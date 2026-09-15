@@ -27,7 +27,7 @@ Publishes 3 name(s). Needs `@angular/forms`, which is an optional peer: install 
 
 ## `@neolorn/atlas/http`
 
-The interceptor that carries the committed locale on outgoing requests.
+The locale request handler and its Node adapter: one request in, one response out, with no Angular in the graph.
 
 Publishes 17 name(s).
 
@@ -49,7 +49,7 @@ Composable from here: `provideLocalizedServerRendering`.
 
 ## `@neolorn/atlas/testing`
 
-The test harness. It replaces the parts of the runtime a test cannot wait for, and nothing else.
+The test harness. It replaces the parts of the runtime a test cannot wait for, and nothing else. Everything in it but the server seat runs under `TestBed`, which needs a DOM and a test runner that installs one.
 
 Publishes 17 name(s).
 

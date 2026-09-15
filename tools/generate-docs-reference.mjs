@@ -237,13 +237,13 @@ const PURPOSE = Object.freeze({
   '@neolorn/atlas/forms':
     'Localized input parsing and the directive that binds it to a form control.',
   '@neolorn/atlas/http':
-    'The interceptor that carries the committed locale on outgoing requests.',
+    'The locale request handler and its Node adapter: one request in, one response out, with no Angular in the graph.',
   '@neolorn/atlas/router':
     'Localized routing: the router setup, the link directive, and the address projection behind them.',
   '@neolorn/atlas/ssr':
     'Server rendering: per-route render modes, and the locale the server renders in.',
   '@neolorn/atlas/testing':
-    'The test harness. It replaces the parts of the runtime a test cannot wait for, and nothing else.',
+    'The test harness. It replaces the parts of the runtime a test cannot wait for, and nothing else. Everything in it but the server seat runs under `TestBed`, which needs a DOM and a test runner that installs one.',
   '@neolorn/atlas-toolkit':
     'The compiler behind the `atlas` command, as a library. An application does not import this; a build script that needs the compiler without the command line does.',
 });

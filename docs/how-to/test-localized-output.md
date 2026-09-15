@@ -4,6 +4,11 @@
 composes, with the same features, so a test and the application cannot drift apart. Three properties
 of the test environment decide what a test actually asserts.
 
+Everything here but the server seat runs under `TestBed`, so it needs a DOM and a test runner that
+installs one. A project whose tests run under plain Node has neither, and adding them is a
+dependency decision rather than a setting. The seat reads a response rather than a document, so it
+needs neither.
+
 ## Give the test an address
 
 A localized address is a real address, and nothing under `TestBed` reaches `window.location`, so an
