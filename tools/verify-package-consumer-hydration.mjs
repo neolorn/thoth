@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { createServer } from 'node:http';
+import { createServer, request as httpRequest } from 'node:http';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 
@@ -510,19 +510,138 @@ assert.notEqual(address, null, 'SSR server has no address');
 assert.equal(typeof address, 'object', 'SSR server address is not TCP');
 const origin = `http://127.0.0.1:${address.port}`;
 
-async function closeServer() {
-  server.closeIdleConnections?.();
-  server.closeAllConnections?.();
-  await Promise.race([
-    new Promise((resolveClose, rejectClose) => {
-      server.close((error) => {
-        if (error === undefined) {
-          resolveClose();
-        } else {
-          rejectClose(error);
+// The server a deployment under a strict policy puts in front of the application, and the policy
+// comes from it for the reason a deployment's does: every document passes through it, whether the
+// browser asked for that address or was redirected there. A route in the browser misses the second
+// kind, because Playwright calls a route handler only for the first address of a navigation that
+// redirects (`playwright-core/types/types.d.ts:4009`). The application's own server cannot add it,
+// because the policy hashes the document's inline scripts and Angular sends the headers before the
+// body (`writeResponseToNodeResponse`, `@angular/ssr/fesm2022/node.mjs:342-343`).
+//
+// The checks of what the application answers read `origin` directly, without the edge, because
+// the application's answer is what they are about. Pages load from `browserOrigin`.
+const edgeFailures = [];
+const hopByHopHeaders = new Set([
+  'connection',
+  'keep-alive',
+  'proxy-connection',
+  'te',
+  'trailer',
+  'transfer-encoding',
+  'upgrade',
+]);
+const withoutHopByHop = (headers) =>
+  Object.fromEntries(
+    Object.entries(headers).filter(
+      ([name, value]) => value !== undefined && !hopByHopHeaders.has(name),
+    ),
+  );
+
+const edge = createServer((request, response) => {
+  // Recorded as well as answered, because a page that lands on the answer may assert nothing
+  // about it, and `assertBrowserDiagnostics` reads this list.
+  const fail = (error) => {
+    edgeFailures.push(
+      `${request.method} ${request.url}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    if (!response.headersSent) {
+      response.statusCode = 502;
+      response.setHeader('content-type', 'text/plain; charset=utf-8');
+    }
+    response.end('The browser assurance edge could not serve this response.');
+  };
+  const upstream = httpRequest(
+    `${origin}${request.url}`,
+    { method: request.method, headers: withoutHopByHop(request.headers) },
+    (answer) => {
+      try {
+        const status = answer.statusCode ?? 502;
+        response.statusCode = status;
+        for (const [name, value] of Object.entries(
+          withoutHopByHop(answer.headers),
+        )) {
+          response.setHeader(name, value);
         }
-      });
-    }),
+        // A redirect is not an application document and has no root element to attach a nonce
+        // to; the document it leads to comes back through here.
+        const isDocument =
+          request.method !== 'HEAD' &&
+          (status < 300 || status >= 400) &&
+          (answer.headers['content-type'] ?? '').includes('text/html');
+        if (!isDocument) {
+          answer.pipe(response);
+          return;
+        }
+        assert.equal(
+          answer.headers['content-encoding'],
+          undefined,
+          `${request.url} arrived encoded, and the policy is computed from the document's text`,
+        );
+        const chunks = [];
+        answer.on('data', (chunk) => chunks.push(chunk));
+        answer.on('error', fail);
+        answer.on('end', () => {
+          try {
+            const original = Buffer.concat(chunks).toString('utf8');
+            const protectedDocument = applyStrictBrowserPolicy(
+              original,
+              `${browserOrigin}${request.url}`,
+            );
+            response.setHeader(
+              'content-security-policy',
+              protectedDocument.policy,
+            );
+            response.setHeader(
+              'x-equator-original-document-sha256',
+              createHash('sha256').update(original, 'utf8').digest('hex'),
+            );
+            response.setHeader(
+              'content-length',
+              Buffer.byteLength(protectedDocument.body),
+            );
+            response.end(protectedDocument.body);
+          } catch (error) {
+            fail(error);
+          }
+        });
+      } catch (error) {
+        fail(error);
+      }
+    },
+  );
+  upstream.on('error', fail);
+  request.pipe(upstream);
+});
+
+await new Promise((resolveListen, rejectListen) => {
+  edge.once('error', rejectListen);
+  edge.listen(0, '127.0.0.1', resolveListen);
+});
+const edgeAddress = edge.address();
+assert.equal(
+  typeof edgeAddress,
+  'object',
+  'The edge server address is not TCP',
+);
+const browserOrigin = `http://127.0.0.1:${edgeAddress.port}`;
+
+async function closeServer() {
+  await Promise.race([
+    Promise.all(
+      [edge, server].map((each) => {
+        each.closeIdleConnections?.();
+        each.closeAllConnections?.();
+        return new Promise((resolveClose, rejectClose) => {
+          each.close((error) => {
+            if (error === undefined) {
+              resolveClose();
+            } else {
+              rejectClose(error);
+            }
+          });
+        });
+      }),
+    ),
     new Promise((resolveClose) => setTimeout(resolveClose, 5_000)),
   ]);
 }
@@ -654,7 +773,7 @@ function applyStrictBrowserPolicy(html, url) {
   return { body: documentWithAssuranceStyle, policy };
 }
 
-async function installStrictBrowserPolicy(context) {
+async function recordPolicyViolations(context) {
   await context.addInitScript(() => {
     globalThis.__equatorCspViolations = [];
     document.addEventListener('securitypolicyviolation', (event) => {
@@ -668,53 +787,13 @@ async function installStrictBrowserPolicy(context) {
       });
     });
   });
-  await context.route('**/*', async (route) => {
-    if (route.request().resourceType() !== 'document') {
-      await route.fallback();
-      return;
-    }
-
-    // Fetched without following redirects, so the browser performs the navigation itself and the
-    // page ends up reporting the address it actually landed on. A redirect is also not an
-    // application document, it carries no root element to attach a nonce to, and locale entry
-    // makes these ordinary rather than exceptional.
-    const response = await route.fetch({ maxRedirects: 0 });
-    if (response.status() >= 300 && response.status() < 400) {
-      await route.fulfill({ response });
-      return;
-    }
-    const contentType = response.headers()['content-type'] ?? '';
-    if (!contentType.includes('text/html')) {
-      await route.fulfill({ response });
-      return;
-    }
-
-    const originalDocument = await response.text();
-    const protectedDocument = applyStrictBrowserPolicy(
-      originalDocument,
-      route.request().url(),
-    );
-    const headers = {
-      ...response.headers(),
-      'content-security-policy': protectedDocument.policy,
-      'x-equator-original-document-sha256': createHash('sha256')
-        .update(originalDocument, 'utf8')
-        .digest('hex'),
-    };
-    delete headers['content-encoding'];
-    delete headers['content-length'];
-    await route.fulfill({
-      body: protectedDocument.body,
-      headers,
-      status: response.status(),
-    });
-  });
 }
 
 function createBrowserDiagnostics(row) {
   return {
     cspViolations: [],
     consoleErrors: [],
+    documentsWithoutPolicy: [],
     engine: row.id,
     pageErrors: [],
     requestFailures: [],
@@ -758,11 +837,28 @@ function attachBrowserDiagnostics(page, diagnostics) {
     rowActivity.inFlight.delete(request.url());
     noteActivity('requestfailed');
     if (
-      request.url().startsWith(origin) &&
+      request.url().startsWith(browserOrigin) &&
       criticalBrowserResourceTypes.has(request.resourceType())
     ) {
       diagnostics.requestFailures.push(
         `${request.url()}: ${request.failure()?.errorText ?? 'unknown failure'}`,
+      );
+    }
+  });
+  // The policy is proven only on a document it was sent with, so landing on one without it is a
+  // finding rather than a page that passed.
+  page.on('response', (response) => {
+    const request = response.request();
+    if (
+      request.resourceType() !== 'document' ||
+      request.frame() !== page.mainFrame() ||
+      (response.status() >= 300 && response.status() < 400)
+    ) {
+      return;
+    }
+    if (response.headers()['content-security-policy'] === undefined) {
+      diagnostics.documentsWithoutPolicy.push(
+        `${response.status()} ${response.url()}`,
       );
     }
   });
@@ -796,6 +892,16 @@ function assertBrowserDiagnostics(diagnostics, label) {
     diagnostics.cspViolations,
     [],
     `${label} strict Content Security Policy was violated`,
+  );
+  assert.deepEqual(
+    diagnostics.documentsWithoutPolicy,
+    [],
+    `${label} landed on documents served without the strict Content Security Policy`,
+  );
+  assert.deepEqual(
+    edgeFailures,
+    [],
+    'The server in front of the application failed to serve',
   );
 }
 
@@ -1992,7 +2098,7 @@ async function exerciseLocaleContinuity(page) {
     assert.fail(
       `The locale switch was not remembered. ` +
         `The switch itself landed, everything asserted above this is about the page after it committed, so what is missing is the cookie meant to outlive it. ` +
-        `The lab writes it from script, as \`equator-locale=ar-EG; Path=/; Max-Age=31536000; SameSite=Lax\` with no \`Secure\`, over ${origin}. ` +
+        `The lab writes it from script, as \`equator-locale=ar-EG; Path=/; Max-Age=31536000; SameSite=Lax\` with no \`Secure\`, over ${browserOrigin}. ` +
         `What the document reports: ${documentCookie}. ` +
         `Every cookie this context holds, for every origin: ${JSON.stringify(persistedCookies)}. ` +
         `In the document but not in the context is this harness reading the wrong place. ` +
@@ -2000,7 +2106,7 @@ async function exerciseLocaleContinuity(page) {
         `In both, under another name or value, is Equator writing something other than what it documents.`,
     );
   }
-  const rememberedEntry = await page.request.fetch(`${origin}/`, {
+  const rememberedEntry = await page.request.fetch(`${browserOrigin}/`, {
     maxRedirects: 0,
   });
   assert.equal(rememberedEntry.status(), 307);
@@ -2302,7 +2408,7 @@ async function verifyRenderingModes(row, context, diagnostics) {
   let prerenderRoute;
   const prerenderResponse = await navigateWithScriptGate(
     prerenderPage,
-    `${origin}${prerenderPath}`,
+    `${browserOrigin}${prerenderPath}`,
     async () => {
       await prerenderPage.waitForSelector('[data-route-view="second"]');
       prerenderRoot = await prerenderPage.$('app-root');
@@ -2360,7 +2466,7 @@ async function verifyRenderingModes(row, context, diagnostics) {
   );
   if (row.id === 'chromium') {
     await collectPolicyDiagnostics(prerenderPage, diagnostics);
-    await prerenderPage.goto(`${origin}/ar-eg/second`);
+    await prerenderPage.goto(`${browserOrigin}/ar-eg/second`);
     await prerenderPage.waitForFunction(
       () => document.documentElement.dataset['clientReady'] === 'true',
     );
@@ -2376,7 +2482,7 @@ async function verifyRenderingModes(row, context, diagnostics) {
   csrPage.setDefaultNavigationTimeout(20_000);
   const csrResponse = await navigateWithScriptGate(
     csrPage,
-    `${origin}/en-us/items/42`,
+    `${browserOrigin}/en-us/items/42`,
     async () => {
       await csrPage.waitForSelector('app-root', { state: 'attached' });
       assert.equal(await csrPage.locator('[data-route-view]').count(), 0);
@@ -2547,7 +2653,7 @@ async function verifySwitchEndurance(page, row) {
 
   for (let batch = 0; batch < 3; batch += 1) {
     await page.goto(
-      `${origin}/en-us?label=${encodeURIComponent(`${row.id}-endurance-${batch}`)}`,
+      `${browserOrigin}/en-us?label=${encodeURIComponent(`${row.id}-endurance-${batch}`)}`,
     );
     await page.waitForFunction(
       () => document.documentElement.dataset['clientReady'] === 'true',
@@ -2610,7 +2716,7 @@ async function verifySecondaryBrowserRow(row) {
 
   try {
     rowContext = boundCalls(await rowBrowser.newContext(), 'context');
-    await installStrictBrowserPolicy(rowContext);
+    await recordPolicyViolations(rowContext);
     rowPage = boundCalls(await rowContext.newPage(), 'page');
     attachBrowserDiagnostics(rowPage, diagnostics);
     rowPage.setDefaultTimeout(15_000);
@@ -2622,7 +2728,7 @@ async function verifySecondaryBrowserRow(row) {
     noteAwaiting(`${row.id} the hydration navigation`);
     const response = await navigateWithScriptGate(
       rowPage,
-      `${origin}/en-us?label=${encodeURIComponent(label)}`,
+      `${browserOrigin}/en-us?label=${encodeURIComponent(label)}`,
       async () => {
         await rowPage.waitForSelector(
           `[data-ssr-probe][data-label="${label}"]`,
@@ -2791,6 +2897,7 @@ function browserRowEvidence(row) {
 const chromiumDiagnostics = {
   cspViolations,
   consoleErrors,
+  documentsWithoutPolicy: [],
   engine: 'chromium',
   pageErrors,
   requestFailures,
@@ -3544,47 +3651,14 @@ try {
   const chromiumVersion = browser.version();
   chromiumEvidence.version = chromiumVersion;
   context = boundCalls(await browser.newContext(), 'context');
-  await installStrictBrowserPolicy(context);
+  await recordPolicyViolations(context);
   page = boundCalls(await context.newPage(), 'page');
   page.setDefaultTimeout(15_000);
   page.setDefaultNavigationTimeout(20_000);
 
   // The primary row feeds the same account as the secondary ones, so a bound tripping in any stage
   // describes what the row was doing rather than only naming the stage.
-  page.on('framenavigated', (frame) =>
-    noteActivity(`navigated ${frame.url()}`),
-  );
-  page.on('load', () => noteActivity('load'));
-  if (traceRequests) {
-    page.on('request', (request) => {
-      rowActivity.inFlight.set(request.url(), Date.now());
-      noteActivity(`request ${request.resourceType()}`);
-    });
-    page.on('requestfinished', (request) => {
-      rowActivity.inFlight.delete(request.url());
-      noteActivity('requestfinished');
-    });
-  }
-  page.on('console', (message) => {
-    noteActivity(`console ${message.type()}`);
-    if (message.type() === 'error') {
-      consoleErrors.push(message.text());
-    }
-  });
-  page.on('pageerror', (error) => {
-    noteActivity('pageerror');
-    pageErrors.push(error.message);
-  });
-  page.on('requestfailed', (request) => {
-    if (
-      request.url().startsWith(origin) &&
-      criticalBrowserResourceTypes.has(request.resourceType())
-    ) {
-      requestFailures.push(
-        `${request.url()}: ${request.failure()?.errorText ?? 'unknown failure'}`,
-      );
-    }
-  });
+  attachBrowserDiagnostics(page, chromiumDiagnostics);
 
   let releaseScripts;
   const scriptGate = new Promise((resolveGate) => {
@@ -3598,9 +3672,12 @@ try {
   });
 
   enterStage('hydration-navigation');
-  const navigation = page.goto(`${origin}/en-us?label=hydration-request`, {
-    waitUntil: 'load',
-  });
+  const navigation = page.goto(
+    `${browserOrigin}/en-us?label=hydration-request`,
+    {
+      waitUntil: 'load',
+    },
+  );
   await page.waitForSelector(
     '[data-ssr-probe][data-label="hydration-request"]',
     { state: 'attached' },
@@ -3697,8 +3774,9 @@ try {
     // answers. Treating that as a localization failure abandoned the navigation and rendered
     // nothing at all.
     const missing = boundCalls(await context.newPage(), 'page');
+    attachBrowserDiagnostics(missing, chromiumDiagnostics);
     missing.setDefaultTimeout(15_000);
-    await missing.goto(`${origin}/ar-eg/no-such-page`, {
+    await missing.goto(`${browserOrigin}/ar-eg/no-such-page`, {
       waitUntil: 'networkidle',
     });
     await missing.waitForFunction(
@@ -3711,6 +3789,7 @@ try {
       'ar-EG',
       'A not-found under a locale prefix did not answer in that locale',
     );
+    await collectPolicyDiagnostics(missing, chromiumDiagnostics);
     await missing.close();
 
     // The same address without a prefix, which is what an ordinary hand-written `href` produces.
@@ -3722,8 +3801,9 @@ try {
     // not test this, because `no` is Norwegian and `no-such-page` parses as a language tag, so
     // Equator reads it as intent toward an unsupported locale and answers 404 where it stands.
     const unprefixed = boundCalls(await context.newPage(), 'page');
+    attachBrowserDiagnostics(unprefixed, chromiumDiagnostics);
     unprefixed.setDefaultTimeout(15_000);
-    await unprefixed.goto(`${origin}/nothing-is-mounted-here`, {
+    await unprefixed.goto(`${browserOrigin}/nothing-is-mounted-here`, {
       waitUntil: 'networkidle',
     });
     await unprefixed.waitForFunction(
@@ -3740,6 +3820,7 @@ try {
       (await unprefixed.title()).length > 0,
       'The not-found page reached without a prefix has no document title',
     );
+    await collectPolicyDiagnostics(unprefixed, chromiumDiagnostics);
     await unprefixed.close();
   }
 
@@ -3763,8 +3844,9 @@ try {
       ['ar-eg', 'النطاق الكسول جاهز.'],
     ]) {
       const deferred = boundCalls(await context.newPage(), 'page');
+      attachBrowserDiagnostics(deferred, chromiumDiagnostics);
       deferred.setDefaultTimeout(15_000);
-      await deferred.goto(`${origin}/${prefix}/lazy`, {
+      await deferred.goto(`${browserOrigin}/${prefix}/lazy`, {
         waitUntil: 'networkidle',
       });
       await deferred.waitForFunction(
@@ -3779,6 +3861,7 @@ try {
         expected,
         `The scope deferred behind /${prefix}/lazy did not load when that route activated`,
       );
+      await collectPolicyDiagnostics(deferred, chromiumDiagnostics);
       await deferred.close();
     }
   }
@@ -3797,8 +3880,9 @@ try {
     // is not one. The directive is gone; this stage is what actually holds the invariant, and it
     // held identically before and after the removal.
     const probe = boundCalls(await context.newPage(), 'page');
+    attachBrowserDiagnostics(probe, chromiumDiagnostics);
     probe.setDefaultTimeout(15_000);
-    await probe.goto(origin, { waitUntil: 'networkidle' });
+    await probe.goto(browserOrigin, { waitUntil: 'networkidle' });
     await probe.locator('[data-locale-choice="ar-EG"]').click();
     await probe.waitForFunction(
       () => document.documentElement.lang === 'ar-EG',
@@ -4048,7 +4132,7 @@ try {
   await collectPolicyDiagnostics(page, chromiumDiagnostics);
 
   enterStage('chromium-focus-selection-composition-scroll');
-  await page.goto(`${origin}/en-us?label=chromium-continuity`);
+  await page.goto(`${browserOrigin}/en-us?label=chromium-continuity`);
   await page.waitForFunction(
     () => document.documentElement.dataset['clientReady'] === 'true',
   );
@@ -4137,6 +4221,8 @@ try {
     browserEvidence,
     cspViolations,
     consoleErrors,
+    documentsWithoutPolicy: chromiumDiagnostics.documentsWithoutPolicy,
+    edgeFailures,
     pageErrors,
     requestFailures,
     pageState,
