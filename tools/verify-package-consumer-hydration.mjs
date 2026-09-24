@@ -2890,6 +2890,17 @@ try {
     'public, max-age=600, must-revalidate',
   );
   assert.equal(builtAddress.headers.get('vary'), null);
+  // A route that declares itself per visitor. The toolkit read the declaration out of the route
+  // file, the generated table carries it, and the handler raised the page to it.
+  const perVisitorPage = await fetch(`${origin}/en-us/lazy`, {
+    redirect: 'manual',
+    signal: AbortSignal.timeout(15_000),
+  });
+  assert.equal(perVisitorPage.status, 200);
+  assert.equal(
+    perVisitorPage.headers.get('cache-control'),
+    'private, no-cache',
+  );
   const correction = await fetch(`${origin}/EN-US/Second/`, {
     redirect: 'manual',
     signal: AbortSignal.timeout(15_000),

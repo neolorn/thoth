@@ -631,11 +631,34 @@ text, so an application writes the set with one loop and gains a header a later 
 without changing a line. Where a classification's correctness would depend on the duration supplied
 with it, the classification is wrong.
 
+Who may keep a response has three levels. Shared is public, held for the deployment's lifetime. Per
+visitor is private and revalidated before every reuse. Not stored is private and kept by nobody. A
+release computes a level for each response from its routing classification, and MUST let each
+declaration below raise that level and none lower it, because a declaration that could lower it
+could publish a page that its route or its host said must not be shared.
+
+A consumer application declares a route's level in its route data: a named field and a table of
+literals, read from the provider file's source text when the owner is compiled, as section 14 reads
+indexing, with a documented default field. The declaration is on the route rather than made by a
+page while it renders, because a cache reuses a stored response for any request to its address,
+including a request where the page decided nothing. A release MUST answer a value it reads and
+cannot use as not stored, and MUST report it when the owner is compiled, because every value the
+declaration can name keeps the page out of a shared cache, and reading an unusable one as absent is
+the one reading that cannot be what was meant. Under the default field every value is meant for the
+release; under a consumer's own field an unlisted value declares nothing, as it does for indexing.
+A private indexing class is not stored whatever the route declares about caching.
+
+A host declares the least level of every page it serves, for a fact that holds on every page, such
+as a cookie every page reads or a nonce every response carries, so a route added later cannot
+forget it. A release MUST apply it to every response that carries a page, and MUST NOT apply it to
+a redirect, which carries none.
+
 ## 17. Primary references
 
 - RFC 3986, Uniform Resource Identifier (URI): Generic Syntax:
   `https://www.rfc-editor.org/rfc/rfc3986`
 - RFC 9110, HTTP Semantics: `https://www.rfc-editor.org/rfc/rfc9110`
+- RFC 9111, HTTP Caching: `https://www.rfc-editor.org/rfc/rfc9111`
 - Sitemaps XML format 0.90: `https://www.sitemaps.org/protocol.html`
 - Google Search Central, Localized versions of your pages:
   `https://developers.google.com/search/docs/specialty/international/localized-versions`

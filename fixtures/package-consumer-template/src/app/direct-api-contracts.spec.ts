@@ -143,6 +143,21 @@ describe('route and SEO contracts, called directly', () => {
     ]);
   });
 
+  it('carries the caching class a route declared into its responses', () => {
+    expect(
+      // `in` rather than a read, because the table's type is a union of literal routes and only the
+      // one that declared a class has the field.
+      appRouteProjection.generated.routes.flatMap((route) =>
+        'caching' in route ? [{ id: route.id, caching: route.caching }] : [],
+      ),
+    ).toEqual([{ id: 'route:lazy', caching: 'per-visitor' }]);
+    expect(
+      routeHttpDescriptor(
+        resolveLocalizedRoute('/en-us/lazy', routePolicy, appRouteProjection),
+      ).cache,
+    ).toBe('private-no-cache');
+  });
+
   /**
    * The identifier codec, through the route path rather than by calling it.
    *

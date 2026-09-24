@@ -9,7 +9,7 @@ This page is generated from the packages and is not edited by hand.
 
 Everything an application component and its bootstrap need.
 
-Publishes 214 name(s).
+Publishes 217 name(s).
 
 Composable from here: `provideLocalizationSetup`, `withExtensions`, `withFormattingContext`, `withLocaleAnnouncement`, `withLocaleSources`, `withLocalizationClock`, `withObservability`, `withOverlayLocale`, `withPersistence`, `withRecoveryMessage`, `withRelativeTimePolicy`, `withRouting`, `withoutDocumentLocale`.
 
@@ -17,7 +17,7 @@ Composable from here: `provideLocalizationSetup`, `withExtensions`, `withFormatt
 
 The value builders, the contracts and the address helpers, with no Angular injector involved. This is what a library or a test helper imports.
 
-Publishes 231 name(s).
+Publishes 234 name(s).
 
 ## `@neolorn/equator/forms`
 

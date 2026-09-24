@@ -97,4 +97,31 @@ describe('the route table a generation writes', () => {
     expect(contents).toContain('routes: Object.freeze([');
     expect(contents).not.toContain('declare const');
   });
+
+  it("writes a route's caching class, and a changed class is a changed table", () => {
+    const identityOf = (contents: string) =>
+      /identity: "(sha256-[^"]+)"/u.exec(contents)?.[1];
+    const shared = routesModule({
+      routes: [{ id: 'route:account', path: 'account', parameterNames: [] }],
+    });
+    const perVisitor = routesModule({
+      routes: [
+        {
+          id: 'route:account',
+          path: 'account',
+          parameterNames: [],
+          caching: 'per-visitor',
+        },
+      ],
+    });
+
+    expect(perVisitor).toContain(
+      'id: "route:account", path: "account", parameterNames: Object.freeze([] as const), caching: "per-visitor"',
+    );
+    expect(shared).not.toContain('caching:');
+    // In the identity, so a build that changed only who may keep a page is not taken for the old
+    // one.
+    expect(identityOf(perVisitor)).toBeDefined();
+    expect(identityOf(perVisitor)).not.toBe(identityOf(shared));
+  });
 });

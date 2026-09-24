@@ -218,6 +218,25 @@ describe('what a generated route projection is refused for', () => {
     expect(validating({ routes })).toContain('invalid indexing class');
   });
 
+  it('refuses a caching class it does not know', () => {
+    for (const caching of ['per-visitor', 'not-stored'] as const) {
+      const routes = replacing(1, {
+        id: 'second',
+        path: 'second',
+        parameterNames: [],
+        caching,
+      });
+      expect(validating({ routes }), caching).toBeUndefined();
+    }
+    const routes = replacing(1, {
+      id: 'second',
+      path: 'second',
+      parameterNames: [],
+      caching: 'private' as 'not-stored',
+    });
+    expect(validating({ routes })).toContain('invalid caching class');
+  });
+
   it('refuses a declared parameter list that disagrees with the path', () => {
     const parameters = {
       article: { slug: SLUG, page: SLUG, id: SLUG, extra: SLUG },

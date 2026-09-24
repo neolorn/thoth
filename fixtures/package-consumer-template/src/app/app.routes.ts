@@ -261,7 +261,9 @@ export const routes = [
     path: 'lazy',
     loadComponent: () =>
       import('./lazy-route').then((module) => module.FeatureLabLazyRoute),
-    data: { equatorIndexing: 'non-indexable' },
+    // Declared per visitor so the served application answers one page from a route declaration
+    // that the toolkit read out of this file.
+    data: { equatorIndexing: 'non-indexable', equatorCaching: 'per-visitor' },
   },
   {
     path: 'articles/:slug',

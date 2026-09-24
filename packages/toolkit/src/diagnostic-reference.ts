@@ -123,6 +123,8 @@ const REFERENCE = {
     'A component template writes a `routerLink` whose leading segment is one this owner claims for a locale.',
   EQ1412:
     'A sitemap declaration cannot be used as written: a changefreq outside the seven the protocol lists, a priority that is not a number literal between 0 and 1, a lastmod that is not a W3C date, or the owner declaring two route sitemap fields.',
+  EQ1413:
+    'A caching declaration cannot be used as written: a value that names neither `per-visitor` nor `not-stored`, a table or a route value the build cannot read as a string literal, or the owner declaring two route caching fields. A route whose value cannot be used is answered as not stored until it is corrected.',
   EQ1501:
     'A compiled artifact cannot be produced from the accepted graph: a recovery identity that resolves to no single plain message, or a catalog absent from the graph.',
   EQ1502: 'A compiled catalog exceeds the IR node or depth ceiling.',

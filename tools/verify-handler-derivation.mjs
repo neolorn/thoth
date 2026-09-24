@@ -50,8 +50,8 @@ const probePath = resolve(
  * hand-computed descriptor is caught too.
  */
 const MUTATION = Object.freeze({
-  find: "              : 'public',",
-  replace: "              : 'private-no-store',",
+  find: "                : 'public',",
+  replace: "                : 'private-no-store',",
 });
 
 const PROBE = `import { describe, expect, it } from 'vitest';

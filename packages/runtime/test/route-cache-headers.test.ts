@@ -7,6 +7,7 @@ import {
   routeHttpDescriptor,
   type LocalePreferenceSource,
   type LocaleUrlPolicy,
+  type RouteCachingClass,
   type RouteHttpDescriptor,
   type RouteRuntimeProjection,
 } from '@neolorn/equator/core';
@@ -222,6 +223,135 @@ describe('the cache headers Equator determines', () => {
         successMaxAge: 0,
       }),
     ).not.toThrow();
+  });
+});
+
+/**
+ * A route that says who may keep its pages.
+ *
+ * Declared on the route because a cache keeps a response by its address. The declaration can only
+ * raise what routing concluded, which is why neither value means shared.
+ */
+describe('what a route declares about caching', () => {
+  const POLICY: LocaleUrlPolicy = {
+    kind: 'path-prefix',
+    defaultLocale: 'en-US',
+    locales: { 'en-US': 'en-us', 'ar-EG': 'ar-eg' },
+    prefixes: { 'en-us': 'en-US', 'ar-eg': 'ar-EG' },
+    aliases: {},
+    localeNeutralRoots: [],
+    omitDefaultPrefix: false,
+  };
+
+  const projectionWith = (
+    route: {
+      readonly caching?: RouteCachingClass;
+      readonly indexing?: 'indexable' | 'non-indexable' | 'private';
+    } = {},
+  ): RouteRuntimeProjection => ({
+    generated: {
+      profile: 'equator-route-projection/1',
+      identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
+      routes: [
+        { id: 'route:account', path: 'account', parameterNames: [], ...route },
+      ],
+    },
+  });
+
+  const headersAt = (projection: RouteRuntimeProjection) =>
+    routeCacheHeaders(
+      routeHttpDescriptor(
+        resolveLocalizedRoute('/en-us/account', POLICY, projection),
+      ),
+      FRESHNESS,
+    );
+
+  it('carries the class on the resolution and raises the page to it', () => {
+    expect(
+      resolveLocalizedRoute(
+        '/en-us/account',
+        POLICY,
+        projectionWith({ caching: 'per-visitor' }),
+      ),
+    ).toMatchObject({ status: 'success', caching: 'per-visitor' });
+    expect(headersAt(projectionWith({ caching: 'per-visitor' }))).toStrictEqual(
+      { 'cache-control': 'private, no-cache' },
+    );
+    expect(headersAt(projectionWith({ caching: 'not-stored' }))).toStrictEqual({
+      'cache-control': 'private, no-store',
+    });
+    // The control: the same route declaring nothing is shared.
+    expect(headersAt(projectionWith())).toStrictEqual({
+      'cache-control': 'public, max-age=600, must-revalidate',
+    });
+  });
+
+  it('keeps a private indexing class not stored whatever caching says', () => {
+    expect(
+      headersAt(
+        projectionWith({ caching: 'per-visitor', indexing: 'private' }),
+      ),
+    ).toStrictEqual({ 'cache-control': 'private, no-store' });
+  });
+});
+
+/**
+ * A deployment that says every page it serves depends on the request.
+ *
+ * A floor rather than a class, so it raises what routing and the route concluded and never lowers
+ * either, and a redirect, which carries no page, keeps what routing gave it.
+ */
+describe('what a host declares about every page', () => {
+  it('raises a shared page and leaves a stricter one where it was', () => {
+    const at = (
+      cache: RouteHttpDescriptor['cache'],
+      pageCaching: RouteCachingClass,
+    ) =>
+      routeCacheHeaders(descriptorFor(cache), { ...FRESHNESS, pageCaching })[
+        'cache-control'
+      ];
+
+    expect(at('public', 'per-visitor')).toBe('private, no-cache');
+    expect(at('public', 'not-stored')).toBe('private, no-store');
+    expect(at('private-no-cache', 'not-stored')).toBe('private, no-store');
+    expect(at('private-no-store', 'per-visitor')).toBe('private, no-store');
+  });
+
+  it('keeps Accept-Language on a negotiated page it raised', () => {
+    expect(
+      routeCacheHeaders(descriptorFor('varies-by-locale-preference'), {
+        ...FRESHNESS,
+        localePreference: 'accept-language',
+        pageCaching: 'per-visitor',
+      }),
+    ).toStrictEqual({
+      'cache-control': 'private, no-cache',
+      vary: 'Accept-Language',
+    });
+  });
+
+  it('leaves a redirect as routing classified it', () => {
+    expect(
+      routeCacheHeaders(descriptorFor('consumer-defined-permanent'), {
+        ...FRESHNESS,
+        pageCaching: 'not-stored',
+      }),
+    ).toStrictEqual({ 'cache-control': 'public, max-age=86400' });
+    expect(
+      routeCacheHeaders(
+        { status: 307, location: '/en-us', cache: 'private-no-cache' },
+        { ...FRESHNESS, pageCaching: 'not-stored' },
+      ),
+    ).toStrictEqual({ 'cache-control': 'private, no-cache' });
+  });
+
+  it('refuses a value that names no class', () => {
+    expect(() =>
+      routeCacheHeaders(descriptorFor('public'), {
+        ...FRESHNESS,
+        pageCaching: 'public' as 'per-visitor',
+      }),
+    ).toThrow(/`pageCaching` is `per-visitor` or `not-stored`/u);
   });
 });
 

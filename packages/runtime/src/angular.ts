@@ -34,6 +34,7 @@ import {
   type LocalizationSetup,
   type LocalizationSnapshot,
   type MessageHandle,
+  type RouteCachingPolicy,
   type RouteIndexingPolicy,
   type RouteSitemapPolicy,
   type RouteRuntimeProjection,
@@ -235,6 +236,15 @@ export interface RoutingOptions {
    * all, and one that may is there with whatever this says about it.
    */
   readonly sitemap?: RouteSitemapPolicy;
+  /**
+   * Which routes a shared cache may not keep, read the same way and at the same moment as
+   * `indexing`.
+   *
+   * For a page that depends on something the request carries, or one nothing may keep. Declared on
+   * the route rather than by the page while it renders, because a cache keeps a response by its
+   * address and hands it to the next request, including one where the page decided nothing.
+   */
+  readonly caching?: RouteCachingPolicy;
 }
 
 interface RoutingFeature extends LocalizationFeature<'routing'> {
@@ -577,9 +587,9 @@ export function withExtensions(
  * meet in one projection, so the `url` locale source, canonical URLs, reciprocal `hreflang`
  * links, and locale redirects all read the same copy: there is no second copy to drift.
  *
- * `indexing` is the exception in this object: it is an input to code generation rather than to
- * the runtime. Equator reads the field name and the value table out of this call's source text when
- * it compiles the owner, and classifies each route then.
+ * `indexing`, `sitemap` and `caching` are the exception in this object: they are inputs to code
+ * generation rather than to the runtime. Equator reads each field name and value table out of this
+ * call's source text when it compiles the owner, and classifies each route then.
  */
 export function withRouting(
   options: RoutingOptions,

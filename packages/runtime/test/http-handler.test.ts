@@ -315,6 +315,33 @@ describe('the fact the handler derives and the descriptor is told', () => {
     expect(response.headers.get('set-cookie')).toBeNull();
   });
 
+  it('raises every page by the floor in its cache options', async () => {
+    const floored = createLocaleRequestHandler({
+      policy: POLICY,
+      projection: PROJECTION,
+      cache: { ...CACHE, pageCaching: 'per-visitor' },
+      render: () =>
+        new Response('<!doctype html>', {
+          headers: { 'content-type': 'text/html' },
+        }),
+    });
+
+    const page = await floored(
+      new Request('https://site.example/en-us/second'),
+    );
+    const correction = await floored(
+      new Request('https://site.example/EN-US/second'),
+    );
+
+    expect(page.headers.get('cache-control')).toBe('private, no-cache');
+    // A correction is the same answer for every request and carries no page, so the floor does not
+    // reach it.
+    expect(correction.status).toBe(308);
+    expect(correction.headers.get('cache-control')).toBe(
+      'public, max-age=86400',
+    );
+  });
+
   it('names Accept-Language on the entry redirect it negotiated', async () => {
     const negotiating = createLocaleRequestHandler({
       policy: POLICY,

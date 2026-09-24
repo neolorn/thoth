@@ -188,6 +188,10 @@ A component template writes a `routerLink` whose leading segment is one this own
 
 A sitemap declaration cannot be used as written: a changefreq outside the seven the protocol lists, a priority that is not a number literal between 0 and 1, a lastmod that is not a W3C date, or the owner declaring two route sitemap fields.
 
+### EQ1413
+
+A caching declaration cannot be used as written: a value that names neither `per-visitor` nor `not-stored`, a table or a route value the build cannot read as a string literal, or the owner declaring two route caching fields. A route whose value cannot be used is answered as not stored until it is corrected.
+
 ## The compiled artifacts
 
 ### EQ1501

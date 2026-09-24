@@ -57,6 +57,38 @@ export interface RouteIndexingPolicy {
 }
 
 /**
+ * Who may keep a page, where a route or a host says more than routing concluded.
+ *
+ * `per-visitor` is a page that depends on something the request carries, such as a cookie: a
+ * browser may keep it and asks the server again before reusing it, and no shared cache may keep it.
+ * `not-stored` is a page nothing may keep, such as one behind a sign-in. There is no value for
+ * shared, because a declaration can only raise what routing concluded.
+ */
+export type RouteCachingClass = 'per-visitor' | 'not-stored';
+
+/**
+ * The route-data field Equator reads for a caching class when a consumer does not name one.
+ *
+ * Read the same way and at the same moment as `DEFAULT_ROUTE_INDEXING_FIELD`.
+ */
+export const DEFAULT_ROUTE_CACHING_FIELD = 'equatorCaching';
+
+/**
+ * How a consumer's own route data says which routes a shared cache may not keep.
+ *
+ * Read from the provider file's source text at build time, like `RouteIndexingPolicy`. On a route,
+ * because a cache keeps a response by its address: a restriction a page decided while rendering
+ * would be missing from the responses where it was not decided, and those are the ones a cache
+ * hands back. A route whose value is unlisted is left as routing classified it.
+ */
+export interface RouteCachingPolicy {
+  /** The route-data field to read the class out of. */
+  readonly field: string;
+  /** What each value in that field means. */
+  readonly values: Readonly<Record<string, RouteCachingClass>>;
+}
+
+/**
  * The seven values `changefreq` admits, from the sitemap protocol's own enumeration.
  *
  * A closed set, and the schema enforces it, so a value outside it is not a hint a crawler ignores
@@ -121,6 +153,8 @@ export interface GeneratedRouteProjectionEntry {
   readonly parameterNames: readonly string[];
   /** What it says to a crawler. Absent where no indexing policy classified it. */
   readonly indexing?: RouteIndexingClass;
+  /** Who may keep its pages, where the route declared it. Absent leaves routing's own class. */
+  readonly caching?: RouteCachingClass;
   /**
    * The scopes this route must have ready before it renders.
    *
@@ -560,6 +594,8 @@ export type RouteResolution =
       readonly query: readonly RouteQueryValue[];
       readonly fragment?: string;
       readonly indexing: RouteIndexingClass;
+      /** Who may keep this page, where its route declared it. */
+      readonly caching?: RouteCachingClass;
       /**
        * Present when this address answers for more than one locale, so which document it returns
        * depended on a preference the address does not state.
@@ -710,6 +746,15 @@ export interface RouteCacheDurations {
    * under an unchanged URL: a retranslated page is the ordinary case here, not an exotic one.
    */
   readonly revalidateSuccess?: boolean;
+  /**
+   * The least any page this deployment serves is kept as, for a fact that holds on every page: a
+   * cookie every page reads, or a nonce every response carries.
+   *
+   * Here rather than on each route, because a route added later would have to remember it. A route
+   * can raise its own pages further, and nothing lowers them. A redirect carries no page and keeps
+   * the class routing gave it.
+   */
+  readonly pageCaching?: RouteCachingClass;
 }
 
 /**
@@ -800,31 +845,68 @@ export function routeCacheHeaders(
     freshness.localePreference === 'accept-language' &&
     (descriptor.variesBy === 'locale-preference' ||
       descriptor.cache === 'varies-by-locale-preference');
+  const floor: unknown = freshness.pageCaching;
+  if (
+    floor !== undefined &&
+    floor !== 'per-visitor' &&
+    floor !== 'not-stored'
+  ) {
+    routeError(
+      `\`pageCaching\` is \`per-visitor\` or \`not-stored\` and cannot be ${JSON.stringify(floor)}. A page is shared unless something raises it, so there is no value that means shared.`,
+    );
+  }
+  const redirect = descriptor.status === 307 || descriptor.status === 308;
+  const level = raised(
+    cacheLevel(descriptor.cache, freshness.localePreference),
+    redirect ? undefined : freshness.pageCaching,
+  );
   return Object.freeze({
-    'cache-control': cacheControl(descriptor.cache, freshness),
+    'cache-control':
+      level === 'not-stored'
+        ? 'private, no-store'
+        : level === 'per-visitor'
+          ? 'private, no-cache'
+          : descriptor.cache === 'consumer-defined-permanent'
+            ? `public, max-age=${wholeSeconds(freshness.permanentRedirectMaxAge, 'permanentRedirectMaxAge')}`
+            : successDirective(freshness),
     ...(negotiated ? { vary: 'Accept-Language' } : {}),
   });
 }
 
-function cacheControl(
+/** Who may keep a response, from weakest to strongest, which is the order a declaration raises. */
+type CacheLevel = 'shared' | RouteCachingClass;
+
+const CACHE_LEVEL_RANK: Readonly<Record<CacheLevel, number>> = {
+  shared: 0,
+  'per-visitor': 1,
+  'not-stored': 2,
+};
+
+function raised(level: CacheLevel, floor: CacheLevel | undefined): CacheLevel {
+  return floor !== undefined &&
+    CACHE_LEVEL_RANK[floor] > CACHE_LEVEL_RANK[level]
+    ? floor
+    : level;
+}
+
+function cacheLevel(
   cache: RouteHttpDescriptor['cache'],
-  freshness: RouteCacheFreshness,
-): string {
+  localePreference: LocalePreferenceSource,
+): CacheLevel {
   switch (cache) {
     case 'public':
-      return successDirective(freshness);
     case 'consumer-defined-permanent':
-      return `public, max-age=${wholeSeconds(freshness.permanentRedirectMaxAge, 'permanentRedirectMaxAge')}`;
+      return 'shared';
     case 'private-no-cache':
-      return 'private, no-cache';
+      return 'per-visitor';
     case 'private-no-store':
-      return 'private, no-store';
+      return 'not-stored';
     case 'varies-by-locale-preference':
-      switch (freshness.localePreference) {
+      switch (localePreference) {
         case 'accept-language':
-          return successDirective(freshness);
+          return 'shared';
         case 'cookie':
-          return 'private, no-store';
+          return 'not-stored';
         case 'none':
           return routeError(
             'This response varied by locale preference and `localePreference` is `none`, which are two statements that cannot both be true. Equator resolved a locale from a preference the host supplied, so the host reads one somewhere; name where, so the answer can say whether a shared cache may hold it.',
@@ -1465,6 +1547,12 @@ function checkRouteProjection(
       !['indexable', 'non-indexable', 'private'].includes(route.indexing)
     ) {
       routeError(`Generated route ${route.id} has an invalid indexing class.`);
+    }
+    if (
+      route.caching !== undefined &&
+      !['per-visitor', 'not-stored'].includes(route.caching)
+    ) {
+      routeError(`Generated route ${route.id} has an invalid caching class.`);
     }
     const discovered = parameterNames(route.path);
     if (
@@ -2240,6 +2328,9 @@ function resolvePathPrefixRoute(
             ? {}
             : { fragment: parsed.fragment }),
           indexing: unprefixedMatch.route.indexing ?? 'indexable',
+          ...(unprefixedMatch.route.caching === undefined
+            ? {}
+            : { caching: unprefixedMatch.route.caching }),
         });
       }
       const preferred = preferredEntryLocale(policy, context);
@@ -2362,6 +2453,9 @@ function resolvePathPrefixRoute(
     query: parsed.query,
     ...(parsed.fragment === undefined ? {} : { fragment: parsed.fragment }),
     indexing: match.route.indexing ?? 'indexable',
+    ...(match.route.caching === undefined
+      ? {}
+      : { caching: match.route.caching }),
   });
 }
 
@@ -2488,6 +2582,9 @@ function resolveLocaleNeutralRoute(
     query: parsed.query,
     ...(parsed.fragment === undefined ? {} : { fragment: parsed.fragment }),
     indexing: match.route.indexing ?? 'indexable',
+    ...(match.route.caching === undefined
+      ? {}
+      : { caching: match.route.caching }),
     // Every success here, not only the ones that read a preference on this request.
     //
     // The address carries no locale, so the document it returns is chosen by something the address
@@ -2631,6 +2728,9 @@ function resolveHostRoute(
     query: parsed.query,
     ...(parsed.fragment === undefined ? {} : { fragment: parsed.fragment }),
     indexing: match.route.indexing ?? 'indexable',
+    ...(match.route.caching === undefined
+      ? {}
+      : { caching: match.route.caching }),
   });
 }
 
@@ -4151,12 +4251,17 @@ export function routeHttpDescriptor(
                   ? ('noindex, nofollow' as const)
                   : ('noindex' as const),
             }),
+        // A page behind a sign-in is what `no-store` exists for, so a private indexing class is
+        // not stored whatever the route declared about caching.
         cache:
-          resolution.indexing === 'private'
+          resolution.indexing === 'private' ||
+          resolution.caching === 'not-stored'
             ? 'private-no-store'
-            : resolution.variesBy === 'locale-preference'
-              ? 'varies-by-locale-preference'
-              : 'public',
+            : resolution.caching === 'per-visitor'
+              ? 'private-no-cache'
+              : resolution.variesBy === 'locale-preference'
+                ? 'varies-by-locale-preference'
+                : 'public',
         ...(resolution.variesBy === undefined
           ? {}
           : { variesBy: resolution.variesBy }),

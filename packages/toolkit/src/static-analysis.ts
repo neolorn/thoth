@@ -129,6 +129,12 @@ export interface RouteProjection {
    */
   readonly indexing?: 'indexable' | 'non-indexable' | 'private';
   /**
+   * Who may keep this route's pages, resolved from the class its own data names.
+   *
+   * Absent when the route names none, which leaves the class routing gives the page.
+   */
+  readonly caching?: RouteCachingClass;
+  /**
    * What this route claims in a sitemap, resolved from the class its own data names.
    *
    * Absent when the owner declared no sitemap policy, and absent when the route's class is one the
@@ -550,6 +556,116 @@ const DEFAULT_ROUTE_INDEXING_VALUES = new Map<
   ['non-indexable', 'non-indexable'],
   ['private', 'private'],
 ]);
+
+type RouteCachingClass = 'per-visitor' | 'not-stored';
+
+/**
+ * How this owner's route data says which routes a shared cache may not keep.
+ *
+ * Read out of `withRouting()` the way the indexing policy is. A value this cannot use is answered
+ * as `not-stored` rather than dropped: every class it could have named keeps the page out of a
+ * shared cache, so the strictest is the one reading that cannot make a page more shareable than
+ * its author wrote. `readable` is false when the table itself cannot be read, and then every value
+ * under the field is such a value.
+ */
+interface RouteCachingPolicy {
+  readonly field: string;
+  readonly values: ReadonlyMap<string, RouteCachingClass>;
+  readonly readable: boolean;
+}
+
+const DEFAULT_ROUTE_CACHING_FIELD = 'equatorCaching';
+
+const DEFAULT_ROUTE_CACHING_VALUES = new Map<string, RouteCachingClass>([
+  ['per-visitor', 'per-visitor'],
+  ['not-stored', 'not-stored'],
+]);
+
+/**
+ * The caching half of `withRouting()`, with what it refused beside it.
+ *
+ * A declaration whose field cannot be read has no policy, and the refusal says so: the build cannot
+ * know which field its routes use, so they keep the default field.
+ */
+function routeCachingPolicy(
+  checker: ts.TypeChecker,
+  node: ts.CallExpression,
+):
+  | {
+      readonly policy: RouteCachingPolicy | undefined;
+      readonly refusals: readonly string[];
+    }
+  | undefined {
+  const resolved = resolvedSymbol(checker, node.expression);
+  if (
+    resolved === undefined ||
+    resolved.name !== 'withRouting' ||
+    !declaredIn(resolved, '/@neolorn/equator/')
+  ) {
+    return undefined;
+  }
+  const argument = node.arguments[0];
+  if (argument === undefined || !ts.isObjectLiteralExpression(argument)) {
+    return undefined;
+  }
+  const caching = objectProperty(argument, 'caching');
+  if (caching === undefined) return undefined;
+  const field = ts.isObjectLiteralExpression(caching)
+    ? objectProperty(caching, 'field')
+    : undefined;
+  if (field === undefined || !ts.isStringLiteralLike(field)) {
+    return {
+      policy: undefined,
+      refusals: [
+        'it is not written as an object literal whose `field` is a string literal, so the build cannot tell which field its routes use, and they are read from `equatorCaching`',
+      ],
+    };
+  }
+  const refusals: string[] = [];
+  const values = new Map<string, RouteCachingClass>();
+  let readable = true;
+  const table = ts.isObjectLiteralExpression(caching)
+    ? objectProperty(caching, 'values')
+    : undefined;
+  if (table === undefined || !ts.isObjectLiteralExpression(table)) {
+    readable = false;
+  } else {
+    for (const item of table.properties) {
+      const key = !ts.isPropertyAssignment(item)
+        ? undefined
+        : ts.isIdentifier(item.name)
+          ? item.name.text
+          : ts.isStringLiteralLike(item.name)
+            ? item.name.text
+            : undefined;
+      if (key === undefined || !ts.isPropertyAssignment(item)) {
+        readable = false;
+        continue;
+      }
+      const value = item.initializer;
+      if (
+        ts.isStringLiteralLike(value) &&
+        (value.text === 'per-visitor' || value.text === 'not-stored')
+      ) {
+        values.set(key, value.text);
+      } else {
+        values.set(key, 'not-stored');
+        refusals.push(
+          `${JSON.stringify(key)} does not name \`per-visitor\` or \`not-stored\` as a string literal, so its routes are answered as \`not-stored\``,
+        );
+      }
+    }
+  }
+  if (!readable) {
+    refusals.push(
+      `its \`values\` is not an object literal of plain entries, so the build cannot tell what a value of ${JSON.stringify(field.text)} means, and every route that sets it is answered as \`not-stored\``,
+    );
+  }
+  return {
+    policy: Object.freeze({ field: field.text, values, readable }),
+    refusals: Object.freeze(refusals),
+  };
+}
 
 /**
  * The sitemap half of `withRouting()`, read from source text for the same reason the indexing half
@@ -1350,6 +1466,13 @@ interface RouteDraft {
    * consulted once when routes are classified and never emitted.
    */
   readonly data: readonly (readonly [string, string])[];
+  /**
+   * The keys of `data` whose value is not a string literal, so the build cannot read it.
+   *
+   * Kept so a field that decides caching can be refused rather than read as absent, which for
+   * caching would be the more shareable answer.
+   */
+  readonly opaqueData: readonly string[];
   /** The lazy entry modules on this route's path from the root, innermost last. */
   readonly lazyEntries: readonly string[];
   readonly sourcePath: string;
@@ -1361,7 +1484,11 @@ const ROUTE_DATA_ENTRIES = 32;
 const ROUTE_DATA_VALUE_CHARACTERS = 128;
 
 function declaresRouteData(draft: RouteDraft): boolean {
-  return draft.declaredId !== undefined || draft.data.length > 0;
+  return (
+    draft.declaredId !== undefined ||
+    draft.data.length > 0 ||
+    draft.opaqueData.length > 0
+  );
 }
 
 /**
@@ -1380,11 +1507,49 @@ function resolveRouteIdentities(
   drafts: readonly RouteDraft[],
   policy: RouteIndexingPolicy | undefined,
   sitemapPolicy: RouteSitemapPolicy | undefined,
+  cachingPolicy: RouteCachingPolicy | undefined,
   deferredFor: (draft: RouteDraft) => readonly string[],
   diagnostics: ToolkitDiagnostic[],
 ): RouteProjection[] {
   const field = policy?.field ?? DEFAULT_ROUTE_INDEXING_FIELD;
   const values = policy?.values ?? DEFAULT_ROUTE_INDEXING_VALUES;
+  const cachingField = cachingPolicy?.field ?? DEFAULT_ROUTE_CACHING_FIELD;
+  /**
+   * A route's caching class, or nothing, which leaves routing's own.
+   *
+   * Under Equator's own field every value is meant for Equator, so one that names no class is a
+   * mistake and is refused. Under a consumer's field an unlisted value is not, for the reason the
+   * indexing field gives. A value the build cannot read is refused under either.
+   */
+  const cachingOf = (draft: RouteDraft): RouteCachingClass | undefined => {
+    const refuse = (reason: string): RouteCachingClass => {
+      diagnostics.push(
+        toolkitDiagnostic(
+          'EQ1413',
+          `Route ${JSON.stringify(`/${draft.path}`)} ${reason}. It is answered as not-stored until the value is corrected.`,
+          { path: ['routes', draft.sourcePath], severity: 'warning' },
+        ),
+      );
+      return 'not-stored';
+    };
+    if (draft.opaqueData.includes(cachingField)) {
+      return refuse(
+        `sets ${JSON.stringify(cachingField)} to something other than a string literal, so the build cannot read which class it names`,
+      );
+    }
+    const written = draft.data.find(([key]) => key === cachingField)?.[1];
+    if (written === undefined) return undefined;
+    if (cachingPolicy !== undefined && !cachingPolicy.readable) {
+      return 'not-stored';
+    }
+    const declared = (
+      cachingPolicy?.values ?? DEFAULT_ROUTE_CACHING_VALUES
+    ).get(written);
+    if (declared !== undefined || cachingPolicy !== undefined) return declared;
+    return refuse(
+      `sets ${JSON.stringify(cachingField)} to ${JSON.stringify(written)}, which is neither per-visitor nor not-stored`,
+    );
+  };
   /**
    * A route's sitemap claim, or nothing.
    *
@@ -1501,15 +1666,23 @@ function resolveRouteIdentities(
       }
       continue;
     }
-    const { declaredId: _declaredId, data: _data, ...rest } = entry.draft;
+    const {
+      declaredId: _declaredId,
+      data: _data,
+      opaqueData: _opaqueData,
+      ...rest
+    } = entry.draft;
     const { lazyEntries: _lazyEntries, ...projected } = rest;
     // Asked once. It reports a malformed date, so a second call would report it twice.
     const claim = claimOf(entry.draft);
+    // Asked once for the same reason: it reports a value it cannot use.
+    const caching = cachingOf(entry.draft);
     projections.push(
       Object.freeze({
         id: entry.id,
         ...projected,
         indexing: classify(entry.draft),
+        ...(caching === undefined ? {} : { caching }),
         ...(claim === undefined ? {} : { sitemap: claim }),
         deferredSourcePaths: deferredFor(entry.draft),
       }),
@@ -1597,6 +1770,33 @@ function analyzeRoutes(
       entries.push(Object.freeze([key, value.text] as const));
     }
     return Object.freeze(entries);
+  };
+  // The keys whose value the build cannot read, which `routeData` leaves out.
+  const opaqueRouteData = (
+    object: ts.ObjectLiteralExpression,
+  ): readonly string[] => {
+    const data = property(object, 'data')?.initializer;
+    const unwrapped = data === undefined ? undefined : unwrap(data);
+    if (unwrapped === undefined || !ts.isObjectLiteralExpression(unwrapped)) {
+      return [];
+    }
+    const keys: string[] = [];
+    for (const item of unwrapped.properties) {
+      if (keys.length >= ROUTE_DATA_ENTRIES) break;
+      if (!ts.isPropertyAssignment(item)) continue;
+      const key = ts.isIdentifier(item.name)
+        ? item.name.text
+        : ts.isStringLiteralLike(item.name)
+          ? item.name.text
+          : undefined;
+      if (
+        key !== undefined &&
+        !ts.isStringLiteralLike(unwrap(item.initializer))
+      ) {
+        keys.push(key);
+      }
+    }
+    return Object.freeze(keys);
   };
   const join = (parent: string, child: string): string =>
     [parent, child].filter((segment) => segment.length > 0).join('/');
@@ -1777,6 +1977,7 @@ function analyzeRoutes(
                 .map((segment) => segment.slice(1)),
             ),
             data: routeData(unwrapped),
+            opaqueData: opaqueRouteData(unwrapped),
             lazyEntries,
             sourcePath: portableSourcePath,
             start: pathExpression.getStart(sourceFile),
@@ -1968,6 +2169,7 @@ export function analyzeApplication(
   let selectsApplicationRuntime = false;
   let declaredRouteIndexing: RouteIndexingPolicy | undefined;
   let declaredRouteSitemap: RouteSitemapPolicy | undefined;
+  let declaredRouteCaching: RouteCachingPolicy | undefined;
   let declaredRoutePolicy: RoutePolicyDeclaration | undefined;
   const routes: RouteDraft[] = [];
   const lazyEntryFiles = new Set<ts.SourceFile>();
@@ -2081,6 +2283,32 @@ export function analyzeApplication(
                 { path: ['routes', portableSourcePath], severity: 'warning' },
               ),
             );
+          }
+        }
+        const declaredCaching = routeCachingPolicy(checker, node);
+        if (declaredCaching !== undefined) {
+          for (const refusal of declaredCaching.refusals) {
+            diagnostics.push(
+              toolkitDiagnostic(
+                'EQ1413',
+                `This owner's caching declaration cannot be used as written: ${refusal}.`,
+                { path: ['routes', portableSourcePath], severity: 'warning' },
+              ),
+            );
+          }
+          const policy = declaredCaching.policy;
+          if (policy !== undefined) {
+            if (declaredRouteCaching === undefined) {
+              declaredRouteCaching = policy;
+            } else if (declaredRouteCaching.field !== policy.field) {
+              diagnostics.push(
+                toolkitDiagnostic(
+                  'EQ1413',
+                  `This owner declares two route caching fields, ${JSON.stringify(declaredRouteCaching.field)} and ${JSON.stringify(policy.field)}. One owner classifies its routes one way; the first declaration is the one Equator used.`,
+                  { path: ['routes', portableSourcePath], severity: 'warning' },
+                ),
+              );
+            }
           }
         }
         const declared = routeIndexingPolicy(checker, node);
@@ -2492,6 +2720,7 @@ export function analyzeApplication(
           routes,
           declaredRouteIndexing,
           declaredRouteSitemap,
+          declaredRouteCaching,
           deferredFor,
           diagnostics,
         ),

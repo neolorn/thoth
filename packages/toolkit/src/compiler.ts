@@ -919,6 +919,7 @@ function compileProjectCore(
               path,
               parameterNames,
               indexing,
+              caching,
               sitemap,
               sourcePath,
               deferredSourcePaths,
@@ -934,6 +935,7 @@ function compileProjectCore(
                 path,
                 parameterNames,
                 ...(indexing === undefined ? {} : { indexing }),
+                ...(caching === undefined ? {} : { caching }),
                 ...(sitemap === undefined ? {} : { sitemap }),
                 sourcePath,
               };

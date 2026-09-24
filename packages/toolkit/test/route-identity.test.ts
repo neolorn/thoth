@@ -207,6 +207,12 @@ function codes(analysed: Analysed): readonly string[] {
   return analysed.diagnostics.map(({ code }) => code);
 }
 
+function caching(analysed: Analysed): Readonly<Record<string, string>> {
+  return Object.fromEntries(
+    analysed.routes.map((route) => [route.id, route.caching ?? 'absent']),
+  );
+}
+
 afterEach(async () => {
   await Promise.all(
     temporaryRoots
@@ -665,5 +671,141 @@ describe('route sitemap claims', () => {
     });
     expect(codes(analysed)).toContain('EQ1412');
     expect(claims(analysed)).toEqual({ 'route:news': { priority: 0.9 } });
+  });
+});
+
+/**
+ * Which routes a shared cache may not keep.
+ *
+ * Read like indexing, with one difference in what an unusable value means. An unlisted indexing
+ * value is indexable because a consumer's field has other reasons to exist; a caching value the
+ * build cannot use is answered as `not-stored`, because every class it could have named keeps the
+ * page out of a shared cache, and reading it as absent would be the one answer that could not be
+ * what its author meant.
+ */
+describe('route caching', () => {
+  it('leaves a route that declares nothing to routing', async () => {
+    const analysed = await analyse(
+      routeFile("[{ path: 'news', component: Page }]"),
+    );
+
+    expect(caching(analysed)).toEqual({ 'route:news': 'absent' });
+    expect(codes(analysed)).not.toContain('EQ1413');
+  });
+
+  it('reads its own field when the consumer names none', async () => {
+    const analysed = await analyse(
+      routeFile(
+        "[{ path: 'home', data: { equatorCaching: 'per-visitor' }, component: Page }, { path: 'account', data: { equatorCaching: 'not-stored' }, component: Page }]",
+      ),
+    );
+
+    expect(caching(analysed)).toEqual({
+      'route:home': 'per-visitor',
+      'route:account': 'not-stored',
+    });
+  });
+
+  it("reads the consumer's own field, and an unlisted value there says nothing", async () => {
+    const analysed = await analyse({
+      ...routingOptions(
+        "caching: { field: 'area', values: { themed: 'per-visitor', account: 'not-stored' } }",
+      ),
+      ...routeFile(
+        "[{ path: 'home', data: { area: 'themed' }, component: Page }, { path: 'account', data: { area: 'account' }, component: Page }, { path: 'news', data: { area: 'editorial' }, component: Page }]",
+      ),
+    });
+
+    expect(caching(analysed)).toEqual({
+      'route:home': 'per-visitor',
+      'route:account': 'not-stored',
+      'route:news': 'absent',
+    });
+    expect(codes(analysed)).not.toContain('EQ1413');
+  });
+
+  it('refuses a value in its own field that names no class', async () => {
+    const analysed = await analyse(
+      routeFile(
+        "[{ path: 'account', data: { equatorCaching: 'private' }, component: Page }]",
+      ),
+    );
+
+    expect(codes(analysed)).toContain('EQ1413');
+    expect(caching(analysed)).toEqual({ 'route:account': 'not-stored' });
+  });
+
+  it('refuses a route value it cannot read', async () => {
+    const analysed = await analyse({
+      'src/app.routes.ts': [
+        "import type { Routes } from '@angular/router';",
+        '',
+        'export class Page {}',
+        "const CLASS: string = 'per-visitor';",
+        '',
+        "export const routes: Routes = [{ path: 'account', data: { equatorCaching: CLASS }, component: Page }];",
+        '',
+      ].join('\n'),
+    });
+
+    expect(codes(analysed)).toContain('EQ1413');
+    expect(caching(analysed)).toEqual({ 'route:account': 'not-stored' });
+  });
+
+  it('refuses a table value it cannot read, and answers its routes as not-stored', async () => {
+    const analysed = await analyse({
+      'src/app.config.ts': [
+        "import { withRouting } from '@neolorn/equator';",
+        '',
+        "const THEMED = 'per-visitor';",
+        "export const routing = withRouting({ caching: { field: 'area', values: { themed: THEMED } } });",
+        '',
+      ].join('\n'),
+      ...routeFile(
+        "[{ path: 'home', data: { area: 'themed' }, component: Page }]",
+      ),
+    });
+
+    expect(codes(analysed)).toContain('EQ1413');
+    expect(caching(analysed)).toEqual({ 'route:home': 'not-stored' });
+  });
+
+  it('refuses a table it cannot read, and answers every route that sets the field as not-stored', async () => {
+    const analysed = await analyse({
+      'src/app.config.ts': [
+        "import { withRouting } from '@neolorn/equator';",
+        '',
+        "const TABLE = { themed: 'per-visitor' } as const;",
+        "export const routing = withRouting({ caching: { field: 'area', values: TABLE } });",
+        '',
+      ].join('\n'),
+      ...routeFile(
+        "[{ path: 'home', data: { area: 'themed' }, component: Page }, { path: 'news', component: Page }]",
+      ),
+    });
+
+    expect(codes(analysed)).toContain('EQ1413');
+    expect(caching(analysed)).toEqual({
+      'route:home': 'not-stored',
+      'route:news': 'absent',
+    });
+  });
+
+  it('reports an owner that declares two caching fields and uses the first', async () => {
+    const analysed = await analyse({
+      ...routeFile(
+        "[{ path: 'home', component: Page, data: { area: 'themed', kind: 'themed' } }]",
+      ),
+      'src/app.config.ts': [
+        "import { withRouting } from '@neolorn/equator';",
+        '',
+        "export const routing = withRouting({ caching: { field: 'area', values: { themed: 'per-visitor' } } });",
+        "export const other = withRouting({ caching: { field: 'kind', values: { themed: 'not-stored' } } });",
+        '',
+      ].join('\n'),
+    });
+
+    expect(codes(analysed)).toContain('EQ1413');
+    expect(caching(analysed)).toEqual({ 'route:home': 'per-visitor' });
   });
 });
