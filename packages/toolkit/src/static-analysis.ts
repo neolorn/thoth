@@ -508,6 +508,11 @@ interface RouteIndexingPolicy {
     string,
     'indexable' | 'non-indexable' | 'private'
   >;
+  /**
+   * False when the table itself cannot be read, and then every value under the field is answered as
+   * private.
+   */
+  readonly readable: boolean;
 }
 
 const DEFAULT_ROUTE_INDEXING_FIELD = 'equatorIndexing';
@@ -590,6 +595,62 @@ const DEFAULT_ROUTE_CACHING_VALUES = new Map<string, RouteCachingClass>([
 ]);
 
 /**
+ * One option of Equator's `withRouting()`, as far as its source says, or nothing where the call is
+ * not that one.
+ */
+function routingOption(
+  checker: ts.TypeChecker,
+  node: ts.CallExpression,
+  name: 'caching' | 'sitemap' | 'indexing',
+): KeyReading | undefined {
+  const resolved = resolvedSymbol(checker, node.expression);
+  if (
+    resolved === undefined ||
+    resolved.name !== 'withRouting' ||
+    !declaredIn(resolved, '/@neolorn/equator/')
+  ) {
+    return undefined;
+  }
+  const argument = node.arguments[0];
+  return argument === undefined
+    ? ABSENT_KEY
+    : keyReading(checker, argument, name);
+}
+
+/** A key of an option that its source sets to a string, or nothing where it sets none it can read. */
+function optionString(
+  checker: ts.TypeChecker,
+  option: WrittenValue,
+  name: string,
+): string | undefined {
+  const item = keyReading(checker, option, name);
+  return item.kind === 'set' && item.value !== undefined
+    ? stringThrough(checker, item.value)
+    : undefined;
+}
+
+/** A key of an option that its source sets to a table, or nothing where it sets none it can read. */
+function optionEntries(
+  checker: ts.TypeChecker,
+  option: WrittenValue,
+  name: string,
+): ReadonlyMap<string, WrittenValue | undefined> | undefined {
+  const item = keyReading(checker, option, name);
+  return item.kind === 'set' && item.value !== undefined
+    ? objectEntries(checker, item.value)
+    : undefined;
+}
+
+/** A number written in place or through `const` bindings to one, or nothing. */
+function numberThrough(
+  checker: ts.TypeChecker,
+  value: WrittenValue,
+): number | undefined {
+  const bound = throughBindings(checker, value, new Set());
+  return ts.isNumericLiteral(bound) ? Number(bound.text) : undefined;
+}
+
+/**
  * The caching half of `withRouting()`, with what it refused beside it.
  *
  * A declaration whose field cannot be read has no policy, and the refusal says so: the build cannot
@@ -604,73 +665,41 @@ function routeCachingPolicy(
       readonly refusals: readonly string[];
     }
   | undefined {
-  const resolved = resolvedSymbol(checker, node.expression);
-  if (
-    resolved === undefined ||
-    resolved.name !== 'withRouting' ||
-    !declaredIn(resolved, '/@neolorn/equator/')
-  ) {
-    return undefined;
-  }
-  const argument = node.arguments[0];
-  if (argument === undefined || !ts.isObjectLiteralExpression(argument)) {
-    return undefined;
-  }
-  const caching = objectProperty(argument, 'caching');
-  if (caching === undefined) return undefined;
-  const field = ts.isObjectLiteralExpression(caching)
-    ? objectProperty(caching, 'field')
-    : undefined;
-  if (field === undefined || !ts.isStringLiteralLike(field)) {
+  const caching = routingOption(checker, node, 'caching');
+  if (caching === undefined || caching.kind === 'absent') return undefined;
+  const option = caching.kind === 'set' ? caching.value : undefined;
+  const field =
+    option === undefined ? undefined : optionString(checker, option, 'field');
+  if (option === undefined || field === undefined) {
     return {
       policy: undefined,
       refusals: [
-        'it is not written as an object literal whose `field` is a string literal, so the build cannot tell which field its routes use, and they are read from `equatorCaching`',
+        'the build cannot read its `field` as a string literal or a `const` bound to one, so it cannot tell which field its routes use, and they are read from `equatorCaching`',
       ],
     };
   }
   const refusals: string[] = [];
   const values = new Map<string, RouteCachingClass>();
-  let readable = true;
-  const table = ts.isObjectLiteralExpression(caching)
-    ? objectProperty(caching, 'values')
-    : undefined;
-  if (table === undefined || !ts.isObjectLiteralExpression(table)) {
-    readable = false;
-  } else {
-    for (const item of table.properties) {
-      const key = !ts.isPropertyAssignment(item)
-        ? undefined
-        : ts.isIdentifier(item.name)
-          ? item.name.text
-          : ts.isStringLiteralLike(item.name)
-            ? item.name.text
-            : undefined;
-      if (key === undefined || !ts.isPropertyAssignment(item)) {
-        readable = false;
-        continue;
-      }
-      const value = item.initializer;
-      if (
-        ts.isStringLiteralLike(value) &&
-        (value.text === 'per-visitor' || value.text === 'not-stored')
-      ) {
-        values.set(key, value.text);
-      } else {
-        values.set(key, 'not-stored');
-        refusals.push(
-          `${JSON.stringify(key)} does not name \`per-visitor\` or \`not-stored\` as a string literal, so its routes are answered as \`not-stored\``,
-        );
-      }
+  const entries = optionEntries(checker, option, 'values');
+  for (const [key, written] of entries ?? []) {
+    const value =
+      written === undefined ? undefined : stringThrough(checker, written);
+    if (value === 'per-visitor' || value === 'not-stored') {
+      values.set(key, value);
+    } else {
+      values.set(key, 'not-stored');
+      refusals.push(
+        `${JSON.stringify(key)} does not name \`per-visitor\` or \`not-stored\` as a string literal or a \`const\` bound to one, so its routes are answered as \`not-stored\``,
+      );
     }
   }
-  if (!readable) {
+  if (entries === undefined) {
     refusals.push(
-      `its \`values\` is not an object literal of plain entries, so the build cannot tell what a value of ${JSON.stringify(field.text)} means, and every route that sets it is answered as \`not-stored\``,
+      `the build cannot read its \`values\` as an object of plain entries, so it cannot tell what a value of ${JSON.stringify(field)} means, and every route that sets it is answered as \`not-stored\``,
     );
   }
   return {
-    policy: Object.freeze({ field: field.text, values, readable }),
+    policy: Object.freeze({ field, values, readable: entries !== undefined }),
     refusals: Object.freeze(refusals),
   };
 }
@@ -681,137 +710,159 @@ function routeCachingPolicy(
  * running anything.
  *
  * A malformed entry is reported by the caller, which has the diagnostics list. This returns what it
- * could read and the refusals beside it, so one walk produces both.
+ * could read and the refusals beside it, so one walk produces both. A declaration whose field cannot
+ * be read has no policy, because no route's class can be found without it.
  */
 function routeSitemapPolicy(
   checker: ts.TypeChecker,
   node: ts.CallExpression,
 ):
   | {
-      readonly policy: RouteSitemapPolicy;
+      readonly policy: RouteSitemapPolicy | undefined;
       readonly refusals: readonly string[];
     }
   | undefined {
-  const resolved = resolvedSymbol(checker, node.expression);
-  if (
-    resolved === undefined ||
-    resolved.name !== 'withRouting' ||
-    !declaredIn(resolved, '/@neolorn/equator/')
-  ) {
-    return undefined;
+  const sitemap = routingOption(checker, node, 'sitemap');
+  if (sitemap === undefined || sitemap.kind === 'absent') return undefined;
+  const option = sitemap.kind === 'set' ? sitemap.value : undefined;
+  const field =
+    option === undefined ? undefined : optionString(checker, option, 'field');
+  if (option === undefined || field === undefined) {
+    return {
+      policy: undefined,
+      refusals: [
+        'the build cannot read its `field` as a string literal or a `const` bound to one, so no route claims anything in the sitemap',
+      ],
+    };
   }
-  const argument = node.arguments[0];
-  if (argument === undefined || !ts.isObjectLiteralExpression(argument)) {
-    return undefined;
-  }
-  const sitemap = objectProperty(argument, 'sitemap');
-  if (sitemap === undefined || !ts.isObjectLiteralExpression(sitemap)) {
-    return undefined;
-  }
-  const field = objectProperty(sitemap, 'field');
-  if (field === undefined || !ts.isStringLiteralLike(field)) return undefined;
-  const lastmodField = objectProperty(sitemap, 'lastmodField');
   const refusals: string[] = [];
   const values = new Map<string, RouteSitemapClass>();
-  const table = objectProperty(sitemap, 'values');
-  if (table !== undefined && ts.isObjectLiteralExpression(table)) {
-    for (const item of table.properties) {
-      if (!ts.isPropertyAssignment(item)) continue;
-      const key = ts.isIdentifier(item.name)
-        ? item.name.text
-        : ts.isStringLiteralLike(item.name)
-          ? item.name.text
-          : undefined;
-      const value = item.initializer;
-      if (key === undefined || !ts.isObjectLiteralExpression(value)) continue;
-      const changefreq = objectProperty(value, 'changefreq');
-      const priority = objectProperty(value, 'priority');
-      const claim: { changefreq?: string; priority?: number } = {};
-      if (changefreq !== undefined) {
-        if (
-          ts.isStringLiteralLike(changefreq) &&
-          SITEMAP_CHANGE_FREQUENCIES.has(changefreq.text)
-        ) {
-          claim.changefreq = changefreq.text;
-        } else {
-          refusals.push(
-            `${JSON.stringify(key)} declares a changefreq the sitemap protocol does not list; it admits ${[...SITEMAP_CHANGE_FREQUENCIES].join(', ')}`,
-          );
-        }
-      }
-      if (priority !== undefined) {
-        const read = ts.isNumericLiteral(priority)
-          ? Number(priority.text)
-          : undefined;
-        if (read !== undefined && read >= 0 && read <= 1) {
-          claim.priority = read;
-        } else {
-          refusals.push(
-            `${JSON.stringify(key)} declares a priority that is not a number literal between 0 and 1`,
-          );
-        }
-      }
-      if (claim.changefreq !== undefined || claim.priority !== undefined) {
-        values.set(key, Object.freeze(claim));
+  const entries = optionEntries(checker, option, 'values');
+  if (entries === undefined) {
+    refusals.push(
+      'the build cannot read its `values` as an object of plain entries, so no route claims anything in the sitemap',
+    );
+  }
+  for (const [key, written] of entries ?? []) {
+    const properties =
+      written === undefined ? undefined : objectEntries(checker, written);
+    if (properties === undefined) {
+      refusals.push(
+        `the build cannot read ${JSON.stringify(key)} as an object of plain entries. That class claims nothing until the value is corrected`,
+      );
+      continue;
+    }
+    const claim: { changefreq?: string; priority?: number } = {};
+    if (properties.has('changefreq')) {
+      const written = properties.get('changefreq');
+      const changefreq =
+        written === undefined ? undefined : stringThrough(checker, written);
+      if (
+        changefreq !== undefined &&
+        SITEMAP_CHANGE_FREQUENCIES.has(changefreq)
+      ) {
+        claim.changefreq = changefreq;
+      } else {
+        refusals.push(
+          changefreq === undefined
+            ? `${JSON.stringify(key)} declares a changefreq that is not a string literal or a \`const\` bound to one. That class claims nothing until the value is corrected`
+            : `${JSON.stringify(key)} declares a changefreq the sitemap protocol does not list; it admits ${[...SITEMAP_CHANGE_FREQUENCIES].join(', ')}. That class claims nothing until the value is corrected`,
+        );
       }
     }
+    if (properties.has('priority')) {
+      const written = properties.get('priority');
+      const priority =
+        written === undefined ? undefined : numberThrough(checker, written);
+      if (priority !== undefined && priority >= 0 && priority <= 1) {
+        claim.priority = priority;
+      } else {
+        refusals.push(
+          `${JSON.stringify(key)} declares a priority that is not a number literal, or a \`const\` bound to one, between 0 and 1. That class claims nothing until the value is corrected`,
+        );
+      }
+    }
+    if (claim.changefreq !== undefined || claim.priority !== undefined) {
+      values.set(key, Object.freeze(claim));
+    }
+  }
+  const dated = keyReading(checker, option, 'lastmodField');
+  const lastmodField =
+    dated.kind === 'set' && dated.value !== undefined
+      ? stringThrough(checker, dated.value)
+      : undefined;
+  if (dated.kind !== 'absent' && lastmodField === undefined) {
+    refusals.push(
+      'the build cannot read its `lastmodField` as a string literal or a `const` bound to one, so no route carries a date in the sitemap',
+    );
   }
   return {
     policy: Object.freeze({
-      field: field.text,
+      field,
       values,
-      ...(lastmodField !== undefined && ts.isStringLiteralLike(lastmodField)
-        ? { lastmodField: lastmodField.text }
-        : {}),
+      ...(lastmodField === undefined ? {} : { lastmodField }),
     }),
     refusals: Object.freeze(refusals),
   };
 }
 
+/**
+ * The indexing half of `withRouting()`, with what it refused beside it.
+ *
+ * A declaration whose field cannot be read has no policy, as the caching half does, so its routes
+ * keep the default field. An entry whose class cannot be read is answered as private, because a
+ * route that sets it may be one its author meant to keep out.
+ */
 function routeIndexingPolicy(
   checker: ts.TypeChecker,
   node: ts.CallExpression,
-): RouteIndexingPolicy | undefined {
-  const resolved = resolvedSymbol(checker, node.expression);
-  if (
-    resolved === undefined ||
-    resolved.name !== 'withRouting' ||
-    !declaredIn(resolved, '/@neolorn/equator/')
-  ) {
-    return undefined;
+):
+  | {
+      readonly policy: RouteIndexingPolicy | undefined;
+      readonly refusals: readonly string[];
+    }
+  | undefined {
+  const indexing = routingOption(checker, node, 'indexing');
+  if (indexing === undefined || indexing.kind === 'absent') return undefined;
+  const option = indexing.kind === 'set' ? indexing.value : undefined;
+  const field =
+    option === undefined ? undefined : optionString(checker, option, 'field');
+  if (option === undefined || field === undefined) {
+    return {
+      policy: undefined,
+      refusals: [
+        'the build cannot read its `field` as a string literal or a `const` bound to one, so it cannot tell which field its routes use, and they are read from `equatorIndexing`',
+      ],
+    };
   }
-  const argument = node.arguments[0];
-  if (argument === undefined || !ts.isObjectLiteralExpression(argument)) {
-    return undefined;
-  }
-  const indexing = objectProperty(argument, 'indexing');
-  if (indexing === undefined || !ts.isObjectLiteralExpression(indexing)) {
-    return undefined;
-  }
-  const field = objectProperty(indexing, 'field');
-  if (field === undefined || !ts.isStringLiteralLike(field)) return undefined;
+  const refusals: string[] = [];
   const values = new Map<string, 'indexable' | 'non-indexable' | 'private'>();
-  const table = objectProperty(indexing, 'values');
-  if (table !== undefined && ts.isObjectLiteralExpression(table)) {
-    for (const item of table.properties) {
-      if (!ts.isPropertyAssignment(item)) continue;
-      const key = ts.isIdentifier(item.name)
-        ? item.name.text
-        : ts.isStringLiteralLike(item.name)
-          ? item.name.text
-          : undefined;
-      const value = item.initializer;
-      if (key === undefined || !ts.isStringLiteralLike(value)) continue;
-      if (
-        value.text === 'indexable' ||
-        value.text === 'non-indexable' ||
-        value.text === 'private'
-      ) {
-        values.set(key, value.text);
-      }
+  const entries = optionEntries(checker, option, 'values');
+  for (const [key, written] of entries ?? []) {
+    const value =
+      written === undefined ? undefined : stringThrough(checker, written);
+    if (
+      value === 'indexable' ||
+      value === 'non-indexable' ||
+      value === 'private'
+    ) {
+      values.set(key, value);
+    } else if (value === undefined) {
+      values.set(key, 'private');
+      refusals.push(
+        `${JSON.stringify(key)} does not name its class as a string literal or a \`const\` bound to one, so its routes are answered as private`,
+      );
     }
   }
-  return Object.freeze({ field: field.text, values });
+  if (entries === undefined) {
+    refusals.push(
+      `the build cannot read its \`values\` as an object of plain entries, so it cannot tell what a value of ${JSON.stringify(field)} means, and every route that sets it is answered as private`,
+    );
+  }
+  return {
+    policy: Object.freeze({ field, values, readable: entries !== undefined }),
+    refusals: Object.freeze(refusals),
+  };
 }
 
 /**
@@ -1133,6 +1184,299 @@ function keySetter(
   return found;
 }
 
+// Parentheses and type assertions change nothing an expression evaluates to.
+function withoutWrappers(expression: ts.Expression): ts.Expression {
+  let current = expression;
+  while (
+    ts.isParenthesizedExpression(current) ||
+    ts.isAsExpression(current) ||
+    ts.isSatisfiesExpression(current) ||
+    ts.isTypeAssertionExpression(current) ||
+    ts.isNonNullExpression(current)
+  ) {
+    current = current.expression;
+  }
+  return current;
+}
+
+/**
+ * The initializer of the `const` a symbol names, or nothing where the name is bound any other way.
+ *
+ * A `const` cannot be reassigned, so its initializer is its value wherever it is read, which is how
+ * `specs/10-compiler-and-tooling.spec.md` section 5 follows a constant alias. A `let`, a parameter,
+ * a destructured name or a declaration without a body can hold anything by the time it is read.
+ */
+function constDeclaration(
+  symbol: ts.Symbol | undefined,
+): ts.VariableDeclaration | undefined {
+  const declaration = symbol?.valueDeclaration;
+  return declaration !== undefined &&
+    ts.isVariableDeclaration(declaration) &&
+    declaration.initializer !== undefined &&
+    (ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.BlockScoped) ===
+      ts.NodeFlags.Const
+    ? declaration
+    : undefined;
+}
+
+/**
+ * How many spreads deep an object is followed.
+ *
+ * Every spread followed is a `const` of its own, so a chain ends, but a long enough one would end in
+ * a stack overflow rather than a report. A spread past this depth is answered the way one the build
+ * cannot follow is.
+ */
+const SPREAD_DEPTH = 8;
+
+/** Where a value is written: an expression, or a shorthand property naming a binding. */
+type WrittenValue = ts.Expression | ts.ShorthandPropertyAssignment;
+
+/**
+ * A value with every `const` it names followed to what that `const` holds, and nothing evaluated.
+ *
+ * `seen` holds the bindings already followed on this path, so one that reaches itself ends the walk.
+ */
+function throughBindings(
+  checker: ts.TypeChecker,
+  value: WrittenValue,
+  seen: Set<ts.Node>,
+): ts.Expression {
+  let symbol: ts.Symbol | undefined;
+  let current: ts.Expression;
+  if (ts.isShorthandPropertyAssignment(value)) {
+    const named = checker.getShorthandAssignmentValueSymbol(value);
+    symbol =
+      named !== undefined && (named.flags & ts.SymbolFlags.Alias) !== 0
+        ? checker.getAliasedSymbol(named)
+        : named;
+    current = value.name;
+  } else {
+    current = withoutWrappers(value);
+    symbol = ts.isIdentifier(current)
+      ? resolvedSymbol(checker, current)
+      : undefined;
+  }
+  for (;;) {
+    const declaration = constDeclaration(symbol);
+    if (declaration === undefined || seen.has(declaration)) return current;
+    seen.add(declaration);
+    current = withoutWrappers(declaration.initializer as ts.Expression);
+    symbol = ts.isIdentifier(current)
+      ? resolvedSymbol(checker, current)
+      : undefined;
+  }
+}
+
+/** A string written in place or through `const` bindings to one, or nothing. */
+function stringThrough(
+  checker: ts.TypeChecker,
+  value: WrittenValue,
+): string | undefined {
+  const bound = throughBindings(checker, value, new Set());
+  return ts.isStringLiteralLike(bound) ? bound.text : undefined;
+}
+
+/** A property's key, where its source spells it or names a `const` that holds it. */
+function propertyKey(
+  checker: ts.TypeChecker,
+  name: ts.PropertyName,
+): string | undefined {
+  if (ts.isIdentifier(name) || ts.isStringLiteralLike(name)) return name.text;
+  if (ts.isNumericLiteral(name)) return String(Number(name.text));
+  if (!ts.isComputedPropertyName(name)) return undefined;
+  const key = throughBindings(checker, name.expression, new Set());
+  return ts.isStringLiteralLike(key) ? key.text : undefined;
+}
+
+/**
+ * What sets one key of an object, as far as its source says.
+ *
+ * `hidden` is a key something may set without the source saying what: a spread the build cannot
+ * follow, a computed key it cannot read, or an object that is not written out at all. Each can set
+ * the key only where its type allows it.
+ */
+type KeyReading =
+  | { readonly kind: 'absent' }
+  | { readonly kind: 'set'; readonly value: WrittenValue | undefined }
+  | {
+      readonly kind: 'hidden';
+      readonly by: 'spread' | 'computed key' | 'expression';
+    };
+
+const ABSENT_KEY: KeyReading = Object.freeze({ kind: 'absent' });
+
+// The last element that can set a key is the one that does, which is JavaScript's own order. A
+// spread of a `const` is read as the object it holds, so it overrides only the keys it writes.
+function keyReading(
+  checker: ts.TypeChecker,
+  value: WrittenValue,
+  name: string,
+  seen: ReadonlySet<ts.Node> = new Set(),
+  depth = 0,
+): KeyReading {
+  const followed = new Set(seen);
+  const object = throughBindings(checker, value, followed);
+  if (!ts.isObjectLiteralExpression(object)) {
+    return canHoldKey(checker, checker.getTypeAtLocation(object), name)
+      ? { kind: 'hidden', by: 'expression' }
+      : ABSENT_KEY;
+  }
+  let found = ABSENT_KEY;
+  for (const item of object.properties) {
+    if (ts.isSpreadAssignment(item)) {
+      const inner =
+        depth < SPREAD_DEPTH
+          ? keyReading(checker, item.expression, name, followed, depth + 1)
+          : canHoldKey(
+                checker,
+                checker.getTypeAtLocation(item.expression),
+                name,
+              )
+            ? ({ kind: 'hidden', by: 'spread' } as const)
+            : ABSENT_KEY;
+      if (inner.kind === 'absent') continue;
+      found =
+        inner.kind === 'hidden' && inner.by === 'expression'
+          ? { kind: 'hidden', by: 'spread' }
+          : inner;
+      continue;
+    }
+    const key = propertyKey(checker, item.name);
+    if (key === undefined) {
+      if (
+        ts.isComputedPropertyName(item.name) &&
+        canBeKey(checker.getTypeAtLocation(item.name.expression), name)
+      ) {
+        found = { kind: 'hidden', by: 'computed key' };
+      }
+      continue;
+    }
+    if (key !== name) continue;
+    found = {
+      kind: 'set',
+      value: ts.isPropertyAssignment(item)
+        ? item.initializer
+        : ts.isShorthandPropertyAssignment(item)
+          ? item
+          : undefined,
+    };
+  }
+  return found;
+}
+
+/**
+ * Every key an object sets and the value that wins it, or nothing where one of its keys cannot be
+ * read, because a table with an unreadable key cannot say what any key means.
+ */
+function objectEntries(
+  checker: ts.TypeChecker,
+  value: WrittenValue,
+  seen: ReadonlySet<ts.Node> = new Set(),
+  depth = 0,
+): ReadonlyMap<string, WrittenValue | undefined> | undefined {
+  const followed = new Set(seen);
+  const object = throughBindings(checker, value, followed);
+  if (!ts.isObjectLiteralExpression(object)) return undefined;
+  const entries = new Map<string, WrittenValue | undefined>();
+  for (const item of object.properties) {
+    if (ts.isSpreadAssignment(item)) {
+      const inner =
+        depth < SPREAD_DEPTH
+          ? objectEntries(checker, item.expression, followed, depth + 1)
+          : undefined;
+      if (inner === undefined) return undefined;
+      for (const [key, written] of inner) entries.set(key, written);
+      continue;
+    }
+    const key = propertyKey(checker, item.name);
+    if (key === undefined) return undefined;
+    entries.set(
+      key,
+      ts.isPropertyAssignment(item)
+        ? item.initializer
+        : ts.isShorthandPropertyAssignment(item)
+          ? item
+          : undefined,
+    );
+  }
+  return entries;
+}
+
+/** One route's own reading of a key of its data, before anything it inherits. */
+type RouteDataReading =
+  | { readonly kind: 'absent' }
+  | { readonly kind: 'string'; readonly value: string }
+  | { readonly kind: 'unreadable'; readonly cause: string };
+
+const ABSENT_DATA: RouteDataReading = Object.freeze({ kind: 'absent' });
+
+/** Why a hidden key cannot be read, as the clause a report puts after the route. */
+function hiddenCause(
+  by: 'spread' | 'computed key' | 'expression',
+  holder: 'data' | 'resolve',
+  field: string,
+): string {
+  const quoted = JSON.stringify(field);
+  return {
+    spread: `may set ${quoted} through a spread the build cannot follow`,
+    'computed key': `may set ${quoted} through a computed key the build cannot read`,
+    expression: `takes its \`${holder}\` from an expression the build cannot read, which may set ${quoted}`,
+  }[by];
+}
+
+/**
+ * What a route's own declarations give one key of its data.
+ *
+ * Angular writes a resolver's result over the route's own data (`runResolve`,
+ * `@angular/router/fesm2022/_router-chunk.mjs:3306-3320`), so a resolver that may supply the key
+ * decides it, and it does so only when the page is visited.
+ */
+function routeDataReading(
+  checker: ts.TypeChecker,
+  route: ts.ObjectLiteralExpression,
+  field: string,
+): RouteDataReading {
+  const quoted = JSON.stringify(field);
+  const resolvers = keyReading(checker, route, 'resolve');
+  const resolved =
+    resolvers.kind !== 'set'
+      ? resolvers
+      : resolvers.value === undefined
+        ? ({ kind: 'hidden', by: 'expression' } as const)
+        : keyReading(checker, resolvers.value, field);
+  if (resolved.kind === 'set') {
+    return {
+      kind: 'unreadable',
+      cause: `supplies ${quoted} through a resolver, which runs only when the page is visited`,
+    };
+  }
+  if (resolved.kind === 'hidden') {
+    return {
+      kind: 'unreadable',
+      cause: hiddenCause(resolved.by, 'resolve', field),
+    };
+  }
+  const data = keyReading(checker, route, 'data');
+  const read =
+    data.kind !== 'set'
+      ? data
+      : data.value === undefined
+        ? ({ kind: 'hidden', by: 'expression' } as const)
+        : keyReading(checker, data.value, field);
+  if (read.kind === 'absent') return ABSENT_DATA;
+  if (read.kind === 'hidden') {
+    return { kind: 'unreadable', cause: hiddenCause(read.by, 'data', field) };
+  }
+  const value =
+    read.value === undefined ? undefined : stringThrough(checker, read.value);
+  return value === undefined
+    ? {
+        kind: 'unreadable',
+        cause: `sets ${quoted} to something other than a string literal or a \`const\` bound to one`,
+      }
+    : { kind: 'string', value };
+}
+
 /**
  * The inheritance strategy one router configuration sets, as far as its source says.
  *
@@ -1171,21 +1515,15 @@ function routerInheritanceStrategy(
       ? symbol
       : undefined;
   };
-  const read = (options: ts.Expression | undefined): RouterStrategyReading => {
-    const object = options === undefined ? undefined : unwrapped(options);
-    if (object === undefined || !ts.isObjectLiteralExpression(object)) {
-      return 'unreadable';
-    }
-    const item = keySetter(checker, object, 'paramsInheritanceStrategy');
-    if (item === 'absent' || item === 'unreadable') return item;
-    const value = ts.isPropertyAssignment(item)
-      ? unwrapped(item.initializer)
-      : undefined;
-    return value !== undefined &&
-      ts.isStringLiteralLike(value) &&
-      (value.text === 'always' || value.text === 'emptyOnly')
-      ? value.text
-      : 'unreadable';
+  const read = (options: WrittenValue | undefined): RouterStrategyReading => {
+    if (options === undefined) return 'unreadable';
+    const item = keyReading(checker, options, 'paramsInheritanceStrategy');
+    if (item.kind === 'absent') return 'absent';
+    const value =
+      item.kind === 'set' && item.value !== undefined
+        ? stringThrough(checker, item.value)
+        : undefined;
+    return value === 'always' || value === 'emptyOnly' ? value : 'unreadable';
   };
   if (ts.isCallExpression(node)) {
     const symbol = fromRouter(node.expression);
@@ -1217,10 +1555,8 @@ function routerInheritanceStrategy(
       return undefined;
     }
     // A factory, a class or an alias produces its value when the application runs.
-    const value = keySetter(checker, node, 'useValue');
-    return typeof value !== 'string' && ts.isPropertyAssignment(value)
-      ? read(value.initializer)
-      : 'unreadable';
+    const value = keyReading(checker, node, 'useValue');
+    return value.kind === 'set' ? read(value.value) : 'unreadable';
   }
   return undefined;
 }
@@ -1621,22 +1957,15 @@ interface RouteNode {
   readonly parent: RouteNode | undefined;
   /** The full path, or `undefined` where the address cannot be read. */
   readonly path: string | undefined;
-  readonly declaredId?: string;
+  /** The route table whose declaration this route was read from. */
+  readonly table: ts.VariableDeclaration;
   /**
-   * The route's own string-valued `data`, as written.
+   * What the route's own declarations give one key of its data.
    *
-   * Kept rather than resolved on the spot because the field to read is named in the provider file,
-   * which is a different file and may be read after this one. Bounded, and transient: it is
-   * consulted once when routes are classified and never emitted.
+   * Read when asked rather than when the route is visited, because the field to read is named in
+   * the provider file, which is a different file and may be read after this one.
    */
-  readonly data: readonly (readonly [string, string])[];
-  /**
-   * The keys of `data` whose value is not a string literal, so the build cannot read it.
-   *
-   * Kept so a field that decides caching can be refused rather than read as absent, which for
-   * caching would be the more shareable answer.
-   */
-  readonly opaqueData: readonly string[];
+  readonly read: (field: string) => RouteDataReading;
   /**
    * Whether Angular gives the route its parent's data under either strategy: its own path is
    * empty, or its parent renders no component (`getInherited`,
@@ -1657,6 +1986,19 @@ interface RouteNode {
  * Naming cannot happen while reading: a collision is a fact about two routes, and the second one
  * may be declared in another file.
  */
+/**
+ * One route table naming another.
+ *
+ * A table the pass visits on its own is projected at the root. That is right only where the
+ * application also uses it there, so what names it, and where, decides whether its routes stay.
+ */
+interface RouteTableReference {
+  readonly from: ts.VariableDeclaration;
+  readonly to: ts.VariableDeclaration;
+  /** Whether the reference sits among the routes of `from` itself rather than below one of them. */
+  readonly atRoot: boolean;
+}
+
 interface RouteDraft {
   readonly node: RouteNode;
   readonly path: string;
@@ -1667,9 +2009,6 @@ interface RouteDraft {
   readonly start: number;
   readonly end: number;
 }
-
-const ROUTE_DATA_ENTRIES = 32;
-const ROUTE_DATA_VALUE_CHARACTERS = 128;
 
 /**
  * Settle every route's name, and say so when one cannot be settled.
@@ -1696,23 +2035,24 @@ function resolveRouteIdentities(
   const values = policy?.values ?? DEFAULT_ROUTE_INDEXING_VALUES;
   const cachingField = cachingPolicy?.field ?? DEFAULT_ROUTE_CACHING_FIELD;
   /**
-   * The route that decides what a page receives under one key, and the value it writes there.
+   * The route that decides what a page receives under one key, and what that route gives it.
    *
    * Angular spreads a parent's data under the route's own (`getInherited`), so the nearest route
-   * that writes the key decides it, and a route that does not inherit ends the search. `value` is
-   * `undefined` where that route writes something the build cannot read.
+   * that writes the key decides it, and a route that does not inherit ends the search.
    */
   const writer = (
     draft: RouteDraft,
     key: string,
   ):
-    | { readonly node: RouteNode; readonly value: string | undefined }
+    | {
+        readonly node: RouteNode;
+        readonly reading: Exclude<RouteDataReading, { kind: 'absent' }>;
+      }
     | undefined => {
     let node: RouteNode | undefined = draft.node;
     while (node !== undefined) {
-      if (node.opaqueData.includes(key)) return { node, value: undefined };
-      const value = node.data.find(([name]) => name === key)?.[1];
-      if (value !== undefined) return { node, value };
+      const reading = node.read(key);
+      if (reading.kind !== 'absent') return { node, reading };
       node =
         strategy === 'always' || node.inheritsUnderEitherStrategy
           ? node.parent
@@ -1723,11 +2063,11 @@ function resolveRouteIdentities(
   // Reported once where the value is written, because every route that inherits it would otherwise
   // repeat the same finding.
   const reported = new Map<RouteNode, Set<string>>();
-  const firstReport = (node: RouteNode, code: string): boolean => {
-    const codes = reported.get(node) ?? new Set<string>();
-    reported.set(node, codes);
-    if (codes.has(code)) return false;
-    codes.add(code);
+  const firstReport = (node: RouteNode, field: string): boolean => {
+    const fields = reported.get(node) ?? new Set<string>();
+    reported.set(node, fields);
+    if (fields.has(field)) return false;
+    fields.add(field);
     return true;
   };
   const address = (node: RouteNode, draft: RouteDraft): string =>
@@ -1743,7 +2083,7 @@ function resolveRouteIdentities(
     const found = writer(draft, cachingField);
     if (found === undefined) return undefined;
     const refuse = (reason: string): RouteCachingClass => {
-      if (firstReport(found.node, 'EQ1413')) {
+      if (firstReport(found.node, cachingField)) {
         diagnostics.push(
           toolkitDiagnostic(
             'EQ1413',
@@ -1754,9 +2094,9 @@ function resolveRouteIdentities(
       }
       return 'not-stored';
     };
-    if (found.value === undefined) {
+    if (found.reading.kind === 'unreadable') {
       return refuse(
-        `sets ${JSON.stringify(cachingField)} to something other than a string literal, so the build cannot read which class it names`,
+        `${found.reading.cause}, so the build cannot read which class it names`,
       );
     }
     if (cachingPolicy !== undefined && !cachingPolicy.readable) {
@@ -1764,10 +2104,10 @@ function resolveRouteIdentities(
     }
     const declared = (
       cachingPolicy?.values ?? DEFAULT_ROUTE_CACHING_VALUES
-    ).get(found.value);
+    ).get(found.reading.value);
     if (declared !== undefined || cachingPolicy !== undefined) return declared;
     return refuse(
-      `sets ${JSON.stringify(cachingField)} to ${JSON.stringify(found.value)}, which is neither per-visitor nor not-stored`,
+      `sets ${JSON.stringify(cachingField)} to ${JSON.stringify(found.reading.value)}, which is neither per-visitor nor not-stored`,
     );
   };
   /**
@@ -1780,23 +2120,40 @@ function resolveRouteIdentities(
    */
   const claimOf = (draft: RouteDraft): RouteProjection['sitemap'] => {
     if (sitemapPolicy === undefined) return undefined;
-    const written = writer(draft, sitemapPolicy.field)?.value;
-    const declared =
-      written === undefined ? undefined : sitemapPolicy.values.get(written);
-    const lastmodField = sitemapPolicy.lastmodField;
-    const dated =
-      lastmodField === undefined ? undefined : writer(draft, lastmodField);
-    const lastmod = dated?.value;
+    const classed = writer(draft, sitemapPolicy.field);
     if (
-      dated !== undefined &&
-      lastmod !== undefined &&
-      !SITEMAP_W3C_DATE.test(lastmod) &&
-      firstReport(dated.node, 'EQ1412')
+      classed?.reading.kind === 'unreadable' &&
+      firstReport(classed.node, sitemapPolicy.field)
     ) {
       diagnostics.push(
         toolkitDiagnostic(
           'EQ1412',
-          `Route ${address(dated.node, draft)} declares ${JSON.stringify(lastmodField)} as ${JSON.stringify(lastmod)}, which is not a W3C date such as 2026-09-08 or 2026-09-08T17:33:30+03:00. It is left out of the sitemap, for this route and every route that inherits its data, rather than written into a document a validator refuses.`,
+          `Route ${address(classed.node, draft)} ${classed.reading.cause}, so the build cannot read which sitemap class it names. It and every route that inherits its data claim nothing in the sitemap until the value is corrected.`,
+          { path: ['routes', draft.sourcePath], severity: 'warning' },
+        ),
+      );
+    }
+    const declared =
+      classed?.reading.kind === 'string'
+        ? sitemapPolicy.values.get(classed.reading.value)
+        : undefined;
+    const lastmodField = sitemapPolicy.lastmodField;
+    const dated =
+      lastmodField === undefined ? undefined : writer(draft, lastmodField);
+    const lastmod =
+      dated?.reading.kind === 'string' ? dated.reading.value : undefined;
+    if (
+      dated !== undefined &&
+      lastmodField !== undefined &&
+      (lastmod === undefined || !SITEMAP_W3C_DATE.test(lastmod)) &&
+      firstReport(dated.node, lastmodField)
+    ) {
+      diagnostics.push(
+        toolkitDiagnostic(
+          'EQ1412',
+          dated.reading.kind === 'unreadable'
+            ? `Route ${address(dated.node, draft)} ${dated.reading.cause}, so the build cannot read the date it names. It is left out of the sitemap, for this route and every route that inherits its data, until the value is corrected.`
+            : `Route ${address(dated.node, draft)} declares ${JSON.stringify(lastmodField)} as ${JSON.stringify(lastmod)}, which is not a W3C date such as 2026-09-08 or 2026-09-08T17:33:30+03:00. It is left out of the sitemap, for this route and every route that inherits its data, rather than written into a document a validator refuses.`,
           { path: ['routes', draft.sourcePath], severity: 'warning' },
         ),
       );
@@ -1816,14 +2173,27 @@ function resolveRouteIdentities(
   };
   // Routes default to indexable, so only the exceptions need naming. An unlisted value is not an
   // error: a consumer's field classifies routes for the consumer's own reasons, and most of those
-  // reasons say nothing about indexing.
+  // reasons say nothing about indexing. A value the build cannot read is not an unlisted one, and
+  // private is the one answer that cannot expose a page its author meant to keep out.
   const classify = (
     draft: RouteDraft,
   ): 'indexable' | 'non-indexable' | 'private' => {
-    const written = writer(draft, field)?.value;
-    return written === undefined
-      ? 'indexable'
-      : (values.get(written) ?? 'indexable');
+    const found = writer(draft, field);
+    if (found === undefined) return 'indexable';
+    if (found.reading.kind === 'unreadable') {
+      if (firstReport(found.node, field)) {
+        diagnostics.push(
+          toolkitDiagnostic(
+            'EQ1414',
+            `Route ${address(found.node, draft)} ${found.reading.cause}, so the build cannot read which indexing class it names. It and every route that inherits its data are answered as private until the value is corrected.`,
+            { path: ['routes', draft.sourcePath], severity: 'warning' },
+          ),
+        );
+      }
+      return 'private';
+    }
+    if (policy !== undefined && !policy.readable) return 'private';
+    return values.get(found.reading.value) ?? 'indexable';
   };
   // Angular tries routes in the order they are declared and then descends through `path: ''`
   // children, so the page at a shared address is the deepest route below the first one declared
@@ -1849,21 +2219,33 @@ function resolveRouteIdentities(
   }
   // An identity names an address, so the deepest route at the page's address that declares one
   // names it, and no route's identity reaches a child at another address.
-  const declaredIdOf = (draft: RouteDraft): string | undefined => {
+  const declaredIdOf = (draft: RouteDraft): RouteDataReading => {
     for (
       let node: RouteNode | undefined = draft.node;
       node !== undefined && node.path === draft.path;
       node = node.parent
     ) {
-      if (node.declaredId !== undefined) return node.declaredId;
+      const reading = node.read('equatorRouteId');
+      if (reading.kind !== 'absent') return reading;
     }
-    return undefined;
+    return ABSENT_DATA;
   };
 
   const named: { readonly id: string; readonly draft: RouteDraft }[] = [];
   for (const draft of pages) {
-    const declaredId = declaredIdOf(draft);
-    if (declaredId !== undefined) {
+    const declared = declaredIdOf(draft);
+    if (declared.kind === 'unreadable') {
+      diagnostics.push(
+        toolkitDiagnostic(
+          'EQ1404',
+          `Route ${JSON.stringify(`/${draft.path}`)} ${declared.cause}, so the build cannot read the identity it declares, and it is not indexed until the value is corrected.`,
+          { path: ['routes', draft.sourcePath], severity: 'warning' },
+        ),
+      );
+      continue;
+    }
+    if (declared.kind === 'string') {
+      const declaredId = declared.value;
       if (!ROUTE_IDENTITY_PATTERN.test(declaredId)) {
         diagnostics.push(
           toolkitDiagnostic(
@@ -1959,6 +2341,8 @@ function analyzeRoutes(
   lazyEntryFiles: Set<ts.SourceFile>,
   diagnostics: ToolkitDiagnostic[],
   childRouteFiles: Set<string>,
+  tables: Set<ts.VariableDeclaration>,
+  references: RouteTableReference[],
 ): void {
   const unwrap = (expression: ts.Expression): ts.Expression => {
     let current = expression;
@@ -2047,98 +2431,98 @@ function analyzeRoutes(
       ? { kind: 'hidden', reason: 'computed' }
       : { kind: 'literal', path: literalPath };
   };
-  const literal = (
-    object: ts.ObjectLiteralExpression,
-    name: string,
-  ): string | undefined => {
-    const value = property(object, name)?.initializer;
-    return value !== undefined && ts.isStringLiteralLike(unwrap(value))
-      ? (unwrap(value) as ts.StringLiteralLike).text
-      : undefined;
-  };
-  const dataLiteral = (
-    object: ts.ObjectLiteralExpression,
-    name: string,
-  ): string | undefined => {
-    const data = property(object, 'data')?.initializer;
-    const unwrapped = data === undefined ? undefined : unwrap(data);
-    return unwrapped !== undefined && ts.isObjectLiteralExpression(unwrapped)
-      ? literal(unwrapped, name)
-      : undefined;
-  };
-  // Every string-valued entry, because which one matters is decided in another file.
-  const routeData = (
-    object: ts.ObjectLiteralExpression,
-  ): readonly (readonly [string, string])[] => {
-    const data = property(object, 'data')?.initializer;
-    const unwrapped = data === undefined ? undefined : unwrap(data);
-    if (unwrapped === undefined || !ts.isObjectLiteralExpression(unwrapped)) {
-      return [];
-    }
-    const entries: (readonly [string, string])[] = [];
-    for (const item of unwrapped.properties) {
-      if (entries.length >= ROUTE_DATA_ENTRIES) break;
-      if (!ts.isPropertyAssignment(item)) continue;
-      const key = ts.isIdentifier(item.name)
-        ? item.name.text
-        : ts.isStringLiteralLike(item.name)
-          ? item.name.text
-          : undefined;
-      const value = unwrap(item.initializer);
-      if (
-        key === undefined ||
-        !ts.isStringLiteralLike(value) ||
-        value.text.length > ROUTE_DATA_VALUE_CHARACTERS
-      ) {
-        continue;
-      }
-      entries.push(Object.freeze([key, value.text] as const));
-    }
-    return Object.freeze(entries);
-  };
-  // The keys whose value the build cannot read, which `routeData` leaves out.
-  const opaqueRouteData = (
-    object: ts.ObjectLiteralExpression,
-  ): readonly string[] => {
-    const data = property(object, 'data')?.initializer;
-    const unwrapped = data === undefined ? undefined : unwrap(data);
-    if (unwrapped === undefined || !ts.isObjectLiteralExpression(unwrapped)) {
-      return [];
-    }
-    const keys: string[] = [];
-    for (const item of unwrapped.properties) {
-      if (keys.length >= ROUTE_DATA_ENTRIES) break;
-      if (!ts.isPropertyAssignment(item)) continue;
-      const key = ts.isIdentifier(item.name)
-        ? item.name.text
-        : ts.isStringLiteralLike(item.name)
-          ? item.name.text
-          : undefined;
-      if (
-        key !== undefined &&
-        !ts.isStringLiteralLike(unwrap(item.initializer))
-      ) {
-        keys.push(key);
-      }
-    }
-    return Object.freeze(keys);
-  };
   const join = (parent: string, child: string): string =>
     [parent, child].filter((segment) => segment.length > 0).join('/');
+  const portableSourcePath = portablePath(projectRoot, sourceFile.fileName);
+  // Only a table the pass below visits on its own has routes of its own in the projection.
+  const routeTableOf = (
+    symbol: ts.Symbol | undefined,
+  ): ts.VariableDeclaration | undefined => {
+    const declaration = symbol?.valueDeclaration;
+    return declaration !== undefined &&
+      ts.isVariableDeclaration(declaration) &&
+      ts.isVariableStatement(declaration.parent.parent) &&
+      ts.isSourceFile(declaration.parent.parent.parent) &&
+      !declaration.parent.parent.parent.isDeclarationFile &&
+      isRoutesContract(checker, declaration) !== undefined
+      ? declaration
+      : undefined;
+  };
+  const routeTable = (
+    expression: ts.Expression,
+  ): ts.VariableDeclaration | undefined => {
+    const target = unwrap(expression);
+    return ts.isIdentifier(target) || ts.isPropertyAccessExpression(target)
+      ? routeTableOf(resolvedSymbol(checker, target))
+      : undefined;
+  };
+  const named = (expression: ts.Expression): string => {
+    const target = unwrap(expression);
+    if (ts.isIdentifier(target) || ts.isPropertyAccessExpression(target)) {
+      return `\`${target.getText(sourceFile)}\``;
+    }
+    return ts.isCallExpression(target) &&
+      (ts.isIdentifier(target.expression) ||
+        ts.isPropertyAccessExpression(target.expression))
+      ? `a call to \`${target.expression.getText(sourceFile)}\``
+      : 'an expression';
+  };
+  const outside = (message: string): void => {
+    diagnostics.push(
+      toolkitDiagnostic('EQ1406', message, {
+        path: ['routes', portableSourcePath],
+        severity: 'warning',
+      }),
+    );
+  };
   // `parentPath` has no default on purpose: `undefined` means "an address Equator cannot know", and
   // a default would quietly turn that into the root, naming a whole subtree as if it sat at the
   // top of the application.
+  //
+  // A route the table names through something else, a spread, a binding or a call, is reported
+  // rather than followed, because `specs/07-routing-rendering-and-seo.spec.md` section 1 leaves
+  // such a route to the application. Where the array's own address is unknown the report above it
+  // already covers everything below.
   const visitArray = (
-    expression: ts.Expression,
+    array: ts.ArrayLiteralExpression,
     parentPath: string | undefined,
     parentLazyEntries: readonly string[],
     parent: RouteNode | undefined,
+    where: string,
+    table: ts.VariableDeclaration,
   ): void => {
-    const array = unwrap(expression);
-    if (!ts.isArrayLiteralExpression(array)) return;
     for (const element of array.elements) {
-      const unwrapped = unwrap(element as ts.Expression);
-      if (!ts.isObjectLiteralExpression(unwrapped)) continue;
+      if (ts.isOmittedExpression(element)) continue;
+      if (ts.isSpreadElement(element)) {
+        const target = routeTable(element.expression);
+        if (target !== undefined) {
+          references.push({
+            from: table,
+            to: target,
+            atRoot: parent === undefined,
+          });
+        }
+        // A table spread in among the root routes of another is visited on its own, at the root,
+        // which is where the spread puts it.
+        if (
+          parentPath !== undefined &&
+          (target === undefined || parent !== undefined)
+        ) {
+          outside(
+            `A spread of ${named(element.expression)} in ${where} brings in routes Equator does not follow, so their addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Declare those routes inline to localize them.`,
+          );
+        }
+        continue;
+      }
+      const unwrapped = unwrap(element);
+      if (!ts.isObjectLiteralExpression(unwrapped)) {
+        if (parentPath !== undefined) {
+          outside(
+            `An entry of ${where} is written as ${named(element)}, which Equator does not follow, so its address stays outside the localized route table and is served at its canonical spelling, in the default locale. Declare the route inline to localize it.`,
+          );
+        }
+        continue;
+      }
       const declared = routeAddress(unwrapped);
       // An empty `path` renders without contributing a URL segment, so the route has its parent's
       // address rather than none. An address Equator cannot read leaves the subtree below it
@@ -2185,15 +2569,12 @@ function analyzeRoutes(
           : Object.freeze([...parentLazyEntries, ...ownEntries]);
 
       const redirect = property(unwrapped, 'redirectTo');
-      const children = property(unwrapped, 'children')?.initializer;
-      const portableSourcePath = portablePath(projectRoot, sourceFile.fileName);
-      const declaredId = dataLiteral(unwrapped, 'equatorRouteId');
+      const children = setter(unwrapped, 'children');
       const node: RouteNode = Object.freeze({
         parent,
         path: fullPath,
-        ...(declaredId === undefined ? {} : { declaredId }),
-        data: routeData(unwrapped),
-        opaqueData: opaqueRouteData(unwrapped),
+        table,
+        read: (field: string) => routeDataReading(checker, unwrapped, field),
         inheritsUnderEitherStrategy:
           ownPath === '' || parent?.rendersComponent === false,
         rendersComponent: rendersComponent(unwrapped),
@@ -2353,8 +2734,45 @@ function analyzeRoutes(
           }),
         );
       }
-      if (children !== undefined) {
-        visitArray(children, fullPath, lazyEntries, node);
+      if (children === 'unreadable') {
+        if (fullPath !== undefined) {
+          outside(
+            `${address} may take its \`children\` from a spread or a computed key, which Equator does not follow, so the addresses below it stay outside the localized route table and are served at their canonical spelling, in the default locale. Write the route its own \`children\` array to localize them.`,
+          );
+        }
+      } else if (children !== 'absent') {
+        const list = ts.isPropertyAssignment(children)
+          ? unwrap(children.initializer)
+          : undefined;
+        if (list !== undefined && ts.isArrayLiteralExpression(list)) {
+          visitArray(
+            list,
+            fullPath,
+            lazyEntries,
+            node,
+            fullPath === undefined
+              ? 'the children of a route'
+              : `the children of ${JSON.stringify(`/${fullPath}`)}`,
+            table,
+          );
+        } else {
+          const target =
+            list !== undefined
+              ? routeTable(list)
+              : ts.isShorthandPropertyAssignment(children)
+                ? routeTableOf(
+                    checker.getShorthandAssignmentValueSymbol(children),
+                  )
+                : undefined;
+          if (target !== undefined) {
+            references.push({ from: table, to: target, atRoot: false });
+          }
+          if (fullPath !== undefined) {
+            outside(
+              `${address} takes its children from ${list !== undefined ? named(list) : ts.isShorthandPropertyAssignment(children) ? named(children.name) : 'an expression'}, which Equator does not follow, so their addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Declare those children inline to localize them.`,
+            );
+          }
+        }
       }
     }
   };
@@ -2363,7 +2781,28 @@ function analyzeRoutes(
     for (const declaration of statement.declarationList.declarations) {
       const expression = isRoutesContract(checker, declaration);
       if (expression === undefined) continue;
-      visitArray(expression, '', [], undefined);
+      tables.add(declaration);
+      const list = unwrap(expression);
+      const name = `\`${declaration.name.getText(sourceFile)}\``;
+      if (ts.isArrayLiteralExpression(list)) {
+        visitArray(
+          list,
+          '',
+          [],
+          undefined,
+          `the route table ${name}`,
+          declaration,
+        );
+        continue;
+      }
+      const target = routeTable(list);
+      if (target !== undefined) {
+        references.push({ from: declaration, to: target, atRoot: true });
+        continue;
+      }
+      outside(
+        `The route table ${name} is written as ${named(list)}, which Equator does not follow, so its addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Declare its routes as an array literal to localize them.`,
+      );
     }
   }
 }
@@ -2548,6 +2987,8 @@ export function analyzeApplication(
   const routes: RouteDraft[] = [];
   const lazyEntryFiles = new Set<ts.SourceFile>();
   const childRouteFiles = new Set<string>();
+  const routeTables = new Set<ts.VariableDeclaration>();
+  const routeTableReferences: RouteTableReference[] = [];
   const components: ComponentTemplateAnalysis[] = [];
   const localeMentions: TemplateLocaleMention[] = [];
   const templateAddresses: TemplateAddress[] = [];
@@ -2640,23 +3081,24 @@ export function analyzeApplication(
             diagnostics.push(
               toolkitDiagnostic(
                 'EQ1412',
-                `This owner's sitemap declaration cannot be used as written: ${refusal}. That class claims nothing until the value is corrected.`,
+                `This owner's sitemap declaration cannot be used as written: ${refusal}.`,
                 { path: ['routes', portableSourcePath], severity: 'warning' },
               ),
             );
           }
-          if (declaredRouteSitemap === undefined) {
-            declaredRouteSitemap = declaredSitemap.policy;
-          } else if (
-            declaredRouteSitemap.field !== declaredSitemap.policy.field
-          ) {
-            diagnostics.push(
-              toolkitDiagnostic(
-                'EQ1412',
-                `This owner declares two route sitemap fields, ${JSON.stringify(declaredRouteSitemap.field)} and ${JSON.stringify(declaredSitemap.policy.field)}. One owner classifies its routes one way; the first declaration is the one Equator used.`,
-                { path: ['routes', portableSourcePath], severity: 'warning' },
-              ),
-            );
+          const policy = declaredSitemap.policy;
+          if (policy !== undefined) {
+            if (declaredRouteSitemap === undefined) {
+              declaredRouteSitemap = policy;
+            } else if (declaredRouteSitemap.field !== policy.field) {
+              diagnostics.push(
+                toolkitDiagnostic(
+                  'EQ1412',
+                  `This owner declares two route sitemap fields, ${JSON.stringify(declaredRouteSitemap.field)} and ${JSON.stringify(policy.field)}. One owner classifies its routes one way; the first declaration is the one Equator used.`,
+                  { path: ['routes', portableSourcePath], severity: 'warning' },
+                ),
+              );
+            }
           }
         }
         const declaredCaching = routeCachingPolicy(checker, node);
@@ -2685,18 +3127,30 @@ export function analyzeApplication(
             }
           }
         }
-        const declared = routeIndexingPolicy(checker, node);
-        if (declared !== undefined) {
-          if (declaredRouteIndexing === undefined) {
-            declaredRouteIndexing = declared;
-          } else if (declaredRouteIndexing.field !== declared.field) {
+        const declaredIndexing = routeIndexingPolicy(checker, node);
+        if (declaredIndexing !== undefined) {
+          for (const refusal of declaredIndexing.refusals) {
             diagnostics.push(
               toolkitDiagnostic(
-                'EQ1404',
-                `This owner declares two route indexing fields, ${JSON.stringify(declaredRouteIndexing.field)} and ${JSON.stringify(declared.field)}. One owner classifies its routes one way; the first declaration is the one Equator used.`,
+                'EQ1414',
+                `This owner's indexing declaration cannot be used as written: ${refusal}.`,
                 { path: ['routes', portableSourcePath], severity: 'warning' },
               ),
             );
+          }
+          const policy = declaredIndexing.policy;
+          if (policy !== undefined) {
+            if (declaredRouteIndexing === undefined) {
+              declaredRouteIndexing = policy;
+            } else if (declaredRouteIndexing.field !== policy.field) {
+              diagnostics.push(
+                toolkitDiagnostic(
+                  'EQ1404',
+                  `This owner declares two route indexing fields, ${JSON.stringify(declaredRouteIndexing.field)} and ${JSON.stringify(policy.field)}. One owner classifies its routes one way; the first declaration is the one Equator used.`,
+                  { path: ['routes', portableSourcePath], severity: 'warning' },
+                ),
+              );
+            }
           }
         }
       }
@@ -2771,6 +3225,8 @@ export function analyzeApplication(
       lazyEntryFiles,
       diagnostics,
       childRouteFiles,
+      routeTables,
+      routeTableReferences,
     );
 
     for (const statement of sourceFile.statements) {
@@ -2988,21 +3444,43 @@ export function analyzeApplication(
       `${right.sourcePath}\u0000${right.start.toString().padStart(12, '0')}\u0000${right.identity}`,
     ),
   );
-  // Drop what a `loadChildren` target contributed at the root.
+  // Drop what a table used below the root contributed at the root.
   //
-  // The pass above visits every file declaring a `Routes` constant, and a child route table is one
-  // of those files. Visited on its own it has no parent, so `detail` enters the projection at
-  // `detail` while the application serves it at `section/detail`. That is not a route Equator
-  // failed to cover; it is a route Equator invented, and a localized branch built from it addresses
-  // nothing. The diagnostic above has already said the subtree is uncovered: this stops the
-  // projection from simultaneously claiming otherwise.
-  if (childRouteFiles.size > 0) {
-    routes.splice(
-      0,
-      routes.length,
-      ...routes.filter((draft) => !childRouteFiles.has(draft.sourcePath)),
-    );
+  // The pass above visits every `Routes` constant on its own, and a `loadChildren` target or a
+  // table another route takes its children from is one of those. Visited on its own it has no
+  // parent, so `detail` enters the projection at `detail` while the application serves it at
+  // `section/detail`. That is not a route Equator failed to cover; it is a route Equator invented,
+  // and a localized branch built from it addresses nothing. The diagnostic above has already said
+  // the subtree is uncovered: this stops the projection from simultaneously claiming otherwise.
+  //
+  // What stays is what the root reaches: a table nothing names, and a table spread in among the
+  // root routes of one that stays. A table named both there and below the root is served at both,
+  // and the root is the one the projection can spell.
+  const referencedTables = new Set(
+    routeTableReferences.map((reference) => reference.to),
+  );
+  const placedTables = new Set<ts.VariableDeclaration>();
+  const reached = [...routeTables].filter(
+    (table) =>
+      !referencedTables.has(table) &&
+      !childRouteFiles.has(
+        portablePath(projectRoot, table.getSourceFile().fileName),
+      ),
+  );
+  for (let table = reached.pop(); table !== undefined; table = reached.pop()) {
+    if (placedTables.has(table)) continue;
+    placedTables.add(table);
+    for (const reference of routeTableReferences) {
+      if (reference.atRoot && reference.from === table) {
+        reached.push(reference.to);
+      }
+    }
   }
+  routes.splice(
+    0,
+    routes.length,
+    ...routes.filter((draft) => placedTables.has(draft.node.table)),
+  );
 
   routes.sort((left, right) =>
     compareCodePoint(

@@ -898,7 +898,7 @@ describe('route caching', () => {
         "import type { Routes } from '@angular/router';",
         '',
         'export class Page {}',
-        "const CLASS: string = 'per-visitor';",
+        "let CLASS: string = 'per-visitor';",
         '',
         "export const routes: Routes = [{ path: 'account', data: { equatorCaching: CLASS }, component: Page }];",
         '',
@@ -915,7 +915,7 @@ describe('route caching', () => {
       'src/app.config.ts': [
         "import { withRouting } from '@neolorn/equator';",
         '',
-        "const THEMED = 'per-visitor';",
+        "let THEMED = 'per-visitor' as const;",
         "export const routing = withRouting({ caching: { field: 'area', values: { themed: THEMED } } });",
         '',
       ].join('\n'),
@@ -934,7 +934,7 @@ describe('route caching', () => {
       'src/app.config.ts': [
         "import { withRouting } from '@neolorn/equator';",
         '',
-        "const TABLE = { themed: 'per-visitor' } as const;",
+        "let TABLE = { themed: 'per-visitor' } as const;",
         "export const routing = withRouting({ caching: { field: 'area', values: TABLE } });",
         '',
       ].join('\n'),

@@ -593,7 +593,17 @@ documented default field for a project that declares none.
 
 A release MUST read that declaration from the provider file's source text when the owner is
 compiled, and MUST NOT execute consumer code to obtain it, which is why the declaration is a field
-name and a table of literals rather than a predicate.
+name and a table of literals rather than a predicate. A literal MAY be written in place or through a
+`const` binding to one, in the same file or imported, and a release MUST follow the binding without
+evaluating anything, as section 5 of `10-compiler-and-tooling.spec.md` follows a constant alias. The
+same holds for a route's data: a field MAY arrive through such a binding or a spread of one, and a
+later key overrides an earlier one as it does when the application runs.
+
+A value the release read and the declaration does not list is indexable. A value it could not read,
+because it is computed, a parameter, supplied by a resolver, or behind a binding it cannot follow,
+is not an unlisted value, and a release MUST answer the route as private and report it when the
+owner is compiled. Reading it as indexable would publish a page whose author may have meant the
+opposite, and private is the one reading that cannot expose a page that was meant to stay out.
 
 The data a route has when the application runs is its own over what it inherits from its parents,
 and a release MUST read declarations the same way, so a class declared on a parent reaches every
@@ -674,12 +684,12 @@ literals, read from the provider file's source text when the owner is compiled, 
 indexing, including what a route inherits, with a documented default field. The declaration is on
 the route rather than made by a page while it renders, because a cache reuses a stored response for
 any request to its address, including a request where the page decided nothing. A release MUST
-answer a value it reads and cannot use as not stored, and MUST report it when the owner is compiled,
-because every value the declaration can name keeps the page out of a shared cache, and reading an
-unusable one as absent is the one reading that cannot be what was meant. Under the default field
-every value is meant for the release; under a consumer's own field an unlisted value declares
-nothing, as it does for indexing. A private indexing class is not stored whatever the route declares
-about caching.
+answer a value it cannot read, or reads and cannot use, as not stored, and MUST report it when the
+owner is compiled, because every value the declaration can name keeps the page out of a shared
+cache, and reading an unusable one as absent is the one reading that cannot be what was meant. Under
+the default field every value is meant for the release; under a consumer's own field an unlisted
+value declares nothing, as it does for indexing. A private indexing class is not stored whatever the
+route declares about caching.
 
 A host declares the least level of every page it serves, for a fact that holds on every page, such
 as a cookie every page reads or a nonce every response carries, so a route added later cannot

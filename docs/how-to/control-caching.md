@@ -63,8 +63,9 @@ withRouting({
 not list says nothing about caching.
 
 Both are read from your source text at generate time, the same way as the indexing field, so they are
-string literals. A value `generate` cannot use is reported as `EQ1413`, and until you correct it the
-route is not stored: every class it could have named keeps the page out of a shared cache.
+string literals, written in place or through a `const`. A value `generate` cannot read or use is
+reported as `EQ1413`, and until you correct it the route is not stored: every class it could have
+named keeps the page out of a shared cache.
 
 ## Declare a floor for every page
 

@@ -111,7 +111,8 @@ element only when it can verify it.
 
 A value the protocol would reject reports `EQ1412` at generate time rather than being dropped: a
 `changefreq` outside the seven it lists, a `priority` that is not a number between 0 and 1, or a
-`lastmod` that is not a date.
+`lastmod` that is not a date. So does a value `generate` cannot read, such as one held by a `let`; a
+`const` bound to a literal is read like the literal.
 
 ## Under a policy that puts the locale in the origin
 

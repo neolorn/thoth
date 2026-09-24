@@ -154,7 +154,7 @@ The analysis exceeded its source-file or byte ceiling, or was asked to resolve s
 
 ### EQ1404
 
-A route's identity cannot be used: declared in a form the localization runtime refuses, not derivable from what the route declares, colliding with another route's, or the owner declaring two route-indexing fields.
+A route's identity cannot be used: declared in a form the localization runtime refuses, declared in a way the build cannot read, not derivable from what the route declares, colliding with another route's, or the owner declaring two route-indexing fields.
 
 ### EQ1405
 
@@ -162,7 +162,7 @@ A route renders nothing: it carries none of `component`, `loadComponent`, `redir
 
 ### EQ1406
 
-A route hides addresses from the projection: its address comes from a computed `path`, a `matcher`, or a spread or computed key that may set either, or its children load from a file it only references. Those addresses stay outside the localized route table and are served at their canonical form in every locale.
+A route hides addresses from the projection: its address comes from a computed `path`, a `matcher`, or a spread or computed key that may set either, or its children load from a file it only references, or a route table takes routes from a binding, a spread or an expression Equator does not follow. Those addresses stay outside the localized route table and are served at their canonical form in every locale.
 
 ### EQ1407
 
@@ -186,11 +186,15 @@ A component template writes a `routerLink` whose leading segment is one this own
 
 ### EQ1412
 
-A sitemap declaration cannot be used as written: a changefreq outside the seven the protocol lists, a priority that is not a number literal between 0 and 1, a lastmod that is not a W3C date, or the owner declaring two route sitemap fields.
+A sitemap declaration cannot be used as written: a changefreq outside the seven the protocol lists, a priority that is not a number literal between 0 and 1, a lastmod that is not a W3C date, a field, table or route value the build cannot read, or the owner declaring two route sitemap fields.
 
 ### EQ1413
 
-A caching declaration cannot be used as written: a value that names neither `per-visitor` nor `not-stored`, a table or a route value the build cannot read as a string literal, or the owner declaring two route caching fields. A route whose value cannot be used is answered as not stored until it is corrected.
+A caching declaration cannot be used as written: a value that names neither `per-visitor` nor `not-stored`, a table or a route value the build cannot read as a string literal or a `const` bound to one, or the owner declaring two route caching fields. A route whose value cannot be used is answered as not stored until it is corrected.
+
+### EQ1414
+
+An indexing declaration cannot be used as written: a route value the build cannot read, because it is computed, a parameter, supplied by a resolver or behind a binding it cannot follow, or a field or table it cannot read. A route whose value cannot be read is answered as private until it is corrected.
 
 ### EQ1415
 
@@ -198,7 +202,7 @@ A route names its addresses in a way Angular refuses: neither a `path` nor a `ma
 
 ### EQ1416
 
-The router's inheritance strategy cannot be read: a `paramsInheritanceStrategy` the build cannot read as a string literal, or more than one router configuration where one sets it. Every child route is read as inheriting its parent's data, which is Angular's default.
+The router's inheritance strategy cannot be read: a `paramsInheritanceStrategy` the build cannot read as a string literal or a `const` bound to one, or more than one router configuration where one sets it. Every child route is read as inheriting its parent's data, which is Angular's default.
 
 ## The compiled artifacts
 

@@ -385,9 +385,27 @@ describe('the router inheritance strategy', () => {
     ).toEqual({ caching: 'absent', codes: [] });
   });
 
+  it('reads a strategy written through a const', async () => {
+    expect(
+      await cartCaching(
+        "const STRATEGY = 'emptyOnly';",
+        'export const router = provideRouter(routes, withRouterConfig({ paramsInheritanceStrategy: STRATEGY }));',
+      ),
+    ).toEqual({ caching: 'absent', codes: [] });
+  });
+
+  it('reads a ROUTER_CONFIGURATION value written as a shorthand', async () => {
+    expect(
+      await cartCaching(
+        "const useValue = { paramsInheritanceStrategy: 'emptyOnly' } as const;",
+        'export const providers = [{ provide: ROUTER_CONFIGURATION, useValue }];',
+      ),
+    ).toEqual({ caching: 'absent', codes: [] });
+  });
+
   it('reports a strategy it cannot read, and inherits always', async () => {
     const result = await cartCaching(
-      "const STRATEGY: 'emptyOnly' | 'always' = 'emptyOnly';",
+      "let STRATEGY: 'emptyOnly' | 'always' = 'emptyOnly';",
       'export const router = provideRouter(routes, withRouterConfig({ paramsInheritanceStrategy: STRATEGY }));',
     );
 
@@ -468,7 +486,7 @@ describe('what a route inherits', () => {
         "[{ path: 'account', data: { equatorCaching: CLASS }, children: [{ path: 'profile', component: Page }, { path: 'orders', component: Page }] }]",
       ).replace(
         'export class Page {}',
-        "export class Page {}\nconst CLASS: string = 'per-visitor';",
+        "export class Page {}\nlet CLASS: string = 'per-visitor';",
       ),
       'src/app.config.ts': configFile(),
     });

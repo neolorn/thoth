@@ -72,7 +72,10 @@ empty path or one whose parent renders no component. A class the child states it
 and passes the class to every child.
 
 Both blocks are read from your source text at generate time, which is why this is a field name and a
-table of literals rather than a predicate.
+table of literals rather than a predicate. A literal can be written in place or through a `const`,
+and route data can arrive through a `const` or a spread of one. A class `generate` cannot read,
+because it is computed, held by a `let` or supplied by a resolver, is reported as `EQ1414`, and until
+you correct it the route and every route that inherits its data are private.
 
 The indexing field is read by both the page metadata and the sitemap, so a route is classified in one
 place.

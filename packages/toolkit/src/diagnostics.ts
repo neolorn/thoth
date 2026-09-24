@@ -56,6 +56,7 @@ export type ToolkitDiagnosticCode =
   | 'EQ1411'
   | 'EQ1412'
   | 'EQ1413'
+  | 'EQ1414'
   | 'EQ1415'
   | 'EQ1416'
   | 'EQ1501'
