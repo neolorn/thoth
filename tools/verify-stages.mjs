@@ -1,4 +1,6 @@
-import { resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /**
  * The gate's stages, and what each one reads and writes.
@@ -29,6 +31,12 @@ import { resolve } from 'node:path';
  * artefact its claims go to. `readsClaims: true` marks the stage that reads all of them. Both are
  * expanded below rather than written out, so a stage that starts recording claims is one line
  * here and the matrix reads it on the day it lands.
+ *
+ * `source:tools` is expanded the same way for every stage whose command runs a program under
+ * `tools/`, because the program is read from there. It is true of nearly every stage and says
+ * nothing particular about any, so it is written below once rather than here forty times. A stage
+ * that reads `tools/` some other way, through a test runner's configuration or a formatter, still
+ * declares it.
  */
 const declared = Object.freeze([
   {
@@ -48,10 +56,12 @@ const declared = Object.freeze([
     reads: ['cache:build', 'source:packages'],
     writes: ['source:packages'],
   },
+  // `source:tools` because a test that claims a capability imports the claim, and a type-aware rule
+  // reads its declaration there.
   {
     id: 'lint',
     gate: true,
-    reads: ['cache:build', 'source:packages'],
+    reads: ['cache:build', 'source:packages', 'source:tools'],
     needs: [
       {
         on: 'lint:self-test',
@@ -148,7 +158,7 @@ const declared = Object.freeze([
   // the build output on disk was correct throughout.
   {
     id: 'verify:tarballs',
-    reads: ['dist:runtime', 'dist:toolkit', 'source:packages'],
+    reads: ['dist:runtime', 'dist:toolkit'],
     writes: ['release:packages'],
   },
   // A scan that counts a scratch directory as its corpus holds exports "used" on files that are
@@ -192,7 +202,7 @@ const declared = Object.freeze([
   },
   {
     id: 'verify:angular-free-consumer',
-    reads: ['dist:runtime', 'source:packages'],
+    reads: ['dist:runtime'],
   },
   {
     id: 'verify:handler-derivation',
@@ -218,7 +228,7 @@ const declared = Object.freeze([
   },
   {
     id: 'verify:focused-consumers',
-    reads: ['dist:runtime', 'dist:toolkit', 'source:packages'],
+    reads: ['dist:runtime', 'dist:toolkit'],
     writes: ['consumer:focused'],
   },
   {
@@ -247,10 +257,9 @@ const declared = Object.freeze([
   // list was true only because it happened to be written here.
   {
     id: 'verify:edit-cost',
-    reads: ['source:packages'],
     writes: ['consumer:package'],
   },
-  { id: 'verify:cost-budget', reads: ['consumer:package', 'source:packages'] },
+  { id: 'verify:cost-budget', reads: ['consumer:package', 'dist:runtime'] },
   // What a new project costs Equator between `equator init` and its second scope, run cold against
   // the installed toolkit rather than against the workspace. It reads that consumer and writes
   // nothing it does not create itself, under `tmp/cold-start`, which is nested and so is not an
@@ -287,11 +296,11 @@ const declared = Object.freeze([
   // gains an option contributes its cases on the day it lands.
   {
     id: 'verify:message-function-space',
-    reads: ['consumer:package', 'source:packages', 'source:tools'],
+    reads: ['consumer:package', 'dist:runtime', 'source:tools'],
   },
   {
     id: 'verify:message-format-conformance',
-    reads: ['consumer:package', 'source:packages', 'source:tools'],
+    reads: ['consumer:package', 'dist:runtime', 'source:tools'],
     writes: ['report:temp'],
     needs: [
       {
@@ -383,7 +392,6 @@ const declared = Object.freeze([
   // written second to last; the three writes below are why that placement was load-bearing.
   {
     id: 'verify:consumer-refresh',
-    reads: ['source:packages'],
     writes: ['consumer:package', 'dist:runtime', 'dist:toolkit'],
   },
   // Last, and now derivably so: it writes source, `dist` and the consumer, so every stage above
@@ -416,6 +424,27 @@ export const claimsArtefact = (id) => `claims:${safeName(id)}`;
 export const claimsFile = (root, id) =>
   resolve(root, 'tmp', 'capability-claims', `${safeName(id)}.jsonl`);
 
+const { scripts } = JSON.parse(
+  readFileSync(
+    resolve(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'),
+    'utf8',
+  ),
+);
+
+/** Whether a script runs a program under `tools/`, itself or through a `pnpm run` it chains. */
+const runsTools = (name, trail = []) => {
+  const script = scripts[name];
+  if (script === undefined) {
+    throw new Error(
+      `${[...trail, name].join(' -> ')} is not a script in package.json, so the gate cannot run it.`,
+    );
+  }
+  if (/(?:^|\s)(?:\.\/)?tools\//u.test(script)) return true;
+  return [...script.matchAll(/\bpnpm run (\S+)/gu)].some(
+    ([, next]) => !trail.includes(next) && runsTools(next, [...trail, name]),
+  );
+};
+
 const claiming = declared.filter(({ claims }) => claims === true);
 const position = new Map(declared.map(({ id }, index) => [id, index]));
 
@@ -440,20 +469,18 @@ for (const producer of claiming) {
 }
 
 export const steps = Object.freeze(
-  declared.map((step) =>
-    Object.freeze({
+  declared.map((step) => {
+    const reads = new Set(step.reads ?? []);
+    if (runsTools(step.id)) reads.add('source:tools');
+    if (step.readsClaims === true) {
+      for (const { id } of claiming) reads.add(claimsArtefact(id));
+    }
+    return Object.freeze({
       ...step,
+      reads: [...reads],
       ...(step.claims === true
         ? { writes: [...(step.writes ?? []), claimsArtefact(step.id)] }
         : {}),
-      ...(step.readsClaims === true
-        ? {
-            reads: [
-              ...(step.reads ?? []),
-              ...claiming.map(({ id }) => claimsArtefact(id)),
-            ],
-          }
-        : {}),
-    }),
-  ),
+    });
+  }),
 );

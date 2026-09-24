@@ -13,6 +13,7 @@ import { basename, dirname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { CLAIMS_FILE_VARIABLE } from './capability-claims.mjs';
+import { readTrace, traceDrift } from './trace-drift.mjs';
 import { claimsFile, safeName, steps } from './verify-stages.mjs';
 import { attemptLedgerPath, workingRoot } from './working-state.mjs';
 
@@ -42,9 +43,10 @@ import { attemptLedgerPath, workingRoot } from './working-state.mjs';
  * *Reads and writes are declared disjointly and a writer implicitly reads.* Declaring an artefact in
  * both places would be noise; every edge a writer needs is derived from the write alone.
  *
- * *Over-declaring is safe and under-declaring is not, which is the direction the check runs in.* A
- * declared artefact a stage never touches costs an edge that need not exist. An undeclared artefact
- * a stage does touch is a missing edge, which is a race, and that is the one the trace catches.
+ * *The check runs in both directions.* An undeclared artefact a stage does touch is a missing edge,
+ * which is a race. A declared artefact a stage never touches is either an edge that need not exist
+ * or an artefact the tracer cannot see, and the second leaves the declaration checked against
+ * nothing.
  *
  * *Every derived edge points backwards in the written order*, because a stage depends only on
  * writers and readers that precede it. So the graph can reorder nothing: `--serial` runs the
@@ -724,45 +726,27 @@ if (results.size !== steps.length) {
 /**
  * The graph above is what the run was scheduled on. This is what the run actually did.
  *
- * A stage that read or wrote an artefact its declaration does not name has an edge nobody drew, and
- * the run goes red for it after finishing: before green is declared, and without hiding the
- * stage's own result, because the two are different findings.
+ * A stage whose trace and declaration differ, in either direction (`tools/trace-drift.mjs`), turns
+ * the run red after finishing: before green is declared, and without hiding the stage's own result,
+ * because the two are different findings.
  *
  * *Whether the tracer ran at all, first.* If it fails to load (a renamed file, a `NODE_OPTIONS` a
- * caller clobbered, a syntax error) every trace is empty, every comparison finds nothing, and
- * drift reads
- * as clean for the rest of the project's life. So the first thing checked is that stages which
- * declare reads produced a trace at all. A check that cannot fail has not passed.
+ * caller clobbered, a syntax error) every trace is empty, and an empty trace is reported as
+ * untraced rather than as a stage that touched nothing. A check that cannot fail has not passed.
  */
 const drift = [];
 const untraced = [];
 for (const step of steps) {
   if (results.get(step.id).status !== 'pass') continue;
-  const tracePath = resolve(runDirectory, `${safeName(step.id)}.jsonl`);
-  const declared = {
-    read: new Set([...readsOf(step), ...writesOf(step)]),
-    write: new Set(writesOf(step)),
-  };
-  const seen = { read: new Set(), write: new Set() };
-  const lines = existsSync(tracePath)
-    ? readFileSync(tracePath, 'utf8')
-        .split('\n')
-        .filter((line) => line.length > 0)
-    : [];
-  for (const line of lines) {
-    const entry = JSON.parse(line);
-    seen[entry.kind]?.add(entry.artefact);
-  }
-  if (lines.length === 0) {
-    if (declared.read.size > 0) untraced.push(step.id);
+  const entries = readTrace(
+    resolve(runDirectory, `${safeName(step.id)}.jsonl`),
+  );
+  if (entries.length === 0) {
+    if (readsOf(step).length + writesOf(step).length > 0)
+      untraced.push(step.id);
     continue;
   }
-  for (const kind of ['read', 'write']) {
-    for (const artefact of seen[kind]) {
-      if (!declared[kind].has(artefact))
-        drift.push(`${step.id} ${kind} ${artefact}`);
-    }
-  }
+  drift.push(...traceDrift(step, entries));
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -815,7 +799,7 @@ for (const { id } of steps) {
 if (untraced.length > 0) {
   process.stdout.write(
     `\n=== UNTRACED (${untraced.length})\n` +
-      'These stages declare reads and produced no trace, so the drift check below saw nothing and\n' +
+      'These stages declare artefacts and produced no trace, so the drift check below saw nothing and\n' +
       'proves nothing. Fix the tracer before reading this run as evidence.\n',
   );
   for (const id of untraced) process.stdout.write(`  ${id}\n`);
@@ -824,8 +808,9 @@ if (untraced.length > 0) {
 if (drift.length > 0) {
   process.stdout.write(
     `\n=== GRAPH DRIFT (${drift.length})\n` +
-      'Each line is an artefact a stage touched that its declaration in this file does not name.\n' +
-      'The stage passed; the graph it was scheduled on is wrong. Add the artefact and re-run.\n',
+      "Each line is a difference between a stage's declaration in tools/verify-stages.mjs and what its\n" +
+      'trace saw it do. The stage passed; the graph it was scheduled on is wrong. Correct the\n' +
+      'declaration, or the tracer where it cannot see the artefact, and re-run.\n',
   );
   for (const line of drift) process.stdout.write(`  ${line}\n`);
 }

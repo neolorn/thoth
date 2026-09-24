@@ -24,13 +24,22 @@
  * environment variable is what makes the measurement cover the work.
  *
  * **What is recorded is the artefact, not the file.** A gate run touches millions of paths and the
- * graph needs about ten of them: which consumer tree, which `dist`, which report. Each process keeps
- * a deduplicated set of `<kind> <artefact>` pairs with a couple of example paths each, and appends
- * it once on exit. That is the difference between a few kilobytes and several gigabytes.
+ * graph needs about ten of them: which consumer tree, which `dist`, which report. Each process
+ * appends a `<kind> <artefact>` pair the first time it sees it, with the path that showed it, and
+ * never again. That is the difference between a few kilobytes and several gigabytes.
+ *
+ * **Appended when seen, not on exit.** A process that is ended rather than left to finish runs no
+ * exit handler, and vitest ends every worker it forked with `kill()`, which on Windows kills
+ * "forcefully and abruptly" (Node's `subprocess.kill` documentation). A trace written on exit loses
+ * whatever those workers read, such as `tools/twin-sources.json`, which a runtime test reads.
+ * Listening for the signals instead would change the stage it measures, because on other platforms
+ * a `SIGTERM` or `SIGINT` listener removes Node's default of exiting.
  */
 
 const fs = require('node:fs');
+const { registerHooks } = require('node:module');
 const path = require('node:path');
+const { fileURLToPath } = require('node:url');
 
 const traceFile = process.env['EQUATOR_TRACE_FILE'];
 const workspaceRoot = process.env['EQUATOR_TRACE_ROOT'];
@@ -69,7 +78,7 @@ if (!launcher && traceFile !== undefined && workspaceRoot !== undefined) {
 
 function install(traceFile, workspaceRoot) {
   const root = path.resolve(workspaceRoot);
-  const observed = new Map();
+  const observed = new Set();
   // Captured before anything below is wrapped, so writing the trace cannot re-enter the tracer.
   const appendFileSync = fs.appendFileSync.bind(fs);
 
@@ -90,10 +99,11 @@ function install(traceFile, workspaceRoot) {
       'tmp/package-consumer-verification/lower-bounds-consumer',
       'consumer:lower-bounds',
     ],
+    ['tmp/package-consumer-verification/strict-consumer', 'consumer:strict'],
     ['tmp/focused-package-consumer-verification', 'consumer:focused'],
-    // `tmp/package-consumer-verification`, the directory that holds the first three,
+    // `tmp/package-consumer-verification`, the directory that holds the first four,
     // is deliberately not one. The only thing any stage does to it is `mkdir` it before installing
-    // its own subtree, and counting that made all three installs write one artefact, which is the
+    // its own subtree, and counting that made every install write one artefact, which is the
     // exact concurrency this graph exists to allow. A container is not what is in it.
     ['release', 'release:packages'],
     ['dist/runtime', 'dist:runtime'],
@@ -179,18 +189,16 @@ function install(traceFile, workspaceRoot) {
     const hit = classify(candidate);
     if (hit === undefined) return;
     const key = `${kind} ${hit.name}`;
-    let entry = observed.get(key);
-    if (entry === undefined) {
-      entry = { kind, artefact: hit.name, count: 0, examples: [] };
-      observed.set(key, entry);
-    }
-    entry.count += 1;
-    if (entry.examples.length < 3) {
-      const relative = path
-        .relative(root, hit.resolved)
-        .split(path.sep)
-        .join('/');
-      if (!entry.examples.includes(relative)) entry.examples.push(relative);
+    if (observed.has(key)) return;
+    observed.add(key);
+    const example = path.relative(root, hit.resolved).split(path.sep).join('/');
+    try {
+      appendFileSync(
+        traceFile,
+        `${JSON.stringify({ pid: process.pid, kind, artefact: hit.name, example })}\n`,
+      );
+    } catch {
+      // Losing a trace line is a worse measurement, not a broken build.
     }
   };
 
@@ -299,21 +307,24 @@ function install(traceFile, workspaceRoot) {
   // `readFile`/`writeFile` take their flag in an options object; `open` takes it positionally. Both
   // shapes are covered above, and `writeFile` is unconditionally a write whatever its options say.
 
-  const flush = () => {
-    if (observed.size === 0) return;
-    const lines = [...observed.values()]
-      .map((entry) => JSON.stringify({ pid: process.pid, ...entry }))
-      .join('\n');
-    observed.clear();
-    try {
-      appendFileSync(traceFile, lines + '\n');
-    } catch {
-      // Losing a trace line is a worse measurement, not a broken build.
-    }
-  };
-  process.on('exit', flush);
-  // A stage that is killed on timeout still recorded what it did up to that point.
-  for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
-    process.on(signal, flush);
-  }
+  /**
+   * A module Node loads is read by the loader, which reaches none of the functions patched above.
+   * Without this, `verify:cli-options`, which imports the built schemas from `dist/toolkit`, would
+   * show no read of it, and a declaration saying it reads `dist:toolkit` could not be told from a
+   * wrong one. Node's synchronous `load` hook sees every module `require` and `import` load (Node's
+   * `module.registerHooks` documentation), and registered here it sees a worker thread's loads too,
+   * because this file is preloaded into the worker. The source is passed on untouched.
+   */
+  registerHooks({
+    load(url, context, nextLoad) {
+      if (url.startsWith('file:')) {
+        try {
+          record('read', fileURLToPath(url));
+        } catch {
+          // A tracer that can throw is a tracer that changes what it measures.
+        }
+      }
+      return nextLoad(url, context);
+    },
+  });
 }
