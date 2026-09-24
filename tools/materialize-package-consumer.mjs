@@ -60,6 +60,23 @@ if (consumerProfile.compilerOptions !== undefined) {
   );
 }
 
+// The claim and its recorder, so the consumer's specs record what they assert the way the
+// workspace suites do. Copied rather than imported from the workspace, because the consumer is
+// installed and run as its own project and must not reach outside itself.
+const claimModules = [
+  'capability-claims.mjs',
+  'capability-claims-in-tests.mjs',
+  'capability-claims-in-tests.d.mts',
+  'capability-evidence.mjs',
+];
+await mkdir(resolve(consumerRoot, 'tools'), { recursive: true });
+for (const name of claimModules) {
+  await cp(
+    resolve(workspaceRoot, 'tools', name),
+    resolve(consumerRoot, 'tools', name),
+  );
+}
+
 const lockPath = resolve(lockRoot, consumerName, 'pnpm-lock.yaml');
 const lockExists = await lstat(lockPath).then(
   (entry) => entry.isFile(),
@@ -99,5 +116,28 @@ manifest.devDependencies['@neolorn/equator-toolkit'] =
   packageLocator('dist/toolkit');
 
 await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+
+// The row this consumer was built as, with the versions that make it that row. The recorder checks
+// them against what the install put in `node_modules`, so a claim names the row whose packages
+// actually ran rather than the row this script was asked for.
+const rowPackages = ['@angular/core', '@angular/build', 'typescript', 'rxjs'];
+const allDependencies = {
+  ...manifest.dependencies,
+  ...manifest.devDependencies,
+};
+await writeFile(
+  resolve(consumerRoot, 'tools/consumer-row.json'),
+  `${JSON.stringify(
+    {
+      row: consumerName,
+      versions: Object.fromEntries(
+        rowPackages.map((name) => [name, allDependencies[name]]),
+      ),
+    },
+    null,
+    2,
+  )}\n`,
+  'utf8',
+);
 
 process.stdout.write(`${consumerRoot}\n`);

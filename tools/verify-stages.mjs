@@ -208,10 +208,13 @@ const declared = Object.freeze([
   // Empty on purpose: it reads no file at all. It probes the installed engines, Node's `Intl`
   // and the three Playwright browsers, which the lockfile binds rather than a stage.
   { id: 'verify:platform', reads: [] },
+  // The four consumer rows read `source:tools` because the materializer copies the claim and its
+  // recorder into each consumer, whose specs claim what they assert.
   {
     id: 'verify:consumer',
-    reads: ['dist:runtime', 'dist:toolkit', 'source:packages'],
+    reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
     writes: ['consumer:package'],
+    claims: true,
   },
   {
     id: 'verify:focused-consumers',
@@ -220,21 +223,24 @@ const declared = Object.freeze([
   },
   {
     id: 'verify:angular-22.0.4',
-    reads: ['dist:runtime', 'dist:toolkit', 'source:packages'],
+    reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
     writes: ['consumer:angular-22.0.4'],
+    claims: true,
   },
   {
     id: 'verify:lower-bounds',
-    reads: ['dist:runtime', 'dist:toolkit', 'source:packages'],
+    reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
     writes: ['consumer:lower-bounds'],
+    claims: true,
   },
   // The row that varies the compiler rather than the versions. Analysis adopts a consumer's own
   // options, so every other row exercises one setting of them, and this one reads the generated
   // route table from application source, which is the shape none of the others performs.
   {
     id: 'verify:strict-consumer',
-    reads: ['dist:runtime', 'dist:toolkit', 'source:packages'],
+    reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
     writes: ['consumer:strict'],
+    claims: true,
   },
   // Edits the materialized consumer in place and restores it, asserting the restore was exact. It
   // declares the write, so everything that reads that tree is ordered around it, which under the

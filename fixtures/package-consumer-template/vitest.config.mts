@@ -1,3 +1,5 @@
+import { capabilityClaimsReporters } from './tools/capability-evidence.mjs';
+
 /**
  * One worker, one file at a time, on every machine that runs this suite.
  *
@@ -15,5 +17,8 @@ export default {
     fileParallelism: false,
     maxWorkers: 1,
     minWorkers: 1,
+    // The builder keeps a runner configuration's reporters only while its own `reporters` option
+    // is unset, which `angular.json` leaves it.
+    reporters: capabilityClaimsReporters({ consumer: true }),
   },
 };

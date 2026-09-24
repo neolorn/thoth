@@ -12,7 +12,7 @@
  * it can name from a stage whose writer never ran.
  */
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
-import { dirname, relative, sep } from 'node:path';
+import { dirname, relative, resolve, sep } from 'node:path';
 
 import {
   CLAIMS_FILE_VARIABLE,
@@ -42,13 +42,16 @@ const opened = (file, writer) =>
  * that decides is the one vitest reports, after retries and after `fails` has been applied.
  */
 export class CapabilityClaimsReporter {
-  constructor(file) {
+  constructor(file, { consumer = false } = {}) {
     this.file = file;
+    this.consumer = consumer;
     this.root = undefined;
+    this.angularRow = undefined;
   }
 
   onInit(vitest) {
     this.root = vitest.config.root;
+    if (this.consumer) this.angularRow = consumerRow(this.root);
     opened(this.file, 'vitest');
   }
 
@@ -63,6 +66,9 @@ export class CapabilityClaimsReporter {
       if (!(claim.assertions > 0)) continue;
       append(this.file, {
         ...claim,
+        ...(this.angularRow === undefined
+          ? {}
+          : { angularRow: this.angularRow }),
         check: `${module} > ${testCase.fullName}`,
       });
     }
@@ -72,12 +78,44 @@ export class CapabilityClaimsReporter {
 /**
  * The reporters a suite runs with: vitest's own, and the claims reporter when the gate asked for
  * claims. Outside the gate a suite reports exactly as it did before claims existed.
+ *
+ * `consumer` is for a suite running inside a materialized consumer, whose claims also carry the
+ * consumer row it was built as.
  */
-export function capabilityClaimsReporters() {
+export function capabilityClaimsReporters({ consumer = false } = {}) {
   const file = claimsFile();
   return file === undefined
     ? ['default']
-    : ['default', new CapabilityClaimsReporter(file)];
+    : ['default', new CapabilityClaimsReporter(file, { consumer })];
+}
+
+/**
+ * The consumer row the consumer at `root` was built as, read from the stamp the materializer left
+ * and held to what is installed.
+ *
+ * The stamp alone would say which row was asked for. Each version it names is checked against the
+ * package in `node_modules`, so a consumer installed from another row's lock, or left over from
+ * another row's run, fails here rather than crediting that row with what a different one ran.
+ */
+export function consumerRow(root) {
+  const stampPath = resolve(root, 'tools/consumer-row.json');
+  if (!existsSync(stampPath)) {
+    throw new Error(
+      `${stampPath} is missing, so these claims cannot name the consumer row they ran in. Materialize the consumer again.`,
+    );
+  }
+  const stamp = JSON.parse(readFileSync(stampPath, 'utf8'));
+  for (const [name, version] of Object.entries(stamp.versions)) {
+    const installed = JSON.parse(
+      readFileSync(resolve(root, 'node_modules', name, 'package.json'), 'utf8'),
+    ).version;
+    if (installed !== version) {
+      throw new Error(
+        `The ${stamp.row} consumer names ${name} ${version}, and ${installed} is installed. Its claims would credit a row that did not run.`,
+      );
+    }
+  }
+  return stamp.row;
 }
 
 const claimsFile = () => {
