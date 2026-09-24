@@ -283,7 +283,7 @@ describe('the fact the handler derives and the descriptor is told', () => {
     // `accept-language`, mark it shared-cacheable per language, and hand it to a visitor whose
     // answer came from a cookie: 6.1's defect, one level up.
     const anonymous = await get('/second', {}, neutral);
-    expect(anonymous.headers.get('cache-control')).toBe('private, no-store');
+    expect(anonymous.headers.get('cache-control')).toBe('private, no-cache');
     expect(anonymous.headers.get('vary')).toBeNull();
   });
 

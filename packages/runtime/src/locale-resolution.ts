@@ -284,12 +284,52 @@ export class LocaleResolution {
     return removal;
   }
 
+  /**
+   * The stored locale, where a page restored from the back-forward cache should now be in it.
+   *
+   * A restored page comes back from memory without asking the server, so it shows the language it
+   * had when the visitor left, whatever was chosen since. The stored choice is the one thing that can
+   * have moved. It applies only where the configured sources, run against the address the page is
+   * at, would choose it now: an address that states its locale still decides, so only a page whose
+   * address states none moves.
+   */
+  async restoredLocale(
+    committed: string,
+    address: string,
+    signal: AbortSignal,
+  ): Promise<string | undefined> {
+    const stored = await this.readPersistedLocale(signal);
+    if (stored === undefined || stored === committed) return undefined;
+    // The address the page is at now, which a client navigation may have moved since setup read it.
+    const requestContext = Object.freeze({ url: address });
+    for (const source of this.sourceOrder) {
+      const resolved =
+        source === 'stored'
+          ? stored
+          : await this.resolveLocaleSource(source, signal, requestContext);
+      if (resolved !== undefined) {
+        return resolved === stored ? stored : undefined;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * The sources in the order the application declared, or the default order.
+   *
+   * One definition for every walk, so a restored page is asked about in the order its first request
+   * was.
+   */
+  private get sourceOrder(): readonly LocalizationLocaleSource[] {
+    return this.context.localeSources ?? DEFAULT_LOCALE_SOURCES;
+  }
+
   async resolveInitialLocale(signal: AbortSignal): Promise<string> {
     await waitForSignal(this.context.seeded, signal);
     if (this.context.initialLocale !== undefined) {
       return this.context.canonicalLocale(this.context.initialLocale);
     }
-    for (const source of this.context.localeSources ?? DEFAULT_LOCALE_SOURCES) {
+    for (const source of this.sourceOrder) {
       const resolved = await this.resolveLocaleSource(source, signal);
       if (resolved !== undefined) return resolved;
     }
@@ -308,6 +348,7 @@ export class LocaleResolution {
   private async resolveLocaleSource(
     source: LocalizationLocaleSource,
     signal: AbortSignal,
+    requestContext: unknown = this.context.requestContext,
   ): Promise<string | undefined> {
     if (source === 'default') return this.context.defaultLocale;
     if (source === 'stored') return this.readPersistedLocale(signal);
@@ -315,7 +356,7 @@ export class LocaleResolution {
       const setup = this.context.localeUrl;
       if (setup === undefined) return undefined;
       const stated = localeFromRoute(
-        this.context.requestContext,
+        requestContext,
         setup.policy,
         setup.projection,
       );

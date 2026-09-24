@@ -177,11 +177,10 @@ const injections = Object.freeze([
     source: 'packages/runtime/src/locale-resolution.ts',
     // Reversed rather than emptied, because an empty list falls through to the default locale and
     // a test could pass on that by coincidence. Reversing keeps every source in play and only
-    // changes which one is believed.
-    find: `    for (const source of this.context.localeSources ?? DEFAULT_LOCALE_SOURCES) {`,
-    replace: `    for (const source of [
-      ...(this.context.localeSources ?? DEFAULT_LOCALE_SOURCES),
-    ].reverse()) {`,
+    // changes which one is believed. At the one definition of the order, so every walk is reversed.
+    find: '    return this.context.localeSources ?? DEFAULT_LOCALE_SOURCES;',
+    replace:
+      '    return [...(this.context.localeSources ?? DEFAULT_LOCALE_SOURCES)].reverse();',
   },
   {
     id: 'chosen-locale-is-not-remembered',

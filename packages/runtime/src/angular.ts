@@ -2040,7 +2040,24 @@ export function provideLocalizationSetup(
           documentLocale !== undefined
             ? undefined
             : inject(DocumentLocalization);
+        // A page restored from the back-forward cache comes back from memory without asking the
+        // server, so no response header can reach it. This is the one place a locale chosen since
+        // it was left, in another tab or before a history step, can still be applied.
+        const view = isPlatformBrowser(platformId)
+          ? document.defaultView
+          : null;
+        const restore = (event: PageTransitionEvent): void => {
+          if (!event.persisted) return;
+          void localization.ɵrestoreLocale(
+            withoutBasePath(
+              `${document.location.pathname}${document.location.search}${document.location.hash}`,
+              baseHref,
+            ),
+          );
+        };
+        view?.addEventListener('pageshow', restore);
         inject(DestroyRef).onDestroy(() => {
+          view?.removeEventListener('pageshow', restore);
           localization.dispose();
           documentLocalization?.dispose();
         });

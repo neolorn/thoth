@@ -77,12 +77,13 @@ describe('the cache headers Equator determines', () => {
 
     // A cookie is not. It carries everything, so a cache keyed on the whole of one stores a variant
     // per visitor, which is not a shared cache, and the answer is `private` rather than a `Vary`.
+    // Kept by the browser and asked again before every reuse, so a language chosen since is seen.
     expect(
       routeCacheHeaders(descriptorFor('varies-by-locale-preference'), {
         ...FRESHNESS,
         localePreference: 'cookie',
       }),
-    ).toStrictEqual({ 'cache-control': 'private, no-store' });
+    ).toStrictEqual({ 'cache-control': 'private, no-cache' });
   });
 
   it('refuses the contradiction of an answer that varied by a preference nobody reads', () => {
@@ -610,7 +611,7 @@ describe('what a locale-neutral policy does to cacheability', () => {
 
   it('is private under a cookie and a shared variant under Accept-Language', () => {
     expect(headersFor(undefined, 'cookie')).toStrictEqual({
-      'cache-control': 'private, no-store',
+      'cache-control': 'private, no-cache',
     });
     expect(headersFor('ar-EG', 'accept-language')).toStrictEqual({
       'cache-control': 'public, max-age=600, must-revalidate',

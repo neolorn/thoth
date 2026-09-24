@@ -201,7 +201,7 @@ describe('the headers a route class implies', () => {
 `localePreference` is the one fact Equator cannot derive, because it never sees the request. Reading
 the preference from `Accept-Language` leaves a successful response shared-cacheable per language, and
 `Vary: Accept-Language` says so. Reading it from a cookie does not, and the answer is
-`private, no-store`.
+`private, no-cache`: the browser keeps the page and asks again before reusing it.
 
 The result is a map by header name rather than one string, so a consumer writes the set with one loop
 and gains a header a later release adds without changing a line.

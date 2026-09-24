@@ -1103,8 +1103,11 @@ function cacheLevel(
       switch (localePreference) {
         case 'accept-language':
           return 'shared';
+        // Revalidated rather than not stored, because the answer depends on request state and is not
+        // sensitive: a browser may keep it and asks again before reusing it, so a language chosen
+        // since is what it gets. A back-forward restore does not ask, and is checked on the client.
         case 'cookie':
-          return 'not-stored';
+          return 'per-visitor';
         case 'none':
           return routeError(
             'This response varied by locale preference and `localePreference` is `none`, which are two statements that cannot both be true. Equator resolved a locale from a preference the host supplied, so the host reads one somewhere; name where, so the answer can say whether a shared cache may hold it.',

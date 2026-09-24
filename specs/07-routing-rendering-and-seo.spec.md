@@ -272,7 +272,16 @@ Whether a shared cache may hold a varying response depends on where the deployme
 preference, which is the one fact here a release cannot observe. A consumer application MUST
 declare that source. A preference read from a request language header is content negotiation and
 takes a varying header; a preference read from a cookie is not, and takes a private directive,
-because a cache keyed on a whole cookie stores a variant per visitor.
+because a cache keyed on a whole cookie stores a variant per visitor. A release MUST classify that
+response as private and revalidated before every reuse, for the reason an entry redirect is: a
+browser may keep it, and asks the server again before using it, so a visitor who has chosen another
+language since is answered in it.
+
+A page a browser restores from its back-forward cache is the one reuse that does not ask the server,
+so a release that classifies a cookie-derived response as revalidated MUST check a restored page on
+the client: where the persisted locale differs from the locale on screen, and the configured sources
+would choose it at the address the page is at, the page changes to it. The change persists nothing, because the locale was resolved rather than chosen, and
+`03-locale-identity-and-resolution.spec.md` section 8 writes only a deliberate change.
 
 Which request field chose an answer and who may keep it are separate facts, and raising the second
 leaves the first alone. A release MUST name the request language header in `Vary` on every response
