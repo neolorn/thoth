@@ -9,9 +9,9 @@ export type ToolkitDiagnosticSeverity = 'error' | 'warning' | 'info';
 /**
  * Every diagnostic Equator can report, as its stable code.
  *
- * Grouped by the thousand: configuration, catalogs, messages, compilation, routing, extensions and
- * output each have their own band. A code is never reused and never changes meaning, which is what
- * lets a build script suppress one particular warning without matching on its wording.
+ * Grouped by the hundred: the first two digits of a code's number are its band, and each band is one
+ * section of `DIAGNOSTICS.md`. A code is never reused and never changes meaning, which is what lets
+ * a build script suppress one particular warning without matching on its wording.
  */
 export type ToolkitDiagnosticCode =
   | 'EQ1001'
