@@ -56,6 +56,13 @@ Both forms are serialized per locale through the route's codecs, so one entry wr
 the route rather than once per locale, and a value with no spelling in some locale fails the build
 rather than being left out of that language.
 
+A prerendered page is one file that every visitor is given, so a route declared `per-visitor` or
+`not-stored`, or indexed as `private`, fails the build that renders it, with the route and its
+address named. That holds whether the route has an entry of its own or the build reaches it through
+a fallback or an application shell. Render such a route with `RenderMode.Server`. A
+[floor](control-caching.md#declare-a-floor-for-every-page) in the handler's cache options is not
+known to the build, so only what the routes declare is checked.
+
 ## Serve a domain per locale
 
 Under a policy that puts the locale in the origin, `provideLocalizedRouter(routes, { origin })` names

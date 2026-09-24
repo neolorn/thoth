@@ -55,8 +55,19 @@ export class LocalizedLocationStrategy extends PathLocationStrategy {
 
   override path(includeHash = false): string {
     return this.withBase(
-      toInternalPath(this.withoutBase(super.path(includeHash)), this.context),
+      toInternalPath(this.externalPath(includeHash), this.context),
     );
+  }
+
+  /**
+   * The address as it arrived, in the form `resolveLocalizedRoute` reads.
+   *
+   * Read from here rather than rebuilt from `PlatformLocation`, because the base href this strips
+   * is the one Angular settled for this strategy, and the Router's first navigation starts from the
+   * same reading.
+   */
+  externalPath(includeHash = false): string {
+    return this.withoutBase(super.path(includeHash));
   }
 
   /**

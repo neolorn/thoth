@@ -13,6 +13,7 @@ import {
   readFile,
   readdir,
   realpath,
+  rm,
   writeFile,
 } from 'node:fs/promises';
 import { isBuiltin } from 'node:module';
@@ -45,14 +46,19 @@ const consumerRoot = resolve(
 const pnpmCommand =
   process.platform === 'win32' ? (process.env.ComSpec ?? 'cmd.exe') : 'pnpm';
 
+const spawnPnpm = (args) =>
+  spawnSync(
+    pnpmCommand,
+    process.platform === 'win32' ? ['/d', '/s', '/c', 'pnpm', ...args] : args,
+    {
+      cwd: consumerRoot,
+      encoding: 'utf8',
+      env: { ...process.env, CI: 'true' },
+    },
+  );
+
 const run = (args, expectedStatus = 0) => {
-  const commandArguments =
-    process.platform === 'win32' ? ['/d', '/s', '/c', 'pnpm', ...args] : args;
-  const result = spawnSync(pnpmCommand, commandArguments, {
-    cwd: consumerRoot,
-    encoding: 'utf8',
-    env: { ...process.env, CI: 'true' },
-  });
+  const result = spawnPnpm(args);
 
   assert.equal(
     result.status,
@@ -1360,6 +1366,75 @@ for (const tag of Object.keys(PSEUDO_LOCALES)) {
 assert.ok(
   restoredLocaleTable.includes('ar-EG'),
   'The restored locale table was not read, so the absences above mean nothing',
+);
+
+/**
+ * A per-visitor route listed for prerender, which the build has to refuse.
+ *
+ * `specs/07-routing-rendering-and-seo.spec.md` section 9. `route:lazy` is per visitor, and it is
+ * listed where an application lists it, in its own server routes, so the refusal is met the way a
+ * release meets it. The three answers are gathered before any is asserted, so a build that lets the
+ * page through reports every way it did. `@angular/build` before 22.1.7 drops a page whose
+ * navigation fails and still succeeds, which is why the written files are read as well as the
+ * status. Built to its own output path and put back afterwards, because the steps after this one
+ * read the production build and its source.
+ */
+const serverRoutesPath = resolve(consumerRoot, 'src/app/app.routes.server.ts');
+const serverRoutes = await readFile(serverRoutesPath, 'utf8');
+const listedBefore = "  { routeId: 'item', renderMode: RenderMode.Client },\n";
+assert.equal(
+  serverRoutes.split(listedBefore).length,
+  2,
+  'The server routes no longer carry the entry the refused route is listed after',
+);
+await writeFile(
+  serverRoutesPath,
+  serverRoutes.replace(
+    listedBefore,
+    `${listedBefore}  { routeId: 'route:lazy', renderMode: RenderMode.Prerender },\n`,
+  ),
+  'utf8',
+);
+const refusedRoot = resolve(consumerRoot, 'dist/feature-lab-refused');
+await rm(refusedRoot, { force: true, recursive: true });
+let refusedBuild;
+try {
+  refusedBuild = spawnPnpm([
+    'exec',
+    'ng',
+    'build',
+    '--output-path',
+    'dist/feature-lab-refused',
+  ]);
+} finally {
+  await writeFile(serverRoutesPath, serverRoutes, 'utf8');
+}
+const refusedOutput = [refusedBuild.stdout, refusedBuild.stderr].join('\n');
+const refusedPages = (
+  await readdir(refusedRoot).then(
+    () => collectPrerendered(refusedRoot),
+    () => [],
+  )
+).filter((path) => path.endsWith('/lazy/index.html'));
+assert.deepEqual(
+  [
+    ...refusedPages.map((path) => `it wrote ${path}`),
+    ...(refusedBuild.status === 1
+      ? []
+      : [`it exited ${String(refusedBuild.status)}`]),
+    ...(/Route route:lazy at "\/[a-z-]+\/lazy" is per-visitor, and it is being rendered ahead of a request/u.test(
+      refusedOutput,
+    )
+      ? []
+      : ['its output does not name the route and the refusal']),
+  ],
+  [],
+  `The build prerendered a per-visitor route:\n${refusedOutput}`,
+);
+assert.equal(
+  await readFile(serverRoutesPath, 'utf8'),
+  serverRoutes,
+  'The server routes were not put back after the refused build',
 );
 
 process.stdout.write(

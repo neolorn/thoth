@@ -1,6 +1,9 @@
-import { LocationStrategy } from '@angular/common';
+import { LocationStrategy, isPlatformServer } from '@angular/common';
 import {
+  APP_BOOTSTRAP_LISTENER,
   InjectionToken,
+  PLATFORM_ID,
+  REQUEST,
   inject,
   isDevMode,
   makeEnvironmentProviders,
@@ -23,6 +26,7 @@ import {
   LOCALE_URL_POLICY,
   Localization,
   LocalizationError,
+  resolveLocalizedRoute,
   toExternalPath,
   type LocaleUrlPolicy,
   type LocalizedAddressContext,
@@ -247,6 +251,15 @@ export function provideLocalizedRouter(
     {
       provide: RouteLocalization,
       useFactory: () => new RouteLocalization(options),
+    },
+    // While the root component bootstraps rather than in the resolver, because a navigation that
+    // fails is a render that answers nothing, and `@angular/build` before 22.1.7 drops such a page
+    // and reports success. A bootstrap that throws fails the build on every supported version.
+    // Route discovery bootstraps no root component, so it never meets this.
+    {
+      provide: APP_BOOTSTRAP_LISTENER,
+      multi: true,
+      useFactory: () => refuseSharedFile(options),
     },
     provideEnvironmentInitializer(() => {
       // First, and unconditionally. Everything below reports; this one decides.
@@ -474,6 +487,44 @@ function refusePolicyAtConfiguration(
     outcome: 'operational-failure',
     message: `provideLocalizedRouter() does not serve a ${JSON.stringify((unserved as LocaleUrlPolicy).kind)} locale URL policy. Equator serves "path-prefix", "locale-neutral" and "locale-host".`,
   });
+}
+
+/**
+ * Refuse a page a build would write once and serve to every visitor when its route says it must not.
+ *
+ * `specs/07-routing-rendering-and-seo.spec.md` section 9. Decided from the route's classes and the
+ * missing request, the same two facts `LocalizedPageOutcome.declare` refuses on, and never from a
+ * render mode, which the section relays without interpreting. Every render ahead of a request
+ * bootstraps once for its own address, so an entry of its own, a fallback and an application shell
+ * all meet it.
+ */
+function refuseSharedFile(options: RouteLocalizationOptions): () => void {
+  if (
+    !isPlatformServer(inject(PLATFORM_ID)) ||
+    inject(REQUEST, { optional: true }) !== null
+  ) {
+    return () => undefined;
+  }
+  // A strategy of the application's own leaves no localized address resolvable, and the startup
+  // diagnostics report it.
+  const strategy = inject(LocationStrategy);
+  if (!(strategy instanceof LocalizedLocationStrategy)) return () => undefined;
+  const { policy, projection } = declaredAddressContext();
+  return () => {
+    const address = strategy.externalPath(true);
+    const resolution = resolveLocalizedRoute(address, policy, projection, {
+      ...(options.origin === undefined ? {} : { origin: options.origin }),
+    });
+    if (resolution.status !== 'success') return;
+    const level =
+      resolution.indexing === 'private' ? 'private' : resolution.caching;
+    if (level === undefined) return;
+    throw new LocalizationError({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      message: `Route ${resolution.routeId} at ${JSON.stringify(address)} is ${level}, and it is being rendered ahead of a request, which writes one file that is served to every visitor. Render this route on demand instead of prerendering it.`,
+    });
+  };
 }
 
 /**

@@ -442,6 +442,16 @@ eligible prerendering. A private client-rendered application still requires loca
 readiness before visible UI. A release MUST NOT force prerendering onto a route whose
 existence, authorization, or freshness cannot be proven at build time.
 
+A prerendered page is one file served for every request to its address, so it can only be a page
+every visitor may be given. A release MUST fail the build when it renders a route whose level under
+section 16 is per visitor or not stored, or whose indexing class is private, and MUST NOT write the
+page, whichever declaration led the build to render it: an entry of its own, a fallback, or an
+application shell. It MUST decide this from the route's classification and from the render having
+no request, and MUST NOT read a render mode value to decide it, because this section relays those
+values without interpreting them. The least level a host declares under section 16 is declared
+where requests are answered and is not known to the build, so this refusal covers what the routes
+declare.
+
 ## 10. Canonical, alternate, and x-default
 
 Each successful indexable locale representation has exactly one self-canonical URL.
