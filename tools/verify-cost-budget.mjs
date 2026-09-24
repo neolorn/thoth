@@ -8,21 +8,21 @@
  *
  * Every check here asserts the *shape* of a cost, never a wall-clock number. These run on whatever
  * machine CI provides, which is never the production host, so an absolute millisecond limit
- * measures the runner and not Atlas: flaky where the runner is slow, and once padded enough to stop
- * being flaky, unable to fail. Complexity transfers across machines; milliseconds do not.
+ * measures the runner and not Equator: flaky where the runner is slow, and once padded enough to
+ * stop being flaky, unable to fail. Complexity transfers across machines; milliseconds do not.
  *
  * `specs/12-verification.spec.md` section 10 states that as a rule: assert the shape of a cost
- * rather than an absolute duration wherever the measurement runs on a machine Atlas does not
+ * rather than an absolute duration wherever the measurement runs on a machine Equator does not
  * control. Section 11 is the other half of it: no recorded timing figure is kept as a threshold a
  * later run is compared against, so a growth curve is judged by the shape its own measurements
  * take.
  *
  * What this deliberately does not do is size a consumer's server. How much concurrency one host
  * sustains depends on its cores, its memory and what else runs on it. That is consumer capacity
- * planning. Atlas's job is to guarantee the curve is the right shape.
+ * planning. Equator's job is to guarantee the curve is the right shape.
  *
  * `specs/12-verification.spec.md` section 12 keeps that boundary: capacity, budgets and traffic
- * objectives belong to the application, and Atlas supplies the instrument rather than the
+ * objectives belong to the application, and Equator supplies the instrument rather than the
  * target.
  */
 import { existsSync } from 'node:fs';
@@ -42,7 +42,7 @@ await import(pathToFileURL(require_.resolve('@angular/compiler')).href);
 // both the working import and the more faithful one.
 const consumerToolkit = resolve(
   workspaceRoot,
-  'tmp/package-consumer-verification/package-consumer/node_modules/@neolorn/atlas-toolkit/index.js',
+  'tmp/package-consumer-verification/package-consumer/node_modules/@neolorn/equator-toolkit/index.js',
 );
 if (!existsSync(consumerToolkit)) {
   process.stderr.write(
@@ -52,17 +52,17 @@ if (!existsSync(consumerToolkit)) {
 }
 const tk = await import(pathToFileURL(consumerToolkit).href);
 // The modules rather than the package entry. The compiler's own machinery is not published:
-// nothing outside Atlas calls it, so it is not part of the toolkit's surface, and a gate that
+// nothing outside Equator calls it, so it is not part of the toolkit's surface, and a gate that
 // exercises it reaches the module that declares it.
-const { compileAtlasLocalArtifacts } = await import(
+const { compileLocalArtifacts } = await import(
   pathToFileURL(resolve(dirname(consumerToolkit), 'compiled-artifacts.js')).href
 );
-const { analyzeAtlasCatalogSet } = await import(
+const { analyzeCatalogSet } = await import(
   pathToFileURL(resolve(dirname(consumerToolkit), 'semantic-model.js')).href
 );
 const rt = await import(
   pathToFileURL(
-    resolve(workspaceRoot, 'dist/runtime/fesm2022/neolorn-atlas.mjs'),
+    resolve(workspaceRoot, 'dist/runtime/fesm2022/neolorn-equator.mjs'),
   ).href
 );
 
@@ -145,8 +145,8 @@ record(
  * Parsed by the toolkit, not written out here.
  *
  * This was an object literal, and it drifted: `personNameLocales` became a required field of
- * the loaded configuration (optional in `atlas.config.json`, defaulted by the loader) and
- * this literal never gained it. `analyzeAtlasCatalogSet` spreads that field unconditionally,
+ * the loaded configuration (optional in `equator.config.json`, defaulted by the loader) and
+ * this literal never gained it. `analyzeCatalogSet` spreads that field unconditionally,
  * correctly, because every configuration it is meant to receive has been through the loader.
  * So the whole gate died on a value only this file could produce, while no consumer could hit
  * it at all.
@@ -156,7 +156,7 @@ record(
  * configuration this measures is built the way a consumer's is, and a field added later
  * arrives here with its default rather than as a crash.
  */
-const parsedConfiguration = tk.parseAtlasConfiguration(
+const parsedConfiguration = tk.parseConfiguration(
   JSON.stringify({
     schemaVersion: 1,
     sourceLocale: 'en-US',
@@ -181,20 +181,20 @@ async function artifactsFor(messageCount) {
   for (let index = 0; index < messageCount; index += 1) {
     lines.push(`  m.k${index}: "Message number ${index} with a little body."`);
   }
-  const parsed = tk.parseAtlasCatalog(`${lines.join('\n')}\n`, {
+  const parsed = tk.parseCatalog(`${lines.join('\n')}\n`, {
     role: 'source',
     providerId: 'p',
     scopeId: 's',
     locale: 'en-US',
   });
   if (!parsed.ok) throw new Error('cost budget fixture failed to parse');
-  const graph = analyzeAtlasCatalogSet({
+  const graph = analyzeCatalogSet({
     configuration,
     catalogs: [parsed.value],
   });
-  const compiled = compileAtlasLocalArtifacts({
+  const compiled = compileLocalArtifacts({
     owner: {
-      providerId: '@neolorn/atlas-verify',
+      providerId: '@neolorn/verify',
       generatedRootPath: 'src/generated/i18n',
     },
     graph: graph.value,
@@ -209,7 +209,7 @@ function contextFor(artifacts) {
   return rt.createLocalizationContext({
     setup: {
       configuration: Object.freeze({
-        generatedAbi: 'atlas-generated/1',
+        generatedAbi: 'equator-generated/1',
         sourceLocale: 'en-US',
         defaultLocale: 'en-US',
         locales: Object.freeze(['en-US']),

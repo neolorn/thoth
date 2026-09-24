@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { type FormattingContext } from '@neolorn/atlas/core';
+import { type FormattingContext } from '@neolorn/equator/core';
 
 import { RUNTIME_LIMITS } from '../src/runtime-safety.js';
 

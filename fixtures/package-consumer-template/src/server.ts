@@ -9,12 +9,12 @@ import {
   allowedLocaleHosts,
   builtLocalePolicy,
   projectSitemap,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import {
   createLocaleRequestHandler,
   toWebRequest,
   writeNodeResponse,
-} from '@neolorn/atlas/http';
+} from '@neolorn/equator/http';
 import { configuration } from '#i18n';
 
 import { localeCookie } from './app/locale-cookie';
@@ -32,7 +32,7 @@ import {
  * `en-Arab-XB`, which exists only in a build made with `--pseudo`. Resolving against the declared
  * policy in an ordinary build answers `/en-arab-xb/second` with a 200 in markup labelled
  * `lang="en-Arab-XB"`, and sends a visitor whose cookie remembers that locale to it. Narrowing once
- * here is the whole fix, and it is one line because Atlas made it one.
+ * here is the whole fix, and it is one line because Equator made it one.
  */
 const servedPolicy = builtLocalePolicy(routePolicy, configuration);
 
@@ -42,7 +42,7 @@ const servedPolicy = builtLocalePolicy(routePolicy, configuration);
  * `@angular/ssr` answers `400` before the application runs for any `Host` header it does not
  * recognise, and by default it recognises loopback and nothing else. Under a `locale-host` policy
  * that is every one of the application's own domains, so the site would answer nothing anywhere.
- * Atlas cannot check this, a build cannot reach the server configuration, so what it does
+ * Equator cannot check this, a build cannot reach the server configuration, so what it does
  * instead is derive the list, and this is the line a consumer writes.
  *
  * `servedPolicy` rather than `routePolicy`, for the same reason as everywhere else here: a build
@@ -57,7 +57,7 @@ const engine = new AngularNodeAppEngine({
 });
 
 /**
- * An address Atlas declined to localize, handed back to the server that owns it.
+ * An address Equator declined to localize, handed back to the server that owns it.
  *
  * `passthrough` has to answer with a `Response` because the handler is written against Fetch and
  * knows nothing about Express. This deployment's answer is "not mine, keep going", which is
@@ -72,9 +72,9 @@ const PASS_THROUGH = 'x-consumer-passthrough';
  * `successMaxAge` is deliberately not `0`. A zero is a deployment that revalidates every request,
  * which makes a response marked `public` behave privately and hides the difference between a
  * correct classification and a leaked one. This fixture is what the gate reads; a fixture that is
- * safe whatever Atlas says cannot show that Atlas is right.
+ * safe whatever Equator says cannot show that Equator is right.
  *
- * `cookie` names the cookie this deployment remembers a choice in. Naming it is what tells Atlas
+ * `cookie` names the cookie this deployment remembers a choice in. Naming it is what tells Equator
  * that answers here vary by something a shared cache must not key on, and that is a fact stated
  * once rather than a directive string retyped per classification. A chain of conditionals mapping
  * classifications to directive text by hand works, and goes on working, wrongly and silently, the
@@ -133,7 +133,7 @@ function createProbeContext(request: {
 /**
  * The sitemap, which this deployment owns the delivery of.
  *
- * Atlas produces the files: their names, their contents, the split when there is one. Where they
+ * Equator produces the files: their names, their contents, the split when there is one. Where they
  * are served from, and the `Sitemap:` line in `robots.txt` beside them, are this application's,
  * under section 10 of the routing specification. Serving them from the same handler is what this
  * deployment does; writing them into the built output beside `index.html` would do as well.
@@ -189,9 +189,9 @@ export const reqHandler = createNodeRequestHandler(
         return;
       }
 
-      // Atlas decided the status, the language, the indexing and the cacheability. Angular renders
-      // the body. The two are joined here rather than in Atlas because rendering is the one part
-      // that needs the Node request and the application's own engine.
+      // Equator decided the status, the language, the indexing and the cacheability. Angular
+      // renders the body. The two are joined here rather than in Equator because rendering is the
+      // one part that needs the Node request and the application's own engine.
       if (resolved.headers.get('x-consumer-render') === '1') {
         const rendered = await engine.handle(
           request,

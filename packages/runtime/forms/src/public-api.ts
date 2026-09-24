@@ -39,7 +39,7 @@ import {
   type LocalizedInputResult,
   type LocalizedInputStatus,
   type LocalizedInputValue,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 
 /**
  * The error code this directive writes when it could not read what a reader typed.
@@ -50,12 +50,12 @@ import {
  * errors of every validator on it in one object, and a bare word would collide.
  */
 export type LocalizedInputIssueCode =
-  | 'atlas.input.incomplete'
-  | 'atlas.input.invalid'
-  | 'atlas.input.ambiguous'
-  | 'atlas.input.out-of-range'
-  | 'atlas.input.unsupported-capability'
-  | 'atlas.input.policy-rejected';
+  | 'equator.input.incomplete'
+  | 'equator.input.invalid'
+  | 'equator.input.ambiguous'
+  | 'equator.input.out-of-range'
+  | 'equator.input.unsupported-capability'
+  | 'equator.input.policy-rejected';
 
 /**
  * The code that goes with a refusal, so a template branches on one string rather than two.
@@ -66,7 +66,7 @@ export type LocalizedInputIssueCode =
 export function localizedInputIssueCode(
   status: Exclude<LocalizedInputStatus, 'valid'>,
 ): LocalizedInputIssueCode {
-  return `atlas.input.${status}`;
+  return `equator.input.${status}`;
 }
 
 /**
@@ -189,7 +189,7 @@ export class LocalizedInput implements ControlValueAccessor, Validator {
   /**
    * Takes the callback the form uses to receive a new value. Called by the form.
    *
-   * Atlas calls it only when what was typed parses, so a half-finished entry never reaches the
+   * Equator calls it only when what was typed parses, so a half-finished entry never reaches the
    * model and the form keeps the last value that meant something.
    */
   registerOnChange(
@@ -201,7 +201,7 @@ export class LocalizedInput implements ControlValueAccessor, Validator {
   /**
    * Takes the callback that marks the control touched. Called by the form.
    *
-   * Atlas calls it on blur, after one last read of the field, so the value and the touched state
+   * Equator calls it on blur, after one last read of the field, so the value and the touched state
    * change together rather than one edit apart.
    */
   registerOnTouched(touched: () => void): void {
@@ -211,7 +211,7 @@ export class LocalizedInput implements ControlValueAccessor, Validator {
   /**
    * Takes the callback that tells the form to revalidate. Called by the form.
    *
-   * Atlas calls it whenever a read or a write changes the status, which includes the rewrite a
+   * Equator calls it whenever a read or a write changes the status, which includes the rewrite a
    * locale change causes, so a field that became unreadable in the new locale is reported without
    * anyone touching it.
    */

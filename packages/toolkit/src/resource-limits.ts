@@ -1,4 +1,4 @@
-export const ATLAS_RESOURCE_LIMITS = Object.freeze({
+export const RESOURCE_LIMITS = Object.freeze({
   configurationBytes: 1_048_576,
   jsonDepth: 64,
   jsonNodes: 100_000,
@@ -33,4 +33,4 @@ export const ATLAS_RESOURCE_LIMITS = Object.freeze({
   irDepth: 128,
 } as const);
 
-export type AtlasResourceLimitName = keyof typeof ATLAS_RESOURCE_LIMITS;
+export type ResourceLimitName = keyof typeof RESOURCE_LIMITS;

@@ -61,7 +61,7 @@ puts it.
 
 `strong`, `emphasis` and `code` render as themselves, `link` takes a link binding and `action` takes
 an action binding. Every other slot is a kind your application registered, which is
-[How to extend Atlas](extend-atlas.md), and it takes one of two bindings.
+[How to extend Equator](add-an-extension.md), and it takes one of two bindings.
 
 A `template` binding puts your own markup around what the translator wrote:
 
@@ -118,8 +118,8 @@ bundle.
 
 ## Render into a document you do not own
 
-Atlas sets the document's `lang` and `dir` from the committed locale. A widget rendered inside a host
-page that maintains its own should compose `withoutDocumentLocale()`, which leaves the document
+Equator sets the document's `lang` and `dir` from the committed locale. A widget rendered inside a
+host page that maintains its own should compose `withoutDocumentLocale()`, which leaves the document
 alone. It is named for the withdrawal rather than taking a flag, so the default behavior has no
 spelling of its own.
 

@@ -230,13 +230,13 @@ for (const document of documents) {
 
 if (findings.length > 0) {
   process.stderr.write(
-    `Atlas document links: ${findings.length} hit(s) across ${documents.length} documents.\n\n` +
+    `Equator document links: ${findings.length} hit(s) across ${documents.length} documents.\n\n` +
       `${findings.map((finding) => `  ${finding}`).join('\n')}\n`,
   );
   process.exit(1);
 }
 
 process.stdout.write(
-  `Atlas document links verified: ${links} relative link(s) and ${spans} path(s) named in prose ` +
+  `Equator document links verified: ${links} relative link(s) and ${spans} path(s) named in prose ` +
     `across ${documents.length} documents all resolve, anchors included.\n`,
 );

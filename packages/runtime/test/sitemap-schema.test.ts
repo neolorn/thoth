@@ -11,12 +11,12 @@ import {
   type GeneratedConfiguration,
   type RouteRuntimeProjection,
   type SitemapDocument,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /**
- * Every file Atlas writes, against the schemas the publishers ship for the format it claims.
+ * Every file Equator writes, against the schemas the publishers ship for the format it claims.
  *
- * Not a round trip and not a shape assertion. A sitemap is read by software Atlas will never see,
+ * Not a round trip and not a shape assertion. A sitemap is read by software Equator will never see,
  * and the only statement worth making about one is that the format's own schema accepts it. That is
  * what caught the ordering rule the emitter now follows: `tUrl` is an `xsd:sequence`, so an entry
  * that writes its alternates before its `priority` is well-formed, self-consistent, and invalid.
@@ -28,7 +28,7 @@ import {
  * content models with a wildcard at `processContents="strict"`, which is the setting that demands a
  * declaration rather than tolerating an unknown element. The hreflang extension puts `xhtml:link`
  * in exactly that position, and it comes from a different publisher, so nothing in the sitemap
- * schemas declares it. `atlas-sitemap-hreflang.xsd` imports both namespaces into one schema set and
+ * schemas declares it. `sitemap-hreflang.xsd` imports both namespaces into one schema set and
  * declares nothing itself.
  */
 const schemaDirectory = fileURLToPath(
@@ -37,7 +37,7 @@ const schemaDirectory = fileURLToPath(
 const xliffDirectory = fileURLToPath(
   new URL('../../../standards/data/xliff-2.2-cs01-schemas/', import.meta.url),
 );
-const SHIM = 'atlas-sitemap-hreflang.xsd';
+const SHIM = 'sitemap-hreflang.xsd';
 const INDEX_SCHEMA = 'siteindex.xsd';
 
 const preload = [
@@ -60,7 +60,7 @@ async function schemaErrors(
   schema: string,
 ): Promise<readonly string[]> {
   const result = await validateXML({
-    xml: [{ fileName: 'atlas-sitemap.xml', contents: document }],
+    xml: [{ fileName: 'sitemap.xml', contents: document }],
     schema: [
       {
         fileName: schema,
@@ -80,7 +80,7 @@ async function schemaErrors(
 }
 
 const CONFIGURATION: GeneratedConfiguration = {
-  generatedAbi: 'atlas-generated/1',
+  generatedAbi: 'equator-generated/1',
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
   locales: ['en-US', 'ar-EG'],
@@ -102,8 +102,8 @@ const POLICY = createPathPrefixLocalePolicy({
  */
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'atlas-route-projection/1',
-    identity: 'sha256-AtlasSitemapSchemaTestProjectionIdentity012',
+    profile: 'equator-route-projection/1',
+    identity: 'sha256-SitemapSchemaTestProjectionIdentity01234567',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
       {
@@ -133,13 +133,13 @@ const PROJECTION: RouteRuntimeProjection = {
 function build(pages = 1): readonly SitemapDocument[] {
   const values: Readonly<Record<string, unknown>>[] = [];
   for (let index = 0; index < pages; index += 1) {
-    values.push({ slug: `atlas-handbook-${index}` });
+    values.push({ slug: `handbook-${index}` });
   }
   return projectSitemap({
     policy: POLICY,
     projection: PROJECTION,
     configuration: CONFIGURATION,
-    origin: 'https://atlas.example',
+    origin: 'https://site.example',
     routes: [
       { routeId: 'route:_index' },
       { routeId: 'route:second' },
@@ -148,7 +148,7 @@ function build(pages = 1): readonly SitemapDocument[] {
   });
 }
 
-describe('the documents Atlas writes', () => {
+describe('the documents Equator writes', () => {
   it('validates against the sitemap schema with the hreflang extension imported', async () => {
     const [file] = build();
     expect(file).toBeDefined();

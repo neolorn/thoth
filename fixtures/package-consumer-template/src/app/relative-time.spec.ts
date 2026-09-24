@@ -11,13 +11,13 @@ import {
   withLocalizationClock,
   withRelativeTimePolicy,
   type RelativeTimePolicy,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
  * When a timestamp is phrased relatively, and in what unit.
@@ -27,9 +27,9 @@ import { atlasRuntimeExtensions } from './runtime-extensions';
  * nobody assigned, each of four applications would write the same selection loop, and they would
  * disagree.
  *
- * The split: Atlas owns the rule, largest unit the span reaches, truncated and never rounded up,
+ * The split: Equator owns the rule, largest unit the span reaches, truncated and never rounded up,
  * and the consumer owns the thresholds, because "3 days ago" is right on a message and wrong on
- * an invoice and Atlas has no basis for preferring either.
+ * an invoice and Equator has no basis for preferring either.
  *
  * The clock is a port for the same reason the reference instant is explicit: a "now" that cannot be
  * supplied cannot be tested, and a server render and the browser render that rehydrates it must be
@@ -54,7 +54,7 @@ function setup(policy?: RelativeTimePolicy): Localization {
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
         },
         withFormattingContext({ timeZone: 'Africa/Cairo' }),
         withLocalizationClock(fixedClock(at(0))),
@@ -103,7 +103,7 @@ describe('unit selection', () => {
   });
 
   it('names the smallest permitted unit rather than inventing wording', () => {
-    // Half a second under a minute-floor policy is zero minutes. Atlas does not turn that into
+    // Half a second under a minute-floor policy is zero minutes. Equator does not turn that into
     // "just now": the phrase belongs to the product, and translating it is a catalog entry.
     expect(
       selectRelativeTime(at(-500), at(0), { smallestUnit: 'minute' }),
@@ -136,7 +136,7 @@ describe('thresholds the consumer declares', () => {
   });
 
   it('leaves the absolute rendering to the consumer', () => {
-    // Atlas hands back the elapsed span and stops. Choosing the date format, the zone and the
+    // Equator hands back the elapsed span and stops. Choosing the date format, the zone and the
     // wording of the fallback is the product decision this whole mechanism exists to avoid making.
     const decision = selectRelativeTime(at(-8 * DAY), at(0), {
       absoluteAfterMilliseconds: 7 * DAY,
@@ -204,7 +204,7 @@ describe('the service call', () => {
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
         }),
       ],
     });

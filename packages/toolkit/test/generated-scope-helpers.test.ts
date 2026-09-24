@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  defineAtlasExtensionRegistry,
-  parseAtlasCatalog,
-  parseAtlasConfiguration,
-  type AtlasCatalog,
-  type AtlasExtensionRegistry,
-  type AtlasProjectConfiguration,
+  defineExtensionRegistry,
+  parseCatalog,
+  parseConfiguration,
+  type Catalog,
+  type ExtensionRegistry,
+  type ProjectConfiguration,
 } from '../src/index.js';
-import { generateAtlasContracts } from '../src/generated-contracts.js';
-import { analyzeAtlasCatalogSet } from '../src/semantic-model.js';
+import { generateContracts } from '../src/generated-contracts.js';
+import { analyzeCatalogSet } from '../src/semantic-model.js';
 
 /**
  * What this guards is that a generated scope module compiles under the options its consumer
@@ -22,13 +22,13 @@ import { analyzeAtlasCatalogSet } from '../src/semantic-model.js';
 
 const familyHelpers = [
   'GeneratedMessageFamily',
-  'defineAtlasMessageFamily',
-  'hasExactAtlasFamilySegments',
-  'isAtlasFamilySegment',
+  'defineMessageFamily',
+  'hasExactFamilySegments',
+  'isFamilySegment',
 ] as const;
 
-function configuration(): AtlasProjectConfiguration {
-  const parsed = parseAtlasConfiguration(
+function configuration(): ProjectConfiguration {
+  const parsed = parseConfiguration(
     JSON.stringify({
       schemaVersion: 1,
       sourceLocale: 'en-US',
@@ -40,8 +40,8 @@ function configuration(): AtlasProjectConfiguration {
   return parsed.value;
 }
 
-function registry(): AtlasExtensionRegistry {
-  const defined = defineAtlasExtensionRegistry([
+function registry(): ExtensionRegistry {
+  const defined = defineExtensionRegistry([
     {
       kind: 'identifier-segment',
       id: 'demo:state',
@@ -53,11 +53,8 @@ function registry(): AtlasExtensionRegistry {
   return defined.value;
 }
 
-function catalog(
-  body: string,
-  extensions?: AtlasExtensionRegistry,
-): AtlasCatalog {
-  const parsed = parseAtlasCatalog(body, {
+function catalog(body: string, extensions?: ExtensionRegistry): Catalog {
+  const parsed = parseCatalog(body, {
     role: 'source',
     providerId: '@example/scope-helpers',
     scopeId: 'shell',
@@ -69,17 +66,14 @@ function catalog(
   return parsed.value;
 }
 
-function scopeModule(
-  body: string,
-  extensions?: AtlasExtensionRegistry,
-): string {
-  const graph = analyzeAtlasCatalogSet({
+function scopeModule(body: string, extensions?: ExtensionRegistry): string {
+  const graph = analyzeCatalogSet({
     configuration: configuration(),
     catalogs: [catalog(body, extensions)],
     ...(extensions === undefined ? {} : { extensions }),
   });
   if (!graph.ok) throw new Error(JSON.stringify(graph.diagnostics));
-  const contracts = generateAtlasContracts(graph.value);
+  const contracts = generateContracts(graph.value);
   if (!contracts.ok) throw new Error(JSON.stringify(contracts.diagnostics));
   const file = contracts.value.find(({ path }) => path === 'shell.ts');
   if (file === undefined) throw new Error('no shell.ts was generated');
@@ -103,7 +97,7 @@ describe('a generated scope module for a scope with no message family', () => {
   it('carries the handle runtime it uses', () => {
     const contents = scopeModule(withoutFamilies);
 
-    expect(contents).toContain('function defineAtlasMessageHandle<');
+    expect(contents).toContain('function defineMessageHandle<');
     expect(contents).toContain('export const families = Object.freeze({});');
   });
 
@@ -129,6 +123,6 @@ describe('a generated scope module for a scope that declares one', () => {
         `${helper} is missing from a scope with a family`,
       ).toContain(helper);
     }
-    expect(contents).toContain('defineAtlasMessageFamily<"status"');
+    expect(contents).toContain('defineMessageFamily<"status"');
   });
 });

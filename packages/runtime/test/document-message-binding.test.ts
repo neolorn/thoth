@@ -21,7 +21,7 @@ import {
   GENERATED_ABI,
   LocalizationError,
   type PlainMessageHandle,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /** A generated handle, as a catalog compilation produces one. */
 const handle = (
@@ -33,7 +33,7 @@ const handle = (
     providerId: 'fixture',
     scopeId: 'shell',
     messageId,
-    identity: `atlas:fixture/shell/${messageId}`,
+    identity: `fixture/shell/${messageId}`,
     resultKind: 'plain' as const,
     inputNames: Object.freeze(inputNames),
     slotNames: Object.freeze([]),
@@ -51,11 +51,11 @@ describe('a document field that takes no values', () => {
 
 describe('a document field whose message takes a value', () => {
   it('carries the value when it is bound', () => {
-    const bound = documentMessage(takesAName, { name: 'Atlas' });
+    const bound = documentMessage(takesAName, { name: 'Equator' });
 
     expect(isBoundDocumentMessage(bound)).toBe(true);
     expect(bound.message).toBe(takesAName);
-    expect(bound.inputs).toEqual({ name: 'Atlas' });
+    expect(bound.inputs).toEqual({ name: 'Equator' });
   });
 
   it('is refused when it is declared bare', () => {
@@ -71,7 +71,7 @@ describe('a document field whose message takes a value', () => {
     const takesTwo = handle('document.greeting', ['name', 'section']);
 
     expect(() =>
-      refuseUnboundDocumentMessage(takesTwo, { name: 'Atlas' }),
+      refuseUnboundDocumentMessage(takesTwo, { name: 'Equator' }),
     ).toThrow(LocalizationError);
   });
 

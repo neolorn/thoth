@@ -32,7 +32,7 @@ import {
   type LocaleUrlPolicy,
   type PageOutcomeDeclaration,
   type RouteRuntimeProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 const CACHE = { successMaxAge: 600, permanentRedirectMaxAge: 86_400 } as const;
 
@@ -48,8 +48,8 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'atlas-route-projection/1',
-    identity: 'sha256-AtlasDeclaredPageOutcomeTestIdentity0123456',
+    profile: 'equator-route-projection/1',
+    identity: 'sha256-DeclaredPageOutcomeTestIdentity012345678901',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
       { id: 'route:second', path: 'second', parameterNames: [] },
@@ -63,7 +63,7 @@ const handlerWith = (render: LocaleRenderer) =>
     policy: POLICY,
     projection: PROJECTION,
     cache: CACHE,
-    cookie: { name: 'atlas-locale' },
+    cookie: { name: 'equator-locale' },
     render,
   });
 
@@ -84,7 +84,7 @@ const rendersPage: LocaleRenderer = ({ locale }) =>
   });
 
 const get = (handler: ReturnType<typeof handlerWith>, path: string) =>
-  handler(new Request(`https://atlas.example${path}`));
+  handler(new Request(`https://site.example${path}`));
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -92,7 +92,7 @@ afterEach(() => {
 
 describe('the channel a declaration travels over', () => {
   it('carries nothing until the handler has opened it', () => {
-    const request = new Request('https://atlas.example/en-us/second');
+    const request = new Request('https://site.example/en-us/second');
 
     // The distinction the whole diagnostic rests on. A render handed a request the handler is not
     // holding declares into nothing, and the response it produces is identical to the response of
@@ -102,7 +102,7 @@ describe('the channel a declaration travels over', () => {
   });
 
   it('carries a declaration made against the request the handler opened', () => {
-    const request = new Request('https://atlas.example/en-us/second');
+    const request = new Request('https://site.example/en-us/second');
     ɵopenPageOutcomeChannel(request);
 
     expect(ɵrememberPageOutcome(request, pageGone())).toBe(true);
@@ -110,7 +110,7 @@ describe('the channel a declaration travels over', () => {
   });
 
   it('gives the declaration to one read and closes', () => {
-    const request = new Request('https://atlas.example/en-us/second');
+    const request = new Request('https://site.example/en-us/second');
     ɵopenPageOutcomeChannel(request);
     ɵrememberPageOutcome(request, pageAbsent());
 
@@ -217,19 +217,19 @@ describe('the response a declared outcome produces', () => {
   });
 });
 
-describe('a declaration at an address Atlas did not serve', () => {
+describe('a declaration at an address Equator did not serve', () => {
   it('leaves the refusal standing and says so once', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const handler = handlerWith(pageDeclares(pageOperationalFailure(503)));
 
-    // `/en-us/missing` resolves to `not-found`, which is Atlas's own answer about the address.
-    // An application declaring maintenance does not know which addresses Atlas refused, so the
+    // `/en-us/missing` resolves to `not-found`, which is Equator's own answer about the address.
+    // An application declaring maintenance does not know which addresses Equator refused, so the
     // narrower rule holds and the refusal is what the reader gets.
     const first = await handler(
-      new Request('https://atlas.example/en-us/missing'),
+      new Request('https://site.example/en-us/missing'),
     );
     const second = await handler(
-      new Request('https://atlas.example/en-us/other'),
+      new Request('https://site.example/en-us/other'),
     );
 
     expect(first.status).toBe(404);

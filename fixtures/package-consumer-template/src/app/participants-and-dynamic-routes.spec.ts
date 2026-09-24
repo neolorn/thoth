@@ -11,8 +11,8 @@ import {
   type RouteParameterContext,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
-} from '@neolorn/atlas';
-import { ControllableLocalizationParticipant } from '@neolorn/atlas/testing';
+} from '@neolorn/equator';
+import { ControllableLocalizationParticipant } from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -25,7 +25,7 @@ import {
   type FeatureArticleSource,
   type FeatureArticleSourceOutcome,
 } from './dynamic-content';
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 import {
   articleSlugCodec,
   routePolicy,
@@ -40,7 +40,7 @@ function localization(): Localization {
       configuration,
       catalogSet,
       catalogLoaders,
-      extensions: atlasRuntimeExtensions,
+      extensions: runtimeExtensions,
     },
     bootstrapScopes: [scope],
   });
@@ -55,7 +55,7 @@ function ready(locale: 'en-US' | 'ar-EG'): LocalizationParticipantCommitReport {
       direction: locale === 'ar-EG' ? 'rtl' : 'ltr',
     }),
     identity: Object.freeze({
-      resourceId: 'article:atlas-handbook',
+      resourceId: 'article:handbook',
       representationId: locale === 'ar-EG' ? 'article-ar' : 'article-en',
       revision: 'r1',
       correlationId: `fixture:${locale}:r1`,
@@ -102,7 +102,7 @@ describe('participant contracts and transactions', () => {
         ({
           ...ready('en-US'),
           payload: {
-            title: 'This consumer payload must never enter Atlas state.',
+            title: 'This consumer payload must never enter Equator state.',
           },
         }) as unknown as LocalizationParticipantReport,
     });
@@ -221,7 +221,7 @@ describe('participant contracts and transactions', () => {
       Object.freeze({
         status: 'unavailable',
         outcome: 'localized-representation-unavailable',
-        identity: Object.freeze({ resourceId: 'article:atlas-handbook' }),
+        identity: Object.freeze({ resourceId: 'article:handbook' }),
       }),
     );
     await expect(failedSwitch).resolves.toMatchObject({
@@ -449,7 +449,7 @@ describe('participant contracts and transactions', () => {
 });
 
 describe('consumer custody and source neutrality', () => {
-  it('substitutes consumer sources without changing the Atlas participant contract', async () => {
+  it('substitutes consumer sources without changing the Equator participant contract', async () => {
     const outcomes: {
       readonly state: unknown;
       readonly sourceLabel: string | undefined;
@@ -610,27 +610,26 @@ describe('dynamic route equivalence and truthful SEO', () => {
       buildLocalizedRoute(routePolicy, appRouteProjection, 'article', 'en-US', {
         slug: FEATURE_ARTICLE_ID,
       }),
-    ).toBe('/en-us/articles/atlas-handbook');
+    ).toBe('/en-us/articles/handbook');
     expect(
       buildLocalizedRoute(routePolicy, appRouteProjection, 'article', 'ar-EG', {
         slug: FEATURE_ARTICLE_ID,
       }),
-    ).toBe('/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84-%D8%A3%D8%B7%D9%84%D8%B3');
+    ).toBe('/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84');
 
     expect(
       resolveLocalizedRoute(
-        '/ar-eg/articles/atlas-handbook',
+        '/ar-eg/articles/handbook',
         routePolicy,
         appRouteProjection,
       ),
     ).toMatchObject({
       status: 'redirect',
       reason: 'canonical-correction',
-      location:
-        '/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84-%D8%A3%D8%B7%D9%84%D8%B3',
+      location: '/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84',
     });
     const arabic = resolveLocalizedRoute(
-      '/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84-%D8%A3%D8%B7%D9%84%D8%B3',
+      '/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84',
       routePolicy,
       appRouteProjection,
     );
@@ -646,7 +645,7 @@ describe('dynamic route equivalence and truthful SEO', () => {
 
   it('projects locale-specific entity alternates and omits unavailable representations', () => {
     const english = resolveLocalizedRoute(
-      '/en-us/articles/atlas-handbook',
+      '/en-us/articles/handbook',
       routePolicy,
       appRouteProjection,
     );
@@ -658,18 +657,18 @@ describe('dynamic route equivalence and truthful SEO', () => {
         routePolicy,
         appRouteProjection,
         { ...configuration, locales: shippedLocales },
-        'https://atlas.example',
+        'https://site.example',
       ).alternates,
     ).toEqual([
       {
         locale: 'en-US',
         hreflang: 'en-US',
-        url: 'https://atlas.example/en-us/articles/atlas-handbook',
+        url: 'https://site.example/en-us/articles/handbook',
       },
       {
         locale: 'ar-EG',
         hreflang: 'ar-EG',
-        url: 'https://atlas.example/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84-%D8%A3%D8%B7%D9%84%D8%B3',
+        url: 'https://site.example/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84',
       },
     ]);
 
@@ -695,13 +694,13 @@ describe('dynamic route equivalence and truthful SEO', () => {
         routePolicy,
         englishOnly,
         { ...configuration, locales: shippedLocales },
-        'https://atlas.example',
+        'https://site.example',
       ).alternates,
     ).toEqual([
       {
         locale: 'en-US',
         hreflang: 'en-US',
-        url: 'https://atlas.example/en-us/articles/atlas-handbook',
+        url: 'https://site.example/en-us/articles/handbook',
       },
     ]);
   });

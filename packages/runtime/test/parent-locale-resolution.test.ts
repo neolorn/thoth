@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
-import { atlasShippedFallbackChain } from '../../toolkit/src/locales.js';
+import { shippedFallbackChain } from '../../toolkit/src/locales.js';
 import type { CompiledCatalog } from '../src/catalog-runtime.js';
 import {
   catalogConsultationOrder,
   findEvaluationCandidate,
 } from '../src/evaluator.js';
-import { LocalizationError, type MessageHandle } from '@neolorn/atlas/core';
+import { LocalizationError, type MessageHandle } from '@neolorn/equator/core';
 
 /**
  * The runtime half of the parent-locale chain: which catalog answers, and in what order.
  *
- * The chains here are not written out. `atlasShippedFallbackChain` is the toolkit function the
+ * The chains here are not written out. `shippedFallbackChain` is the toolkit function the
  * build calls, so what these cases consult is what a real generated configuration would carry for
  * the same locale set. That matters more than it looks: the two halves of this feature live in
  * different packages, and a runtime case fed a hand-written chain proves the runtime walks a list
@@ -36,9 +36,9 @@ function catalogFor(
     outputParts: 8,
   };
   return {
-    profile: 'atlas-compiled-ir/1',
-    generatedAbi: 'atlas-generated/1',
-    standardsProfile: 'atlas-1',
+    profile: 'equator-compiled-ir/1',
+    generatedAbi: 'equator-generated/1',
+    standardsProfile: 'equator-1',
     key: { providerId: 'home', scopeId: 'shell', catalogLocale: locale },
     applicationContractFingerprint: 'test',
     semanticRegistryFingerprint: 'test',
@@ -64,7 +64,7 @@ function catalogFor(
 
 function handleFor(messageId: string): MessageHandle {
   return {
-    generatedAbi: 'atlas-generated/1',
+    generatedAbi: 'equator-generated/1',
     providerId: 'home',
     scopeId: 'shell',
     messageId,
@@ -96,7 +96,7 @@ function project(options: {
   return (targetLocale: string) => {
     const order = catalogConsultationOrder(
       targetLocale,
-      atlasShippedFallbackChain(targetLocale, shipped, options.parentLocales),
+      shippedFallbackChain(targetLocale, shipped, options.parentLocales),
       options.sourceLocale,
       (locale) => byLocale.has(locale),
     );
@@ -172,7 +172,7 @@ describe('a locale whose parent changes the language', () => {
   });
 
   it('follows CLDR across the language boundary', () => {
-    // `hi-Latn` inherits from `en-IN`. Excluding cross-language parents would be Atlas overriding
+    // `hi-Latn` inherits from `en-IN`. Excluding cross-language parents would be Equator overriding
     // pinned data on taste, so they are followed and named in the README.
     const candidate = indian('hi-Latn').resolve('nav.help');
     expect(candidate.catalog.key.catalogLocale).toBe('en-IN');

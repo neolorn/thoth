@@ -1,6 +1,6 @@
 # Releasing
 
-This document describes how a release of `@neolorn/atlas` and `@neolorn/atlas-toolkit` is produced. The two packages share one version and are released together.
+This document describes how a release of `@neolorn/equator` and `@neolorn/equator-toolkit` is produced. The two packages share one version and are released together.
 
 ## Versioning
 
@@ -43,8 +43,8 @@ The commands below are written for version `0.0.0`, which this project cannot pr
 6. **Publish the verified archives.** Publish the archives the suite produced rather than repacking:
 
    ```sh
-   npm publish release/runtime/0.0.0/neolorn-atlas-0.0.0.tgz
-   npm publish release/toolkit/0.0.0/neolorn-atlas-toolkit-0.0.0.tgz
+   npm publish release/runtime/0.0.0/neolorn-equator-0.0.0.tgz
+   npm publish release/toolkit/0.0.0/neolorn-equator-toolkit-0.0.0.tgz
    ```
 
    For a prerelease, add `--tag next`. The registry is set by `publishConfig` in each manifest. Publish both packages in the same session.
@@ -66,6 +66,6 @@ The commands below are written for version `0.0.0`, which this project cannot pr
 A published version is never modified or republished. If a release must be withdrawn, deprecate it on the registry with a message pointing to the version that replaces it:
 
 ```sh
-npm deprecate @neolorn/atlas@0.0.0 "Use 0.0.1"
-npm deprecate @neolorn/atlas-toolkit@0.0.0 "Use 0.0.1"
+npm deprecate @neolorn/equator@0.0.0 "Use 0.0.1"
+npm deprecate @neolorn/equator-toolkit@0.0.0 "Use 0.0.1"
 ```

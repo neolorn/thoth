@@ -33,7 +33,7 @@ import {
   type RouteParameterCodec,
   type RouteParameterContext,
   type RouteRuntimeProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /**
  * The policy declares intent; the build decides what exists.
@@ -43,7 +43,7 @@ import {
  * configuration, and that varies: a development locale exists only in a build that asked for it,
  * and an ordinary locale exists only once someone has configured it.
  *
- * Atlas turns the policy into published addresses in four places: the server route table, where
+ * Equator turns the policy into published addresses in four places: the server route table, where
  * each address becomes a prerendered file or a server route; the SEO projection, where each becomes
  * an `hreflang` claim that the same page exists in another language; route resolution, which
  * decides whether an address arriving at the server means anything; and the client route table.
@@ -73,8 +73,8 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'atlas-route-projection/1',
-    identity: 'sha256-AtlasBuiltLocaleAddressesTestIdentity012345',
+    profile: 'equator-route-projection/1',
+    identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
       { id: 'route:second', path: 'second', parameterNames: [] },
@@ -93,7 +93,7 @@ const PROJECTION: RouteRuntimeProjection = {
  */
 function configurationFor(locales: readonly string[]): GeneratedConfiguration {
   return {
-    generatedAbi: 'atlas-generated/1',
+    generatedAbi: 'equator-generated/1',
     sourceLocale: 'en-US',
     defaultLocale: 'en-US',
     locales,
@@ -155,7 +155,7 @@ describe('the addresses a build publishes', () => {
         POLICY,
         PROJECTION,
         configuration,
-        'https://atlas.example',
+        'https://site.example',
       ).alternates.map(({ locale }) => locale);
 
     // An `hreflang` is a public claim that this page exists in another language. Made for a locale
@@ -183,16 +183,16 @@ describe('the addresses a build publishes', () => {
         POLICY,
         PROJECTION,
         WITH_GERMAN,
-        'https://atlas.example',
+        'https://site.example',
       );
-      // Fed the cluster Atlas actually projects, not an alternates array written in this file,
+      // Fed the cluster Equator actually projects, not an alternates array written in this file,
       // and that cluster does contain this page's own locale, which is the thing being excluded.
       expect(seo.alternates.map(({ hreflang }) => hreflang)).toContain(locale);
       return openGraphAlternates(locale, seo.alternates);
     };
 
     expect(social('/en-us/second', 'en-US')).toEqual(['ar_EG', 'de_DE']);
-    // Percent-encoded, because the raw form is not this address's canonical spelling: Atlas
+    // Percent-encoded, because the raw form is not this address's canonical spelling: Equator
     // answers it with a 308 to the encoded one, which is a `redirect` and carries no SEO
     // projection at all.
     expect(social(`/ar-eg/${encodeURIComponent('الثاني')}`, 'ar-EG')).toEqual([
@@ -230,7 +230,7 @@ describe('the policy a build can actually serve', () => {
     expect(outcome(POLICY, '/de/zweite')).toBe('success');
 
     // Narrowed, the segment is a locale identity this application does not serve, which is the
-    // answer Atlas already had for one and is a 404 rather than a redirect home. A bookmark to a
+    // answer Equator already had for one and is a 404 rather than a redirect home. A bookmark to a
     // page that genuinely no longer exists should say so; sending it to the home page in another
     // language claims the content moved.
     expect(outcome(SHIPPED_POLICY, '/de/zweite')).toBe('unsupported-locale');
@@ -287,7 +287,7 @@ describe('the policy a build can actually serve', () => {
 });
 
 /**
- * The one registration Atlas cannot check, derived so it does not have to be maintained.
+ * The one registration Equator cannot check, derived so it does not have to be maintained.
  *
  * `@angular/ssr` refuses an unrecognised `Host` with `400` before the application runs, so a
  * host policy has to tell the server the same domains it told the policy. A build cannot reach
@@ -364,23 +364,23 @@ describe('the addresses a page may be advertised at', () => {
   const SLUG: RouteParameterCodec<string> = Object.freeze({
     parse: (slug: string) =>
       Object.freeze(
-        slug === 'atlas-handbook' || slug === 'دليل-أطلس'
-          ? { ok: true, value: 'atlas-handbook' }
+        slug === 'handbook' || slug === 'دليل'
+          ? { ok: true, value: 'handbook' }
           : { ok: false },
       ),
     serialize: (entityId: string, context?: RouteParameterContext) =>
-      entityId !== 'atlas-handbook'
+      entityId !== 'handbook'
         ? undefined
         : context?.locale === 'ar-EG'
-          ? 'دليل-أطلس'
-          : 'atlas-handbook',
+          ? 'دليل'
+          : 'handbook',
   });
 
   /** Three routes that differ only in how much of the locale their address carries. */
   const SHAPES = defineRouteProjection({
     generated: Object.freeze({
-      profile: 'atlas-route-projection/1',
-      identity: 'sha256-AtlasAddressSelectsLocaleTestIdentity012345',
+      profile: 'equator-route-projection/1',
+      identity: 'sha256-AddressSelectsLocaleTestIdentity01234567890',
       routes: Object.freeze([
         Object.freeze({
           id: 'alike',
@@ -426,9 +426,9 @@ describe('the addresses a page may be advertised at', () => {
   const HOSTED = createHostLocalePolicy({
     defaultLocale: 'en-US',
     origins: {
-      'en-US': 'https://atlas.example',
-      'ar-EG': 'https://ar.atlas.example',
-      'de-DE': 'https://de.atlas.example',
+      'en-US': 'https://site.example',
+      'ar-EG': 'https://ar.site.example',
+      'de-DE': 'https://de.site.example',
     },
   });
 
@@ -455,7 +455,7 @@ describe('the addresses a page may be advertised at', () => {
       policy,
       SHAPES,
       WITH_GERMAN,
-      'https://atlas.example',
+      'https://site.example',
     ).alternates.map(({ locale }) => locale);
   };
 
@@ -474,18 +474,18 @@ describe('the addresses a page may be advertised at', () => {
 
   it('drops an address that answers a redirect rather than the page', () => {
     const arabic = buildLocalizedRoute(NEUTRAL, SHAPES, 'article', 'ar-EG', {
-      slug: 'atlas-handbook',
+      slug: 'handbook',
     });
     // Measured rather than assumed, because the whole entry turns on it: the Arabic spelling is a
     // real, unique URL that a filter counting duplicates keeps, and it is a 308 to the English one.
     expect(resolveLocalizedRoute(arabic, NEUTRAL, SHAPES)).toMatchObject({
       status: 'redirect',
       httpStatus: 308,
-      location: from(NEUTRAL, 'article', { slug: 'atlas-handbook' }),
+      location: from(NEUTRAL, 'article', { slug: 'handbook' }),
     });
     expect(addressSelectsLocale(arabic, 'ar-EG', NEUTRAL, SHAPES)).toBe(false);
 
-    expect(hreflangs(NEUTRAL, 'article', { slug: 'atlas-handbook' })).toEqual([
+    expect(hreflangs(NEUTRAL, 'article', { slug: 'handbook' })).toEqual([
       'en-US',
     ]);
   });
@@ -495,7 +495,7 @@ describe('the addresses a page may be advertised at', () => {
     // absences above become presences, so neither is a function that returns a short list.
     expect(hreflangs(PREFIXED, 'alike')).toEqual(LOCALES);
     expect(hreflangs(PREFIXED, 'spelled')).toEqual(LOCALES);
-    expect(hreflangs(PREFIXED, 'article', { slug: 'atlas-handbook' })).toEqual(
+    expect(hreflangs(PREFIXED, 'article', { slug: 'handbook' })).toEqual(
       LOCALES,
     );
   });
@@ -505,9 +505,7 @@ describe('the addresses a page may be advertised at', () => {
     // pattern: these addresses are cross-origin, and the resolver reads the locale off the origin.
     expect(hreflangs(HOSTED, 'alike')).toEqual(LOCALES);
     expect(hreflangs(HOSTED, 'spelled')).toEqual(LOCALES);
-    expect(hreflangs(HOSTED, 'article', { slug: 'atlas-handbook' })).toEqual(
-      LOCALES,
-    );
+    expect(hreflangs(HOSTED, 'article', { slug: 'handbook' })).toEqual(LOCALES);
   });
 });
 
@@ -519,7 +517,7 @@ describe('the addresses a page may be advertised at', () => {
  * direction of the same fact: a canonical or `hreflang` URL is the origin, the mount point, and the
  * address the policy spells from the application's own root. Leave the middle one out and the head
  * advertises `https://example.com/ar-eg/second`, not this page, and possibly not this
- * application, since whatever else the site serves at that path is not something Atlas placed.
+ * application, since whatever else the site serves at that path is not something Equator placed.
  *
  * **The three policy kinds are here because the two shapes of address are.** Under `path-prefix`
  * and `locale-neutral` an address is a path, and the origin comes from the configured one. Under
@@ -534,8 +532,8 @@ describe('the addresses a page may be advertised at', () => {
 describe('the head of a page served under a sub-path', () => {
   const SIMPLE = defineRouteProjection({
     generated: Object.freeze({
-      profile: 'atlas-route-projection/1',
-      identity: 'sha256-AtlasMountedHeadProjectionTestIdentity01234',
+      profile: 'equator-route-projection/1',
+      identity: 'sha256-MountedHeadProjectionTestIdentity0123456789',
       routes: Object.freeze([
         Object.freeze({
           id: 'second',
@@ -558,8 +556,8 @@ describe('the head of a page served under a sub-path', () => {
   const HOSTS = createHostLocalePolicy({
     defaultLocale: 'en-US',
     origins: {
-      'en-US': 'https://atlas.example',
-      'ar-EG': 'https://ar.atlas.example',
+      'en-US': 'https://site.example',
+      'ar-EG': 'https://ar.site.example',
     },
   });
 
@@ -575,7 +573,7 @@ describe('the head of a page served under a sub-path', () => {
       policy,
       SIMPLE,
       BUILT,
-      'https://atlas.example',
+      'https://site.example',
       undefined,
       undefined,
       baseHref,
@@ -585,15 +583,15 @@ describe('the head of a page served under a sub-path', () => {
   it('puts the mount point between the origin and the address', () => {
     const seo = head(PREFIX, '/app');
 
-    expect(seo.canonical).toBe('https://atlas.example/app/ar-eg/second');
+    expect(seo.canonical).toBe('https://site.example/app/ar-eg/second');
     expect(seo.alternates.map(({ url }) => url)).toEqual([
-      'https://atlas.example/app/en-us/second',
-      'https://atlas.example/app/ar-eg/second',
+      'https://site.example/app/en-us/second',
+      'https://site.example/app/ar-eg/second',
     ]);
     // The fallback a crawler is sent to when no alternate fits is an address in this application
     // like any other, so it is mounted like any other. Advertising `/` here would point at the
     // site's root, which under a sub-path deployment is not this application at all.
-    expect(seo.xDefault).toBe('https://atlas.example/app/');
+    expect(seo.xDefault).toBe('https://site.example/app/');
   });
 
   it('leaves the same page alone when it is mounted at the root', () => {
@@ -601,12 +599,12 @@ describe('the head of a page served under a sub-path', () => {
     // `<base href>` and no `APP_BASE_HREF` resolves to, which is nearly every application.
     const seo = head(PREFIX, '');
 
-    expect(seo.canonical).toBe('https://atlas.example/ar-eg/second');
+    expect(seo.canonical).toBe('https://site.example/ar-eg/second');
     expect(seo.alternates.map(({ url }) => url)).toEqual([
-      'https://atlas.example/en-us/second',
-      'https://atlas.example/ar-eg/second',
+      'https://site.example/en-us/second',
+      'https://site.example/ar-eg/second',
     ]);
-    expect(seo.xDefault).toBe('https://atlas.example/');
+    expect(seo.xDefault).toBe('https://site.example/');
   });
 
   it('reads a mount point in every spelling a base href arrives in', () => {
@@ -617,17 +615,17 @@ describe('the head of a page served under a sub-path', () => {
     for (const spelling of [
       '/app',
       '/app/',
-      'https://atlas.example/app/',
+      'https://site.example/app/',
       '/app/index.html',
     ]) {
       expect(head(PREFIX, spelling).canonical).toBe(
-        'https://atlas.example/app/ar-eg/second',
+        'https://site.example/app/ar-eg/second',
       );
     }
     // And three spellings of no mount point at all, which must not become one.
-    for (const spelling of ['', '/', 'https://atlas.example']) {
+    for (const spelling of ['', '/', 'https://site.example']) {
       expect(head(PREFIX, spelling).canonical).toBe(
-        'https://atlas.example/ar-eg/second',
+        'https://site.example/ar-eg/second',
       );
     }
   });
@@ -639,10 +637,10 @@ describe('the head of a page served under a sub-path', () => {
     // domain.
     const seo = head(HOSTS, '/app');
 
-    expect(seo.canonical).toBe('https://ar.atlas.example/app/second');
+    expect(seo.canonical).toBe('https://ar.site.example/app/second');
     expect(seo.alternates.map(({ url }) => url)).toEqual([
-      'https://atlas.example/app/second',
-      'https://ar.atlas.example/app/second',
+      'https://site.example/app/second',
+      'https://ar.site.example/app/second',
     ]);
   });
 });

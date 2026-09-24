@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import type {
-  AtlasPatternMessageSemanticModel,
-  AtlasSelectMessageSemanticModel,
+  PatternMessageSemanticModel,
+  SelectMessageSemanticModel,
 } from '../../toolkit/src/message-format.js';
 import type { CompiledInputContract } from '../src/catalog-runtime.js';
 import { COUNT, parse, render, renderSemantics } from './message-harness.js';
@@ -104,11 +104,11 @@ describe('MF2 Compare Variants', () => {
     // an NFD key authored in a catalog reaches the runtime already in NFC. That is why this case
     // is built by rewriting one key of a real parse rather than by writing NFD in the source.
     //
-    // What normalizes it is `messageformat`'s parser, not Atlas. `normalizeVariantKey` in
+    // What normalizes it is `messageformat`'s parser, not Equator. `normalizeVariantKey` in
     // `packages/toolkit/src/message-format.ts` copies a key's value through untouched: it
-    // normalizes the *shape* into Atlas's semantic model, not the string into NFC. Naming the
-    // toolkit here would put Atlas's name on a third-party parser's behaviour, and the day that
-    // behaviour changed the sentence would still read as though Atlas guaranteed it.
+    // normalizes the *shape* into Equator's semantic model, not the string into NFC. Naming the
+    // toolkit here would put Equator's name on a third-party parser's behaviour, and the day that
+    // behaviour changed the sentence would still read as though Equator guaranteed it.
     // `packages/toolkit/test/message-format.test.ts` pins the parser so the change is a failing
     // test rather than a silent one.
     //
@@ -127,8 +127,8 @@ describe('MF2 Compare Variants', () => {
         `${nfcKey} {{matched}}`,
         '* {{catch-all}}',
       ].join('\n'),
-    ) as AtlasSelectMessageSemanticModel;
-    const denormalized: AtlasSelectMessageSemanticModel = {
+    ) as SelectMessageSemanticModel;
+    const denormalized: SelectMessageSemanticModel = {
       ...parsed,
       variants: parsed.variants.map((variant) => ({
         ...variant,
@@ -150,14 +150,14 @@ describe('MF2 Compare Variants', () => {
 /**
  * A `.match` whose selector was produced by a function that formats but does not select.
  *
- * MessageFormat requires a *Bad Selector* here. Atlas reported nothing, and worse than nothing:
+ * MessageFormat requires a *Bad Selector* here. Equator reported nothing, and worse than nothing:
  * one factory builds the resolved value for all six numeric functions, so `:currency` and `:unit`
  * inherited numeric selection and matched keyed variants the standard says are unreachable.
  * `.match {42 :currency currency=EUR} 42 {{keyed}} * {{other}}` chose `keyed`. `:date` was quieter
  * and no better: its `match` returned false for every key, which is the visible half of the rule
  * with the reported half missing, so the author was never told the keyed variants were dead.
  *
- * The toolkit refuses such a message at parse (ATL1206), so no catalog can carry one here and the
+ * The toolkit refuses such a message at parse (EQ1206), so no catalog can carry one here and the
  * sources below do not parse whole. The runtime keeps the rule anyway, because its input is a
  * compiled artifact and it has no way to know what produced one. The same reason and the same
  * construction as the NFD key above and the inherited `select` in `declaration-values.test.ts`:
@@ -170,7 +170,7 @@ describe('a selector that cannot select', () => {
   const spliceSelector = (
     annotation: string,
     key: string,
-  ): AtlasSelectMessageSemanticModel => {
+  ): SelectMessageSemanticModel => {
     const selecting = parse(
       [
         `.local $v = {42 :number}`,
@@ -178,10 +178,10 @@ describe('a selector that cannot select', () => {
         `${key} {{keyed}}`,
         '* {{other}}',
       ].join('\n'),
-    ) as AtlasSelectMessageSemanticModel;
+    ) as SelectMessageSemanticModel;
     const formatting = parse(
       [`.local $v = {${annotation}}`, '{{{$v}}}'].join('\n'),
-    ) as AtlasPatternMessageSemanticModel;
+    ) as PatternMessageSemanticModel;
     return { ...selecting, declarations: formatting.declarations };
   };
 
@@ -209,7 +209,7 @@ describe('a selector that cannot select', () => {
         '42 {{keyed}}',
         '* {{other}}',
       ].join('\n'),
-    ) as AtlasSelectMessageSemanticModel;
+    ) as SelectMessageSemanticModel;
     const spliced = spliceSelector('42 :number', '42');
     expect(renderSemantics(selecting, NONE, {})).toBe('keyed');
     expect(renderSemantics(spliced, NONE, {})).toBe('keyed');

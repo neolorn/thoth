@@ -24,16 +24,16 @@ repository develops on:
 | `@angular/compiler` | `>=22.0.0 <23.0.0` (build time) |
 | `typescript`        | `>=6.0.2 <6.1.0` (build time)   |
 
-Angular is a peer, not a dependency, so the copy that compiles your application is the copy Atlas
-compiles against. There is never a second Angular in your tree because of Atlas.
+Angular is a peer, not a dependency, so the copy that compiles your application is the copy Equator
+compiles against. There is never a second Angular in your tree because of Equator.
 
 ## Peers you install only if you use them
 
-`@angular/forms` at `>=22.0.0 <23.0.0`, needed if you import from `@neolorn/atlas/forms`.
+`@angular/forms` at `>=22.0.0 <23.0.0`, needed if you import from `@neolorn/equator/forms`.
 
-`@angular/router` at `>=22.0.0 <23.0.0`, needed if you import from `@neolorn/atlas/router`.
+`@angular/router` at `>=22.0.0 <23.0.0`, needed if you import from `@neolorn/equator/router`.
 
-`@angular/ssr` at `>=22.0.0 <23.0.0`, needed if you import from `@neolorn/atlas/ssr`.
+`@angular/ssr` at `>=22.0.0 <23.0.0`, needed if you import from `@neolorn/equator/ssr`.
 
 Leave one out and the entry point that needs it is the only thing you cannot import. A
 browser-only application installs none of the three.
@@ -42,7 +42,7 @@ browser-only application installs none of the three.
 
 | Row                             | Angular                     | TypeScript | RxJS    |
 | ------------------------------- | --------------------------- | ---------- | ------- |
-| Atlas development row           | `22.1.3` (tooling `22.1.7`) | `6.0.3`    | `7.8.2` |
+| Equator development row         | `22.1.3` (tooling `22.1.7`) | `6.0.3`    | `7.8.2` |
 | Angular patch compatibility row | `22.0.4`                    | `6.0.3`    | `7.8.2` |
 | Demanding compiler options      | `22.1.3` (tooling `22.1.7`) | `6.0.3`    | `7.8.2` |
 | Lowest supported versions       | `22.0.0`                    | `6.0.2`    | `7.4.0` |
@@ -57,7 +57,7 @@ unwatched.
 
 ## Browsers
 
-Atlas targets what your Angular build targets. It adds no browser requirement of its own beyond
+Equator targets what your Angular build targets. It adds no browser requirement of its own beyond
 `Intl`, which every browser Angular supports has had for years.
 
 What varies between browsers is the data behind `Intl`. Two browsers can format the same date
@@ -67,6 +67,6 @@ rather than on the exact string, which is
 
 ## When a version outside the range is installed
 
-The toolkit checks the host before the compiler does anything and refuses with `ATL1806` rather
+The toolkit checks the host before the compiler does anything and refuses with `EQ1806` rather
 than attempting a best effort. A refusal names what it found and what it wanted, so the fix is
 the install rather than a bisect.

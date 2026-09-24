@@ -8,7 +8,7 @@ import {
   routeHttpDescriptor,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 const CACHE = { successMaxAge: 600, permanentRedirectMaxAge: 86_400 } as const;
 
@@ -24,8 +24,8 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'atlas-route-projection/1',
-    identity: 'sha256-AtlasBuiltLocaleAddressesTestIdentity012345',
+    profile: 'equator-route-projection/1',
+    identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
       { id: 'route:second', path: 'second', parameterNames: [] },
@@ -39,7 +39,7 @@ const handlerFor = (policy: LocaleUrlPolicy = POLICY) =>
     policy,
     projection: PROJECTION,
     cache: CACHE,
-    cookie: { name: 'atlas-locale' },
+    cookie: { name: 'equator-locale' },
     render: ({ locale }) =>
       new Response(`<!doctype html><html lang="${locale}"></html>`, {
         headers: { 'content-type': 'text/html' },
@@ -51,7 +51,7 @@ const get = (
   headers: Record<string, string> = {},
   policy?: LocaleUrlPolicy,
 ) =>
-  handlerFor(policy)(new Request(`https://atlas.example${path}`, { headers }));
+  handlerFor(policy)(new Request(`https://site.example${path}`, { headers }));
 
 /**
  * 4.13's handler half: a prerendered address whose segments are not ASCII.
@@ -64,7 +64,7 @@ const get = (
  * `specs/07-routing-rendering-and-seo.spec.md` and is unchanged by that: a static file server or
  * a content network has no
  * engine in front of it and still has to map the decoded path itself. This is the other half of the
- * item, which is what Atlas's own handler does when it is the host, and it decoded before the
+ * item, which is what Equator's own handler does when it is the host, and it decoded before the
  * lookup on the day it was written, which is why nothing here moves with the version.
  *
  * The addresses here are built with `encodeURIComponent` rather than written out encoded, so the
@@ -75,8 +75,8 @@ describe('a localized address whose segments are not ASCII', () => {
   const ARABIC = '\u0627\u0644\u062b\u0627\u0646\u064a';
   const NON_ASCII: RouteRuntimeProjection = {
     generated: {
-      profile: 'atlas-route-projection/1',
-      identity: 'sha256-AtlasBuiltLocaleAddressesTestIdentity012345',
+      profile: 'equator-route-projection/1',
+      identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
       routes: [
         { id: 'route:_index', path: '', parameterNames: [] },
         { id: 'route:second', path: 'second', parameterNames: [] },
@@ -89,7 +89,7 @@ describe('a localized address whose segments are not ASCII', () => {
     policy: POLICY,
     projection: NON_ASCII,
     cache: CACHE,
-    cookie: { name: 'atlas-locale' },
+    cookie: { name: 'equator-locale' },
     render: ({ locale, resolution }) =>
       new Response(
         `<!doctype html><html lang="${locale}" data-path="${resolution.status === 'success' ? resolution.canonicalPath : ''}"></html>`,
@@ -98,7 +98,7 @@ describe('a localized address whose segments are not ASCII', () => {
   });
 
   const fetchPath = (path: string) =>
-    handler(new Request(`https://atlas.example${path}`));
+    handler(new Request(`https://site.example${path}`));
 
   it('serves the encoded form, which is the only form a request can carry', async () => {
     const response = await fetchPath(`/ar-eg/${encodeURIComponent(ARABIC)}`);
@@ -108,7 +108,7 @@ describe('a localized address whose segments are not ASCII', () => {
   });
 
   it('does not mistake a non-ASCII segment for something to decline', async () => {
-    // The bypass is what would swallow this silently: an address Atlas declines never reaches the
+    // The bypass is what would swallow this silently: an address Equator declines never reaches the
     // renderer, and with no passthrough configured it answers 404, which is indistinguishable
     // from "no such page" unless it is asserted separately from the status above.
     const response = await fetchPath(`/ar-eg/${encodeURIComponent(ARABIC)}`);
@@ -130,7 +130,7 @@ describe('a localized address whose segments are not ASCII', () => {
    */
   it('cannot be reached in its decoded spelling, because a URL encodes it first', async () => {
     const response = await fetchPath(`/ar-eg/${ARABIC}`);
-    expect(new URL(`https://atlas.example/ar-eg/${ARABIC}`).pathname).toBe(
+    expect(new URL(`https://site.example/ar-eg/${ARABIC}`).pathname).toBe(
       `/ar-eg/${encodeURIComponent(ARABIC)}`,
     );
     expect(response.status).toBe(200);
@@ -150,7 +150,7 @@ describe('a localized address whose segments are not ASCII', () => {
  *
  * An application that hand-writes `routePolicy.localeNeutralRoots.includes(firstSegment)` plus a
  * dot-sniff has written the rule a second time, and every such copy is a different third way.
- * Atlas already holds the roots, so the handler consults them, which means adding a root to the
+ * Equator already holds the roots, so the handler consults them, which means adding a root to the
  * policy moves the bypass with it. A bypass that agrees with the policy only because both were
  * typed the same way agrees until one of them is edited.
  */
@@ -212,7 +212,7 @@ describe('where the handler gets its answers', () => {
         path,
         preference === undefined
           ? {}
-          : { cookie: `atlas-locale=${preference}` },
+          : { cookie: `equator-locale=${preference}` },
       );
 
       const resolution = resolveLocalizedRoute(
@@ -301,7 +301,7 @@ describe('the fact the handler derives and the descriptor is told', () => {
     });
 
     const response = await negotiating(
-      new Request('https://atlas.example/second', {
+      new Request('https://site.example/second', {
         headers: { 'accept-language': 'ar-EG,en;q=0.8' },
       }),
     );
@@ -321,7 +321,7 @@ describe('the fact the handler derives and the descriptor is told', () => {
  * `hasBody` reads "not a redirect", and a malformed target is not a redirect, so the one outcome
  * the entry point documents as never reaching a renderer was the one reaching it. The status was
  * right either way, because it comes from the descriptor; what was wrong is that an application was
- * asked to render a page for an address Atlas had already refused, with a resolution carrying no
+ * asked to render a page for an address Equator had already refused, with a resolution carrying no
  * presentation of its own.
  *
  * These are the unsafe shapes a URL keeps. The ones it rewrites are checked through the adapter in
@@ -339,7 +339,7 @@ describe('a malformed target', () => {
         policy: POLICY,
         projection: PROJECTION,
         cache: CACHE,
-        cookie: { name: 'atlas-locale' },
+        cookie: { name: 'equator-locale' },
         render: () => {
           renders += 1;
           return new Response('<!doctype html>');
@@ -347,7 +347,7 @@ describe('a malformed target', () => {
       });
 
       const response = await handler(
-        new Request(`https://atlas.example${target}`),
+        new Request(`https://site.example${target}`),
       );
       seen.push({ target, status: response.status, renders });
     }
@@ -362,12 +362,12 @@ describe('a malformed target', () => {
       policy: POLICY,
       projection: PROJECTION,
       cache: CACHE,
-      cookie: { name: 'atlas-locale' },
+      cookie: { name: 'equator-locale' },
       render: () => new Response('<!doctype html>'),
     });
 
     const response = await handler(
-      new Request('https://atlas.example/en-us/%zz'),
+      new Request('https://site.example/en-us/%zz'),
     );
 
     expect(await response.text()).toBe('');

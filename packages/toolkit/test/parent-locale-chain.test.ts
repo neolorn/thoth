@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  parseAtlasCatalog,
-  parseAtlasConfiguration,
-  type AtlasSemanticGraph,
+  parseCatalog,
+  parseConfiguration,
+  type SemanticGraph,
 } from '../src/index.js';
-import { generateAtlasContracts } from '../src/generated-contracts.js';
-import { analyzeAtlasCatalogSet } from '../src/semantic-model.js';
-import { atlasLocaleFallbackChain } from '../src/locales.js';
-import { ATLAS_PARENT_LOCALES } from '../src/parent-locales.generated.js';
+import { generateContracts } from '../src/generated-contracts.js';
+import { analyzeCatalogSet } from '../src/semantic-model.js';
+import { localeFallbackChain } from '../src/locales.js';
+import { PARENT_LOCALES } from '../src/parent-locales.generated.js';
 import { testProjectConfiguration } from './fixtures.js';
 
 /**
@@ -17,8 +17,8 @@ import { testProjectConfiguration } from './fixtures.js';
  * Until this existed a target catalog that omitted a message was answered by the source locale and
  * by nothing in between, so an application shipping `en`, `en-AU` and `en-GB` either wrote every
  * string three times or served the source language for the ones it did not. CLDR has said which
- * locale each locale inherits from for as long as there has been a CLDR, and Atlas was not reading
- * it.
+ * locale each locale inherits from for as long as there has been a CLDR, and Equator was not
+ * reading it.
  *
  * ## What the chain is
  *
@@ -37,7 +37,7 @@ import { testProjectConfiguration } from './fixtures.js';
  */
 
 const chainOf = (locale: string, overrides?: Record<string, string>) =>
-  atlasLocaleFallbackChain(locale, overrides);
+  localeFallbackChain(locale, overrides);
 
 describe('the chain CLDR declares', () => {
   it('walks to its end rather than stopping at one hop', () => {
@@ -67,7 +67,7 @@ describe('the chain CLDR declares', () => {
   });
 
   it('leaves every locale that inherits from root behaving as it always did', () => {
-    const rootParented = Object.entries(ATLAS_PARENT_LOCALES)
+    const rootParented = Object.entries(PARENT_LOCALES)
       .filter(([, parent]) => parent === 'und')
       .map(([locale]) => locale);
     // The count is asserted so a CLDR release that stopped applying the rule is read here rather
@@ -77,14 +77,14 @@ describe('the chain CLDR declares', () => {
   });
 
   it('follows the four parents that change the language', () => {
-    // Leaving these out would be Atlas overriding pinned data on taste. They are named in the
+    // Leaving these out would be Equator overriding pinned data on taste. They are named in the
     // README's fallback section so nobody meets them by surprise, and the per-locale declaration
     // is where a project that disagrees says so.
     expect(chainOf('hi-Latn')).toEqual(['en-IN', 'en-001', 'en']);
     expect(chainOf('ht')).toEqual(['fr-HT', 'fr']);
     expect(chainOf('nb')).toEqual(['no']);
     expect(chainOf('nn')).toEqual(['no']);
-    const crossLanguage = Object.entries(ATLAS_PARENT_LOCALES)
+    const crossLanguage = Object.entries(PARENT_LOCALES)
       .filter(
         ([locale, parent]) =>
           parent !== 'und' && locale.split('-')[0] !== parent.split('-')[0],
@@ -119,7 +119,7 @@ describe('a project that declares a parent of its own', () => {
 });
 
 const configuration = (extra: Readonly<Record<string, unknown>>) =>
-  parseAtlasConfiguration(
+  parseConfiguration(
     JSON.stringify({
       schemaVersion: 1,
       sourceLocale: 'en-US',
@@ -146,7 +146,7 @@ describe('the declarations a configuration is refused for', () => {
     // this means "no parent" and there is a spelling for that.
     expect(
       codesOf(configuration({ parentLocales: { 'en-AU': 'en-AU' } })),
-    ).toContain('ATL1007');
+    ).toContain('EQ1007');
   });
 
   it('refuses a chain that comes back on itself', () => {
@@ -158,7 +158,7 @@ describe('the declarations a configuration is refused for', () => {
     });
     // One finding per locale caught in it, and each one prints the walk that came back, because a
     // reader looking at two entries in a file cannot see the loop and a reader given the path can.
-    const cycles = parsed.diagnostics.filter(({ code }) => code === 'ATL1007');
+    const cycles = parsed.diagnostics.filter(({ code }) => code === 'EQ1007');
     expect(cycles.map(({ summary }) => summary).join('\n')).toContain(
       'en-AU to en-US to en-AU',
     );
@@ -172,21 +172,21 @@ describe('the declarations a configuration is refused for', () => {
     // has no effect, which is a typo far more often than it is a plan.
     expect(
       codesOf(configuration({ parentLocales: { 'fr-CA': 'fr' } })),
-    ).toContain('ATL1004');
+    ).toContain('EQ1004');
   });
 
   it('refuses a malformed locale on either side', () => {
     expect(
       codesOf(configuration({ parentLocales: { 'not a locale': 'en' } })),
-    ).toContain('ATL1003');
+    ).toContain('EQ1003');
     expect(
       codesOf(configuration({ parentLocales: { 'en-AU': 'not a locale' } })),
-    ).toContain('ATL1003');
+    ).toContain('EQ1003');
   });
 });
 
 function catalog(role: 'source' | 'target', locale: string, body: string) {
-  const parsed = parseAtlasCatalog(body, {
+  const parsed = parseCatalog(body, {
     role,
     providerId: 'home',
     scopeId: 'shell',
@@ -217,13 +217,13 @@ const analyze = (
   catalogs: readonly ReturnType<typeof catalog>[],
   extra: Readonly<Record<string, unknown>> = {},
 ) =>
-  analyzeAtlasCatalogSet({
+  analyzeCatalogSet({
     configuration: testProjectConfiguration(locales, extra),
     catalogs,
     requireCompleteTargets: true,
   });
 
-function graphOf(result: ReturnType<typeof analyze>): AtlasSemanticGraph {
+function graphOf(result: ReturnType<typeof analyze>): SemanticGraph {
   if (!result.ok) {
     throw new Error(
       `the fixture did not compile: ${result.diagnostics
@@ -234,8 +234,8 @@ function graphOf(result: ReturnType<typeof analyze>): AtlasSemanticGraph {
   return result.value;
 }
 
-function indexModuleOf(graph: AtlasSemanticGraph): string {
-  const generated = generateAtlasContracts(graph);
+function indexModuleOf(graph: SemanticGraph): string {
+  const generated = generateContracts(graph);
   if (!generated.ok) throw new Error('the fixture generated nothing');
   const index = generated.value.find(({ path }) => path === 'index.ts');
   if (index === undefined) throw new Error('no index module was generated');
@@ -318,7 +318,7 @@ describe('the release completeness gate', () => {
       [french, english, australian],
     );
     expect(graph.ok).toBe(true);
-    expect(codes(graph)).not.toContain('ATL1307');
+    expect(codes(graph)).not.toContain('EQ1307');
   });
 
   it('still reports a message no locale in the chain has', () => {
@@ -326,7 +326,7 @@ describe('the release completeness gate', () => {
     // been given the second place to look that the runtime already looks in.
     const thin = catalog('target', 'en', 'messages:\n  nav.home: Home\n');
     const graph = analyze(['fr-FR', 'en', 'en-AU'], [french, thin, australian]);
-    const reported = graph.diagnostics.filter(({ code }) => code === 'ATL1307');
+    const reported = graph.diagnostics.filter(({ code }) => code === 'EQ1307');
     // Both locales are short of it and both are told so: `en-AU` inherits from an `en` that does
     // not have it either.
     expect(reported).toHaveLength(2);
@@ -341,12 +341,12 @@ describe('the release completeness gate', () => {
     // numbers, and every string it shows is `en`.
     const graph = analyze(['fr-FR', 'en', 'en-AU'], [french, english]);
     expect(graph.ok).toBe(true);
-    expect(codes(graph)).not.toContain('ATL1306');
+    expect(codes(graph)).not.toContain('EQ1306');
   });
 
   it('still reports a locale with no catalog and nothing to inherit from', () => {
     expect(
       codes(analyze(['fr-FR', 'en', 'de-DE'], [french, english])),
-    ).toContain('ATL1306');
+    ).toContain('EQ1306');
   });
 });

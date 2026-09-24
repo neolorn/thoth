@@ -1,12 +1,12 @@
-// Atlas builds the response and the application supplies the body, which is
+// Equator builds the response and the application supplies the body, which is
 // `specs/07-routing-rendering-and-seo.spec.md` section 5. A handler that only set headers could
 // not answer a redirect, an unsupported locale or a malformed target, and those are the outcomes
 // that must never reach a renderer; a handler that produced the body would have to know what a
-// page looks like. So the status is Atlas's, the body is the renderer's, and section 15 of
+// page looks like. So the status is Equator's, the body is the renderer's, and section 15 of
 // `specs/07-routing-rendering-and-seo.spec.md` is what keeps a 404 in the requested locale at
 // the requested address rather than redirecting it somewhere that renders.
 
-// Relative, not `@neolorn/atlas`.
+// Relative, not `@neolorn/equator`.
 //
 // A secondary entry point that imports the primary keeps that import in its own bundle, and the
 // primary is the thing that throws on import in plain Node. So the classification lives inside this
@@ -29,7 +29,7 @@ import {
   type RouteCacheDurations,
   type RouteResolution,
   type RouteRuntimeProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 import { rawTargetOf } from './raw-target';
 
@@ -79,7 +79,7 @@ export type RenderableResolution = Exclude<
 
 /** What the handler resolved, handed to the renderer when there is something to render. */
 export interface LocaleRequestOutcome {
-  /** The request as it arrived, so a renderer can read a header Atlas had no reason to. */
+  /** The request as it arrived, so a renderer can read a header Equator had no reason to. */
   readonly request: Request;
   /**
    * What the address resolved to: the route, its parameters, and the status the response carries.
@@ -103,7 +103,7 @@ export interface LocaleRequestOutcome {
  * two of them depend on facts an address cannot supply: whether the entity is absent, whether it
  * was permanently removed, and whether the render failed. A renderer states any of the three here,
  * and a page states the same three from inside the render through `LocalizedPageOutcome` in
- * `@neolorn/atlas/router`. One type carries both, because they differ only in where the
+ * `@neolorn/equator/router`. One type carries both, because they differ only in where the
  * declaration is made.
  *
  * *The wrapper is the declaration.* A renderer's plain `Response` also carries a status, and
@@ -149,8 +149,8 @@ export interface DeclaredOperationalFailure extends DeclaredPageOutcome {
  * };
  * ```
  *
- * The declaration is honoured at an address Atlas serves. At one it refuses, the refusal stands and
- * the declaration is reported where a developer will see it.
+ * The declaration is honoured at an address Equator serves. At one it refuses, the refusal stands
+ * and the declaration is reported where a developer will see it.
  */
 export function declarePageOutcome(
   pageOutcome: PageOutcomeDeclaration,
@@ -174,9 +174,9 @@ export function declarePageOutcome(
  *   );
  * ```
  *
- * The declaration is honoured at an address Atlas serves. At one it refuses, the refusal stands
+ * The declaration is honoured at an address Equator serves. At one it refuses, the refusal stands
  * and the declaration is reported where a developer will see it, because an application declaring
- * maintenance does not know which addresses Atlas refused and cannot be asked to.
+ * maintenance does not know which addresses Equator refused and cannot be asked to.
  */
 export function declareOperationalFailure(
   response: Response,
@@ -211,7 +211,7 @@ export type LocaleRenderer = (
  * What the handler decided for one request, for the seat that answers through it.
  *
  * Internal. Section 12 of `specs/06-runtime-and-angular.spec.md` requires the server seat in
- * `@neolorn/atlas/testing` to answer through this handler rather than through a second
+ * `@neolorn/equator/testing` to answer through this handler rather than through a second
  * implementation of its rules, and two of the things a test needs to know are not in the response:
  * whether a 404 came from the table or from a page declaring an absence, and whether a declaration
  * was carried at all. The handler reports what it decided instead of the seat deriving it again.
@@ -227,7 +227,9 @@ export interface ɵAnsweredRequest {
   readonly declared: PageOutcomeDeclaration | undefined;
   /** Whether that declaration decided the response, which section 5's narrow rule settles. */
   readonly carried: boolean;
-  /** Whether Atlas declined the address, which sends it to `passthrough` rather than to a route. */
+  /**
+   * Whether Equator declined the address, which sends it to `passthrough` rather than to a route.
+   */
   readonly declined: boolean;
 }
 
@@ -265,15 +267,15 @@ export interface LocaleRequestHandlerOptions {
   readonly cookie?: LocaleCookiePolicy;
   /**
    * Produces the document. Without it the handler answers the status and the headers and no body,
-   * which is the right shape for a deployment that puts Atlas in front of something else that
+   * which is the right shape for a deployment that puts Equator in front of something else that
    * renders.
    */
   readonly render?: LocaleRenderer;
   /**
-   * What serves an address Atlas declined to localize.
+   * What serves an address Equator declined to localize.
    *
    * Static assets and the policy's own locale-neutral roots reach here. Without it they answer 404,
-   * which is honest, Atlas will not invent a response for something it has decided is not its
+   * which is honest, Equator will not invent a response for something it has decided is not its
    * business, but a real deployment hands them to whatever serves files.
    */
   readonly passthrough?: (request: Request) => Response | Promise<Response>;
@@ -301,7 +303,7 @@ const ONE_YEAR_SECONDS = 31_536_000;
  * Builds the handler that decides a response's status, language, caching and redirect.
  *
  * Takes the policy, the routes, the cache lifetimes and the cookie policy, and returns a function
- * from a request to a response. The status is Atlas's and the body is the renderer's, so a
+ * from a request to a response. The status is Equator's and the body is the renderer's, so a
  * redirect, an unsupported locale and a malformed address are all answered without a renderer
  * being asked anything.
  *
@@ -317,7 +319,7 @@ export function createLocaleRequestHandler(
       : builtLocalePolicy(options.policy, options.configuration);
   const cookie = options.cookie ?? {};
   const cookieName =
-    cookie === false ? undefined : (cookie.name ?? 'atlas-locale');
+    cookie === false ? undefined : (cookie.name ?? 'equator-locale');
 
   // Derived from what this deployment reads, never from what this request happened to carry.
   //
@@ -360,7 +362,7 @@ export function createLocaleRequestHandler(
     // not exempt from the first step, because `/assets/%2e%2e/%2e%2e/etc/passwd` is not an asset
     // request, and handing it to whatever serves files is the one thing that must not happen.
     if (resolution.status !== 'malformed' && bypasses(url, policy)) {
-      // Declined, not rendered. A bypassed address is one Atlas has decided is not about locale
+      // Declined, not rendered. A bypassed address is one Equator has decided is not about locale
       // (a static asset, a health check, an upload root) and rendering the application's page for
       // `/main-A1B2C3.js` would be worse than answering nothing. The consumer's own handling is
       // what should serve it, so `passthrough` is where it goes and a 404 is what happens when
@@ -383,7 +385,7 @@ export function createLocaleRequestHandler(
     // Taken as an argument rather than read from the outer descriptor, because a declared outcome
     // changes the status, the caching and the indexing of the response and nothing else about it,
     // and which of those apply is known only after the renderer has answered.
-    const atlasHeaders = (
+    const responseHeaders = (
       effective: DeclaredPageOutcomeDescriptor,
     ): Headers => {
       const headers = new Headers();
@@ -430,7 +432,7 @@ export function createLocaleRequestHandler(
       });
       return new Response(null, {
         status: descriptor.status,
-        headers: atlasHeaders(descriptor),
+        headers: responseHeaders(descriptor),
       });
     }
     // Opened before the render and closed by the take below, so the render has a channel to
@@ -458,9 +460,9 @@ export function createLocaleRequestHandler(
       rendered = result;
     }
 
-    // Section 5's narrow rule: Atlas's classification wins for an address it refused, and the
+    // Section 5's narrow rule: Equator's classification wins for an address it refused, and the
     // declared outcome wins for one it serves. An application declaring maintenance does not know
-    // which addresses Atlas refused, so a rule written the other way round would be one the
+    // which addresses Equator refused, so a rule written the other way round would be one the
     // application could not reason about.
     const carriesDeclaration =
       declared !== undefined && resolution.status === 'success';
@@ -488,7 +490,7 @@ export function createLocaleRequestHandler(
     });
 
     const merged = new Headers(rendered.headers);
-    for (const [name, value] of atlasHeaders(effective)) {
+    for (const [name, value] of responseHeaders(effective)) {
       if (name === 'set-cookie') merged.append(name, value);
       else merged.set(name, value);
     }
@@ -558,7 +560,7 @@ function reportOverriddenDeclaration(
   if (reported.has(identity)) return;
   reported.add(identity);
   console.warn(
-    `[Atlas] The render declared ${describeDeclaration(declaration)} at ${JSON.stringify(pathname)} and the response is ${servedStatus}. Atlas resolved that address as ${JSON.stringify(resolved)}, and a declared outcome travels only at an address Atlas serves, so the declaration was not applied. Declare one from a render of a resolved address, or answer the refusal that address already carries.`,
+    `[Equator] The render declared ${describeDeclaration(declaration)} at ${JSON.stringify(pathname)} and the response is ${servedStatus}. Equator resolved that address as ${JSON.stringify(resolved)}, and a declared outcome travels only at an address Equator serves, so the declaration was not applied. Declare one from a render of a resolved address, or answer the refusal that address already carries.`,
   );
 }
 
@@ -636,7 +638,7 @@ function readCookie(header: string | null, name: string): string | undefined {
  * The first acceptable language, in the order the client ranked them.
  *
  * Deliberately shallow: this hands a candidate to `resolveLocalizedRoute`, which is the function
- * that decides whether Atlas supports it, so nothing here needs to know the locale set. An
+ * that decides whether Equator supports it, so nothing here needs to know the locale set. An
  * unsupported value is ignored there rather than being an error here.
  */
 function preferredFromAcceptLanguage(

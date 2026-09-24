@@ -1,4 +1,4 @@
-import { parseAtlasConfiguration } from '@neolorn/atlas-toolkit';
+import { parseConfiguration } from '@neolorn/equator-toolkit';
 
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
@@ -21,11 +21,11 @@ import {
   withRouting,
   withOverlayLocale,
   withRecoveryMessage,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import {
   LocalizationTestingController,
   provideLocalizationTesting,
-} from '@neolorn/atlas/testing';
+} from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -39,7 +39,7 @@ import {
 } from '#i18n/lazy';
 
 import { App } from './app';
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 import { provideDynamicContent } from './dynamic-content';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
@@ -48,7 +48,7 @@ import { routePolicy, appRouteProjection } from './localization.routes';
  * past the template's type checking.
  */
 @Component({
-  selector: 'atlas-refused-label',
+  selector: 'refused-label',
   imports: [LocalizedLabel],
   template: `
     <a
@@ -69,7 +69,7 @@ const lazyScope = {
   scopeId: lazyScopeId,
 } as const;
 
-describe('Atlas feature-lab package consumer', () => {
+describe('Equator feature-lab package consumer', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
@@ -81,7 +81,7 @@ describe('Atlas feature-lab package consumer', () => {
             catalogSet,
             catalogLoaders,
             recoveryPayload,
-            extensions: atlasRuntimeExtensions,
+            extensions: runtimeExtensions,
             maximumCachedCatalogs: 1,
             routeProjection,
           },
@@ -118,10 +118,10 @@ describe('Atlas feature-lab package consumer', () => {
       localization.textSignal(messages.appTitle),
     );
     expect(element.querySelector('h1')?.textContent).toContain(
-      'Atlas feature lab',
+      'Equator feature lab',
     );
     expect(element.querySelector('[data-welcome]')?.textContent).toContain(
-      'Welcome, Atlas!',
+      'Welcome, Equator!',
     );
     expect(element.querySelector('[data-rich-message]')?.textContent).toContain(
       'Read the guide.',
@@ -201,22 +201,22 @@ describe('Atlas feature-lab package consumer', () => {
 
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('h1')?.textContent).toContain(
-      'مختبر ميزات Atlas',
+      'مختبر ميزات Equator',
     );
     expect(element.querySelector('[data-welcome]')?.textContent).toContain(
-      'مرحبًا، \u2067Atlas\u2069!',
+      'مرحبًا، \u2067Equator\u2069!',
     );
     expect(element.querySelector('[data-pipe]')?.textContent).toContain(
-      'مختبر ميزات Atlas',
+      'مختبر ميزات Equator',
     );
     // An attribute-position label follows the active locale like anything else, and writing one
     // attribute leaves the element's other attributes alone: a host binding on every supported
     // name would have cleared this img's static alt.
     expect(
       element.querySelector('[data-label]')?.getAttribute('aria-label'),
-    ).toBe('مختبر ميزات Atlas');
+    ).toBe('مختبر ميزات Equator');
     const labelled = element.querySelector('[data-label-alt]');
-    expect(labelled?.getAttribute('title')).toBe('غلاف دليل Atlas');
+    expect(labelled?.getAttribute('title')).toBe('غلاف دليل Equator');
     expect(labelled?.getAttribute('alt')).toBe('static alt');
     expect(labelled?.hasAttribute('aria-label')).toBe(false);
     expect(element.querySelector('[data-rich-message]')?.textContent).toContain(
@@ -273,7 +273,7 @@ describe('Atlas feature-lab package consumer', () => {
     expect(arriving?.selfName).toBe(configuration.localeNames?.['ar-EG']);
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain(
-      'Atlas feature lab',
+      'Equator feature lab',
     );
 
     const latest = localization.changeLocale('en-US');
@@ -394,7 +394,7 @@ describe('Atlas feature-lab package consumer', () => {
     fixture.detectChanges();
     expect(control?.errors).toEqual({
       localizedInput: {
-        code: 'atlas.input.invalid',
+        code: 'equator.input.invalid',
         status: 'invalid',
       },
     });
@@ -411,7 +411,7 @@ describe('Atlas feature-lab package consumer', () => {
     expect(input.value).toBe('1 2%');
     expect(control?.errors).toEqual({
       localizedInput: {
-        code: 'atlas.input.invalid',
+        code: 'equator.input.invalid',
         status: 'invalid',
       },
     });
@@ -438,10 +438,10 @@ describe('Atlas feature-lab package consumer', () => {
     expect(
       element.querySelector('[data-percent-model]')?.textContent,
     ).toContain('0.5');
-    // Atlas owns this region and puts it on the document, so it is found there rather than inside
+    // Equator owns this region and puts it on the document, so it is found there rather than inside
     // the component under test, which is the point: nothing in the application renders it.
     expect(
-      document.querySelector('[data-atlas-announcer]')?.textContent,
+      document.querySelector('[data-equator-announcer]')?.textContent,
     ).toContain('locale:ar-EG');
 
     input.value = 'composition in progress';
@@ -564,7 +564,7 @@ describe('Atlas feature-lab package consumer', () => {
             catalogSet,
             catalogLoaders,
             recoveryPayload,
-            extensions: atlasRuntimeExtensions,
+            extensions: runtimeExtensions,
           },
           withOverlayLocale(() => adapter),
         ),
@@ -595,7 +595,7 @@ describe('Atlas feature-lab package consumer', () => {
 
     child.dispose();
     expect(() => child.text(messages.appTitle)).toThrow(/disposed/u);
-    expect(parent.text(messages.appTitle)).toBe('Atlas feature lab');
+    expect(parent.text(messages.appTitle)).toBe('Equator feature lab');
   });
 
   it('keeps lazy-scope evaluation behind explicit readiness without hidden loading', async () => {
@@ -803,7 +803,7 @@ describe('Atlas feature-lab package consumer', () => {
   });
 
   it('resolves the built toolkit and its installed parser dependencies', () => {
-    const result = parseAtlasConfiguration(
+    const result = parseConfiguration(
       JSON.stringify({
         schemaVersion: 1,
         sourceLocale: 'EN-us',

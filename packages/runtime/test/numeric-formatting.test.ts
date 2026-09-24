@@ -11,7 +11,7 @@ import {
   measurement,
   money,
 } from '../src/formatting.js';
-import { type FormattingContext } from '@neolorn/atlas/core';
+import { type FormattingContext } from '@neolorn/equator/core';
 
 /**
  * The formatting path, checked against the platform's own idea of each locale.
@@ -21,8 +21,8 @@ import { type FormattingContext } from '@neolorn/atlas/core';
  * harness named `routing.ts`, `angular.ts`, `localization.ts` or the router's public API, and the
  * two modules where every numbering-system finding has lived had none.
  *
- * The property asserted here is the one a self-consistent formatter cannot fake. Atlas is asked to
- * render in a numbering system; the result is decoded back through the digits the platform says
+ * The property asserted here is the one a self-consistent formatter cannot fake. Equator is asked
+ * to render in a numbering system; the result is decoded back through the digits the platform says
  * that locale and numbering system use, and the decoded number must be the number that went in. A
  * formatter that quietly dropped `numberingSystem`, rendering `123` where `١٢٣` was asked for,
  * round-trips perfectly against itself and is wrong for every reader.
@@ -203,8 +203,8 @@ describe('the numeric formatters render in the numbering system they were given'
  * `NumberFormat.formatRange`, `NumberFormat.formatRangeToParts` and `DurationFormat.format` take a
  * `numberingSystem` option, ignore it, and report through `resolvedOptions().numberingSystem` that
  * they honoured it. Measured on ICU 78.3 across ar-EG, fa-IR, bn-BD, my-MM, ne-NP and mr-IN; every
- * other Intl surface honours the option and the `-u-nu-` extension identically, which is why Atlas
- * builds one tag for all of them.
+ * other Intl surface honours the option and the `-u-nu-` extension identically, which is why
+ * Equator builds one tag for all of them.
  *
  * Every row here is crossed on purpose: the locale is asked for digits that are not its own. A
  * row asking a locale for its own default cannot observe any of this, which is the defect the
@@ -256,7 +256,7 @@ describe('a crossed numbering system reaches every numeric surface', () => {
   it('honours a crossed request on a locale that already carries a -u- extension', () => {
     // The case string concatenation cannot serve. `ar-EG-u-ca-islamic` + `-u-nu-latn` is two `u`
     // singletons, which RFC 5646 §2.2.6 forbids, and `Intl` rejects the tag outright, so a
-    // formatter built that way throws for any consumer whose locale carries a calendar. Atlas
+    // formatter built that way throws for any consumer whose locale carries a calendar. Equator
     // canonicalizes through `Intl.getCanonicalLocales`, which preserves extensions, so this is
     // reachable rather than theoretical.
     const context: FormattingContext = Object.freeze({

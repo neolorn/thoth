@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { LocalizePipe, LocalizedMessage } from '@neolorn/atlas';
+import { LocalizePipe, LocalizedMessage } from '@neolorn/equator';
 import { messages } from '#i18n/shell';
 
 /**
@@ -25,7 +25,7 @@ import { messages } from '#i18n/shell';
 @Component({
   selector: 'negative-pipe-unknown-input',
   imports: [LocalizePipe],
-  template: `{{ messages.welcome | localize: { nmae: 'Atlas' } }}`,
+  template: `{{ messages.welcome | localize: { nmae: 'Equator' } }}`,
 })
 export class NegativePipeUnknownInput {
   protected readonly messages = messages;

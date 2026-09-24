@@ -190,7 +190,7 @@ for (const lockfile of lockfiles) {
   );
 
   // A manifest of its own, and without it this file stages nothing. Given a directory holding only
-  // a lockfile, pnpm walks up for the nearest `package.json`, finds Atlas's own, decides that
+  // a lockfile, pnpm walks up for the nearest `package.json`, finds Equator's own, decides that
   // project is already installed and prints "Already up to date": five fetches in four seconds,
   // nothing added to the store, exit zero.
   // `--ignore-workspace` does not prevent it, because what pnpm found was a manifest and not the
@@ -200,7 +200,7 @@ for (const lockfile of lockfiles) {
   await writeFile(
     resolve(directory, 'package.json'),
     `${JSON.stringify(
-      { name: `atlas-consumer-store-${name}`, version: '0.0.0', private: true },
+      { name: `consumer-store-${name}`, version: '0.0.0', private: true },
       undefined,
       2,
     )}\n`,
@@ -209,8 +209,8 @@ for (const lockfile of lockfiles) {
   // Copied out of `fixtures/` rather than fetched in place: `pnpm fetch` writes a virtual store
   // beside the lockfile, and a fixture directory is not the place for it.
   //
-  // `--ignore-workspace` is what makes this the consumer's lockfile rather than Atlas's, and it is
-  // not a tidiness flag. Without it pnpm walks up to the repository's own `pnpm-workspace.yaml`,
+  // `--ignore-workspace` is what makes this the consumer's lockfile rather than Equator's, and it
+  // is not a tidiness flag. Without it pnpm walks up to the repository's own `pnpm-workspace.yaml`,
   // treats the command as a workspace fetch, and `pnpm fetch` **purges the workspace's
   // node_modules** on the way: `node_modules/` at the repository root is emptied and the next
   // command cannot find `prettier`. The confirmation prompt that would catch it is the one this
@@ -250,7 +250,7 @@ for (const lockfile of lockfiles) {
 }
 
 console.log(
-  `Atlas consumer store staged: ${staged.length} lockfile(s), ${staged
+  `Equator consumer store staged: ${staged.length} lockfile(s), ${staged
     .map(({ lockfile, imported }) => `${lockfile} (${imported})`)
     .join(', ')}.`,
 );

@@ -24,7 +24,7 @@ import {
   type LocaleUrlPolicy,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /**
  * A parameter spelling the codec cannot produce, supplied by whoever loaded the record.
@@ -52,7 +52,7 @@ const IDENTITY: RouteParameterCodec<string> = {
 /** Reads only what it wrote. Used to prove a declaration is checked rather than trusted. */
 const ENGLISH_ONLY: RouteParameterCodec<string> = {
   parse: (segment: string) =>
-    segment === 'atlas-dossier' ? { ok: true, value: segment } : { ok: false },
+    segment === 'dossier' ? { ok: true, value: segment } : { ok: false },
   serialize: (value: string) => value,
 };
 
@@ -69,8 +69,8 @@ const POLICY: LocaleUrlPolicy = {
 function projectionWith(codec: RouteParameterCodec): RouteRuntimeProjection {
   return {
     generated: {
-      profile: 'atlas-route-projection/1',
-      identity: 'sha256-AtlasDeclaredParameterSpellingsFixture01234',
+      profile: 'equator-route-projection/1',
+      identity: 'sha256-DeclaredParameterSpellingsFixture0123456789',
       routes: [
         {
           id: 'dossier',
@@ -87,7 +87,7 @@ function projectionWith(codec: RouteParameterCodec): RouteRuntimeProjection {
 const PROJECTION = projectionWith(IDENTITY);
 
 const CONFIGURATION: GeneratedConfiguration = {
-  generatedAbi: 'atlas-generated/1',
+  generatedAbi: 'equator-generated/1',
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
   locales: ['en-US', 'ar-EG'],
@@ -97,7 +97,7 @@ const CONFIGURATION: GeneratedConfiguration = {
   scopes: [],
 };
 
-const ARABIC_SLUG = 'ملف-أطلس';
+const ARABIC_SLUG = 'ملف';
 const DECLARED = { slug: { 'ar-EG': ARABIC_SLUG } };
 
 describe('a declared route parameter spelling', () => {
@@ -105,9 +105,9 @@ describe('a declared route parameter spelling', () => {
     // The control, in the same call shape as the assertion under it.
     expect(
       buildLocalizedRoute(POLICY, PROJECTION, 'dossier', 'ar-EG', {
-        slug: 'atlas-dossier',
+        slug: 'dossier',
       }),
-    ).toBe('/ar-eg/dossiers/atlas-dossier');
+    ).toBe('/ar-eg/dossiers/dossier');
 
     expect(
       buildLocalizedRoute(
@@ -115,7 +115,7 @@ describe('a declared route parameter spelling', () => {
         PROJECTION,
         'dossier',
         'ar-EG',
-        { slug: 'atlas-dossier' },
+        { slug: 'dossier' },
         [],
         undefined,
         DECLARED,
@@ -130,16 +130,16 @@ describe('a declared route parameter spelling', () => {
         PROJECTION,
         'dossier',
         'en-US',
-        { slug: 'atlas-dossier' },
+        { slug: 'dossier' },
         [],
         undefined,
         DECLARED,
       ),
-    ).toBe('/en-us/dossiers/atlas-dossier');
+    ).toBe('/en-us/dossiers/dossier');
   });
 
   it('refuses a declared spelling the codec cannot read back', () => {
-    // The declaration is checked, not trusted. An address Atlas emits and cannot resolve is worse
+    // The declaration is checked, not trusted. An address Equator emits and cannot resolve is worse
     // than one it never emitted: it becomes an `hreflang` link to a 404, or a locale switch that
     // lands the reader on nothing. The codec here reads only the English slug, so the Arabic
     // declaration is one this application could not serve.
@@ -149,7 +149,7 @@ describe('a declared route parameter spelling', () => {
         projectionWith(ENGLISH_ONLY),
         'dossier',
         'ar-EG',
-        { slug: 'atlas-dossier' },
+        { slug: 'dossier' },
         [],
         undefined,
         DECLARED,
@@ -165,10 +165,10 @@ describe('a declared route parameter spelling', () => {
         'dossier',
         'ar-EG',
         {
-          slug: 'atlas-dossier',
+          slug: 'dossier',
         },
       ),
-    ).toBe('/ar-eg/dossiers/atlas-dossier');
+    ).toBe('/ar-eg/dossiers/dossier');
   });
 
   it('refuses a declared spelling that is not a safe segment', () => {
@@ -180,7 +180,7 @@ describe('a declared route parameter spelling', () => {
         PROJECTION,
         'dossier',
         'ar-EG',
-        { slug: 'atlas-dossier' },
+        { slug: 'dossier' },
         [],
         undefined,
         { slug: { 'ar-EG': '../etc' } },
@@ -190,7 +190,7 @@ describe('a declared route parameter spelling', () => {
 
   it('spells the canonical and the alternates from one declaration', () => {
     const resolution = resolveLocalizedRoute(
-      '/en-us/dossiers/atlas-dossier',
+      '/en-us/dossiers/dossier',
       POLICY,
       PROJECTION,
     );
@@ -202,19 +202,17 @@ describe('a declared route parameter spelling', () => {
       POLICY,
       PROJECTION,
       CONFIGURATION,
-      'https://atlas.example',
+      'https://site.example',
       DECLARED,
     );
     // The canonical is this page's own locale, which the declaration says nothing about, and the
     // alternate is the one it does. Both from the same call, so a declaration cannot reach one of
     // them and miss the other.
-    expect(seo.canonical).toBe(
-      'https://atlas.example/en-us/dossiers/atlas-dossier',
-    );
+    expect(seo.canonical).toBe('https://site.example/en-us/dossiers/dossier');
     expect(seo.alternates.map(({ locale, url }) => `${locale} ${url}`)).toEqual(
       [
-        'en-US https://atlas.example/en-us/dossiers/atlas-dossier',
-        `ar-EG https://atlas.example/ar-eg/dossiers/${encodeURIComponent(ARABIC_SLUG)}`,
+        'en-US https://site.example/en-us/dossiers/dossier',
+        `ar-EG https://site.example/ar-eg/dossiers/${encodeURIComponent(ARABIC_SLUG)}`,
       ],
     );
   });

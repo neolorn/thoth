@@ -13,16 +13,16 @@ import {
   RouterOutlet,
 } from '@angular/router';
 import { filter, firstValueFrom } from 'rxjs';
-import { Localization, withRouting } from '@neolorn/atlas';
-import { provideLocalizedRouter } from '@neolorn/atlas/router';
-import { provideLocalizationTesting } from '@neolorn/atlas/testing';
+import { Localization, withRouting } from '@neolorn/equator';
+import { provideLocalizedRouter } from '@neolorn/equator/router';
+import { provideLocalizationTesting } from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 import { routes } from './app.routes';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
@@ -73,14 +73,14 @@ async function arriveAt(startUrl: string): Promise<Application> {
   TestBed.configureTestingModule({
     providers: [
       { provide: MOCK_PLATFORM_LOCATION_CONFIG, useValue: { startUrl } },
-      provideLocalizedRouter(routes, { origin: 'https://atlas.example' }),
+      provideLocalizedRouter(routes, { origin: 'https://site.example' }),
       provideLocalizationTesting(
         {
           configuration,
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
           routeProjection,
         },
         withRouting({ policy: routePolicy, projection: appRouteProjection }),
@@ -129,7 +129,7 @@ const showing = (application: Application): string =>
     application.localization.snapshot()?.primaryLocale,
   )}`;
 
-const ARABIC_SECOND = 'https://atlas.example/ar-eg/second';
+const ARABIC_SECOND = 'https://site.example/ar-eg/second';
 
 describe('the address bar through a reader’s own history', () => {
   it('spells the route and the locale at every step of a switch and a walk back', async () => {

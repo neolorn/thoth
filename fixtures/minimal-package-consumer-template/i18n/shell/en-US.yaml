@@ -1,5 +1,5 @@
 messages:
-  title: Atlas minimal consumer
+  title: Equator minimal consumer
   welcome: 'Welcome, {$name}!'
   guide: 'Read the {#strong}guide{/strong}.'
   recovery.unavailable: Localization is temporarily unavailable.

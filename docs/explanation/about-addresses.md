@@ -1,7 +1,7 @@
 # About how routing derives addresses
 
 A localized address and an Angular route are two different things. The route is what your application
-matches on; the address is what a visitor sees and shares. Atlas derives the second from the first
+matches on; the address is what a visitor sees and shares. Equator derives the second from the first
 and one policy, and everything a crawler reads comes out of the same derivation.
 
 ## One projection, three consumers
@@ -57,10 +57,10 @@ one is the one that gets indexed.
 `priority`, `lastmod` and indexability are claims about content that only the application can make,
 so they are read from a field on the Angular route's own `data` at generate time.
 
-Atlas never runs your code to find them. That is why the declaration is a field name and a table of
-literals rather than a function: `generate` reads source text.
+Equator never runs your code to find them. That is why the declaration is a field name and a table
+of literals rather than a function: `generate` reads source text.
 
-Atlas emits `lastmod` only from a value a route declares. A build time is a date the page did not
+Equator emits `lastmod` only from a value a route declares. A build time is a date the page did not
 change on, and a search engine reads that element only when it can verify it.
 
 ## Related

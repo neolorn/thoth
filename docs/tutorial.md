@@ -24,33 +24,33 @@ cd my-app
 
 The CLI asks whether to enable server-side rendering. Answer no, which is the default, so the
 application this tutorial builds runs in the browser alone and every file below is the file the CLI
-wrote. Atlas localizes a server-rendered application too, and [How to render on the
+wrote. Equator localizes a server-rendered application too, and [How to render on the
 server](how-to/render-on-the-server.md) starts from one.
 
 Run `npm start` and open the address the CLI prints. The Angular welcome page appears. Stop the
 server before continuing.
 
-## Install Atlas
+## Install Equator
 
 ```sh install
-npm install @neolorn/atlas
-npm install --save-dev @neolorn/atlas-toolkit
+npm install @neolorn/equator
+npm install --save-dev @neolorn/equator-toolkit
 ```
 
-`@neolorn/atlas` ships with the application. `@neolorn/atlas-toolkit` compiles the catalogs at build
-time and is a development dependency.
+`@neolorn/equator` ships with the application. `@neolorn/equator-toolkit` compiles the catalogs at
+build time and is a development dependency.
 
 ## Set up the project
 
 Declare the locales the application serves:
 
 ```sh run
-npx atlas init --source-locale en-US --default-locale en-US --locale en-US --locale ar-EG
+npx equator init --source-locale en-US --default-locale en-US --locale en-US --locale ar-EG
 ```
 
-`init` writes `atlas.config.json`, maps `#i18n` in `package.json`, creates the `i18n/` directory,
-and adds the `atlas:generate`, `atlas:check`, `atlas:format`, `atlas:clean`, and `atlas:watch`
-scripts. `atlas.config.json` holds the locale set and nothing else.
+`init` writes `equator.config.json`, maps `#i18n` in `package.json`, creates the `i18n/` directory,
+and adds the `equator:generate`, `equator:check`, `equator:format`, `equator:clean`, and
+`equator:watch` scripts. `equator.config.json` holds the locale set and nothing else.
 
 `init` writes no catalog and no recovery message. Both are content, and content belongs to the
 project.
@@ -72,7 +72,7 @@ messages:
   open-second: Open the second page
   return-home: Back to the start
   hero-tagline: Localized end to end.
-  asset.alt: The Atlas handbook cover
+  asset.alt: The Equator handbook cover
   learn-more:
     message: 'Read the {#strong}guide{/strong}.'
     description: Shown under the hero. The guide is a separate page.
@@ -92,7 +92,7 @@ messages:
   open-second: افتح الصفحة الثانية
   return-home: العودة إلى البداية
   hero-tagline: مترجم من أوله إلى آخره.
-  asset.alt: غلاف دليل أطلس
+  asset.alt: غلاف دليل Equator
   learn-more:
     message: 'اقرأ {#strong}الدليل{/strong}.'
   help-link:
@@ -100,7 +100,7 @@ messages:
 ```
 
 `recovery-message` is the sentence a visitor reads when no catalog can be loaded, and
-`recovery-retry` names the button beside it. Atlas has no default for either, so every application
+`recovery-retry` names the button beside it. Equator has no default for either, so every application
 writes them, and both travel in the recovery payload so they arrive in the reader's language even
 though no catalog could be loaded.
 
@@ -111,7 +111,7 @@ with the message to whoever translates it.
 ## Compile the catalogs
 
 ```sh run
-npx atlas generate
+npx equator generate
 ```
 
 `generate` compiles both catalogs and writes the modules the application imports:
@@ -133,7 +133,7 @@ Create `src/app/localization.routes.ts`:
 import {
   createPathPrefixLocalePolicy,
   defineRouteProjection,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { routeProjection } from '#i18n/routes';
 
 export const routePolicy = createPathPrefixLocalePolicy({
@@ -165,7 +165,7 @@ import {
   LocalizedLabel,
   LocalizedMessage,
   LocalizePipe,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { messages } from '#i18n/shell';
 
 @Component({
@@ -207,7 +207,7 @@ Replace `src/app/app.routes.ts`:
 ```ts src/app/app.routes.ts
 import { Component } from '@angular/core';
 import { RouterLink, type Routes } from '@angular/router';
-import { LocalizePipe } from '@neolorn/atlas';
+import { LocalizePipe } from '@neolorn/equator';
 import { messages } from '#i18n/shell';
 
 import { Hero } from './hero';
@@ -259,8 +259,8 @@ import {
   withPersistence,
   withRecoveryMessage,
   withRouting,
-} from '@neolorn/atlas';
-import { provideLocalizedRouter } from '@neolorn/atlas/router';
+} from '@neolorn/equator';
+import { provideLocalizedRouter } from '@neolorn/equator/router';
 import { routes } from './app.routes';
 import { appRouteProjection, routePolicy } from './localization.routes';
 
@@ -291,7 +291,11 @@ Replace `src/app/app.ts`:
 ```ts src/app/app.ts
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { injectLocalization, LocaleChoice, LocalizePipe } from '@neolorn/atlas';
+import {
+  injectLocalization,
+  LocaleChoice,
+  LocalizePipe,
+} from '@neolorn/equator';
 import { messages } from '#i18n/shell';
 
 @Component({
@@ -322,11 +326,11 @@ in that locale.
 The route table exists now, so compile again:
 
 ```sh run
-npx atlas generate
+npx equator generate
 ```
 
 `generate` writes `#i18n/routes` from what this pass found, and checks the composed providers
-against it. `atlas watch` runs both steps while you work.
+against it. `equator watch` runs both steps while you work.
 
 ## Run the application
 
@@ -346,13 +350,17 @@ import { MOCK_PLATFORM_LOCATION_CONFIG } from '@angular/common/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { Localization, withRecoveryMessage, withRouting } from '@neolorn/atlas';
-import { provideLocalizedRouter } from '@neolorn/atlas/router';
+import {
+  Localization,
+  withRecoveryMessage,
+  withRouting,
+} from '@neolorn/equator';
+import { provideLocalizedRouter } from '@neolorn/equator/router';
 import {
   LocalizationTestingController,
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
-} from '@neolorn/atlas/testing';
+} from '@neolorn/equator/testing';
 import { localizationSetup } from '#i18n';
 import { messages, providerId, scopeId } from '#i18n/shell';
 
@@ -362,7 +370,7 @@ import { appRouteProjection, routePolicy } from './localization.routes';
 
 const shell = { providerId, scopeId } as const;
 
-// The DOM outlives this file. Atlas reads the address bar for the locale, so a file that
+// The DOM outlives this file. Equator reads the address bar for the locale, so a file that
 // navigates and does not put it back decides what the next file is testing.
 afterEach(resetLocalizationTestEnvironment);
 
@@ -507,5 +515,5 @@ the test environment saying it has no scrolling to do rather than anything about
   locale omits a message.
 - [How to localize your routes](how-to/localize-routes.md): the other locale policies, and what a
   visitor's address decides.
-- [About how a locale is resolved](explanation/about-locale-resolution.md): the order Atlas asks in,
-  and how to add a source of your own.
+- [About how a locale is resolved](explanation/about-locale-resolution.md): the order Equator asks
+  in, and how to add a source of your own.

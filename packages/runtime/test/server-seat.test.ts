@@ -2,11 +2,11 @@
  * The seat that answers an address, for the questions only a response can answer.
  *
  * Section 12 of `specs/06-runtime-and-angular.spec.md` puts a server seat in
- * `@neolorn/atlas/testing` and requires it to answer through the request handler a deployment uses
- * rather than through a second implementation of the same rules, without a socket, a built bundle
- * or a browser. What is asserted here is that it does: the status table, the cacheability, the
- * narrow rule about a declaration at a refused address, and the target arriving as written are all
- * the handler's, and the seat adds the reading.
+ * `@neolorn/equator/testing` and requires it to answer through the request handler a deployment
+ * uses rather than through a second implementation of the same rules, without a socket, a built
+ * bundle or a browser. What is asserted here is that it does: the status table, the cacheability,
+ * the narrow rule about a declaration at a refused address, and the target arriving as written are
+ * all the handler's, and the seat adds the reading.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -26,7 +26,7 @@ import {
   ɵrememberPageOutcome,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 const POLICY: LocaleUrlPolicy = {
   kind: 'path-prefix',
@@ -40,8 +40,8 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'atlas-route-projection/1',
-    identity: 'sha256-AtlasServerSeatTestProjectionIdentity012345',
+    profile: 'equator-route-projection/1',
+    identity: 'sha256-ServerSeatTestProjectionIdentity01234567890',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
       { id: 'route:second', path: 'second', parameterNames: [] },
@@ -56,10 +56,10 @@ const documentFor = (locale: string): string =>
   `<!doctype html><html lang="${locale}" dir="ltr"><head>` +
   `<title>Ali &amp; Co</title>` +
   `<meta name="description" content="A page that says so">` +
-  `<meta property="og:url" content="https://atlas.example/en-us/second">` +
-  `<link rel="canonical" href="https://atlas.example/en-us/second">` +
-  `<link rel="alternate" hreflang="ar-EG" href='https://atlas.example/ar-eg/thani'>` +
-  `<link rel="alternate" hreflang="x-default" href="https://atlas.example/en-us/second">` +
+  `<meta property="og:url" content="https://site.example/en-us/second">` +
+  `<link rel="canonical" href="https://site.example/en-us/second">` +
+  `<link rel="alternate" hreflang="ar-EG" href='https://site.example/ar-eg/thani'>` +
+  `<link rel="alternate" hreflang="x-default" href="https://site.example/en-us/second">` +
   `</head><body></body></html>`;
 
 const seatFor = (
@@ -73,7 +73,7 @@ const seatFor = (
     projection: PROJECTION,
     cache: CACHE,
     cookie: false,
-    origin: 'https://atlas.example',
+    origin: 'https://site.example',
     render,
   });
 
@@ -115,7 +115,7 @@ describe('an address answered through the seat', () => {
     expect(answered.resolution.status).toBe('malformed');
   });
 
-  it('reports an address Atlas declined rather than answering for it', async () => {
+  it('reports an address Equator declined rather than answering for it', async () => {
     const answered = await seatFor().request('/assets/main-A1B2C3.js');
 
     expect(answered.declined).toBe(true);
@@ -124,7 +124,7 @@ describe('an address answered through the seat', () => {
 
   it('asks an absolute address on its own origin', async () => {
     const answered = await seatFor().request(
-      'https://atlas.example/ar-eg/thani',
+      'https://site.example/ar-eg/thani',
     );
 
     expect(answered.status).toBe(200);
@@ -185,7 +185,7 @@ describe('the head of an answered document', () => {
     expect(head.lang).toBe('en-US');
     expect(head.dir).toBe('ltr');
     expect(head.description).toBe('A page that says so');
-    expect(head.canonical).toBe('https://atlas.example/en-us/second');
+    expect(head.canonical).toBe('https://site.example/en-us/second');
     expect(head.properties['og:url']).toBe(head.canonical);
     expect(head.alternates.map((link) => link.hreflang)).toEqual([
       'ar-EG',

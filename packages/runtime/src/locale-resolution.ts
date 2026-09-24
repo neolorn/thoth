@@ -21,7 +21,7 @@ import {
   type LocaleUrlPolicy,
   type LocalizationSnapshot,
   type RouteRuntimeProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 import { negotiateLocale } from './locale-negotiation';
 import {
   type LocalizationEventEmitter,
@@ -100,7 +100,7 @@ export class LocaleResolution {
    *
    * Stores are read in the order the consumer declared, and the first believable answer wins:
    * `specs/03-locale-identity-and-resolution.spec.md` section 8 gives the consumer the authority
-   * order, so Atlas does not reorder it or merge answers. A value is believable only if it still
+   * order, so Equator does not reorder it or merge answers. A value is believable only if it still
    * canonicalizes and is still a locale this application offers: a preference for a language that
    * was removed last release is stale, and restoring it would render an interface nobody can
    * supply.

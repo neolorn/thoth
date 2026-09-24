@@ -1,20 +1,20 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 
 import { TestBed } from '@angular/core/testing';
-import { Localization, provideLocalizationSetup } from '@neolorn/atlas';
+import { Localization, provideLocalizationSetup } from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { messages } from '#i18n/shell';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
  * Arabic plural selection, executed rather than assumed.
  *
  * No fixture catalog contained a plural, so `selectPattern` and the `Intl.PluralRules` dispatch
- * behind it had never run in any Atlas test. Arabic has six CLDR cardinal categories against
+ * behind it had never run in any Equator test. Arabic has six CLDR cardinal categories against
  * English's two, so a source-locale corpus proves nothing here: the target locale is the whole
  * point.
  *
@@ -35,7 +35,7 @@ function context(): Localization {
         catalogSet,
         catalogLoaders,
         recoveryPayload,
-        extensions: atlasRuntimeExtensions,
+        extensions: runtimeExtensions,
       }),
     ],
   });

@@ -1,8 +1,8 @@
 # How to read typed input
 
-`@neolorn/atlas/forms` exports `LocalizedInput`, a directive that parses what a visitor typed in the
-committed locale and gives the form the value rather than the text. `١٢٣٫٥`, `123.5` and `123,5` are
-one amount, and the control returns that amount.
+`@neolorn/equator/forms` exports `LocalizedInput`, a directive that parses what a visitor typed in
+the committed locale and gives the form the value rather than the text. `١٢٣٫٥`, `123.5` and `123,5`
+are one amount, and the control returns that amount.
 
 ## Before you begin
 
@@ -34,7 +34,7 @@ writeValue(value: LocalizedInputValue<Amount> | null): void {
 ```
 
 That write can arrive before the inner field has been given its profile, because the form writes to
-the outermost accessor during its own binding pass and the inner bindings are applied after. Atlas
+the outermost accessor during its own binding pass and the inner bindings are applied after. Equator
 holds such a write and renders it when the profile lands, so there is no ordering for you to
 discover and nothing to buffer around.
 
@@ -76,12 +76,12 @@ import {
   withRecoveryMessage,
   type LocalizedMoneyInputProfile,
   type MoneyValue,
-} from '@neolorn/atlas';
-import { LocalizedInput } from '@neolorn/atlas/forms';
+} from '@neolorn/equator';
+import { LocalizedInput } from '@neolorn/equator/forms';
 import {
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
-} from '@neolorn/atlas/testing';
+} from '@neolorn/equator/testing';
 import { localizationSetup } from '#i18n';
 import { messages } from '#i18n/shell';
 
@@ -189,7 +189,7 @@ describe('a localized input', () => {
 
     expect(host.localized().result()?.status).toBe('invalid');
     expect(host.control().errors?.['localizedInput']).toEqual({
-      code: 'atlas.input.invalid',
+      code: 'equator.input.invalid',
       status: 'invalid',
     });
     // The form keeps the value it had. A field nobody can read does not empty what was already

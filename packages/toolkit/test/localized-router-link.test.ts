@@ -4,12 +4,12 @@ import { resolve } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { checkAtlasProject, generateAtlasProject } from '../src/index.js';
+import { checkProject, generateProject } from '../src/index.js';
 
 /**
  * A template may not write a locale into an address it hands to the Router.
  *
- * The contract: a consumer writes `routerLink="/articles/atlas-handbook"`,
+ * The contract: a consumer writes `routerLink="/articles/handbook"`,
  * never `/ar-eg/...`, never a link-builder service, never a pipe. Nothing enforced the never. The
  * first place a prefixed link was reported was a console warning in development, after the click,
  * to whoever happened to be looking at the console.
@@ -67,7 +67,7 @@ const ANGULAR_ROUTER_STUB = [
   '',
 ].join('\n');
 
-const ATLAS_STUB = [
+const STUB = [
   'export declare function createPathPrefixLocalePolicy(options: unknown): unknown;',
   'export declare function createLocaleNeutralPolicy(options: unknown): unknown;',
   '',
@@ -83,7 +83,7 @@ const ATLAS_STUB = [
  * rule and not about the fixture being small.
  */
 const ORDINARY_LINKS = [
-  '<a routerLink="/articles/atlas-handbook">the contract</a>',
+  '<a routerLink="/articles/handbook">the contract</a>',
   '<a routerLink="articles">relative</a>',
   '<a routerLink="../articles">relative, upward</a>',
   "<a [routerLink]=\"['..', 'articles']\">relative commands</a>",
@@ -104,7 +104,7 @@ interface ProjectOptions {
 }
 
 async function project(options: ProjectOptions): Promise<string> {
-  const root = await mkdtemp(resolve(tmpdir(), 'atlas-router-link-'));
+  const root = await mkdtemp(resolve(tmpdir(), 'router-link-'));
   temporaryRoots.push(root);
   const factory = options.factory ?? 'createPathPrefixLocalePolicy';
 
@@ -127,7 +127,7 @@ async function project(options: ProjectOptions): Promise<string> {
   );
   await write(
     root,
-    'atlas.config.json',
+    'equator.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -168,7 +168,7 @@ async function project(options: ProjectOptions): Promise<string> {
   for (const [name, contents] of [
     ['@angular/core', ANGULAR_CORE_STUB],
     ['@angular/router', ANGULAR_ROUTER_STUB],
-    ['@neolorn/atlas', ATLAS_STUB],
+    ['@neolorn/equator', STUB],
   ] as const) {
     await write(root, `node_modules/${name}/index.d.ts`, contents);
     await write(root, `node_modules/${name}/package.json`, manifest(name));
@@ -195,7 +195,7 @@ async function project(options: ProjectOptions): Promise<string> {
     'src/app.ts',
     [
       "import { messages } from '#i18n/shell';",
-      `import { ${factory} } from '@neolorn/atlas';`,
+      `import { ${factory} } from '@neolorn/equator';`,
       '',
       'export const title = messages.appTitle.messageId;',
       '',
@@ -267,14 +267,12 @@ async function refusals(root: string): Promise<{
     }[],
   ): readonly { severity: string; summary: string }[] =>
     diagnostics
-      .filter(({ code }) => code === 'ATL1411')
+      .filter(({ code }) => code === 'EQ1411')
       .map(({ severity, summary }) => ({ severity, summary }));
   const generated = only(
-    (await generateAtlasProject({ project: root })).diagnostics,
+    (await generateProject({ project: root })).diagnostics,
   );
-  const checked = only(
-    (await checkAtlasProject({ project: root })).diagnostics,
-  );
+  const checked = only((await checkProject({ project: root })).diagnostics);
   return {
     generate: generated.map(({ summary }) => summary),
     check: checked.map(({ summary }) => summary),
@@ -353,7 +351,7 @@ describe('a routerLink may not name a segment the policy claims', () => {
 
   it('matches the prefix however the address spells its case', async () => {
     // The resolver corrects the case of a prefix, so an address that differs only in case reaches
-    // the same locale and is the same defect. `AtlasClaimedRouteSegment` records that rule and this
+    // the same locale and is the same defect. `ClaimedRouteSegment` records that rule and this
     // check reads it rather than restating it.
     const root = await project({
       links: ['<a routerLink="/AR-EG/articles">shouted</a>'],
@@ -362,7 +360,7 @@ describe('a routerLink may not name a segment the policy claims', () => {
   });
 
   it('says nothing under a policy that claims no prefix', async () => {
-    // A locale-neutral policy puts every locale at one address, so `ar-eg` leads no route Atlas
+    // A locale-neutral policy puts every locale at one address, so `ar-eg` leads no route Equator
     // owns and a link through it is an ordinary broken link for the application to answer. Paired
     // with the neutral root the same policy still claims, which is what says this silence is about
     // the claim and not about the policy going unread.

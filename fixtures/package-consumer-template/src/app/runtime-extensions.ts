@@ -7,7 +7,7 @@ import {
   type RuntimeParsingAdapterBinding,
   type RuntimeRichSlotKindBinding,
   type LocalizedPart,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 
 type ExtensionKind = RuntimeExtensionDescriptor['kind'];
@@ -21,7 +21,7 @@ function descriptor<Kind extends ExtensionKind>(
   );
   if (value === undefined) {
     throw new Error(
-      `Generated Atlas extension descriptor ${kind}/${id} is absent.`,
+      `Generated Equator extension descriptor ${kind}/${id} is absent.`,
     );
   }
   return value as Extract<RuntimeExtensionDescriptor, { readonly kind: Kind }>;
@@ -84,7 +84,7 @@ export const skuParseAdapter = Object.freeze<
   },
 });
 
-export const atlasRuntimeExtensions = defineRuntimeExtensions([
+export const runtimeExtensions = defineRuntimeExtensions([
   Object.freeze({
     descriptor: uppercase,
     evaluate: ({ operand, options, locale }) => {

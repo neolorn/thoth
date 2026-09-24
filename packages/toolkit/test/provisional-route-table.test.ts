@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseAtlasCatalog } from '../src/index.js';
-import { generateAtlasContracts } from '../src/generated-contracts.js';
-import { analyzeAtlasCatalogSet } from '../src/semantic-model.js';
+import { parseCatalog } from '../src/index.js';
+import { generateContracts } from '../src/generated-contracts.js';
+import { analyzeCatalogSet } from '../src/semantic-model.js';
 import { testProjectConfiguration } from './fixtures.js';
 
 /**
@@ -12,12 +12,12 @@ import { testProjectConfiguration } from './fixtures.js';
  * is the pass that discovers the routes, so the overlay it starts from cannot contain them. Emitted
  * as an empty table written `as const`, that overlay types `routes` as `readonly []`, every field
  * read on a member of it resolves against `never`, and the resulting TypeScript errors are
- * forwarded as ATL1401 against the consumer's own lines. An application whose route table really is
+ * forwarded as EQ1401 against the consumer's own lines. An application whose route table really is
  * empty is a different case and still gets a table.
  */
 
 function catalog(role: 'source' | 'target', locale: string, body: string) {
-  const parsed = parseAtlasCatalog(body, {
+  const parsed = parseCatalog(body, {
     role,
     providerId: 'home',
     scopeId: 'shell',
@@ -29,7 +29,7 @@ function catalog(role: 'source' | 'target', locale: string, body: string) {
 }
 
 const graphOf = () => {
-  const graph = analyzeAtlasCatalogSet({
+  const graph = analyzeCatalogSet({
     configuration: testProjectConfiguration(['en-US']),
     catalogs: [catalog('source', 'en-US', 'messages:\n  nav.home: Home\n')],
   });
@@ -38,9 +38,9 @@ const graphOf = () => {
 };
 
 const routesModule = (
-  options: Parameters<typeof generateAtlasContracts>[1],
+  options: Parameters<typeof generateContracts>[1],
 ): string => {
-  const contracts = generateAtlasContracts(graphOf(), options);
+  const contracts = generateContracts(graphOf(), options);
   if (!contracts.ok) throw new Error(JSON.stringify(contracts.diagnostics));
   const file = contracts.value.find(({ path }) => path === 'routes.ts');
   if (file === undefined) throw new Error('no routes.ts was generated');
@@ -52,7 +52,7 @@ describe('the route table the analysis overlay starts from', () => {
     const contents = routesModule({});
 
     expect(contents).toContain(
-      "import type { GeneratedRouteProjection } from '@neolorn/atlas';",
+      "import type { GeneratedRouteProjection } from '@neolorn/equator';",
     );
     expect(contents).toContain(
       'export declare const routeProjection: GeneratedRouteProjection;',

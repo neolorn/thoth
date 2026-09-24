@@ -6,8 +6,8 @@
  * `fs.stat` returns inode values above `Number.MAX_SAFE_INTEGER`, so distinct files collapse onto
  * the same number and the packer links files that were never linked.
  *
- * That is not theoretical. `@neolorn/atlas@1.0.0-alpha.1` was published with
- * `types/neolorn-atlas-router.d.ts` containing the runtime module's JavaScript, byte for byte,
+ * That is not theoretical. `@neolorn/equator@1.0.0-alpha.1` was published with
+ * `types/neolorn-equator-router.d.ts` containing the runtime module's JavaScript, byte for byte,
  * because those two paths collided. The build output on disk was correct the whole time; only the
  * tarball was wrong, and nothing in the pipeline looked at the tarball.
  *
@@ -100,7 +100,7 @@ function run(command, args, cwd) {
   return result.stdout;
 }
 
-const staging = await mkdtemp(join(tmpdir(), 'atlas-pack-'));
+const staging = await mkdtemp(join(tmpdir(), 'pack-'));
 try {
   const copied = join(staging, 'package-source');
   // A fresh copy, because the collision is in the inodes the packer reads, not in the bytes.

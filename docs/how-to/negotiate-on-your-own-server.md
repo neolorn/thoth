@@ -1,7 +1,7 @@
 # How to negotiate a locale on your own server
 
-`@neolorn/atlas/http` answers one question for a process that is not an Angular server: which locale
-this request is in. A request goes in, a locale comes out.
+`@neolorn/equator/http` answers one question for a process that is not an Angular server: which
+locale this request is in. A request goes in, a locale comes out.
 
 ## Before you begin
 
@@ -18,7 +18,7 @@ returns a function from a `Request` to a `Response`.
 ```ts src/app/negotiation.spec.ts
 import { describe, expect, it } from 'vitest';
 
-import { createLocaleRequestHandler } from '@neolorn/atlas/http';
+import { createLocaleRequestHandler } from '@neolorn/equator/http';
 import { localizationSetup } from '#i18n';
 
 import { appRouteProjection, routePolicy } from './localization.routes';
@@ -92,7 +92,7 @@ objects and the web ones, for a server that speaks the former.
 
 ## Declare a status of your own
 
-A rendered response carries the status Atlas resolved for its address. Serving maintenance, or
+A rendered response carries the status Equator resolved for its address. Serving maintenance, or
 reporting a render that failed, is your application's answer about its own condition rather than
 something about the address, so you state it. `declareOperationalFailure` wraps the response you
 were going to return, and the wrapper is what makes the status a statement: a 500 nobody meant and
@@ -104,7 +104,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createLocaleRequestHandler,
   declareOperationalFailure,
-} from '@neolorn/atlas/http';
+} from '@neolorn/equator/http';
 import { localizationSetup } from '#i18n';
 
 import { appRouteProjection, routePolicy } from './localization.routes';
@@ -172,8 +172,8 @@ import { describe, expect, it } from 'vitest';
 import {
   createLocaleRequestHandler,
   declarePageOutcome,
-} from '@neolorn/atlas/http';
-import { pageAbsent, pageGone } from '@neolorn/atlas/core';
+} from '@neolorn/equator/http';
+import { pageAbsent, pageGone } from '@neolorn/equator/core';
 import { localizationSetup } from '#i18n';
 
 import { appRouteProjection, routePolicy } from './localization.routes';
@@ -219,7 +219,7 @@ describe('one address, and a record in three states', () => {
 ```
 
 A page can state the same three from inside an Angular render, through `LocalizedPageOutcome` in
-`@neolorn/atlas/router`, which is
+`@neolorn/equator/router`, which is
 [How to tell crawlers your pages are translations](control-indexing.md). The declaration reaches the
 handler over the request the two already share, so nothing is carried in a header a client could
 write or a response could expose.

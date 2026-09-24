@@ -1,8 +1,8 @@
 /**
  * The diagnostics reference, written from the union that declares the codes.
  *
- * `specs/10-compiler-and-tooling.spec.md` section 12 says Atlas's diagnostic codes are stable and
- * documented, and the second half of that was not true: no `ATL` code appeared anywhere in
+ * `specs/10-compiler-and-tooling.spec.md` section 12 says Equator's diagnostic codes are stable and
+ * documented, and the second half of that was not true: no `EQ` code appeared anywhere in
  * `specs/`, and codes were built, argued and measured with nothing naming them. A list written
  * into a specification would not have made it true either: a hand-kept list of every code is a
  * second source, and it drifts from the union on the first commit that adds one.
@@ -10,8 +10,8 @@
  * So the reference is derived, the same way `cli-options.generated.ts` is derived from the
  * configuration schema and `locale-profile.generated.ts` from `cldr-core`. The one hand-written
  * thing is the sentence per code, which lives in `packages/toolkit/src/diagnostic-reference.ts`
- * beside the union it is checked against: `satisfies Record<AtlasDiagnosticCode, string>` fails the
- * typecheck for a code with no sentence and for a sentence with no code, by name, in both
+ * beside the union it is checked against: `satisfies Record<ToolkitDiagnosticCode, string>` fails
+ * the typecheck for a code with no sentence and for a sentence with no code, by name, in both
  * directions. This file turns that table into the document a reader gets, and `--check` fails when
  * the checked-in copy no longer matches.
  *
@@ -64,8 +64,8 @@ try {
   );
 }
 
-const { ATLAS_DIAGNOSTIC_REFERENCE, ATLAS_DIAGNOSTIC_SECTIONS } = reference;
-const codes = Object.keys(ATLAS_DIAGNOSTIC_REFERENCE).sort();
+const { DIAGNOSTIC_REFERENCE, DIAGNOSTIC_SECTIONS } = reference;
+const codes = Object.keys(DIAGNOSTIC_REFERENCE).sort();
 assert.ok(
   codes.length > 0,
   'The built diagnostics table is empty, so nothing below means anything.',
@@ -75,15 +75,15 @@ assert.ok(
  * Sections, both ways.                                                *
  * ------------------------------------------------------------------ */
 
-const sectionOf = (code) => code.slice(3, 5);
+const sectionOf = (code) => code.slice(-4, -2);
 const used = new Set(codes.map(sectionOf));
 for (const section of used) {
   assert.ok(
-    typeof ATLAS_DIAGNOSTIC_SECTIONS[section] === 'string',
-    `Codes ATL${section}xx exist and no section is titled "${section}". Add one to ATLAS_DIAGNOSTIC_SECTIONS.`,
+    typeof DIAGNOSTIC_SECTIONS[section] === 'string',
+    `Codes EQ${section}xx exist and no section is titled "${section}". Add one to DIAGNOSTIC_SECTIONS.`,
   );
 }
-for (const section of Object.keys(ATLAS_DIAGNOSTIC_SECTIONS)) {
+for (const section of Object.keys(DIAGNOSTIC_SECTIONS)) {
   assert.ok(
     used.has(section),
     `Section "${section}" is titled and no code uses it. Take it out; the sections follow the codes.`,
@@ -126,7 +126,7 @@ for (const root of roots) {
     if (DECLARATIONS.has(file.split(/[\\/]/u).at(-1))) continue;
     scanned += 1;
     const text = readFileSync(file, 'utf8');
-    for (const match of text.matchAll(/'(ATL\d{4})'/gu)) {
+    for (const match of text.matchAll(/'(EQ\d{4})'/gu)) {
       occurrences += 1;
       raised.get(match[1])?.push(relative(workspaceRoot, file));
     }
@@ -154,25 +154,25 @@ const sections = [...used].sort();
 
 const body = [];
 for (const section of sections) {
-  body.push(`## ${ATLAS_DIAGNOSTIC_SECTIONS[section]}`, '');
+  body.push(`## ${DIAGNOSTIC_SECTIONS[section]}`, '');
   for (const code of codes.filter((each) => sectionOf(each) === section)) {
-    body.push(`### ${code}`, '', ATLAS_DIAGNOSTIC_REFERENCE[code], '');
+    body.push(`### ${code}`, '', DIAGNOSTIC_REFERENCE[code], '');
   }
 }
 
 const lines = [
-  '# Atlas diagnostics',
+  '# Equator diagnostics',
   '',
-  'Every code `@neolorn/atlas-toolkit` can report, and what it means. A diagnostic carries its own',
+  'Every code `@neolorn/equator-toolkit` can report, and what it means. A diagnostic carries its own',
   'summary saying what happened at the place it happened; this says what the code is about.',
   '',
-  '**Generated.** The list comes from the `AtlasDiagnosticCode` union and the sentences from the',
+  '**Generated.** The list comes from the `ToolkitDiagnosticCode` union and the sentences from the',
   'table beside it, and the gate re-renders this file and fails when it differs. Do not edit it here:',
   'edit `packages/toolkit/src/diagnostic-reference.ts`, which the compiler checks against the union in',
   'both directions.',
   '',
   '**Severity is not listed, on purpose.** Several codes carry the severity a run decides: the',
-  "completeness family and `ATL1704` are advisory or blocking depending on the command's switches and",
+  "completeness family and `EQ1704` are advisory or blocking depending on the command's switches and",
   "the project's own declarations, so a severity written here would be wrong for exactly the codes",
   'most worth looking up. What a run does with a finding is decided on severity, and the finding says',
   'which one it carries.',
@@ -184,14 +184,14 @@ const document = `${[...lines, ...body].join('\n').trimEnd()}\n`;
 const webDocument = `${[
   '# Diagnostics',
   '',
-  'Every code `@neolorn/atlas-toolkit` reports, and what it means. A diagnostic carries its own',
+  'Every code `@neolorn/equator-toolkit` reports, and what it means. A diagnostic carries its own',
   'summary describing what happened where it happened; this table describes the code.',
   '',
   'This page is generated from the code union and is not edited by hand. The same table ships inside',
   'the package as `DIAGNOSTICS.md`, readable from an install with no network.',
   '',
   'Severity is not listed. Several codes carry the severity the run decides: the completeness family',
-  "and `ATL1704` are advisory or blocking depending on the command's switches and the project's own",
+  "and `EQ1704` are advisory or blocking depending on the command's switches and the project's own",
   'declarations. A finding states the severity it carries, and a run acts on that.',
   '',
   'What a diagnostic contains, and what it never contains, is',
@@ -231,7 +231,7 @@ if (check) {
     );
   }
   process.stdout.write(
-    `Atlas diagnostics reference verified: ${codes.length} code(s) across ${sections.length} section(s), each raised in packages/*/src; ${occurrences} code reference(s) over ${scanned} file(s).\n`,
+    `Equator diagnostics reference verified: ${codes.length} code(s) across ${sections.length} section(s), each raised in packages/*/src; ${occurrences} code reference(s) over ${scanned} file(s).\n`,
   );
 } else {
   await mkdir(dirname(webDocumentPath), { recursive: true });
@@ -239,6 +239,6 @@ if (check) {
     await writeFile(target, contents, 'utf8');
   }
   process.stdout.write(
-    `Atlas diagnostics reference written: ${codes.length} code(s) across ${sections.length} section(s), in ${written.length} document(s).\n`,
+    `Equator diagnostics reference written: ${codes.length} code(s) across ${sections.length} section(s), in ${written.length} document(s).\n`,
   );
 }

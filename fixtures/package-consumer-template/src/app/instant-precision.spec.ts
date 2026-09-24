@@ -6,7 +6,7 @@ import {
   formatInstantRange,
   instant,
   type FormattingContext,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 
 /**
  * Instants finer than a millisecond.
@@ -15,7 +15,7 @@ import {
  * `unsupported-formatting-capability`. Sub-millisecond instants are ordinary: .NET's
  * `DateTimeOffset` carries 100-nanosecond ticks, Go and Rust count nanoseconds, and PostgreSQL
  * `timestamptz` stores microseconds, so any system whose canonical timestamp comes from one of
- * those hands Atlas a value it refused. An ordinary order timestamp did not format at all. Not
+ * those hands Equator a value it refused. An ordinary order timestamp did not format at all. Not
  * wrongly: not at all.
  *
  * Nothing is lost by accepting them, which is what makes this a refusal rather than a safeguard.

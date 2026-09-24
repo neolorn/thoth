@@ -24,11 +24,11 @@ const consumerRoot = resolve(
 );
 const installedRuntimeRoot = resolve(
   consumerRoot,
-  'node_modules/@neolorn/atlas',
+  'node_modules/@neolorn/equator',
 );
 const installedToolkitRoot = resolve(
   consumerRoot,
-  'node_modules/@neolorn/atlas-toolkit',
+  'node_modules/@neolorn/equator-toolkit',
 );
 
 const assertContained = (path, owner) => {
@@ -39,7 +39,7 @@ const assertContained = (path, owner) => {
 
 const replaceFile = async (path, contents) => {
   assertContained(path, workspaceRoot);
-  const temporaryPath = `${path}.atlas-package-refresh`;
+  const temporaryPath = `${path}.package-refresh`;
   assertContained(temporaryPath, workspaceRoot);
 
   await rm(temporaryPath, { force: true });
@@ -69,7 +69,7 @@ const trimRelative = (path) => path.replace(/^\.\//u, '');
 const paths = {
   runtimeJavaScript: resolve(runtimeRoot, trimRelative(primaryExport.default)),
   runtimeTypes: resolve(runtimeRoot, trimRelative(primaryExport.types)),
-  toolkitCli: resolve(toolkitRoot, trimRelative(toolkitManifest.bin.atlas)),
+  toolkitCli: resolve(toolkitRoot, trimRelative(toolkitManifest.bin.equator)),
 };
 
 for (const path of Object.values(paths)) {
@@ -87,7 +87,7 @@ const installedPaths = {
   ),
   toolkitCli: resolve(
     installedToolkitRoot,
-    trimRelative(toolkitManifest.bin.atlas),
+    trimRelative(toolkitManifest.bin.equator),
   ),
 };
 
@@ -101,11 +101,11 @@ for (const path of [
 }
 
 const markers = {
-  runtimeJavaScript: 'atlas-package-refresh-javascript',
-  runtimeTypes: 'atlas-package-refresh-declarations',
-  toolkitCli: 'atlas-package-refresh-cli',
+  runtimeJavaScript: 'package-refresh-javascript',
+  runtimeTypes: 'package-refresh-declarations',
+  toolkitCli: 'package-refresh-cli',
   runtimeExport: './package-refresh-probe',
-  toolkitBin: 'atlas-package-refresh-probe',
+  toolkitBin: 'package-refresh-probe',
 };
 
 // The refresh this gate is about is defined once, in the module both its callers import,
@@ -187,6 +187,6 @@ try {
 // command they need before they run the gate.
 process.stdout.write(
   directPropagation
-    ? 'Atlas file-package rebuilds propagate directly.\n'
-    : 'Atlas file-package refresh verified: `pnpm run refresh:consumer` propagates it.\n',
+    ? 'Equator file-package rebuilds propagate directly.\n'
+    : 'Equator file-package refresh verified: `pnpm run refresh:consumer` propagates it.\n',
 );

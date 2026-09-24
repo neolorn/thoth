@@ -1,5 +1,5 @@
 {
-  "profile": "atlas-extension-registry/1",
+  "profile": "equator-extension-registry/1",
   "descriptors": [
     {
       "kind": "message-function",

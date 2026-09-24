@@ -3,8 +3,8 @@ import {
   buildLocalizedRoute,
   defineRouteProjection,
   type Localization,
-} from '@neolorn/atlas';
-import { provideLocalizedServerRendering } from '@neolorn/atlas/ssr';
+} from '@neolorn/equator';
+import { provideLocalizedServerRendering } from '@neolorn/equator/ssr';
 import { configuration } from '#i18n';
 import { routeProjection } from '#i18n/routes';
 
@@ -55,7 +55,7 @@ defineRouteProjection({ generated: routeProjection });
 // An adapter addressed by an unchecked identifier, with a value unrelated to it. Untyped, both
 // compile and fail at runtime.
 // EXPECT: is not assignable to parameter of type 'RuntimeFormattingAdapterBinding<string>'
-localization.formatWithAdapter('feature:sku-format', 'atlas-42');
+localization.formatWithAdapter('feature:sku-format', 'item-42');
 
 // EXPECT: Argument of type 'number' is not assignable to parameter of type 'string'
 localization.formatWithAdapter(skuFormatAdapter, 42);
@@ -63,7 +63,7 @@ localization.formatWithAdapter(skuFormatAdapter, 42);
 // A caller that declares the parsed type itself is making an assertion rather than holding a
 // contract: nothing checks it against what the adapter returns.
 // EXPECT: Property 'sku' does not exist on type 'FeatureSku'
-const parsed = localization.parseWithAdapter(skuParseAdapter, 'sku-atlas-42');
+const parsed = localization.parseWithAdapter(skuParseAdapter, 'sku-item-42');
 if (parsed.status === 'valid') {
   void parsed.value.sku;
 }

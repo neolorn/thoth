@@ -11,9 +11,9 @@ You need catalogs, which is [How to write a message](write-messages.md).
 
 ## Export and import
 
-`exportAtlasXliff22` produces an interchange document per locale, carrying each message with the
+`exportXliff22` produces an interchange document per locale, carrying each message with the
 `description` and `context` you authored, so a translator has the notes rather than a bare string.
-`importAtlasXliff22` reads the same document back and tracks the translation state of each unit.
+`importXliff22` reads the same document back and tracks the translation state of each unit.
 
 Nothing about your build, your routes or your project goes into the document, and nothing in the
 document can introduce markup or a destination into your page, which is
@@ -26,7 +26,7 @@ message missing a plural form its language needs, and a translation written agai
 that has since changed.
 
 ```text
-npx atlas check --require-complete
+npx equator check --require-complete
 ```
 
 All four stop the run under `--require-complete` and are ordinary warnings without it, because during
@@ -37,9 +37,9 @@ as an answer.
 
 Name the locale rather than turning the gate off for every locale.
 
-`atlas.config.json` takes an `inProgress` entry naming the locale and a note, which
-`atlas init --in-progress` writes for you. That locale's findings are still printed, with your note
-quoted into them, and they stop blocking.
+`equator.config.json` takes an `inProgress` entry naming the locale and a note, which
+`equator init --in-progress` writes for you. That locale's findings are still printed, with your
+note quoted into them, and they stop blocking.
 
 The note is required, and it is what tells the next person whether the exemption still holds.
 
@@ -54,8 +54,8 @@ compiled.
 
 ## What is checked in
 
-The catalogs and `atlas.config.json` are yours and are checked in. Everything under the generated
-root is output: it carries an ownership marker, it regenerates, and `atlas clean` removes it. A
+The catalogs and `equator.config.json` are yours and are checked in. Everything under the generated
+root is output: it carries an ownership marker, it regenerates, and `equator clean` removes it. A
 hand-edited generated file is overwritten by the next `generate`.
 
 ## Related

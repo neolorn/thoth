@@ -7,7 +7,7 @@
  * transition phase are different vocabularies, and one union of both would name neither.
  */
 
-import type { AtlasDiagnosticCode } from './diagnostics.js';
+import type { ToolkitDiagnosticCode } from './diagnostics.js';
 
 /**
  * The version stamp every toolkit event carries, so a reader knows what shape it is reading.
@@ -15,8 +15,8 @@ import type { AtlasDiagnosticCode } from './diagnostics.js';
  * Distinct from the runtime's own stamp, because a compilation phase and a locale transition are
  * different vocabularies and one union of both would name neither.
  */
-export const ATLAS_TOOLKIT_OBSERVABILITY_PROFILE =
-  'atlas-toolkit-observability-event/1' as const;
+export const TOOLKIT_OBSERVABILITY_PROFILE =
+  'equator-toolkit-observability-event/1' as const;
 
 /**
  * The three areas the toolkit reports on, as stable codes for filtering a log.
@@ -24,15 +24,15 @@ export const ATLAS_TOOLKIT_OBSERVABILITY_PROFILE =
  * A code never changes and is never reused. The wording of an event may change; the code is the
  * identity.
  */
-export const ATLAS_TOOLKIT_EVENT_CODES = Object.freeze({
-  compilation: 'ATL-E1001',
-  interchange: 'ATL-E1002',
-  migration: 'ATL-E1003',
+export const TOOLKIT_EVENT_CODES = Object.freeze({
+  compilation: 'EQ-E1001',
+  interchange: 'EQ-E1002',
+  migration: 'EQ-E1003',
 } as const);
 
 /** Any of the three codes. Worth naming when a sink switches on one. */
-export type AtlasToolkitEventCode =
-  (typeof ATLAS_TOOLKIT_EVENT_CODES)[keyof typeof ATLAS_TOOLKIT_EVENT_CODES];
+export type ToolkitEventCode =
+  (typeof TOOLKIT_EVENT_CODES)[keyof typeof TOOLKIT_EVENT_CODES];
 
 /**
  * Which part of the work an event is about, in words rather than as a code.
@@ -40,7 +40,7 @@ export type AtlasToolkitEventCode =
  * Carried beside the code, so a log reads without a lookup table. The eight follow the order the
  * work happens in, from reading the configuration to writing the generated tree.
  */
-export type AtlasToolkitEventPhase =
+export type ToolkitEventPhase =
   | 'configuration'
   | 'catalog'
   | 'analysis'
@@ -56,7 +56,7 @@ export type AtlasToolkitEventPhase =
  * `started` pairs with a later one. `unchanged` is a success that wrote nothing, which is the
  * ordinary outcome of building a project nobody has edited.
  */
-export type AtlasToolkitEventStatus =
+export type ToolkitEventStatus =
   | 'started'
   | 'succeeded'
   | 'failed'
@@ -69,17 +69,17 @@ export type AtlasToolkitEventStatus =
  * Identities are bounded and counts are checked before they go on an event, so a field that
  * survived is one a log can hold.
  */
-export interface AtlasToolkitObservabilityEvent {
+export interface ToolkitObservabilityEvent {
   /** The event shape's version. */
-  readonly profile: typeof ATLAS_TOOLKIT_OBSERVABILITY_PROFILE;
+  readonly profile: typeof TOOLKIT_OBSERVABILITY_PROFILE;
   /** Which of the three areas this is about. */
-  readonly code: AtlasToolkitEventCode;
+  readonly code: ToolkitEventCode;
   /** Which part of the work, in words. */
-  readonly phase: AtlasToolkitEventPhase;
+  readonly phase: ToolkitEventPhase;
   /** How it ended. */
-  readonly status: AtlasToolkitEventStatus;
+  readonly status: ToolkitEventStatus;
   /** The first diagnostic's code, on a failure, so a log can say why without carrying the text. */
-  readonly diagnosticCode?: AtlasDiagnosticCode;
+  readonly diagnosticCode?: ToolkitDiagnosticCode;
   /** Which package's catalogs this concerns. */
   readonly providerId?: string;
   /** Which scope within that package. */
@@ -97,27 +97,27 @@ export interface AtlasToolkitObservabilityEvent {
 /**
  * Where toolkit events go. Supply one on an operation; with none, no event is built at all.
  *
- * Atlas ships no transport and knows no endpoint, so this is the whole contract. It must not throw
- * and must not block: an event is raised in the middle of a build somebody is waiting on.
+ * Equator ships no transport and knows no endpoint, so this is the whole contract. It must not
+ * throw and must not block: an event is raised in the middle of a build somebody is waiting on.
  */
-export interface AtlasToolkitObservabilitySink {
+export interface ToolkitObservabilitySink {
   /** Called once per event, in the order the events occur. */
-  emit(event: AtlasToolkitObservabilityEvent): void;
+  emit(event: ToolkitObservabilityEvent): void;
 }
 
 /** Mixed into every operation that may report: a sink, or nothing and no reporting. */
-export interface AtlasToolkitObservabilityOptions {
+export interface ToolkitObservabilityOptions {
   /** Where to send events. Omit it and none are built. */
-  readonly observability?: AtlasToolkitObservabilitySink;
+  readonly observability?: ToolkitObservabilitySink;
 }
 
-type EventInput = Omit<AtlasToolkitObservabilityEvent, 'profile'>;
+type EventInput = Omit<ToolkitObservabilityEvent, 'profile'>;
 
 interface SinkState {
   readonly failures: Map<string, number>;
 }
 
-const sinkStates = new WeakMap<AtlasToolkitObservabilitySink, SinkState>();
+const sinkStates = new WeakMap<ToolkitObservabilitySink, SinkState>();
 
 function boundedIdentity(value: string | undefined): string | undefined {
   return value === undefined ||
@@ -146,8 +146,8 @@ function boundedDuration(value: number | undefined): number | undefined {
     : Math.round(value * 1000) / 1000;
 }
 
-export function emitAtlasToolkitEvent(
-  sink: AtlasToolkitObservabilitySink | undefined,
+export function emitToolkitEvent(
+  sink: ToolkitObservabilitySink | undefined,
   input: EventInput,
 ): void {
   if (sink === undefined) return;
@@ -157,8 +157,8 @@ export function emitAtlasToolkitEvent(
   const operationId = boundedIdentity(input.operationId);
   const count = boundedCount(input.count);
   const durationMilliseconds = boundedDuration(input.durationMilliseconds);
-  const event: AtlasToolkitObservabilityEvent = Object.freeze({
-    profile: ATLAS_TOOLKIT_OBSERVABILITY_PROFILE,
+  const event: ToolkitObservabilityEvent = Object.freeze({
+    profile: TOOLKIT_OBSERVABILITY_PROFILE,
     code: input.code,
     phase: input.phase,
     status: input.status,

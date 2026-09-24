@@ -1,5 +1,5 @@
 /**
- * XML text, escaped for a document Atlas writes.
+ * XML text, escaped for a document Equator writes.
  *
  * Both packages emit XML: the core writes a sitemap and the alternate-language links beside it, the
  * toolkit writes XLIFF. Neither can import from the other, so this file is duplicated byte for byte

@@ -1,7 +1,7 @@
 /**
  * Is every published export reachable from something that is not a throwaway?
  *
- * The corpus is Atlas only, and the export list is read from the built declaration files. It
+ * The corpus is Equator only, and the export list is read from the built declaration files. It
  * needs `build`.
  *
  * Two rules the corpus has to keep. A scan that counts throwaway files holds exports "used" on
@@ -50,17 +50,17 @@ const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const BASELINE = Object.freeze({
   // The plugin half of the extension contract: a plugin calls this to tell the compiler about the
   // same descriptors `defineRuntimeExtensions` registers at runtime, and
-  // `docs/how-to/extend-atlas.md` is where that is written down. This corpus does not read `docs`,
-  // deliberately, because a name in prose is not a use. The fixture declares its extensions in
-  // `atlas.extensions.json` instead, which is the other supported way and exercises the parser
+  // `docs/how-to/add-an-extension.md` is where that is written down. This corpus does not read
+  // `docs`, deliberately, because a name in prose is not a use. The fixture declares its extensions
+  // in `equator.extensions.json` instead, which is the other supported way and exercises the parser
   // rather than the builder.
-  atlasExtensionDescriptor:
+  extensionDescriptor:
     'toolkit API; the plugin surface the extension guide documents',
   // The project-host compile, beside the seven other verbs the programmatic API publishes. Those
-  // seven are reached and this one is not, because Atlas's own gates drive compilation through the
-  // command line rather than through the host API. The programmatic API mirrors the command line,
-  // so publishing every verb but one would be a surface a caller cannot predict.
-  compileAtlasProjectFromDisk:
+  // seven are reached and this one is not, because Equator's own gates drive compilation through
+  // the command line rather than through the host API. The programmatic API mirrors the command
+  // line, so publishing every verb but one would be a surface a caller cannot predict.
+  compileProjectFromDisk:
     'toolkit API; the compile verb, beside the seven the corpus reaches',
 });
 
@@ -89,7 +89,7 @@ const CORPUS = Object.freeze([
  * The corpus above names test directories by hand, and a hand-written list of directories is the
  * shape that goes quietly wrong.
  *
- * Atlas keeps source in five places, not one: `packages/runtime/src` plus the secondary entry
+ * Equator keeps source in five places, not one: `packages/runtime/src` plus the secondary entry
  * points beside it (`router`, `forms`, `testing`) and `packages/toolkit/src`. A scan aimed at
  * one of them finds nothing in the other four and reports that as nothing existing. That is not a
  * hypothetical: a grep scoped to `packages/runtime/src/*.ts` returned empty for two
@@ -174,7 +174,7 @@ function withoutComments(text) {
     .replace(/^[^\S\n]*\/\/[^\n]*$/gmu, '');
 }
 
-const SKIP = new Set(['node_modules', 'dist', '.angular', '.atlas', 'tmp']);
+const SKIP = new Set(['node_modules', 'dist', '.angular', '.equator', 'tmp']);
 
 function readAll(dir, out = []) {
   let entries;
@@ -295,7 +295,7 @@ for (const { text } of declarationSets) {
 
 // Resolved rather than counted; `export-reachability.mjs` says why the count was the wrong
 // instrument. The seed is the set above, so what comes back is everything a consumer arrives at by
-// following the surface out of something Atlas's own consumers, gates and tests already hold.
+// following the surface out of something Equator's own consumers, gates and tests already hold.
 const { reached, seeded } = reachablePublishedNames(
   (name) => (namedBy.get(name) ?? []).length > 0,
 );
@@ -515,7 +515,7 @@ assert.equal(
  */
 const RETIRED_MEMBERS = [
   {
-    entryPoint: 'neolorn-atlas',
+    entryPoint: 'neolorn-equator',
     interfaceName: 'RoutingOptions',
     members: ['localizedPaths', 'parameters', 'historical'],
     replacement:
@@ -560,5 +560,5 @@ for (const {
 }
 
 process.stdout.write(
-  `\nAtlas export surface verified: ${candidates.length} accepted candidate(s), all named in the baseline.\n`,
+  `\nEquator export surface verified: ${candidates.length} accepted candidate(s), all named in the baseline.\n`,
 );

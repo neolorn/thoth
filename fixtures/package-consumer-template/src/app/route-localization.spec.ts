@@ -4,13 +4,13 @@ import { LocationStrategy } from '@angular/common';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, type Routes } from '@angular/router';
-import { Localization, withRouting } from '@neolorn/atlas';
+import { Localization, withRouting } from '@neolorn/equator';
 import {
   RouteLocalization,
   provideLocalizedRouter,
   type RouteLocalizationContext,
-} from '@neolorn/atlas/router';
-import { provideLocalizationTesting } from '@neolorn/atlas/testing';
+} from '@neolorn/equator/router';
+import { provideLocalizationTesting } from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -22,7 +22,7 @@ import {
 } from '#i18n/lazy';
 
 import { routePolicy, appRouteProjection } from './localization.routes';
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 @Component({
   standalone: true,
@@ -33,7 +33,7 @@ class RouteProbe {}
 /**
  * The application's own routes, canonical, and every address this file navigates to.
  *
- * Every address this file reaches is declared, `/en-us/lazy` included. Atlas appends no
+ * Every address this file reaches is declared, `/en-us/lazy` included. Equator appends no
  * catch-all, so an application without a not-found page does not silently acquire one, and an
  * address this list omits renders nothing rather than falling into an appended `**` with the
  * resolver on it and leaving the assertions below about the adapter alone. The `**` here is this
@@ -50,30 +50,32 @@ const routes: Routes = [
  * What this application decides, and nothing more.
  *
  * No `requiredScopes`. The generated route table names what each route must have ready and the
- * adapter loads it, so declaring the shell scope here restated a fact Atlas already holds, and
+ * adapter loads it, so declaring the shell scope here restated a fact Equator already holds, and
  * while it was declared, this file passed whether or not the derivation worked at all.
  */
-const ATLAS_ROUTING_OPTIONS = {
-  origin: 'https://atlas.example',
+const ROUTING_OPTIONS = {
+  origin: 'https://site.example',
   document: ({ resolution }: RouteLocalizationContext) => ({
     title:
-      resolution.locale === 'ar-EG' ? 'مختبر ميزات Atlas' : 'Atlas feature lab',
+      resolution.locale === 'ar-EG'
+        ? 'مختبر ميزات Equator'
+        : 'Equator feature lab',
   }),
 } as const;
 
-describe('Atlas Router transaction integration', () => {
+describe('Equator Router transaction integration', () => {
   /** The integration as an application configures it, with nothing added for the test's benefit. */
   const configureRouterIntegration = async () => {
     await TestBed.configureTestingModule({
       providers: [
-        provideLocalizedRouter(routes, ATLAS_ROUTING_OPTIONS),
+        provideLocalizedRouter(routes, ROUTING_OPTIONS),
         provideLocalizationTesting(
           {
             configuration,
             catalogSet,
             catalogLoaders,
             recoveryPayload,
-            extensions: atlasRuntimeExtensions,
+            extensions: runtimeExtensions,
             routeProjection,
           },
           withRouting({
@@ -105,7 +107,7 @@ describe('Atlas Router transaction integration', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideLocalizedRouter(routes, {
-          origin: 'https://atlas.example',
+          origin: 'https://site.example',
           document: ({ resolution }) => {
             // Keyed on the route rather than the locale, because the locale no longer changes
             // across the navigation under test and keying on it would never fire.
@@ -115,8 +117,8 @@ describe('Atlas Router transaction integration', () => {
             return {
               title:
                 resolution.locale === 'ar-EG'
-                  ? 'مختبر ميزات Atlas'
-                  : 'Atlas feature lab',
+                  ? 'مختبر ميزات Equator'
+                  : 'Equator feature lab',
             };
           },
         }),
@@ -126,7 +128,7 @@ describe('Atlas Router transaction integration', () => {
             catalogSet,
             catalogLoaders,
             recoveryPayload,
-            extensions: atlasRuntimeExtensions,
+            extensions: runtimeExtensions,
             routeProjection,
           },
           withRouting({
@@ -149,7 +151,7 @@ describe('Atlas Router transaction integration', () => {
       primaryLocale: 'en-US',
       route: { routeId: 'route:_index', canonicalPath: '/en-us' },
     });
-    expect(document.title).toBe('Atlas feature lab');
+    expect(document.title).toBe('Equator feature lab');
 
     // The switch, which is the operation that changes locale. The address bar follows it, so the
     // state this navigation has to be restored to is an Arabic one throughout.
@@ -170,7 +172,7 @@ describe('Atlas Router transaction integration', () => {
       TestBed.inject(LocationStrategy).prepareExternalUrl(router.url);
     expect(router.url).toBe('/');
     expect(externalUrl()).toBe('/ar-eg');
-    expect(document.title).toBe('مختبر ميزات Atlas');
+    expect(document.title).toBe('مختبر ميزات Equator');
 
     failDocument = true;
     await router.navigateByUrl('/second');
@@ -196,7 +198,7 @@ describe('Atlas Router transaction integration', () => {
     });
     expect(document.documentElement.lang).toBe('ar-EG');
     expect(document.documentElement.dir).toBe('rtl');
-    expect(document.title).toBe('مختبر ميزات Atlas');
+    expect(document.title).toBe('مختبر ميزات Equator');
   });
 
   /**
@@ -261,7 +263,7 @@ describe('Atlas Router transaction integration', () => {
     const router = TestBed.inject(Router);
     await localization.initialize();
     await router.navigateByUrl('/en-us');
-    expect(document.title).toBe('Atlas feature lab');
+    expect(document.title).toBe('Equator feature lab');
 
     await localization.changeLocale('ar-EG');
     // The re-projection runs in an effect, as the address sync's does, so it lands on the next
@@ -269,7 +271,7 @@ describe('Atlas Router transaction integration', () => {
     // itself; a zoneless TestBed has to be told.
     TestBed.tick();
 
-    expect(document.title).toBe('مختبر ميزات Atlas');
+    expect(document.title).toBe('مختبر ميزات Equator');
     expect(document.documentElement.lang).toBe('ar-EG');
     expect(document.documentElement.dir).toBe('rtl');
   });

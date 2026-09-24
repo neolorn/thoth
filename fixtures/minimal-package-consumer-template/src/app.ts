@@ -4,7 +4,7 @@ import {
   LocalizedMessage,
   LocalizePipe,
   injectLocalization,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { messages } from '#i18n/shell';
 
 @Component({
@@ -13,7 +13,7 @@ import { messages } from '#i18n/shell';
   imports: [LocaleChoice, LocalizedMessage, LocalizePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main data-minimal-atlas [attr.lang]="locale()" [attr.dir]="direction()">
+    <main data-minimal [attr.lang]="locale()" [attr.dir]="direction()">
       <h1 data-title>{{ title() }}</h1>
       <p data-welcome>{{ welcome() }}</p>
       <p data-pipe>{{ messages.title | localize }}</p>
@@ -43,7 +43,7 @@ export class App {
   protected readonly messages = messages;
   protected readonly title = this.localization.textSignal(messages.title);
   protected readonly welcome = this.localization.textSignal(messages.welcome, {
-    name: 'Atlas',
+    name: 'Equator',
   });
   /**
    * The one message `ar-EG` does not carry.

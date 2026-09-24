@@ -69,7 +69,9 @@ function runVerifier(overrides) {
 }
 
 for (const escape of escapes) {
-  const result = await runVerifier({ ATLAS_ASSURANCE_SELF_TEST: escape.mode });
+  const result = await runVerifier({
+    EQUATOR_ASSURANCE_SELF_TEST: escape.mode,
+  });
 
   // The whole point, stated as plainly as it can be: this must not be zero.
   assert.notEqual(
@@ -81,7 +83,7 @@ for (const escape of escapes) {
   // And it must fail by reporting, not by dying somewhere unrelated on the way. A missing consumer
   // build would also produce a non-zero exit, and would prove nothing about the listeners.
   assert.ok(
-    result.stderr.includes('Atlas browser assurance failed.'),
+    result.stderr.includes('Equator browser assurance failed.'),
     `The gate exited ${result.code} for ${escape.description} without reporting a failure. That is a different fault from the one under test:\n${result.stderr}`,
   );
   assert.ok(
@@ -99,7 +101,7 @@ for (const escape of escapes) {
 
 // The third silence: a run that does not end. One millisecond of stage budget makes the first
 // stage overrun, so this exercises the bound itself rather than any assertion behind it.
-const bounded = await runVerifier({ ATLAS_ASSURANCE_STAGE_TIMEOUT_MS: '1' });
+const bounded = await runVerifier({ EQUATOR_ASSURANCE_STAGE_TIMEOUT_MS: '1' });
 
 assert.notEqual(
   bounded.code,
@@ -125,7 +127,7 @@ assert.ok(
 // above die before the try that assembles it and the stage bound exits from its own timer, so
 // nothing had ever read the browser rows, the violations or the page state a real failure reports.
 const reported = await runVerifier({
-  ATLAS_ASSURANCE_SELF_TEST: 'diagnostics',
+  EQUATOR_ASSURANCE_SELF_TEST: 'diagnostics',
 });
 
 assert.notEqual(

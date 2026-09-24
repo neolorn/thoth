@@ -63,7 +63,7 @@ import {
   type RuntimeParsingAdapterBinding,
   type ScopeReadiness,
   type ZonedDateTimeValue,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 import {
   LocalCatalogStore,
   scopeIdentity,
@@ -757,7 +757,7 @@ interface PendingTransition {
 }
 
 interface TransferSnapshot {
-  readonly profile: 'atlas-transfer-state/1';
+  readonly profile: 'equator-transfer-state/1';
   readonly primaryLocale: string;
   readonly formatting: FormattingContext;
   readonly route?: LocalizationRouteSnapshot;
@@ -783,7 +783,7 @@ function freezeScope(scope: LocalizationScope): LocalizationScope {
         'semanticRegistryFingerprint',
         'requiredExtensions',
         // Whether the first render uses this scope. Optional, so a configuration generated before
-        // Atlas derived it still admits.
+        // Equator derived it still admits.
         'startup',
       ],
     ) ||
@@ -1723,7 +1723,7 @@ class LocalizationInternal {
       loadedScopes: Object.freeze(activations.map(({ scope }) => scope)),
       degraded,
       generatedAbi: GENERATED_ABI,
-      standardsProfile: 'atlas-1',
+      standardsProfile: 'equator-1',
       catalogSetIds: this.store.catalogSetIds(),
       formatting: this.formatting(targetLocale),
       ...(route === undefined ? {} : { route: Object.freeze({ ...route }) }),
@@ -1817,9 +1817,9 @@ class LocalizationInternal {
     };
     const outputBound = recoveryOutputBound(representation.body);
     const catalog: CompiledCatalog = {
-      profile: 'atlas-compiled-ir/1',
+      profile: 'equator-compiled-ir/1',
       generatedAbi: GENERATED_ABI,
-      standardsProfile: 'atlas-1',
+      standardsProfile: 'equator-1',
       key: {
         providerId: parsed.providerId,
         scopeId: parsed.scopeId,
@@ -1830,7 +1830,7 @@ class LocalizationInternal {
       requiredExtensions: Object.freeze([]),
       messages: Object.freeze([message]),
       resources: {
-        profile: 'atlas-resource-summary/1',
+        profile: 'equator-resource-summary/1',
         decodedBytes: 0,
         messages: 1,
         identifiers: 1,
@@ -2726,7 +2726,7 @@ class LocalizationInternal {
     // `specs/03-locale-identity-and-resolution.spec.md` section 9. A message that came from a
     // locale the primary one inherits from is the primary locale's own answer, which is also what
     // the release completeness gate counts, so refusing it here would let
-    // `atlas check --require-complete` report green on a project this throws in.
+    // `equator check --require-complete` report green on a project this throws in.
     if (
       this.options.setup.fallbackPolicy === 'strict' &&
       !activation.inheritedLocales.has(candidate.catalog.key.catalogLocale)
@@ -2778,7 +2778,8 @@ class LocalizationInternal {
       );
     }
     const result = this.evaluate(handle, inputs);
-    if (result.kind !== 'text') throw new Error('Atlas text invariant failed.');
+    if (result.kind !== 'text')
+      throw new Error('Equator text invariant failed.');
     return result;
   }
 
@@ -2793,7 +2794,7 @@ class LocalizationInternal {
     }
     const result = this.evaluate(handle, inputs);
     if (result.kind !== 'parts')
-      throw new Error('Atlas parts invariant failed.');
+      throw new Error('Equator parts invariant failed.');
     return result;
   }
 
@@ -2823,7 +2824,7 @@ class LocalizationInternal {
       }
     }
     return Object.freeze({
-      profile: 'atlas-transfer-state/1',
+      profile: 'equator-transfer-state/1',
       primaryLocale: this.active.publicSnapshot.primaryLocale,
       formatting: this.active.publicSnapshot.formatting,
       ...(this.active.publicSnapshot.route === undefined
@@ -2921,7 +2922,7 @@ class RuntimeLocalization implements Localization {
   private internal(): LocalizationInternal {
     const value = internals.get(this);
     if (value === undefined)
-      throw new Error('Atlas localization invariant failed.');
+      throw new Error('Equator localization invariant failed.');
     return value;
   }
 

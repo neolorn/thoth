@@ -2,12 +2,11 @@
  * "What compiles, renders", checked as an invariant rather than as a list of cases.
  *
  * The specification's own words for this are in `specs/04-message-authoring-and-catalogs.spec.md`
- * section 6: where MessageFormat 2
- * leaves a behaviour implementation-defined, Atlas resolves it as a refusal at compile time, never
- * as a render-time fallback and never as a render-time throw. Three separate pieces of work turned
- * out to be instances of that being untrue (a literal operand that was not a number, `:integer`
- * inheriting a fraction-digit minimum above its own maximum, and `roundingIncrement`) and each was
- * fixed where it was found. Nothing checked the class.
+ * section 6: where MessageFormat 2 leaves a behaviour implementation-defined, Equator resolves it
+ * as a refusal at compile time, never as a render-time fallback and never as a render-time throw.
+ * Three separate pieces of work turned out to be instances of that being untrue (a literal operand
+ * that was not a number, `:integer` inheriting a fraction-digit minimum above its own maximum, and
+ * `roundingIncrement`) and each was fixed where it was found. Nothing checked the class.
  *
  * **The cases are not written here.** They are generated from the option table the compiler and the
  * evaluator both read, so a function that gains an option contributes its cases the day it lands and
@@ -37,7 +36,7 @@ const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 const consumerToolkit = resolve(
   workspaceRoot,
-  'tmp/package-consumer-verification/package-consumer/node_modules/@neolorn/atlas-toolkit/index.js',
+  'tmp/package-consumer-verification/package-consumer/node_modules/@neolorn/equator-toolkit/index.js',
 );
 if (!existsSync(consumerToolkit)) {
   process.stderr.write(
@@ -61,13 +60,13 @@ if (!existsSync(tableModule)) {
 const table = await import(pathToFileURL(tableModule).href);
 const tk = await import(pathToFileURL(consumerToolkit).href);
 // The modules rather than the package entry. The compiler's own machinery is not published:
-// nothing outside Atlas calls it, so it is not part of the toolkit's surface, and a gate that
+// nothing outside Equator calls it, so it is not part of the toolkit's surface, and a gate that
 // exercises it reaches the module that declares it. This is the same reach the option table above
 // already makes.
-const { compileAtlasLocalArtifacts } = await import(
+const { compileLocalArtifacts } = await import(
   pathToFileURL(resolve(dirname(consumerToolkit), 'compiled-artifacts.js')).href
 );
-const { analyzeAtlasCatalogSet } = await import(
+const { analyzeCatalogSet } = await import(
   pathToFileURL(resolve(dirname(consumerToolkit), 'semantic-model.js')).href
 );
 const messageFormat = await import(
@@ -75,12 +74,12 @@ const messageFormat = await import(
 );
 const rt = await import(
   pathToFileURL(
-    resolve(workspaceRoot, 'dist/runtime/fesm2022/neolorn-atlas.mjs'),
+    resolve(workspaceRoot, 'dist/runtime/fesm2022/neolorn-equator.mjs'),
   ).href
 );
 
-const RULES = table.ATLAS_MESSAGE_OPTION_RULES;
-const FUNCTIONS = table.ATLAS_MESSAGE_FUNCTION_OPTIONS;
+const RULES = table.MESSAGE_OPTION_RULES;
+const FUNCTIONS = table.MESSAGE_FUNCTION_OPTIONS;
 if (RULES === undefined || FUNCTIONS === undefined) {
   process.stderr.write(
     'The installed option table does not export what this walk reads. Nothing was measured.' +
@@ -198,7 +197,7 @@ const SCOPE = 'walk';
  * not what an extension formats but what its declaration carries, so the only difference between a
  * direct case and its twin is which function the option was written on.
  *
- * Nothing is shipped. These are extension descriptors, the mechanism Atlas already has, declared
+ * Nothing is shipped. These are extension descriptors, the mechanism Equator already has, declared
  * the way the conformance runner declares the suite's test functions.
  */
 const seamOptionsFor = (fn) => {
@@ -214,7 +213,7 @@ const seamOptionsFor = (fn) => {
 const declaredOptions = (names) =>
   Object.fromEntries(names.map((name) => [name, { type: 'string' }]));
 
-const seamRegistry = tk.defineAtlasExtensionRegistry([
+const seamRegistry = tk.defineExtensionRegistry([
   {
     kind: 'message-function',
     id: 'walk:number',
@@ -236,7 +235,7 @@ const seamRegistry = tk.defineAtlasExtensionRegistry([
 ]);
 if (!seamRegistry.ok) {
   process.stderr.write(
-    'Atlas refused this walk own extension descriptors: ' +
+    'Equator refused this walk own extension descriptors: ' +
       seamRegistry.diagnostics
         .map(({ code, summary }) => code + ' ' + summary)
         .join('; ') +
@@ -297,11 +296,12 @@ function valuesFor(name) {
     case 'platform':
       // The sampled pair where there is one, so the walk stays the same size whatever ICU ships.
       return (
-        SAMPLED[name] ?? [...table.atlasPlatformValues(rule.key)].slice(0, 2)
+        SAMPLED[name] ??
+        [...table.supportedPlatformValues(rule.key)].slice(0, 2)
       );
     case 'unsupported':
-      // Written on purpose: an option Atlas declines has to be refused, and a walk that skipped it
-      // would never notice it being quietly accepted again.
+      // Written on purpose: an option Equator declines has to be refused, and a walk that skipped
+      // it would never notice it being quietly accepted again.
       return ['whatever'];
     default:
       return [];
@@ -327,12 +327,12 @@ const missingSamples = [];
  * cases for it and reporting green.
  *
  * So the compiler's own list of built-in functions is compared to the table's, in both directions.
- * `ATLAS_MESSAGE_FUNCTION_PROFILE` is the list the parser accepts a `:name` from; anything in it
+ * `MESSAGE_FUNCTION_PROFILE` is the list the parser accepts a `:name` from; anything in it
  * without an option profile is a function whose options nobody reads, and anything in the profile
  * table without an entry there is a vocabulary for a function that cannot be written.
  */
 const declared = new Set(
-  (messageFormat.ATLAS_MESSAGE_FUNCTION_PROFILE ?? []).map(({ name }) => name),
+  (messageFormat.MESSAGE_FUNCTION_PROFILE ?? []).map(({ name }) => name),
 );
 if (declared.size === 0) {
   process.stderr.write(
@@ -458,14 +458,14 @@ for (const [fn, profile] of Object.entries(FUNCTIONS)) {
  * Compiling and rendering, through the shipped surface.               *
  * ------------------------------------------------------------------ */
 
-const configuration = tk.parseAtlasConfiguration(
+const configuration = tk.parseConfiguration(
   JSON.stringify({
     schemaVersion: 1,
     sourceLocale: LOCALE,
     defaultLocale: LOCALE,
     locales: [LOCALE],
   }),
-  { sourcePath: 'atlas.config.json' },
+  { sourcePath: 'equator.config.json' },
 );
 if (!configuration.ok) {
   process.stderr.write(
@@ -533,7 +533,7 @@ const catalogOf = (indices) =>
 /**
  * The subset the compiler accepts, found by bisection.
  *
- * `parseAtlasCatalog` reports the first refusing message and stops, so dropping one refusal and
+ * `parseCatalog` reports the first refusing message and stops, so dropping one refusal and
  * retrying the whole set is quadratic in the number of refusals: an earlier draft did exactly
  * that and did not finish in ten minutes. Halving instead is one parse per accepted run plus a
  * logarithmic tail per refusal.
@@ -541,7 +541,7 @@ const catalogOf = (indices) =>
 const refusals = new Map();
 function accepted(subset) {
   if (subset.length === 0) return [];
-  const attempt = tk.parseAtlasCatalog(catalogOf(subset), parseOptions);
+  const attempt = tk.parseCatalog(catalogOf(subset), parseOptions);
   if (attempt.ok) return subset;
   if (subset.length === 1) {
     refusals.set(
@@ -557,14 +557,14 @@ function accepted(subset) {
 }
 
 const live = accepted(cases.map((_, index) => index));
-const parsed = tk.parseAtlasCatalog(catalogOf(live), parseOptions);
+const parsed = tk.parseCatalog(catalogOf(live), parseOptions);
 if (!parsed.ok) {
   process.stderr.write(
     `The accepted subset did not parse as a whole. The walk is measuring itself.${NEWLINE}`,
   );
   process.exit(1);
 }
-const graph = analyzeAtlasCatalogSet({
+const graph = analyzeCatalogSet({
   configuration: configuration.value,
   catalogs: [parsed.value],
   extensions: extensionRegistry,
@@ -575,9 +575,9 @@ if (!graph.ok) {
   );
   process.exit(1);
 }
-const compiled = compileAtlasLocalArtifacts({
+const compiled = compileLocalArtifacts({
   owner: {
-    providerId: '@neolorn/atlas-verify',
+    providerId: '@neolorn/verify',
     generatedRootPath: 'src/generated/i18n',
   },
   graph: graph.value,
@@ -596,7 +596,7 @@ const catalog = artifacts.catalogs[0];
 const localization = rt.createLocalizationContext({
   setup: {
     configuration: Object.freeze({
-      generatedAbi: 'atlas-generated/1',
+      generatedAbi: 'equator-generated/1',
       sourceLocale: LOCALE,
       defaultLocale: LOCALE,
       locales: Object.freeze([LOCALE]),
@@ -629,8 +629,8 @@ const localization = rt.createLocalizationContext({
     extensions: extensionBindings,
   },
   bootstrapScopes: [Object.freeze({ providerId: PROVIDER, scopeId: SCOPE })],
-  // A consumer supplies one and Atlas refuses to format a date without it. `UTC` because it is the
-  // one zone whose answer does not depend on where this runs.
+  // A consumer supplies one and Equator refuses to format a date without it. `UTC` because it is
+  // the one zone whose answer does not depend on where this runs.
   formattingContext: Object.freeze({ timeZone: 'UTC' }),
 });
 
@@ -641,7 +641,7 @@ const rendered = new Map();
 for (const semantic of graph.value.scopes[0].messages) {
   const index = Number(semantic.messageId.slice(1));
   const handle = Object.freeze({
-    generatedAbi: 'atlas-generated/1',
+    generatedAbi: 'equator-generated/1',
     providerId: semantic.providerId,
     scopeId: semantic.scopeId,
     messageId: semantic.messageId,
@@ -676,7 +676,7 @@ const distinctRenderings = (group) => {
   if (group === undefined) return 0;
   const values = group.values.filter((index) => rendered.has(index));
   // Every value refused is a complete answer: the option cannot be written at all, so it cannot be
-  // written and ignored. `usage` is the standing case: Atlas declines unit conversion by name.
+  // written and ignored. `usage` is the standing case: Equator declines unit conversion by name.
   if (values.length === 0) return 0;
   const seen = new Set(values.map((index) => rendered.get(index)));
   const baseline = rendered.get(group.baseline);

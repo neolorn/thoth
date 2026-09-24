@@ -1,7 +1,7 @@
 # About diagnostics and runtime outcomes
 
-Atlas reports two kinds of finding, from two places, with two audiences. The compiler's diagnostics
-are about your sources. The runtime's outcomes are about what happened to one request.
+Equator reports two kinds of finding, from two places, with two audiences. The compiler's
+diagnostics are about your sources. The runtime's outcomes are about what happened to one request.
 
 ## Codes
 
@@ -9,14 +9,14 @@ Every finding carries a code. The code is what you search for, what you suppress
 you count, and it means the same thing across releases. The sentence beside it is for a person and
 may be reworded; a build script that reacts to a class of finding matches on the code.
 
-`packages/toolkit/DIAGNOSTICS.md` ships inside the toolkit package, so it is readable from an install
-with no network. It is generated from the code union itself, which is why it cannot list a code Atlas
-does not have or omit one it does. The same table is published as
+`packages/toolkit/DIAGNOSTICS.md` ships inside the toolkit package, so it is readable from an
+install with no network. It is generated from the code union itself, which is why it cannot list a
+code Equator does not have or omit one it does. The same table is published as
 [Diagnostics](../reference/diagnostics.md).
 
 ## Severity and exit codes
 
-`atlas check` reports. `--require-complete` and `--require-fresh` turn classes of finding into
+`equator check` reports. `--require-complete` and `--require-fresh` turn classes of finding into
 failures.
 
 Exit codes are the half a build reads: `0` success, `1` diagnostics, `2` invocation or configuration,

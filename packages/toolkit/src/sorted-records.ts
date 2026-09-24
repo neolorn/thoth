@@ -1,10 +1,10 @@
 /**
  * One key order and one record shape, for every table the toolkit emits.
  *
- * Everything Atlas writes is compared against something: a digest, a catalog diff, a generated file
- * checked against the source it came from. Those comparisons only mean anything if two runs over
- * the same input produce the same order, so keys are ordered by code point everywhere rather than
- * by whatever order they were inserted in.
+ * Everything Equator writes is compared against something: a digest, a catalog diff, a generated
+ * file checked against the source it came from. Those comparisons only mean anything if two runs
+ * over the same input produce the same order, so keys are ordered by code point everywhere rather
+ * than by whatever order they were inserted in.
  *
  * The records are built with no prototype and frozen, because the keys in them come from authored
  * files. A key spelled `__proto__` reaches `Object.prototype` on a plain object literal and reaches

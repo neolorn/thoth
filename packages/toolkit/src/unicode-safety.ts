@@ -9,7 +9,7 @@ function isNoncharacter(codePoint: number): boolean {
   );
 }
 
-export function isAtlasUnicodeScalarText(value: string): boolean {
+export function isUnicodeScalarText(value: string): boolean {
   for (let index = 0; index < value.length; index += 1) {
     const first = value.charCodeAt(index);
     let codePoint = first;
@@ -26,17 +26,15 @@ export function isAtlasUnicodeScalarText(value: string): boolean {
   return true;
 }
 
-export function isAtlasSafeAuthoredText(value: string): boolean {
+export function isSafeAuthoredText(value: string): boolean {
   return (
-    isAtlasUnicodeScalarText(value) &&
+    isUnicodeScalarText(value) &&
     !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/u.test(value)
   );
 }
 
-export function isAtlasSafeStructuralText(value: string): boolean {
-  return (
-    isAtlasSafeAuthoredText(value) && !unsafeInvisibleOrBidiControl.test(value)
-  );
+export function isSafeStructuralText(value: string): boolean {
+  return isSafeAuthoredText(value) && !unsafeInvisibleOrBidiControl.test(value);
 }
 
 /**
@@ -45,7 +43,7 @@ export function isAtlasSafeStructuralText(value: string): boolean {
  * Named rather than boolean because "contains a forbidden character" is useless to a translator
  * who cannot see the character. The diagnostic has to say which kind and what it does.
  */
-export type AtlasBidiViolation =
+export type BidiViolation =
   | 'directional-override'
   | 'unbalanced-isolate'
   | 'byte-order-mark';
@@ -81,9 +79,7 @@ const ISOLATE_OPEN = /[\u2066-\u2068]/u;
  *   reorder a run. Ordinary bidi authoring.
  * - **Zero-width space and word joiner** (U+200B, U+2060), which have real typographic uses.
  */
-export function inspectAtlasAuthoredBidi(
-  value: string,
-): AtlasBidiViolation | undefined {
+export function inspectAuthoredBidi(value: string): BidiViolation | undefined {
   if (DIRECTIONAL_OVERRIDE.test(value)) return 'directional-override';
   if (value.includes('\ufeff')) return 'byte-order-mark';
 
@@ -100,8 +96,8 @@ export function inspectAtlasAuthoredBidi(
   return depth === 0 ? undefined : 'unbalanced-isolate';
 }
 
-export function isAtlasSafeXmlText(value: string): boolean {
-  if (!isAtlasSafeAuthoredText(value)) return false;
+export function isSafeXmlText(value: string): boolean {
+  if (!isSafeAuthoredText(value)) return false;
   for (const character of value) {
     const codePoint = character.codePointAt(0) as number;
     if (

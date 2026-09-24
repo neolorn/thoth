@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  atlasCatchallOtherCollisions,
-  parseAtlasMessage,
-  type AtlasMessageVariant,
+  catchallOtherCollisions,
+  parseMessageSemanticModel,
+  type MessageVariant,
 } from '../src/message-format.js';
-import { ATLAS_CARDINAL_PLURAL_CATEGORIES } from '../src/plural-categories.generated.js';
+import { CARDINAL_PLURAL_CATEGORIES } from '../src/plural-categories.generated.js';
 
 /**
  * A message that cannot be written in a format whose cases are all named.
@@ -20,7 +20,7 @@ import { ATLAS_CARDINAL_PLURAL_CATEGORIES } from '../src/plural-categories.gener
  */
 
 function variantsOf(source: string) {
-  const parsed = parseAtlasMessage(source);
+  const parsed = parseMessageSemanticModel(source);
   if (!parsed.ok) {
     throw new Error(
       `fixture did not parse: ${parsed.diagnostics.map(({ summary }) => summary).join('; ')}`,
@@ -43,14 +43,14 @@ describe('the premise: a catch-all is not a synonym for other', () => {
    * data rather than argued.
    */
   it('is invisible in English, where every value is one or other', () => {
-    expect([...(ATLAS_CARDINAL_PLURAL_CATEGORIES['en'] ?? [])].sort()).toEqual([
+    expect([...(CARDINAL_PLURAL_CATEGORIES['en'] ?? [])].sort()).toEqual([
       'one',
       'other',
     ]);
   });
 
   it('is four categories wide in Arabic, which is where the two part company', () => {
-    const arabic = ATLAS_CARDINAL_PLURAL_CATEGORIES['ar'] ?? [];
+    const arabic = CARDINAL_PLURAL_CATEGORIES['ar'] ?? [];
     expect([...arabic].sort()).toEqual([
       'few',
       'many',
@@ -68,7 +68,7 @@ describe('the premise: a catch-all is not a synonym for other', () => {
 
 describe('variants that would merge under the mapping', () => {
   it('names the pair when other and the catch-all are both present', () => {
-    const collisions = atlasCatchallOtherCollisions(
+    const collisions = catchallOtherCollisions(
       variantsOf(
         select('one {{1 item}}', 'other {{# items}}', '* {{# items}}'),
       ),
@@ -78,7 +78,7 @@ describe('variants that would merge under the mapping', () => {
 
   it('says nothing when the catch-all is the only one of the two', () => {
     expect(
-      atlasCatchallOtherCollisions(
+      catchallOtherCollisions(
         variantsOf(select('one {{1 item}}', '* {{# items}}')),
       ),
     ).toEqual([]);
@@ -97,7 +97,7 @@ describe('variants that would merge under the mapping', () => {
       'other book {{# books}}',
       '* * {{# things}}',
     ].join('\n');
-    expect(atlasCatchallOtherCollisions(variantsOf(twoSelectors))).toEqual([]);
+    expect(catchallOtherCollisions(variantsOf(twoSelectors))).toEqual([]);
   });
 });
 
@@ -108,7 +108,7 @@ describe('what it must not report', () => {
    * question, and would hide the fact that nothing else answers that one.
    */
   it('never sees duplicate literal keys, because MF2 itself refuses them', () => {
-    const duplicated = parseAtlasMessage(
+    const duplicated = parseMessageSemanticModel(
       select('one {{1 item}}', 'one {{a duplicate}}', '* {{# items}}'),
     );
     expect(duplicated.ok).toBe(false);
@@ -128,8 +128,8 @@ describe('what it must not report', () => {
       { keys: [{ kind: 'literal', value: 'one' }], pattern: ['1 item'] },
       { keys: [{ kind: 'literal', value: 'one' }], pattern: ['a duplicate'] },
       { keys: [{ kind: 'catchall' }], pattern: ['# items'] },
-    ] as const satisfies readonly AtlasMessageVariant[];
-    expect(atlasCatchallOtherCollisions(duplicated)).toEqual([]);
+    ] as const satisfies readonly MessageVariant[];
+    expect(catchallOtherCollisions(duplicated)).toEqual([]);
   });
 
   it('leaves a message with no catch-all collision alone across two selectors', () => {
@@ -142,7 +142,7 @@ describe('what it must not report', () => {
       '* book {{# books}}',
       '* * {{# things}}',
     ].join('\n');
-    expect(atlasCatchallOtherCollisions(variantsOf(twoSelectors))).toEqual([]);
+    expect(catchallOtherCollisions(variantsOf(twoSelectors))).toEqual([]);
   });
 
   it('finds the collision across two selectors when one tuple repeats', () => {
@@ -156,8 +156,6 @@ describe('what it must not report', () => {
       '* * {{# things}}',
     ].join('\n');
     // `one other` and `one *` both become `one other`.
-    expect(atlasCatchallOtherCollisions(variantsOf(twoSelectors))).toEqual([
-      [1, 2],
-    ]);
+    expect(catchallOtherCollisions(variantsOf(twoSelectors))).toEqual([[1, 2]]);
   });
 });

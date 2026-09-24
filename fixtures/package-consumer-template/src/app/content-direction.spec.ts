@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { contentPresentation, languagePresentation } from '@neolorn/atlas';
+import { contentPresentation, languagePresentation } from '@neolorn/equator';
 
 /**
  * Consumer content whose language may not be known.
@@ -9,14 +9,14 @@ import { contentPresentation, languagePresentation } from '@neolorn/atlas';
  * language-independent values "retain
  * their own known language and direction … or an explicit unknown state". The unknown state had no
  * representation: `languagePresentation('und')` answered `ltr`, so content explicitly marked
- * undetermined was assigned a direction Atlas had no basis for.
+ * undetermined was assigned a direction Equator had no basis for.
  *
  * A customer types their name in Arabic, the application stores it without a language tag
  * (user-supplied text usually arrives without one) and it renders left-to-right, with nothing in
  * the output to record that the direction was guessed.
  *
  * `auto` is not a third direction. It defers to the renderer's first-strong rule, which is what
- * `dir="auto"` already does in a browser, so Atlas still never determines the authoritative
+ * `dir="auto"` already does in a browser, so Equator still never determines the authoritative
  * language of consumer content.
  */
 
@@ -64,7 +64,7 @@ describe('content whose language is not known', () => {
 
   it('does not infer a direction from region alone', () => {
     // und-EG is "undetermined, in Egypt". Reading Arabic out of the region would be inferring the
-    // language of consumer content, which is exactly what Atlas must not do.
+    // language of consumer content, which is exactly what Equator must not do.
     expect(contentPresentation('und-EG')).toMatchObject({
       direction: 'auto',
       classification: 'unknown',

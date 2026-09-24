@@ -1,6 +1,6 @@
 # About canonical values
 
-Atlas formats values rather than numbers. `formatMoney` takes a money value, and there is no
+Equator formats values rather than numbers. `formatMoney` takes a money value, and there is no
 overload taking an amount and a currency code as two arguments.
 
 ## A canonical value type
@@ -63,8 +63,8 @@ written in `arab` digits and the other in `arabext`.
 
 "3 days ago" is two decisions: how far apart the two moments are, and which unit to say it in. The
 distance is arithmetic. The unit is a product decision, so `withRelativeTimePolicy` sets the
-thresholds and Atlas does not pick them: a support tool keeps saying minutes for longer than a news
-feed does.
+thresholds and Equator does not pick them: a support tool keeps saying minutes for longer than a
+news feed does.
 
 `withLocalizationClock` decides what `now` is. Left out, it is the system clock. `fixedClock` pins
 it, which is what makes a relative time reproducible in a test.

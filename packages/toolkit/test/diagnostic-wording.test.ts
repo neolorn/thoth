@@ -5,9 +5,9 @@ import { resolve } from 'node:path';
 import { MessageSyntaxError, parseMessage, validate } from 'messageformat';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { checkAtlasProject, parseAtlasCatalog } from '../src/index.js';
-import { parseAtlasMessage } from '../src/message-format.js';
-import { initializeAtlasProject } from '../src/project-host.js';
+import { checkProject, parseCatalog } from '../src/index.js';
+import { parseMessageSemanticModel } from '../src/message-format.js';
+import { initializeProject } from '../src/project-host.js';
 import { syntaxErrorSentence } from '../src/message-format.js';
 
 /**
@@ -15,25 +15,25 @@ import { syntaxErrorSentence } from '../src/message-format.js';
  *
  * The defect these tests protect against is entirely in the wording, so every assertion below is
  * on the rendered sentence and none of them is on a code. A test that asserts `code ===
- * 'ATL1102'` passes against every one of the sentences these replaced, which is why they were
+ * 'EQ1102'` passes against every one of the sentences these replaced, which is why they were
  * written after those codes were already covered.
  *
  * The three, as they read before:
  *
- * - **ATL1102, a rejected key.** Two lines for one key, at two positions, each carrying half of
- *   what the reader needed: `Atlas catalog must match pattern "^[a-z][a-z0-9]*(?:-[a-z]..."` (
+ * - **EQ1102, a rejected key.** Two lines for one key, at two positions, each carrying half of
+ *   what the reader needed: `Equator catalog must match pattern "^[a-z][a-z0-9]*(?:-[a-z]..."` (
  *   the rule, in a language the reader is not writing in, with no property named) and
- *   `Atlas catalog property name must be valid`, which names the property's position and no rule.
+ *   `Equator catalog property name must be valid`, which names the property's position and no rule.
  *   Neither said that a catalog spells keys one way and code spells them another.
- * - **ATL1101, a parse failure.** The `yaml` package's `message` is a code frame: sentence, blank
+ * - **EQ1101, a parse failure.** The `yaml` package's `message` is a code frame: sentence, blank
  *   line, source, caret. Interpolated into a one-line diagnostic it reached the terminal as
  *   `Missing closing "quote at line 3, column 1:<CR><LF>  greeting: "unterminated<CR><LF>^<CR>`.
- * - **ATL1702, no catalogs.** *"Atlas found no conventional i18n/<scope>/<locale>.yaml catalogs"*
+ * - **EQ1702, no catalogs.** *"Equator found no conventional i18n/<scope>/<locale>.yaml catalogs"*
  *   was printed whether none existed or every one of them existed and failed to parse: above the
  *   parse errors for the very files it had just read.
  *
- * The catalog cases go through `parseAtlasCatalog` and the project case through
- * `checkAtlasProject`, because that is where each sentence is decided.
+ * The catalog cases go through `parseCatalog` and the project case through
+ * `checkProject`, because that is where each sentence is decided.
  */
 
 const temporaryRoots: string[] = [];
@@ -47,7 +47,7 @@ afterEach(async () => {
 });
 
 function catalogSummaries(body: string, code: string): readonly string[] {
-  const result = parseAtlasCatalog(body, {
+  const result = parseCatalog(body, {
     role: 'source',
     providerId: 'home',
     scopeId: 'shell',
@@ -56,7 +56,7 @@ function catalogSummaries(body: string, code: string): readonly string[] {
   });
   for (const diagnostic of result.diagnostics) {
     // Every diagnostic in this file is one terminal line, whichever case produced it. This is the
-    // ATL1101 defect stated as a property rather than as one expected string, so a second parser
+    // EQ1101 defect stated as a property rather than as one expected string, so a second parser
     // message that also arrives as a code frame cannot pass unnoticed.
     expect(diagnostic.summary).not.toMatch(/[\u0000-\u001f]/u);
   }
@@ -66,13 +66,13 @@ function catalogSummaries(body: string, code: string): readonly string[] {
 }
 
 async function projectWithCatalogs(scopes: readonly string[]): Promise<string> {
-  const root = await mkdtemp(resolve(tmpdir(), 'atlas-wording-'));
+  const root = await mkdtemp(resolve(tmpdir(), 'wording-'));
   temporaryRoots.push(root);
   await writeFile(
     resolve(root, 'package.json'),
     `${JSON.stringify(
       {
-        name: '@example/atlas-wording-fixture',
+        name: '@example/wording-fixture',
         version: '0.0.0',
         private: true,
         type: 'module',
@@ -82,7 +82,7 @@ async function projectWithCatalogs(scopes: readonly string[]): Promise<string> {
     )}\n`,
     'utf8',
   );
-  const initialized = await initializeAtlasProject({
+  const initialized = await initializeProject({
     project: root,
     configuration: {
       sourceLocale: 'en-US',
@@ -137,18 +137,18 @@ async function projectWithCatalogs(scopes: readonly string[]): Promise<string> {
 async function catalogDiscoveryLines(
   scopes: readonly string[],
 ): Promise<readonly string[]> {
-  const checked = await checkAtlasProject({
+  const checked = await checkProject({
     project: await projectWithCatalogs(scopes),
   });
   return checked.diagnostics
-    .filter(({ code }) => code === 'ATL1702')
+    .filter(({ code }) => code === 'EQ1702')
     .map(({ severity, code, summary }) => `${severity} ${code}: ${summary}`);
 }
 
 describe('a rejected catalog key, said the way a person would say it', () => {
   it('names the key, states the rule, and gives the name code will use', () => {
     expect(
-      catalogSummaries('messages:\n  signInButton: Sign in\n', 'ATL1102'),
+      catalogSummaries('messages:\n  signInButton: Sign in\n', 'EQ1102'),
     ).toEqual([
       'Message key "signInButton" is not a valid catalog key. Message keys are lower-case words joined by hyphens, and a dot separates groups. Write it as "sign-in-button", which code reaches as messages.signInButton.',
     ]);
@@ -158,13 +158,13 @@ describe('a rejected catalog key, said the way a person would say it', () => {
     // The count is the point. Ajv reports the rejected name twice, and printing both halves still
     // passes the assertion above.
     expect(
-      catalogSummaries('messages:\n  signInButton: Sign in\n', 'ATL1102'),
+      catalogSummaries('messages:\n  signInButton: Sign in\n', 'EQ1102'),
     ).toHaveLength(1);
   });
 
   it('keeps a group separator a group separator', () => {
     expect(
-      catalogSummaries('messages:\n  cart.lineItems: Items\n', 'ATL1102'),
+      catalogSummaries('messages:\n  cart.lineItems: Items\n', 'EQ1102'),
     ).toEqual([
       'Message key "cart.lineItems" is not a valid catalog key. Message keys are lower-case words joined by hyphens, and a dot separates groups. Write it as "cart.line-items", which code reaches as messages.cart.lineItems.',
     ]);
@@ -172,7 +172,7 @@ describe('a rejected catalog key, said the way a person would say it', () => {
 
   it('repairs the mistakes a person actually makes', () => {
     expect(
-      catalogSummaries('messages:\n  sign_in_button: Sign in\n', 'ATL1102'),
+      catalogSummaries('messages:\n  sign_in_button: Sign in\n', 'EQ1102'),
     ).toEqual([
       'Message key "sign_in_button" is not a valid catalog key. Message keys are lower-case words joined by hyphens, and a dot separates groups. Write it as "sign-in-button", which code reaches as messages.signInButton.',
     ]);
@@ -181,18 +181,16 @@ describe('a rejected catalog key, said the way a person would say it', () => {
   it('offers no repair the schema would reject in turn', () => {
     // `1greeting` has nothing wrong that lower-casing and hyphenation can fix. A suggestion that is
     // itself rejected is worse than none, so the rule is given and the sentence stops.
-    expect(catalogSummaries('messages:\n  1greeting: Hi\n', 'ATL1102')).toEqual(
-      [
-        'Message key "1greeting" is not a valid catalog key. Message keys are lower-case words joined by hyphens, and a dot separates groups.',
-      ],
-    );
+    expect(catalogSummaries('messages:\n  1greeting: Hi\n', 'EQ1102')).toEqual([
+      'Message key "1greeting" is not a valid catalog key. Message keys are lower-case words joined by hyphens, and a dot separates groups.',
+    ]);
   });
 
   it('calls a family name a family name, with its own rule', () => {
     expect(
       catalogSummaries(
         'messages:\n  ok: Fine\nfamilies:\n  personName:\n    kind: person-name\n',
-        'ATL1102',
+        'EQ1102',
       )[0],
     ).toBe(
       'Family name "personName" is not a valid catalog key. Family names are lower-case words joined by hyphens. Write it as "person-name".',
@@ -205,10 +203,10 @@ describe('a rejected catalog key, said the way a person would say it', () => {
     // that silently swallowed the whole report would fail here rather than look like a quieter
     // diagnostic.
     expect(
-      catalogSummaries('messages: not-a-map\nunknown-key: 1\n', 'ATL1102'),
+      catalogSummaries('messages: not-a-map\nunknown-key: 1\n', 'EQ1102'),
     ).toEqual([
-      'Atlas catalog must NOT have additional properties.',
-      'Atlas catalog must be object.',
+      'Equator catalog must NOT have additional properties.',
+      'Equator catalog must be object.',
     ]);
   });
 });
@@ -216,13 +214,13 @@ describe('a rejected catalog key, said the way a person would say it', () => {
 describe('a catalog the YAML parser could not read', () => {
   it('says what is wrong in one sentence, without the code frame', () => {
     expect(
-      catalogSummaries('messages:\n  greeting: "unterminated\n', 'ATL1101'),
-    ).toEqual(['Atlas catalog YAML is invalid: Missing closing "quote']);
+      catalogSummaries('messages:\n  greeting: "unterminated\n', 'EQ1101'),
+    ).toEqual(['Equator catalog YAML is invalid: Missing closing "quote']);
   });
 
   it('does the same for a parser message that is not about quoting', () => {
-    expect(catalogSummaries('messages:\n\tgreeting: Hi\n', 'ATL1101')).toEqual([
-      'Atlas catalog YAML is invalid: Tabs are not allowed as indentation',
+    expect(catalogSummaries('messages:\n\tgreeting: Hi\n', 'EQ1101')).toEqual([
+      'Equator catalog YAML is invalid: Tabs are not allowed as indentation',
     ]);
   });
 });
@@ -230,19 +228,19 @@ describe('a catalog the YAML parser could not read', () => {
 describe('catalogs that are missing and catalogs that will not parse', () => {
   it('treats having no messages yet as a note, and says where the first one goes', async () => {
     expect(await catalogDiscoveryLines([])).toEqual([
-      'info ATL1702: Atlas found no messages yet. Write the first catalog at i18n/<scope>/en-US.yaml, for example i18n/shell/en-US.yaml.',
+      'info EQ1702: Equator found no messages yet. Write the first catalog at i18n/<scope>/en-US.yaml, for example i18n/shell/en-US.yaml.',
     ]);
   });
 
   it('names the one it found and could not read', async () => {
     expect(await catalogDiscoveryLines(['shell'])).toEqual([
-      'error ATL1702: Atlas found 1 conventional catalog and could not read it: i18n/shell/en-US.yaml.',
+      'error EQ1702: Equator found 1 conventional catalog and could not read it: i18n/shell/en-US.yaml.',
     ]);
   });
 
   it('names all of them while the list is short enough to read', async () => {
     expect(await catalogDiscoveryLines(['cart', 'shell'])).toEqual([
-      'error ATL1702: Atlas found 2 conventional catalogs and could not read any of them: i18n/cart/en-US.yaml, i18n/shell/en-US.yaml.',
+      'error EQ1702: Equator found 2 conventional catalogs and could not read any of them: i18n/cart/en-US.yaml, i18n/shell/en-US.yaml.',
     ]);
   });
 
@@ -258,7 +256,7 @@ describe('catalogs that are missing and catalogs that will not parse', () => {
         'shell',
       ]),
     ).toEqual([
-      'error ATL1702: Atlas found 7 conventional catalogs and could not read any of them: i18n/account/en-US.yaml, i18n/admin/en-US.yaml, i18n/cart/en-US.yaml, i18n/checkout/en-US.yaml, i18n/help/en-US.yaml, i18n/search/en-US.yaml and 1 more.',
+      'error EQ1702: Equator found 7 conventional catalogs and could not read any of them: i18n/account/en-US.yaml, i18n/admin/en-US.yaml, i18n/cart/en-US.yaml, i18n/checkout/en-US.yaml, i18n/help/en-US.yaml, i18n/search/en-US.yaml and 1 more.',
     ]);
   });
 });
@@ -266,7 +264,7 @@ describe('catalogs that are missing and catalogs that will not parse', () => {
 /**
  * What a refused message says, held as text.
  *
- * Filed by 3.17, fixed here, and the same family as ATL1101 above. `MessageSyntaxError.message` is
+ * Filed by 3.17, fixed here, and the same family as EQ1101 above. `MessageSyntaxError.message` is
  * the parser's own type slug followed by the offset, `parse-error at 6`, and
  * `MessageDataModelError` adds nothing to it, so the diagnostic that carried it whole read
  * `MessageFormat missing-selector-annotation: missing-selector-annotation`: the slug twice over,
@@ -299,7 +297,7 @@ describe('a message the parser or the validator refuses', () => {
   ] as const;
 
   const refusalSentences = (source: string): readonly string[] => {
-    const result = parseAtlasMessage(source);
+    const result = parseMessageSemanticModel(source);
     expect(result.ok).toBe(false);
     for (const { summary } of result.diagnostics) {
       // Stated as properties rather than as expected strings, so a shape this file does not list
@@ -412,7 +410,7 @@ describe('a message the parser or the validator refuses', () => {
 
   it('covers every type the pinned parser and validator can produce', () => {
     // The sentences above are one per type, which is a claim about the sources rather than about
-    // Atlas, so it is checked against the thing that raises them. A type this file stopped
+    // Equator, so it is checked against the thing that raises them. A type this file stopped
     // exercising would otherwise leave its sentence asserted by nothing.
     const produced = new Set<string>();
     for (const [, source] of cases) {

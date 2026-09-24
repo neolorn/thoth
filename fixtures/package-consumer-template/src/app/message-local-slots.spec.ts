@@ -8,14 +8,14 @@ import {
   provideLocalizationSetup,
   type LocalizedSlotPart,
   type TrustedSlotBinding,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { messages } from '#i18n/shell';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
  * The two bindings that render a slot which is neither a link nor an action.
@@ -98,7 +98,7 @@ function setup(): Localization {
         catalogSet,
         catalogLoaders,
         recoveryPayload,
-        extensions: atlasRuntimeExtensions,
+        extensions: runtimeExtensions,
       }),
     ],
   });

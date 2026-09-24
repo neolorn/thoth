@@ -5,7 +5,7 @@ import {
   type LocaleDirection,
   type LocaleTypographyRegistry,
   type TypographyProfile,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /** A language tag with the direction it is written in, for marking up a run of text. */
 export interface LanguagePresentation {
@@ -29,7 +29,7 @@ export interface IconPresentation {
  * How to mark up a piece of content whose language the application may not know.
  *
  * The direction is `auto` rather than a guess wherever the language is unknown or the content has
- * no language, which is what lets the browser decide from the text instead of Atlas deciding from
+ * no language, which is what lets the browser decide from the text instead of Equator deciding from
  * nothing.
  */
 export interface ContentPresentation {
@@ -54,7 +54,7 @@ const UNDETERMINED = 'und';
  * language-independent values keep their own known language and direction, or an explicit unknown
  * state. The unknown state had no
  * representation: `languagePresentation('und')` answered `ltr`, so content explicitly marked
- * undetermined was assigned a direction Atlas had no basis for. A customer name typed in Arabic
+ * undetermined was assigned a direction Equator had no basis for. A customer name typed in Arabic
  * and stored without a tag rendered left-to-right.
  *
  * Now:

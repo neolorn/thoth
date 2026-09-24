@@ -4,10 +4,11 @@ import { basename, resolve } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { checkAtlasProject, generateAtlasProject } from '../src/index.js';
+import { checkProject, generateProject } from '../src/index.js';
 
 /**
- * A consumer mid-refactor must not have its Atlas build fail because of its own TypeScript errors.
+ * A consumer mid-refactor must not have its Equator build fail because of its own TypeScript
+ * errors.
  *
  * The 100-diagnostic cap region was unreachable because every fixture compiled clean, so nothing
  * exercised what happens on the other side of it, and crossing the cap turns findings that are
@@ -17,7 +18,7 @@ import { checkAtlasProject, generateAtlasProject } from '../src/index.js';
  * a consumer under its own compiler configuration was never exercised from the CLI-facing API.
  *
  * Every project below is built with deliberate errors that belong to the consumer, never to a
- * generated `#i18n` module. Atlas's own generated defects must still block, and that distinction
+ * generated `#i18n` module. Equator's own generated defects must still block, and that distinction
  * is the point of the severity split in `static-analysis.ts`.
  */
 
@@ -41,7 +42,7 @@ interface ProjectOptions {
 }
 
 async function consumerProject(options: ProjectOptions): Promise<string> {
-  const root = await mkdtemp(resolve(tmpdir(), 'atlas-consumer-source-'));
+  const root = await mkdtemp(resolve(tmpdir(), 'consumer-source-'));
   temporaryRoots.push(root);
 
   await write(
@@ -49,7 +50,7 @@ async function consumerProject(options: ProjectOptions): Promise<string> {
     'package.json',
     `${JSON.stringify(
       {
-        name: '@example/atlas-consumer-source',
+        name: '@example/consumer-source',
         version: '0.0.0',
         private: true,
         type: 'module',
@@ -64,7 +65,7 @@ async function consumerProject(options: ProjectOptions): Promise<string> {
   );
   await write(
     root,
-    'atlas.config.json',
+    'equator.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -76,8 +77,16 @@ async function consumerProject(options: ProjectOptions): Promise<string> {
       2,
     )}\n`,
   );
-  await write(root, 'i18n/shell/en-US.yaml', 'messages:\n  app-title: Atlas\n');
-  await write(root, 'i18n/shell/ar-EG.yaml', 'messages:\n  app-title: أطلس\n');
+  await write(
+    root,
+    'i18n/shell/en-US.yaml',
+    'messages:\n  app-title: Equator\n',
+  );
+  await write(
+    root,
+    'i18n/shell/ar-EG.yaml',
+    'messages:\n  app-title: Equator\n',
+  );
   await write(
     root,
     'tsconfig.app.json',
@@ -101,7 +110,7 @@ async function consumerProject(options: ProjectOptions): Promise<string> {
   );
   if (options.paths === true) {
     // The alias has to be used, not merely declared. A tsconfig carrying `paths` that no source
-    // imports through proves nothing: Atlas could discard the consumer's paths entirely and the
+    // imports through proves nothing: Equator could discard the consumer's paths entirely and the
     // project would still analyse cleanly.
     await write(root, 'src/toolbox.ts', 'export const toolboxLabel = "t";\n');
   }
@@ -123,7 +132,7 @@ async function consumerProject(options: ProjectOptions): Promise<string> {
   if (options.escapingTemplate === true) {
     // Component detection resolves the @Component symbol and requires its declaration to come
     // from a path containing '/@angular/core/'. A stub declaration is enough: this exercises
-    // Atlas's containment rule, not Angular.
+    // Equator's containment rule, not Angular.
     await write(
       root,
       'node_modules/@angular/core/index.d.ts',
@@ -149,11 +158,11 @@ async function consumerProject(options: ProjectOptions): Promise<string> {
       )}\n`,
     );
 
-    // The secret lives beside the owner, not inside it. Atlas must never open it.
+    // The secret lives beside the owner, not inside it. Equator must never open it.
     await write(
       resolve(root, '..'),
       `outside-${basename(root)}.html`,
-      '<p>ATLAS_MUST_NOT_READ_THIS</p>\n',
+      '<p>MUST_NOT_READ_THIS</p>\n',
     );
     await write(
       root,
@@ -193,7 +202,7 @@ afterEach(async () => {
 describe("a consumer's own TypeScript errors", () => {
   it('does not block generation below the diagnostic cap', async () => {
     const root = await consumerProject({ consumerErrors: 99 });
-    const generated = await generateAtlasProject({ project: root });
+    const generated = await generateProject({ project: root });
 
     expect(generated.ok).toBe(true);
 
@@ -206,7 +215,7 @@ describe("a consumer's own TypeScript errors", () => {
 
   it('reports them as warnings rather than errors', async () => {
     const root = await consumerProject({ consumerErrors: 50 });
-    const generated = await generateAtlasProject({ project: root });
+    const generated = await generateProject({ project: root });
 
     expect(generated.ok).toBe(true);
     for (const diagnostic of generated.diagnostics) {
@@ -217,32 +226,32 @@ describe("a consumer's own TypeScript errors", () => {
   it('refuses to read a component template that escapes the owner', async () => {
     // B2. The project host filtered escaping paths out of suppliedSources by containment, and the
     // analysis fallback then read them from disk anyway, so a templateUrl of
-    // '../../secret/leak.html' was opened and parsed. Atlas analyses the selected owner and
+    // '../../secret/leak.html' was opened and parsed. Equator analyses the selected owner and
     // nothing else.
     const root = await consumerProject({
       consumerErrors: 0,
       escapingTemplate: true,
     });
-    const generated = await generateAtlasProject({ project: root });
+    const generated = await generateProject({ project: root });
 
     const diagnostics = generated.diagnostics;
     const refusal = diagnostics.filter((d) =>
-      d.summary.includes('resolves outside the selected Atlas owner'),
+      d.summary.includes('resolves outside the selected Equator owner'),
     );
 
     expect(refusal).toHaveLength(1);
 
     // The refusal must not carry what it refused to read.
     for (const diagnostic of diagnostics) {
-      expect(diagnostic.summary).not.toContain('ATLAS_MUST_NOT_READ_THIS');
+      expect(diagnostic.summary).not.toContain('MUST_NOT_READ_THIS');
     }
   });
 
   it('analyses a consumer that configures compilerOptions.paths', async () => {
-    // No fixture tsconfig carried `paths`, so nothing proved Atlas analyses a consumer
-    // under the consumer's own compiler configuration rather than one Atlas invents.
+    // No fixture tsconfig carried `paths`, so nothing proved Equator analyses a consumer
+    // under the consumer's own compiler configuration rather than one Equator invents.
     const root = await consumerProject({ consumerErrors: 3, paths: true });
-    const generated = await generateAtlasProject({ project: root });
+    const generated = await generateProject({ project: root });
 
     expect(generated.ok).toBe(true);
     expect(
@@ -258,7 +267,7 @@ describe("a consumer's own TypeScript errors", () => {
       ),
     ).toEqual([]);
 
-    const checked = await checkAtlasProject({ project: root });
+    const checked = await checkProject({ project: root });
     expect(checked.ok).toBe(true);
     expect(
       checked.diagnostics.filter(({ summary }) =>
@@ -275,7 +284,7 @@ describe("a consumer's own TypeScript errors", () => {
     // The cap bounds reporting volume. It is not a judgement about whether the consumer's code
     // compiles, so it does not change the outcome.
     const root = await consumerProject({ consumerErrors: 150 });
-    const generated = await generateAtlasProject({ project: root });
+    const generated = await generateProject({ project: root });
 
     expect(generated.ok).toBe(true);
 
@@ -293,7 +302,7 @@ describe("a consumer's own TypeScript errors", () => {
 
   it('caps how many consumer findings it reports without capping the outcome', async () => {
     const root = await consumerProject({ consumerErrors: 150 });
-    const generated = await generateAtlasProject({ project: root });
+    const generated = await generateProject({ project: root });
 
     const warnings = generated.diagnostics.filter(
       (d) => d.severity === 'warning',

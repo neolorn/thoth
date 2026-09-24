@@ -18,19 +18,19 @@ import {
   createLocaleNeutralPolicy,
   withRouting,
   type LocaleUrlPolicy,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import {
   LocalizedTitleStrategy,
   provideLocalizedRouter,
-} from '@neolorn/atlas/router';
-import { provideLocalizationTesting } from '@neolorn/atlas/testing';
+} from '@neolorn/equator/router';
+import { provideLocalizationTesting } from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
  * `ɵwithRouterResources` exists on 22.1.x and not on 22.0.x, so it is read off the namespace
@@ -53,12 +53,12 @@ import { routePolicy, appRouteProjection } from './localization.routes';
  * Both diagnostics are warnings and both are about silence. Angular provides
  * `ROUTER_CONFIGURATION` non-multi and `LocationStrategy` as an overridable root factory, so a
  * consumer replaces either of them by writing one line and nothing anywhere says so. Neither
- * replacement is refused: Atlas needs nothing from the router config beyond the one mode it
+ * replacement is refused: Equator needs nothing from the router config beyond the one mode it
  * refuses outright, and a consumer's own `LocationStrategy` is an escape hatch rather than a
  * mistake.
  *
  * This file uses the application's real routes rather than a probe pair, so the route table itself
- * has nothing to report and any `[Atlas]` warning is the one under test.
+ * has nothing to report and any `[Equator]` warning is the one under test.
  */
 
 /**
@@ -74,7 +74,7 @@ import { routePolicy, appRouteProjection } from './localization.routes';
 @Injectable()
 class ConsumerTitleStrategy extends TitleStrategy {
   override updateTitle(): void {
-    // Deliberately inert. This file asserts what Atlas reports about the token, not what the
+    // Deliberately inert. This file asserts what Equator reports about the token, not what the
     // replacement does with it: that is `title-strategy.spec.ts`, on the document.
   }
 }
@@ -95,15 +95,15 @@ class ConsumerUrlHandling extends UrlHandlingStrategy {
   }
 }
 
-/** The whole of the Atlas surface these assertions read: what it wrote to the console. */
+/** The whole of the Equator surface these assertions read: what it wrote to the console. */
 interface WarnSpy {
   readonly mock: { readonly calls: readonly (readonly unknown[])[] };
 }
 
-function atlasWarnings(spy: WarnSpy): string[] {
+function warnings(spy: WarnSpy): string[] {
   return spy.mock.calls
     .map((call): string => (typeof call[0] === 'string' ? call[0] : ''))
-    .filter((message: string) => message.startsWith('[Atlas]'));
+    .filter((message: string) => message.startsWith('[Equator]'));
 }
 
 /**
@@ -134,7 +134,7 @@ async function bootstrap(
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
           routeProjection,
         },
         withRouting({
@@ -160,14 +160,14 @@ describe('provideLocalizedRouter diagnostics', () => {
   it('says nothing when nothing of its own is replaced', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await bootstrap([]);
-    expect(atlasWarnings(warn)).toEqual([]);
+    expect(warnings(warn)).toEqual([]);
   });
 
   it('reports a router feature that replaces its configuration', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await bootstrap([withRouterConfig({ onSameUrlNavigation: 'reload' })]);
     expect(
-      atlasWarnings(warn).filter((message) =>
+      warnings(warn).filter((message) =>
         message.includes('ROUTER_CONFIGURATION'),
       ),
     ).toHaveLength(1);
@@ -179,12 +179,12 @@ describe('provideLocalizedRouter diagnostics', () => {
    *
    * `ɵkind` is not unique per feature in Angular itself: on 22.1.3 `withViewTransitions({})` and
    * `ɵwithRouterResources()` both answer 9. A "two features share a kind" scan would warn on this
-   * pair, where nothing of Atlas's is replaced at all. Both features are constructed rather than
+   * pair, where nothing of Equator's is replaced at all. Both features are constructed rather than
    * fabricated as objects carrying a `ɵkind`, because a fabricated pair would pass an
    * implementation that reads the real ones wrongly.
    *
    * **Version-specific, and it says so rather than being skipped quietly.** The collision is a
-   * fact about a particular Angular build, not about Atlas: `ɵwithRouterResources` does not exist
+   * fact about a particular Angular build, not about Equator: `ɵwithRouterResources` does not exist
    * on 22.0.4, so on that row there is no pair to collide and nothing for this case to assert.
    * Skipping alone would be the shape this whole file argues against, a check that stopped
    * running and still reported green, so the companion case below asserts the absence with a
@@ -195,7 +195,7 @@ describe('provideLocalizedRouter diagnostics', () => {
     async () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       await bootstrap([withViewTransitions({}), withRouterResources!()]);
-      expect(atlasWarnings(warn)).toEqual([]);
+      expect(warnings(warn)).toEqual([]);
     },
   );
 
@@ -220,7 +220,7 @@ describe('provideLocalizedRouter diagnostics', () => {
 
   /**
    * The direction that actually breaks localization, and the reason 5.1 ships an assertion instead
-   * of a line the consumer has to write and read. Atlas registers its own `LocationStrategy`
+   * of a line the consumer has to write and read. Equator registers its own `LocationStrategy`
    * before `provideRouter`, so this provider wins on ordinary ordering: the escape hatch works,
    * and it is not silent.
    */
@@ -232,13 +232,13 @@ describe('provideLocalizedRouter diagnostics', () => {
    * `app.routes.ts` declares one English title, on `second`, which is what makes this fire here.
    *
    * What the warning is *for* is asserted in `title-strategy.spec.ts`, on the document: this file
-   * only proves that Atlas says something, and that it says it in the configuration where the
+   * only proves that Equator says something, and that it says it in the configuration where the
    * damage happens rather than in the one where it cannot.
    */
   it('warns when a route declares a title and the localized strategy is absent', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await bootstrap([], [], 'omitted');
-    const named = atlasWarnings(warn).filter((message) =>
+    const named = warnings(warn).filter((message) =>
       message.includes('TitleStrategy'),
     );
     expect(named).toHaveLength(1);
@@ -259,9 +259,7 @@ describe('provideLocalizedRouter diagnostics', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await bootstrap([], [], 'installed');
     expect(
-      atlasWarnings(warn).filter((message) =>
-        message.includes('TitleStrategy'),
-      ),
+      warnings(warn).filter((message) => message.includes('TitleStrategy')),
     ).toEqual([]);
   });
 
@@ -270,14 +268,14 @@ describe('provideLocalizedRouter diagnostics', () => {
    * `RouteMetadataTitleStrategy` overwrites a localized title exactly as `DefaultTitleStrategy`
    * does; the warning names what won so the reader can tell which of the two they are looking at.
    */
-  it('names a consumer strategy that is not Atlas\u2019s', async () => {
+  it('names a consumer strategy that is not Equator\u2019s', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await bootstrap(
       [],
       [{ provide: TitleStrategy, useClass: ConsumerTitleStrategy }],
       'omitted',
     );
-    const named = atlasWarnings(warn).filter((message) =>
+    const named = warnings(warn).filter((message) =>
       message.includes('ConsumerTitleStrategy'),
     );
     expect(named).toHaveLength(1);
@@ -289,7 +287,7 @@ describe('provideLocalizedRouter diagnostics', () => {
       [],
       [{ provide: LocationStrategy, useClass: PathLocationStrategy }],
     );
-    const named = atlasWarnings(warn).filter((message) =>
+    const named = warnings(warn).filter((message) =>
       message.includes('PathLocationStrategy'),
     );
     expect(named).toHaveLength(1);
@@ -314,13 +312,13 @@ describe('provideLocalizedRouter diagnostics', () => {
    * back something else entirely. The defect this file already records against
    * `ConsumerTitleStrategy`.
    */
-  it('names a UrlHandlingStrategy that is not Atlas\u2019s', async () => {
+  it('names a UrlHandlingStrategy that is not Equator\u2019s', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await bootstrap(
       [],
       [{ provide: UrlHandlingStrategy, useClass: ConsumerUrlHandling }],
     );
-    const named = atlasWarnings(warn).filter((message) =>
+    const named = warnings(warn).filter((message) =>
       message.includes('ConsumerUrlHandling'),
     );
     expect(named).toHaveLength(1);
@@ -335,7 +333,7 @@ describe('provideLocalizedRouter diagnostics', () => {
    *
    * `says nothing when nothing of its own is replaced` above covers this token along with every
    * other, which is what makes the assertion here about the *token* rather than about the absence
-   * of output: Atlas installed its own and the injector confirms it, in the same bootstrap the
+   * of output: Equator installed its own and the injector confirms it, in the same bootstrap the
    * warning case uses minus one provider.
    */
   it('finds its own UrlHandlingStrategy in the injector when nothing replaced it', async () => {
@@ -353,7 +351,7 @@ describe('provideLocalizedRouter diagnostics', () => {
  * make. A policy kind is not that: three exported, documented kinds accepted by name and served
  * partly, behind an `unlocalizable-policy` warning that a production build never prints and nobody
  * reads, is an application that half works. All three are served; what these cases pin is that the
- * decision is made rather than defaulted, so a kind Atlas has not decided about cannot start.
+ * decision is made rather than defaulted, so a kind Equator has not decided about cannot start.
  */
 const NEUTRAL = createLocaleNeutralPolicy({
   defaultLocale: 'en-US',
@@ -365,16 +363,16 @@ const NEUTRAL = createLocaleNeutralPolicy({
 const HOST = createHostLocalePolicy({
   defaultLocale: 'en-US',
   origins: {
-    'en-US': 'https://atlas.example',
-    'ar-EG': 'https://ar.atlas.example',
-    'en-Arab-XB': 'https://xb.atlas.example',
+    'en-US': 'https://site.example',
+    'ar-EG': 'https://ar.site.example',
+    'en-Arab-XB': 'https://xb.site.example',
   },
   localeNeutralRoots: ['assets'],
-  xDefaultUrl: 'https://atlas.example',
+  xDefaultUrl: 'https://site.example',
 });
 
 /** Which of the host policy's origins this build answers at, which a host policy must be told. */
-const AT_EN = { origin: 'https://atlas.example' } as const;
+const AT_EN = { origin: 'https://site.example' } as const;
 
 describe('provideLocalizedRouter decides every policy kind by name', () => {
   afterEach(() => {
@@ -395,7 +393,7 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
     expect(TestBed.inject(UrlHandlingStrategy).constructor.name).toBe(
       'LocalizedUrlHandlingStrategy',
     );
-    expect(atlasWarnings(warn)).toEqual([]);
+    expect(warnings(warn)).toEqual([]);
   });
 
   it('serves a locale-host policy, and says nothing about it', async () => {
@@ -404,7 +402,7 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
     expect(TestBed.inject(LocationStrategy).constructor.name).toBe(
       'LocalizedLocationStrategy',
     );
-    expect(atlasWarnings(warn)).toEqual([]);
+    expect(warnings(warn)).toEqual([]);
   });
 
   /**
@@ -418,7 +416,7 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
   it('serves a host policy at a non-default origin the policy names', async () => {
     await bootstrap([], [], 'installed', {
       policy: HOST,
-      options: { origin: 'https://ar.atlas.example' },
+      options: { origin: 'https://ar.site.example' },
     });
     expect(TestBed.inject(LocationStrategy).constructor.name).toBe(
       'LocalizedLocationStrategy',
@@ -436,13 +434,13 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
 
   /**
    * The half that is easiest to skim past, and the one this fixture got wrong by hand.
-   * `https://atlas.example` and `http://atlas.example` are two origins, and the message says so.
+   * `https://site.example` and `http://site.example` are two origins, and the message says so.
    */
   it('refuses a host policy whose configured origin differs only in scheme', async () => {
     await expect(
       bootstrap([], [], 'installed', {
         policy: HOST,
-        options: { origin: 'http://atlas.example' },
+        options: { origin: 'http://site.example' },
       }),
     ).rejects.toThrow(/scheme is part of an origin/u);
   });
@@ -460,7 +458,7 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
   it('accepts the configured origin written with a trailing slash', async () => {
     await bootstrap([], [], 'installed', {
       policy: HOST,
-      options: { origin: 'https://atlas.example/' },
+      options: { origin: 'https://site.example/' },
     });
     expect(TestBed.inject(LocationStrategy).constructor.name).toBe(
       'LocalizedLocationStrategy',
@@ -478,7 +476,7 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
   });
 
   /**
-   * A kind Atlas has not decided about does not start. What refuses it is not the gate.
+   * A kind Equator has not decided about does not start. What refuses it is not the gate.
    *
    * The gate's last arm assigns the narrowed policy to `never`, so a fourth member added to
    * `LocaleUrlPolicy` is a type error there, which is the guarantee that matters and is not

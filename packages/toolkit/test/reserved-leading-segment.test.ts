@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { checkAtlasProject, generateAtlasProject } from '../src/index.js';
+import { checkProject, generateProject } from '../src/index.js';
 
 /**
  * A canonical route whose leading segment the policy already owns.
@@ -12,7 +12,7 @@ import { checkAtlasProject, generateAtlasProject } from '../src/index.js';
  * The policy claims the first segment of an address before any route does: a locale prefix names
  * the locale and is removed, an older alias of one redirects, a locale-neutral root is answered by
  * nothing. A route declared at `ar-eg/tools` under an `ar-eg` prefix is therefore unreachable at
- * the address it declared, and Atlas will publish addresses for it that it cannot resolve.
+ * the address it declared, and Equator will publish addresses for it that it cannot resolve.
  *
  * This is the first point in a build that holds both statements. The policy is one source file and
  * the route projection is another; the runtime validator that checks the projection is handed no
@@ -52,7 +52,7 @@ const ROUTER_STUB = [
 
 // Every factory the package exports, so that recognizing only some of them is a failure here
 // rather than a hole a consumer discovers in production.
-const ATLAS_STUB = [
+const STUB = [
   'export declare function createPathPrefixLocalePolicy(options: unknown): unknown;',
   'export declare function createDefaultLocalePrefixPolicy(options: unknown): unknown;',
   'export declare function createHostLocalePolicy(options: unknown): unknown;',
@@ -88,7 +88,7 @@ interface ProjectOptions {
 const ORDINARY_ROUTES = ['dashboard', 'articles/:slug'];
 
 async function project(options: ProjectOptions): Promise<string> {
-  const root = await mkdtemp(resolve(tmpdir(), 'atlas-reserved-segment-'));
+  const root = await mkdtemp(resolve(tmpdir(), 'reserved-segment-'));
   temporaryRoots.push(root);
   const factory = options.factory ?? 'createPathPrefixLocalePolicy';
 
@@ -111,7 +111,7 @@ async function project(options: ProjectOptions): Promise<string> {
   );
   await write(
     root,
-    'atlas.config.json',
+    'equator.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -155,11 +155,11 @@ async function project(options: ProjectOptions): Promise<string> {
     'node_modules/@angular/router/package.json',
     manifest('@angular/router'),
   );
-  await write(root, 'node_modules/@neolorn/atlas/index.d.ts', ATLAS_STUB);
+  await write(root, 'node_modules/@neolorn/equator/index.d.ts', STUB);
   await write(
     root,
-    'node_modules/@neolorn/atlas/package.json',
-    manifest('@neolorn/atlas'),
+    'node_modules/@neolorn/equator/package.json',
+    manifest('@neolorn/equator'),
   );
 
   const table =
@@ -203,7 +203,7 @@ async function project(options: ProjectOptions): Promise<string> {
       "import { messages } from '#i18n/shell';",
       ...(options.shadowed
         ? []
-        : [`import { ${factory} } from '@neolorn/atlas';`]),
+        : [`import { ${factory} } from '@neolorn/equator';`]),
       '',
       ...(options.shadowed
         ? [
@@ -252,10 +252,10 @@ async function refusals(root: string): Promise<{
     diagnostics: readonly { readonly code: string; readonly summary: string }[],
   ): readonly string[] =>
     diagnostics
-      .filter(({ code }) => code === 'ATL1409')
+      .filter(({ code }) => code === 'EQ1409')
       .map(({ summary }) => summary);
-  const generated = await generateAtlasProject({ project: root });
-  const checked = await checkAtlasProject({ project: root });
+  const generated = await generateProject({ project: root });
+  const checked = await checkProject({ project: root });
   return {
     generate: summaries(generated.diagnostics),
     check: summaries(checked.diagnostics),
@@ -315,7 +315,7 @@ describe('a route may not be declared at an address the policy owns', () => {
   /**
    * The hole that made the check silent for half the ways of spelling a policy.
    *
-   * Atlas exports four policy factories and the toolkit recognized two, so a consumer who used
+   * Equator exports four policy factories and the toolkit recognized two, so a consumer who used
    * `createDefaultLocalePrefixPolicy` (the shape in which a route's own leading segment becomes
    * the first segment of an address, and therefore the one most exposed to this defect) got no
    * check at all. Every factory is asserted here, and the two that put no locale in the path are

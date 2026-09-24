@@ -23,7 +23,7 @@ import {
   type CatalogLoaders,
   type RuntimeExtensionBinding,
   type RuntimeFormattingAdapterDescriptor,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -33,7 +33,7 @@ import {
   scopeId as lazyScopeId,
 } from '#i18n/lazy';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 const scope = Object.freeze({ providerId, scopeId });
 const lazyScope = Object.freeze({
@@ -47,7 +47,7 @@ function setup(loaders: CatalogLoaders = catalogLoaders) {
     configuration,
     catalogSet,
     catalogLoaders: loaders,
-    extensions: atlasRuntimeExtensions,
+    extensions: runtimeExtensions,
   } as const;
 }
 
@@ -97,15 +97,15 @@ describe('fixed runtime ceilings', () => {
     );
     expect(() =>
       externalDestination(
-        'https://atlas.example/path',
-        ['https://atlas.example'],
+        'https://site.example/path',
+        ['https://site.example'],
         '_parent' as '_blank',
       ),
     ).toThrow(/safety policy/u);
     expect(() =>
       externalDestination(
-        'https://atlas.example/path',
-        Array.from({ length: 65 }, () => 'https://atlas.example'),
+        'https://site.example/path',
+        Array.from({ length: 65 }, () => 'https://site.example'),
       ),
     ).toThrow(/safety policy/u);
   });
@@ -127,7 +127,7 @@ describe('closed configuration admission', () => {
     await expect(localization.changeLocale('ar-EG')).resolves.toMatchObject({
       status: 'committed',
     });
-    expect(localization.text(messages.appTitle)).toContain('Atlas');
+    expect(localization.text(messages.appTitle)).toContain('Equator');
     localization.dispose();
 
     expect(() =>
@@ -267,7 +267,7 @@ describe('catalog and lifetime admission', () => {
  * Seeding the transfer with `TestBed.inject(TransferState).set(...)` and then injecting
  * `Localization`, which reads it, never lets the runtime see the value. `TestBed.inject` of
  * anything calls `finalize()`, which runs the app initializers (Angular 22.1.3,
- * `testing.mjs:720`), and Atlas's initializer injects `Localization`, whose factory reads the
+ * `testing.mjs:720`), and Equator's initializer injects `Localization`, whose factory reads the
  * transfer at construction. The first `inject` in such a test builds the runtime against an empty
  * store, and the `set` on the line above the assertion runs after the read it is seeding: the test
  * asserts a fallback the sanitizer has nothing to do with, and passes for whatever the sanitizer
@@ -287,7 +287,7 @@ describe('catalog and lifetime admission', () => {
  * cycle can exist: `defineRuntimeExtensions`, in this file, against a live object.
  */
 describe('hostile transfer state', () => {
-  const KEY = '@neolorn/atlas:localization-state/1';
+  const KEY = '@neolorn/equator:localization-state/1';
   /**
    * The application id this test delivers under, stated rather than assumed.
    *
@@ -297,9 +297,9 @@ describe('hostile transfer state', () => {
    * fixes both halves of the pair from one value, and a builder that changes its default again
    * cannot quietly empty this block.
    */
-  const APP = 'atlas-transfer-lab';
+  const APP = 'transfer-lab';
   const valid = (route?: unknown): Record<string, unknown> => ({
-    profile: 'atlas-transfer-state/1',
+    profile: 'equator-transfer-state/1',
     primaryLocale: 'ar-EG',
     formatting: { locale: 'ar-EG' },
     catalogs: [],
@@ -362,7 +362,7 @@ describe('hostile transfer state', () => {
 
   it('drops the whole transfer for anything it does not recognise', async () => {
     const refused: readonly [string, unknown][] = [
-      ['not a record', ['atlas-transfer-state/1']],
+      ['not a record', ['equator-transfer-state/1']],
       ['a profile from something else', { ...valid(), profile: 'other/1' }],
       ['a key the profile does not declare', { ...valid(), extra: 1 }],
       [

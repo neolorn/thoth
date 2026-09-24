@@ -1,10 +1,10 @@
 /**
- * The one surface a locale switch has, and the markup Atlas does not write.
+ * The one surface a locale switch has, and the markup Equator does not write.
  *
  * `specs/07-routing-rendering-and-seo.spec.md` section 7 puts the loop and the markup in the
  * application and the option's language, direction, current state and address on the control it
  * binds. The address goes on a link and nowhere else, because a link is what an address is for
- * and putting one on a button would be markup Atlas invented.
+ * and putting one on a button would be markup Equator invented.
  *
  * A switch is a transaction rather than a navigation, so the link is what a visitor sees before
  * clicking and what a middle-click opens, and under a locale-specific origin policy it is the
@@ -13,7 +13,7 @@
 
 import { Directive, ElementRef, computed, inject, input } from '@angular/core';
 
-import { withBasePath, type LocaleSelectorChoice } from '@neolorn/atlas/core';
+import { withBasePath, type LocaleSelectorChoice } from '@neolorn/equator/core';
 
 import { applicationBaseHref } from './angular';
 import { Localization } from './localization';
@@ -32,7 +32,7 @@ export type LocaleChoiceCurrent = 'true' | 'page' | 'location' | 'step';
  * One option of a locale switcher, wired.
  *
  * The application writes the loop and the markup: that is its layout, and a directive that owned
- * the loop would make Atlas own markup. What the application should not have to write is the six
+ * the loop would make Equator own markup. What the application should not have to write is the six
  * attributes a correct option needs, because every one of them is something the runtime knows:
  *
  *     &commat;for (choice of localization.localeChoices(); track choice.locale) {

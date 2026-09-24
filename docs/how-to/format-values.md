@@ -5,7 +5,7 @@ needs to be correct, so nothing has to be inferred from a number.
 
 ## Before you begin
 
-You need a composed runtime, which every Atlas application has after
+You need a composed runtime, which every Equator application has after
 [the tutorial](../tutorial.md).
 
 ## Build the value
@@ -33,18 +33,18 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import type { FormattingResult } from '@neolorn/atlas/core';
+import type { FormattingResult } from '@neolorn/equator/core';
 import {
   decimal,
   Localization,
   money,
   plainDate,
   withRecoveryMessage,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import {
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
-} from '@neolorn/atlas/testing';
+} from '@neolorn/equator/testing';
 import { localizationSetup } from '#i18n';
 import { messages } from '#i18n/shell';
 
@@ -140,11 +140,11 @@ import {
   withRecoveryMessage,
   type LocalizationObservabilityEvent,
   type LocalizationObservabilitySink,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import {
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
-} from '@neolorn/atlas/testing';
+} from '@neolorn/equator/testing';
 import { localizationSetup } from '#i18n';
 import { messages } from '#i18n/shell';
 
@@ -225,7 +225,7 @@ describe('a value rendered by a pipe', () => {
 
 A failed format renders an empty string and reports the diagnostic through the observability sink,
 so nothing is silent and nothing throws in a template. A throw would take a view down over one value
-that a locale cannot express, and a stand-in sentence would put Atlas wording on your page. What
+that a locale cannot express, and a stand-in sentence would put Equator wording on your page. What
 reaches the sink is [About diagnostics and runtime outcomes](../explanation/about-diagnostics.md).
 
 Hold the options in a field rather than writing them into the binding. A pipe formats again only

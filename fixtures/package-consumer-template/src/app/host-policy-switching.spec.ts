@@ -11,9 +11,9 @@ import {
   withRouting,
   type LocaleSelectorChoice,
   type LocaleUrlPolicy,
-} from '@neolorn/atlas';
-import { provideLocalizedRouter } from '@neolorn/atlas/router';
-import { provideLocalizationTesting } from '@neolorn/atlas/testing';
+} from '@neolorn/equator';
+import { provideLocalizedRouter } from '@neolorn/equator/router';
+import { provideLocalizationTesting } from '@neolorn/equator/testing';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { configuration } from '#i18n';
@@ -21,7 +21,7 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
 
 import { routePolicy, appRouteProjection } from './localization.routes';
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
  * A locale that is an origin, and the switch that cannot happen in place.
@@ -76,14 +76,14 @@ const routes: Routes = [
 const HOST: LocaleUrlPolicy = createHostLocalePolicy({
   defaultLocale: 'en-US',
   origins: {
-    'en-US': 'https://atlas.example',
-    'ar-EG': 'https://ar.atlas.example',
-    'en-Arab-XB': 'https://xb.atlas.example',
+    'en-US': 'https://site.example',
+    'ar-EG': 'https://ar.site.example',
+    'en-Arab-XB': 'https://xb.site.example',
   },
 });
 
 /**
- * `location.assign`, made observable without giving Atlas a seam it does not need.
+ * `location.assign`, made observable without giving Equator a seam it does not need.
  *
  * jsdom's `Location` is unforgeable: its properties are own and non-configurable, so a spy cannot
  * be installed on the real one and the call is otherwise invisible. Jsdom logs "Not implemented"
@@ -140,14 +140,14 @@ async function configure(policy: LocaleUrlPolicy): Promise<Router> {
             assigned.push(url);
           }),
       },
-      provideLocalizedRouter(routes, { origin: 'https://atlas.example' }),
+      provideLocalizedRouter(routes, { origin: 'https://site.example' }),
       provideLocalizationTesting(
         {
           configuration,
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
           routeProjection,
         },
         withRouting({ policy, projection: appRouteProjection }),
@@ -183,8 +183,8 @@ describe('switching locale under a policy whose locales are origins', () => {
     // Asserted as a relation rather than as three literals. What makes this a locale switch and
     // not a link somewhere else is that it is *the same page* at another origin: the origins come
     // from the policy and the path is the one this page already has.
-    expect(new URL(here ?? '').origin).toBe('https://atlas.example');
-    expect(new URL(there ?? '').origin).toBe('https://ar.atlas.example');
+    expect(new URL(here ?? '').origin).toBe('https://site.example');
+    expect(new URL(there ?? '').origin).toBe('https://ar.site.example');
     expect(new URL(there ?? '').pathname).toBe(new URL(here ?? '').pathname);
   });
 

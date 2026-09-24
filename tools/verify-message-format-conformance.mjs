@@ -1,7 +1,7 @@
 /**
  * MessageFormat 2 conformance, run against the built packages.
  *
- * Atlas *parses* MessageFormat 2 with the reference implementation, and that half is settled by
+ * Equator *parses* MessageFormat 2 with the reference implementation, and that half is settled by
  * construction. It **evaluates** with its own code: selection, function resolution, the fallback
  * rules and the bidi strategy are all written here, and until this file existed every case that code
  * had ever passed was also written here, against the same reading of the specification that produced
@@ -22,10 +22,10 @@
  * materialized consumer and the runtime is `dist/`, so what is measured is the package a consumer
  * receives. A suite pointed at `src/` would prove the sources agree with each other.
  *
- * That constraint decides the shape of the whole file, because Atlas has no public "evaluate this
+ * That constraint decides the shape of the whole file, because Equator has no public "evaluate this
  * string" entry point and should not have one: a message reaches the runtime as compiled IR, always.
  * So each case becomes a one-message catalog, compiled by the built toolkit, and evaluated through a
- * real `Localization` booted over it. The consequence is that Atlas answers a case at whichever
+ * real `Localization` booted over it. The consequence is that Equator answers a case at whichever
  * stage is competent to answer it: most of the suite's error cases are refused by the compiler
  * rather than by the evaluator, which is the correct behavior for a compiled system and is
  * recorded as such rather than being forced into a runtime shape it does not have.
@@ -107,7 +107,7 @@ await import(pathToFileURL(require_.resolve('@angular/compiler')).href);
 // the same artifact a consumer receives, correctly resolved.
 const consumerToolkit = resolve(
   workspaceRoot,
-  'tmp/package-consumer-verification/package-consumer/node_modules/@neolorn/atlas-toolkit/index.js',
+  'tmp/package-consumer-verification/package-consumer/node_modules/@neolorn/equator-toolkit/index.js',
 );
 if (!existsSync(consumerToolkit)) {
   process.stderr.write(
@@ -117,17 +117,17 @@ if (!existsSync(consumerToolkit)) {
 }
 const tk = await import(pathToFileURL(consumerToolkit).href);
 // The modules rather than the package entry. The compiler's own machinery is not published:
-// nothing outside Atlas calls it, so it is not part of the toolkit's surface, and a gate that
+// nothing outside Equator calls it, so it is not part of the toolkit's surface, and a gate that
 // exercises it reaches the module that declares it.
-const { compileAtlasLocalArtifacts } = await import(
+const { compileLocalArtifacts } = await import(
   pathToFileURL(resolve(dirname(consumerToolkit), 'compiled-artifacts.js')).href
 );
-const { analyzeAtlasCatalogSet } = await import(
+const { analyzeCatalogSet } = await import(
   pathToFileURL(resolve(dirname(consumerToolkit), 'semantic-model.js')).href
 );
 const rt = await import(
   pathToFileURL(
-    resolve(workspaceRoot, 'dist/runtime/fesm2022/neolorn-atlas.mjs'),
+    resolve(workspaceRoot, 'dist/runtime/fesm2022/neolorn-equator.mjs'),
   ).href
 );
 
@@ -142,7 +142,7 @@ function configurationFor(locale) {
   // Through the loader rather than as an object literal, for the reason the cost budget records: a
   // `.mjs` tool fabricating a value of a TypeScript type is unchecked by construction, and a field
   // added to the configuration later would arrive here as a crash instead of as its default.
-  const parsed = tk.parseAtlasConfiguration(
+  const parsed = tk.parseConfiguration(
     JSON.stringify({
       schemaVersion: 1,
       sourceLocale: locale,
@@ -152,7 +152,7 @@ function configurationFor(locale) {
   );
   if (!parsed.ok) {
     throw new Error(
-      `The suite asks for locale ${locale} and the Atlas configuration refused it: ${parsed.diagnostics
+      `The suite asks for locale ${locale} and the Equator configuration refused it: ${parsed.diagnostics
         .map(({ code, summary }) => `${code} ${summary}`)
         .join('; ')}`,
     );
@@ -168,11 +168,11 @@ const describe = (diagnostics) =>
   }));
 
 /* ------------------------------------------------------------------ *
- * The suite's test functions, as an Atlas extension.                  *
+ * The suite's test functions, as an Equator extension.                  *
  * ------------------------------------------------------------------ */
 
 /**
- * `:test:function`, `:test:select` and `:test:format`, declared through Atlas's own extension
+ * `:test:function`, `:test:select` and `:test:format`, declared through Equator's own extension
  * registry and bound only here.
  *
  * They exist because the built-in functions' output is locale data and varies between
@@ -182,20 +182,20 @@ const describe = (diagnostics) =>
  * `pattern-selection.json` entirely, and left the code that ranks variants reached by five cases
  * that happen to put a catch-all beside a real key.
  *
- * **Nothing is shipped.** These are extension descriptors, which is the mechanism Atlas already has
- * for a function it does not define, declared in this file and present in no published profile. It
- * also means the extension path itself is exercised by cases nobody here wrote, which nothing else
- * in this repository does.
+ * **Nothing is shipped.** These are extension descriptors, which is the mechanism Equator already
+ * has for a function it does not define, declared in this file and present in no published profile.
+ * It also means the extension path itself is exercised by cases nobody here wrote, which nothing
+ * else in this repository does.
  *
- * The behaviour is transcribed from the suite's own README, not from what Atlas's descriptor fields
- * appear to offer.
+ * The behaviour is transcribed from the suite's own README, not from what Equator's descriptor
+ * fields appear to offer.
  *
  * **Both of the README's options are declared now, and one of them is deliberately only half
  * honoured.** `decimalPlaces` was unspellable until 3.16 gave the descriptor MessageFormat's own
  * `name` production; it is declared, set by six cases, and honoured in formatting, in matching and
  * in the ranking between `'1.0'` and `'1'`. `fails` is declared and its `never` value is the only
- * one Atlas can act on: the option asks for a function that fails as a selector but not as a
- * formatter, and Atlas refuses for both or neither. That is a position, not a shortfall, and the
+ * one Equator can act on: the option asks for a function that fails as a selector but not as a
+ * formatter, and Equator refuses for both or neither. That is a position, not a shortfall, and the
  * gap table below carries the reason. Every case that sets `fails` is listed there.
  */
 const testFunctionDescriptor = (id, selector) =>
@@ -221,16 +221,16 @@ const testFunctionDescriptor = (id, selector) =>
     }),
   });
 
-const registryResult = tk.defineAtlasExtensionRegistry([
+const registryResult = tk.defineExtensionRegistry([
   testFunctionDescriptor('test:function', 'exact'),
   testFunctionDescriptor('test:select', 'exact'),
-  // "except that it cannot be used for selection": the one part of the three definitions Atlas's
+  // "except that it cannot be used for selection": the one part of the three definitions Equator's
   // descriptor expresses exactly.
   testFunctionDescriptor('test:format', 'none'),
 ]);
 if (!registryResult.ok) {
   throw new Error(
-    `Atlas refused the suite's test-function descriptors: ${registryResult.diagnostics
+    `Equator refused the suite's test-function descriptors: ${registryResult.diagnostics
       .map(({ code, summary }) => `${code} ${summary}`)
       .join('; ')}`,
   );
@@ -309,16 +309,16 @@ const extensionBindings = rt.defineRuntimeExtensions([
 /**
  * One case, from source text to a formatted string, through the supported surface only.
  *
- * The stage a case stops at is part of the answer rather than an implementation detail. MessageFormat
- * describes one formatter that both rejects and formats; Atlas splits that across a compiler and a
- * runtime, so "the message was refused" is a real outcome and the report says where.
+ * The stage a case stops at is part of the answer rather than an implementation detail.
+ * MessageFormat describes one formatter that both rejects and formats; Equator splits that across a
+ * compiler and a runtime, so "the message was refused" is a real outcome and the report says where.
  */
 async function evaluateCase(testCase) {
   const locale = testCase.locale;
   const configuration = configurationFor(locale);
   const source = `messages:\n  ${MESSAGE_ID}: ${JSON.stringify(testCase.src)}\n`;
 
-  const parsed = tk.parseAtlasCatalog(source, {
+  const parsed = tk.parseCatalog(source, {
     role: 'source',
     providerId: PROVIDER,
     scopeId: SCOPE,
@@ -333,9 +333,9 @@ async function evaluateCase(testCase) {
     };
   }
 
-  // The envelope must be transparent before any refusal below it can be read as being about Atlas.
-  // A YAML scalar that mangled a backslash, a brace or a newline would produce a message the suite
-  // never wrote, and every failure downstream would be about this file.
+  // The envelope must be transparent before any refusal below it can be read as being about
+  // Equator. A YAML scalar that mangled a backslash, a brace or a newline would produce a message
+  // the suite never wrote, and every failure downstream would be about this file.
   const authored = parsed.value.messages[MESSAGE_ID];
   if (authored?.kind !== 'message' || authored.message !== testCase.src) {
     throw new Error(
@@ -344,7 +344,7 @@ async function evaluateCase(testCase) {
     );
   }
 
-  const graph = analyzeAtlasCatalogSet({
+  const graph = analyzeCatalogSet({
     configuration,
     catalogs: [parsed.value],
     extensions: extensionRegistry,
@@ -356,9 +356,9 @@ async function evaluateCase(testCase) {
       diagnostics: describe(graph.diagnostics),
     };
   }
-  const compiled = compileAtlasLocalArtifacts({
+  const compiled = compileLocalArtifacts({
     owner: {
-      providerId: '@neolorn/atlas-verify',
+      providerId: '@neolorn/verify',
       generatedRootPath: 'src/generated/i18n',
     },
     graph: graph.value,
@@ -377,10 +377,10 @@ async function evaluateCase(testCase) {
   const catalog = artifacts.catalogs[0];
   const semantic = graph.value.scopes[0].messages[0];
   // The handle is built from the toolkit's own semantic model, not written out here. It is the same
-  // object `generateAtlasContracts` emits, from the same fields, so a handle shape that changed
+  // object `generateContracts` emits, from the same fields, so a handle shape that changed
   // would change both together instead of leaving this file describing a contract that moved.
   const handle = Object.freeze({
-    generatedAbi: 'atlas-generated/1',
+    generatedAbi: 'equator-generated/1',
     providerId: semantic.providerId,
     scopeId: semantic.scopeId,
     messageId: semantic.messageId,
@@ -393,7 +393,7 @@ async function evaluateCase(testCase) {
   const localization = rt.createLocalizationContext({
     setup: {
       configuration: Object.freeze({
-        generatedAbi: 'atlas-generated/1',
+        generatedAbi: 'equator-generated/1',
         sourceLocale: locale,
         defaultLocale: locale,
         locales: Object.freeze([locale]),
@@ -427,12 +427,13 @@ async function evaluateCase(testCase) {
       extensions: extensionBindings,
     },
     bootstrapScopes: [Object.freeze({ providerId: PROVIDER, scopeId: SCOPE })],
-    // Atlas refuses to format a date without an explicit zone, deliberately: a server and a browser
-    // that disagree about the ambient zone render the same instant as two different days, and there
-    // is no later correction. A consumer supplies one, so a runner that left it unset would be
-    // reporting its own omission as fourteen conformance failures. `UTC` because it is the one zone
-    // whose answer does not depend on where this runs; the suite's date cases assert that formatting
-    // reports no error rather than asserting a particular rendering, so the choice is free.
+    // Equator refuses to format a date without an explicit zone, deliberately: a server and a
+    // browser that disagree about the ambient zone render the same instant as two different days,
+    // and there is no later correction. A consumer supplies one, so a runner that left it unset
+    // would be reporting its own omission as fourteen conformance failures. `UTC` because it is the
+    // one zone whose answer does not depend on where this runs; the suite's date cases assert that
+    // formatting reports no error rather than asserting a particular rendering, so the choice is
+    // free.
     formattingContext: Object.freeze({ timeZone: 'UTC' }),
   });
 
@@ -478,15 +479,15 @@ async function evaluateCase(testCase) {
  * one this file performs. Everything else is handed over exactly as the suite wrote it.
  *
  * **Converting on the declared type instead would manufacture passes, and it did.** The first draft
- * also converted whenever Atlas's contract said `date-time`, which meant `{$x :datetime}` with the
- * suite's deliberately bad boolean operand became `new Date(true)`, and Atlas dutifully formatted
- * the first millisecond of 1970 for a case whose whole purpose is to be rejected. Repairing an
- * operand the specification says the formatter must reject is not marshalling; it is answering the
- * question on the implementation's behalf.
+ * also converted whenever Equator's contract said `date-time`, which meant `{$x :datetime}` with
+ * the suite's deliberately bad boolean operand became `new Date(true)`, and Equator dutifully
+ * formatted the first millisecond of 1970 for a case whose whole purpose is to be rejected.
+ * Repairing an operand the specification says the formatter must reject is not marshalling; it is
+ * answering the question on the implementation's behalf.
  *
  * **The name is a different question from the value, and it goes the other way.** A parameter is
  * addressed by the name the generated contract publishes, because that is the only name a consumer
- * can write: the contract is what they import. Atlas normalizes a variable name to NFC when it
+ * can write: the contract is what they import. Equator normalizes a variable name to NFC when it
  * compiles, so `.input {$D<combining dots>}` is published under its composed spelling, and passing
  * the suite's decomposed spelling produced "Unknown message input" on a case whose whole subject is
  * that the two spellings are one variable. Matching on the normalized name is speaking the
@@ -515,7 +516,7 @@ function marshalInputs(testCase, declaredNames) {
  * ------------------------------------------------------------------ */
 
 /**
- * What the suite's test functions do that an Atlas extension descriptor still cannot say.
+ * What the suite's test functions do that an Equator extension descriptor still cannot say.
  *
  * There were five of these and there is one. The other four were closed in 3.16, each against the
  * pinned specification rather than against the failing case: the descriptor took MessageFormat's
@@ -524,16 +525,16 @@ function marshalInputs(testCase, declaredNames) {
  * its operand's resolved options the way the numeric built-ins already did.
  *
  * What is left is deliberate, and it is the same decision
- * `specs/04-message-authoring-and-catalogs.spec.md` section 6 makes everywhere
- * else. The suite's `fails` option asks a function to fail as a selector but not as a formatter, or
- * the reverse. Honouring it means a message that renders, selects the catch-all, and reports an
- * error while doing so: report-and-continue, which is the permission the standard grants and
- * Atlas declines by name. Atlas has one `evaluate` call that yields the text and the keys together
- * and either succeeds or refuses for both, and that is the position rather than the shortfall: 3.17
- * refused a whole message for a selector that cannot select, and accepting a half-failing function
- * here would contradict it.
+ * `specs/04-message-authoring-and-catalogs.spec.md` section 6 makes everywhere else. The suite's
+ * `fails` option asks a function to fail as a selector but not as a formatter, or the reverse.
+ * Honouring it means a message that renders, selects the catch-all, and reports an error while
+ * doing so: report-and-continue, which is the permission the standard grants and Equator declines
+ * by name. Equator has one `evaluate` call that yields the text and the keys together and either
+ * succeeds or refuses for both, and that is the position rather than the shortfall: 3.17 refused a
+ * whole message for a selector that cannot select, and accepting a half-failing function here would
+ * contradict it.
  *
- * The six cases below are excluded rather than recorded as divergences because Atlas cannot run
+ * The six cases below are excluded rather than recorded as divergences because Equator cannot run
  * them at all: there is no option value that produces a half-failure, so there is no outcome to
  * judge. A case is listed with every gap that stops it, not the first one, so closing one gap never
  * looks like it freed a case another still holds.

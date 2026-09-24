@@ -5,14 +5,14 @@ import {
   Localization,
   provideLocalizationSetup,
   withFormattingContext,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { messages } from '#i18n/shell';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
  * Is a locale written the way that locale declares?
@@ -24,11 +24,11 @@ import { atlasRuntimeExtensions } from './runtime-extensions';
  * context, then the locale's own entry in the generated configuration, then, for whatever neither
  * sets, CLDR's answer for that locale.
  *
- * **The table is built here rather than declared in `atlas.config.json`, and that is deliberate.**
- * Nine specs in this lab assert digits in `en-US` or `ar-EG`; a declaration in the shared
- * configuration would have made every one of them pass or fail for a reason it was not written for,
- * including the two that pin `ar-EG` precisely: one with no context at all, one with the
- * application's own. What that split leaves out is the channel from the file to the generated
+ * **The table is built here rather than declared in `equator.config.json`, and that is
+ * deliberate.** Nine specs in this lab assert digits in `en-US` or `ar-EG`; a declaration in the
+ * shared configuration would have made every one of them pass or fail for a reason it was not
+ * written for, including the two that pin `ar-EG` precisely: one with no context at all, one with
+ * the application's own. What that split leaves out is the channel from the file to the generated
  * module, and that is asserted where it lives:
  * `packages/toolkit/test/locale-formatting-declaration.test.ts` writes the key, generates, and
  * reads the emitted `configuration`. The gate's own consumer declares one too, for a pseudo-locale,
@@ -64,7 +64,7 @@ async function rendered(
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
         },
         ...(declaration.applicationWide === undefined
           ? []

@@ -23,8 +23,8 @@ import {
   percentagePoints,
   personName,
   type LocalizedPercentInputProfile,
-} from '@neolorn/atlas';
-import { LocalizedInput } from '@neolorn/atlas/forms';
+} from '@neolorn/equator';
+import { LocalizedInput } from '@neolorn/equator/forms';
 import { messages } from '#i18n/shell';
 import {
   providerId as lazyProviderId,
@@ -133,7 +133,7 @@ import { FeatureLabReadiness } from './readiness';
       <p data-percent-model>{{ percentControl.value.amount.value }}</p>
       <p data-submitted>{{ submitted() }}</p>
       <p data-locale>{{ locale() }}</p>
-      <atlas-feature-readiness />
+      <feature-readiness />
       <section
         data-dynamic-content
         [attr.data-presentation]="dynamicPresentation().kind"
@@ -310,7 +310,7 @@ export class App {
   protected readonly title = this.localization.textSignal(messages.appTitle);
   protected readonly messages = messages;
   protected readonly welcome = this.localization.textSignal(messages.welcome, {
-    name: 'Atlas',
+    name: 'Equator',
   });
   protected readonly sourceFallback = computed(() =>
     this.localization.evaluateText(messages.sourceOnly),
@@ -342,7 +342,7 @@ export class App {
     return result.ok ? result.value.text : result.diagnostic.code;
   });
   protected readonly formattedList = computed(() => {
-    const result = this.localization.formatList(['Atlas', 'Angular', 'Intl']);
+    const result = this.localization.formatList(['Equator', 'Angular', 'Intl']);
     return result.ok ? result.value.text : result.diagnostic.code;
   });
   protected readonly formattedRelativeTime = computed(() => {
@@ -504,10 +504,10 @@ export class App {
   /**
    * One call, and no route knowledge in it.
    *
-   * `RouteLocalization.navigate(locale)` builds the *localized* URL and hands it to the Router,
-   * and the Router's addresses are canonical, so a localized one is an unmatched path.
-   * `changeLocale` commits the locale and Atlas's address sync moves the address bar, which is why
-   * a component switching locale needs to know nothing about the application having routes.
+   * `RouteLocalization.navigate(locale)` builds the *localized* URL and hands it to the Router, and
+   * the Router's addresses are canonical, so a localized one is an unmatched path. `changeLocale`
+   * commits the locale and Equator's address sync moves the address bar, which is why a component
+   * switching locale needs to know nothing about the application having routes.
    */
   protected selectLocaleProgressive(locale: string): void {
     void this.localization.changeLocale(locale, {

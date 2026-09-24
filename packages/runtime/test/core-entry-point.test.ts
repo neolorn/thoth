@@ -6,7 +6,7 @@ import {
   localeProfile,
   validateRouteProjection,
   type RouteRuntimeProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /**
  * The three exports the core split published, exercised rather than waived.
@@ -33,8 +33,8 @@ import {
 
 const VALID: RouteRuntimeProjection = {
   generated: {
-    profile: 'atlas-route-projection/1',
-    identity: 'sha256-AtlasBuiltLocaleAddressesTestIdentity012345',
+    profile: 'equator-route-projection/1',
+    identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
       { id: 'route:second', path: 'second', parameterNames: [] },
@@ -44,7 +44,7 @@ const VALID: RouteRuntimeProjection = {
 };
 
 describe('a locale writing direction', () => {
-  it('answers for locales whose script Atlas knows in either direction', () => {
+  it('answers for locales whose script Equator knows in either direction', () => {
     expect(directionForLocale('ar-EG')).toBe('rtl');
     expect(directionForLocale('he-IL')).toBe('rtl');
     expect(directionForLocale('en-US')).toBe('ltr');
@@ -95,7 +95,7 @@ describe('a locale profile', () => {
     // use a guess. Asserted together, because the pair is what a consumer gets wrong.
     expect(() => localeProfile('not a locale')).toThrow(RangeError);
     expect(directionForLocale('not a locale')).toBe('ltr');
-    // A well-formed tag CLDR has no likely script for. It reaches Atlas's own error rather than
+    // A well-formed tag CLDR has no likely script for. It reaches Equator's own error rather than
     // Intl's, and it is the one place this function throws something it wrote itself.
     expect(() => localeProfile('xx')).toThrow('has no likely script');
     expect(directionForLocale('xx')).toBe('ltr');
@@ -166,9 +166,9 @@ describe('validating a generated route projection', () => {
 
 /**
  * And the property the whole split exists for, asserted where a unit test can see it: the error the
- * core throws is the error the rest of Atlas tests against. Two copies of `contracts.ts` would make
- * this pass in isolation and fail in a consumer, so `verify-package-structure.mjs` checks the built
- * bundles too: this is the cheap half of that pair, not a replacement for it.
+ * core throws is the error the rest of Equator tests against. Two copies of `contracts.ts` would
+ * make this pass in isolation and fail in a consumer, so `verify-package-structure.mjs` checks the
+ * built bundles too: this is the cheap half of that pair, not a replacement for it.
  */
 describe('the identity of the error the core throws', () => {
   it('is the same class the primary compares against', () => {

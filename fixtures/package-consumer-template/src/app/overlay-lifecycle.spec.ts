@@ -8,13 +8,13 @@ import {
   withOverlayLocale,
   type LocalizationOverlayAdapter,
   type LocalizationSnapshot,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
  * Overlay adapters under server rendering.
@@ -29,8 +29,8 @@ import { atlasRuntimeExtensions } from './runtime-extensions';
  * The deferral of this finding argued that overlays are browser-side. They are not, wherever an
  * application server-renders: overlay state has to be present before components paint on
  * server-rendered and prerendered routes, overlay-root context divergence is a hydration hazard,
- * and the server and client have to agree on overlay-root direction. Direction is Atlas-owned, so
- * an Atlas overlay adapter is live during server rendering.
+ * and the server and client have to agree on overlay-root direction. Direction is Equator-owned, so
+ * an Equator overlay adapter is live during server rendering.
  *
  * It takes a factory now, which is the same correction persistence stores needed, for the same
  * reason: request-scoped state must be created by the injector that owns the request.
@@ -71,7 +71,7 @@ function serverRequest(create: () => LocalizationOverlayAdapter): Localization {
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
         },
         withOverlayLocale(create),
       ),

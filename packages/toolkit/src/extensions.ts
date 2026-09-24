@@ -15,37 +15,37 @@ import {
 } from 'jsonc-parser';
 
 import {
-  digestAtlasCanonicalJson,
-  type AtlasCanonicalJsonValue,
+  digestCanonicalJson,
+  type CanonicalJsonValue,
 } from './canonical-json.js';
 import {
-  atlasDiagnostic,
-  atlasFailure,
-  atlasSuccess,
-  atlasSourceSpan,
-  type AtlasDiagnostic,
-  type AtlasResult,
+  toolkitDiagnostic,
+  toolkitFailure,
+  toolkitSuccess,
+  spanAt,
+  type ToolkitDiagnostic,
+  type ToolkitResult,
 } from './diagnostics.js';
 import {
-  atlasSchemaErrorPath,
-  atlasSchemaErrorSummary,
-  compileAtlasSchema,
-  sortedAtlasSchemaErrors,
+  schemaErrorPath,
+  schemaErrorSummary,
+  compileSchema,
+  sortedSchemaErrors,
 } from './schema-validation.js';
-import { inspectAtlasTree } from './bounded-data.js';
-import type { AtlasMessageCustomFunction } from './message-format.js';
-import { atlasIsMessageName } from './message-format-syntax.js';
-import { ATLAS_RESOURCE_LIMITS } from './resource-limits.js';
-import { ATLAS_EXTENSION_REGISTRY_SCHEMA } from './schemas.js';
+import { inspectTree } from './bounded-data.js';
+import type { MessageCustomFunction } from './message-format.js';
+import { isMessageName } from './message-format-syntax.js';
+import { RESOURCE_LIMITS } from './resource-limits.js';
+import { EXTENSION_REGISTRY_SCHEMA } from './schemas.js';
 import { compareCodePoint } from './sorted-records.js';
 import { constructJsonValue } from './json-tree.js';
 
 /** The version stamp on an extension registry file, checked before one is read. */
-export const ATLAS_EXTENSION_REGISTRY_PROFILE =
-  'atlas-extension-registry/1' as const;
+export const EXTENSION_REGISTRY_PROFILE =
+  'equator-extension-registry/1' as const;
 /** The version stamp on a single extension descriptor. */
 export const EXTENSION_DESCRIPTOR_PROFILE =
-  'atlas-extension-descriptor/1' as const;
+  'equator-extension-descriptor/1' as const;
 
 /**
  * The five value types an extension may declare, matching what a message input can be.
@@ -66,7 +66,7 @@ export type ExtensionValueType =
  * The declaration only. What the function does is registered separately at runtime, so nothing here
  * is executed and the compiler never loads application code to find out what it says.
  */
-export interface AtlasMessageFunctionDescriptorInput {
+export interface MessageFunctionDescriptorInput {
   readonly kind: 'message-function';
   /** The name messages call it by, without a leading colon. */
   readonly id: string;
@@ -102,11 +102,11 @@ export interface AtlasMessageFunctionDescriptorInput {
 }
 
 /**
- * Declares a kind of value a message family may vary over, beyond Atlas's own message parts.
+ * Declares a kind of value a message family may vary over, beyond Equator's own message parts.
  *
  * For a family keyed by something the application owns: a product line, a document type, a tier.
  */
-export interface AtlasIdentifierSegmentDescriptorInput {
+export interface IdentifierSegmentDescriptorInput {
   readonly kind: 'identifier-segment';
   /** The name a family names this segment type by. */
   readonly id: string;
@@ -117,12 +117,12 @@ export interface AtlasIdentifierSegmentDescriptorInput {
 }
 
 /**
- * Declares a kind of named region messages may place, beyond the ones Atlas ships.
+ * Declares a kind of named region messages may place, beyond the ones Equator ships.
  *
  * The catalog can then place it and name it; what it renders as is still decided in application
  * code, so a catalog gains a position in a sentence rather than a component.
  */
-export interface AtlasRichSlotKindDescriptorInput {
+export interface RichSlotKindDescriptorInput {
   readonly kind: 'rich-slot-kind';
   /** The name messages place it under. */
   readonly id: string;
@@ -147,12 +147,12 @@ export interface AtlasRichSlotKindDescriptorInput {
 }
 
 /**
- * Declares a way of writing a value type Atlas does not know: a domain's own quantity, code or
+ * Declares a way of writing a value type Equator does not know: a domain's own quantity, code or
  * identifier.
  *
  * The declaration only. The code that does the writing is registered at runtime.
  */
-export interface AtlasFormattingAdapterDescriptorInput {
+export interface FormattingAdapterDescriptorInput {
   readonly kind: 'formatting-adapter';
   /** The name this adapter is reached by. */
   readonly id: string;
@@ -165,11 +165,11 @@ export interface AtlasFormattingAdapterDescriptorInput {
 }
 
 /**
- * Declares a way of reading a value type Atlas does not know back out of what a person typed.
+ * Declares a way of reading a value type Equator does not know back out of what a person typed.
  *
  * The other half of a formatting adapter, for a field that has to round-trip.
  */
-export interface AtlasParsingAdapterDescriptorInput {
+export interface ParsingAdapterDescriptorInput {
   readonly kind: 'parsing-adapter';
   /** The name this adapter is reached by. */
   readonly id: string;
@@ -182,15 +182,15 @@ export interface AtlasParsingAdapterDescriptorInput {
 /**
  * Any of the five things an extension can declare, as written before it is registered.
  *
- * What `defineAtlasExtensionRegistry` takes. The registry adds a profile stamp and a fingerprint to
+ * What `defineExtensionRegistry` takes. The registry adds a profile stamp and a fingerprint to
  * each one.
  */
-export type AtlasExtensionDescriptorInput =
-  | AtlasMessageFunctionDescriptorInput
-  | AtlasIdentifierSegmentDescriptorInput
-  | AtlasRichSlotKindDescriptorInput
-  | AtlasFormattingAdapterDescriptorInput
-  | AtlasParsingAdapterDescriptorInput;
+export type ExtensionDescriptorInput =
+  | MessageFunctionDescriptorInput
+  | IdentifierSegmentDescriptorInput
+  | RichSlotKindDescriptorInput
+  | FormattingAdapterDescriptorInput
+  | ParsingAdapterDescriptorInput;
 
 /**
  * A declaration as the registry holds it: what was written, stamped and fingerprinted.
@@ -198,46 +198,46 @@ export type AtlasExtensionDescriptorInput =
  * The fingerprint is of the declaration's content, so a compiled artifact can say exactly which
  * version of an extension it was built against and a loader can refuse one that has since changed.
  */
-export type AtlasExtensionDescriptor = AtlasExtensionDescriptorInput & {
+export type ExtensionDescriptor = ExtensionDescriptorInput & {
   readonly profile: typeof EXTENSION_DESCRIPTOR_PROFILE;
   readonly fingerprint: string;
 };
 
 /**
- * Everything an application's messages may reach for beyond Atlas's own vocabulary.
+ * Everything an application's messages may reach for beyond Equator's own vocabulary.
  *
  * Inert throughout. Nothing in it is executed, nothing imports a consumer's module, and the whole
  * of it can be read from a file and compared between builds.
  */
-export interface AtlasExtensionRegistry {
+export interface ExtensionRegistry {
   /** The registry-shape version stamp. */
-  readonly profile: typeof ATLAS_EXTENSION_REGISTRY_PROFILE;
+  readonly profile: typeof EXTENSION_REGISTRY_PROFILE;
   /** The declarations, sorted so two registries with the same contents compare equal. */
-  readonly descriptors: readonly AtlasExtensionDescriptor[];
+  readonly descriptors: readonly ExtensionDescriptor[];
   /** A digest of the whole registry, which moves when any descriptor in it does. */
   readonly fingerprint: string;
 }
 
-export interface AtlasExtensionRegistryParseOptions {
+export interface ExtensionRegistryParseOptions {
   readonly sourcePath?: string;
 }
 
-const validateExtensionRegistry = compileAtlasSchema(
-  ATLAS_EXTENSION_REGISTRY_SCHEMA,
-);
+const validateExtensionRegistry = compileSchema(EXTENSION_REGISTRY_SCHEMA);
 
 function portableSnapshot(
   value: unknown,
   seen = new Set<object>(),
   depth = 0,
   budget: { nodes: number } = { nodes: 0 },
-): AtlasCanonicalJsonValue {
+): CanonicalJsonValue {
   budget.nodes += 1;
   if (
-    budget.nodes > ATLAS_RESOURCE_LIMITS.jsonNodes ||
-    depth > ATLAS_RESOURCE_LIMITS.jsonDepth
+    budget.nodes > RESOURCE_LIMITS.jsonNodes ||
+    depth > RESOURCE_LIMITS.jsonDepth
   ) {
-    throw new TypeError('Extension descriptor data exceeds Atlas tree limits.');
+    throw new TypeError(
+      'Extension descriptor data exceeds Equator tree limits.',
+    );
   }
   if (
     value === null ||
@@ -292,7 +292,7 @@ function portableSnapshot(
   if (prototype !== Object.prototype && prototype !== null) {
     throw new TypeError('Extension descriptor records must be plain data.');
   }
-  const output = Object.create(null) as Record<string, AtlasCanonicalJsonValue>;
+  const output = Object.create(null) as Record<string, CanonicalJsonValue>;
   for (const [key, descriptor] of Object.entries(
     Object.getOwnPropertyDescriptors(value),
   )) {
@@ -320,7 +320,7 @@ function validBound(value: number, maximum: number): boolean {
 }
 
 function descriptorError(
-  descriptor: AtlasExtensionDescriptorInput,
+  descriptor: ExtensionDescriptorInput,
 ): string | undefined {
   if (!validExtensionId(descriptor.id)) {
     return 'Application-local extension identities require a provider namespace and bounded lowercase name.';
@@ -332,19 +332,18 @@ function descriptorError(
       }
       if (
         Object.keys(descriptor.options ?? {}).length >
-        ATLAS_RESOURCE_LIMITS.extensionOptionsPerDescriptor
+        RESOURCE_LIMITS.extensionOptionsPerDescriptor
       ) {
         return 'Custom message function exceeds the option ceiling.';
       }
       for (const [name, option] of Object.entries(descriptor.options ?? {})) {
-        if (!atlasIsMessageName(name)) {
+        if (!isMessageName(name)) {
           return 'Custom message function option name is invalid.';
         }
         if (
           option.values !== undefined &&
           (option.values.length === 0 ||
-            option.values.length >
-              ATLAS_RESOURCE_LIMITS.extensionValuesPerOption ||
+            option.values.length > RESOURCE_LIMITS.extensionValuesPerOption ||
             new Set(option.values).size !== option.values.length)
         ) {
           return 'Custom message function option values must be nonempty and unique.';
@@ -359,7 +358,7 @@ function descriptorError(
     case 'rich-slot-kind':
       if (
         Object.keys(descriptor.options ?? {}).length >
-        ATLAS_RESOURCE_LIMITS.extensionOptionsPerDescriptor
+        RESOURCE_LIMITS.extensionOptionsPerDescriptor
       ) {
         return 'Rich-slot kind exceeds the option ceiling.';
       }
@@ -367,7 +366,7 @@ function descriptorError(
         if (
           !/^[a-z][a-z0-9-]{0,63}$/u.test(name) ||
           values.length === 0 ||
-          values.length > ATLAS_RESOURCE_LIMITS.extensionValuesPerOption ||
+          values.length > RESOURCE_LIMITS.extensionValuesPerOption ||
           new Set(values).size !== values.length ||
           values.some((value) => value.length === 0 || value.length > 128)
         ) {
@@ -401,69 +400,69 @@ function descriptorError(
  * than the ceiling allows, and for anything that is not bounded inert data: a function, an
  * accessor or a cycle reaching a registry is refused rather than carried into a compilation.
  */
-export function defineAtlasExtensionRegistry(
-  inputs: readonly AtlasExtensionDescriptorInput[],
-): AtlasResult<AtlasExtensionRegistry> {
-  let snapshot: AtlasCanonicalJsonValue;
+export function defineExtensionRegistry(
+  inputs: readonly ExtensionDescriptorInput[],
+): ToolkitResult<ExtensionRegistry> {
+  let snapshot: CanonicalJsonValue;
   try {
     snapshot = portableSnapshot(inputs);
   } catch (error) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1805',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1805',
         `Application-local extension registry is not bounded inert data: ${error instanceof Error ? error.message : String(error)}`,
       ),
     ]);
   }
   const registryInput = Object.freeze({
-    profile: ATLAS_EXTENSION_REGISTRY_PROFILE,
+    profile: EXTENSION_REGISTRY_PROFILE,
     descriptors: snapshot,
   });
   if (!validateExtensionRegistry(registryInput)) {
-    return atlasFailure(
-      sortedAtlasSchemaErrors(validateExtensionRegistry.errors)
-        .slice(0, ATLAS_RESOURCE_LIMITS.diagnostics)
+    return toolkitFailure(
+      sortedSchemaErrors(validateExtensionRegistry.errors)
+        .slice(0, RESOURCE_LIMITS.diagnostics)
         .map((error) =>
-          atlasDiagnostic(
-            'ATL1805',
-            atlasSchemaErrorSummary('Atlas extension registry', error),
-            { path: atlasSchemaErrorPath(error) },
+          toolkitDiagnostic(
+            'EQ1805',
+            schemaErrorSummary('Equator extension registry', error),
+            { path: schemaErrorPath(error) },
           ),
         ),
     );
   }
   const normalizedInputs =
-    snapshot as unknown as readonly AtlasExtensionDescriptorInput[];
-  if (normalizedInputs.length > ATLAS_RESOURCE_LIMITS.extensionDescriptors) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1805',
-        'Application-local extension registry exceeds the Atlas descriptor ceiling.',
+    snapshot as unknown as readonly ExtensionDescriptorInput[];
+  if (normalizedInputs.length > RESOURCE_LIMITS.extensionDescriptors) {
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1805',
+        'Application-local extension registry exceeds the Equator descriptor ceiling.',
       ),
     ]);
   }
   const seen = new Set<string>();
-  const descriptors: AtlasExtensionDescriptor[] = [];
+  const descriptors: ExtensionDescriptor[] = [];
   for (const input of normalizedInputs) {
     const key = `${input.kind}\u0000${input.id}`;
     const error = descriptorError(input);
     if (error !== undefined || seen.has(key)) {
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1805',
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1805',
           error ?? 'Application-local extension descriptor is duplicated.',
           { path: ['extensions', input.kind, input.id] },
         ),
       ]);
     }
     seen.add(key);
-    const canonical = input as unknown as AtlasCanonicalJsonValue;
+    const canonical = input as unknown as CanonicalJsonValue;
     const normalized = input;
     descriptors.push(
       Object.freeze({
         ...normalized,
         profile: EXTENSION_DESCRIPTOR_PROFILE,
-        fingerprint: digestAtlasCanonicalJson(
+        fingerprint: digestCanonicalJson(
           EXTENSION_DESCRIPTOR_PROFILE,
           canonical,
         ),
@@ -476,17 +475,17 @@ export function defineAtlasExtensionRegistry(
       `${right.kind}\u0000${right.id}`,
     ),
   );
-  const fingerprint = digestAtlasCanonicalJson(
-    ATLAS_EXTENSION_REGISTRY_PROFILE,
+  const fingerprint = digestCanonicalJson(
+    EXTENSION_REGISTRY_PROFILE,
     descriptors.map(({ kind, id, fingerprint: value }) => ({
       kind,
       id,
       fingerprint: value,
     })),
   );
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
-      profile: ATLAS_EXTENSION_REGISTRY_PROFILE,
+      profile: EXTENSION_REGISTRY_PROFILE,
       descriptors: Object.freeze(descriptors),
       fingerprint,
     }),
@@ -498,9 +497,9 @@ function duplicateKeys(
   node: JsonNode,
   sourcePath: string | undefined,
   path: readonly (string | number)[] = [],
-  diagnostics: AtlasDiagnostic[] = [],
-): readonly AtlasDiagnostic[] {
-  if (diagnostics.length >= ATLAS_RESOURCE_LIMITS.diagnostics) {
+  diagnostics: ToolkitDiagnostic[] = [],
+): readonly ToolkitDiagnostic[] {
+  if (diagnostics.length >= RESOURCE_LIMITS.diagnostics) {
     return diagnostics;
   }
   if (node.type === 'object') {
@@ -512,12 +511,12 @@ function duplicateKeys(
       const nextPath = [...path, key.value];
       if (seen.has(key.value)) {
         diagnostics.push(
-          atlasDiagnostic(
-            'ATL1805',
-            `Atlas extension registry contains duplicate key ${JSON.stringify(key.value)}.`,
+          toolkitDiagnostic(
+            'EQ1805',
+            `Equator extension registry contains duplicate key ${JSON.stringify(key.value)}.`,
             {
               path: nextPath,
-              span: atlasSourceSpan(
+              span: spanAt(
                 source,
                 key.offset,
                 Math.max(1, key.length),
@@ -531,28 +530,26 @@ function duplicateKeys(
       if (child !== undefined) {
         duplicateKeys(source, child, sourcePath, nextPath, diagnostics);
       }
-      if (diagnostics.length >= ATLAS_RESOURCE_LIMITS.diagnostics) break;
+      if (diagnostics.length >= RESOURCE_LIMITS.diagnostics) break;
     }
   } else if (node.type === 'array') {
     for (const [index, child] of (node.children ?? []).entries()) {
       duplicateKeys(source, child, sourcePath, [...path, index], diagnostics);
-      if (diagnostics.length >= ATLAS_RESOURCE_LIMITS.diagnostics) break;
+      if (diagnostics.length >= RESOURCE_LIMITS.diagnostics) break;
     }
   }
   return diagnostics;
 }
 
-export function parseAtlasExtensionRegistry(
+export function parseExtensionRegistry(
   source: string,
-  options: AtlasExtensionRegistryParseOptions = {},
-): AtlasResult<AtlasExtensionRegistry> {
-  if (
-    Buffer.byteLength(source, 'utf8') > ATLAS_RESOURCE_LIMITS.configurationBytes
-  ) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1805',
-        'Atlas extension registry exceeds the 1 MiB authored-input ceiling.',
+  options: ExtensionRegistryParseOptions = {},
+): ToolkitResult<ExtensionRegistry> {
+  if (Buffer.byteLength(source, 'utf8') > RESOURCE_LIMITS.configurationBytes) {
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1805',
+        'Equator extension registry exceeds the 1 MiB authored-input ceiling.',
       ),
     ]);
   }
@@ -563,18 +560,18 @@ export function parseAtlasExtensionRegistry(
     disallowComments: true,
   });
   if (root === undefined || errors.length > 0) {
-    return atlasFailure(
+    return toolkitFailure(
       (errors.length === 0
         ? [{ error: 1, offset: 0, length: Math.max(1, source.length) }]
         : errors
       )
-        .slice(0, ATLAS_RESOURCE_LIMITS.diagnostics)
+        .slice(0, RESOURCE_LIMITS.diagnostics)
         .map((error) =>
-          atlasDiagnostic(
-            'ATL1805',
-            `Atlas extension registry contains invalid JSON: ${printParseErrorCode(error.error)}.`,
+          toolkitDiagnostic(
+            'EQ1805',
+            `Equator extension registry contains invalid JSON: ${printParseErrorCode(error.error)}.`,
             {
-              span: atlasSourceSpan(
+              span: spanAt(
                 source,
                 error.offset,
                 Math.max(1, error.length),
@@ -585,49 +582,47 @@ export function parseAtlasExtensionRegistry(
         ),
     );
   }
-  const tree = inspectAtlasTree(root, (node) => node.children ?? [], {
-    maximumDepth: ATLAS_RESOURCE_LIMITS.jsonDepth,
-    maximumNodes: ATLAS_RESOURCE_LIMITS.jsonNodes,
+  const tree = inspectTree(root, (node) => node.children ?? [], {
+    maximumDepth: RESOURCE_LIMITS.jsonDepth,
+    maximumNodes: RESOURCE_LIMITS.jsonNodes,
   });
   if (tree.failure !== undefined) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1805',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1805',
         tree.failure === 'depth'
-          ? `Atlas extension registry exceeds the JSON depth ceiling of ${ATLAS_RESOURCE_LIMITS.jsonDepth}.`
-          : `Atlas extension registry exceeds the JSON node ceiling of ${ATLAS_RESOURCE_LIMITS.jsonNodes}.`,
+          ? `Equator extension registry exceeds the JSON depth ceiling of ${RESOURCE_LIMITS.jsonDepth}.`
+          : `Equator extension registry exceeds the JSON node ceiling of ${RESOURCE_LIMITS.jsonNodes}.`,
       ),
     ]);
   }
   const duplicates = duplicateKeys(source, root, options.sourcePath);
-  if (duplicates.length > 0) return atlasFailure(duplicates);
+  if (duplicates.length > 0) return toolkitFailure(duplicates);
   const value = constructJsonValue(root);
   if (!validateExtensionRegistry(value)) {
-    return atlasFailure(
-      sortedAtlasSchemaErrors(validateExtensionRegistry.errors)
-        .slice(0, ATLAS_RESOURCE_LIMITS.diagnostics)
+    return toolkitFailure(
+      sortedSchemaErrors(validateExtensionRegistry.errors)
+        .slice(0, RESOURCE_LIMITS.diagnostics)
         .map((error) =>
-          atlasDiagnostic(
-            'ATL1805',
-            atlasSchemaErrorSummary('Atlas extension registry', error),
-            { path: atlasSchemaErrorPath(error) },
+          toolkitDiagnostic(
+            'EQ1805',
+            schemaErrorSummary('Equator extension registry', error),
+            { path: schemaErrorPath(error) },
           ),
         ),
     );
   }
   const authored = value as Readonly<{
-    readonly profile: typeof ATLAS_EXTENSION_REGISTRY_PROFILE;
-    readonly descriptors: readonly AtlasExtensionDescriptorInput[];
+    readonly profile: typeof EXTENSION_REGISTRY_PROFILE;
+    readonly descriptors: readonly ExtensionDescriptorInput[];
   }>;
-  return defineAtlasExtensionRegistry(authored.descriptors);
+  return defineExtensionRegistry(authored.descriptors);
 }
 
-export function formatAtlasExtensionRegistry(
-  registry: AtlasExtensionRegistry,
-): string {
+export function formatExtensionRegistry(registry: ExtensionRegistry): string {
   return `${JSON.stringify(
     {
-      profile: ATLAS_EXTENSION_REGISTRY_PROFILE,
+      profile: EXTENSION_REGISTRY_PROFILE,
       descriptors: registry.descriptors.map(
         ({ profile: _profile, fingerprint: _fingerprint, ...descriptor }) =>
           descriptor,
@@ -645,20 +640,16 @@ export function formatAtlasExtensionRegistry(
  * descriptor narrowed to that kind, or `undefined` when the registry is absent or has no such
  * entry.
  */
-export function atlasExtensionDescriptor<
-  Kind extends AtlasExtensionDescriptor['kind'],
->(
-  registry: AtlasExtensionRegistry | undefined,
+export function extensionDescriptor<Kind extends ExtensionDescriptor['kind']>(
+  registry: ExtensionRegistry | undefined,
   kind: Kind,
   id: string,
-): Extract<AtlasExtensionDescriptor, { readonly kind: Kind }> | undefined {
+): Extract<ExtensionDescriptor, { readonly kind: Kind }> | undefined {
   return registry?.descriptors.find(
     (
       descriptor,
-    ): descriptor is Extract<
-      AtlasExtensionDescriptor,
-      { readonly kind: Kind }
-    > => descriptor.kind === kind && descriptor.id === id,
+    ): descriptor is Extract<ExtensionDescriptor, { readonly kind: Kind }> =>
+      descriptor.kind === kind && descriptor.id === id,
   );
 }
 /**
@@ -670,9 +661,9 @@ export function atlasExtensionDescriptor<
  * from drifting apart at the call sites that parse: authored catalogs, and the pseudo-locales
  * derived from them, which must parse identically.
  */
-export function atlasMessageCustomFunctions(
-  registry: AtlasExtensionRegistry | undefined,
-): readonly AtlasMessageCustomFunction[] {
+export function messageCustomFunctions(
+  registry: ExtensionRegistry | undefined,
+): readonly MessageCustomFunction[] {
   return Object.freeze(
     (registry?.descriptors ?? [])
       .filter((descriptor) => descriptor.kind === 'message-function')

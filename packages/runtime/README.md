@@ -1,13 +1,13 @@
-# @neolorn/atlas
+# @neolorn/equator
 
 ### Localization runtime for Angular applications (MessageFormat 2, CLDR, BCP 47)
 
-[![npm version](https://img.shields.io/npm/v/@neolorn/atlas?style=flat-square)](https://www.npmjs.com/package/@neolorn/atlas)
-[![license](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/neolorn/atlas/blob/main/LICENSE)
+[![npm version](https://img.shields.io/npm/v/@neolorn/equator?style=flat-square)](https://www.npmjs.com/package/@neolorn/equator)
+[![license](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/neolorn/equator/blob/main/LICENSE)
 
-**@neolorn/atlas** is the runtime half of [Atlas](https://github.com/neolorn/atlas): locale resolution, message evaluation, formatting and parsing through `Intl`, and the Angular integration for routing, forms, and server rendering. It ships as ESM with seven entry points and no dependency beyond `tslib`.
+**@neolorn/equator** is the runtime half of [Equator](https://github.com/neolorn/equator): locale resolution, message evaluation, formatting and parsing through `Intl`, and the Angular integration for routing, forms, and server rendering. It ships as ESM with seven entry points and no dependency beyond `tslib`.
 
-Catalogs are compiled by [`@neolorn/atlas-toolkit`](https://www.npmjs.com/package/@neolorn/atlas-toolkit) into typed modules under `#i18n`, which this package's providers read.
+Catalogs are compiled by [`@neolorn/equator-toolkit`](https://www.npmjs.com/package/@neolorn/equator-toolkit) into typed modules under `#i18n`, which this package's providers read.
 
 ## Features
 
@@ -37,20 +37,20 @@ Catalogs are compiled by [`@neolorn/atlas-toolkit`](https://www.npmjs.com/packag
 
 ## Requirements
 
-The Angular, RxJS, and Node.js ranges an install accepts are on [Compatibility](https://github.com/neolorn/atlas/blob/main/docs/reference/compatibility.md).
+The Angular, RxJS, and Node.js ranges an install accepts are on [Compatibility](https://github.com/neolorn/equator/blob/main/docs/reference/compatibility.md).
 
 ## Install
 
 ```sh install
-npm install @neolorn/atlas
-npm install --save-dev @neolorn/atlas-toolkit
+npm install @neolorn/equator
+npm install --save-dev @neolorn/equator-toolkit
 ```
 
 The toolkit runs at build time and ships in nothing, which is why it is a development dependency. This package is what the application ships.
 
 ## Quick start
 
-Run `atlas init` and `atlas generate` first, which the [tutorial](https://github.com/neolorn/atlas/blob/main/docs/tutorial.md) covers. `generate` writes a `provideLocalization` for the project, with the locale set already bound.
+Run `equator init` and `equator generate` first, which the [tutorial](https://github.com/neolorn/equator/blob/main/docs/tutorial.md) covers. `generate` writes a `provideLocalization` for the project, with the locale set already bound.
 
 Compose the providers in `src/app/app.config.ts`. `provideLocalizedRouter` replaces `provideRouter`, and each `with*` selects a feature:
 
@@ -88,16 +88,16 @@ Read the facade from a component to render or switch from code:
   protected readonly localization = injectLocalization();
 ```
 
-The [tutorial](https://github.com/neolorn/atlas/blob/main/docs/tutorial.md) builds the application these lines come from, and every code block in the documentation is executed against the published packages on each release.
+The [tutorial](https://github.com/neolorn/equator/blob/main/docs/tutorial.md) builds the application these lines come from, and every code block in the documentation is executed against the published packages on each release.
 
 ## Documentation
 
-- [Tutorial](https://github.com/neolorn/atlas/blob/main/docs/tutorial.md): a two-locale application from `ng new` to a localized route.
-- [How-to guides](https://github.com/neolorn/atlas/blob/main/docs/README.md#how-to-guides): step-by-step instructions for specific tasks.
-- [Reference](https://github.com/neolorn/atlas/blob/main/docs/README.md#reference): entry points, features, configuration, and diagnostics, generated from the packages.
-- [Explanation](https://github.com/neolorn/atlas/blob/main/docs/README.md#explanation): how locale resolution, compilation, routing, and the trust model work.
-- [Atlas](https://github.com/neolorn/atlas): the repository, the specifications, and how to contribute.
+- [Tutorial](https://github.com/neolorn/equator/blob/main/docs/tutorial.md): a two-locale application from `ng new` to a localized route.
+- [How-to guides](https://github.com/neolorn/equator/blob/main/docs/README.md#how-to-guides): step-by-step instructions for specific tasks.
+- [Reference](https://github.com/neolorn/equator/blob/main/docs/README.md#reference): entry points, features, configuration, and diagnostics, generated from the packages.
+- [Explanation](https://github.com/neolorn/equator/blob/main/docs/README.md#explanation): how locale resolution, compilation, routing, and the trust model work.
+- [Equator](https://github.com/neolorn/equator): the repository, the specifications, and how to contribute.
 
 ## License
 
-[MIT](https://github.com/neolorn/atlas/blob/main/LICENSE).
+[MIT](https://github.com/neolorn/equator/blob/main/LICENSE).

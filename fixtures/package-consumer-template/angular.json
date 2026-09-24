@@ -5,7 +5,7 @@
     "packageManager": "pnpm"
   },
   "projects": {
-    "atlas-feature-lab": {
+    "feature-lab": {
       "projectType": "application",
       "root": "",
       "sourceRoot": "src",

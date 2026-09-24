@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { generateAtlasProject } from '../src/index.js';
+import { generateProject } from '../src/index.js';
 
 /**
  * Which scopes the first render needs, when the messages are used in templates.
@@ -65,7 +65,7 @@ function manifest(name: string): string {
 
 /** A project whose only use of the `page` scope is a template behind a lazy route. */
 async function project(): Promise<string> {
-  const root = await mkdtemp(resolve(tmpdir(), 'atlas-template-reach-'));
+  const root = await mkdtemp(resolve(tmpdir(), 'template-reach-'));
   temporaryRoots.push(root);
 
   await write(
@@ -73,7 +73,7 @@ async function project(): Promise<string> {
     'package.json',
     `${JSON.stringify(
       {
-        name: '@example/atlas-template-reachability',
+        name: '@example/template-reachability',
         version: '0.0.0',
         private: true,
         type: 'module',
@@ -88,7 +88,7 @@ async function project(): Promise<string> {
   );
   await write(
     root,
-    'atlas.config.json',
+    'equator.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -208,7 +208,7 @@ afterEach(async () => {
 
 describe('a route behind a lazy boundary', () => {
   it('carries the scopes it has to have ready before it renders', async () => {
-    // Deferring a scope is only safe if something loads it at the right time. Atlas already knows
+    // Deferring a scope is only safe if something loads it at the right time. Equator already knows
     // which scopes a lazily loaded page uses, so the route table says so and the router adapter
     // loads them on activation: no application lists scopes per route.
     //
@@ -216,7 +216,7 @@ describe('a route behind a lazy boundary', () => {
     // in, and a locale transition has to have every scope the page renders ready in the new locale
     // before it commits.
     const root = await project();
-    expect((await generateAtlasProject({ project: root })).ok).toBe(true);
+    expect((await generateProject({ project: root })).ok).toBe(true);
 
     const routes = await readFile(
       resolve(root, 'src/generated/i18n/routes.ts'),
@@ -231,7 +231,7 @@ describe('a route behind a lazy boundary', () => {
 describe('a scope used only from a template', () => {
   it('is deferred when the component that owns the template is', async () => {
     const root = await project();
-    const generated = await generateAtlasProject({ project: root });
+    const generated = await generateProject({ project: root });
     expect(generated.ok).toBe(true);
 
     const index = await readFile(

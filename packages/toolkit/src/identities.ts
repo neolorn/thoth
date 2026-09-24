@@ -7,13 +7,13 @@
  * identities from projecting onto one name.
  */
 import {
-  atlasDiagnostic,
-  atlasFailure,
-  atlasSuccess,
-  type AtlasDiagnosticCode,
-  type AtlasResult,
+  toolkitDiagnostic,
+  toolkitFailure,
+  toolkitSuccess,
+  type ToolkitDiagnosticCode,
+  type ToolkitResult,
 } from './diagnostics.js';
-import { atlasUntrustedText } from './untrusted-text.js';
+import { untrustedText } from './untrusted-text.js';
 
 /**
  * How a catalog key is spelled in the file and how code reaches it, in one place.
@@ -26,15 +26,15 @@ import { atlasUntrustedText } from './untrusted-text.js';
  * `generated-contracts.ts` now takes its projection from here rather than keeping a private copy,
  * so the sentence a diagnostic prints and the name the generator emits cannot disagree.
  */
-export function atlasMessagePartInCode(part: string): string {
+export function messagePartInCode(part: string): string {
   return part.replace(/-([a-z0-9])/gu, (_match, character: string) =>
     character.toUpperCase(),
   );
 }
 
 /** The whole dotted key as code reaches it: `cart.line-items` is `cart.lineItems`. */
-export function atlasMessageKeyInCode(key: string): string {
-  return key.split('.').map(atlasMessagePartInCode).join('.');
+export function messageKeyInCode(key: string): string {
+  return key.split('.').map(messagePartInCode).join('.');
 }
 
 /**
@@ -45,7 +45,7 @@ export function atlasMessageKeyInCode(key: string): string {
  * schema's own pattern before offering it. A key it cannot repair gets the rule and no suggestion,
  * which is better than a suggestion that is also rejected.
  */
-export function atlasMessageKeyInCatalog(key: string): string {
+export function messageKeyInCatalog(key: string): string {
   return key
     .split('.')
     .map((part) =>
@@ -64,11 +64,11 @@ declare const messageIdBrand: unique symbol;
 /**
  * A package's identity, which is the name it publishes under, checked and normalized.
  *
- * Branded, so a bare string cannot stand in for one. `parseAtlasProviderId` is what produces one,
+ * Branded, so a bare string cannot stand in for one. `parseProviderId` is what produces one,
  * and it is the only thing that does: an identity that reached here reached here through a check.
  */
-export type AtlasProviderId = string & {
-  readonly [providerIdBrand]: 'AtlasProviderId';
+export type ProviderId = string & {
+  readonly [providerIdBrand]: 'ProviderId';
 };
 
 /**
@@ -77,18 +77,18 @@ export type AtlasProviderId = string & {
  * A scope is the unit catalogs are loaded in, so this is the name a route or a feature names when
  * it says which messages it needs. Branded for the same reason a provider identity is.
  */
-export type AtlasScopeId = string & {
-  readonly [scopeIdBrand]: 'AtlasScopeId';
+export type ScopeId = string & {
+  readonly [scopeIdBrand]: 'ScopeId';
 };
 
-export type AtlasMessageId = string & {
-  readonly [messageIdBrand]: 'AtlasMessageId';
+export type MessageId = string & {
+  readonly [messageIdBrand]: 'MessageId';
 };
 
-export interface AtlasMessageIdentity {
-  readonly providerId: AtlasProviderId;
-  readonly scopeId: AtlasScopeId;
-  readonly messageId: AtlasMessageId;
+export interface MessageIdentity {
+  readonly providerId: ProviderId;
+  readonly scopeId: ScopeId;
+  readonly messageId: MessageId;
 }
 
 const providerPattern = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/u;
@@ -99,64 +99,60 @@ const messagePattern =
 function parseIdentity<T extends string>(
   value: unknown,
   pattern: RegExp,
-  code: AtlasDiagnosticCode,
+  code: ToolkitDiagnosticCode,
   label: string,
-): AtlasResult<T> {
+): ToolkitResult<T> {
   // Before the grammar, because `RegExp.prototype.test` coerces and a coerced number satisfies an
   // identifier grammar as readily as a real identity does.
-  const text = atlasUntrustedText(value, code, label);
+  const text = untrustedText(value, code, label);
   if (!text.ok) return text;
   if (!pattern.test(text.value)) {
-    return atlasFailure([
-      atlasDiagnostic(
+    return toolkitFailure([
+      toolkitDiagnostic(
         code,
-        `${label} does not match the Atlas identity grammar.`,
+        `${label} does not match the Equator identity grammar.`,
       ),
     ]);
   }
 
-  return atlasSuccess(text.value as T);
+  return toolkitSuccess(text.value as T);
 }
 
-export function parseAtlasProviderId(
-  value: unknown,
-): AtlasResult<AtlasProviderId> {
-  return parseIdentity<AtlasProviderId>(
+export function parseProviderId(value: unknown): ToolkitResult<ProviderId> {
+  return parseIdentity<ProviderId>(
     value,
     providerPattern,
-    'ATL1104',
+    'EQ1104',
     'Provider identity',
   );
 }
 
-export function parseAtlasScopeId(value: unknown): AtlasResult<AtlasScopeId> {
-  return parseIdentity<AtlasScopeId>(
+export function parseScopeId(value: unknown): ToolkitResult<ScopeId> {
+  return parseIdentity<ScopeId>(
     value,
     scopePattern,
-    'ATL1104',
+    'EQ1104',
     'Scope identity',
   );
 }
 
-export function parseAtlasMessageId(
-  value: unknown,
-): AtlasResult<AtlasMessageId> {
-  return parseIdentity<AtlasMessageId>(
+export function parseMessageId(value: unknown): ToolkitResult<MessageId> {
+  return parseIdentity<MessageId>(
     value,
     messagePattern,
-    'ATL1104',
+    'EQ1104',
     'Message identity',
   );
 }
 
-export function createAtlasMessageIdentity(
+export function createMessageIdentity(
   providerId: unknown,
   scopeId: unknown,
   messageId: unknown,
-): AtlasResult<AtlasMessageIdentity> {
-  const provider = parseAtlasProviderId(providerId);
-  const scope = parseAtlasScopeId(scopeId);
-  const message = parseAtlasMessageId(messageId);
+): ToolkitResult<MessageIdentity> {
+  const provider = parseProviderId(providerId);
+  const scope = parseScopeId(scopeId);
+  const message = parseMessageId(messageId);
   const diagnostics = [
     ...provider.diagnostics,
     ...scope.diagnostics,
@@ -164,10 +160,10 @@ export function createAtlasMessageIdentity(
   ];
 
   if (!provider.ok || !scope.ok || !message.ok) {
-    return atlasFailure(diagnostics);
+    return toolkitFailure(diagnostics);
   }
 
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
       providerId: provider.value,
       scopeId: scope.value,

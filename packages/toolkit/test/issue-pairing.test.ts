@@ -4,10 +4,10 @@ import { resolve } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { generateAtlasProject } from '../src/index.js';
+import { generateProject } from '../src/index.js';
 
 /**
- * Messages a running program selects, and whether Atlas can see them being selected.
+ * Messages a running program selects, and whether Equator can see them being selected.
  *
  * A backend failure code pairs with its message by name rather than through a table an
  * application maintains, which means the code that picks the message is a string from a service
@@ -33,7 +33,7 @@ async function write(
 }
 
 async function project(body: readonly string[]): Promise<string> {
-  const root = await mkdtemp(resolve(tmpdir(), 'atlas-issue-pairing-'));
+  const root = await mkdtemp(resolve(tmpdir(), 'issue-pairing-'));
   temporaryRoots.push(root);
 
   await write(
@@ -41,7 +41,7 @@ async function project(body: readonly string[]): Promise<string> {
     'package.json',
     `${JSON.stringify(
       {
-        name: '@example/atlas-issue-pairing',
+        name: '@example/issue-pairing',
         version: '0.0.0',
         private: true,
         type: 'module',
@@ -56,7 +56,7 @@ async function project(body: readonly string[]): Promise<string> {
   );
   await write(
     root,
-    'atlas.config.json',
+    'equator.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -107,11 +107,11 @@ async function project(body: readonly string[]): Promise<string> {
 async function unreachedMessages(
   body: readonly string[],
 ): Promise<readonly string[]> {
-  const generated = await generateAtlasProject({
+  const generated = await generateProject({
     project: await project(body),
   });
   expect(generated.ok).toBe(true);
-  const advisory = generated.diagnostics.find(({ code }) => code === 'ATL1311');
+  const advisory = generated.diagnostics.find(({ code }) => code === 'EQ1311');
   if (advisory === undefined) return [];
   return [...advisory.summary.matchAll(/"([^"]+)"/gu)].map(
     ([, name]) => name as string,

@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  formatAtlasCatalog,
-  parseAtlasCatalog,
-  parseAtlasConfiguration,
-  type AtlasCatalogParseOptions,
+  formatCatalog,
+  parseCatalog,
+  parseConfiguration,
+  type CatalogParseOptions,
 } from '../src/index.js';
-import { formatAtlasCatalogSource } from '../src/catalog.js';
-import { formatAtlasConfiguration } from '../src/configuration.js';
-import { canonicalizeAtlasLocale } from '../src/locales.js';
-import { parseAtlasMessage } from '../src/message-format.js';
+import { formatCatalogSource } from '../src/catalog.js';
+import { formatConfiguration } from '../src/configuration.js';
+import { canonicalizeLocale } from '../src/locales.js';
+import { parseMessageSemanticModel } from '../src/message-format.js';
 
 /**
  * Round-trip, idempotence and differential properties over generated input.
  *
- * These exist because of `atlas format`. Building a plain object from the semantic model and
+ * These exist because of `equator format`. Building a plain object from the semantic model and
  * stringifying it drops every comment, because comments are not in that model, so a command whose
  * name promises presentation changes deletes them all from a consumer's catalogs: twelve across
  * four files on one real catalog set, two of them load-bearing. `lossless-format.test.ts` pins that
@@ -25,7 +25,7 @@ import { parseAtlasMessage } from '../src/message-format.js';
  * **Generated, not random bytes, and the distinction is the whole design.** Random bytes reach a
  * parser's front door and stop: they are rejected, the reject path is already the best-covered path
  * in the toolkit (`untrusted-input.test.ts`, and thirty-four enforced ceilings in
- * `ATLAS_RESOURCE_LIMITS`), and nothing past the door is ever exercised. Every generator here emits
+ * `RESOURCE_LIMITS`), and nothing past the door is ever exercised. Every generator here emits
  * input that is *valid*, because the properties worth checking are the ones that only apply once
  * parsing has succeeded.
  *
@@ -84,9 +84,9 @@ const SEED = 0x0a71a5;
 /** Enough to walk the space; small enough that `test:toolkit` stays a routine-tier command. */
 const CASES = 200;
 
-const OPTIONS: AtlasCatalogParseOptions = Object.freeze({
+const OPTIONS: CatalogParseOptions = Object.freeze({
   role: 'source',
-  providerId: 'atlas-properties',
+  providerId: 'properties',
   scopeId: 'shell',
   locale: 'en-US',
 });
@@ -187,7 +187,7 @@ interface GeneratedCatalog {
 }
 
 /**
- * An Atlas catalog as an author would have written one, comments included.
+ * An Equator catalog as an author would have written one, comments included.
  *
  * Comments are the point. They exist only in the file, never in the semantic model, so any
  * transform that goes through the model loses them, which is exactly what happened.
@@ -240,12 +240,12 @@ describe('formatting a catalog source is lossless and idempotent', () => {
     const random = createRandom(SEED);
     for (let index = 0; index < CASES; index += 1) {
       const { source, comments } = generateCatalog(random);
-      const parsed = parseAtlasCatalog(source, OPTIONS);
+      const parsed = parseCatalog(source, OPTIONS);
       // A generator that stopped producing valid catalogs would make every property below pass
       // vacuously, so the generated input is asserted to be input.
       expect(parsed.ok, source).toBe(true);
 
-      const formatted = formatAtlasCatalogSource(source, OPTIONS);
+      const formatted = formatCatalogSource(source, OPTIONS);
       expect(formatted.ok, source).toBe(true);
       if (!formatted.ok) continue;
 
@@ -260,16 +260,16 @@ describe('formatting a catalog source is lossless and idempotent', () => {
     const random = createRandom(SEED);
     for (let index = 0; index < CASES; index += 1) {
       const { source } = generateCatalog(random);
-      const once = formatAtlasCatalogSource(source, OPTIONS);
+      const once = formatCatalogSource(source, OPTIONS);
       expect(once.ok, source).toBe(true);
       if (!once.ok) continue;
 
-      const twice = formatAtlasCatalogSource(once.value, OPTIONS);
+      const twice = formatCatalogSource(once.value, OPTIONS);
       expect(twice.ok, once.value).toBe(true);
       if (!twice.ok) continue;
 
-      // Without this, `atlas format` in a pre-commit hook can loop, and a `check --fix` can report
-      // work remaining on a file it just wrote.
+      // Without this, `equator format` in a pre-commit hook can loop, and a `check --fix` can
+      // report work remaining on a file it just wrote.
       expect(twice.value, source).toBe(once.value);
     }
   });
@@ -278,12 +278,12 @@ describe('formatting a catalog source is lossless and idempotent', () => {
     const random = createRandom(SEED);
     for (let index = 0; index < CASES; index += 1) {
       const { source } = generateCatalog(random);
-      const before = parseAtlasCatalog(source, OPTIONS);
-      const formatted = formatAtlasCatalogSource(source, OPTIONS);
+      const before = parseCatalog(source, OPTIONS);
+      const formatted = formatCatalogSource(source, OPTIONS);
       expect(formatted.ok, source).toBe(true);
       if (!formatted.ok || !before.ok) continue;
 
-      const after = parseAtlasCatalog(formatted.value, OPTIONS);
+      const after = parseCatalog(formatted.value, OPTIONS);
       expect(after.ok, formatted.value).toBe(true);
       if (!after.ok) continue;
 
@@ -301,16 +301,16 @@ describe('a catalog survives the model round trip', () => {
     const random = createRandom(SEED);
     for (let index = 0; index < CASES; index += 1) {
       const { source } = generateCatalog(random);
-      const parsed = parseAtlasCatalog(source, OPTIONS);
+      const parsed = parseCatalog(source, OPTIONS);
       expect(parsed.ok, source).toBe(true);
       if (!parsed.ok) continue;
 
-      const written = formatAtlasCatalog(parsed.value);
-      const reparsed = parseAtlasCatalog(written, OPTIONS);
+      const written = formatCatalog(parsed.value);
+      const reparsed = parseCatalog(written, OPTIONS);
       expect(reparsed.ok, written).toBe(true);
       if (!reparsed.ok) continue;
 
-      // `formatAtlasCatalog` goes through the semantic model by design, it is how Atlas writes a
+      // `formatCatalog` goes through the semantic model by design, it is how Equator writes a
       // catalog it composed rather than one an author wrote, so comments are legitimately absent
       // here. What must not be absent is anything the model holds.
       expect(reparsed.value.messages, written).toEqual(parsed.value.messages);
@@ -362,11 +362,11 @@ describe('locale canonicalization is a fixed point and agrees with the platform'
     const random = createRandom(SEED);
     for (let index = 0; index < CASES; index += 1) {
       const tag = generateTag(random);
-      const once = canonicalizeAtlasLocale(tag);
+      const once = canonicalizeLocale(tag);
       expect(once.ok, tag).toBe(true);
       if (!once.ok) continue;
 
-      const twice = canonicalizeAtlasLocale(once.value);
+      const twice = canonicalizeLocale(once.value);
       expect(twice.ok, once.value).toBe(true);
       if (!twice.ok) continue;
 
@@ -380,11 +380,11 @@ describe('locale canonicalization is a fixed point and agrees with the platform'
     const random = createRandom(SEED);
     for (let index = 0; index < CASES; index += 1) {
       const tag = generateTag(random);
-      const result = canonicalizeAtlasLocale(tag);
+      const result = canonicalizeLocale(tag);
       if (!result.ok) continue;
 
       // A differential rather than a pinned string, and against a *different* ECMA-402 entry point
-      // than the one Atlas calls: `canonicalizeAtlasLocale` goes through
+      // than the one Equator calls: `canonicalizeLocale` goes through
       // `Intl.getCanonicalLocales`, and this checks the answer against `Intl.Locale`, which is a
       // separate algorithm over the same standard. Pinning `en-US` here would pin one ICU edition
       // and turn every platform bump into a failure nobody could tell from a regression.
@@ -399,7 +399,7 @@ describe('locale canonicalization is a fixed point and agrees with the platform'
       const tag = `${generateTag(random)}-${random.pick(singletons)}`;
       // A catalog locale that carried `-u-ca-islamic` would be a second catalog for a locale whose
       // identity is the same, differing only in a preference the runtime resolves separately.
-      expect(canonicalizeAtlasLocale(tag).ok, tag).toBe(false);
+      expect(canonicalizeLocale(tag).ok, tag).toBe(false);
     }
   });
 
@@ -410,15 +410,15 @@ describe('locale canonicalization is a fixed point and agrees with the platform'
       // Only when there is a separator to replace. `de` has none, and asserting that `de` is
       // refused would assert the opposite of what this file is for.
       if (tag.includes('-')) {
-        expect(canonicalizeAtlasLocale(tag.split('-').join('_')).ok, tag).toBe(
+        expect(canonicalizeLocale(tag.split('-').join('_')).ok, tag).toBe(
           false,
         );
       }
-      expect(canonicalizeAtlasLocale(` ${tag}`).ok, tag).toBe(false);
-      expect(canonicalizeAtlasLocale(`${tag} `).ok, tag).toBe(false);
+      expect(canonicalizeLocale(` ${tag}`).ok, tag).toBe(false);
+      expect(canonicalizeLocale(`${tag} `).ok, tag).toBe(false);
     }
     for (const value of [42, undefined, null, true, [], {}]) {
-      expect(canonicalizeAtlasLocale(value).ok).toBe(false);
+      expect(canonicalizeLocale(value).ok).toBe(false);
     }
   });
 });
@@ -429,19 +429,15 @@ describe('the generators produce input, and the shapes they exclude are excluded
     // A message that says nothing is not a message, and a catalog carrying one would generate a
     // handle whose rendering is the empty string in every locale: a missing translation that
     // looks like a deliberate one.
-    expect(parseAtlasCatalog(source, OPTIONS).ok).toBe(false);
+    expect(parseCatalog(source, OPTIONS).ok).toBe(false);
   });
 
   it('refuses a message id whose segment starts with a digit', () => {
     // Found by the generator rather than written from the schema: a de-duplicating suffix of `-5`
     // produced `title-5`, which the id pattern refuses because every segment must start with a
     // letter. Pinned so the pattern cannot loosen without someone saying so.
-    expect(parseAtlasCatalog(`messages:\n  title-5: 'x'\n`, OPTIONS).ok).toBe(
-      false,
-    );
-    expect(parseAtlasCatalog(`messages:\n  title-e: 'x'\n`, OPTIONS).ok).toBe(
-      true,
-    );
+    expect(parseCatalog(`messages:\n  title-5: 'x'\n`, OPTIONS).ok).toBe(false);
+    expect(parseCatalog(`messages:\n  title-e: 'x'\n`, OPTIONS).ok).toBe(true);
   });
 });
 
@@ -468,8 +464,10 @@ describe('parsing is total', () => {
       // Not "it parses": most of these do not. The property is that a parser handed untrusted
       // text returns a typed answer either way, because a throw at this boundary escapes into
       // whatever called it: a CLI, a build script, an editor.
-      expect(() => parseAtlasMessage(source)).not.toThrow();
-      expect(typeof parseAtlasMessage(source).ok, source).toBe('boolean');
+      expect(() => parseMessageSemanticModel(source)).not.toThrow();
+      expect(typeof parseMessageSemanticModel(source).ok, source).toBe(
+        'boolean',
+      );
     }
   });
 
@@ -482,8 +480,8 @@ describe('parsing is total', () => {
       const source = Array.from({ length }, () => random.pick(ALPHABET)).join(
         '',
       );
-      expect(() => parseAtlasConfiguration(source)).not.toThrow();
-      expect(typeof parseAtlasConfiguration(source).ok, source).toBe('boolean');
+      expect(() => parseConfiguration(source)).not.toThrow();
+      expect(typeof parseConfiguration(source).ok, source).toBe('boolean');
     }
   });
 });
@@ -516,16 +514,16 @@ describe('a configuration survives the round trip', () => {
             }
           : {}),
       });
-      const parsed = parseAtlasConfiguration(source);
+      const parsed = parseConfiguration(source);
       expect(parsed.ok, source).toBe(true);
       if (!parsed.ok) continue;
 
-      const written = formatAtlasConfiguration(parsed.value);
-      const reparsed = parseAtlasConfiguration(written);
+      const written = formatConfiguration(parsed.value);
+      const reparsed = parseConfiguration(written);
       expect(reparsed.ok, written).toBe(true);
       if (!reparsed.ok) continue;
 
-      // `formatAtlasConfiguration` sorts aliases, so the text is not expected to match. The model
+      // `formatConfiguration` sorts aliases, so the text is not expected to match. The model
       // is, and a formatter that reordered anything meaning-bearing would show up here.
       expect(reparsed.value, written).toEqual(parsed.value);
     }

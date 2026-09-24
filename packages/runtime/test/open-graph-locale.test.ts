@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { openGraphLocale } from '@neolorn/atlas/core';
+import { openGraphLocale } from '@neolorn/equator/core';
 
 /**
  * The failure mode, pinned.
@@ -41,12 +41,12 @@ describe('a locale in Open Graph spelling', () => {
 
   it('answers nothing rather than something malformed', () => {
     // A value the profile cannot resolve at all. `zh` alone maximizes to a territory, so the case
-    // that matters here is the tag Atlas cannot profile.
+    // that matters here is the tag Equator cannot profile.
     expect(openGraphLocale('not a locale')).toBeUndefined();
     expect(openGraphLocale('')).toBeUndefined();
   });
 
-  it('agrees with the locales the rest of Atlas uses', () => {
+  it('agrees with the locales the rest of Equator uses', () => {
     // Checked against tags the routing tests use, not against tags chosen to make it pass: a case
     // drawn from its own subject agrees with it whatever the subject does.
     for (const locale of ['en-US', 'ar-EG']) {

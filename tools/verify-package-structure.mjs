@@ -170,7 +170,7 @@ const standardsLock = await readJson(
   resolve(workspaceRoot, 'standards/sources.lock.json'),
 );
 assert.equal(standardsLock.schemaVersion, 1);
-assert.equal(standardsLock.profileId, 'atlas-1');
+assert.equal(standardsLock.profileId, 'equator-1');
 assert.equal(standardsLock.updatePolicy, 'intentional-review-only');
 assert.equal(standardsLock.standardsProfile.unicode, '17.0.0');
 assert.equal(standardsLock.standardsProfile.cldrLdml, '48.2');
@@ -291,7 +291,7 @@ assert.equal(
 );
 
 const runtimePackage = await readJson(resolve(runtimeRoot, 'package.json'));
-assert.equal(runtimePackage.name, '@neolorn/atlas');
+assert.equal(runtimePackage.name, '@neolorn/equator');
 assert.equal(runtimePackage.version, workspacePackage.version);
 assert.equal(
   runtimePackage.description,
@@ -308,7 +308,7 @@ assert.deepEqual(runtimePackage.publishConfig, {
 });
 assert.deepEqual(runtimePackage.repository, {
   type: 'git',
-  url: 'git+https://github.com/neolorn/atlas.git',
+  url: 'git+https://github.com/neolorn/equator.git',
   directory: 'packages/runtime',
 });
 assert.equal(runtimePackage.type, 'module');
@@ -340,8 +340,8 @@ assert.deepEqual(runtimePackage.peerDependenciesMeta, {
   '@angular/router': { optional: true },
   '@angular/ssr': { optional: true },
 });
-assert.equal(runtimePackage.module, 'fesm2022/neolorn-atlas.mjs');
-assert.equal(runtimePackage.typings, 'types/neolorn-atlas.d.ts');
+assert.equal(runtimePackage.module, 'fesm2022/neolorn-equator.mjs');
+assert.equal(runtimePackage.typings, 'types/neolorn-equator.d.ts');
 assert.deepEqual(Object.keys(runtimePackage.exports).sort(), [
   '.',
   './core',
@@ -356,44 +356,44 @@ assert.deepEqual(Object.keys(runtimePackage.exports).sort(), [
 const runtimeEntrypoints = Object.freeze([
   Object.freeze({
     subpath: '.',
-    javascript: './fesm2022/neolorn-atlas.mjs',
-    declarations: './types/neolorn-atlas.d.ts',
+    javascript: './fesm2022/neolorn-equator.mjs',
+    declarations: './types/neolorn-equator.d.ts',
     angularDeclarations: true,
   }),
   Object.freeze({
     subpath: './ssr',
-    javascript: './fesm2022/neolorn-atlas-ssr.mjs',
-    declarations: './types/neolorn-atlas-ssr.d.ts',
+    javascript: './fesm2022/neolorn-equator-ssr.mjs',
+    declarations: './types/neolorn-equator-ssr.d.ts',
     angularDeclarations: false,
   }),
   Object.freeze({
     subpath: './forms',
-    javascript: './fesm2022/neolorn-atlas-forms.mjs',
-    declarations: './types/neolorn-atlas-forms.d.ts',
+    javascript: './fesm2022/neolorn-equator-forms.mjs',
+    declarations: './types/neolorn-equator-forms.d.ts',
     angularDeclarations: true,
   }),
   Object.freeze({
     subpath: './router',
-    javascript: './fesm2022/neolorn-atlas-router.mjs',
-    declarations: './types/neolorn-atlas-router.d.ts',
+    javascript: './fesm2022/neolorn-equator-router.mjs',
+    declarations: './types/neolorn-equator-router.d.ts',
     angularDeclarations: false,
   }),
   Object.freeze({
     subpath: './testing',
-    javascript: './fesm2022/neolorn-atlas-testing.mjs',
-    declarations: './types/neolorn-atlas-testing.d.ts',
+    javascript: './fesm2022/neolorn-equator-testing.mjs',
+    declarations: './types/neolorn-equator-testing.d.ts',
     angularDeclarations: false,
   }),
   Object.freeze({
     subpath: './core',
-    javascript: './fesm2022/neolorn-atlas-core.mjs',
-    declarations: './types/neolorn-atlas-core.d.ts',
+    javascript: './fesm2022/neolorn-equator-core.mjs',
+    declarations: './types/neolorn-equator-core.d.ts',
     angularDeclarations: false,
   }),
   Object.freeze({
     subpath: './http',
-    javascript: './fesm2022/neolorn-atlas-http.mjs',
-    declarations: './types/neolorn-atlas-http.d.ts',
+    javascript: './fesm2022/neolorn-equator-http.mjs',
+    declarations: './types/neolorn-equator-http.d.ts',
     angularDeclarations: false,
   }),
 ]);
@@ -405,21 +405,21 @@ assert.deepEqual(runtimePackage.exports['./package.json'], {
 // The pseudo-localization transform is absent from every shipped runtime bundle.
 //
 // This is the criterion the removed runtime helper could not have met. The transform now runs at
-// build time in `@neolorn/atlas-toolkit`, which a consumer installs as a development dependency, so
-// what reaches an application is a compiled catalog that nothing can tell from a translation. That
-// makes "never in production" an absence rather than a flag: there is no code in the bundle to
+// build time in `@neolorn/equator-toolkit`, which a consumer installs as a development dependency,
+// so what reaches an application is a compiled catalog that nothing can tell from a translation.
+// That makes "never in production" an absence rather than a flag: there is no code in the bundle to
 // enable, no environment to read, and nothing to defeat.
 //
 // Asserted against the built bundles rather than against the source layout, because the layout is
 // what is intended and the bundle is what ships.
 const pseudoTransformMarkers = Object.freeze([
   // The public entry points of the transform.
-  'pseudoLocalizeAtlasMessage',
-  'createAtlasPseudoCatalog',
+  'pseudoLocalizeMessage',
+  'createPseudoCatalog',
   // The boundary markers it emits. If these are in a runtime bundle, the transform is too.
   '\u27e6',
   '\u27e7',
-  // A slice of the accent table, which nothing else in Atlas has a reason to contain.
+  // A slice of the accent table, which nothing else in Equator has a reason to contain.
   '\u00c5\u00cb\u00cf',
 ]);
 for (const entrypoint of runtimeEntrypoints) {
@@ -441,7 +441,7 @@ for (const entrypoint of runtimeEntrypoints) {
   // The control for the five absences above. Without it they prove only that a file was read:
   // a renamed bundle, an empty read, or a wrong path would satisfy every one of them.
   assert.ok(
-    bundle.length > 0 && bundle.includes('atlas'),
+    bundle.length > 0 && bundle.includes('equator'),
     `${entrypoint.subpath} bundle was not read, so the absence checks above mean nothing.`,
   );
 }
@@ -557,11 +557,11 @@ await import(pathToFileURL(resolve(runtimeRoot, runtimeRouterEntry)).href);
 await import(pathToFileURL(resolve(runtimeRoot, runtimeTestingEntry)).href);
 
 const toolkitPackage = await readJson(resolve(toolkitRoot, 'package.json'));
-assert.equal(toolkitPackage.name, '@neolorn/atlas-toolkit');
+assert.equal(toolkitPackage.name, '@neolorn/equator-toolkit');
 assert.equal(toolkitPackage.version, runtimePackage.version);
 assert.equal(
   toolkitPackage.description,
-  'Compiler and developer tooling for Atlas localization projects.',
+  'Compiler and developer tooling for Equator localization projects.',
 );
 assert.equal(toolkitPackage.private, undefined);
 assert.deepEqual(toolkitPackage.publishConfig, {
@@ -570,14 +570,14 @@ assert.deepEqual(toolkitPackage.publishConfig, {
 });
 assert.deepEqual(toolkitPackage.repository, {
   type: 'git',
-  url: 'git+https://github.com/neolorn/atlas.git',
+  url: 'git+https://github.com/neolorn/equator.git',
   directory: 'packages/toolkit',
 });
 assert.equal(toolkitPackage.type, 'module');
 assert.equal(toolkitPackage.license, 'MIT');
 assert.equal(toolkitPackage.sideEffects, false);
 assert.deepEqual(toolkitPackage.engines, { node: nodeRange });
-assert.deepEqual(toolkitPackage.bin, { atlas: './cli.js' });
+assert.deepEqual(toolkitPackage.bin, { equator: './cli.js' });
 assert.deepEqual(toolkitPackage.dependencies, {
   ajv: '8.20.0',
   'jsonc-parser': '3.3.1',
@@ -604,7 +604,7 @@ assert.equal(toolkitPackage.peerDependenciesMeta, undefined);
 // The leaf module rather than `index.js`: the package entry pulls the whole toolkit, including
 // dependencies that are declared for a consumer to install and are not resolvable from `dist`.
 // This is the same reach the schema assertions below already make.
-const { ATLAS_HOST_COMPATIBILITY_PROFILE: hostProfile } = await import(
+const { HOST_COMPATIBILITY_PROFILE: hostProfile } = await import(
   pathToFileURL(resolve(toolkitRoot, 'host-compatibility.js')).href
 );
 const declaredAngularRanges = new Map([
@@ -632,7 +632,7 @@ for (const [where, range] of declaredAngularRanges) {
   );
 }
 
-// `@angular/compiler-cli` was a required peer that Atlas never imported: two occurrences in the
+// `@angular/compiler-cli` was a required peer that Equator never imported: two occurrences in the
 // whole repository, both of them declarations. It forced every consumer to install a package the
 // toolkit does not load. Asserted absent rather than deleted quietly, so it cannot come back as a
 // copy-paste from the compiler peer beside it.
@@ -695,12 +695,12 @@ const builtSchemas = await import(
   pathToFileURL(resolve(toolkitRoot, 'schemas.js')).href
 );
 for (const [fileName, exportName] of [
-  ['cli-result.v1.schema.json', 'ATLAS_CLI_RESULT_SCHEMA'],
-  ['cli-watch-event.v1.schema.json', 'ATLAS_CLI_WATCH_EVENT_SCHEMA'],
-  ['configuration.v1.schema.json', 'ATLAS_CONFIGURATION_SCHEMA'],
-  ['extension-registry.v1.schema.json', 'ATLAS_EXTENSION_REGISTRY_SCHEMA'],
-  ['source-catalog.v1.schema.json', 'ATLAS_SOURCE_CATALOG_SCHEMA'],
-  ['target-catalog.v1.schema.json', 'ATLAS_TARGET_CATALOG_SCHEMA'],
+  ['cli-result.v1.schema.json', 'CLI_RESULT_SCHEMA'],
+  ['cli-watch-event.v1.schema.json', 'CLI_WATCH_EVENT_SCHEMA'],
+  ['configuration.v1.schema.json', 'CONFIGURATION_SCHEMA'],
+  ['extension-registry.v1.schema.json', 'EXTENSION_REGISTRY_SCHEMA'],
+  ['source-catalog.v1.schema.json', 'SOURCE_CATALOG_SCHEMA'],
+  ['target-catalog.v1.schema.json', 'TARGET_CATALOG_SCHEMA'],
 ]) {
   const schemaPath = resolve(toolkitRoot, 'schemas', fileName);
   assert.deepEqual(
@@ -729,7 +729,7 @@ assert.match(
 assert.match(help.stdout, /Reconcile changes in one foreground process/);
 assert.match(
   help.stdout,
-  /Preview or apply one explicit Atlas-authored migration plan/,
+  /Preview or apply one explicit Equator-authored migration plan/,
 );
 assert.match(help.stdout, /--plan <path>/);
 
@@ -737,7 +737,7 @@ assert.match(help.stdout, /--plan <path>/);
  * Does the shipped `--help` state every field the shipped configuration schema accepts?
  *
  * Checked at the package boundary and on purpose not inside it. `--help` is printed from
- * `cli-options.generated.ts`, which is generated from `ATLAS_CONFIGURATION_SCHEMA`, so asking the
+ * `cli-options.generated.ts`, which is generated from `CONFIGURATION_SCHEMA`, so asking the
  * table whether it agrees with itself would agree by construction and prove nothing. The
  * two artifacts below are staged separately: `schemas/configuration.v1.schema.json` is written from
  * the constant at pack time, and the help text is compiled from a file checked into source. A stale
@@ -761,11 +761,11 @@ for (const [key, property] of settableConfigurationKeys) {
   assert.equal(
     typeof property.description,
     'string',
-    `The shipped configuration schema describes no ${key}, so this check cannot tell whether atlas init --help mentions it.`,
+    `The shipped configuration schema describes no ${key}, so this check cannot tell whether equator init --help mentions it.`,
   );
   assert.ok(
     help.stdout.includes(property.description),
-    `atlas init --help does not state ${key}: the shipped schema accepts it and the install line says nothing about it. Run pnpm run build && pnpm run generate:cli-options.`,
+    `equator init --help does not state ${key}: the shipped schema accepts it and the install line says nothing about it. Run pnpm run build && pnpm run generate:cli-options.`,
   );
 }
 // A description that matched by accident (an empty string, a substring of the banner)
@@ -773,16 +773,14 @@ for (const [key, property] of settableConfigurationKeys) {
 // there is checked too.
 assert.ok(
   !help.stdout.includes('A field no schema describes.'),
-  'The atlas init --help check matches text the schema never contained, so it is not reading what it thinks it is.',
+  'The equator init --help check matches text the schema never contained, so it is not reading what it thinks it is.',
 );
 
-const toolkitHarnessRoot = await mkdtemp(
-  resolve(tmpdir(), 'atlas-built-toolkit-'),
-);
+const toolkitHarnessRoot = await mkdtemp(resolve(tmpdir(), 'built-toolkit-'));
 const toolkitHarnessNodeModules = resolve(toolkitHarnessRoot, 'node_modules');
 const toolkitHarnessPackageRoot = resolve(
   toolkitHarnessNodeModules,
-  '@neolorn/atlas-toolkit',
+  '@neolorn/equator-toolkit',
 );
 await mkdir(dirname(toolkitHarnessPackageRoot), { recursive: true });
 await cp(toolkitRoot, toolkitHarnessPackageRoot, { recursive: true });
@@ -806,9 +804,9 @@ for (const [specifier, sourceRoot] of [
 const builtToolkit = await import(
   pathToFileURL(resolve(toolkitHarnessPackageRoot, 'index.js')).href
 );
-// Host admission is internal: a consumer does not ask Atlas whether its own compiler is admitted,
-// Atlas answers that when it compiles. The leaf module, for the reason the schema assertions above
-// already give.
+// Host admission is internal: a consumer does not ask Equator whether its own compiler is admitted,
+// Equator answers that when it compiles. The leaf module, for the reason the schema assertions
+// above already give.
 const builtHostCompatibility = await import(
   pathToFileURL(resolve(toolkitHarnessPackageRoot, 'host-compatibility.js'))
     .href
@@ -818,14 +816,14 @@ const { default: Ajv2020 } = await import(
 );
 const schemaValidator = new Ajv2020({ allErrors: true, strict: true });
 const validateCliResult = schemaValidator.compile(
-  builtToolkit.ATLAS_CLI_RESULT_SCHEMA,
+  builtToolkit.CLI_RESULT_SCHEMA,
 );
 const validateWatchEvent = schemaValidator.compile(
-  builtToolkit.ATLAS_CLI_WATCH_EVENT_SCHEMA,
+  builtToolkit.CLI_WATCH_EVENT_SCHEMA,
 );
 assert.equal(
   validateWatchEvent({
-    profile: 'atlas-cli-watch-event/1',
+    profile: 'equator-cli-watch-event/1',
     command: 'watch',
     sequence: 1,
     status: 'success',
@@ -842,7 +840,7 @@ assert.equal(
 );
 assert.equal(
   validateWatchEvent({
-    profile: 'atlas-cli-watch-event/1',
+    profile: 'equator-cli-watch-event/1',
     command: 'watch',
     sequence: 2,
     status: 'diagnostic-failure',
@@ -852,7 +850,7 @@ assert.equal(
   false,
   'A failed watch event cannot carry a success result.',
 );
-const currentHost = builtHostCompatibility.admitAtlasHostCompatibility();
+const currentHost = builtHostCompatibility.admitHostCompatibility();
 assert.equal(
   currentHost.ok,
   true,
@@ -861,13 +859,13 @@ assert.equal(
 // The shipped admission profile against what the packages declare. This profile is compiled into
 // the toolkit and cannot read a manifest at the moment it decides, so it carries its own copy of
 // the three ranges, and this is the check that the copy is still the same claim.
-assert.deepEqual(builtHostCompatibility.ATLAS_HOST_COMPATIBILITY_PROFILE, {
-  profile: 'atlas-host-compatibility/1',
+assert.deepEqual(builtHostCompatibility.HOST_COMPATIBILITY_PROFILE, {
+  profile: 'equator-host-compatibility/1',
   node: nodeRange,
   typescript: peerRange('typescript'),
   angularCompiler: peerRange('@angular/compiler'),
 });
-const unsupportedHost = builtHostCompatibility.admitAtlasHostCompatibility({
+const unsupportedHost = builtHostCompatibility.admitHostCompatibility({
   node: '22.22.2',
   typescript: '6.1.0',
   angularCompiler: '23.0.0',
@@ -876,15 +874,13 @@ assert.equal(unsupportedHost.ok, false);
 assert.deepEqual(
   unsupportedHost.diagnostics.map(({ code, path }) => ({ code, path })),
   [
-    { code: 'ATL1806', path: ['host', 'node'] },
-    { code: 'ATL1806', path: ['host', 'typescript'] },
-    { code: 'ATL1806', path: ['host', 'angularCompiler'] },
+    { code: 'EQ1806', path: ['host', 'node'] },
+    { code: 'EQ1806', path: ['host', 'typescript'] },
+    { code: 'EQ1806', path: ['host', 'angularCompiler'] },
   ],
 );
 
-const migrationRoot = await mkdtemp(
-  resolve(tmpdir(), 'atlas-built-migration-'),
-);
+const migrationRoot = await mkdtemp(resolve(tmpdir(), 'built-migration-'));
 try {
   const cliPath = resolve(toolkitHarnessPackageRoot, 'cli.js');
   const ownerFile = resolve(migrationRoot, 'source.txt');
@@ -892,7 +888,7 @@ try {
   const invalidPlanPath = resolve(migrationRoot, 'invalid-plan.json');
   const tamperedPlanPath = resolve(migrationRoot, 'tampered-plan.json');
   await writeFile(ownerFile, 'before\n', 'utf8');
-  const migrationPlan = builtToolkit.createAtlasMigrationPlan({
+  const migrationPlan = builtToolkit.createMigrationPlan({
     id: 'built-cli',
     domain: 'authored-data',
     fromVersion: '1',
@@ -928,7 +924,7 @@ try {
     )}\n`,
     'utf8',
   );
-  const runAtlas = (arguments_) =>
+  const run = (arguments_) =>
     spawnSync(process.execPath, [cliPath, ...arguments_], {
       cwd: workspaceRoot,
       encoding: 'utf8',
@@ -944,24 +940,19 @@ try {
     return parsed;
   };
 
-  const unknownCommand = runAtlas(['not-an-atlas-command', '--json']);
+  const unknownCommand = run(['not-a-command', '--json']);
   assert.equal(unknownCommand.status, 2);
   assert.equal(machineResult(unknownCommand).command, 'unknown');
 
-  const missingProject = runAtlas(['migrate', '--plan', planPath, '--json']);
+  const missingProject = run(['migrate', '--plan', planPath, '--json']);
   assert.equal(missingProject.status, 2);
-  assert.equal(machineResult(missingProject).diagnostics[0].code, 'ATL1701');
+  assert.equal(machineResult(missingProject).diagnostics[0].code, 'EQ1701');
 
-  const missingPlan = runAtlas([
-    'migrate',
-    '--project',
-    migrationRoot,
-    '--json',
-  ]);
+  const missingPlan = run(['migrate', '--project', migrationRoot, '--json']);
   assert.equal(missingPlan.status, 2);
-  assert.equal(machineResult(missingPlan).diagnostics[0].code, 'ATL1701');
+  assert.equal(machineResult(missingPlan).diagnostics[0].code, 'EQ1701');
 
-  const absentPlan = runAtlas([
+  const absentPlan = run([
     'migrate',
     '--project',
     migrationRoot,
@@ -970,9 +961,9 @@ try {
     '--json',
   ]);
   assert.equal(absentPlan.status, 2);
-  assert.equal(machineResult(absentPlan).diagnostics[0].code, 'ATL1701');
+  assert.equal(machineResult(absentPlan).diagnostics[0].code, 'EQ1701');
 
-  const invalidPlan = runAtlas([
+  const invalidPlan = run([
     'migrate',
     '--project',
     migrationRoot,
@@ -981,9 +972,9 @@ try {
     '--json',
   ]);
   assert.equal(invalidPlan.status, 2);
-  assert.equal(machineResult(invalidPlan).diagnostics[0].code, 'ATL1805');
+  assert.equal(machineResult(invalidPlan).diagnostics[0].code, 'EQ1805');
 
-  const tamperedPlan = runAtlas([
+  const tamperedPlan = run([
     'migrate',
     '--project',
     migrationRoot,
@@ -992,10 +983,10 @@ try {
     '--json',
   ]);
   assert.equal(tamperedPlan.status, 2);
-  assert.equal(machineResult(tamperedPlan).diagnostics[0].code, 'ATL1805');
+  assert.equal(machineResult(tamperedPlan).diagnostics[0].code, 'EQ1805');
   assert.equal(await readFile(ownerFile, 'utf8'), 'before\n');
 
-  const humanPreview = runAtlas([
+  const humanPreview = run([
     'migrate',
     '--project',
     migrationRoot,
@@ -1010,7 +1001,7 @@ try {
   );
   assert.equal(await readFile(ownerFile, 'utf8'), 'before\n');
 
-  const machinePreview = runAtlas([
+  const machinePreview = run([
     'migrate',
     '--project',
     migrationRoot,
@@ -1030,7 +1021,7 @@ try {
   });
   assert.equal(await readFile(ownerFile, 'utf8'), 'before\n');
 
-  const applied = runAtlas([
+  const applied = run([
     'migrate',
     '--project',
     migrationRoot,
@@ -1049,7 +1040,7 @@ try {
   });
   assert.equal(await readFile(ownerFile, 'utf8'), 'after\n');
 
-  const repeated = runAtlas([
+  const repeated = run([
     'migrate',
     '--project',
     migrationRoot,
@@ -1063,7 +1054,7 @@ try {
   // The install line, run cold on the shipped CLI: `init`, then `generate`, with
   // nothing authored in between.
   //
-  // A `generate` that refuses this (`ATL1702` for the missing `i18n` directory, then `ATL1702`
+  // A `generate` that refuses this (`EQ1702` for the missing `i18n` directory, then `EQ1702`
   // again for the catalogs nobody has written yet) makes the documented first run fail twice
   // before it can succeed once. A project with zero messages is a valid project; it is the state
   // every project is in the moment after `init`. The two assertions that matter are that both
@@ -1072,7 +1063,7 @@ try {
   await mkdir(resolve(coldRoot, 'src'), { recursive: true });
   await writeFile(
     resolve(coldRoot, 'package.json'),
-    `${JSON.stringify({ name: '@example/atlas-cold-install', version: '0.0.0', private: true, type: 'module' }, null, 2)}\n`,
+    `${JSON.stringify({ name: '@example/cold-install', version: '0.0.0', private: true, type: 'module' }, null, 2)}\n`,
     'utf8',
   );
   await writeFile(
@@ -1086,7 +1077,7 @@ try {
     'utf8',
   );
 
-  const coldInit = runAtlas([
+  const coldInit = run([
     'init',
     '--project',
     coldRoot,
@@ -1104,24 +1095,24 @@ try {
       (metadata) => metadata.isDirectory(),
       () => false,
     ),
-    'atlas init did not create the catalog directory, so the name of the one thing a consumer cannot guess is still unwritten.',
+    'equator init did not create the catalog directory, so the name of the one thing a consumer cannot guess is still unwritten.',
   );
   assert.deepEqual(
     await readdir(coldCatalogRoot),
     [],
-    'atlas init wrote something into the catalog directory. It creates containers and never content.',
+    'equator init wrote something into the catalog directory. It creates containers and never content.',
   );
 
-  const coldGenerate = runAtlas(['generate', '--project', coldRoot, '--json']);
+  const coldGenerate = run(['generate', '--project', coldRoot, '--json']);
   assert.equal(
     coldGenerate.status,
     0,
-    `atlas generate refused a project with no messages yet:\n${coldGenerate.stdout}${coldGenerate.stderr}`,
+    `equator generate refused a project with no messages yet:\n${coldGenerate.stdout}${coldGenerate.stderr}`,
   );
   const coldReport = machineResult(coldGenerate);
   assert.deepEqual(
     coldReport.diagnostics.map(({ code, severity }) => ({ code, severity })),
-    [{ code: 'ATL1702', severity: 'info' }],
+    [{ code: 'EQ1702', severity: 'info' }],
     'A project with no messages yet reports one note and nothing else.',
   );
   assert.match(
@@ -1308,8 +1299,8 @@ for (const surface of packageSurfaces) {
           `${path} imports Node built-in ${specifier}`,
         );
         assert.equal(
-          specifier === '@neolorn/atlas-toolkit' ||
-            specifier.startsWith('@neolorn/atlas-toolkit/'),
+          specifier === '@neolorn/equator-toolkit' ||
+            specifier.startsWith('@neolorn/equator-toolkit/'),
           false,
           `${path} imports toolkit module ${specifier}`,
         );
@@ -1322,8 +1313,8 @@ for (const surface of packageSurfaces) {
 //
 // Two checks, and the second is the one with teeth.
 //
-// `@neolorn/atlas/core` and `@neolorn/atlas/http` exist for an environment boundary: they load in a
-// worker, a Lambda, or plain Node, where every other entry point of this package throws
+// `@neolorn/equator/core` and `@neolorn/equator/http` exist for an environment boundary: they load
+// in a worker, a Lambda, or plain Node, where every other entry point of this package throws
 // `The injectable 'PlatformLocation' needs to be compiled using the JIT compiler`. That property is
 // not visible in the source, a source file that imports `@angular/core` for a type looks exactly
 // like one that does not, so it is asserted against the built distributable, which is the only
@@ -1342,17 +1333,17 @@ for (const surface of packageSurfaces) {
 const angularFreeEntrypoints = Object.freeze([
   Object.freeze({
     subpath: './core',
-    javascript: 'fesm2022/neolorn-atlas-core.mjs',
-    declarations: 'types/neolorn-atlas-core.d.ts',
+    javascript: 'fesm2022/neolorn-equator-core.mjs',
+    declarations: 'types/neolorn-equator-core.d.ts',
     // The base of the package. It may import nothing at all.
     permitted: Object.freeze([]),
   }),
   Object.freeze({
     subpath: './http',
-    javascript: 'fesm2022/neolorn-atlas-http.mjs',
-    declarations: 'types/neolorn-atlas-http.d.ts',
+    javascript: 'fesm2022/neolorn-equator-http.mjs',
+    declarations: 'types/neolorn-equator-http.d.ts',
     // The handler calls the classification; it does not reimplement it.
-    permitted: Object.freeze(['@neolorn/atlas/core']),
+    permitted: Object.freeze(['@neolorn/equator/core']),
   }),
 ]);
 
@@ -1367,7 +1358,7 @@ for (const entrypoint of angularFreeEntrypoints) {
         `${entrypoint.subpath} is not Angular-free: ${artifact} imports ${specifier}`,
       );
       assert.equal(
-        specifier === '@neolorn/atlas',
+        specifier === '@neolorn/equator',
         false,
         `${entrypoint.subpath} imports the primary (${artifact}), which cannot load outside Angular`,
       );
@@ -1396,7 +1387,7 @@ for (const name of runtimeBundles) {
 }
 assert.deepEqual(
   bundlesDefiningCore,
-  ['neolorn-atlas-core.mjs'],
+  ['neolorn-equator-core.mjs'],
   `LocalizationError must be defined in exactly one bundle, found: ${bundlesDefiningCore.join(', ')}`,
 );
 
@@ -1443,4 +1434,4 @@ for (const root of entrypointSourceRoots) {
   }
 }
 
-process.stdout.write('Atlas package structure verified.\n');
+process.stdout.write('Equator package structure verified.\n');

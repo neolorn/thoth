@@ -1,5 +1,5 @@
 /**
- * The locale tables Atlas carries, derived from the pinned CLDR release rather than transcribed.
+ * The locale tables Equator carries, derived from the pinned CLDR release rather than transcribed.
  *
  * `specs/01-standards-profile.spec.md` section 2 requires every such table to come from a source
  * the lock records, and to agree with that source. `--check` is what makes the second half true: it
@@ -96,7 +96,7 @@ const BIDI_LONG_NAMES = new Map([
 // character that exists today and wrong for the next one added to the Arabic block. That is the
 // worst shape a generated table can have. It passes every test, ships, and stays right until some
 // Unicode release years from now assigns a character in one of those blocks: at which point a
-// value containing it silently stops being isolated, in a released version of Atlas, with nothing
+// value containing it silently stops being isolated, in a released version of Equator, with nothing
 // in the repository having changed. Nothing would connect the two events.
 //
 // So the defaults go down first and every explicit line overrides them, and the class includes
@@ -139,7 +139,7 @@ const scriptClass = (property) =>
 assert.equal(
   process.versions.unicode,
   '17.0',
-  'The cross-check below compares the vendored Unicode 17.0.0 file against the running ICU. Under a different Unicode version the two disagree for reasons that have nothing to do with Atlas, so this runs on the pinned toolchain or not at all.',
+  'The cross-check below compares the vendored Unicode 17.0.0 file against the running ICU. Under a different Unicode version the two disagree for reasons that have nothing to do with Equator, so this runs on the pinned toolchain or not at all.',
 );
 const inRtlScript = scriptClass('Script');
 const usedWithRtlScript = scriptClass('Script_Extensions');
@@ -228,7 +228,7 @@ const rtlPattern = `[${rtlRanges
 
 const output = [
   '/** Generated from cldr-core 48.2.0 and Unicode 17.0.0 by tools/generate-locale-profile.mjs. */',
-  "export const LOCALE_DATA_PROFILE =\n  'cldr-48.2+unicode-17.0/atlas-rtl-bidi-1' as const;",
+  "export const LOCALE_DATA_PROFILE =\n  'cldr-48.2+unicode-17.0/equator-rtl-bidi-1' as const;",
   '',
   '/**',
   ' * Every script code written right to left, from the CLDR release named above.',
@@ -307,7 +307,7 @@ const ordinalCategories = categoriesFrom(
 
 const pluralOutput = [
   '/** Generated from cldr-core 48.2.0 by tools/generate-locale-profile.mjs. */',
-  "export const ATLAS_PLURAL_DATA_PROFILE = 'cldr-48.2/atlas-plurals-2' as const;",
+  "export const PLURAL_DATA_PROFILE = 'cldr-48.2/equator-plurals-1' as const;",
   '',
   '/**',
   ' * Cardinal plural categories each language requires, keyed by CLDR language subtag.',
@@ -315,7 +315,7 @@ const pluralOutput = [
   ' * A language absent from this table has only `other`, which is how CLDR expresses it.',
   ' */',
   '// prettier-ignore',
-  `export const ATLAS_CARDINAL_PLURAL_CATEGORIES: Readonly<Record<string, readonly string[]>> = Object.freeze(${JSON.stringify(pluralCategories)});`,
+  `export const CARDINAL_PLURAL_CATEGORIES: Readonly<Record<string, readonly string[]>> = Object.freeze(${JSON.stringify(pluralCategories)});`,
   '',
   '/**',
   ' * Ordinal plural categories each language requires, keyed by CLDR language subtag.',
@@ -325,7 +325,7 @@ const pluralOutput = [
   ' * and exactly one ordinal category, while English requires two cardinal and four ordinal.',
   ' */',
   '// prettier-ignore',
-  `export const ATLAS_ORDINAL_PLURAL_CATEGORIES: Readonly<Record<string, readonly string[]>> = Object.freeze(${JSON.stringify(ordinalCategories)});`,
+  `export const ORDINAL_PLURAL_CATEGORIES: Readonly<Record<string, readonly string[]>> = Object.freeze(${JSON.stringify(ordinalCategories)});`,
   '',
 ].join('\n');
 
@@ -349,14 +349,14 @@ const pluralOutput = [
 // that data is read, and within it only pairs that share an encompassing macrolanguage. Two things
 // are being refused. The script and region dimensions: for `zh-Hant` against a supported
 // `zh-Hans-CN` the script dimension alone contributes 50, which is exactly the specification's
-// default threshold, so under the whole distance model the refusal would rest on how the
-// dimensions combine and on where the threshold sits. Atlas decides that pair categorically today,
-// by comparing maximized scripts, and with a test. And the rest of the language dimension: it
-// holds 114 pairs that share no macrolanguage (`af`/`en` at 20, `be`/`ru` at 30, `da`/`no` at 8)
-// which are judgments about what a reader will accept instead, not about what their language is.
-// Serving Russian to a request for Belarusian is a policy, and a localization framework should not
-// adopt one silently on a consumer's behalf. Widening this later is a deliberate decision with its
-// own argument, not a correction of something left half-done.
+// default threshold, so under the whole distance model the refusal would rest on how the dimensions
+// combine and on where the threshold sits. Equator decides that pair categorically today, by
+// comparing maximized scripts, and with a test. And the rest of the language dimension: it holds
+// 114 pairs that share no macrolanguage (`af`/`en` at 20, `be`/`ru` at 30, `da`/`no` at 8) which
+// are judgments about what a reader will accept instead, not about what their language is. Serving
+// Russian to a request for Belarusian is a policy, and a localization framework should not adopt
+// one silently on a consumer's behalf. Widening this later is a deliberate decision with its own
+// argument, not a correction of something left half-done.
 const sourcesLock = JSON.parse(
   await readFile(resolve(workspaceRoot, 'standards/sources.lock.json'), 'utf8'),
 );
@@ -461,7 +461,7 @@ for (const [key, distance] of [...languageDistance].sort(([left], [right]) =>
   if (!sameGroup(desired, supported)) continue;
   assert.ok(
     distance < DEFAULT_THRESHOLD,
-    `CLDR now rates ${desired} and ${supported} at ${distance}, at or beyond the default matching threshold, though one encompasses the other. Whether Atlas should still treat them as the same language is a decision, not a regeneration.`,
+    `CLDR now rates ${desired} and ${supported} at ${distance}, at or beyond the default matching threshold, though one encompasses the other. Whether Equator should still treat them as the same language is a decision, not a regeneration.`,
   );
   widestKept = Math.max(widestKept, distance);
   encompassed[desired] ??= {};
@@ -477,20 +477,20 @@ const encompassedOutput = [
   `/** Generated from cldr-core ${manifest.version} and the IANA registry of ${registrySource.fileDate} by tools/generate-locale-profile.mjs. */`,
   // Built rather than written out: this string exists to change when the data under it changes,
   // and a literal is a thing somebody has to remember to edit.
-  `export const ATLAS_ENCOMPASSED_LANGUAGE_PROFILE =\n  '${cldrProfile}+iana-${registrySource.fileDate}/atlas-encompassed-1' as const;`,
+  `export const ENCOMPASSED_LANGUAGE_PROFILE =\n  '${cldrProfile}+iana-${registrySource.fileDate}/equator-encompassed-1' as const;`,
   '',
   '/**',
   ' * How far apart two language subtags are, for subtags that are the same language written twice.',
   ' *',
   ' * Keyed by the requested language subtag, then by the supported one, in CLDR distances where a',
   ' * smaller number is a closer match. A pair is present only when the IANA registry says one subtag',
-  ' * encompasses the other or that both are encompassed by one macrolanguage, BCP 47 3.1.10, and',
-  ' * CLDR ranks the pair at the language dimension. Absent means Atlas has nothing to say about the',
-  ' * pair, not that the two are unrelated.',
+  ' * encompasses the other or that both are encompassed by one macrolanguage, BCP 47 3.1.10, and CLDR',
+  ' * ranks the pair at the language dimension. Absent means Equator has nothing to say about the pair,',
+  ' * not that the two are unrelated.',
   ' *',
   ' * This is not the whole of CLDR language matching and is not meant to become it. The dimensions it',
-  ' * leaves out are the ones Atlas already decides categorically, and the language-dimension pairs it',
-  " * leaves out are CLDR's judgments about what a reader will accept instead of their own language,",
+  ' * leaves out are the ones Equator already decides categorically, and the language-dimension pairs',
+  " * it leaves out are CLDR's judgments about what a reader will accept instead of their own language,",
   ' * which is a policy rather than an identity.',
   ' */',
   '// prettier-ignore',
@@ -503,12 +503,12 @@ const encompassedOutput = [
 //
 // `selfName` on a locale choice is decided here rather than by
 // `new Intl.DisplayNames([locale], { type: 'language' })` read in the browser, which is the
-// engine's own CLDR snapshot. Over sixteen locales on the four engines Atlas gates on, three of
+// engine's own CLDR snapshot. Over sixteen locales on the four engines Equator gates on, three of
 // sixteen disagree in two distinct ways: WebKit 26.5
 // title-cases the language name (`Portugues (Brasil)`, `Espanol latinoamericano`) where CLDR's own
 // casing is lowercase, and Chromium 149 does not translate the `valencia` variant subtag and prints
 // `catala (Espanya, VALENCIA)`. A name no reader of any language has seen. The sharper half is
-// not the browsers disagreeing with each other: Atlas server-renders the switcher on Node, so a
+// not the browsers disagreeing with each other: Equator server-renders the switcher on Node, so a
 // WebKit visitor was sent one label and recomputed a different one on hydration.
 //
 // So the name is derived here from a pinned release and shipped, and the engine no longer votes.
@@ -571,15 +571,15 @@ const undParents = Object.values(parentLocales).filter(
   (parent) => parent === 'und',
 ).length;
 
-// Atlas's two pseudo-locales are named here for the same reason every other locale is: they appear
-// in a switcher during development, and CLDR does have names for XA and XB.
-const ATLAS_PSEUDO_LOCALES = ['en-Latn-XA', 'en-Arab-XB'];
+// Equator's two pseudo-locales are named here for the same reason every other locale is: they
+// appear in a switcher during development, and CLDR does have names for XA and XB.
+const PSEUDO_LOCALES = ['en-Latn-XA', 'en-Arab-XB'];
 
 const endonymUniverse = [
   ...new Set([
     ...availableLocales,
     ...defaultContentLocales,
-    ...ATLAS_PSEUDO_LOCALES,
+    ...PSEUDO_LOCALES,
   ]),
 ].sort(compareCodePoint);
 
@@ -749,7 +749,7 @@ assert.equal(endonyms['ca-ES-valencia'], 'català (Espanya, valencià)');
 
 const endonymOutput = [
   `/** Generated from cldr-localenames-full ${localeNamesManifest.version} by tools/generate-locale-profile.mjs. */`,
-  `export const ATLAS_ENDONYM_PROFILE = 'cldr-${cldrProfile.slice('cldr-'.length)}/atlas-endonyms-1' as const;`,
+  `export const ENDONYM_PROFILE = 'cldr-${cldrProfile.slice('cldr-'.length)}/equator-endonyms-1' as const;`,
   '',
   '/**',
   ' * The name each locale has for itself, in itself, keyed by CLDR locale identifier.',
@@ -757,7 +757,7 @@ const endonymOutput = [
   ' * Derived by TR35 locale display name from the same CLDR release the rest of the profile comes',
   ' * from, so a switcher renders one label for a locale on every engine and on both sides of',
   " * hydration. The engine's own answer is not wrong, it is merely the engine's: measured over the",
-  ' * four engines Atlas gates on, three of sixteen locales disagreed, and a server-rendered label',
+  ' * four engines Equator gates on, three of sixteen locales disagreed, and a server-rendered label',
   ' * that changes on hydration is a defect no consumer can fix.',
   ' *',
   ' * A locale absent from this table is one CLDR has no name for. There are',
@@ -768,12 +768,12 @@ const endonymOutput = [
   ' * locales sends three names to the browser rather than a table of every locale CLDR names.',
   ' */',
   '// prettier-ignore',
-  `export const ATLAS_LOCALE_ENDONYMS: Readonly<Record<string, string>> = Object.freeze(${JSON.stringify(endonyms)});`,
+  `export const LOCALE_ENDONYMS: Readonly<Record<string, string>> = Object.freeze(${JSON.stringify(endonyms)});`,
   '',
 ].join('\n');
 
 // Every tag in the table canonicalizes to itself, so a key here matches what
-// `canonicalizeAtlasLocale` produces from a project's own configuration. A release that changed
+// `canonicalizeLocale` produces from a project's own configuration. A release that changed
 // that would silently stop matching, and the chain would quietly become truncation again.
 const nonCanonicalParentTags = [
   ...new Set(Object.entries(parentLocales).flat()),
@@ -795,8 +795,8 @@ const parentLocaleOutput = [
   `/** Generated from cldr-core ${manifest.version} by tools/generate-locale-profile.mjs. */`,
   // Wrapped as prettier wraps it: the name and the value together pass the print width, and a
   // generated file that the formatter would rewrite fails the gate on a difference nobody made.
-  'export const ATLAS_PARENT_LOCALE_PROFILE =',
-  `  '${cldrProfile}/atlas-parent-locales-1' as const;`,
+  'export const PARENT_LOCALE_PROFILE =',
+  `  '${cldrProfile}/equator-parent-locales-1' as const;`,
   '',
   '/**',
   ' * The parent CLDR declares for a locale, where that parent is not the tag with its last subtag',
@@ -815,7 +815,7 @@ const parentLocaleOutput = [
   ' * locale it was separated from, so they are kept and a reader stops when it reaches one.',
   ' *',
   ' * Four parents change the language: `hi-Latn` takes `en-IN`, `ht` takes `fr-HT`, and `nb` and',
-  ' * `nn` take `no`. That is CLDR data rather than a choice Atlas made, and a project that',
+  ' * `nn` take `no`. That is CLDR data rather than a choice Equator made, and a project that',
   ' * disagrees says so under `parentLocales` in its own configuration.',
   ' *',
   ' * This lives in the toolkit and not in the runtime for the reason the endonyms do: it is a build',
@@ -824,7 +824,7 @@ const parentLocaleOutput = [
   ' * table of every parent CLDR declares.',
   ' */',
   '// prettier-ignore',
-  `export const ATLAS_PARENT_LOCALES: Readonly<Record<string, string>> = Object.freeze(${JSON.stringify(orderedParentLocales)});`,
+  `export const PARENT_LOCALES: Readonly<Record<string, string>> = Object.freeze(${JSON.stringify(orderedParentLocales)});`,
   '',
 ].join('\n');
 
@@ -856,27 +856,27 @@ if (process.argv.includes('--check')) {
   assert.equal(
     await readFile(outputPath, 'utf8'),
     output,
-    'The checked-in Atlas locale profile is stale; run pnpm run generate:locale-profile.',
+    'The checked-in Equator locale profile is stale; run pnpm run generate:locale-profile.',
   );
   assert.equal(
     await readFile(pluralOutputPath, 'utf8'),
     pluralOutput,
-    'The checked-in Atlas plural-category table is stale; run pnpm run generate:locale-profile.',
+    'The checked-in Equator plural-category table is stale; run pnpm run generate:locale-profile.',
   );
   assert.equal(
     await readFile(encompassedOutputPath, 'utf8'),
     encompassedOutput,
-    'The checked-in Atlas encompassed-language table is stale; run pnpm run generate:locale-profile.',
+    'The checked-in Equator encompassed-language table is stale; run pnpm run generate:locale-profile.',
   );
   assert.equal(
     await readFile(endonymOutputPath, 'utf8'),
     endonymOutput,
-    'The checked-in Atlas endonym table is stale; run pnpm run generate:locale-profile.',
+    'The checked-in Equator endonym table is stale; run pnpm run generate:locale-profile.',
   );
   assert.equal(
     await readFile(parentLocaleOutputPath, 'utf8'),
     parentLocaleOutput,
-    'The checked-in Atlas parent-locale table is stale; run pnpm run generate:locale-profile.',
+    'The checked-in Equator parent-locale table is stale; run pnpm run generate:locale-profile.',
   );
   console.log(
     `Verified ${rtlScripts.length} RTL scripts, ${rtlRanges.length} strong right-to-left code point ranges derived from Unicode 17.0.0 Bidi_Class, agreeing with the CLDR script data on every letter in Unicode and dropping ${droppedByBidiClass.length} context-resolved code points and no strong one, and cardinal plural categories for ${Object.keys(pluralCategories).length} languages and ordinal plural categories for ${Object.keys(ordinalCategories).length} languages from cldr-core 48.2.0, and ${encompassedPairs} encompassed-language pairs over ${Object.keys(encompassed).length} language subtags, every one ranked by CLDR at ${widestKept} or closer where two languages it does not relate stand at ${unrelatedDistance._distance} and its default matching threshold is ${DEFAULT_THRESHOLD}; likely-script resolution remains native Intl under the tested platform matrix; and ${Object.keys(endonyms).length} endonyms from cldr-localenames-full ${localeNamesManifest.version}, agreeing with this platform's ICU on ${endonymsComparedToIcu.length - endonymsDisagreeingWithIcu.length} of the ${endonymsComparedToIcu.length} locales it has display names for; and ${Object.keys(orderedParentLocales).length} declared parent locales from cldr-core ${manifest.version}, ${undParents} of which name root.`,

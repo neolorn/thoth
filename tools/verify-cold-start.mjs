@@ -1,33 +1,34 @@
 /**
- * What a new project costs Atlas between `atlas init` and its second scope.
+ * What a new project costs Equator between `equator init` and its second scope.
  *
- * Adding a scope is ordinary localization work and must cost no Atlas step. A generated-owner
+ * Adding a scope is ordinary localization work and must cost no Equator step. A generated-owner
  * identity taken as a digest over the scope list costs one: it moves the first time a consumer
  * writes a catalog and again every time they add another, the work root still records the identity
- * of the run before, and `atlas generate` refuses with `ATL1602` until `atlas clean` removes the
+ * of the run before, and `equator generate` refuses with `EQ1602` until `equator clean` removes the
  * marker. A new project meets that on its second command: `generate` on an empty project prints
- * `ATL1702`, which names the exact next step, write `i18n/shell/en-US.yaml`, and doing exactly
+ * `EQ1702`, which names the exact next step, write `i18n/shell/en-US.yaml`, and doing exactly
  * that breaks the next `generate`.
  *
  * So this is the sequence a new project actually performs, run cold:
  *
- *   1. `atlas init`
- *   2. `atlas generate`: no catalogs yet
- *   3. write the first catalog, in the scope `ATL1702` names
- *   4. `atlas generate`
+ *   1. `equator init`
+ *   2. `equator generate`: no catalogs yet
+ *   3. write the first catalog, in the scope `EQ1702` names
+ *   4. `equator generate`
  *   5. write a second scope
- *   6. `atlas generate`
+ *   6. `equator generate`
  *
- * Every one must succeed, and `atlas clean` appears nowhere.
+ * Every one must succeed, and `equator clean` appears nowhere.
  *
  * **The identity is checked against what it is supposed to be made of, not merely against itself.**
  * "The three generates all passed" would also be true of an identity that still moved and a refusal
  * that had been softened into a silent re-own, and a silent re-own is how one project's disposable
  * state comes to serve another's build, which is the whole reason the marker exists. So after each
- * generation the marker is read and required to equal `atlasOwnerId({providerId, generatedRootPath})`
- * computed here from the project's own package name and its configured output location. That
- * equality is the rule itself, stated as an assertion: an identity equal to a function of those two
- * fields cannot contain anything the consumer authored.
+ * generation the marker is read and required to equal
+ * `generatedOwnerId({providerId, generatedRootPath})` computed here from the project's own package
+ * name and its configured output location. That equality is the rule itself, stated as an
+ * assertion: an identity equal to a function of those two fields cannot contain anything the
+ * consumer authored.
  *
  * **The toolkit under test is the installed one**, from the materialized consumer's `node_modules`,
  * because a package is verified through its built distributable and because a staged `dist/toolkit`
@@ -50,7 +51,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const installedToolkit = resolve(
   workspaceRoot,
-  'tmp/package-consumer-verification/package-consumer/node_modules/@neolorn/atlas-toolkit',
+  'tmp/package-consumer-verification/package-consumer/node_modules/@neolorn/equator-toolkit',
 );
 if (!existsSync(installedToolkit)) {
   process.stderr.write(
@@ -58,13 +59,13 @@ if (!existsSync(installedToolkit)) {
   );
   process.exit(1);
 }
-// The modules rather than the package entry. The ownership marker is Atlas's own bookkeeping
+// The modules rather than the package entry. The ownership marker is Equator's own bookkeeping
 // rather than something a build script writes, so it is not published, and this reads it from where
 // it is declared.
-const { ATLAS_WORK_OWNER_PATH, ATLAS_WORK_OWNER_PROFILE } = await import(
+const { WORK_OWNER_PATH, WORK_OWNER_PROFILE } = await import(
   pathToFileURL(resolve(installedToolkit, 'output-host.js')).href
 );
-const { atlasOwnerId } = await import(
+const { generatedOwnerId } = await import(
   pathToFileURL(resolve(installedToolkit, 'compiled-artifacts.js')).href
 );
 
@@ -72,10 +73,10 @@ const cli = resolve(installedToolkit, 'cli.js');
 const scratchRoot = resolve(workspaceRoot, 'tmp/cold-start');
 // The project directory's name is the package name, which is the provider identity, which is half
 // of what the owner identity is made of. Named rather than incidental for that reason.
-const projectName = 'atlas-cold-start';
+const projectName = 'cold-start';
 const projectRoot = resolve(scratchRoot, projectName);
 const generatedRootPath = 'src/generated/i18n';
-const expectedOwnerId = atlasOwnerId({
+const expectedOwnerId = generatedOwnerId({
   providerId: projectName,
   generatedRootPath,
 });
@@ -83,7 +84,7 @@ const expectedOwnerId = atlasOwnerId({
 const steps = [];
 
 function run(...args) {
-  const label = `atlas ${args.join(' ')}`;
+  const label = `equator ${args.join(' ')}`;
   const finished = spawnSync(process.execPath, [cli, ...args, '--json'], {
     cwd: projectRoot,
     encoding: 'utf8',
@@ -103,7 +104,7 @@ function run(...args) {
   return { label, result, exitCode: finished.status };
 }
 
-function atlas(...args) {
+function equator(...args) {
   const { label, result, exitCode } = run(...args);
   assert.equal(
     result.status,
@@ -118,12 +119,12 @@ function atlas(...args) {
 }
 
 async function recordedOwnerId() {
-  const markerPath = resolve(projectRoot, '.atlas', ATLAS_WORK_OWNER_PATH);
+  const markerPath = resolve(projectRoot, '.equator', WORK_OWNER_PATH);
   const marker = JSON.parse(await readFile(markerPath, 'utf8'));
   assert.equal(
     marker.profile,
-    ATLAS_WORK_OWNER_PROFILE,
-    'The work-root marker is not the profile this version of Atlas writes.',
+    WORK_OWNER_PROFILE,
+    'The work-root marker is not the profile this version of Equator writes.',
   );
   return marker.ownerId;
 }
@@ -169,7 +170,7 @@ await writeFile(
   'utf8',
 );
 
-atlas(
+equator(
   'init',
   '--source-locale',
   'en-US',
@@ -181,15 +182,15 @@ atlas(
   'ar-EG',
 );
 
-atlas('generate');
+equator('generate');
 const afterFirstGenerate = await recordedOwnerId();
 
-await writeScope('shell', 'app-title', 'Atlas', 'أطلس');
-atlas('generate');
+await writeScope('shell', 'app-title', 'Equator', 'Equator');
+equator('generate');
 const afterFirstCatalog = await recordedOwnerId();
 
 await writeScope('checkout', 'pay-now', 'Pay now', 'ادفع الآن');
-atlas('generate');
+equator('generate');
 const afterSecondScope = await recordedOwnerId();
 
 assert.equal(
@@ -200,19 +201,19 @@ assert.equal(
 assert.equal(
   afterFirstCatalog,
   expectedOwnerId,
-  'The owner identity moved when the first catalog was written. That is the defect ATL1602 reported on day one.',
+  'The owner identity moved when the first catalog was written. That is the defect EQ1602 reported on day one.',
 );
 assert.equal(
   afterSecondScope,
   expectedOwnerId,
-  'The owner identity moved when a second scope was added. Adding a scope must cost no Atlas step.',
+  'The owner identity moved when a second scope was added. Adding a scope must cost no Equator step.',
 );
 
 // And then the case where ownership genuinely is foreign, because the refusal has to stay a refusal.
 // Renaming the package is the honest way to reach it: the provider identity is the package name, so
 // after a rename this is a different project generating into a work root the previous one marked.
 // Re-owning is the correct outcome, and the diagnostic is how a reader learns that.
-const renamed = 'atlas-cold-start-renamed';
+const renamed = 'cold-start-renamed';
 await writeFile(
   resolve(projectRoot, 'package.json'),
   `${JSON.stringify(
@@ -227,7 +228,10 @@ await writeFile(
   )}\n`,
   'utf8',
 );
-const renamedOwnerId = atlasOwnerId({ providerId: renamed, generatedRootPath });
+const renamedOwnerId = generatedOwnerId({
+  providerId: renamed,
+  generatedRootPath,
+});
 const foreign = run('generate');
 assert.equal(
   foreign.result.status,
@@ -235,9 +239,9 @@ assert.equal(
   'A work root marked by another project was adopted rather than refused.',
 );
 const refusal = foreign.result.diagnostics.find(
-  (diagnostic) => diagnostic.code === 'ATL1602',
+  (diagnostic) => diagnostic.code === 'EQ1602',
 );
-assert.ok(refusal, 'The refusal did not report ATL1602.');
+assert.ok(refusal, 'The refusal did not report EQ1602.');
 // Read from the machine output on purpose. The summary passes through the redaction that keeps a
 // consumer's absolute paths out of published JSON, and a redaction running to the end of the line
 // takes everything after the path with it, which is both identities and the recovery, leaving them
@@ -245,18 +249,18 @@ assert.ok(refusal, 'The refusal did not report ATL1602.');
 for (const [what, expected] of [
   ['the identity it found', expectedOwnerId],
   ['the identity this project computes', renamedOwnerId],
-  ['the recovery', 'atlas clean'],
+  ['the recovery', 'equator clean'],
 ]) {
   assert.ok(
     refusal.summary.includes(expected),
-    `ATL1602 does not name ${what}. It says: ${refusal.summary}`,
+    `EQ1602 does not name ${what}. It says: ${refusal.summary}`,
   );
 }
 
-// The recovery the message names, performed. A diagnostic that prescribes a step Atlas does not
+// The recovery the message names, performed. A diagnostic that prescribes a step Equator does not
 // actually accept is worse than one that prescribes none.
-atlas('clean');
-atlas('generate');
+equator('clean');
+equator('generate');
 assert.equal(
   await recordedOwnerId(),
   renamedOwnerId,
@@ -266,5 +270,5 @@ assert.equal(
 await rm(scratchRoot, { recursive: true, force: true });
 
 process.stdout.write(
-  `Atlas cold start: ${steps.join(', ')}. Six steps green on one owner identity (${expectedOwnerId}) with no clean, and a foreign work root refused by name with its recovery.\n`,
+  `Equator cold start: ${steps.join(', ')}. Six steps green on one owner identity (${expectedOwnerId}) with no clean, and a foreign work root refused by name with its recovery.\n`,
 );

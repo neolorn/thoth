@@ -83,14 +83,14 @@ class RouterProbe {
 }
 
 @Component({
-  selector: 'atlas-feature-stable-view',
+  selector: 'feature-stable-view',
   standalone: true,
   template: '<p data-view="stable">stable view</p>',
 })
 class StableView {}
 
 @Component({
-  selector: 'atlas-feature-prepared-view',
+  selector: 'feature-prepared-view',
   standalone: true,
   template: `
     <p data-view="prepared">prepared {{ id() }}: {{ prepared() }}</p>
@@ -117,7 +117,7 @@ class PreparedView {
 }
 
 @Component({
-  selector: 'atlas-feature-failed-view',
+  selector: 'feature-failed-view',
   standalone: true,
   template: '<p data-view="failed">this view must never activate</p>',
 })

@@ -15,28 +15,28 @@ import {
   resolveLocalizedRoute,
   type DynamicAssetParticipantReportInput,
   type RouteRuntimeProjection,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import {
-  createAtlasMigrationPlan,
-  ATLAS_PSEUDO_LOCALE_EXPANDED,
-  createAtlasPseudoCatalog,
-  diffAtlasCatalogSets,
-  exportAtlasXliff22,
-  formatAtlasCatalog,
-  importAtlasXliff22,
-  parseAtlasCatalog,
-  parseAtlasConfiguration,
-  planAtlasMessageRefactor,
-  type AtlasCatalog,
-  type AtlasCatalogParseOptions,
-} from '@neolorn/atlas-toolkit';
+  createMigrationPlan,
+  PSEUDO_LOCALE_EXPANDED,
+  createPseudoCatalog,
+  diffCatalogSets,
+  exportXliff22,
+  formatCatalog,
+  importXliff22,
+  parseCatalog,
+  parseConfiguration,
+  planMessageRefactor,
+  type Catalog,
+  type CatalogParseOptions,
+} from '@neolorn/equator-toolkit';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { families, messages, providerId, scopeId } from '#i18n/shell';
 
 import {
-  atlasRuntimeExtensions,
+  runtimeExtensions,
   skuFormatAdapter,
   skuParseAdapter,
 } from './runtime-extensions';
@@ -113,30 +113,30 @@ describe('shared URL policies', () => {
       policy,
       localizedProjection,
       configuration,
-      'https://atlas.example',
+      'https://site.example',
     );
     expect(seo.alternates).toHaveLength(2);
-    expect(seo.xDefault).toBe('https://atlas.example/');
+    expect(seo.xDefault).toBe('https://site.example/');
   });
 
   it('maps locale-specific trusted origins without accepting request-controlled hosts', () => {
     const policy = createHostLocalePolicy({
       defaultLocale: 'en-US',
       origins: {
-        'en-US': 'https://www.atlas.example',
-        'ar-EG': 'https://ar.atlas.example',
+        'en-US': 'https://www.site.example',
+        'ar-EG': 'https://ar.site.example',
       },
-      xDefaultUrl: 'https://atlas.example',
+      xDefaultUrl: 'https://site.example',
     });
     const arabicUrl = buildLocalizedRoute(
       policy,
       localizedProjection,
       'article',
       'ar-EG',
-      { slug: 'atlas-handbook' },
+      { slug: 'handbook' },
     );
     expect(arabicUrl).toBe(
-      'https://ar.atlas.example/%D9%85%D9%82%D8%A7%D9%84%D8%A7%D8%AA/%D8%AF%D9%84%D9%8A%D9%84-%D8%A3%D8%B7%D9%84%D8%B3',
+      'https://ar.site.example/%D9%85%D9%82%D8%A7%D9%84%D8%A7%D8%AA/%D8%AF%D9%84%D9%8A%D9%84',
     );
     const resolution = resolveLocalizedRoute(
       arabicUrl,
@@ -161,13 +161,13 @@ describe('shared URL policies', () => {
       policy,
       localizedProjection,
       configuration,
-      'https://ar.atlas.example',
+      'https://ar.site.example',
     );
     expect(seo.alternates.map(({ url }) => url)).toEqual([
-      'https://www.atlas.example/articles/atlas-handbook',
+      'https://www.site.example/articles/handbook',
       arabicUrl,
     ]);
-    expect(seo.xDefault).toBe('https://atlas.example');
+    expect(seo.xDefault).toBe('https://site.example');
   });
 });
 
@@ -178,15 +178,15 @@ describe('application-local extensibility', () => {
         configuration,
         catalogSet,
         catalogLoaders,
-        extensions: atlasRuntimeExtensions,
+        extensions: runtimeExtensions,
       },
       bootstrapScopes: [{ providerId, scopeId }],
     });
     await localization.initialize();
 
     expect(
-      localization.text(messages.extension.uppercase, { name: 'Atlas' }),
-    ).toBe('Custom function: ATLAS!');
+      localization.text(messages.extension.uppercase, { name: 'Equator' }),
+    ).toBe('Custom function: EQUATOR!');
     const badge = localization.parts(messages.extension.badge);
     expect(badge.text).toBe('Badge: New');
     expect(badge.value[0]).toMatchObject({
@@ -203,21 +203,21 @@ describe('application-local extensibility', () => {
     expect(families.featureState.resolve({ state: 'READY' })).toBeUndefined();
 
     expect(
-      localization.formatWithAdapter(skuFormatAdapter, 'atlas-42'),
+      localization.formatWithAdapter(skuFormatAdapter, 'item-42'),
     ).toMatchObject({
       ok: true,
       value: {
         semantic: 'extension',
         extensionId: 'feature:sku-format',
-        text: 'SKU-ATLAS-42',
+        text: 'SKU-ITEM-42',
       },
     });
     expect(
-      localization.parseWithAdapter(skuParseAdapter, 'sku-atlas-42'),
+      localization.parseWithAdapter(skuParseAdapter, 'sku-item-42'),
     ).toEqual({
       status: 'valid',
-      text: 'sku-atlas-42',
-      value: { value: 'ATLAS-42' },
+      text: 'sku-item-42',
+      value: { value: 'ITEM-42' },
     });
     localization.dispose();
   });
@@ -243,7 +243,7 @@ describe('localized assets', () => {
         configuration,
         catalogSet,
         catalogLoaders,
-        extensions: atlasRuntimeExtensions,
+        extensions: runtimeExtensions,
       },
       bootstrapScopes: [{ providerId, scopeId }],
     });
@@ -352,7 +352,7 @@ describe('localized assets', () => {
   });
 });
 
-const configurationResult = parseAtlasConfiguration(
+const configurationResult = parseConfiguration(
   JSON.stringify({
     schemaVersion: 1,
     sourceLocale: 'en-US',
@@ -364,23 +364,20 @@ if (!configurationResult.ok)
   throw new Error('The fixture configuration is invalid.');
 const phase5Configuration = configurationResult.value;
 
-function phase5Catalog(
-  source: string,
-  options: AtlasCatalogParseOptions,
-): AtlasCatalog {
-  const parsed = parseAtlasCatalog(source, options);
+function phase5Catalog(source: string, options: CatalogParseOptions): Catalog {
+  const parsed = parseCatalog(source, options);
   if (!parsed.ok) throw new Error(JSON.stringify(parsed.diagnostics));
   return parsed.value;
 }
 
-const sourceOptions: AtlasCatalogParseOptions = {
+const sourceOptions: CatalogParseOptions = {
   role: 'source',
   providerId: '@feature/phase-five',
   scopeId: 'shell',
   locale: 'en-US',
   sourcePath: 'i18n/shell/en-US.yaml',
 };
-const targetOptions: AtlasCatalogParseOptions = {
+const targetOptions: CatalogParseOptions = {
   ...sourceOptions,
   role: 'target',
   locale: 'ar-EG',
@@ -397,20 +394,20 @@ describe('built-toolkit lifecycle', () => {
       'messages:\n  greeting: "مرحبًا {#strong}{$name}{/strong}."\n',
       targetOptions,
     );
-    const exported = exportAtlasXliff22({ source, target });
+    const exported = exportXliff22({ source, target });
     expect(exported.ok).toBe(true);
     if (!exported.ok) return;
     expect(exported.value).toContain('version="2.2"');
-    const imported = importAtlasXliff22({
+    const imported = importXliff22({
       document: exported.value,
       source,
     });
     expect(imported.ok).toBe(true);
     if (!imported.ok) return;
-    expect(formatAtlasCatalog(imported.value)).toBe(formatAtlasCatalog(target));
+    expect(formatCatalog(imported.value)).toBe(formatCatalog(target));
 
-    const pseudo = createAtlasPseudoCatalog(source, {
-      locale: ATLAS_PSEUDO_LOCALE_EXPANDED,
+    const pseudo = createPseudoCatalog(source, {
+      locale: PSEUDO_LOCALE_EXPANDED,
       lengthFactor: 0.35,
       markers: true,
     });
@@ -441,7 +438,7 @@ describe('built-toolkit lifecycle', () => {
       'messages:\n  heading: "مرحبًا"\n  keep: "أبقِ"\n',
       targetOptions,
     );
-    const diff = diffAtlasCatalogSets({
+    const diff = diffCatalogSets({
       before: {
         configuration: phase5Configuration,
         catalogs: [beforeSource, beforeTarget],
@@ -468,7 +465,7 @@ describe('built-toolkit lifecycle', () => {
     );
 
     const code = 'const title = messages.title;\n';
-    const refactor = planAtlasMessageRefactor({
+    const refactor = planMessageRefactor({
       from: {
         providerId: '@feature/phase-five',
         scopeId: 'shell',
@@ -500,16 +497,16 @@ describe('built-toolkit lifecycle', () => {
       refactor.value.changes.find(({ path }) => path === 'src/probe.ts')?.after,
     ).toBe('const title = messages.heading;\n');
 
-    const migration = createAtlasMigrationPlan({
+    const migration = createMigrationPlan({
       id: 'phase-five-profile',
       domain: 'configuration',
       fromVersion: '1',
       toVersion: '1.1',
       changes: [
         {
-          path: 'atlas.config.json',
+          path: 'equator.config.json',
           before: '{"schemaVersion":1}\n',
-          after: '{"schemaVersion":1,"profile":"atlas-1"}\n',
+          after: '{"schemaVersion":1,"profile":"equator-1"}\n',
         },
       ],
     });

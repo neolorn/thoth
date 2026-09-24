@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  exportAtlasXliff22,
-  importAtlasXliff22,
-  parseAtlasCatalog,
-  type AtlasCatalog,
-  type AtlasCatalogParseOptions,
+  exportXliff22,
+  importXliff22,
+  parseCatalog,
+  type Catalog,
+  type CatalogParseOptions,
 } from '../src/index.js';
 
 /**
@@ -25,14 +25,14 @@ import {
  * because a check that refuses those would be worse than no check at all.
  */
 
-const sourceOptions: AtlasCatalogParseOptions = {
+const sourceOptions: CatalogParseOptions = {
   role: 'source',
   providerId: '@example/app',
   scopeId: 'shell',
   locale: 'en-US',
 };
 
-const targetOptions: AtlasCatalogParseOptions = {
+const targetOptions: CatalogParseOptions = {
   ...sourceOptions,
   role: 'target',
   locale: 'ar-EG',
@@ -40,9 +40,9 @@ const targetOptions: AtlasCatalogParseOptions = {
 
 function catalog(
   lines: readonly string[],
-  options: AtlasCatalogParseOptions,
-): AtlasCatalog {
-  const parsed = parseAtlasCatalog([...lines, ''].join('\n'), options);
+  options: CatalogParseOptions,
+): Catalog {
+  const parsed = parseCatalog([...lines, ''].join('\n'), options);
   if (!parsed.ok) {
     throw new Error(
       `fixture catalog is invalid: ${parsed.diagnostics.map(({ summary }) => summary).join('; ')}`,
@@ -64,7 +64,7 @@ const ENGLISH = catalog(
   sourceOptions,
 );
 
-function arabic(...variants: readonly string[]): AtlasCatalog {
+function arabic(...variants: readonly string[]): Catalog {
   return catalog(
     [
       'messages:',
@@ -89,17 +89,17 @@ describe('a flat translation that drops a value', () => {
     // count: it just never prints it. That is the exact shape a deletion leaves behind, and it is
     // why the check reads patterns rather than the whole message text: a rule that looked for
     // `$count` anywhere would find it in `.input` and `.match` and pass this.
-    const dropped = exportAtlasXliff22({
+    const dropped = exportXliff22({
       source: ENGLISH,
       target: arabic('one {{لديك ملف.}}', '* {{لديك ملفات.}}'),
     });
     expect(dropped.ok).toBe(false);
     expect(summaries(dropped.diagnostics)).toContain('"$count"');
-    expect(dropped.diagnostics.map(({ code }) => code)).toContain('ATL1802');
+    expect(dropped.diagnostics.map(({ code }) => code)).toContain('EQ1802');
 
     // The control: the same two variants, same locale, same call, with the count printed.
     expect(
-      exportAtlasXliff22({
+      exportXliff22({
         source: ENGLISH,
         target: arabic(
           'one {{لديك {$count} ملف.}}',
@@ -114,7 +114,7 @@ describe('a flat translation that drops a value', () => {
     // Arabic does not need one to say "no files" or "one file". A per-variant comparison would
     // have to reject this, and there is no way to key these variants to the source's anyway:
     // there is no `zero` and no `two` on the English side to key them to.
-    const exported = exportAtlasXliff22({
+    const exported = exportXliff22({
       source: ENGLISH,
       target: arabic(
         'zero {{ليس لديك ملفات.}}',
@@ -157,9 +157,7 @@ describe('a flat translation that drops a value', () => {
       ],
       targetOptions,
     );
-    expect(exportAtlasXliff22({ source: renamed, target: direct }).ok).toBe(
-      true,
-    );
+    expect(exportXliff22({ source: renamed, target: direct }).ok).toBe(true);
 
     // The check is still live under that resolution: the same rename with the value gone is caught.
     const gone = catalog(
@@ -173,7 +171,7 @@ describe('a flat translation that drops a value', () => {
       ],
       targetOptions,
     );
-    const refused = exportAtlasXliff22({ source: renamed, target: gone });
+    const refused = exportXliff22({ source: renamed, target: gone });
     expect(refused.ok).toBe(false);
     expect(summaries(refused.diagnostics)).toContain('"$count"');
   });
@@ -198,15 +196,13 @@ describe('a flat translation that drops a value', () => {
       ],
       targetOptions,
     );
-    expect(exportAtlasXliff22({ source: plain, target: gendered }).ok).toBe(
-      true,
-    );
+    expect(exportXliff22({ source: plain, target: gendered }).ok).toBe(true);
   });
 
   it('is refused on import, which is where it actually arrives', () => {
-    // Export is Atlas checking its own catalogs. Import is the direction a translation comes back
+    // Export is Equator checking its own catalogs. Import is the direction a translation comes back
     // from someone else, so it is the one that has to hold.
-    const document = exportAtlasXliff22({
+    const document = exportXliff22({
       source: ENGLISH,
       target: arabic('one {{ملف واحد}}', '* {{عدد الملفات: {$count}}}'),
     });
@@ -215,7 +211,7 @@ describe('a flat translation that drops a value', () => {
 
     // The control, before the edit: this document imports.
     expect(
-      importAtlasXliff22({ document: document.value, source: ENGLISH }).ok,
+      importXliff22({ document: document.value, source: ENGLISH }).ok,
     ).toBe(true);
 
     // The edit a translation tool makes when someone deletes the placeholder from the one variant
@@ -226,9 +222,9 @@ describe('a flat translation that drops a value', () => {
     );
     expect(edited).not.toBe(document.value);
 
-    const imported = importAtlasXliff22({ document: edited, source: ENGLISH });
+    const imported = importXliff22({ document: edited, source: ENGLISH });
     expect(imported.ok).toBe(false);
     expect(summaries(imported.diagnostics)).toContain('"$count"');
-    expect(imported.diagnostics.map(({ code }) => code)).toContain('ATL1803');
+    expect(imported.diagnostics.map(({ code }) => code)).toContain('EQ1803');
   });
 });

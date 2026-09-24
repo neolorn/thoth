@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { checkAtlasProject, generateAtlasProject } from '../src/index.js';
+import { checkProject, generateProject } from '../src/index.js';
 
 /**
  * A template may not spell out a locale.
@@ -17,9 +17,9 @@ import { checkAtlasProject, generateAtlasProject } from '../src/index.js';
  * Every locale switcher in this repository was written by hand before this check existed, and both
  * of them looked the same: the locale as a string in a click handler, the option's language as a
  * static `lang`, its direction as a static `dir`, and its name in its own language as literal text.
- * Four answers Atlas already holds, authored again per locale per template, in languages the author
- * may not read, and adding a locale means finding every one of those places, with nothing failing
- * when one is missed.
+ * Four answers Equator already holds, authored again per locale per template, in languages the
+ * author may not read, and adding a locale means finding every one of those places, with nothing
+ * failing when one is missed.
  *
  * **The old fixtures are the mutation.** The first case below is a switcher exactly as one was
  * written by hand, and it has to be refused; the second is the same switcher built on
@@ -87,7 +87,7 @@ const BY_CHOICE = [
 const QUOTATION = '<blockquote lang="ar" dir="rtl">مرحبا</blockquote>';
 
 async function project(template: string): Promise<string> {
-  const root = await mkdtemp(resolve(tmpdir(), 'atlas-locale-template-'));
+  const root = await mkdtemp(resolve(tmpdir(), 'locale-template-'));
   temporaryRoots.push(root);
 
   await write(
@@ -109,7 +109,7 @@ async function project(template: string): Promise<string> {
   );
   await write(
     root,
-    'atlas.config.json',
+    'equator.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -188,10 +188,10 @@ async function findings(root: string): Promise<{
     }[],
   ): readonly { code: string; severity: string }[] =>
     diagnostics
-      .filter(({ code }) => code === 'ATL1410')
+      .filter(({ code }) => code === 'EQ1410')
       .map(({ code, severity }) => ({ code, severity }));
-  const generated = await generateAtlasProject({ project: root });
-  const checked = await checkAtlasProject({ project: root });
+  const generated = await generateProject({ project: root });
+  const checked = await checkProject({ project: root });
   return {
     generate: only(generated.diagnostics),
     check: only(checked.diagnostics),
@@ -233,7 +233,7 @@ describe('a template may not spell out a locale', () => {
     const reported = await findings(await project(QUOTATION));
 
     for (const step of [reported.generate, reported.check]) {
-      expect(step).toEqual([{ code: 'ATL1410', severity: 'warning' }]);
+      expect(step).toEqual([{ code: 'EQ1410', severity: 'warning' }]);
     }
   });
 

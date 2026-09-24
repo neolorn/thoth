@@ -1,30 +1,30 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  ATLAS_HOST_COMPATIBILITY_PROFILE,
-  type AtlasHostVersions,
-  admitAtlasHostCompatibility,
-  currentAtlasHostVersions,
+  HOST_COMPATIBILITY_PROFILE,
+  type HostVersions,
+  admitHostCompatibility,
+  currentHostVersions,
 } from '../src/host-compatibility.js';
 
-const supported: AtlasHostVersions = Object.freeze({
+const supported: HostVersions = Object.freeze({
   node: '24.15.0',
   typescript: '6.0.2',
   angularCompiler: '22.0.0',
 });
 
-describe('Atlas compiler-host compatibility admission', () => {
+describe('Equator compiler-host compatibility admission', () => {
   it('admits the actual locked development host through the public contract', () => {
-    const current = currentAtlasHostVersions();
-    const result = admitAtlasHostCompatibility();
+    const current = currentHostVersions();
+    const result = admitHostCompatibility();
     expect(result.ok, JSON.stringify(result.diagnostics, null, 2)).toBe(true);
     if (!result.ok) return;
     expect(result.value).toEqual({
-      profile: 'atlas-host-compatibility/1',
+      profile: 'equator-host-compatibility/1',
       versions: current,
     });
-    expect(ATLAS_HOST_COMPATIBILITY_PROFILE).toEqual({
-      profile: 'atlas-host-compatibility/1',
+    expect(HOST_COMPATIBILITY_PROFILE).toEqual({
+      profile: 'equator-host-compatibility/1',
       node: '^22.22.3 || ^24.15.0 || ^26.0.0',
       typescript: '>=6.0.2 <6.1.0',
       angularCompiler: '>=22.0.0 <23.0.0',
@@ -45,12 +45,12 @@ describe('Atlas compiler-host compatibility admission', () => {
     ['26.99.99', true],
     ['27.0.0', false],
   ] as const)('checks the exact Node boundary at %s', (node, accepted) => {
-    const result = admitAtlasHostCompatibility({ ...supported, node });
+    const result = admitHostCompatibility({ ...supported, node });
     expect(result.ok).toBe(accepted);
     if (!accepted) {
       expect(result.diagnostics).toEqual([
         expect.objectContaining({
-          code: 'ATL1806',
+          code: 'EQ1806',
           path: ['host', 'node'],
         }),
       ]);
@@ -68,7 +68,7 @@ describe('Atlas compiler-host compatibility admission', () => {
   ] as const)(
     'checks the exact TypeScript boundary at %s',
     (typescript, accepted) => {
-      const result = admitAtlasHostCompatibility({
+      const result = admitHostCompatibility({
         ...supported,
         typescript,
       });
@@ -76,7 +76,7 @@ describe('Atlas compiler-host compatibility admission', () => {
       if (!accepted) {
         expect(result.diagnostics).toEqual([
           expect.objectContaining({
-            code: 'ATL1806',
+            code: 'EQ1806',
             path: ['host', 'typescript'],
           }),
         ]);
@@ -93,7 +93,7 @@ describe('Atlas compiler-host compatibility admission', () => {
   ] as const)(
     'checks the exact Angular compiler boundary at %s',
     (angularCompiler, accepted) => {
-      const result = admitAtlasHostCompatibility({
+      const result = admitHostCompatibility({
         ...supported,
         angularCompiler,
       });
@@ -101,7 +101,7 @@ describe('Atlas compiler-host compatibility admission', () => {
       if (!accepted) {
         expect(result.diagnostics).toEqual([
           expect.objectContaining({
-            code: 'ATL1806',
+            code: 'EQ1806',
             path: ['host', 'angularCompiler'],
           }),
         ]);
@@ -110,7 +110,7 @@ describe('Atlas compiler-host compatibility admission', () => {
   );
 
   it('reports every unsupported host component deterministically', () => {
-    const result = admitAtlasHostCompatibility({
+    const result = admitHostCompatibility({
       node: '23.0.0',
       typescript: '6.1.0',
       angularCompiler: '23.0.0',
@@ -119,9 +119,9 @@ describe('Atlas compiler-host compatibility admission', () => {
     expect(
       result.diagnostics.map(({ code, path }) => ({ code, path })),
     ).toEqual([
-      { code: 'ATL1806', path: ['host', 'node'] },
-      { code: 'ATL1806', path: ['host', 'typescript'] },
-      { code: 'ATL1806', path: ['host', 'angularCompiler'] },
+      { code: 'EQ1806', path: ['host', 'node'] },
+      { code: 'EQ1806', path: ['host', 'typescript'] },
+      { code: 'EQ1806', path: ['host', 'angularCompiler'] },
     ]);
   });
 });

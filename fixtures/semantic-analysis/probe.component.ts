@@ -1,7 +1,7 @@
 import { Component as NgComponent } from '@angular/core';
 
 @NgComponent({
-  selector: 'atlas-analysis-probe',
+  selector: 'analysis-probe',
   standalone: true,
   templateUrl: './probe.component.html',
 })

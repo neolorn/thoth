@@ -8,12 +8,12 @@ import {
   type GeneratedRouteProjectionEntry,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /**
  * A route table larger than a hand-written one, resolved and built the ordinary way.
  *
- * Atlas is built for a hundred times the size it is used at today, and a table of a few dozen
+ * Equator is built for a hundred times the size it is used at today, and a table of a few dozen
  * routes hides the difference between a lookup and a search. Every case in this file is ordinary:
  * one address in, one address out. What makes it a case is the table it happens against.
  *
@@ -50,8 +50,8 @@ function largeProjection(): RouteRuntimeProjection {
   }
   return {
     generated: {
-      profile: 'atlas-route-projection/1',
-      identity: 'sha256-AtlasRouteTableScaleTestIdentity01234567890',
+      profile: 'equator-route-projection/1',
+      identity: 'sha256-RouteTableScaleTestIdentity0123456789012345',
       routes,
     },
     parameters: { article: { slug: createIdentifierParameterCodec() } },
@@ -78,7 +78,7 @@ describe('a route table of twenty thousand', () => {
 
   it('resolves the parameterised route that stands in front of all of them', () => {
     const resolution = resolveLocalizedRoute(
-      '/en-us/articles/atlas-handbook',
+      '/en-us/articles/handbook',
       POLICY,
       projection,
     );

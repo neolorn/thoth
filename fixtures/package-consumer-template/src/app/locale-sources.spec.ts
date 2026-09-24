@@ -17,14 +17,14 @@ import {
   withPersistence,
   type LocalizationLocaleSource,
   type LocalizationPersistenceStoreFactory,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
 /**
@@ -59,18 +59,18 @@ function setup(environment: Environment): Localization {
       { provide: PLATFORM_ID, useValue: 'server' },
       {
         provide: REQUEST,
-        useValue: new Request('https://atlas.example/', {
+        useValue: new Request('https://site.example/', {
           headers:
             environment.acceptLanguage === undefined
               ? {}
               : { 'accept-language': environment.acceptLanguage },
         }),
       },
-      // The address, supplied the way Atlas now reads it on the server.
+      // The address, supplied the way Equator now reads it on the server.
       //
       // Not `REQUEST_CONTEXT`. `@angular/ssr` provides that token only when the render mode is
       // `Server`, so a prerendered page has no address at all and resolves to the default locale:
-      // Arabic addresses rendered in English and written to disk. Atlas derives the address from
+      // Arabic addresses rendered in English and written to disk. Equator derives the address from
       // `PlatformLocation`, which the server platform initializes from the address being rendered
       // under both prerendering and SSR.
       //
@@ -81,7 +81,7 @@ function setup(environment: Environment): Localization {
         : [
             {
               provide: MOCK_PLATFORM_LOCATION_CONFIG,
-              useValue: { startUrl: `https://atlas.example${environment.url}` },
+              useValue: { startUrl: `https://site.example${environment.url}` },
             },
             { provide: PlatformLocation, useClass: MockPlatformLocation },
           ]),
@@ -91,7 +91,7 @@ function setup(environment: Environment): Localization {
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
           routeProjection,
         },
         // One declaration of the locale URL policy, wherever it is read from.
@@ -230,7 +230,7 @@ describe('the declared order', () => {
     expect((await localization.initialize()).primaryLocale).toBe('en-US');
   });
 
-  it('honours the order, not Atlas s opinion of it', async () => {
+  it('honours the order, not Equator s opinion of it', async () => {
     // Storage ahead of the URL is unusual and legitimate: an application that deliberately pins a
     // signed-in user's language regardless of the link they followed.
     const localization = setup({
@@ -270,7 +270,7 @@ describe('the declared order', () => {
  * The order an application gets when it declares none.
  *
  * `app.config.ts` declares no sources. Writing `withLocaleSources('url', 'stored', 'browser',
- * 'default')` there restates Atlas's default, which says nothing and creates a second place to
+ * 'default')` there restates Equator's default, which says nothing and creates a second place to
  * maintain; leaving it out puts this application's behaviour on a constant, and every test above
  * passes an explicit `sources` rather than exercising it.
  *

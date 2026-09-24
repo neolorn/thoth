@@ -2,17 +2,17 @@ import { DraftFunctions, DefaultFunctions } from 'messageformat/functions';
 import { describe, expect, it } from 'vitest';
 
 import {
-  formatAtlasCatalog,
-  parseAtlasCatalog,
-  type AtlasCatalogParseOptions,
-  type AtlasMessageCustomFunction,
+  formatCatalog,
+  parseCatalog,
+  type CatalogParseOptions,
+  type MessageCustomFunction,
 } from '../src/index.js';
 import {
-  ATLAS_MESSAGE_FUNCTION_PROFILE,
-  parseAtlasMessage,
+  MESSAGE_FUNCTION_PROFILE,
+  parseMessageSemanticModel,
 } from '../src/message-format.js';
 
-const catalogOptions: AtlasCatalogParseOptions = {
+const catalogOptions: CatalogParseOptions = {
   role: 'source',
   providerId: '@neolorn/example',
   scopeId: 'messages',
@@ -20,9 +20,9 @@ const catalogOptions: AtlasCatalogParseOptions = {
   sourcePath: 'i18n/messages/en-US.yaml',
 };
 
-describe('Atlas MessageFormat 2 profile', () => {
+describe('Equator MessageFormat 2 profile', () => {
   it('pins every stable and draft LDML 48.2 default function', () => {
-    expect(ATLAS_MESSAGE_FUNCTION_PROFILE).toEqual([
+    expect(MESSAGE_FUNCTION_PROFILE).toEqual([
       { name: 'string', status: 'stable', selection: 'literal' },
       { name: 'number', status: 'stable', selection: 'number' },
       { name: 'integer', status: 'stable', selection: 'number' },
@@ -41,7 +41,7 @@ describe('Atlas MessageFormat 2 profile', () => {
           ...Object.keys(DraftFunctions),
         ]),
       ].sort(),
-    ).toEqual(ATLAS_MESSAGE_FUNCTION_PROFILE.map(({ name }) => name).sort());
+    ).toEqual(MESSAGE_FUNCTION_PROFILE.map(({ name }) => name).sort());
   });
 
   it.each([
@@ -56,9 +56,9 @@ describe('Atlas MessageFormat 2 profile', () => {
     ['date', '{$value :date}'],
     ['time', '{$value :time}'],
   ])(
-    'admits the pinned :%s function into the Atlas semantic model',
+    'admits the pinned :%s function into the Equator semantic model',
     (name, source) => {
-      const result = parseAtlasMessage(source);
+      const result = parseMessageSemanticModel(source);
       expect(result.ok).toBe(true);
       if (!result.ok) return;
       expect(result.value.functions).toEqual([name]);
@@ -69,11 +69,11 @@ describe('Atlas MessageFormat 2 profile', () => {
   /**
    * The option here is a real one on a function that has it. `:string case=upper` is neither:
    * `:string` has no options and `case` is not an option of anything, so a normalizer asked about
-   * that message is asked about one no reader could rely on, and Atlas refuses it. The question is
-   * worth putting only to a message that means something.
+   * that message is asked about one no reader could rely on, and Equator refuses it. The question
+   * is worth putting only to a message that means something.
    */
   it('normalizes expressions, options, attributes, and external inputs without dependency-owned types', () => {
-    const result = parseAtlasMessage(
+    const result = parseMessageSemanticModel(
       'Hello {$person :number signDisplay=always @dir=rtl}',
     );
     expect(result.ok).toBe(true);
@@ -109,7 +109,7 @@ describe('Atlas MessageFormat 2 profile', () => {
       '1 {{One item}}',
       '* {{Other: {$count}}}',
     ].join('\n');
-    const result = parseAtlasMessage(source);
+    const result = parseMessageSemanticModel(source);
 
     expect(result.ok).toBe(true);
     if (!result.ok || result.value.kind !== 'select') return;
@@ -126,7 +126,7 @@ describe('Atlas MessageFormat 2 profile', () => {
   });
 
   it('excludes local declarations from the external input set', () => {
-    const result = parseAtlasMessage(
+    const result = parseMessageSemanticModel(
       '.local $label = {$name :string}\n{{Hello {$label}}}',
     );
     expect(result.ok).toBe(true);
@@ -138,7 +138,7 @@ describe('Atlas MessageFormat 2 profile', () => {
   });
 
   it('marks semantic markup as structured output without interpreting it as HTML', () => {
-    const result = parseAtlasMessage('{#strong}Important{/strong}');
+    const result = parseMessageSemanticModel('{#strong}Important{/strong}');
     expect(result.ok).toBe(true);
     if (!result.ok || result.value.kind !== 'pattern') return;
     expect(result.value.resultKind).toBe('structured');
@@ -162,20 +162,20 @@ describe('Atlas MessageFormat 2 profile', () => {
   });
 
   it('reports source-located syntax and data-model failures', () => {
-    const syntax = parseAtlasMessage('Hello {', {
+    const syntax = parseMessageSemanticModel('Hello {', {
       sourcePath: 'message.mf2',
       path: ['messages', 'hello'],
     });
     expect(syntax.ok).toBe(false);
-    expect(syntax.diagnostics[0]?.code).toBe('ATL1201');
+    expect(syntax.diagnostics[0]?.code).toBe('EQ1201');
     expect(syntax.diagnostics[0]?.path).toEqual(['messages', 'hello']);
     expect(syntax.diagnostics[0]?.span?.sourcePath).toBe('message.mf2');
 
-    const dataModel = parseAtlasMessage(
+    const dataModel = parseMessageSemanticModel(
       '.input {$count :number}\n.match $count\n1 {{One}}',
     );
     expect(dataModel.ok).toBe(false);
-    expect(dataModel.diagnostics.some(({ code }) => code === 'ATL1202')).toBe(
+    expect(dataModel.diagnostics.some(({ code }) => code === 'EQ1202')).toBe(
       true,
     );
   });
@@ -184,9 +184,9 @@ describe('Atlas MessageFormat 2 profile', () => {
    * The standard's division, not the parser's stages.
    *
    * `messageformat` throws `duplicate-option-name` while parsing and reports the other five types
-   * from `validate`, so classifying by stage files them under two codes, `ATL1201` and `ATL1202`.
+   * from `validate`, so classifying by stage files them under two codes, `EQ1201` and `EQ1202`.
    * The working group's own `data-model-errors.json` files all six together. Which stage notices a
-   * fault is a detail of the parser Atlas embeds; which class of error it is belongs to the
+   * fault is a detail of the parser Equator embeds; which class of error it is belongs to the
    * message.
    *
    * The sources are written out rather than read from that suite, which `verify:message-format-
@@ -205,35 +205,37 @@ describe('Atlas MessageFormat 2 profile', () => {
         '.input {$foo} .match $foo one {{one}} * {{other}}',
     };
     for (const [type, source] of Object.entries(dataModelSources)) {
-      const result = parseAtlasMessage(source);
+      const result = parseMessageSemanticModel(source);
       expect(result.ok, `${type} was accepted`).toBe(false);
       expect(
         result.diagnostics.map(({ code }) => code),
         `${type} did not report the data-model code`,
-      ).toEqual([`ATL1202`]);
+      ).toEqual([`EQ1202`]);
     }
 
     // The control that keeps the row above meaningful: a message the syntax refuses is still
-    // `ATL1201`, so the table is a division rather than a rename.
-    expect(parseAtlasMessage('Hello {').diagnostics[0]?.code).toBe('ATL1201');
+    // `EQ1201`, so the table is a division rather than a rename.
+    expect(parseMessageSemanticModel('Hello {').diagnostics[0]?.code).toBe(
+      'EQ1201',
+    );
   });
 
-  it('rejects functions outside the approved Atlas 1 profile', () => {
-    const result = parseAtlasMessage('{$value :example}');
+  it('rejects functions outside the approved Equator 1 profile', () => {
+    const result = parseMessageSemanticModel('{$value :example}');
     expect(result.ok).toBe(false);
     expect(result.diagnostics).toMatchObject([
       {
-        code: 'ATL1203',
+        code: 'EQ1203',
         summary:
-          'MessageFormat function :example is not part of the Atlas 1 profile.',
+          'MessageFormat function :example is not part of the Equator 1 profile.',
       },
     ]);
   });
 });
 
 describe('MessageFormat catalog integration', () => {
-  it('attaches Atlas-owned semantics to every nonempty catalog message', () => {
-    const result = parseAtlasCatalog(
+  it('attaches Equator-owned semantics to every nonempty catalog message', () => {
+    const result = parseCatalog(
       'messages:\n  greeting: "Hello {$name :string}"\n  spacer:\n    empty: true\n',
       catalogOptions,
     );
@@ -249,36 +251,36 @@ describe('MessageFormat catalog integration', () => {
       },
     });
     expect(result.value.messages['spacer']).not.toHaveProperty('semantics');
-    expect(formatAtlasCatalog(result.value)).toContain(
+    expect(formatCatalog(result.value)).toContain(
       'greeting: "Hello {$name :string}"',
     );
   });
 
   it('rejects invalid or unsupported MessageFormat before catalog admission', () => {
-    const invalid = parseAtlasCatalog(
+    const invalid = parseCatalog(
       'messages:\n  greeting: "Hello {"\n',
       catalogOptions,
     );
     expect(invalid.ok).toBe(false);
-    expect(invalid.diagnostics[0]?.code).toBe('ATL1201');
+    expect(invalid.diagnostics[0]?.code).toBe('EQ1201');
     expect(invalid.diagnostics[0]?.path).toEqual(['messages', 'greeting']);
     expect(invalid.diagnostics[0]?.span?.sourcePath).toBe(
       'i18n/messages/en-US.yaml',
     );
 
-    const unsupported = parseAtlasCatalog(
+    const unsupported = parseCatalog(
       'messages:\n  greeting: "{$name :custom}"\n',
       catalogOptions,
     );
     expect(unsupported.ok).toBe(false);
-    expect(unsupported.diagnostics[0]?.code).toBe('ATL1203');
+    expect(unsupported.diagnostics[0]?.code).toBe('EQ1203');
   });
 });
 
 /**
  * MessageFormat 2 reserves the `u:` option namespace for the message syntax itself.
  *
- * Atlas folded these in with every other option, kept them in the model and dropped them at
+ * Equator folded these in with every other option, kept them in the model and dropped them at
  * runtime, so `{$name :string u:dir=rtl}` produced no diagnostic and no isolation. An author had no
  * way to discover that: the message parsed, the gate was green, and the bytes were identical to
  * the same message written without the option.
@@ -287,30 +289,36 @@ describe('MessageFormat catalog integration', () => {
  * ignored, because `u:locale` is a real option in the spec: accepting it quietly would mean a
  * message formatted in the wrong locale with nothing to say so.
  */
-describe('Atlas MessageFormat u: options', () => {
+describe('Equator MessageFormat u: options', () => {
   const diagnosticsFor = (message: string) => {
-    const result = parseAtlasMessage(message);
+    const result = parseMessageSemanticModel(message);
     return result.ok
       ? []
       : result.diagnostics.map(({ code, summary }) => ({ code, summary }));
   };
 
   it('accepts the two it implements', () => {
-    expect(parseAtlasMessage('{$name :string u:dir=rtl}').ok).toBe(true);
-    expect(parseAtlasMessage('{$name :string u:dir=auto}').ok).toBe(true);
-    expect(parseAtlasMessage('{$name :string u:dir=inherit}').ok).toBe(true);
-    expect(parseAtlasMessage('{$name :string u:id=who}').ok).toBe(true);
+    expect(parseMessageSemanticModel('{$name :string u:dir=rtl}').ok).toBe(
+      true,
+    );
+    expect(parseMessageSemanticModel('{$name :string u:dir=auto}').ok).toBe(
+      true,
+    );
+    expect(parseMessageSemanticModel('{$name :string u:dir=inherit}').ok).toBe(
+      true,
+    );
+    expect(parseMessageSemanticModel('{$name :string u:id=who}').ok).toBe(true);
   });
 
   it('rejects a u:dir value outside the four the spec defines', () => {
     const diagnostics = diagnosticsFor('{$name :string u:dir=sideways}');
-    expect(diagnostics[0]?.code).toBe('ATL1204');
+    expect(diagnostics[0]?.code).toBe('EQ1204');
     expect(diagnostics[0]?.summary).toContain('u:dir="sideways"');
   });
 
   it('rejects a u:dir that is a variable rather than a literal', () => {
     const diagnostics = diagnosticsFor('{$name :string u:dir=$flag}');
-    expect(diagnostics[0]?.code).toBe('ATL1204');
+    expect(diagnostics[0]?.code).toBe('EQ1204');
     expect(diagnostics[0]?.summary).toContain('must be a literal');
   });
 
@@ -320,17 +328,19 @@ describe('Atlas MessageFormat u: options', () => {
    */
   it('rejects u:dir on markup', () => {
     const diagnostics = diagnosticsFor('{#strong u:dir=rtl}text{/strong}');
-    expect(diagnostics[0]?.code).toBe('ATL1204');
+    expect(diagnostics[0]?.code).toBe('EQ1204');
     expect(diagnostics[0]?.summary).toContain('markup {#strong}');
   });
 
   it('accepts u:id on markup, which does resolve to a formatted part', () => {
-    expect(parseAtlasMessage('{#strong u:id=lead}text{/strong}').ok).toBe(true);
+    expect(
+      parseMessageSemanticModel('{#strong u:id=lead}text{/strong}').ok,
+    ).toBe(true);
   });
 
   it('refuses a reserved option it does not implement rather than ignoring it', () => {
     const diagnostics = diagnosticsFor('{$name :string u:locale=ar}');
-    expect(diagnostics[0]?.code).toBe('ATL1204');
+    expect(diagnostics[0]?.code).toBe('EQ1204');
     expect(diagnostics[0]?.summary).toContain('u:locale');
   });
 });
@@ -338,7 +348,7 @@ describe('Atlas MessageFormat u: options', () => {
 /**
  * MessageFormat's Number Operand, refused here so it cannot reach the runtime and throw.
  *
- * `{foo :number}` is valid MessageFormat syntax and Atlas compiled it without a word. The operand
+ * `{foo :number}` is valid MessageFormat syntax and Equator compiled it without a word. The operand
  * is a literal, so it reaches the evaluator as the string `foo`, and the evaluator threw. A message
  * that passes the gate and then throws while rendering is the one failure a localization library
  * cannot leave in: there is no fallback below it and the frame is already on screen.
@@ -347,27 +357,27 @@ describe('Atlas MessageFormat u: options', () => {
  * decided at compile time; a variable operand is not, and the runtime still answers for that. The
  * two checks read the same production out of the same sentence of LDML 48 Part 9.
  */
-describe('Atlas MessageFormat number operands', () => {
+describe('Equator MessageFormat number operands', () => {
   const diagnosticsFor = (message: string) => {
-    const result = parseAtlasMessage(message);
+    const result = parseMessageSemanticModel(message);
     return result.ok
       ? []
       : result.diagnostics.map(({ code, summary }) => ({ code, summary }));
   };
 
   it('accepts a literal operand that is a number literal', () => {
-    expect(parseAtlasMessage('{42 :number}').ok).toBe(true);
-    expect(parseAtlasMessage('{-1.5e3 :number}').ok).toBe(true);
-    expect(parseAtlasMessage('{0 :integer}').ok).toBe(true);
+    expect(parseMessageSemanticModel('{42 :number}').ok).toBe(true);
+    expect(parseMessageSemanticModel('{-1.5e3 :number}').ok).toBe(true);
+    expect(parseMessageSemanticModel('{0 :integer}').ok).toBe(true);
   });
 
   it('accepts a variable operand, which only the runtime can decide', () => {
-    expect(parseAtlasMessage('{$count :number}').ok).toBe(true);
+    expect(parseMessageSemanticModel('{$count :number}').ok).toBe(true);
   });
 
   it('refuses a literal operand that is not a number', () => {
     const diagnostics = diagnosticsFor('{foo :number}');
-    expect(diagnostics[0]?.code).toBe('ATL1205');
+    expect(diagnostics[0]?.code).toBe('EQ1205');
     expect(diagnostics[0]?.summary).toContain('"foo"');
   });
 
@@ -390,7 +400,7 @@ describe('Atlas MessageFormat number operands', () => {
     ]) {
       const diagnostics = diagnosticsFor(`{${operand} :number}`);
       expect(
-        diagnostics.some(({ code }) => code === 'ATL1205'),
+        diagnostics.some(({ code }) => code === 'EQ1205'),
         `${operand} should be refused as a number operand`,
       ).toBe(true);
     }
@@ -398,12 +408,12 @@ describe('Atlas MessageFormat number operands', () => {
 
   it('refuses a number function written with no operand at all', () => {
     const diagnostics = diagnosticsFor('{:number}');
-    expect(diagnostics[0]?.code).toBe('ATL1205');
+    expect(diagnostics[0]?.code).toBe('EQ1205');
     expect(diagnostics[0]?.summary).toContain('needs an operand');
   });
 
   it('leaves a non-numeric function alone', () => {
-    expect(parseAtlasMessage('{foo :string}').ok).toBe(true);
+    expect(parseMessageSemanticModel('{foo :string}').ok).toBe(true);
   });
 });
 
@@ -413,7 +423,7 @@ describe('Atlas MessageFormat number operands', () => {
  * LDML 48 Part 9 lets a number function's resolved value carry its options into a later annotation,
  * and names one exception: "If the `select` option is set by an implementation-defined type used as
  * an operand, a Bad Option Error is emitted." MessageFormat reports that while formatting and falls
- * back to the catch-all. Atlas refuses the message here instead, for the reason the rest of the
+ * back to the catch-all. Equator refuses the message here instead, for the reason the rest of the
  * `select` handling is here: the value decides which CLDR plural table a target catalog's coverage
  * is checked against, and a translator opening the message has to be able to see which one.
  *
@@ -421,9 +431,9 @@ describe('Atlas MessageFormat number operands', () => {
  * compiled artifact that did not come through this check, and `packages/runtime/test/
  * declaration-values.test.ts` reaches it by assembling one.
  */
-describe('Atlas MessageFormat inherited select', () => {
+describe('Equator MessageFormat inherited select', () => {
   const diagnosticsFor = (message: string) => {
-    const result = parseAtlasMessage(message);
+    const result = parseMessageSemanticModel(message);
     return result.ok
       ? []
       : result.diagnostics.map(({ code, summary }) => ({ code, summary }));
@@ -433,7 +443,7 @@ describe('Atlas MessageFormat inherited select', () => {
     const diagnostics = diagnosticsFor(
       '.local $sel = {1 :integer select=exact}\n.local $bad = {$sel :integer}\n{{{$bad}}}',
     );
-    expect(diagnostics[0]?.code).toBe('ATL1204');
+    expect(diagnostics[0]?.code).toBe('EQ1204');
     expect(diagnostics[0]?.summary).toContain('$sel');
   });
 
@@ -442,7 +452,7 @@ describe('Atlas MessageFormat inherited select', () => {
       diagnosticsFor(
         '.local $sel = {1 :number select=exact}\n.local $same = {$sel}\n.local $bad = {$same :number}\n{{{$bad}}}',
       )[0]?.code,
-    ).toBe('ATL1204');
+    ).toBe('EQ1204');
   });
 
   it('refuses it in the pattern as well as in a declaration', () => {
@@ -450,12 +460,12 @@ describe('Atlas MessageFormat inherited select', () => {
       diagnosticsFor(
         '.local $sel = {1 :integer select=exact}\n{{{$sel :number}}}',
       )[0]?.code,
-    ).toBe('ATL1204');
+    ).toBe('EQ1204');
   });
 
   it('accepts a re-annotation that writes its own select', () => {
     expect(
-      parseAtlasMessage(
+      parseMessageSemanticModel(
         '.local $sel = {1 :integer select=exact}\n.local $ok = {$sel :integer select=plural}\n{{{$ok}}}',
       ).ok,
     ).toBe(true);
@@ -463,7 +473,7 @@ describe('Atlas MessageFormat inherited select', () => {
 
   it('leaves a declaration that never set select alone', () => {
     expect(
-      parseAtlasMessage(
+      parseMessageSemanticModel(
         '.local $n = {1 :integer signDisplay=always}\n.local $m = {$n :offset add=1}\n{{{$m}}}',
       ).ok,
     ).toBe(true);
@@ -473,7 +483,7 @@ describe('Atlas MessageFormat inherited select', () => {
 /**
  * Numeric options, refused where an author can still fix them.
  *
- * LDML 48 Part 9 gives each of the six numeric functions its own option table, and Atlas read one
+ * LDML 48 Part 9 gives each of the six numeric functions its own option table, and Equator read one
  * union of seven names for all of them: `roundingMode`, `roundingPriority`, `roundingIncrement`,
  * `trailingZeroDisplay`, `currencySign` and `:currency`'s `fractionDigits` were parsed, compiled,
  * shipped and ignored. The conformance suite cannot see any of it, it writes none of those names
@@ -481,9 +491,9 @@ describe('Atlas MessageFormat inherited select', () => {
  * a failing case. `packages/runtime/test/message-function-options.test.ts` holds the other
  * half, where the same tables are checked against the two `Intl` constructors that impose them.
  */
-describe('Atlas MessageFormat numeric options', () => {
+describe('Equator MessageFormat numeric options', () => {
   const summaryFor = (message: string): string | undefined => {
-    const result = parseAtlasMessage(message);
+    const result = parseMessageSemanticModel(message);
     return result.ok ? undefined : result.diagnostics[0]?.summary;
   };
 
@@ -560,7 +570,7 @@ describe('Atlas MessageFormat numeric options', () => {
    * the whole point: `Intl.NumberFormat` accepts `usage` and silently ignores it, so a message
    * asking for road distances would print metres to an American reader with nothing to say so.
    */
-  it('refuses the two options Atlas cannot honour rather than ignoring them', () => {
+  it('refuses the two options Equator cannot honour rather than ignoring them', () => {
     expect(
       summaryFor('{1 :currency currency=EUR currencyDisplay=never}'),
     ).toContain('no way to produce it');
@@ -603,8 +613,8 @@ describe('Atlas MessageFormat numeric options', () => {
 
   /**
    * `:percent` discards `select` from its operand rather than reporting it, because it has no
-   * `select` option for an inherited one to have decided anything about. Atlas refused this, which
-   * is a conforming message rejected, and the conformance suite has no case for it either.
+   * `select` option for an inherited one to have decided anything about. Equator refused this,
+   * which is a conforming message rejected, and the conformance suite has no case for it either.
    */
   it('lets a function without a select option inherit one harmlessly', () => {
     expect(
@@ -617,16 +627,16 @@ describe('Atlas MessageFormat numeric options', () => {
 });
 
 /**
- * The behaviour Atlas depends on and does not implement.
+ * The behaviour Equator depends on and does not implement.
  *
- * MF2 `NormalizeKey` compares a variant key in Unicode Normalization Form C, and Atlas's compiled
- * catalogs satisfy it, but not because Atlas does anything. `normalizeVariantKey` reshapes a key
+ * MF2 `NormalizeKey` compares a variant key in Unicode Normalization Form C, and Equator's compiled
+ * catalogs satisfy it, but not because Equator does anything. `normalizeVariantKey` reshapes a key
  * into the semantic model and copies its value through untouched; the normalization is
  * `messageformat`'s parser, a dependency, doing it on the way in.
  *
  * That is fine and it is not written down anywhere, which is the problem. The evaluator carries its
  * own `NormalizeKey` for artifacts it did not compile, and a reader who believed the toolkit
- * normalized could delete it as duplicated work: leaving Atlas's conformance resting entirely on
+ * normalized could delete it as duplicated work: leaving Equator's conformance resting entirely on
  * an undocumented behaviour of a third-party parser, with nothing that would notice if it changed.
  *
  * So the dependency is pinned here rather than assumed. If a future `messageformat` stops
@@ -638,9 +648,9 @@ describe('MessageFormat key normalization', () => {
   const decomposed = 'Ḍ̇';
   const composed = decomposed.normalize('NFC');
 
-  it('is done by the parser, before Atlas sees the key', () => {
+  it('is done by the parser, before Equator sees the key', () => {
     expect(composed).not.toBe(decomposed);
-    const result = parseAtlasMessage(
+    const result = parseMessageSemanticModel(
       `.input {$s :string}\n.match $s\n${decomposed} {{hit}}\n* {{miss}}`,
     );
     expect(result.ok).toBe(true);
@@ -651,7 +661,7 @@ describe('MessageFormat key normalization', () => {
   });
 
   /**
-   * The other half of the claim, that Atlas's own step does *not* normalize, is deliberately not
+   * The other half of the claim, that Equator's own step does *not* normalize, is deliberately not
    * asserted here, because nothing in this package can assert it. A compiled key is NFC either way,
    * so measuring the outcome cannot tell the two layers apart, and the only input that could is one
    * the parser refuses to produce. Every check available from this side would agree by construction.
@@ -665,8 +675,9 @@ describe('MessageFormat key normalization', () => {
  * A `.match` over a function that formats but does not select.
  *
  * MessageFormat requires a *Bad Selector* error here and requires the selector to match nothing but
- * the catch-all. Atlas reported neither: `:currency` and `:unit` reached the evaluator's one numeric
- * resolved value and selected as plain numbers, so `.match {42 :currency currency=EUR} 42 {{keyed}}
+ * the catch-all. Equator reported neither: `:currency` and `:unit` reached the evaluator's one
+ * numeric resolved value and selected as plain numbers, so `.match {42 :currency currency=EUR} 42
+ * {{keyed}}
  * * {{other}}` rendered `keyed`. A variant the standard says is unreachable, chosen silently. The
  * refusal is at parse because which functions select is known before anything runs.
  */
@@ -688,14 +699,14 @@ describe('a selector that cannot select', () => {
   ] as const;
 
   it.each(formattingOnly)('refuses %s as a selector', (label, declaration) => {
-    const result = parseAtlasMessage(
+    const result = parseMessageSemanticModel(
       `${declaration}\n.match $v\n42 {{keyed}}\n* {{other}}`,
     );
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.diagnostics.map(({ code }) => code)).toContain('ATL1206');
+    expect(result.diagnostics.map(({ code }) => code)).toContain('EQ1206');
     const summary = result.diagnostics.find(
-      ({ code }) => code === 'ATL1206',
+      ({ code }) => code === 'EQ1206',
     )?.summary;
     // The author is told which function, which variable, and what a selecting one is.
     expect(summary).toContain(label);
@@ -704,7 +715,7 @@ describe('a selector that cannot select', () => {
   });
 
   it.each(selecting)('accepts %s as a selector', (_label, declaration, key) => {
-    const result = parseAtlasMessage(
+    const result = parseMessageSemanticModel(
       `${declaration}\n.match $v\n${key} {{keyed}}\n* {{other}}`,
     );
     expect(result.ok).toBe(true);
@@ -716,7 +727,7 @@ describe('a selector that cannot select', () => {
    * the function name and nothing else.
    */
   it('follows a chain of declarations to the annotation that made the value', () => {
-    const refused = parseAtlasMessage(
+    const refused = parseMessageSemanticModel(
       [
         '.local $a = {42 :currency currency=EUR}',
         '.local $b = {$a}',
@@ -727,9 +738,9 @@ describe('a selector that cannot select', () => {
     );
     expect(refused.ok).toBe(false);
     if (!refused.ok) {
-      expect(refused.diagnostics.map(({ code }) => code)).toContain('ATL1206');
+      expect(refused.diagnostics.map(({ code }) => code)).toContain('EQ1206');
     }
-    const accepted = parseAtlasMessage(
+    const accepted = parseMessageSemanticModel(
       [
         '.local $a = {42 :number}',
         '.local $b = {$a}',
@@ -745,7 +756,7 @@ describe('a selector that cannot select', () => {
    * An unannotated selector never reaches this rule, and that is worth pinning rather than assuming.
    *
    * `messageformat`'s own data-model validation refuses it first, so every shape below stops at
-   * ATL1202: a bare variable, a local that relays an undeclared one, an unannotated `.input`, and
+   * EQ1202: a bare variable, a local that relays an undeclared one, an unannotated `.input`, and
    * a bare literal. That is why the rule may walk a declaration chain and find no annotating
    * function without deciding anything: by then the message is already refused. The last row is the
    * one that does reach it, and shows the walk is load-bearing rather than defensive.
@@ -765,14 +776,14 @@ describe('a selector that cannot select', () => {
       '.local $b = {|a|}\n.match $b\na {{keyed}}\n* {{other}}',
     ],
   ])('never reaches an unannotated selector: %s', (_label, source) => {
-    const result = parseAtlasMessage(source);
+    const result = parseMessageSemanticModel(source);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.diagnostics.map(({ code }) => code)).toEqual(['ATL1202']);
+    expect(result.diagnostics.map(({ code }) => code)).toEqual(['EQ1202']);
   });
 
   it('reads a registered function from its descriptor rather than its name', () => {
-    const tag = (selects: boolean): AtlasMessageCustomFunction => ({
+    const tag = (selects: boolean): MessageCustomFunction => ({
       name: 'feature:tag',
       selects,
       operandType: 'number',
@@ -781,14 +792,14 @@ describe('a selector that cannot select', () => {
     });
     const source =
       '.local $v = {42 :feature:tag}\n.match $v\n42 {{keyed}}\n* {{other}}';
-    const refused = parseAtlasMessage(source, {
+    const refused = parseMessageSemanticModel(source, {
       customFunctions: [tag(false)],
     });
     expect(refused.ok).toBe(false);
     if (!refused.ok) {
-      expect(refused.diagnostics.map(({ code }) => code)).toContain('ATL1206');
+      expect(refused.diagnostics.map(({ code }) => code)).toContain('EQ1206');
     }
-    const accepted = parseAtlasMessage(source, {
+    const accepted = parseMessageSemanticModel(source, {
       customFunctions: [tag(true)],
     });
     expect(accepted.ok).toBe(true);

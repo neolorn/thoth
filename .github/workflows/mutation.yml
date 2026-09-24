@@ -1,6 +1,6 @@
 # Mutation testing, on request.
 #
-# Deliberately not a stage in `verify`. Atlas already mutation-tests by hand, with 53 declared
+# Deliberately not a stage in `verify`. Equator already mutation-tests by hand, with 53 declared
 # injections across two harnesses taking more than half the gate's stage time, and those are the
 # mutations somebody thought of. This is the general form, and its cost is why it is not automatic:
 # roughly 36,000 mutants across the two packages, against suites that take seconds each.

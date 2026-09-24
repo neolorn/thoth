@@ -1,6 +1,6 @@
 import type { Route, Routes } from '@angular/router';
 
-import type { LocaleUrlPolicy, RouteRuntimeProjection } from '@neolorn/atlas';
+import type { LocaleUrlPolicy, RouteRuntimeProjection } from '@neolorn/equator';
 
 /**
  * Why this module imports nothing at runtime.
@@ -9,7 +9,7 @@ import type { LocaleUrlPolicy, RouteRuntimeProjection } from '@neolorn/atlas';
  * That is deliberate rather than incidental: Angular's own route validation is dead in production
  * builds, `validateConfig` is called only behind `(typeof ngDevMode === 'undefined' || ngDevMode)`
  * at both of its call sites, so a malformed branch ships and surfaces only when someone happens
- * to run a development build. Atlas therefore has to carry the check itself, and a check that can
+ * to run a development build. Equator therefore has to carry the check itself, and a check that can
  * only run inside a bootstrapped application is a check that proves nothing about the production
  * path. Keeping the derivation Angular-free is what lets the check run against the code that ships.
  *
@@ -22,7 +22,7 @@ import type { LocaleUrlPolicy, RouteRuntimeProjection } from '@neolorn/atlas';
 /**
  * A locale branch declines, always, and that is the branch saying so in its own entry.
  *
- * The branches exist to be read, not to be matched. Atlas removes the locale prefix before the
+ * The branches exist to be read, not to be matched. Equator removes the locale prefix before the
  * Router is asked anything, so a prefixed address never reaches one: the canonical layer answers
  * every navigation. That has been true by construction, which is a different thing from being
  * stated: nothing in the table said a branch must not match, so a change that stopped delocalizing
@@ -88,7 +88,7 @@ export interface LocalizedRouteTable {
    */
   readonly branches: readonly Route[];
   /**
-   * `canonical` and `branches` composed in the order Atlas ships.
+   * `canonical` and `branches` composed in the order Equator ships.
    *
    * `readonly Route[]` rather than `Routes`, which is mutable, because the arrays are frozen. A
    * caller handing this to `provideRouter` spreads it: Angular's own signature asks for a mutable
@@ -223,7 +223,7 @@ export function localizedRouteTable(
     // every locale shares one address space, so a second layer would be the same addresses twice.
     // Under `locale-host` the locale is carried by the origin, and one client route config cannot
     // hold two locales' spellings of the same address: that would need a build per origin, which
-    // Atlas does not do.
+    // Equator does not do.
     //
     // Pushing an `unlocalizable-policy` problem here when the projection carries per-locale
     // spellings, for `provideLocalizedRouter` to print as a warning and carry on from, warns about
@@ -312,7 +312,7 @@ export function localizedRouteTable(
 
   // Ordering is a result, not a constraint: both orderings render the canonical branch, because
   // the strategy delocalizes before the Router matches, so a prefixed address never reaches it.
-  // Canonical first is the order Atlas emits; `three-path-equality.spec.ts` boots a Router with
+  // Canonical first is the order Equator emits; `three-path-equality.spec.ts` boots a Router with
   // these branches registered ahead of the application's own routes and asserts every arrival is
   // identical, so a future Angular that makes ordering load-bearing turns this into a visible
   // change rather than a silent one.

@@ -2,7 +2,7 @@
 /**
  * Every vendored normative source is what `standards/sources.lock.json` says it is.
  *
- * `specs/01-standards-profile.spec.md` section 4 is the requirement: every source Atlas derives
+ * `specs/01-standards-profile.spec.md` section 4 is the requirement: every source Equator derives
  * from, or verifies itself against, is recorded with its release, its provenance, its role and a
  * digest, and a vendored one matches that digest byte for byte.
  *

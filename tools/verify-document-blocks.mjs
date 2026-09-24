@@ -7,10 +7,10 @@
  *   compile there.
  * - `” ```yaml excerpt i18n/shell/en-US.yaml ”`: the block is part of that file, checked after the
  *   run rather than written. This is how a section quotes part of a file another section owns, and
- *   how a document shows a file `atlas init` writes. "Part of" is a contiguous run of lines, except
- *   for JSON, where it is a structural subset: Prettier owns the document's formatting and reflows
- *   a JSON block, so comparing text there compares Prettier's line breaks against the writing
- *   command's rather than what the block actually claims.
+ *   how a document shows a file `equator init` writes. "Part of" is a contiguous run of lines,
+ *   except for JSON, where it is a structural subset: Prettier owns the document's formatting and
+ *   reflows a JSON block, so comparing text there compares Prettier's line breaks against the
+ *   writing command's rather than what the block actually claims.
  * - `” ```sh run ”`: the commands are run in the consumer, where they stand.
  * - `” ```sh install ”`, not run, because the packages it names are the ones under test rather
  *   than the ones on the registry. It is checked against the manifest instead: the packages it
@@ -37,7 +37,7 @@
  * selected. Two guides may therefore write one path differently. Two blocks on one guide may not.
  *
  * **The tutorial authors the base.** The scaffold is what `ng new` produced with `src/app/` and
- * `i18n/` removed, and the tutorial runs on it from `atlas init` onward, so everything the
+ * `i18n/` removed, and the tutorial runs on it from `equator init` onward, so everything the
  * application is comes from the one document that claims to build it: the catalogs in both locales,
  * the providers, the route table, the switcher, the rich content, and the spec. It ends at that
  * spec, so what this proves is a working application rather than only a build.
@@ -70,9 +70,9 @@ const docsRoot = resolve(workspaceRoot, 'docs');
  * like a README that was never in the list.
  */
 const README_GROUP = [
-  ['atlas', 'README.md'],
-  ['@neolorn/atlas', 'packages/runtime/README.md'],
-  ['@neolorn/atlas-toolkit', 'packages/toolkit/README.md'],
+  ['equator', 'README.md'],
+  ['@neolorn/equator', 'packages/runtime/README.md'],
+  ['@neolorn/equator-toolkit', 'packages/toolkit/README.md'],
 ];
 
 /**
@@ -291,8 +291,8 @@ async function pointAtTheDistributables(root) {
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
   const locate = (output) =>
     `file:${relative(root, resolve(workspaceRoot, output)).replaceAll('\\', '/')}`;
-  manifest.dependencies['@neolorn/atlas'] = locate('dist/runtime');
-  manifest.devDependencies['@neolorn/atlas-toolkit'] = locate('dist/toolkit');
+  manifest.dependencies['@neolorn/equator'] = locate('dist/runtime');
+  manifest.devDependencies['@neolorn/equator-toolkit'] = locate('dist/toolkit');
   await writeFile(
     manifestPath,
     `${JSON.stringify(manifest, null, 2)}\n`,
@@ -421,8 +421,9 @@ async function resetTo(root, tree) {
 /**
  * The pages that start from the installed scaffold rather than from the base.
  *
- * One page is on this list and it is the tutorial, whose first command is `atlas init`. Everything
- * else starts from what the READMEs built, which is what a reader of a guide already has.
+ * One page is on this list and it is the tutorial, whose first command is `equator init`.
+ * Everything else starts from what the READMEs built, which is what a reader of a guide already
+ * has.
  */
 const STARTS_FROM_THE_SCAFFOLD = new Set(['docs/tutorial.md']);
 

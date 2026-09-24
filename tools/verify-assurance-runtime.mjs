@@ -126,7 +126,7 @@ const injections = Object.freeze([
     // Named to the browser gate, because no other suite can see it. A locale switch has to happen
     // in an engine that actually scrolls, against an application that asked the Router to restore
     // scroll position: otherwise nothing moves, the hook restores what was never lost, and the
-    // assertion passes whether Atlas acts or not. That is what this injection reported as an
+    // assertion passes whether Equator acts or not. That is what this injection reported as an
     // unguarded gap until the feature lab enabled `scrollPositionRestoration` and the restore
     // moved behind `NavigationEnd`.
     suite: 'browser',
@@ -145,7 +145,7 @@ const injections = Object.freeze([
   {
     id: 'locale-announcement-not-published',
     invariant:
-      'A locale change is announced into a live region Atlas owns, with the application rendering nothing.',
+      'A locale change is announced into a live region Equator owns, with the application rendering nothing.',
     source: 'packages/runtime/src/angular.ts',
     find: `            new LocaleAnnouncementCommitHook(
               document,
@@ -306,7 +306,7 @@ const injections = Object.freeze([
   {
     id: 'document-locale-withdrawal-ignored',
     invariant:
-      '`withoutDocumentLocale()` actually stops Atlas writing to a document it was told it does not own.',
+      '`withoutDocumentLocale()` actually stops Equator writing to a document it was told it does not own.',
     // The other half of `document-locale-not-maintained`, and a separate injection because the two
     // fail in opposite directions: that one breaks the default, this one breaks the withdrawal, and
     // a suite that only asserts the default passes with the withdrawal welded shut. Withdrawal is
@@ -417,7 +417,7 @@ function suitePasses(suite) {
     workspaceRoot,
     'The workspace did not build with the injection applied, so nothing was proven. A `TS6133 ' +
       'is declared but its value is never read` here is this file to fix, not the runtime: ' +
-      'Atlas compiles with `noUnusedLocals` and `noUnusedParameters`, so an injection that ' +
+      'Equator compiles with `noUnusedLocals` and `noUnusedParameters`, so an injection that ' +
       'removes the only reader of a local or a parameter cannot compile. Reference it with ' +
       '`void`, the way the injections above do, or widen the replacement to take the reader ' +
       'out with it.',
@@ -429,7 +429,7 @@ function suitePasses(suite) {
 
   // The browser gate serves the consumer's already-built Angular bundle. Refreshing the package in
   // `node_modules` does not rebuild that bundle, so without this the browser would run the old
-  // Atlas and every browser-named injection would report itself unguarded. Re-materializing
+  // Equator and every browser-named injection would report itself unguarded. Re-materializing
   // installs the injected build and rebuilds the application.
   //
   // Materializing is asserted rather than folded into the `&&` chain, and the reason is a false

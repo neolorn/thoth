@@ -33,8 +33,8 @@ Pass handles, not text:
       }),
 ```
 
-`atlas generate` reports `ATL1310` for an application runtime that composes none, and `atlas init`
-names it as one of the two things it leaves for you to write.
+`equator generate` reports `EQ1310` for an application runtime that composes none, and
+`equator init` names it as one of the two things it leaves for you to write.
 
 `retryLabel` is optional and is what makes the retry control appear. Both handles are compiled into
 the recovery payload, which is loaded independently of the catalogs, so the wording arrives in the

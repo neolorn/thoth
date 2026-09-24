@@ -18,24 +18,24 @@ import {
 } from 'jsonc-parser';
 
 import {
-  digestAtlasCanonicalJson,
-  stringifyAtlasCanonicalJson,
-  type AtlasCanonicalJsonValue,
+  digestCanonicalJson,
+  stringifyCanonicalJson,
+  type CanonicalJsonValue,
 } from './canonical-json.js';
 import {
-  atlasDiagnostic,
-  atlasFailure,
-  atlasSourceSpan,
-  atlasSuccess,
-  type AtlasResult,
+  toolkitDiagnostic,
+  toolkitFailure,
+  spanAt,
+  toolkitSuccess,
+  type ToolkitResult,
 } from './diagnostics.js';
-import { digestAtlasBytes } from './output-plan.js';
+import { digestBytes } from './output-plan.js';
 import {
-  ATLAS_TOOLKIT_EVENT_CODES,
-  emitAtlasToolkitEvent,
-  type AtlasToolkitObservabilityOptions,
+  TOOLKIT_EVENT_CODES,
+  emitToolkitEvent,
+  type ToolkitObservabilityOptions,
 } from './observability.js';
-import { ATLAS_RESOURCE_LIMITS } from './resource-limits.js';
+import { RESOURCE_LIMITS } from './resource-limits.js';
 import { compareCodePoint } from './sorted-records.js';
 import { constructJsonValue, duplicateJsonKeys } from './json-tree.js';
 
@@ -44,9 +44,9 @@ import { constructJsonValue, duplicateJsonKeys } from './json-tree.js';
  *
  * A refactor is a rename or a reorganization somebody asked for. A migration moves a project from
  * one version of a format to another. They are applied the same way and recorded apart, so a
- * history says which changes were the team's and which were Atlas's.
+ * history says which changes were the team's and which were Equator's.
  */
-export type AtlasAuthoredChangeKind = 'refactor' | 'migration';
+export type AuthoredChangeKind = 'refactor' | 'migration';
 
 /**
  * One file a plan means to change, as it is written down.
@@ -54,7 +54,7 @@ export type AtlasAuthoredChangeKind = 'refactor' | 'migration';
  * Both texts are optional, and which are present says what the change is: no `before` creates the
  * file, no `after` deletes it, and both replace it.
  */
-export interface AtlasAuthoredFileChangeInput {
+export interface AuthoredFileChangeInput {
   /** Which file, as a path relative to the project root. */
   readonly path: string;
   /** What the file must hold for the change to apply. Absent when the file is being created. */
@@ -70,7 +70,7 @@ export interface AtlasAuthoredFileChangeInput {
  * Applying checks the digest rather than the text, so a plan made against a file somebody has since
  * edited is refused rather than overwriting their work.
  */
-export interface AtlasAuthoredFileChange extends AtlasAuthoredFileChangeInput {
+export interface AuthoredFileChange extends AuthoredFileChangeInput {
   /** A digest of the expected content. Absent when the file is being created. */
   readonly beforeDigest?: string;
   /** A digest of the intended content. Absent when the file is being deleted. */
@@ -83,24 +83,24 @@ export interface AtlasAuthoredFileChange extends AtlasAuthoredFileChangeInput {
  * Producing a change plan and applying it are separate steps on purpose: one can be read, reviewed
  * and committed, and applying it is all or nothing rather than a rewrite that stopped halfway.
  */
-export interface AtlasAuthoredChangePlan {
+export interface AuthoredChangePlan {
   /** The version stamp of the change-plan shape. */
-  readonly profile: 'atlas-authored-change-plan/1';
+  readonly profile: 'equator-authored-change-plan/1';
   /** What this change is, as a stable name a history can be indexed by. */
   readonly id: string;
   /** Whether this is a team's own change or a move between versions. */
-  readonly kind: AtlasAuthoredChangeKind;
+  readonly kind: AuthoredChangeKind;
   /** The files to change, sorted by path. */
-  readonly changes: readonly AtlasAuthoredFileChange[];
+  readonly changes: readonly AuthoredFileChange[];
   /** Whether the generated tree has to be rebuilt afterwards. */
   readonly regenerate: boolean;
   /** A digest of the whole plan, recorded when it is applied so it is not applied twice. */
   readonly digest: string;
 }
 
-export interface AtlasAuthoredChangePlanParseOptions {
+export interface AuthoredChangePlanParseOptions {
   readonly sourcePath?: string;
-  readonly kind?: AtlasAuthoredChangeKind;
+  readonly kind?: AuthoredChangeKind;
 }
 
 /**
@@ -109,7 +109,7 @@ export interface AtlasAuthoredChangePlanParseOptions {
  * For a tool that knows how to bring a project forward and wants the move recorded the same way
  * every other authored change is.
  */
-export interface AtlasMigrationPlanRequest {
+export interface MigrationPlanRequest {
   /** What this migration is called, which becomes part of the change plan's identity. */
   readonly id: string;
   /** Which part of the project is moving. */
@@ -124,16 +124,16 @@ export interface AtlasMigrationPlanRequest {
   /** The version being moved to. */
   readonly toVersion: string;
   /** The files to change. */
-  readonly changes: readonly AtlasAuthoredFileChangeInput[];
+  readonly changes: readonly AuthoredFileChangeInput[];
 }
 
-export interface AtlasApplyAuthoredPlanOptions extends AtlasToolkitObservabilityOptions {
+export interface ApplyAuthoredPlanOptions extends ToolkitObservabilityOptions {
   readonly ownerRoot: string;
-  readonly plan: AtlasAuthoredChangePlan;
+  readonly plan: AuthoredChangePlan;
   readonly dryRun?: boolean;
 }
 
-export interface AtlasApplyAuthoredPlanResult {
+export interface ApplyAuthoredPlanResult {
   readonly changed: boolean;
   readonly files: readonly string[];
   readonly planDigest: string;
@@ -163,8 +163,8 @@ function jsonTreeWithinLimits(root: JsonNode): boolean {
     if (current === undefined) break;
     nodes += 1;
     if (
-      nodes > ATLAS_RESOURCE_LIMITS.jsonNodes ||
-      current.depth > ATLAS_RESOURCE_LIMITS.jsonDepth
+      nodes > RESOURCE_LIMITS.jsonNodes ||
+      current.depth > RESOURCE_LIMITS.jsonDepth
     ) {
       return false;
     }
@@ -195,14 +195,14 @@ function validDigest(value: unknown): value is string {
   return typeof value === 'string' && /^sha256-[A-Za-z0-9_-]{43}$/u.test(value);
 }
 
-function invalidPlan(summary: string): AtlasResult<AtlasAuthoredChangePlan> {
-  return atlasFailure([atlasDiagnostic('ATL1805', summary)]);
+function invalidPlan(summary: string): ToolkitResult<AuthoredChangePlan> {
+  return toolkitFailure([toolkitDiagnostic('EQ1805', summary)]);
 }
 
-function reconstructAtlasAuthoredChangePlan(
+function reconstructAuthoredChangePlan(
   value: unknown,
-  expectedKind?: AtlasAuthoredChangeKind,
-): AtlasResult<AtlasAuthoredChangePlan> {
+  expectedKind?: AuthoredChangeKind,
+): ToolkitResult<AuthoredChangePlan> {
   if (
     !isRecord(value) ||
     !exactKeys(value, [
@@ -213,26 +213,26 @@ function reconstructAtlasAuthoredChangePlan(
       'regenerate',
       'digest',
     ]) ||
-    value['profile'] !== 'atlas-authored-change-plan/1' ||
+    value['profile'] !== 'equator-authored-change-plan/1' ||
     typeof value['id'] !== 'string' ||
     (value['kind'] !== 'refactor' && value['kind'] !== 'migration') ||
     (expectedKind !== undefined && value['kind'] !== expectedKind) ||
     !Array.isArray(value['changes']) ||
-    value['changes'].length > ATLAS_RESOURCE_LIMITS.authoredChangePlanChanges ||
+    value['changes'].length > RESOURCE_LIMITS.authoredChangePlanChanges ||
     value['regenerate'] !== true ||
     !validDigest(value['digest'])
   ) {
     return invalidPlan(
       expectedKind === undefined
-        ? 'Atlas authored change plan must exactly match atlas-authored-change-plan/1.'
-        : `Atlas authored change plan must exactly match atlas-authored-change-plan/1 with kind ${JSON.stringify(expectedKind)}.`,
+        ? 'Equator authored change plan must exactly match equator-authored-change-plan/1.'
+        : `Equator authored change plan must exactly match equator-authored-change-plan/1 with kind ${JSON.stringify(expectedKind)}.`,
     );
   }
-  const changes: AtlasAuthoredFileChangeInput[] = [];
+  const changes: AuthoredFileChangeInput[] = [];
   for (const rawChange of value['changes']) {
     if (!isRecord(rawChange)) {
       return invalidPlan(
-        'Atlas authored change plan contains an invalid file operation.',
+        'Equator authored change plan contains an invalid file operation.',
       );
     }
     const hasBefore = Object.hasOwn(rawChange, 'before');
@@ -258,7 +258,7 @@ function reconstructAtlasAuthoredChangePlan(
           !validDigest(rawChange['afterDigest'])))
     ) {
       return invalidPlan(
-        'Atlas authored change plan contains an invalid file operation.',
+        'Equator authored change plan contains an invalid file operation.',
       );
     }
     changes.push(
@@ -269,7 +269,7 @@ function reconstructAtlasAuthoredChangePlan(
       }),
     );
   }
-  const reconstructed = createAtlasAuthoredChangePlan(
+  const reconstructed = createAuthoredChangePlan(
     value['id'],
     value['kind'],
     changes,
@@ -277,33 +277,32 @@ function reconstructAtlasAuthoredChangePlan(
   if (!reconstructed.ok) return reconstructed;
   try {
     if (
-      stringifyAtlasCanonicalJson(value as AtlasCanonicalJsonValue) !==
-      stringifyAtlasCanonicalJson(
-        reconstructed.value as unknown as AtlasCanonicalJsonValue,
+      stringifyCanonicalJson(value as CanonicalJsonValue) !==
+      stringifyCanonicalJson(
+        reconstructed.value as unknown as CanonicalJsonValue,
       )
     ) {
       return invalidPlan(
-        'Atlas authored change plan content or digest does not match its reconstructed plan.',
+        'Equator authored change plan content or digest does not match its reconstructed plan.',
       );
     }
   } catch {
     return invalidPlan(
-      'Atlas authored change plan contains invalid Unicode or noncanonical content.',
+      'Equator authored change plan contains invalid Unicode or noncanonical content.',
     );
   }
   return reconstructed;
 }
 
-export function parseAtlasAuthoredChangePlan(
+export function parseAuthoredChangePlan(
   source: string,
-  options: AtlasAuthoredChangePlanParseOptions = {},
-): AtlasResult<AtlasAuthoredChangePlan> {
+  options: AuthoredChangePlanParseOptions = {},
+): ToolkitResult<AuthoredChangePlan> {
   if (
-    Buffer.byteLength(source, 'utf8') >
-    ATLAS_RESOURCE_LIMITS.authoredChangePlanBytes
+    Buffer.byteLength(source, 'utf8') > RESOURCE_LIMITS.authoredChangePlanBytes
   ) {
     return invalidPlan(
-      `Atlas authored change plan exceeds the ${ATLAS_RESOURCE_LIMITS.authoredChangePlanBytes}-byte implementation ceiling.`,
+      `Equator authored change plan exceeds the ${RESOURCE_LIMITS.authoredChangePlanBytes}-byte implementation ceiling.`,
     );
   }
   const parseErrors: ParseError[] = [];
@@ -314,11 +313,11 @@ export function parseAtlasAuthoredChangePlan(
   });
   if (parseErrors.length > 0 || root === undefined) {
     const diagnostics = parseErrors.map((error) =>
-      atlasDiagnostic(
-        'ATL1805',
-        `Atlas authored change plan contains invalid JSON: ${printParseErrorCode(error.error)}.`,
+      toolkitDiagnostic(
+        'EQ1805',
+        `Equator authored change plan contains invalid JSON: ${printParseErrorCode(error.error)}.`,
         {
-          span: atlasSourceSpan(
+          span: spanAt(
             source,
             error.offset,
             Math.max(1, error.length),
@@ -329,60 +328,56 @@ export function parseAtlasAuthoredChangePlan(
     );
     if (diagnostics.length === 0) {
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1805',
-          'Atlas authored change plan must contain one JSON value.',
+        toolkitDiagnostic(
+          'EQ1805',
+          'Equator authored change plan must contain one JSON value.',
         ),
       );
     }
-    return atlasFailure(diagnostics);
+    return toolkitFailure(diagnostics);
   }
   if (!jsonTreeWithinLimits(root)) {
     return invalidPlan(
-      `Atlas authored change plan exceeds the ${ATLAS_RESOURCE_LIMITS.jsonDepth}-depth or ${ATLAS_RESOURCE_LIMITS.jsonNodes}-node JSON implementation ceiling.`,
+      `Equator authored change plan exceeds the ${RESOURCE_LIMITS.jsonDepth}-depth or ${RESOURCE_LIMITS.jsonNodes}-node JSON implementation ceiling.`,
     );
   }
   const duplicates = duplicateJsonKeys(source, root, options.sourcePath, {
-    code: 'ATL1805',
+    code: 'EQ1805',
     summary: (key) =>
-      `Atlas authored change plan contains the duplicate key ${JSON.stringify(key)}.`,
+      `Equator authored change plan contains the duplicate key ${JSON.stringify(key)}.`,
   });
-  if (duplicates.length > 0) return atlasFailure(duplicates);
-  return reconstructAtlasAuthoredChangePlan(
-    constructJsonValue(root),
-    options.kind,
-  );
+  if (duplicates.length > 0) return toolkitFailure(duplicates);
+  return reconstructAuthoredChangePlan(constructJsonValue(root), options.kind);
 }
 
-export function createAtlasAuthoredChangePlan(
+export function createAuthoredChangePlan(
   id: string,
-  kind: AtlasAuthoredChangeKind,
-  changes: readonly AtlasAuthoredFileChangeInput[],
-): AtlasResult<AtlasAuthoredChangePlan> {
-  if (changes.length > ATLAS_RESOURCE_LIMITS.authoredChangePlanChanges) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1805',
-        `Authored change plan exceeds the ${ATLAS_RESOURCE_LIMITS.authoredChangePlanChanges}-operation implementation ceiling.`,
+  kind: AuthoredChangeKind,
+  changes: readonly AuthoredFileChangeInput[],
+): ToolkitResult<AuthoredChangePlan> {
+  if (changes.length > RESOURCE_LIMITS.authoredChangePlanChanges) {
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1805',
+        `Authored change plan exceeds the ${RESOURCE_LIMITS.authoredChangePlanChanges}-operation implementation ceiling.`,
       ),
     ]);
   }
   if (!/^[a-z0-9][a-z0-9._/-]{0,127}$/u.test(id)) {
-    return atlasFailure([
-      atlasDiagnostic('ATL1805', 'Authored change plan identity is invalid.'),
+    return toolkitFailure([
+      toolkitDiagnostic('EQ1805', 'Authored change plan identity is invalid.'),
     ]);
   }
-  const normalized: AtlasAuthoredFileChange[] = [];
+  const normalized: AuthoredFileChange[] = [];
   const paths = new Set<string>();
   for (const change of changes) {
     try {
-      if (change.before !== undefined)
-        stringifyAtlasCanonicalJson(change.before);
-      if (change.after !== undefined) stringifyAtlasCanonicalJson(change.after);
+      if (change.before !== undefined) stringifyCanonicalJson(change.before);
+      if (change.after !== undefined) stringifyCanonicalJson(change.after);
     } catch {
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1805',
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1805',
           'Authored change plan contains invalid Unicode file content.',
         ),
       ]);
@@ -393,9 +388,9 @@ export function createAtlasAuthoredChangePlan(
       change.before === change.after ||
       (change.before === undefined && change.after === undefined)
     ) {
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1805',
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1805',
           'Authored change plan contains an invalid, duplicate, or unchanged file operation.',
         ),
       ]);
@@ -408,19 +403,19 @@ export function createAtlasAuthoredChangePlan(
           ? {}
           : {
               before: change.before,
-              beforeDigest: digestAtlasBytes(change.before),
+              beforeDigest: digestBytes(change.before),
             }),
         ...(change.after === undefined
           ? {}
           : {
               after: change.after,
-              afterDigest: digestAtlasBytes(change.after),
+              afterDigest: digestBytes(change.after),
             }),
       }),
     );
   }
   normalized.sort((left, right) => compareCodePoint(left.path, right.path));
-  const digest = digestAtlasCanonicalJson('atlas-authored-change-plan/1', {
+  const digest = digestCanonicalJson('equator-authored-change-plan/1', {
     id,
     kind,
     changes: normalized.map(({ path, beforeDigest, afterDigest }) => ({
@@ -430,7 +425,7 @@ export function createAtlasAuthoredChangePlan(
     })),
   });
   const plan = Object.freeze({
-    profile: 'atlas-authored-change-plan/1' as const,
+    profile: 'equator-authored-change-plan/1' as const,
     id,
     kind,
     changes: Object.freeze(normalized),
@@ -439,16 +434,16 @@ export function createAtlasAuthoredChangePlan(
   });
   if (
     Buffer.byteLength(JSON.stringify(plan), 'utf8') >
-    ATLAS_RESOURCE_LIMITS.authoredChangePlanBytes
+    RESOURCE_LIMITS.authoredChangePlanBytes
   ) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1805',
-        `Authored change plan exceeds the ${ATLAS_RESOURCE_LIMITS.authoredChangePlanBytes}-byte implementation ceiling.`,
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1805',
+        `Authored change plan exceeds the ${RESOURCE_LIMITS.authoredChangePlanBytes}-byte implementation ceiling.`,
       ),
     ]);
   }
-  return atlasSuccess(plan);
+  return toolkitSuccess(plan);
 }
 
 /**
@@ -461,22 +456,22 @@ export function createAtlasAuthoredChangePlan(
  * Fails for versions that are not bounded identifiers or are the same as each other, and for a
  * change set that is malformed or exceeds the ceilings. Applying a change plan is a separate step.
  */
-export function createAtlasMigrationPlan(
-  request: AtlasMigrationPlanRequest,
-): AtlasResult<AtlasAuthoredChangePlan> {
+export function createMigrationPlan(
+  request: MigrationPlanRequest,
+): ToolkitResult<AuthoredChangePlan> {
   if (
     !/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/u.test(request.fromVersion) ||
     !/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/u.test(request.toVersion) ||
     request.fromVersion === request.toVersion
   ) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1805',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1805',
         'Migration versions must be distinct bounded protocol identifiers.',
       ),
     ]);
   }
-  return createAtlasAuthoredChangePlan(
+  return createAuthoredChangePlan(
     `${request.domain}/${request.fromVersion}-to-${request.toVersion}/${request.id}`,
     'migration',
     request.changes,
@@ -537,7 +532,7 @@ async function writeExclusive(path: string, contents: string): Promise<void> {
 }
 
 interface PublicationOperation {
-  readonly change: AtlasAuthoredFileChange;
+  readonly change: AuthoredFileChange;
   readonly destination: string;
   readonly temporary?: string;
   readonly backup: string;
@@ -545,10 +540,10 @@ interface PublicationOperation {
   backedUp: boolean;
 }
 
-async function applyAtlasAuthoredChangePlanCore(
-  options: AtlasApplyAuthoredPlanOptions,
-): Promise<AtlasResult<AtlasApplyAuthoredPlanResult>> {
-  const admitted = reconstructAtlasAuthoredChangePlan(options.plan);
+async function applyAuthoredChangePlanCore(
+  options: ApplyAuthoredPlanOptions,
+): Promise<ToolkitResult<ApplyAuthoredPlanResult>> {
+  const admitted = reconstructAuthoredChangePlan(options.plan);
   if (!admitted.ok) return admitted;
   const plan = admitted.value;
   const ownerRoot = resolve(options.ownerRoot);
@@ -558,15 +553,15 @@ async function applyAtlasAuthoredChangePlanCore(
     !ownerMetadata.isDirectory() ||
     ownerMetadata.isSymbolicLink()
   ) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1602',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1602',
         'Authored transaction owner must be an ordinary directory.',
       ),
     ]);
   }
   const pending: Array<{
-    readonly change: AtlasAuthoredFileChange;
+    readonly change: AuthoredFileChange;
     readonly destination: string;
   }> = [];
   try {
@@ -597,15 +592,15 @@ async function applyAtlasAuthoredChangePlanCore(
       pending.push({ change, destination });
     }
   } catch (error) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1602',
-        `Atlas refused the authored transaction before mutation: ${error instanceof Error ? error.message : String(error)}`,
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1602',
+        `Equator refused the authored transaction before mutation: ${error instanceof Error ? error.message : String(error)}`,
       ),
     ]);
   }
   if (options.dryRun === true || pending.length === 0) {
-    return atlasSuccess(
+    return toolkitSuccess(
       Object.freeze({
         changed: pending.length > 0,
         files: Object.freeze(pending.map(({ change }) => change.path)),
@@ -614,7 +609,7 @@ async function applyAtlasAuthoredChangePlanCore(
     );
   }
 
-  const lockPath = resolve(ownerRoot, '.atlas-authoring.lock');
+  const lockPath = resolve(ownerRoot, '.equator-authoring.lock');
   let lockHandle: Awaited<ReturnType<typeof open>> | undefined;
   const transactionId = randomBytes(12).toString('hex');
   const operations: PublicationOperation[] = [];
@@ -623,7 +618,7 @@ async function applyAtlasAuthoredChangePlanCore(
     for (const item of pending) {
       await mkdir(dirname(item.destination), { recursive: true });
       await assertUnlinkedPath(ownerRoot, item.destination);
-      const suffix = `.atlas-${transactionId}`;
+      const suffix = `.equator-${transactionId}`;
       const temporary =
         item.change.after === undefined
           ? undefined
@@ -653,7 +648,7 @@ async function applyAtlasAuthoredChangePlanCore(
     for (const operation of operations) {
       if (operation.backedUp) await unlink(operation.backup);
     }
-    return atlasSuccess(
+    return toolkitSuccess(
       Object.freeze({
         changed: true,
         files: Object.freeze(pending.map(({ change }) => change.path)),
@@ -679,12 +674,12 @@ async function applyAtlasAuthoredChangePlanCore(
         recovered = false;
       }
     }
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1602',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1602',
         recovered
-          ? `Atlas authored transaction failed and restored its prior complete state: ${error instanceof Error ? error.message : String(error)}`
-          : 'Atlas authored transaction failed and automatic recovery could not be completed safely.',
+          ? `Equator authored transaction failed and restored its prior complete state: ${error instanceof Error ? error.message : String(error)}`
+          : 'Equator authored transaction failed and automatic recovery could not be completed safely.',
       ),
     ]);
   } finally {
@@ -695,38 +690,38 @@ async function applyAtlasAuthoredChangePlanCore(
   }
 }
 
-export async function applyAtlasAuthoredChangePlan(
-  options: AtlasApplyAuthoredPlanOptions,
-): Promise<AtlasResult<AtlasApplyAuthoredPlanResult>> {
+export async function applyAuthoredChangePlan(
+  options: ApplyAuthoredPlanOptions,
+): Promise<ToolkitResult<ApplyAuthoredPlanResult>> {
   const sink = options.observability;
-  if (sink === undefined) return applyAtlasAuthoredChangePlanCore(options);
-  emitAtlasToolkitEvent(sink, {
-    code: ATLAS_TOOLKIT_EVENT_CODES.migration,
+  if (sink === undefined) return applyAuthoredChangePlanCore(options);
+  emitToolkitEvent(sink, {
+    code: TOOLKIT_EVENT_CODES.migration,
     phase: 'migration',
     status: 'started',
   });
-  let result: AtlasResult<AtlasApplyAuthoredPlanResult>;
+  let result: ToolkitResult<ApplyAuthoredPlanResult>;
   try {
-    result = await applyAtlasAuthoredChangePlanCore(options);
+    result = await applyAuthoredChangePlanCore(options);
   } catch (error) {
-    emitAtlasToolkitEvent(sink, {
-      code: ATLAS_TOOLKIT_EVENT_CODES.migration,
+    emitToolkitEvent(sink, {
+      code: TOOLKIT_EVENT_CODES.migration,
       phase: 'migration',
       status: 'failed',
     });
     throw error;
   }
   if (result.ok) {
-    emitAtlasToolkitEvent(sink, {
-      code: ATLAS_TOOLKIT_EVENT_CODES.migration,
+    emitToolkitEvent(sink, {
+      code: TOOLKIT_EVENT_CODES.migration,
       phase: 'migration',
       status: result.value.changed ? 'succeeded' : 'unchanged',
       count: result.value.files.length,
     });
   } else {
     const diagnosticCode = result.diagnostics[0]?.code;
-    emitAtlasToolkitEvent(sink, {
-      code: ATLAS_TOOLKIT_EVENT_CODES.migration,
+    emitToolkitEvent(sink, {
+      code: TOOLKIT_EVENT_CODES.migration,
       phase: 'migration',
       status: 'failed',
       ...(diagnosticCode === undefined ? {} : { diagnosticCode }),

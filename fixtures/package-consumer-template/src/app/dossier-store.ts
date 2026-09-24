@@ -10,8 +10,8 @@ import { Injectable } from '@angular/core';
  * reason `LocalizedRouteParameters` exists.
  *
  * Deliberately keyed by every spelling, because that is what a real store does: the address is the
- * lookup key, and `/ar-eg/dossiers/ملف-أطلس` has to find the same record as
- * `/en-us/dossiers/atlas-dossier`.
+ * lookup key, and `/ar-eg/dossiers/ملف` has to find the same record as
+ * `/en-us/dossiers/dossier`.
  */
 export interface FeatureDossier {
   readonly entityId: string;
@@ -20,10 +20,10 @@ export interface FeatureDossier {
 }
 
 const DOSSIER: FeatureDossier = Object.freeze({
-  entityId: 'atlas-dossier',
+  entityId: 'dossier',
   slugs: Object.freeze({
-    'en-US': 'atlas-dossier',
-    'ar-EG': 'ملف-أطلس',
+    'en-US': 'dossier',
+    'ar-EG': 'ملف',
   }),
 });
 

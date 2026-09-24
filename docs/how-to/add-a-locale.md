@@ -6,13 +6,13 @@ inherits from.
 
 ## Before you begin
 
-You need a project that `atlas init` has set up.
+You need a project that `equator init` has set up.
 
 ## Declare the locale
 
-`atlas.config.json` holds the locale set:
+`equator.config.json` holds the locale set:
 
-```json excerpt atlas.config.json
+```json excerpt equator.config.json
 {
   "sourceLocale": "en-US",
   "defaultLocale": "en-US",
@@ -39,8 +39,8 @@ the source catalog. Writing one is
 ## Compile and check
 
 ```text
-npx atlas generate
-npx atlas check --require-complete
+npx equator generate
+npx equator check --require-complete
 ```
 
 `--require-complete` fails while any scope is missing the locale, any message is missing a plural
@@ -50,7 +50,7 @@ changed. Ship the locale before its catalogs are finished with an `inProgress` e
 
 ## Add a source of your own
 
-Atlas asks four sources for a visitor's locale, in a fixed order, and takes the first answer: the
+Equator asks four sources for a visitor's locale, in a fixed order, and takes the first answer: the
 address, a persisted choice, `Accept-Language`, then `defaultLocale`. `withLocaleSources` inserts
 your own source into that order, for something the list cannot know: an account setting, a tenant's
 declared language, a value in your session.

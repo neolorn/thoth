@@ -5,14 +5,15 @@ import { defineConfig } from 'vitest/config';
 /**
  * Two aliases, and the rule that decides which specifiers may have one.
  *
- * `@neolorn/atlas/core` and `@neolorn/atlas/http` are real published entry points, so the package's
- * own sources import them by those specifiers rather than reaching across directories, which is
- * what keeps each compiled into exactly one bundle. Under vitest there is no published package to
- * resolve them against, so each is mapped to the source its entry point is built from. The testing
- * entry point's server seat imports the request handler that way, because a seat compiled around a
- * second copy of it would be answering through something other than what a deployment installs.
+ * `@neolorn/equator/core` and `@neolorn/equator/http` are real published entry points, so the
+ * package's own sources import them by those specifiers rather than reaching across directories,
+ * which is what keeps each compiled into exactly one bundle. Under vitest there is no published
+ * package to resolve them against, so each is mapped to the source its entry point is built from.
+ * The testing entry point's server seat imports the request handler that way, because a seat
+ * compiled around a second copy of it would be answering through something other than what a
+ * deployment installs.
  *
- * The primary is deliberately *not* aliased. An earlier attempt to alias `@neolorn/atlas` to
+ * The primary is deliberately *not* aliased. An earlier attempt to alias `@neolorn/equator` to
  * `src/public-api.ts` threw `The injectable 'PlatformLocation' needs to be compiled using the JIT
  * compiler`, which was not a configuration problem to work around but the finding that started
  * this step: the primary cannot be loaded outside an Angular application. `core` and `http` import
@@ -54,10 +55,10 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@neolorn/atlas/core': fileURLToPath(
+      '@neolorn/equator/core': fileURLToPath(
         new URL('./packages/runtime/core/src/public-api.ts', import.meta.url),
       ),
-      '@neolorn/atlas/http': fileURLToPath(
+      '@neolorn/equator/http': fileURLToPath(
         new URL('./packages/runtime/http/src/public-api.ts', import.meta.url),
       ),
     },

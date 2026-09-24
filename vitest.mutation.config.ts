@@ -12,7 +12,7 @@ import shared from './vitest.config';
  * weekly job weekly.
  *
  * It is also what the score means. A mutant that survives here survived *these* suites, and the
- * report is read as a list of places the fast suites do not look, not as a claim about Atlas's
+ * report is read as a list of places the fast suites do not look, not as a claim about Equator's
  * coverage overall, which the consumer, browser and injection gates carry and this cannot see.
  */
 export default mergeConfig(shared, {

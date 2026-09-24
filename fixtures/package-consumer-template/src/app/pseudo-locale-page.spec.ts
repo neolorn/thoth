@@ -9,11 +9,11 @@ import {
   LocalizedMessage,
   LocalizePipe,
   withRouting,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import {
   provideLocalizationTesting,
   renderedText,
-} from '@neolorn/atlas/testing';
+} from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -21,13 +21,13 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
 import { messages } from '#i18n/shell';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
 /**
- * A page under a pseudo-locale, and the string that did not go through Atlas.
+ * A page under a pseudo-locale, and the string that did not go through Equator.
  *
- * The catalog under test is the one `atlas generate --pseudo` wrote. It is loaded through the
+ * The catalog under test is the one `equator generate --pseudo` wrote. It is loaded through the
  * application's own generated `catalogLoaders`, switched to with an ordinary `changeLocale`, and
  * nothing here tells the runtime that a pseudo-locale is involved, because nothing can. That is
  * the design: the transform ran at build time and what the runtime received is a target catalog.
@@ -35,12 +35,12 @@ import { routePolicy, appRouteProjection } from './localization.routes';
  * **The hardcoded string is the point of the criterion, not decoration.** Pseudo-localization
  * exists to make an unlocalized string visible, and a fixture with nothing hardcoded proves the
  * transform runs but not that it catches anything: every assertion would pass for a page with no
- * way to fail. The paragraph below is a string a developer forgot to put through Atlas, and the
+ * way to fail. The paragraph below is a string a developer forgot to put through Equator, and the
  * check is that it comes through the locale change byte for byte while everything beside it does
  * not.
  */
 
-/** A string a developer forgot to put through Atlas. Deliberate, and the whole point. */
+/** A string a developer forgot to put through Equator. Deliberate, and the whole point. */
 const HARDCODED = 'Saved 3 minutes ago';
 
 const MARKER_START = '⟦';
@@ -88,7 +88,7 @@ describe('a page rendered under a pseudo-locale', () => {
             catalogSet,
             catalogLoaders,
             recoveryPayload,
-            extensions: atlasRuntimeExtensions,
+            extensions: runtimeExtensions,
             routeProjection,
           },
           withRouting({ policy: routePolicy, projection: appRouteProjection }),

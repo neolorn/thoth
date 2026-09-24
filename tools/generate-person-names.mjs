@@ -50,7 +50,7 @@ const check = process.argv.includes('--check');
  * this value, and a runtime handed a profile set it does not recognise says so rather than reading
  * the wrong offsets out of it.
  */
-const PROFILE_SET_PROFILE = 'cldr-48.2/atlas-person-names-1';
+const PROFILE_SET_PROFILE = 'cldr-48.2/equator-person-names-1';
 
 /**
  * The cube axes, in the order the flat index below walks them.
@@ -221,7 +221,7 @@ const source = [
   // Single-quoted deliberately: Prettier owns this line, and emitting what it would write is the
   // difference between `verify:person-names` being a staleness gate and being a coin toss with
   // whoever ran the formatter last.
-  `export const ATLAS_PERSON_NAME_DATA_PROFILE =\n  '${PROFILE_SET_PROFILE}' as const;`,
+  `export const PERSON_NAME_DATA_PROFILE =\n  '${PROFILE_SET_PROFILE}' as const;`,
   '',
   '/**',
   ' * Cube axes, in the order the flat cell index walks them.',
@@ -230,13 +230,13 @@ const source = [
   ' * patterns, and an implementation that treats it as surname-first with a comma is inventing.',
   ' */',
   '// prettier-ignore',
-  `export const ATLAS_PERSON_NAME_ORDERS = ${JSON.stringify(ORDERS)} as const;`,
+  `export const PERSON_NAME_ORDERS = ${JSON.stringify(ORDERS)} as const;`,
   '// prettier-ignore',
-  `export const ATLAS_PERSON_NAME_LENGTHS = ${JSON.stringify(LENGTHS)} as const;`,
+  `export const PERSON_NAME_LENGTHS = ${JSON.stringify(LENGTHS)} as const;`,
   '// prettier-ignore',
-  `export const ATLAS_PERSON_NAME_USAGES = ${JSON.stringify(USAGES)} as const;`,
+  `export const PERSON_NAME_USAGES = ${JSON.stringify(USAGES)} as const;`,
   '// prettier-ignore',
-  `export const ATLAS_PERSON_NAME_FORMALITIES = ${JSON.stringify(FORMALITIES)} as const;`,
+  `export const PERSON_NAME_FORMALITIES = ${JSON.stringify(FORMALITIES)} as const;`,
   '',
   '/**',
   ' * Distinct pattern strings, referenced by index from every row.',
@@ -245,7 +245,7 @@ const source = [
   ' * per profile would be a quarter of a megabyte of source saying the same thing.',
   ' */',
   '// prettier-ignore',
-  `export const ATLAS_PERSON_NAME_PATTERNS: readonly string[] = Object.freeze(${JSON.stringify(pool)});`,
+  `export const PERSON_NAME_PATTERNS: readonly string[] = Object.freeze(${JSON.stringify(pool)});`,
   '',
   '/**',
   ' * One row per locale whose profile differs from what longest-prefix would otherwise answer.',
@@ -257,10 +257,10 @@ const source = [
   ' *',
   ' * Each row is `[tag, cells, initial, initialSequence, foreignSpace, nativeSpace, defaultLength,',
   ' * defaultFormality, givenFirstLocales, surnameFirstLocales]`. Every number except the last two',
-  ' * entries indexes `ATLAS_PERSON_NAME_PATTERNS`, or is -1 for a cell the locale does not fill.',
+  ' * entries indexes `PERSON_NAME_PATTERNS`, or is -1 for a cell the locale does not fill.',
   ' */',
   '// prettier-ignore',
-  'export const ATLAS_PERSON_NAME_ROWS: readonly (readonly [string, readonly number[], number, number, number, number, number, number, readonly string[], readonly string[]])[] = Object.freeze(',
+  'export const PERSON_NAME_ROWS: readonly (readonly [string, readonly number[], number, number, number, number, number, number, readonly string[], readonly string[]])[] = Object.freeze(',
   `${JSON.stringify(encoded)} as const);`,
   '',
 ].join('\n');
@@ -272,7 +272,7 @@ const source = [
  * same way `provideLocalizationSetup` can be called with a hand-assembled setup. Something has to
  * answer when no generated profile set was threaded through, and the two honest options are to
  * fail or to fall back to root. Root is real published data covering every field, modifier and
- * usage; the alternative Atlas shipped before this was a hand-written field order, which is the
+ * usage; the alternative Equator shipped before this was a hand-written field order, which is the
  * thing this step exists to remove. It is one profile, so pay-for-what-you-use survives it.
  */
 const rootSource = [
@@ -285,13 +285,13 @@ const rootSource = [
   ' * a disagreement between them would be a silent read of the wrong pattern, not an error.',
   ' */',
   '// prettier-ignore',
-  `export const ATLAS_PERSON_NAME_ORDERS = ${JSON.stringify(ORDERS)} as const;`,
+  `export const PERSON_NAME_ORDERS = ${JSON.stringify(ORDERS)} as const;`,
   '// prettier-ignore',
-  `export const ATLAS_PERSON_NAME_LENGTHS = ${JSON.stringify(LENGTHS)} as const;`,
+  `export const PERSON_NAME_LENGTHS = ${JSON.stringify(LENGTHS)} as const;`,
   '// prettier-ignore',
-  `export const ATLAS_PERSON_NAME_USAGES = ${JSON.stringify(USAGES)} as const;`,
+  `export const PERSON_NAME_USAGES = ${JSON.stringify(USAGES)} as const;`,
   '// prettier-ignore',
-  `export const ATLAS_PERSON_NAME_FORMALITIES = ${JSON.stringify(FORMALITIES)} as const;`,
+  `export const PERSON_NAME_FORMALITIES = ${JSON.stringify(FORMALITIES)} as const;`,
   '',
   '/**',
   ' * CLDR root, in the shape a generated profile set uses.',
@@ -300,7 +300,7 @@ const rootSource = [
   ' * particular locale: it is the answer that is not invented.',
   ' */',
   '// prettier-ignore',
-  'export const ATLAS_PERSON_NAME_ROOT: {',
+  'export const PERSON_NAME_ROOT: {',
   '  readonly profile: string;',
   '  readonly patterns: readonly string[];',
   '  readonly rows: readonly (readonly [',

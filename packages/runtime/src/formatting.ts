@@ -43,14 +43,14 @@ import {
   type PlainTimeValue,
   type TimeZoneValue,
   type ZonedDateTimeValue,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 import { FormatterCache, formattingLocale } from './evaluator';
 import {
-  ATLAS_PERSON_NAME_FORMALITIES,
-  ATLAS_PERSON_NAME_LENGTHS,
-  ATLAS_PERSON_NAME_ORDERS,
-  ATLAS_PERSON_NAME_ROOT,
-  ATLAS_PERSON_NAME_USAGES,
+  PERSON_NAME_FORMALITIES,
+  PERSON_NAME_LENGTHS,
+  PERSON_NAME_ORDERS,
+  PERSON_NAME_ROOT,
+  PERSON_NAME_USAGES,
 } from './person-names-root.generated';
 import { RUNTIME_LIMITS, codePointLengthAtMost } from './runtime-safety';
 
@@ -80,8 +80,8 @@ import { RUNTIME_LIMITS, codePointLengthAtMost } from './runtime-safety';
  * is "explicit cache to prevent leaking memory", because the FormatJS store is an unbounded
  * `Record<string, V>` and hoisting an unbounded cache is how it leaks.
  *
- * **Atlas's is bounded, which is why hoisting it is safe here.** `FormatterCache` is an LRU with a
- * fixed ceiling, so this changes who owns the bound and not whether there is one. Sized at
+ * **Equator's is bounded, which is why hoisting it is safe here.** `FormatterCache` is an LRU with
+ * a fixed ceiling, so this changes who owns the bound and not whether there is one. Sized at
  * `RUNTIME_LIMITS.formatterCacheEntries` because the store is process-wide: there is no catalog
  * count or instance to scale it from, which is exactly what `Localization` scales its own cache by,
  * and any smaller number here would be arbitrary.
@@ -889,7 +889,7 @@ export function formatPercentagePoints(
  * discards, and refusing was declining to answer a question that had been asked at a precision the
  * value could satisfy. Decision section 10: format to the precision the options request, and
  * refuse only where sub-millisecond output is genuinely requested, which no Intl option can do.
- * Silent truncation was rejected as the guessing Atlas refuses elsewhere.
+ * Silent truncation was rejected as the guessing Equator refuses elsewhere.
  *
  * The division floors rather than truncating toward zero. For an instant before 1970 those differ,
  * and truncation would name the millisecond *after* the one the instant falls in: displaying a
@@ -967,7 +967,7 @@ export function formatInstant(
 /**
  * A calendar option safe to hand to `Intl.DateTimeFormat`.
  *
- * `iso8601` describes how an Atlas plain value is *expressed*: proleptic Gregorian, ISO rules.
+ * `iso8601` describes how an Equator plain value is *expressed*: proleptic Gregorian, ISO rules.
  * It is not a display calendar. CLDR defines no month names for it, so passing it through makes
  * ICU drop the month from any pattern that would spell it out: `dateStyle: 'medium'` renders
  * "2026  14" instead of "Mar 14, 2026", in every locale, with no diagnostic.
@@ -1384,7 +1384,7 @@ interface NativeDurationFormatConstructor {
  * Writes a length of time in the locale's words for its units.
  *
  * The options are the platform's duration options, typed loosely because the duration formatter is
- * newer than the type definitions Atlas compiles against. A host without it reports rather than
+ * newer than the type definitions Equator compiles against. A host without it reports rather than
  * assembling a sentence out of separate numbers, which would put the units in an order that is
  * wrong in most locales.
  */
@@ -1473,7 +1473,7 @@ export function formatList(
     });
   if (!bounded) {
     return unsupported(
-      'The list exceeds Atlas formatting resource bounds.',
+      'The list exceeds Equator formatting resource bounds.',
       context,
     );
   }
@@ -1558,7 +1558,10 @@ export function formatDisplayName(
     typeof value !== 'string' ||
     codePointLengthAtMost(value, 1_024) === undefined
   ) {
-    return unsupported('The display-name input exceeds Atlas bounds.', context);
+    return unsupported(
+      'The display-name input exceeds Equator bounds.',
+      context,
+    );
   }
   try {
     const display = sharedFormatters
@@ -1696,10 +1699,9 @@ function personNameCell(
   formality: number,
 ): number {
   return (
-    ((order * ATLAS_PERSON_NAME_LENGTHS.length + length) *
-      ATLAS_PERSON_NAME_USAGES.length +
+    ((order * PERSON_NAME_LENGTHS.length + length) * PERSON_NAME_USAGES.length +
       usage) *
-      ATLAS_PERSON_NAME_FORMALITIES.length +
+      PERSON_NAME_FORMALITIES.length +
     formality
   );
 }
@@ -1732,13 +1734,12 @@ function personNameOrder(
   nameLocale: string,
   requested: PersonNameFormatOptions['order'],
 ): number {
-  if (requested === 'sorting')
-    return ATLAS_PERSON_NAME_ORDERS.indexOf('sorting');
+  if (requested === 'sorting') return PERSON_NAME_ORDERS.indexOf('sorting');
   if (requested === 'given-first') {
-    return ATLAS_PERSON_NAME_ORDERS.indexOf('givenFirst');
+    return PERSON_NAME_ORDERS.indexOf('givenFirst');
   }
   if (requested === 'surname-first') {
-    return ATLAS_PERSON_NAME_ORDERS.indexOf('surnameFirst');
+    return PERSON_NAME_ORDERS.indexOf('surnameFirst');
   }
   const givenFirst = new Set(
     profile.givenFirstLocales.map((entry) => entry.toLowerCase()),
@@ -1749,10 +1750,10 @@ function personNameOrder(
   let candidate = nameLocale.toLowerCase();
   for (;;) {
     if (givenFirst.has(candidate)) {
-      return ATLAS_PERSON_NAME_ORDERS.indexOf('givenFirst');
+      return PERSON_NAME_ORDERS.indexOf('givenFirst');
     }
     if (surnameFirst.has(candidate)) {
-      return ATLAS_PERSON_NAME_ORDERS.indexOf('surnameFirst');
+      return PERSON_NAME_ORDERS.indexOf('surnameFirst');
     }
     const boundary = candidate.lastIndexOf('-');
     if (boundary <= 0) break;
@@ -1760,9 +1761,9 @@ function personNameOrder(
   }
   // The chain ends at root, which every locale lists, and given-first if even that is silent.
   if (surnameFirst.has('und')) {
-    return ATLAS_PERSON_NAME_ORDERS.indexOf('surnameFirst');
+    return PERSON_NAME_ORDERS.indexOf('surnameFirst');
   }
-  return ATLAS_PERSON_NAME_ORDERS.indexOf('givenFirst');
+  return PERSON_NAME_ORDERS.indexOf('givenFirst');
 }
 
 /**
@@ -1917,7 +1918,7 @@ function parsePersonNamePattern(
     }
     at = start + match[0].length;
     const resolved = personNameFieldText(value, profile, match[1] ?? '', cache);
-    // A placeholder naming no field Atlas knows is literal text, not a silent disappearance.
+    // A placeholder naming no field Equator knows is literal text, not a silent disappearance.
     if (resolved === undefined)
       tokens.push({ kind: 'literal', text: match[0] });
     else tokens.push({ kind: 'field', ...resolved });
@@ -2001,7 +2002,7 @@ function coalesceLiterals(
  * Writes a name in the order, length and formality a locale asks for.
  *
  * Takes the name, the reading context, the options that say which arrangement is wanted, and the
- * profile set the rules come from. The profiles default to the root set Atlas ships; a caller
+ * profile set the rules come from. The profiles default to the root set Equator ships; a caller
  * passing its own must pass one of the same profile version, and one that is not is refused.
  *
  * The name's own language decides the arrangement, not the reader's locale, so a name keeps its
@@ -2011,11 +2012,11 @@ export function formatPersonName(
   value: PersonNameValue,
   context: FormattingContext,
   options: PersonNameFormatOptions = {},
-  profiles: PersonNameProfileSet = ATLAS_PERSON_NAME_ROOT,
+  profiles: PersonNameProfileSet = PERSON_NAME_ROOT,
 ): FormattingResult {
-  if (profiles.profile !== ATLAS_PERSON_NAME_ROOT.profile) {
+  if (profiles.profile !== PERSON_NAME_ROOT.profile) {
     return unsupported(
-      `Person-name data profile ${JSON.stringify(profiles.profile)} is not the one this runtime reads (${JSON.stringify(ATLAS_PERSON_NAME_ROOT.profile)}). Regenerate this application against a matching Atlas.`,
+      `Person-name data profile ${JSON.stringify(profiles.profile)} is not the one this runtime reads (${JSON.stringify(PERSON_NAME_ROOT.profile)}). Regenerate this application against a matching Equator.`,
       context,
       'integrity-mismatch',
     );
@@ -2035,22 +2036,22 @@ export function formatPersonName(
   const formattingTag = switched ? value.language : context.locale;
   const profile =
     personNameProfile(profiles, formattingTag) ??
-    (personNameProfile(ATLAS_PERSON_NAME_ROOT, 'und') as PersonNameProfile);
+    (personNameProfile(PERSON_NAME_ROOT, 'und') as PersonNameProfile);
 
   const order = personNameOrder(profile, value.language, options.order);
   const length =
     options.length === undefined
       ? profile.defaultLength
-      : ATLAS_PERSON_NAME_LENGTHS.indexOf(options.length);
+      : PERSON_NAME_LENGTHS.indexOf(options.length);
   const formality =
     options.formality === undefined
       ? profile.defaultFormality
-      : ATLAS_PERSON_NAME_FORMALITIES.indexOf(options.formality);
-  const usage = ATLAS_PERSON_NAME_USAGES.indexOf(options.usage ?? 'referring');
+      : PERSON_NAME_FORMALITIES.indexOf(options.formality);
+  const usage = PERSON_NAME_USAGES.indexOf(options.usage ?? 'referring');
 
   // The only empty region in the release is `sorting` crossed with addressing and monogram, in
   // every one of the 379 rows: a sorting form is a referring form, so that is where it falls to.
-  const referring = ATLAS_PERSON_NAME_USAGES.indexOf('referring');
+  const referring = PERSON_NAME_USAGES.indexOf('referring');
   const selected =
     profile.cells[personNameCell(order, length, usage, formality)];
   const index =
@@ -2230,7 +2231,7 @@ export function segmentText(
       undefined
   ) {
     return capabilityFailure(
-      'The segmentation input exceeds Atlas bounds.',
+      'The segmentation input exceeds Equator bounds.',
       context,
     );
   }
@@ -2275,7 +2276,7 @@ interface ExtendedLocale {
  * What a locale tag implies: its direction, its calendar, its numbering system, its week.
  *
  * Takes the tag and returns what the host resolves for it, so this is the platform's answer rather
- * than a table Atlas keeps. A tag the host cannot canonicalize is reported.
+ * than a table Equator keeps. A tag the host cannot canonicalize is reported.
  */
 export function localeMetadata(
   locale: string,

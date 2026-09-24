@@ -1,7 +1,7 @@
 import {
-  parseAtlasMessage,
-  type AtlasMessageCustomFunction,
-  type AtlasMessageSemanticModel,
+  parseMessageSemanticModel,
+  type MessageCustomFunction,
+  type MessageSemanticModel,
 } from '../../toolkit/src/message-format.js';
 import {
   FormatterCache,
@@ -16,14 +16,14 @@ import type {
 import {
   type FormattingContext,
   type MessageHandle,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /**
  * One message, parsed by the real parser and evaluated by the real evaluator.
  *
- * **The messages are parsed, not hand-written as IR.** `parseAtlasMessage` is the parser the
- * compiler uses and the compiler stores its output verbatim, so what reaches the evaluator here is
- * what a catalog actually produces. Only the catalog envelope is built, because nothing in the
+ * **The messages are parsed, not hand-written as IR.** `parseMessageSemanticModel` is the parser
+ * the compiler uses and the compiler stores its output verbatim, so what reaches the evaluator here
+ * is what a catalog actually produces. Only the catalog envelope is built, because nothing in the
  * envelope participates in evaluating a message.
  *
  * `renderSemantics` takes the model rather than the source, for the cases that have to hand the
@@ -38,7 +38,7 @@ export const COUNT: readonly CompiledInputContract[] = Object.freeze([
 ]);
 
 function compiledCatalogFor(
-  semantics: AtlasMessageSemanticModel,
+  semantics: MessageSemanticModel,
   inputs: readonly CompiledInputContract[],
 ): CompiledCatalog {
   const body =
@@ -65,9 +65,9 @@ function compiledCatalogFor(
     outputParts,
   };
   return {
-    profile: 'atlas-compiled-ir/1',
-    generatedAbi: 'atlas-generated/1',
-    standardsProfile: 'atlas-1',
+    profile: 'equator-compiled-ir/1',
+    generatedAbi: 'equator-generated/1',
+    standardsProfile: 'equator-1',
     key: {
       providerId: 'selection',
       scopeId: 'selection',
@@ -92,7 +92,7 @@ function compiledCatalogFor(
 }
 
 export function renderSemantics(
-  semantics: AtlasMessageSemanticModel,
+  semantics: MessageSemanticModel,
   inputs: readonly CompiledInputContract[],
   values: Readonly<Record<string, unknown>>,
   extensions: RuntimeExtensions = new RuntimeExtensions(),
@@ -100,7 +100,7 @@ export function renderSemantics(
 ): string {
   const catalog = compiledCatalogFor(semantics, inputs);
   const handle: MessageHandle = {
-    generatedAbi: 'atlas-generated/1',
+    generatedAbi: 'equator-generated/1',
     providerId: 'selection',
     scopeId: 'selection',
     messageId: 'subject',
@@ -123,9 +123,9 @@ export function renderSemantics(
 
 export function parse(
   source: string,
-  customFunctions: readonly AtlasMessageCustomFunction[] = [],
-): AtlasMessageSemanticModel {
-  const parsed = parseAtlasMessage(source, { customFunctions });
+  customFunctions: readonly MessageCustomFunction[] = [],
+): MessageSemanticModel {
+  const parsed = parseMessageSemanticModel(source, { customFunctions });
   if (!parsed.ok) {
     throw new Error(
       `The message under test did not parse: ${parsed.diagnostics

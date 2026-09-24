@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "profileId": "atlas-1",
+  "profileId": "equator-1",
   "updatePolicy": "intentional-review-only",
   "standardsProfile": {
     "unicode": "17.0.0",
@@ -182,7 +182,7 @@
       "fileDate": "2025-03-13",
       "url": "https://docs.oasis-open.org/xliff/xliff-core/v2.2/cs01/schemas/",
       "projectSnapshot": "data/xliff-2.2-cs01-schemas",
-      "role": "Normative schemas for the pinned XLIFF profile. Toolkit gate input: Atlas validates its own exported documents against them.",
+      "role": "Normative schemas for the pinned XLIFF profile. Toolkit gate input: Equator validates its own exported documents against them.",
       "crossCheck": {
         "method": "Each vendored file compared byte-for-byte against its entry in the official OASIS archive, acquired separately.",
         "url": "https://docs.oasis-open.org/xliff/xliff-core/v2.2/cs01/xliff-core-v2.2-cs01.zip",
@@ -194,7 +194,7 @@
         },
         "result": "twelve of twelve identical"
       },
-      "unresolvedReference": "itsm.xsd imports xliff_core_2.0.xsd, which OASIS does not ship in this directory. Nothing Atlas validates reaches itsm.xsd: the core schema imports only metadata.xsd and the XML namespace schema.",
+      "unresolvedReference": "itsm.xsd imports xliff_core_2.0.xsd, which OASIS does not ship in this directory. Nothing Equator validates reaches itsm.xsd: the core schema imports only metadata.xsd and the XML namespace schema.",
       "license": {
         "name": "OASIS IPR Policy",
         "url": "https://www.oasis-open.org/policies-guidelines/ipr/",
@@ -320,7 +320,7 @@
       "fileDate": "2008-03-26 for sitemap.xsd, 2009-04-08 for siteindex.xsd",
       "url": "https://www.sitemaps.org/schemas/sitemap/0.9/",
       "projectSnapshot": "data/sitemaps-0.9-schemas",
-      "role": "Normative schemas for the sitemap protocol Atlas writes. Runtime gate input: Atlas validates its own emitted sitemaps and sitemap index against them. Never shipped.",
+      "role": "Normative schemas for the sitemap protocol Equator writes. Runtime gate input: Equator validates its own emitted sitemaps and sitemap index against them. Never shipped.",
       "license": {
         "name": "sitemaps.org, unversioned publication",
         "url": "https://www.sitemaps.org/terms.html"
@@ -360,18 +360,18 @@
         "url": "https://www.w3.org/copyright/software-license/"
       }
     },
-    "atlasSitemapHreflangImport": {
-      "publisher": "Atlas",
-      "projectSnapshot": "data/sitemaps-0.9-schemas/atlas-sitemap-hreflang.xsd",
-      "role": "Atlas's own file, recorded here so the directory has no unaccounted member. It imports the sitemap namespace and the XHTML namespace and declares nothing, because a validator needs the second namespace imported rather than merely available. Measured: `xhtml:link` against sitemap.xsd alone is refused by the strict wildcard, and preloading the XHTML schema does not change that. A sitemap index is validated against siteindex.xsd directly, since the two sitemap schemas share a namespace and a repeated import of one namespace is skipped.",
-      "bytes": 1749,
+    "sitemapHreflangImport": {
+      "publisher": "Equator",
+      "projectSnapshot": "data/sitemaps-0.9-schemas/sitemap-hreflang.xsd",
+      "role": "Equator's own file, recorded here so the directory has no unaccounted member. It imports the sitemap namespace and the XHTML namespace and declares nothing, because a validator needs the second namespace imported rather than merely available. Measured: `xhtml:link` against sitemap.xsd alone is refused by the strict wildcard, and preloading the XHTML schema does not change that. A sitemap index is validated against siteindex.xsd directly, since the two sitemap schemas share a namespace and a repeated import of one namespace is skipped.",
+      "bytes": 1751,
       "digest": {
         "algorithm": "SHA-256",
         "encoding": "hex",
-        "value": "5a302a0a4a1eccbbc8d1dfd63d789e35160b6fc46a7f38abab7b5f43d3d14806"
+        "value": "5e5467e571f0aa4ec510813f66455380aa2d1197486c4cacc94d8f6dbadfb55b"
       },
       "license": {
-        "name": "Part of Atlas, under the repository license"
+        "name": "Part of Equator, under the repository license"
       }
     }
   },

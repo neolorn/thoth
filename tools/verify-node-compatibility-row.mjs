@@ -86,7 +86,7 @@ async function createProjectFixture(projectRoot) {
   const files = Object.freeze({
     'package.json': `${JSON.stringify(
       {
-        name: '@example/atlas-node-row-fixture',
+        name: '@example/node-row-fixture',
         version: '0.0.0',
         private: true,
         type: 'module',
@@ -95,14 +95,14 @@ async function createProjectFixture(projectRoot) {
           '#i18n/*': './src/generated/i18n/*.ts',
         },
         scripts: {
-          'atlas:generate': 'atlas generate',
-          'atlas:check': 'atlas check',
+          'equator:generate': 'equator generate',
+          'equator:check': 'equator check',
         },
       },
       null,
       2,
     )}\n`,
-    'atlas.config.json': `${JSON.stringify(
+    'equator.config.json': `${JSON.stringify(
       {
         schemaVersion: 1,
         sourceLocale: 'en-US',
@@ -114,14 +114,14 @@ async function createProjectFixture(projectRoot) {
     )}\n`,
     'i18n/shell/en-US.yaml': [
       'messages:',
-      '  app-title: Atlas Node row fixture',
+      '  app-title: Equator Node row fixture',
       "  welcome: 'Welcome, {$name}!'",
       '  recovery.unavailable: Localization is temporarily unavailable.',
       '',
     ].join('\n'),
     'i18n/shell/ar-EG.yaml': [
       'messages:',
-      '  app-title: تطبيق Atlas',
+      '  app-title: تطبيق Equator',
       "  welcome: 'مرحبًا، {$name}!'",
       '  recovery.unavailable: الترجمة غير متاحة مؤقتًا.',
       '',
@@ -214,7 +214,7 @@ async function snapshotGeneratedOutput(generatedRoot) {
     }
   };
   await visit(generatedRoot);
-  assert.ok(files.length > 0, 'Atlas generate did not publish any files');
+  assert.ok(files.length > 0, 'Equator generate did not publish any files');
   return Object.freeze({ files: Object.freeze(files), bytes });
 }
 
@@ -248,47 +248,47 @@ function runMachineCommand(cliPath, projectRoot, command, validateCliResult) {
   assert.equal(
     result.error,
     undefined,
-    `Atlas ${command} could not launch: ${cliFailure(result)}`,
+    `Equator ${command} could not launch: ${cliFailure(result)}`,
   );
-  assert.equal(result.signal, null, `Atlas ${command} ${cliFailure(result)}`);
+  assert.equal(result.signal, null, `Equator ${command} ${cliFailure(result)}`);
   assert.equal(
     result.status,
     0,
-    `Atlas ${command} failed: ${cliFailure(result)}`,
+    `Equator ${command} failed: ${cliFailure(result)}`,
   );
   assert.equal(
     result.stderr,
     '',
-    `Atlas ${command} emitted stderr: ${result.stderr}`,
+    `Equator ${command} emitted stderr: ${result.stderr}`,
   );
   const source = result.stdout.trim();
   const lines = source.split(/\r?\n/u).filter((line) => line !== '');
   assert.equal(
     lines.length,
     1,
-    `Atlas ${command} must emit exactly one machine-result line`,
+    `Equator ${command} must emit exactly one machine-result line`,
   );
   let record;
   try {
     record = JSON.parse(lines[0]);
   } catch (error) {
     throw new Error(
-      `Atlas ${command} emitted invalid JSON: ${error instanceof Error ? error.message : String(error)}`,
+      `Equator ${command} emitted invalid JSON: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
   assert.equal(
     validateCliResult(record),
     true,
-    `Atlas ${command} machine result violates the public schema: ${JSON.stringify(validateCliResult.errors)}`,
+    `Equator ${command} machine result violates the public schema: ${JSON.stringify(validateCliResult.errors)}`,
   );
-  assert.equal(record.profile, 'atlas-cli-result/1');
+  assert.equal(record.profile, 'equator-cli-result/1');
   assert.equal(record.command, command);
   assert.equal(record.status, 'success');
   assert.deepEqual(record.diagnostics, []);
   assert.equal(
     typeof record.result,
     'object',
-    `Atlas ${command} did not include a result object`,
+    `Equator ${command} did not include a result object`,
   );
   assert.notEqual(record.result, null);
   return Object.freeze({ source, record });
@@ -381,7 +381,7 @@ async function importPublicEntry(packageRoot, manifest, subpath) {
     `${manifest.name} export ${subpath} escapes its built package root`,
   );
   const loaded = await import(pathToFileURL(outputPath).href);
-  if (manifest.name === '@neolorn/atlas') {
+  if (manifest.name === '@neolorn/equator') {
     importedRuntimeEntrypoints.push(subpath);
   }
   return loaded;
@@ -396,7 +396,7 @@ function assertFunction(module, name, entrypoint) {
 }
 
 /**
- * What Atlas actually renders on this Node runtime.
+ * What Equator actually renders on this Node runtime.
  *
  * Rendered rather than type-checked. Asserting that five exports are functions and invoking none
  * of them says nothing about the three Node majors `engines.node` advertises. ICU data differs
@@ -423,7 +423,7 @@ function localizedOutputEvidence(runtime) {
   };
 
   return Object.freeze({
-    profile: 'atlas-node-localized-output/1',
+    profile: 'equator-node-localized-output/1',
     numberArabic: text(
       runtime.formatNumber(runtime.decimal('1234567.89'), arabic, {}),
     ),
@@ -488,18 +488,23 @@ async function main() {
   );
 
   const harnessRoot = await realpath(options.harnessRoot);
-  const runtimeRoot = resolve(harnessRoot, 'node_modules', '@neolorn', 'atlas');
+  const runtimeRoot = resolve(
+    harnessRoot,
+    'node_modules',
+    '@neolorn',
+    'equator',
+  );
   const toolkitRoot = resolve(
     harnessRoot,
     'node_modules',
     '@neolorn',
-    'atlas-toolkit',
+    'equator-toolkit',
   );
   const runtimeManifest = await readJson(resolve(runtimeRoot, 'package.json'));
   const toolkitManifest = await readJson(resolve(toolkitRoot, 'package.json'));
 
-  assert.equal(runtimeManifest.name, '@neolorn/atlas');
-  assert.equal(toolkitManifest.name, '@neolorn/atlas-toolkit');
+  assert.equal(runtimeManifest.name, '@neolorn/equator');
+  assert.equal(toolkitManifest.name, '@neolorn/equator-toolkit');
   // The installed copies against what the packages declare, with the range read from the source
   // manifests rather than written again here.
   assert.equal(runtimeManifest.engines?.node, nodeRange);
@@ -525,47 +530,51 @@ async function main() {
     runtimeManifest,
     './testing',
   );
-  // The server entry point, and the one with the most to prove here: it is the only Atlas code
+  // The server entry point, and the one with the most to prove here: it is the only Equator code
   // that runs under Node in production rather than in a test, and the only one whose peer is
   // optional *and* server-only. An entry point that fails to load on a supported Node row fails
   // at a consumer's prerender, which is the least recoverable place to find out.
   const ssr = await importPublicEntry(runtimeRoot, runtimeManifest, './ssr');
-  assertFunction(runtime, 'createLocalizationContext', '@neolorn/atlas');
-  assertFunction(runtime, 'provideLocalizationSetup', '@neolorn/atlas');
-  assertFunction(forms, 'LocalizedInput', '@neolorn/atlas/forms');
-  assertFunction(router, 'provideLocalizedRouter', '@neolorn/atlas/router');
-  assertFunction(ssr, 'provideLocalizedServerRendering', '@neolorn/atlas/ssr');
+  assertFunction(runtime, 'createLocalizationContext', '@neolorn/equator');
+  assertFunction(runtime, 'provideLocalizationSetup', '@neolorn/equator');
+  assertFunction(forms, 'LocalizedInput', '@neolorn/equator/forms');
+  assertFunction(router, 'provideLocalizedRouter', '@neolorn/equator/router');
+  assertFunction(
+    ssr,
+    'provideLocalizedServerRendering',
+    '@neolorn/equator/ssr',
+  );
   assertFunction(
     testing,
     'provideLocalizationTesting',
-    '@neolorn/atlas/testing',
+    '@neolorn/equator/testing',
   );
 
   const toolkit = await importPublicEntry(toolkitRoot, toolkitManifest, '.');
-  assertFunction(toolkit, 'compileAtlasProject', '@neolorn/atlas-toolkit');
-  assertFunction(toolkit, 'parseAtlasConfiguration', '@neolorn/atlas-toolkit');
+  assertFunction(toolkit, 'compileProject', '@neolorn/equator-toolkit');
+  assertFunction(toolkit, 'parseConfiguration', '@neolorn/equator-toolkit');
   // Host admission is internal to the toolkit, so it comes from the module that declares it. The
   // public entry is still loaded above, because whether it loads at all on this row is half of what
   // this gate asks.
   const hostCompatibility = await import(
     pathToFileURL(resolve(toolkitRoot, 'host-compatibility.js')).href
   );
-  const hostVersions = hostCompatibility.currentAtlasHostVersions();
+  const hostVersions = hostCompatibility.currentHostVersions();
   assert.equal(hostVersions.node, options.expectedVersion);
-  const admission = hostCompatibility.admitAtlasHostCompatibility();
+  const admission = hostCompatibility.admitHostCompatibility();
   assert.equal(
     admission.ok,
     true,
     `Host admission rejected ${JSON.stringify(hostVersions)}: ${JSON.stringify(admission.diagnostics)}`,
   );
-  assert.equal(admission.value.profile, 'atlas-host-compatibility/1');
+  assert.equal(admission.value.profile, 'equator-host-compatibility/1');
 
   const formatting = localizedOutputEvidence(runtime);
 
   assert.equal(
-    typeof toolkit.ATLAS_CLI_RESULT_SCHEMA,
+    typeof toolkit.CLI_RESULT_SCHEMA,
     'object',
-    'Toolkit public API is missing ATLAS_CLI_RESULT_SCHEMA',
+    'Toolkit public API is missing CLI_RESULT_SCHEMA',
   );
   const { default: Ajv2020 } = await import(
     pathToFileURL(harnessRequire.resolve('ajv/dist/2020.js')).href
@@ -573,14 +582,14 @@ async function main() {
   const validateCliResult = new Ajv2020({
     allErrors: true,
     strict: true,
-  }).compile(toolkit.ATLAS_CLI_RESULT_SCHEMA);
+  }).compile(toolkit.CLI_RESULT_SCHEMA);
 
-  const cliTarget = toolkitManifest.bin?.atlas;
-  assert.equal(typeof cliTarget, 'string', 'Toolkit atlas binary is missing');
+  const cliTarget = toolkitManifest.bin?.equator;
+  assert.equal(typeof cliTarget, 'string', 'Toolkit equator binary is missing');
   const cliPath = resolve(toolkitRoot, cliTarget);
   assert.ok(
     isWithin(cliPath, toolkitRoot),
-    'Toolkit atlas binary escapes package',
+    'Toolkit equator binary escapes package',
   );
   const help = spawnSync(process.execPath, [cliPath, '--help'], {
     cwd: harnessRoot,
@@ -599,16 +608,16 @@ async function main() {
   assert.equal(
     help.signal,
     null,
-    `Atlas CLI help terminated by ${help.signal}`,
+    `Equator CLI help terminated by ${help.signal}`,
   );
   assert.equal(help.status, 0, help.stderr || help.stdout);
-  assert.match(help.stdout, /Usage: atlas <command> \[options\]/u);
+  assert.match(help.stdout, /Usage: equator <command> \[options\]/u);
   assert.match(help.stdout, /migrate\s+Preview or apply/u);
   assert.match(help.stdout, /Exit codes: 0 success/u);
 
   const projectsRoot = resolve(harnessRoot, 'projects');
   await mkdir(projectsRoot, { recursive: true });
-  const projectPrefix = `.atlas-node-row-${options.row}-`;
+  const projectPrefix = `.node-row-${options.row}-`;
   let projectRoot;
   let workflowEvidence;
   try {
@@ -684,11 +693,11 @@ async function main() {
     assert.deepEqual(
       await snapshotGeneratedOutput(generatedRoot),
       initialSnapshot,
-      'Atlas check mutated generated bytes or mtimes',
+      'Equator check mutated generated bytes or mtimes',
     );
 
     workflowEvidence = Object.freeze({
-      profile: 'atlas-node-toolkit-workflow/1',
+      profile: 'equator-node-toolkit-workflow/1',
       fixture: 'two-locale-typescript',
       generatedFiles: initialSnapshot.files.length,
       generatedBytes: initialSnapshot.bytes,
@@ -718,8 +727,8 @@ async function main() {
   assert.notEqual(workflowEvidence, undefined);
 
   process.stdout.write(
-    `ATLAS_NODE_ROW ${JSON.stringify({
-      profile: 'atlas-node-compatibility/1',
+    `EQUATOR_NODE_ROW ${JSON.stringify({
+      profile: 'equator-node-compatibility/1',
       row: options.row,
       node: options.expectedVersion,
       architecture: process.arch,
@@ -738,7 +747,7 @@ async function main() {
 
 main().catch((error) => {
   process.stderr.write(
-    `Atlas Node row verification failed: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
+    `Equator Node row verification failed: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
   );
   process.exitCode = 1;
 });

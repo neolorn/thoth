@@ -22,78 +22,74 @@ import {
 
 import ts from 'typescript';
 
+import { formatCatalogSource, parseCatalog, type Catalog } from './catalog.js';
 import {
-  formatAtlasCatalogSource,
-  parseAtlasCatalog,
-  type AtlasCatalog,
-} from './catalog.js';
-import {
-  compileAtlasProject,
-  fingerprintAtlasCompilerInputs,
-  type AtlasCompileProjectRequest,
-  type AtlasCompileProjectResult,
-  type AtlasCompilerAnalysisInput,
-  type AtlasCompilerState,
+  compileProject,
+  fingerprintCompilerInputs,
+  type CompileProjectRequest,
+  type CompileProjectResult,
+  type CompilerAnalysisInput,
+  type CompilerState,
 } from './compiler.js';
 import {
-  ATLAS_TRANSLATION_STATE_PATH,
-  EMPTY_ATLAS_TRANSLATION_STATE,
-  formatAtlasTranslationState,
-  parseAtlasTranslationState,
-  reconcileAtlasTranslationState,
-  type AtlasStaleTranslation,
+  TRANSLATION_STATE_PATH,
+  EMPTY_TRANSLATION_STATE,
+  formatTranslationState,
+  parseTranslationState,
+  reconcileTranslationState,
+  type StaleTranslation,
 } from './translation-state.js';
-import { ATLAS_INIT_OPTIONS } from './cli-options.generated.js';
+import { INIT_OPTIONS } from './cli-options.generated.js';
 import {
-  atlasCompletenessPolicy,
-  atlasPseudoLocales,
-  formatAtlasConfiguration,
-  parseAtlasConfiguration,
-  type AtlasInitConfiguration,
-  type AtlasProjectConfiguration,
+  completenessPolicy,
+  pseudoLocaleTags,
+  formatConfiguration,
+  parseConfiguration,
+  type InitConfiguration,
+  type ProjectConfiguration,
 } from './configuration.js';
 import {
-  atlasMessageCustomFunctions,
-  formatAtlasExtensionRegistry,
-  parseAtlasExtensionRegistry,
-  type AtlasExtensionRegistry,
+  messageCustomFunctions,
+  formatExtensionRegistry,
+  parseExtensionRegistry,
+  type ExtensionRegistry,
 } from './extensions.js';
-import { createAtlasPseudoCatalog } from './pseudo-localization.js';
+import { createPseudoCatalog } from './pseudo-localization.js';
 import {
-  atlasDiagnostic,
-  atlasFailure,
-  atlasSourceSpan,
-  atlasSuccess,
-  type AtlasDiagnostic,
-  type AtlasDiagnosticSeverity,
-  type AtlasResult,
+  toolkitDiagnostic,
+  toolkitFailure,
+  spanAt,
+  toolkitSuccess,
+  type ToolkitDiagnostic,
+  type ToolkitDiagnosticSeverity,
+  type ToolkitResult,
 } from './diagnostics.js';
 import {
-  digestAtlasCanonicalJson,
-  type AtlasCanonicalJsonObject,
-  type AtlasCanonicalJsonValue,
+  digestCanonicalJson,
+  type CanonicalJsonObject,
+  type CanonicalJsonValue,
 } from './canonical-json.js';
-import { admitAtlasHostCompatibility } from './host-compatibility.js';
-import { parseAtlasProviderId } from './identities.js';
-import { canonicalizeAtlasLocale } from './locales.js';
+import { admitHostCompatibility } from './host-compatibility.js';
+import { parseProviderId } from './identities.js';
+import { canonicalizeLocale } from './locales.js';
 import {
-  ATLAS_TOOLKIT_EVENT_CODES,
-  emitAtlasToolkitEvent,
-  type AtlasToolkitObservabilityOptions,
-  type AtlasToolkitObservabilitySink,
+  TOOLKIT_EVENT_CODES,
+  emitToolkitEvent,
+  type ToolkitObservabilityOptions,
+  type ToolkitObservabilitySink,
 } from './observability.js';
-import { ATLAS_RESOURCE_LIMITS } from './resource-limits.js';
+import { RESOURCE_LIMITS } from './resource-limits.js';
 import {
-  ATLAS_COMPILER_CACHE_PATH,
-  ATLAS_WORK_OWNER_PATH,
-  ATLAS_WORK_OWNER_PROFILE,
-  applyAtlasOutputPlan,
-  cleanAtlasOutput,
+  COMPILER_CACHE_PATH,
+  WORK_OWNER_PATH,
+  WORK_OWNER_PROFILE,
+  applyOutputPlan,
+  cleanOutput,
   containedPath,
-  inspectAtlasOutputFreshness,
-  type AtlasApplyOutputPlanResult,
-  type AtlasCleanOutputResult,
-  type AtlasOutputFreshness,
+  inspectOutputFreshness,
+  type ApplyOutputPlanResult,
+  type CleanOutputResult,
+  type OutputFreshness,
 } from './output-host.js';
 import { compareCodePoint } from './sorted-records.js';
 import {
@@ -103,13 +99,13 @@ import {
   writeSynced,
 } from './file-system.js';
 
-export const ATLAS_COMPILER_CACHE_PROFILE = 'atlas-compiler-cache/1' as const;
+export const COMPILER_CACHE_PROFILE = 'equator-compiler-cache/1' as const;
 
-const CONFIGURATION_NAME = 'atlas.config.json';
+const CONFIGURATION_NAME = 'equator.config.json';
 const PACKAGE_MANIFEST_NAME = 'package.json';
-const EXTENSION_REGISTRY_NAME = 'atlas.extensions.json';
+const EXTENSION_REGISTRY_NAME = 'equator.extensions.json';
 const GENERATED_ROOT = 'src/generated/i18n';
-const WORK_ROOT = '.atlas';
+const WORK_ROOT = '.equator';
 /**
  * The `#i18n` map for an owner whose generated output sits at `generatedRootPortablePath`.
  *
@@ -129,16 +125,16 @@ function packageImports(
 /**
  * The script entries `init` writes and keeps.
  *
- * Exported so a verification gate can assert what Atlas declares rather than what a fixture author
- * happened to type. A gate that runs `pnpm run atlas:init` proves only that a person added that
- * entry to the fixture manifest, because Atlas writes no such script.
+ * Exported so a verification gate can assert what Equator declares rather than what a fixture
+ * author happened to type. A gate that runs `pnpm run equator:init` proves only that a person added
+ * that entry to the fixture manifest, because Equator writes no such script.
  */
-export const ATLAS_PACKAGE_SCRIPTS = Object.freeze({
-  'atlas:generate': 'atlas generate',
-  'atlas:check': 'atlas check',
-  'atlas:format': 'atlas format',
-  'atlas:clean': 'atlas clean',
-  'atlas:watch': 'atlas watch',
+export const PACKAGE_SCRIPTS = Object.freeze({
+  'equator:generate': 'equator generate',
+  'equator:check': 'equator check',
+  'equator:format': 'equator format',
+  'equator:clean': 'equator clean',
+  'equator:watch': 'equator watch',
 });
 
 /**
@@ -147,19 +143,19 @@ export const ATLAS_PACKAGE_SCRIPTS = Object.freeze({
  * Every project verb takes this or something extending it. All of it is optional: with nothing
  * given, the operation finds the project from the current working directory.
  */
-export interface AtlasProjectSelection extends AtlasToolkitObservabilityOptions {
+export interface ProjectSelection extends ToolkitObservabilityOptions {
   /** Where to start looking for the project. Defaults to the current working directory. */
   readonly cwd?: string;
-  /** The configuration file to use, for a repository holding more than one Atlas project. */
+  /** The configuration file to use, for a repository holding more than one Equator project. */
   readonly project?: string;
   /**
    * Generate the catalogs for the configured pseudo-locales. Off unless asked for.
    *
    * The switch is here, on the invocation, rather than in the configuration file that declares the
    * pseudo-locales, so one configuration serves both builds and the production build differs by
-   * what it was asked to do, not by a file it had to edit first. `atlas generate --pseudo` is a
-   * development command; a production build runs `atlas generate` and receives a locale table with
-   * no pseudo-locale in it and no catalog to load.
+   * what it was asked to do, not by a file it had to edit first. `equator generate --pseudo` is a
+   * development command; a production build runs `equator generate` and receives a locale table
+   * with no pseudo-locale in it and no catalog to load.
    *
    * Deliberately not an environment variable. An environment variable set once on a CI runner
    * applies to every build on it, including the production one, which is the failure this switch
@@ -169,7 +165,7 @@ export interface AtlasProjectSelection extends AtlasToolkitObservabilityOptions 
   readonly pseudoLocales?: boolean;
 }
 
-export interface AtlasProjectLocation {
+export interface ProjectLocation {
   readonly ownerRoot: string;
   readonly configurationPath: string;
   readonly packagePath: string;
@@ -179,51 +175,51 @@ export interface AtlasProjectLocation {
   readonly workRoot: string;
 }
 
-export interface AtlasLoadedCatalog {
+export interface LoadedCatalog {
   readonly absolutePath: string;
   readonly portablePath: string;
   readonly source: string;
-  readonly catalog: AtlasCatalog;
+  readonly catalog: Catalog;
 }
 
-export interface AtlasLoadedProject extends AtlasProjectLocation {
+export interface LoadedProject extends ProjectLocation {
   readonly providerId: string;
   readonly configurationSource: string;
-  readonly configuration: AtlasProjectConfiguration;
+  readonly configuration: ProjectConfiguration;
   readonly packageSource: string;
   readonly packageManifest: Readonly<Record<string, unknown>>;
-  readonly catalogFiles: readonly AtlasLoadedCatalog[];
-  readonly catalogs: readonly AtlasCatalog[];
+  readonly catalogFiles: readonly LoadedCatalog[];
+  readonly catalogs: readonly Catalog[];
   readonly extensionSource?: string;
-  readonly extensions?: AtlasExtensionRegistry;
-  readonly analysis?: AtlasCompilerAnalysisInput;
+  readonly extensions?: ExtensionRegistry;
+  readonly analysis?: CompilerAnalysisInput;
   readonly recoveryMessageIdentities: readonly string[];
 }
 
 /** What every project verb returns at minimum: the compilation it ran. */
-export interface AtlasProjectCompilation {
+export interface ProjectCompilation {
   /** The analysis, the compiled artifacts, the generated files, and everything reported. */
-  readonly compilation: AtlasCompileProjectResult;
+  readonly compilation: CompileProjectResult;
 }
 
-interface AtlasLoadedProjectCompilation extends AtlasProjectCompilation {
-  readonly project: AtlasLoadedProject;
+interface LoadedProjectCompilation extends ProjectCompilation {
+  readonly project: LoadedProject;
 }
 
 /** What generating takes: a project, and whether to actually write. */
-export interface AtlasGenerateProjectOptions extends AtlasProjectSelection {
+export interface GenerateProjectOptions extends ProjectSelection {
   /** Work out the whole result and write nothing. The result still says what would have changed. */
   readonly dryRun?: boolean;
 }
 
 /** What generating produced, and what it did to the generated tree. */
-export interface AtlasGenerateProjectResult extends AtlasProjectCompilation {
+export interface GenerateProjectResult extends ProjectCompilation {
   /** What was written, what was removed, and whether anything changed at all. */
-  readonly publication: AtlasApplyOutputPlanResult;
+  readonly publication: ApplyOutputPlanResult;
 }
 
 /** What checking takes: a project, and how strict to be about what it finds. */
-export interface AtlasCheckProjectOptions extends AtlasProjectSelection {
+export interface CheckProjectOptions extends ProjectSelection {
   /** Reformat the catalogs that are not in canonical form, rather than only reporting them. */
   readonly fix?: boolean;
   /**
@@ -234,11 +230,11 @@ export interface AtlasCheckProjectOptions extends AtlasProjectSelection {
    * ordinarily lands before its translations and a hard failure there would stop the work that
    * produces them.
    *
-   * **What it covers is the whole family, not a selection from it.** `ATL1306` (the locale has no
-   * catalog for a scope at all), `ATL1307` (a catalog omits a message), `ATL1308` (a message omits
-   * a plural or ordinal category) and `ATL1309` (a translation was written against an older
+   * **What it covers is the whole family, not a selection from it.** `EQ1306` (the locale has no
+   * catalog for a scope at all), `EQ1307` (a catalog omits a message), `EQ1308` (a message omits
+   * a plural or ordinal category) and `EQ1309` (a translation was written against an older
    * source) are one question asked at four granularities, and they escalate together. They did not
-   * always: this switch reached `ATL1307` and `ATL1308` only, so a locale missing one message of
+   * always: this switch reached `EQ1307` and `EQ1308` only, so a locale missing one message of
    * three blocked a release and the same locale with no catalog at all passed it.
    *
    * **Which locales it applies to is not this option's to say.** Every locale is required unless
@@ -247,7 +243,7 @@ export interface AtlasCheckProjectOptions extends AtlasProjectSelection {
    *
    * **The name is `require`, and it stays.** The behaviour is a severity escalation, and the word
    * looked like a mismatch for that, until the pair is read together. `requireFreshOutput` does
-   * the same thing to `ATL1704`, and both say the same true thing: the condition is *required for
+   * the same thing to `EQ1704`, and both say the same true thing: the condition is *required for
    * this run*, and a run that does not meet it does not pass. Renaming one would separate a pair
    * that reads as a pair, and renaming both would spend a public-surface break on a word that was
    * already accurate.
@@ -259,7 +255,7 @@ export interface AtlasCheckProjectOptions extends AtlasProjectSelection {
    * Off by default and deliberately so: `specs/10-compiler-and-tooling.spec.md` section 12 keeps
    * freshness a non-blocking advisory in friendly mode, because generated output is routinely
    * stale in the middle of ordinary
-   * authoring and a command that failed on it would be unusable. On, `ATL1704` is raised at
+   * authoring and a command that failed on it would be unusable. On, `EQ1704` is raised at
    * `error` rather than `warning`, which is what makes it blocking: the exit code is keyed to
    * severity, so nothing else has to be told about this option.
    *
@@ -274,21 +270,21 @@ export interface AtlasCheckProjectOptions extends AtlasProjectSelection {
 }
 
 /** What checking found: whether the generated tree is current, and what it rewrote. */
-export interface AtlasCheckProjectResult extends AtlasProjectCompilation {
+export interface CheckProjectResult extends ProjectCompilation {
   /** Whether what is on disk matches what the sources would produce now, and where it does not. */
-  readonly freshness: AtlasOutputFreshness;
+  readonly freshness: OutputFreshness;
   /** The catalog files reformatted, empty unless `fix` was asked for. */
   readonly fixedFiles: readonly string[];
 }
 
 /** Which project to format, and whether to write anything. */
-export interface AtlasFormatProjectOptions extends AtlasProjectSelection {
+export interface FormatProjectOptions extends ProjectSelection {
   /** Work out the rewrites and write none of them, so a check can report without changing. */
   readonly dryRun?: boolean;
 }
 
 /** What formatting rewrote, or would have rewritten under a dry run. */
-export interface AtlasFormatProjectResult {
+export interface FormatProjectResult {
   /** Whether anything was out of canonical form. False on a project already formatted. */
   readonly changed: boolean;
   /** The files rewritten, as repository-relative paths, sorted. */
@@ -301,9 +297,9 @@ export interface AtlasFormatProjectResult {
  * Unlike the other three, this one is required rather than defaulted: initialization has to be told
  * at least the source locale, and there is no sensible guess for a project's languages.
  */
-export interface AtlasInitProjectOptions extends AtlasProjectSelection {
+export interface InitProjectOptions extends ProjectSelection {
   /**
-   * The configuration fields to write, spelled as `atlas.config.json` spells them.
+   * The configuration fields to write, spelled as `equator.config.json` spells them.
    *
    * One field rather than one per key, and that is correctness rather than convenience. Naming
    * four of the six the parser accepts leaves `personNameLocales` and `pseudoLocales` unreachable
@@ -311,16 +307,16 @@ export interface AtlasInitProjectOptions extends AtlasProjectSelection {
    * valid, so nothing fails and nothing says anything. A named field per key is a second statement
    * of the configuration shape, and the second one going quiet is the defect rather than a risk.
    *
-   * `AtlasInitConfiguration` is derived from the parser's own shape, so this follows the parser
+   * `InitConfiguration` is derived from the parser's own shape, so this follows the parser
    * without anyone keeping it in step.
    */
-  readonly configuration?: AtlasInitConfiguration;
+  readonly configuration?: InitConfiguration;
   /** Work out the files and write none of them, which is how a caller previews an init. */
   readonly dryRun?: boolean;
 }
 
 /** What initialization wrote, and the configuration the project now has. */
-export interface AtlasInitProjectResult {
+export interface InitProjectResult {
   /** Whether anything was written. False on a project already initialized the same way. */
   readonly changed: boolean;
   /** The files written or that would be written, as repository-relative paths, sorted. */
@@ -331,17 +327,17 @@ export interface AtlasInitProjectResult {
    * What the project now has rather than what was asked for, so a caller reading the locale list
    * reads the one the parser accepted.
    */
-  readonly configuration: AtlasProjectConfiguration;
+  readonly configuration: ProjectConfiguration;
 }
 
 /** Which project to clean, and whether to delete anything. */
-export interface AtlasCleanProjectOptions extends AtlasProjectSelection {
+export interface CleanProjectOptions extends ProjectSelection {
   /** Work out what would be removed and remove none of it. */
   readonly dryRun?: boolean;
 }
 
-/** Which project to remove Atlas from, whether to delete anything, and how far to go. */
-export interface AtlasUninstallProjectOptions extends AtlasProjectSelection {
+/** Which project to remove Equator from, whether to delete anything, and how far to go. */
+export interface UninstallProjectOptions extends ProjectSelection {
   /** Work out what would be removed and remove none of it. */
   readonly dryRun?: boolean;
   /** Remove authored catalogs too. Off unless asked for by name. */
@@ -349,13 +345,13 @@ export interface AtlasUninstallProjectOptions extends AtlasProjectSelection {
 }
 
 /** What uninstalling took back, what it left behind, and why. */
-export interface AtlasUninstallProjectResult {
+export interface UninstallProjectResult {
   /** Whether anything was removed. */
   readonly changed: boolean;
   /** The files taken back, as repository-relative paths, sorted. */
   readonly removed: readonly string[];
   /**
-   * What Atlas wrote, then somebody changed, and Atlas therefore left alone.
+   * What Equator wrote, then somebody changed, and Equator therefore left alone.
    *
    * Named rather than reverted: an edited script or a repointed `#i18n` specifier belongs to
    * whoever edited it, and silently undoing that is the same class of mistake as silently
@@ -367,15 +363,15 @@ export interface AtlasUninstallProjectResult {
 }
 
 /** One pass of the watcher: what number it was, and how it ended. */
-export interface AtlasWatchCycle {
+export interface WatchCycle {
   /** Which pass this is, counting from one, so a log can be read in order. */
   readonly sequence: number;
   /** What generating produced this time, including a failure, which does not stop the watch. */
-  readonly result: AtlasResult<AtlasGenerateProjectResult>;
+  readonly result: ToolkitResult<GenerateProjectResult>;
 }
 
 /** What watching takes: a project, a way to stop, and somewhere to report each pass. */
-export interface AtlasWatchProjectOptions extends AtlasProjectSelection {
+export interface WatchProjectOptions extends ProjectSelection {
   /**
    * How the watch is stopped. Required: there is no other way out.
    *
@@ -395,26 +391,26 @@ export interface AtlasWatchProjectOptions extends AtlasProjectSelection {
    * The only way to see a pass's diagnostics: the watch returns once, at the end, and by then every
    * pass but the last is over. It must not throw.
    */
-  readonly onCycle?: (cycle: AtlasWatchCycle) => void;
+  readonly onCycle?: (cycle: WatchCycle) => void;
 }
 
 /** What a finished watch has to say, which is how much it did. */
-export interface AtlasWatchProjectResult {
+export interface WatchProjectResult {
   /** How many passes ran before the watch was stopped. */
   readonly cycles: number;
 }
 
 interface CompilerCacheEnvelope {
-  readonly profile: typeof ATLAS_COMPILER_CACHE_PROFILE;
+  readonly profile: typeof COMPILER_CACHE_PROFILE;
   readonly ownerId: string;
   readonly stateDigest: string;
-  readonly state: AtlasCompilerState;
+  readonly state: CompilerState;
 }
 
 interface CachedCompilerState {
   readonly ownerId: string;
-  readonly state: AtlasCompilerState;
-  readonly diagnostics: readonly AtlasDiagnostic[];
+  readonly state: CompilerState;
+  readonly diagnostics: readonly ToolkitDiagnostic[];
 }
 
 interface TextFileChange {
@@ -446,7 +442,7 @@ async function assertOrdinaryContainedPath(
   target: string,
 ): Promise<void> {
   if (!containedPath(target, ownerRoot)) {
-    throw new TypeError(`Atlas path escapes its selected owner: ${target}`);
+    throw new TypeError(`Equator path escapes its selected owner: ${target}`);
   }
   const portable = relative(ownerRoot, target);
   let current = ownerRoot;
@@ -455,7 +451,7 @@ async function assertOrdinaryContainedPath(
     const metadata = await pathMetadata(current);
     if (metadata === undefined) break;
     if (metadata.isSymbolicLink()) {
-      throw new TypeError(`Atlas refuses linked project content: ${current}`);
+      throw new TypeError(`Equator refuses linked project content: ${current}`);
     }
   }
 }
@@ -464,7 +460,7 @@ async function readUtf8(path: string, maximumBytes: number): Promise<string> {
   const contents = await readFile(path);
   if (contents.byteLength > maximumBytes) {
     throw new TypeError(
-      `Atlas refuses ${path} because it exceeds ${maximumBytes} bytes.`,
+      `Equator refuses ${path} because it exceeds ${maximumBytes} bytes.`,
     );
   }
   return contents.toString('utf8');
@@ -472,36 +468,36 @@ async function readUtf8(path: string, maximumBytes: number): Promise<string> {
 
 function projectDiagnostic(
   summary: string,
-  severity: AtlasDiagnosticSeverity = 'error',
-): AtlasDiagnostic {
-  return atlasDiagnostic('ATL1702', summary, { severity });
+  severity: ToolkitDiagnosticSeverity = 'error',
+): ToolkitDiagnostic {
+  return toolkitDiagnostic('EQ1702', summary, { severity });
 }
 
 async function explicitOwner(
   project: string,
   cwd: string,
-): Promise<AtlasResult<string>> {
+): Promise<ToolkitResult<string>> {
   const candidate = resolve(cwd, project);
   const metadata = await pathMetadata(candidate);
   if (metadata === undefined) {
-    return atlasFailure([
+    return toolkitFailure([
       projectDiagnostic(
-        `Selected Atlas project ${JSON.stringify(project)} does not exist.`,
+        `Selected Equator project ${JSON.stringify(project)} does not exist.`,
       ),
     ]);
   }
   if (metadata.isSymbolicLink()) {
-    return atlasFailure([
-      projectDiagnostic('Atlas project selection cannot be a symbolic link.'),
+    return toolkitFailure([
+      projectDiagnostic('Equator project selection cannot be a symbolic link.'),
     ]);
   }
-  if (metadata.isDirectory()) return atlasSuccess(candidate);
+  if (metadata.isDirectory()) return toolkitSuccess(candidate);
   if (metadata.isFile() && basename(candidate) === CONFIGURATION_NAME) {
-    return atlasSuccess(dirname(candidate));
+    return toolkitSuccess(dirname(candidate));
   }
-  return atlasFailure([
+  return toolkitFailure([
     projectDiagnostic(
-      'Atlas --project must select an owner directory or atlas.config.json.',
+      'Equator --project must select an owner directory or equator.config.json.',
     ),
   ]);
 }
@@ -510,20 +506,20 @@ async function explicitOwner(
  * The owner this working directory is in, searched no further than the package it is in.
  *
  * Discovery walks upward, and unbounded it walks to the filesystem root, selecting one
- * `atlas.config.json` however far above and whatever stands between.
+ * `equator.config.json` however far above and whatever stands between.
  * `specs/10-compiler-and-tooling.spec.md` section 4 says a working-directory accident never merges
  * projects, and section 10 says an application never inherits a neighboring configuration by
  * directory accident; this is the same accident one directory up.
  *
- * Unbounded, `atlas init` inside `parent/child`, where `child` has its own `package.json` and
- * `parent` has an `atlas.config.json`, initializes **`parent`** and reports success, naming three
- * files the reader cannot find where they are standing. In this repository it goes further: a
- * stray configuration at the workspace root makes every consumer materialized under `tmp/`
- * select that root as its owner instead of itself, and four gate stages then fail with "Atlas init
- * is already complete" against a consumer whose configuration does not exist.
+ * Unbounded, `equator init` inside `parent/child`, where `child` has its own `package.json` and
+ * `parent` has an `equator.config.json`, initializes **`parent`** and reports success, naming three
+ * files the reader cannot find where they are standing. In this repository it goes further: a stray
+ * configuration at the workspace root makes every consumer materialized under `tmp/` select that
+ * root as its owner instead of itself, and four gate stages then fail with "Equator init is already
+ * complete" against a consumer whose configuration does not exist.
  *
  * **So the boundary is the nearest `package.json` upward, inclusive.** That directory is the
- * project's root (it is what a package manager, Node's own resolution and Atlas's provider
+ * project's root (it is what a package manager, Node's own resolution and Equator's provider
  * identity all already treat as one) and a configuration above it belongs to a different project.
  * The workspace-root owner with a nested application still resolves, because nothing between the
  * application and that root carries a manifest of its own (section 134).
@@ -531,7 +527,7 @@ async function explicitOwner(
  * With no `package.json` anywhere above, there is no project, so the only directory a configuration
  * could belong to is this one.
  */
-type AtlasOwnerSearch =
+type OwnerSearch =
   | { readonly outcome: 'one'; readonly ownerRoot: string }
   | { readonly outcome: 'many'; readonly candidates: readonly string[] }
   | {
@@ -540,9 +536,7 @@ type AtlasOwnerSearch =
       readonly beyond: string | undefined;
     };
 
-async function searchOwnerWithinPackage(
-  cwd: string,
-): Promise<AtlasOwnerSearch> {
+async function searchOwnerWithinPackage(cwd: string): Promise<OwnerSearch> {
   const candidates: string[] = [];
   let boundary: string | undefined;
   let current: string | undefined = cwd;
@@ -577,27 +571,27 @@ async function searchOwnerWithinPackage(
 
 async function discoverOwnerWithinPackage(
   cwd: string,
-): Promise<AtlasResult<string>> {
+): Promise<ToolkitResult<string>> {
   const search = await searchOwnerWithinPackage(cwd);
-  if (search.outcome === 'one') return atlasSuccess(search.ownerRoot);
+  if (search.outcome === 'one') return toolkitSuccess(search.ownerRoot);
   if (search.outcome === 'many') {
-    return atlasFailure([
+    return toolkitFailure([
       projectDiagnostic(
-        `Atlas project discovery is ambiguous: ${search.candidates
+        `Equator project discovery is ambiguous: ${search.candidates
           .map((path) => JSON.stringify(path))
           .join(', ')}. Use --project.`,
       ),
     ]);
   }
-  return atlasFailure([projectDiagnostic(noOwnerFound(search))]);
+  return toolkitFailure([projectDiagnostic(noOwnerFound(search))]);
 }
 
 function noOwnerFound(
-  search: Extract<AtlasOwnerSearch, { outcome: 'none' }>,
+  search: Extract<OwnerSearch, { outcome: 'none' }>,
 ): string {
   return search.beyond === undefined
-    ? `No atlas.config.json was found in ${JSON.stringify(search.boundary)}. Select an owner with --project or run atlas init.`
-    : `No atlas.config.json was found in ${JSON.stringify(search.boundary)}, which is the package this directory is in. There is one at ${JSON.stringify(search.beyond)}, above that boundary, and it belongs to that project rather than this one. Run atlas init here, or select that project with --project if this directory really is part of it.`;
+    ? `No equator.config.json was found in ${JSON.stringify(search.boundary)}. Select an owner with --project or run equator init.`
+    : `No equator.config.json was found in ${JSON.stringify(search.boundary)}, which is the package this directory is in. There is one at ${JSON.stringify(search.beyond)}, above that boundary, and it belongs to that project rather than this one. Run equator init here, or select that project with --project if this directory really is part of it.`;
 }
 
 /** The nearest configuration strictly above a boundary, for a diagnostic that has to name it. */
@@ -612,9 +606,9 @@ async function configurationAbove(
   return undefined;
 }
 
-export async function discoverAtlasProject(
-  selection: AtlasProjectSelection = {},
-): Promise<AtlasResult<AtlasProjectLocation>> {
+export async function discoverProject(
+  selection: ProjectSelection = {},
+): Promise<ToolkitResult<ProjectLocation>> {
   const cwd = resolve(selection.cwd ?? process.cwd());
   let ownerRoot: string;
   if (selection.project !== undefined) {
@@ -632,12 +626,14 @@ export async function discoverAtlasProject(
     !ownerMetadata.isDirectory() ||
     ownerMetadata.isSymbolicLink()
   ) {
-    return atlasFailure([
-      projectDiagnostic('Atlas owner must be an existing ordinary directory.'),
+    return toolkitFailure([
+      projectDiagnostic(
+        'Equator owner must be an existing ordinary directory.',
+      ),
     ]);
   }
   const generatedRoot = await generatedRootPath(ownerRoot);
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
       ownerRoot,
       configurationPath: resolve(ownerRoot, CONFIGURATION_NAME),
@@ -652,17 +648,17 @@ export async function discoverAtlasProject(
 /**
  * The manifest an owner is identified by.
  *
- * `create` is set only by `atlas init`. Scaffolding commands author files and build commands do
+ * `create` is set only by `equator init`. Scaffolding commands author files and build commands do
  * not, which is the division `tsc --init` and `tsc`, `eslint --init`, `git init` and
  * `cargo init` all draw. The practical reason is stronger than the convention: `generate`,
  * `check` and `watch` run unattended inside build pipelines and dev servers, so letting them
  * author files means one mistyped `--project` scatters manifests through a build.
  */
 async function readPackageManifest(
-  location: AtlasProjectLocation,
+  location: ProjectLocation,
   create = false,
 ): Promise<
-  AtlasResult<{
+  ToolkitResult<{
     readonly source: string;
     readonly value: Readonly<Record<string, unknown>>;
     readonly providerId: string;
@@ -671,16 +667,16 @@ async function readPackageManifest(
 > {
   const metadata = await pathMetadata(location.packagePath);
   if (metadata !== undefined && metadata.isSymbolicLink()) {
-    return atlasFailure([
+    return toolkitFailure([
       projectDiagnostic(
-        'The selected Atlas owner package.json is a link. Atlas refuses linked project content; replace it with an ordinary file.',
+        'The selected Equator owner package.json is a link. Equator refuses linked project content; replace it with an ordinary file.',
       ),
     ]);
   }
   if (metadata !== undefined && !metadata.isFile()) {
-    return atlasFailure([
+    return toolkitFailure([
       projectDiagnostic(
-        'The selected Atlas owner package.json is not an ordinary file.',
+        'The selected Equator owner package.json is not an ordinary file.',
       ),
     ]);
   }
@@ -689,9 +685,9 @@ async function readPackageManifest(
       // The remedy, not just the fact. A missing manifest is the ordinary state of a new
       // application in a multi-application workspace, and the whole of what to do about it is one
       // command.
-      return atlasFailure([
+      return toolkitFailure([
         projectDiagnostic(
-          `The selected Atlas owner has no package.json at ${JSON.stringify(portablePath(location.ownerRoot, location.packagePath))}. Run atlas init in that directory to create it; generate, check, format and watch never author files.`,
+          `The selected Equator owner has no package.json at ${JSON.stringify(portablePath(location.ownerRoot, location.packagePath))}. Run equator init in that directory to create it; generate, check, format and watch never author files.`,
         ),
       ]);
     }
@@ -700,9 +696,9 @@ async function readPackageManifest(
     const parsed = JSON.parse(created.value) as Readonly<
       Record<string, unknown>
     >;
-    const provider = parseAtlasProviderId(parsed['name']);
+    const provider = parseProviderId(parsed['name']);
     if (!provider.ok) return provider;
-    return atlasSuccess(
+    return toolkitSuccess(
       Object.freeze({
         source: created.value,
         value: parsed,
@@ -716,32 +712,32 @@ async function readPackageManifest(
   try {
     value = JSON.parse(source);
   } catch {
-    return atlasFailure([
+    return toolkitFailure([
       projectDiagnostic('The selected owner package.json is not valid JSON.'),
     ]);
   }
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return atlasFailure([
+    return toolkitFailure([
       projectDiagnostic('The selected owner package.json must be an object.'),
     ]);
   }
   const manifest = value as Readonly<Record<string, unknown>>;
   if (typeof manifest['name'] !== 'string') {
-    return atlasFailure([
+    return toolkitFailure([
       projectDiagnostic(
         'The selected owner package.json requires a package name for its provider identity.',
       ),
     ]);
   }
-  const provider = parseAtlasProviderId(manifest['name']);
+  const provider = parseProviderId(manifest['name']);
   if (!provider.ok) {
-    return atlasFailure([
+    return toolkitFailure([
       projectDiagnostic(
-        `Package name ${JSON.stringify(manifest['name'])} is not a valid Atlas provider identity.`,
+        `Package name ${JSON.stringify(manifest['name'])} is not a valid Equator provider identity.`,
       ),
     ]);
   }
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
       source,
       value: manifest,
@@ -752,24 +748,24 @@ async function readPackageManifest(
 }
 
 /**
- * The manifest `atlas init` writes when an application has none.
+ * The manifest `equator init` writes when an application has none.
  *
- * The package name comes from the directory, because that is the only name present: Atlas has no
+ * The package name comes from the directory, because that is the only name present: Equator has no
  * way to know a workspace's scope, and inventing one would put a wrong provider identity into
  * every compiled artifact. A directory whose name is not a usable identity is reported rather than
  * sanitized, since the identity is durable and a silently corrected one is worse than a refusal.
  */
-function createdPackageManifest(ownerRoot: string): AtlasResult<string> {
+function createdPackageManifest(ownerRoot: string): ToolkitResult<string> {
   const name = basename(ownerRoot);
-  const provider = parseAtlasProviderId(name);
+  const provider = parseProviderId(name);
   if (!provider.ok) {
-    return atlasFailure([
+    return toolkitFailure([
       projectDiagnostic(
-        `Atlas cannot name a package after the directory ${JSON.stringify(name)}, which is not a valid package name. Create package.json with a name of your choosing and run atlas init again.`,
+        `Equator cannot name a package after the directory ${JSON.stringify(name)}, which is not a valid package name. Create package.json with a name of your choosing and run equator init again.`,
       ),
     ]);
   }
-  return atlasSuccess(
+  return toolkitSuccess(
     `${JSON.stringify({ name: provider.value, private: true }, null, 2)}\n`,
   );
 }
@@ -777,8 +773,8 @@ function createdPackageManifest(ownerRoot: string): AtlasResult<string> {
 function packageSetupDiagnostics(
   manifest: Readonly<Record<string, unknown>>,
   generatedRootPortablePath: string,
-): readonly AtlasDiagnostic[] {
-  const diagnostics: AtlasDiagnostic[] = [];
+): readonly ToolkitDiagnostic[] {
+  const diagnostics: ToolkitDiagnostic[] = [];
   const imports = manifest['imports'];
   if (
     typeof imports !== 'object' ||
@@ -786,9 +782,9 @@ function packageSetupDiagnostics(
     Array.isArray(imports)
   ) {
     diagnostics.push(
-      atlasDiagnostic(
-        'ATL1705',
-        'package.json does not contain the Atlas #i18n import mappings. Run atlas init.',
+      toolkitDiagnostic(
+        'EQ1705',
+        'package.json does not contain the Equator #i18n import mappings. Run equator init.',
       ),
     );
     return diagnostics;
@@ -798,9 +794,9 @@ function packageSetupDiagnostics(
   )) {
     if ((imports as Record<string, unknown>)[specifier] !== target) {
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1705',
-          `package.json must map ${JSON.stringify(specifier)} to ${JSON.stringify(target)}. Run atlas init.`,
+        toolkitDiagnostic(
+          'EQ1705',
+          `package.json must map ${JSON.stringify(specifier)} to ${JSON.stringify(target)}. Run equator init.`,
           { path: ['imports', specifier] },
         ),
       );
@@ -809,10 +805,10 @@ function packageSetupDiagnostics(
   return diagnostics;
 }
 
-async function readConfiguration(location: AtlasProjectLocation): Promise<
-  AtlasResult<{
+async function readConfiguration(location: ProjectLocation): Promise<
+  ToolkitResult<{
     readonly source: string;
-    readonly value: AtlasProjectConfiguration;
+    readonly value: ProjectConfiguration;
   }>
 > {
   const metadata = await pathMetadata(location.configurationPath);
@@ -821,38 +817,38 @@ async function readConfiguration(location: AtlasProjectLocation): Promise<
     !metadata.isFile() ||
     metadata.isSymbolicLink()
   ) {
-    return atlasFailure([
+    return toolkitFailure([
       projectDiagnostic(
-        'The selected Atlas owner requires an ordinary atlas.config.json.',
+        'The selected Equator owner requires an ordinary equator.config.json.',
       ),
     ]);
   }
   const source = await readUtf8(location.configurationPath, 1024 * 1024);
-  const parsed = parseAtlasConfiguration(source, {
+  const parsed = parseConfiguration(source, {
     sourcePath: CONFIGURATION_NAME,
   });
   return parsed.ok
-    ? atlasSuccess(
+    ? toolkitSuccess(
         Object.freeze({ source, value: parsed.value }),
         parsed.diagnostics,
       )
     : parsed;
 }
 
-async function readExtensionRegistry(location: AtlasProjectLocation): Promise<
-  AtlasResult<
+async function readExtensionRegistry(location: ProjectLocation): Promise<
+  ToolkitResult<
     | {
         readonly source: string;
-        readonly value: AtlasExtensionRegistry;
+        readonly value: ExtensionRegistry;
       }
     | undefined
   >
 > {
   const path = resolve(location.ownerRoot, EXTENSION_REGISTRY_NAME);
   const metadata = await pathMetadata(path);
-  if (metadata === undefined) return atlasSuccess(undefined);
+  if (metadata === undefined) return toolkitSuccess(undefined);
   if (!metadata.isFile() || metadata.isSymbolicLink()) {
-    return atlasFailure([
+    return toolkitFailure([
       projectDiagnostic(
         `${EXTENSION_REGISTRY_NAME} must be an ordinary contained file.`,
       ),
@@ -860,11 +856,11 @@ async function readExtensionRegistry(location: AtlasProjectLocation): Promise<
   }
   await assertOrdinaryContainedPath(location.ownerRoot, path);
   const source = await readUtf8(path, 1024 * 1024);
-  const parsed = parseAtlasExtensionRegistry(source, {
+  const parsed = parseExtensionRegistry(source, {
     sourcePath: EXTENSION_REGISTRY_NAME,
   });
   return parsed.ok
-    ? atlasSuccess(
+    ? toolkitSuccess(
         Object.freeze({ source, value: parsed.value }),
         parsed.diagnostics,
       )
@@ -883,23 +879,23 @@ async function readExtensionRegistry(location: AtlasProjectLocation): Promise<
  * two transformations and measure neither.
  */
 function derivePseudoCatalogs(
-  configuration: AtlasProjectConfiguration,
-  authored: readonly AtlasCatalog[],
-  extensions: AtlasExtensionRegistry | undefined,
-): AtlasResult<readonly AtlasCatalog[]> {
+  configuration: ProjectConfiguration,
+  authored: readonly Catalog[],
+  extensions: ExtensionRegistry | undefined,
+): ToolkitResult<readonly Catalog[]> {
   const tags = Object.keys(configuration.pseudoLocales);
-  if (tags.length === 0) return atlasSuccess(Object.freeze([]));
+  if (tags.length === 0) return toolkitSuccess(Object.freeze([]));
   // The same registry the authored catalogs were parsed with. A derived catalog is an ordinary
   // catalog, and that has to include how it is read, not only what it looks like afterwards.
-  const customFunctions = atlasMessageCustomFunctions(extensions);
-  const derived: AtlasCatalog[] = [];
-  const diagnostics: AtlasDiagnostic[] = [];
+  const customFunctions = messageCustomFunctions(extensions);
+  const derived: Catalog[] = [];
+  const diagnostics: ToolkitDiagnostic[] = [];
   for (const source of authored) {
     if (source.role !== 'source') continue;
     for (const tag of tags) {
       const transform = configuration.pseudoLocales[tag];
       if (transform === undefined) continue;
-      const catalog = createAtlasPseudoCatalog(source, {
+      const catalog = createPseudoCatalog(source, {
         locale: tag,
         ...transform,
         customFunctions,
@@ -910,17 +906,17 @@ function derivePseudoCatalogs(
     }
   }
   if (diagnostics.some(({ severity }) => severity === 'error')) {
-    return atlasFailure(diagnostics);
+    return toolkitFailure(diagnostics);
   }
-  return atlasSuccess(Object.freeze(derived), diagnostics);
+  return toolkitSuccess(Object.freeze(derived), diagnostics);
 }
 
 async function discoverCatalogs(
-  location: AtlasProjectLocation,
+  location: ProjectLocation,
   providerId: string,
-  configuration: AtlasProjectConfiguration,
-  extensions: AtlasExtensionRegistry | undefined,
-): Promise<AtlasResult<readonly AtlasLoadedCatalog[]>> {
+  configuration: ProjectConfiguration,
+  extensions: ExtensionRegistry | undefined,
+): Promise<ToolkitResult<readonly LoadedCatalog[]>> {
   const catalogRoot = resolve(location.ownerRoot, 'i18n');
   const rootMetadata = await pathMetadata(catalogRoot);
   if (
@@ -928,14 +924,14 @@ async function discoverCatalogs(
     !rootMetadata.isDirectory() ||
     rootMetadata.isSymbolicLink()
   ) {
-    return atlasFailure([
+    return toolkitFailure([
       projectDiagnostic(
-        'The selected Atlas owner requires an ordinary i18n directory.',
+        'The selected Equator owner requires an ordinary i18n directory.',
       ),
     ]);
   }
-  const diagnostics: AtlasDiagnostic[] = [];
-  const catalogs: AtlasLoadedCatalog[] = [];
+  const diagnostics: ToolkitDiagnostic[] = [];
+  const catalogs: LoadedCatalog[] = [];
   // Conventional catalog files that were found and read off disk but never became a catalog.
   const unreadable: string[] = [];
   const scopeEntries = await readdir(catalogRoot, { withFileTypes: true });
@@ -944,7 +940,7 @@ async function discoverCatalogs(
     if (scopeEntry.isSymbolicLink() || !scopeEntry.isDirectory()) {
       diagnostics.push(
         projectDiagnostic(
-          `Atlas catalog root contains unsupported entry ${JSON.stringify(scopeEntry.name)}.`,
+          `Equator catalog root contains unsupported entry ${JSON.stringify(scopeEntry.name)}.`,
         ),
       );
       continue;
@@ -962,13 +958,13 @@ async function discoverCatalogs(
       ) {
         diagnostics.push(
           projectDiagnostic(
-            `Atlas scope ${JSON.stringify(scopeEntry.name)} contains unsupported entry ${JSON.stringify(localeEntry.name)}.`,
+            `Equator scope ${JSON.stringify(scopeEntry.name)} contains unsupported entry ${JSON.stringify(localeEntry.name)}.`,
           ),
         );
         continue;
       }
       const localeName = basename(localeEntry.name, '.yaml');
-      const canonicalLocale = canonicalizeAtlasLocale(localeName);
+      const canonicalLocale = canonicalizeLocale(localeName);
       if (!canonicalLocale.ok || canonicalLocale.value !== localeName) {
         diagnostics.push(
           projectDiagnostic(
@@ -984,7 +980,7 @@ async function discoverCatalogs(
       // Counted where the file is read rather than where it is accepted, because the difference
       // between the two is the whole of the diagnostic below.
       unreadable.push(portable);
-      const parsed = parseAtlasCatalog(source, {
+      const parsed = parseCatalog(source, {
         role:
           canonicalLocale.value === configuration.sourceLocale
             ? 'source'
@@ -1010,10 +1006,10 @@ async function discoverCatalogs(
     }
   }
   if (catalogs.length === 0) {
-    // This said *"Atlas found no conventional i18n/<scope>/<locale>.yaml catalogs"*
+    // This said *"Equator found no conventional i18n/<scope>/<locale>.yaml catalogs"*
     // whether none existed or every one of them existed and failed to parse, and it said it above
     // the parse errors for the very files it had just read. A reader who has an `en-US.yaml` open in
-    // front of them is told Atlas cannot find it, which sends them to check the path convention,
+    // front of them is told Equator cannot find it, which sends them to check the path convention,
     // the scope name and the locale spelling, none of which is wrong.
     //
     // Absence and unreadability are different facts and they take different sentences. The
@@ -1021,47 +1017,47 @@ async function discoverCatalogs(
     // business and "see the errors below" is a claim about a layout this code does not control.
     //
     // They are also different *severities*. A project with no messages is not a broken
-    // project: it is the state every project is in the moment after `atlas init`, and the install
+    // project: it is the state every project is in the moment after `equator init`, and the install
     // line is `init` then `generate` with nothing authored in between. So absence is a note that
     // says where the first message goes, and only unreadability is an error. The severity carries
-    // it rather than a second code, the way `ATL1704` does: one fact, one diagnostic, and the
+    // it rather than a second code, the way `EQ1704` does: one fact, one diagnostic, and the
     // severity-keyed exit path decides whether it blocks.
     diagnostics.push(
       unreadable.length === 0
         ? projectDiagnostic(
-            `Atlas found no messages yet. Write the first catalog at i18n/<scope>/${configuration.sourceLocale}.yaml, for example i18n/shell/${configuration.sourceLocale}.yaml.`,
+            `Equator found no messages yet. Write the first catalog at i18n/<scope>/${configuration.sourceLocale}.yaml, for example i18n/shell/${configuration.sourceLocale}.yaml.`,
             'info',
           )
         : projectDiagnostic(
             unreadable.length === 1
-              ? `Atlas found 1 conventional catalog and could not read it: ${namedPaths(unreadable)}.`
-              : `Atlas found ${unreadable.length} conventional catalogs and could not read any of them: ${namedPaths(unreadable)}.`,
+              ? `Equator found 1 conventional catalog and could not read it: ${namedPaths(unreadable)}.`
+              : `Equator found ${unreadable.length} conventional catalogs and could not read any of them: ${namedPaths(unreadable)}.`,
           ),
     );
   }
   if (diagnostics.some(({ severity }) => severity === 'error')) {
-    return atlasFailure(diagnostics);
+    return toolkitFailure(diagnostics);
   }
   catalogs.sort((left, right) =>
     compareCodePoint(left.portablePath, right.portablePath),
   );
-  return atlasSuccess(Object.freeze(catalogs), diagnostics);
+  return toolkitSuccess(Object.freeze(catalogs), diagnostics);
 }
 
 function typescriptDiagnostic(
   ownerRoot: string,
   diagnostic: ts.Diagnostic,
-): AtlasDiagnostic {
+): ToolkitDiagnostic {
   const summary = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
   if (
     diagnostic.file === undefined ||
     diagnostic.start === undefined ||
     diagnostic.length === undefined
   ) {
-    return atlasDiagnostic('ATL1401', `TypeScript configuration: ${summary}`);
+    return toolkitDiagnostic('EQ1401', `TypeScript configuration: ${summary}`);
   }
-  return atlasDiagnostic('ATL1401', `TypeScript configuration: ${summary}`, {
-    span: atlasSourceSpan(
+  return toolkitDiagnostic('EQ1401', `TypeScript configuration: ${summary}`, {
+    span: spanAt(
       diagnostic.file.text,
       diagnostic.start,
       diagnostic.length,
@@ -1079,14 +1075,14 @@ interface AngularApplication {
 function angularApplication(
   ownerRoot: string,
   angular: Readonly<Record<string, unknown>>,
-): AtlasResult<AngularApplication | undefined> {
+): ToolkitResult<AngularApplication | undefined> {
   const projects = angular['projects'];
   if (
     typeof projects !== 'object' ||
     projects === null ||
     Array.isArray(projects)
   ) {
-    return atlasSuccess(undefined);
+    return toolkitSuccess(undefined);
   }
   const candidates: AngularApplication[] = [];
   for (const [, rawProject] of Object.entries(projects).sort(
@@ -1141,9 +1137,9 @@ function angularApplication(
     ...new Map(candidates.map((entry) => [entry.tsConfig, entry])).values(),
   ].sort((left, right) => compareCodePoint(left.tsConfig, right.tsConfig));
   if (unique.length > 1) {
-    return atlasFailure([
+    return toolkitFailure([
       projectDiagnostic(
-        `Atlas found multiple Angular application TypeScript graphs: ${unique
+        `Equator found multiple Angular application TypeScript graphs: ${unique
           .map(({ tsConfig }) =>
             JSON.stringify(portablePath(ownerRoot, tsConfig)),
           )
@@ -1151,19 +1147,19 @@ function angularApplication(
       ),
     ]);
   }
-  return atlasSuccess(unique[0]);
+  return toolkitSuccess(unique[0]);
 }
 
 async function selectAngularApplication(
   ownerRoot: string,
-): Promise<AtlasResult<AngularApplication | undefined>> {
+): Promise<ToolkitResult<AngularApplication | undefined>> {
   const angularPath = resolve(ownerRoot, 'angular.json');
   if (await pathExists(angularPath)) {
     let angular: unknown;
     try {
       angular = JSON.parse(await readUtf8(angularPath, 4 * 1024 * 1024));
     } catch {
-      return atlasFailure([
+      return toolkitFailure([
         projectDiagnostic('The selected owner angular.json is not valid JSON.'),
       ]);
     }
@@ -1182,16 +1178,16 @@ async function selectAngularApplication(
   for (const name of ['tsconfig.app.json', 'tsconfig.json']) {
     const path = resolve(ownerRoot, name);
     if (await pathExists(path)) {
-      return atlasSuccess(Object.freeze({ root: '', tsConfig: path }));
+      return toolkitSuccess(Object.freeze({ root: '', tsConfig: path }));
     }
   }
-  return atlasSuccess(undefined);
+  return toolkitSuccess(undefined);
 }
 
 /**
  * Where this owner's generated source belongs.
  *
- * Inside the Angular application Atlas analyzed, always. When the owner is the application, the
+ * Inside the Angular application Equator analyzed, always. When the owner is the application, the
  * per-application layout, that is `src/generated/i18n` under the owner. When an owner at a
  * workspace root has its application nested, writing to the owner's own `src/generated/i18n` would
  * create a source directory belonging to no Angular project and sitting outside the tsconfig of
@@ -1251,8 +1247,8 @@ const NON_PORTABLE_COMPILER_OPTIONS: ReadonlySet<string> = new Set([
 function portableCompilerOptions(
   ownerRoot: string,
   options: ts.CompilerOptions,
-): AtlasCanonicalJsonObject {
-  const portableValue = (value: unknown): AtlasCanonicalJsonValue => {
+): CanonicalJsonObject {
+  const portableValue = (value: unknown): CanonicalJsonValue => {
     if (typeof value === 'string') {
       return isAbsolute(value) ? portablePath(ownerRoot, value) : value;
     }
@@ -1261,7 +1257,7 @@ function portableCompilerOptions(
     if (typeof value === 'object' && value !== null) {
       return Object.fromEntries(
         Object.entries(value as Record<string, unknown>)
-          .map(([key, nested]): [string, AtlasCanonicalJsonValue] => [
+          .map(([key, nested]): [string, CanonicalJsonValue] => [
             key,
             portableValue(nested),
           ])
@@ -1275,7 +1271,7 @@ function portableCompilerOptions(
       ([key, value]) =>
         !NON_PORTABLE_COMPILER_OPTIONS.has(key) && value !== undefined,
     )
-    .map(([key, value]): [string, AtlasCanonicalJsonValue] => [
+    .map(([key, value]): [string, CanonicalJsonValue] => [
       key,
       portableValue(value),
     ])
@@ -1284,30 +1280,32 @@ function portableCompilerOptions(
 }
 
 async function loadAnalysisGraph(
-  location: AtlasProjectLocation,
-): Promise<AtlasResult<AtlasCompilerAnalysisInput | undefined>> {
-  const host = admitAtlasHostCompatibility();
+  location: ProjectLocation,
+): Promise<ToolkitResult<CompilerAnalysisInput | undefined>> {
+  const host = admitHostCompatibility();
   if (!host.ok) return host;
   const selected = await selectAngularApplication(location.ownerRoot);
   if (!selected.ok) return selected;
   if (selected.value === undefined) {
-    // Silence was the worst available answer. With no TypeScript graph, Atlas cannot see a single
+    // Silence was the worst available answer. With no TypeScript graph, Equator cannot see a single
     // template or call site, so every message looks unused, reachability is empty, and generation
     // produces an owner with nothing in it, and it all reports success. Every application meets
-    // first-time configuration exactly once, so this is the moment a workspace adopting Atlas is
+    // first-time configuration exactly once, so this is the moment a workspace adopting Equator is
     // most likely to hit it and least able to recognise it. Reported as a project-selection
     // failure rather than an environment one, because the fix is in the project.
-    return atlasFailure([
+    return toolkitFailure([
       ...selected.diagnostics,
       projectDiagnostic(
-        'Atlas found no TypeScript graph for this owner, so no template or call site can be analyzed and every message would appear unused. Expected an Angular application build tsConfig in angular.json, or tsconfig.app.json or tsconfig.json beside package.json.',
+        'Equator found no TypeScript graph for this owner, so no template or call site can be analyzed and every message would appear unused. Expected an Angular application build tsConfig in angular.json, or tsconfig.app.json or tsconfig.json beside package.json.',
       ),
     ]);
   }
   const configPath = selected.value.tsConfig;
   const read = ts.readConfigFile(configPath, ts.sys.readFile);
   if (read.error !== undefined) {
-    return atlasFailure([typescriptDiagnostic(location.ownerRoot, read.error)]);
+    return toolkitFailure([
+      typescriptDiagnostic(location.ownerRoot, read.error),
+    ]);
   }
   const parsed = ts.parseJsonConfigFileContent(
     read.config,
@@ -1317,7 +1315,7 @@ async function loadAnalysisGraph(
     configPath,
   );
   if (parsed.errors.length > 0) {
-    return atlasFailure(
+    return toolkitFailure(
       parsed.errors.map((diagnostic) =>
         typescriptDiagnostic(location.ownerRoot, diagnostic),
       ),
@@ -1333,12 +1331,12 @@ async function loadAnalysisGraph(
         !portablePath(location.ownerRoot, path).startsWith('node_modules/'),
     )
     .sort(compareCodePoint);
-  const diagnostics: AtlasDiagnostic[] = [];
-  if (rootNames.length > ATLAS_RESOURCE_LIMITS.analysisSourceFiles) {
+  const diagnostics: ToolkitDiagnostic[] = [];
+  if (rootNames.length > RESOURCE_LIMITS.analysisSourceFiles) {
     diagnostics.push(
-      atlasDiagnostic(
-        'ATL1403',
-        `Atlas TypeScript analysis exceeds the ${ATLAS_RESOURCE_LIMITS.analysisSourceFiles}-source implementation ceiling.`,
+      toolkitDiagnostic(
+        'EQ1403',
+        `Equator TypeScript analysis exceeds the ${RESOURCE_LIMITS.analysisSourceFiles}-source implementation ceiling.`,
       ),
     );
   }
@@ -1346,20 +1344,20 @@ async function loadAnalysisGraph(
     if (!containedPath(path, location.ownerRoot)) {
       diagnostics.push(
         projectDiagnostic(
-          `The selected TypeScript graph contains root ${JSON.stringify(path)} outside the Atlas owner.`,
+          `The selected TypeScript graph contains root ${JSON.stringify(path)} outside the Equator owner.`,
         ),
       );
     }
   }
-  if (diagnostics.length > 0) return atlasFailure(diagnostics);
+  if (diagnostics.length > 0) return toolkitFailure(diagnostics);
   const sourceMap = new Map<string, string>();
   let sourceBytes = 0;
   const addSource = (path: string, source: string): boolean => {
     if (sourceMap.has(path)) return true;
     sourceBytes += Buffer.byteLength(source, 'utf8');
     if (
-      sourceMap.size + 1 > ATLAS_RESOURCE_LIMITS.analysisSourceFiles ||
-      sourceBytes > ATLAS_RESOURCE_LIMITS.analysisSourceBytes
+      sourceMap.size + 1 > RESOURCE_LIMITS.analysisSourceFiles ||
+      sourceBytes > RESOURCE_LIMITS.analysisSourceBytes
     ) {
       return false;
     }
@@ -1370,10 +1368,10 @@ async function loadAnalysisGraph(
     await assertOrdinaryContainedPath(location.ownerRoot, path);
     const source = await readUtf8(path, 4 * 1024 * 1024);
     if (!addSource(path, source)) {
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1403',
-          `Atlas analysis exceeds its ${ATLAS_RESOURCE_LIMITS.analysisSourceFiles}-source or ${ATLAS_RESOURCE_LIMITS.analysisSourceBytes}-byte implementation ceiling.`,
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1403',
+          `Equator analysis exceeds its ${RESOURCE_LIMITS.analysisSourceFiles}-source or ${RESOURCE_LIMITS.analysisSourceBytes}-byte implementation ceiling.`,
         ),
       ]);
     }
@@ -1384,10 +1382,10 @@ async function loadAnalysisGraph(
     )) {
       const metadata = await pathMetadata(templatePath);
       if (metadata?.isSymbolicLink()) {
-        return atlasFailure([
-          atlasDiagnostic(
-            'ATL1402',
-            `Atlas refuses linked Angular template ${JSON.stringify(
+        return toolkitFailure([
+          toolkitDiagnostic(
+            'EQ1402',
+            `Equator refuses linked Angular template ${JSON.stringify(
               portablePath(location.ownerRoot, templatePath),
             )}.`,
           ),
@@ -1404,10 +1402,10 @@ async function loadAnalysisGraph(
             await readUtf8(templatePath, 4 * 1024 * 1024),
           )
         ) {
-          return atlasFailure([
-            atlasDiagnostic(
-              'ATL1403',
-              `Atlas analysis exceeds its ${ATLAS_RESOURCE_LIMITS.analysisSourceFiles}-source or ${ATLAS_RESOURCE_LIMITS.analysisSourceBytes}-byte implementation ceiling.`,
+          return toolkitFailure([
+            toolkitDiagnostic(
+              'EQ1403',
+              `Equator analysis exceeds its ${RESOURCE_LIMITS.analysisSourceFiles}-source or ${RESOURCE_LIMITS.analysisSourceBytes}-byte implementation ceiling.`,
             ),
           ]);
         }
@@ -1417,7 +1415,7 @@ async function loadAnalysisGraph(
   const sources = [...sourceMap.entries()]
     .sort(([left], [right]) => compareCodePoint(left, right))
     .map(([path, contents]) => Object.freeze({ path, contents }));
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
       projectRoot: location.ownerRoot,
       rootNames: Object.freeze(rootNames),
@@ -1435,11 +1433,11 @@ async function loadAnalysisGraph(
   );
 }
 
-export async function loadAtlasProject(
-  selection: AtlasProjectSelection = {},
+export async function loadProject(
+  selection: ProjectSelection = {},
   options: { readonly requirePackageSetup?: boolean } = {},
-): Promise<AtlasResult<AtlasLoadedProject>> {
-  const location = await discoverAtlasProject(selection);
+): Promise<ToolkitResult<LoadedProject>> {
+  const location = await discoverProject(selection);
   if (!location.ok) return location;
   const packageManifest = await readPackageManifest(location.value);
   if (!packageManifest.ok) return packageManifest;
@@ -1448,7 +1446,7 @@ export async function loadAtlasProject(
       packageManifest.value.value,
       location.value.generatedRootPath,
     );
-    if (setupDiagnostics.length > 0) return atlasFailure(setupDiagnostics);
+    if (setupDiagnostics.length > 0) return toolkitFailure(setupDiagnostics);
   }
   const configuration = await readConfiguration(location.value);
   if (!configuration.ok) return configuration;
@@ -1482,7 +1480,7 @@ export async function loadAtlasProject(
           authoredCatalogs,
           extensions.value?.value,
         )
-      : atlasSuccess(Object.freeze([] as readonly AtlasCatalog[]));
+      : toolkitSuccess(Object.freeze([] as readonly Catalog[]));
   if (!pseudo.ok) return pseudo;
   const configurationValue =
     pseudo.value.length === 0
@@ -1491,11 +1489,11 @@ export async function loadAtlasProject(
           ...configuration.value.value,
           locales: Object.freeze([
             ...configuration.value.value.locales,
-            ...atlasPseudoLocales(configuration.value.value),
+            ...pseudoLocaleTags(configuration.value.value),
           ]),
         });
 
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
       ...location.value,
       providerId: packageManifest.value.providerId,
@@ -1525,11 +1523,11 @@ export async function loadAtlasProject(
 }
 
 function compileRequest(
-  project: AtlasLoadedProject,
-  previousState?: AtlasCompilerState,
-  observability?: AtlasToolkitObservabilitySink,
+  project: LoadedProject,
+  previousState?: CompilerState,
+  observability?: ToolkitObservabilitySink,
   requireCompleteTargets?: boolean,
-): AtlasCompileProjectRequest {
+): CompileProjectRequest {
   return {
     configuration: project.configuration,
     catalogs: project.catalogs,
@@ -1572,7 +1570,7 @@ function validCachedInputIdentity(identity: string): boolean {
   );
 }
 
-function parseCompilerState(value: unknown): AtlasCompilerState | undefined {
+function parseCompilerState(value: unknown): CompilerState | undefined {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return undefined;
   }
@@ -1580,7 +1578,7 @@ function parseCompilerState(value: unknown): AtlasCompilerState | undefined {
   if (
     Object.keys(state).sort().join(',') !==
       'inputFingerprint,inputs,outputPlanDigest,profile' ||
-    state['profile'] !== 'atlas-compiler-state/1' ||
+    state['profile'] !== 'equator-compiler-state/1' ||
     !validDigest(state['inputFingerprint']) ||
     !validDigest(state['outputPlanDigest']) ||
     !Array.isArray(state['inputs'])
@@ -1614,23 +1612,20 @@ function parseCompilerState(value: unknown): AtlasCompilerState | undefined {
     return undefined;
   }
   return Object.freeze({
-    profile: 'atlas-compiler-state/1',
+    profile: 'equator-compiler-state/1',
     inputFingerprint: state['inputFingerprint'],
     outputPlanDigest: state['outputPlanDigest'],
     inputs: Object.freeze(inputs.map((input) => Object.freeze(input))),
   });
 }
 
-function compilerCacheContents(
-  ownerId: string,
-  state: AtlasCompilerState,
-): string {
-  const stateDigest = digestAtlasCanonicalJson('atlas-compiler-cache-state/1', {
+function compilerCacheContents(ownerId: string, state: CompilerState): string {
+  const stateDigest = digestCanonicalJson('equator-compiler-cache-state/1', {
     ownerId,
     state: JSON.parse(JSON.stringify(state)),
   });
   const envelope: CompilerCacheEnvelope = Object.freeze({
-    profile: ATLAS_COMPILER_CACHE_PROFILE,
+    profile: COMPILER_CACHE_PROFILE,
     ownerId,
     stateDigest,
     state,
@@ -1639,11 +1634,11 @@ function compilerCacheContents(
 }
 
 async function readCompilerCache(
-  project: AtlasProjectLocation,
+  project: ProjectLocation,
 ): Promise<CachedCompilerState | undefined> {
   const cachePath = resolve(
     project.workRoot,
-    ...ATLAS_COMPILER_CACHE_PATH.split('/'),
+    ...COMPILER_CACHE_PATH.split('/'),
   );
   if (!(await pathExists(cachePath))) return undefined;
   await assertOrdinaryContainedPath(project.ownerRoot, cachePath);
@@ -1655,7 +1650,7 @@ async function readCompilerCache(
       return Object.freeze({
         ownerId: '',
         state: Object.freeze({
-          profile: 'atlas-compiler-state/1',
+          profile: 'equator-compiler-state/1',
           inputFingerprint:
             'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
           outputPlanDigest:
@@ -1663,9 +1658,9 @@ async function readCompilerCache(
           inputs: Object.freeze([]),
         }),
         diagnostics: Object.freeze([
-          atlasDiagnostic(
-            'ATL1703',
-            'Atlas ignored a corrupt incremental compiler cache and will recompute it.',
+          toolkitDiagnostic(
+            'EQ1703',
+            'Equator ignored a corrupt incremental compiler cache and will recompute it.',
             { severity: 'info' },
           ),
         ]),
@@ -1681,7 +1676,7 @@ async function readCompilerCache(
   const ownerId = record?.['ownerId'];
   const expectedDigest =
     typeof ownerId === 'string' && state !== undefined
-      ? digestAtlasCanonicalJson('atlas-compiler-cache-state/1', {
+      ? digestCanonicalJson('equator-compiler-cache-state/1', {
           ownerId,
           state: JSON.parse(JSON.stringify(state)),
         })
@@ -1690,7 +1685,7 @@ async function readCompilerCache(
     record === undefined ||
     Object.keys(record).sort().join(',') !==
       'ownerId,profile,state,stateDigest' ||
-    record['profile'] !== ATLAS_COMPILER_CACHE_PROFILE ||
+    record['profile'] !== COMPILER_CACHE_PROFILE ||
     !validDigest(ownerId) ||
     state === undefined ||
     record['stateDigest'] !== expectedDigest
@@ -1698,15 +1693,15 @@ async function readCompilerCache(
     return Object.freeze({
       ownerId: '',
       state: Object.freeze({
-        profile: 'atlas-compiler-state/1',
+        profile: 'equator-compiler-state/1',
         inputFingerprint: 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         outputPlanDigest: 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         inputs: Object.freeze([]),
       }),
       diagnostics: Object.freeze([
-        atlasDiagnostic(
-          'ATL1703',
-          'Atlas ignored an incompatible incremental compiler cache and will recompute it.',
+        toolkitDiagnostic(
+          'EQ1703',
+          'Equator ignored an incompatible incremental compiler cache and will recompute it.',
           { severity: 'info' },
         ),
       ]),
@@ -1720,30 +1715,30 @@ async function readCompilerCache(
 }
 
 async function writeCompilerCache(
-  project: AtlasLoadedProject,
+  project: LoadedProject,
   ownerId: string,
-  state: AtlasCompilerState,
-): Promise<readonly AtlasDiagnostic[]> {
-  const markerPath = resolve(project.workRoot, ATLAS_WORK_OWNER_PATH);
+  state: CompilerState,
+): Promise<readonly ToolkitDiagnostic[]> {
+  const markerPath = resolve(project.workRoot, WORK_OWNER_PATH);
   const marker = JSON.parse(await readUtf8(markerPath, 1024 * 1024)) as Record<
     string,
     unknown
   >;
   if (
-    marker['profile'] !== ATLAS_WORK_OWNER_PROFILE ||
+    marker['profile'] !== WORK_OWNER_PROFILE ||
     marker['ownerId'] !== ownerId
   ) {
     return Object.freeze([
-      atlasDiagnostic(
-        'ATL1703',
-        'Atlas skipped incremental cache persistence because work ownership changed.',
+      toolkitDiagnostic(
+        'EQ1703',
+        'Equator skipped incremental cache persistence because work ownership changed.',
         { severity: 'warning' },
       ),
     ]);
   }
   const cachePath = resolve(
     project.workRoot,
-    ...ATLAS_COMPILER_CACHE_PATH.split('/'),
+    ...COMPILER_CACHE_PATH.split('/'),
   );
   const cacheRoot = dirname(cachePath);
   await assertOrdinaryContainedPath(project.ownerRoot, cacheRoot);
@@ -1761,13 +1756,13 @@ async function writeCompilerCache(
 }
 
 async function compileLoadedProject(
-  project: AtlasLoadedProject,
-  observability?: AtlasToolkitObservabilitySink,
+  project: LoadedProject,
+  observability?: ToolkitObservabilitySink,
   requireCompleteTargets?: boolean,
-): Promise<AtlasResult<AtlasLoadedProjectCompilation>> {
+): Promise<ToolkitResult<LoadedProjectCompilation>> {
   const cached = await readCompilerCache(project);
   const candidateState = cached?.ownerId === '' ? undefined : cached?.state;
-  let compiled = compileAtlasProject(
+  let compiled = compileProject(
     compileRequest(
       project,
       candidateState,
@@ -1780,23 +1775,23 @@ async function compileLoadedProject(
     cached !== undefined &&
     cached.ownerId !== compiled.value.artifacts.ownerId
   ) {
-    compiled = compileAtlasProject(
+    compiled = compileProject(
       compileRequest(project, undefined, observability, requireCompleteTargets),
     );
     if (!compiled.ok) return compiled;
   }
-  return atlasSuccess(Object.freeze({ project, compilation: compiled.value }), [
-    ...(cached?.diagnostics ?? []),
-    ...compiled.diagnostics,
-  ]);
+  return toolkitSuccess(
+    Object.freeze({ project, compilation: compiled.value }),
+    [...(cached?.diagnostics ?? []), ...compiled.diagnostics],
+  );
 }
 
-async function compileAtlasProjectFromDiskInternalCore(
-  selection: AtlasProjectSelection & {
+async function compileProjectFromDiskInternalCore(
+  selection: ProjectSelection & {
     readonly requireCompleteTargets?: boolean;
   } = {},
-): Promise<AtlasResult<AtlasLoadedProjectCompilation>> {
-  const project = await loadAtlasProject(selection, {
+): Promise<ToolkitResult<LoadedProjectCompilation>> {
+  const project = await loadProject(selection, {
     requirePackageSetup: true,
   });
   if (!project.ok) return project;
@@ -1806,48 +1801,47 @@ async function compileAtlasProjectFromDiskInternalCore(
     selection.requireCompleteTargets,
   );
   return compiled.ok
-    ? atlasSuccess(compiled.value, [
+    ? toolkitSuccess(compiled.value, [
         ...project.diagnostics,
         ...compiled.diagnostics,
       ])
     : compiled;
 }
 
-async function compileAtlasProjectFromDiskInternal(
-  selection: AtlasProjectSelection & {
+async function compileProjectFromDiskInternal(
+  selection: ProjectSelection & {
     readonly requireCompleteTargets?: boolean;
   } = {},
-): Promise<AtlasResult<AtlasLoadedProjectCompilation>> {
+): Promise<ToolkitResult<LoadedProjectCompilation>> {
   const sink = selection.observability;
-  if (sink === undefined)
-    return compileAtlasProjectFromDiskInternalCore(selection);
-  emitAtlasToolkitEvent(sink, {
-    code: ATLAS_TOOLKIT_EVENT_CODES.compilation,
+  if (sink === undefined) return compileProjectFromDiskInternalCore(selection);
+  emitToolkitEvent(sink, {
+    code: TOOLKIT_EVENT_CODES.compilation,
     phase: 'integration',
     status: 'started',
   });
-  let result: AtlasResult<AtlasLoadedProjectCompilation>;
+  let result: ToolkitResult<LoadedProjectCompilation>;
   try {
-    result = await compileAtlasProjectFromDiskInternalCore(selection);
+    result = await compileProjectFromDiskInternalCore(selection);
   } catch (error) {
-    emitAtlasToolkitEvent(sink, {
-      code: ATLAS_TOOLKIT_EVENT_CODES.compilation,
+    emitToolkitEvent(sink, {
+      code: TOOLKIT_EVENT_CODES.compilation,
       phase: 'integration',
       status: 'failed',
     });
     throw error;
   }
   if (result.ok) {
-    emitAtlasToolkitEvent(sink, {
-      code: ATLAS_TOOLKIT_EVENT_CODES.compilation,
+    emitToolkitEvent(sink, {
+      code: TOOLKIT_EVENT_CODES.compilation,
       phase: 'integration',
       status: 'succeeded',
       count: result.value.compilation.artifacts.outputPlan.files.length,
     });
   } else {
     const diagnosticCode = result.diagnostics[0]?.code;
-    emitAtlasToolkitEvent(sink, {
-      code: ATLAS_TOOLKIT_EVENT_CODES.compilation,
+    emitToolkitEvent(sink, {
+      code: TOOLKIT_EVENT_CODES.compilation,
       phase: 'integration',
       status: 'failed',
       ...(diagnosticCode === undefined ? {} : { diagnosticCode }),
@@ -1863,14 +1857,14 @@ async function compileAtlasProjectFromDiskInternal(
  * compiles. Returns everything that came out, or the reasons it could not.
  *
  * For a caller that wants the result rather than the side effect: a report over the messages, a
- * custom check, an editor integration. `generateAtlasProject` is the one that writes.
+ * custom check, an editor integration. `generateProject` is the one that writes.
  */
-export async function compileAtlasProjectFromDisk(
-  selection: AtlasProjectSelection = {},
-): Promise<AtlasResult<AtlasProjectCompilation>> {
-  const compiled = await compileAtlasProjectFromDiskInternal(selection);
+export async function compileProjectFromDisk(
+  selection: ProjectSelection = {},
+): Promise<ToolkitResult<ProjectCompilation>> {
+  const compiled = await compileProjectFromDiskInternal(selection);
   return compiled.ok
-    ? atlasSuccess(
+    ? toolkitSuccess(
         Object.freeze({ compilation: compiled.value.compilation }),
         compiled.diagnostics,
       )
@@ -1879,15 +1873,15 @@ export async function compileAtlasProjectFromDisk(
 
 async function readTranslationState(ownerRoot: string) {
   try {
-    return parseAtlasTranslationState(
+    return parseTranslationState(
       await readUtf8(
-        resolve(ownerRoot, ATLAS_TRANSLATION_STATE_PATH),
+        resolve(ownerRoot, TRANSLATION_STATE_PATH),
         4 * 1024 * 1024,
       ),
     );
   } catch {
     // Absent or unreadable is the ordinary first-run case, not a failure.
-    return EMPTY_ATLAS_TRANSLATION_STATE;
+    return EMPTY_TRANSLATION_STATE;
   }
 }
 
@@ -1904,19 +1898,19 @@ async function readTranslationState(ownerRoot: string) {
  * finding stays the advisory it is during authoring.
  */
 function staleTranslationDiagnostics(
-  stale: readonly AtlasStaleTranslation[],
-  configuration: Pick<AtlasProjectConfiguration, 'inProgress'>,
+  stale: readonly StaleTranslation[],
+  configuration: Pick<ProjectConfiguration, 'inProgress'>,
   requireComplete: boolean,
-): readonly AtlasDiagnostic[] {
+): readonly ToolkitDiagnostic[] {
   return Object.freeze(
     stale.map((entry) => {
-      const policy = atlasCompletenessPolicy(
+      const policy = completenessPolicy(
         configuration,
         requireComplete,
         entry.locale,
       );
-      return atlasDiagnostic(
-        'ATL1309',
+      return toolkitDiagnostic(
+        'EQ1309',
         `Translation ${JSON.stringify(entry.messageId)} in ${entry.locale} was written against an older ${entry.scopeId} source and may no longer match it.${policy.suffix}`,
         { path: ['messages', entry.messageId], severity: policy.severity },
       );
@@ -1936,10 +1930,10 @@ function staleTranslationDiagnostics(
  */
 async function revalidatedInputFingerprint(
   ownerRoot: string,
-  selection: AtlasProjectSelection,
+  selection: ProjectSelection,
 ): Promise<string> {
   const { observability: _observability, ...inputSelection } = selection;
-  const project = await loadAtlasProject(
+  const project = await loadProject(
     { ...inputSelection, cwd: ownerRoot, project: ownerRoot },
     { requirePackageSetup: true },
   );
@@ -1950,17 +1944,17 @@ async function revalidatedInputFingerprint(
         .join('\n'),
     );
   }
-  return fingerprintAtlasCompilerInputs(compileRequest(project.value))
+  return fingerprintCompilerInputs(compileRequest(project.value))
     .inputFingerprint;
 }
 
-async function generateAtlasProjectCore(
-  options: AtlasGenerateProjectOptions = {},
-): Promise<AtlasResult<AtlasGenerateProjectResult>> {
-  const compiled = await compileAtlasProjectFromDiskInternal(options);
+async function generateProjectCore(
+  options: GenerateProjectOptions = {},
+): Promise<ToolkitResult<GenerateProjectResult>> {
+  const compiled = await compileProjectFromDiskInternal(options);
   if (!compiled.ok) return compiled;
   const { project, compilation } = compiled.value;
-  const publication = await applyAtlasOutputPlan({
+  const publication = await applyOutputPlan({
     ownerRoot: project.ownerRoot,
     generatedRoot: project.generatedRoot,
     workRoot: project.workRoot,
@@ -1975,7 +1969,7 @@ async function generateAtlasProjectCore(
 
   // The record only moves forward when output is actually published. A dry run must observe
   // staleness without recording that it observed it, or the next real run would see nothing.
-  const translationState = reconcileAtlasTranslationState(
+  const translationState = reconcileTranslationState(
     compilation.graph,
     await readTranslationState(project.ownerRoot),
   );
@@ -1987,8 +1981,8 @@ async function generateAtlasProjectCore(
   if (options.dryRun !== true && translationState.changed) {
     try {
       await writeFile(
-        resolve(project.ownerRoot, ATLAS_TRANSLATION_STATE_PATH),
-        formatAtlasTranslationState(translationState.state),
+        resolve(project.ownerRoot, TRANSLATION_STATE_PATH),
+        formatTranslationState(translationState.state),
         'utf8',
       );
     } catch {
@@ -1996,7 +1990,7 @@ async function generateAtlasProjectCore(
     }
   }
 
-  let cacheDiagnostics: readonly AtlasDiagnostic[] = [];
+  let cacheDiagnostics: readonly ToolkitDiagnostic[] = [];
   if (options.dryRun !== true) {
     try {
       cacheDiagnostics = await writeCompilerCache(
@@ -2006,15 +2000,15 @@ async function generateAtlasProjectCore(
       );
     } catch {
       cacheDiagnostics = Object.freeze([
-        atlasDiagnostic(
-          'ATL1703',
-          'Atlas accepted generated output but could not persist its disposable incremental cache.',
+        toolkitDiagnostic(
+          'EQ1703',
+          'Equator accepted generated output but could not persist its disposable incremental cache.',
           { severity: 'warning' },
         ),
       ]);
     }
   }
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({ ...compiled.value, publication: publication.value }),
     [
       ...compiled.diagnostics,
@@ -2034,30 +2028,30 @@ async function generateAtlasProjectCore(
  * Returns what was written and removed, or the reasons nothing was. Pass `dryRun` to find out what
  * it would do without doing it.
  */
-export async function generateAtlasProject(
-  options: AtlasGenerateProjectOptions = {},
-): Promise<AtlasResult<AtlasGenerateProjectResult>> {
+export async function generateProject(
+  options: GenerateProjectOptions = {},
+): Promise<ToolkitResult<GenerateProjectResult>> {
   const sink = options.observability;
-  if (sink === undefined) return generateAtlasProjectCore(options);
-  emitAtlasToolkitEvent(sink, {
-    code: ATLAS_TOOLKIT_EVENT_CODES.compilation,
+  if (sink === undefined) return generateProjectCore(options);
+  emitToolkitEvent(sink, {
+    code: TOOLKIT_EVENT_CODES.compilation,
     phase: 'generation',
     status: 'started',
   });
-  let result: AtlasResult<AtlasGenerateProjectResult>;
+  let result: ToolkitResult<GenerateProjectResult>;
   try {
-    result = await generateAtlasProjectCore(options);
+    result = await generateProjectCore(options);
   } catch (error) {
-    emitAtlasToolkitEvent(sink, {
-      code: ATLAS_TOOLKIT_EVENT_CODES.compilation,
+    emitToolkitEvent(sink, {
+      code: TOOLKIT_EVENT_CODES.compilation,
       phase: 'generation',
       status: 'failed',
     });
     throw error;
   }
   if (result.ok) {
-    emitAtlasToolkitEvent(sink, {
-      code: ATLAS_TOOLKIT_EVENT_CODES.compilation,
+    emitToolkitEvent(sink, {
+      code: TOOLKIT_EVENT_CODES.compilation,
       phase: 'generation',
       status: result.value.publication.changed ? 'succeeded' : 'unchanged',
       count:
@@ -2066,8 +2060,8 @@ export async function generateAtlasProject(
     });
   } else {
     const diagnosticCode = result.diagnostics[0]?.code;
-    emitAtlasToolkitEvent(sink, {
-      code: ATLAS_TOOLKIT_EVENT_CODES.compilation,
+    emitToolkitEvent(sink, {
+      code: TOOLKIT_EVENT_CODES.compilation,
       phase: 'generation',
       status: 'failed',
       ...(diagnosticCode === undefined ? {} : { diagnosticCode }),
@@ -2087,19 +2081,19 @@ export async function generateAtlasProject(
  * rewrite catalogs that are out of canonical form, and `requireCompleteTargets` to make an
  * unfinished locale an error rather than a warning.
  */
-export async function checkAtlasProject(
-  options: AtlasCheckProjectOptions = {},
-): Promise<AtlasResult<AtlasCheckProjectResult>> {
+export async function checkProject(
+  options: CheckProjectOptions = {},
+): Promise<ToolkitResult<CheckProjectResult>> {
   let fixedFiles: readonly string[] = Object.freeze([]);
   if (options.fix === true) {
-    const formatted = await formatAtlasProject(options);
+    const formatted = await formatProject(options);
     if (!formatted.ok) return formatted;
     fixedFiles = formatted.value.files;
   }
-  const compiled = await compileAtlasProjectFromDiskInternal(options);
+  const compiled = await compileProjectFromDiskInternal(options);
   if (!compiled.ok) return compiled;
   const { project, compilation } = compiled.value;
-  const freshness = await inspectAtlasOutputFreshness({
+  const freshness = await inspectOutputFreshness({
     ownerRoot: project.ownerRoot,
     generatedRoot: project.generatedRoot,
     workRoot: project.workRoot,
@@ -2110,7 +2104,7 @@ export async function checkAtlasProject(
 
   // Reconciled but not persisted: check reports what it sees and leaves the record for generate to
   // move, so a read-only command cannot quietly retire a warning it just raised.
-  const translationState = reconcileAtlasTranslationState(
+  const translationState = reconcileTranslationState(
     compilation.graph,
     await readTranslationState(project.ownerRoot),
   );
@@ -2126,9 +2120,9 @@ export async function checkAtlasProject(
   ];
   if (!freshness.value.fresh) {
     diagnostics.push(
-      atlasDiagnostic(
-        'ATL1704',
-        `Generated output is stale (${freshness.value.missing.length} missing, ${freshness.value.changed.length} changed, ${freshness.value.stale.length} stale). Run atlas generate.`,
+      toolkitDiagnostic(
+        'EQ1704',
+        `Generated output is stale (${freshness.value.missing.length} missing, ${freshness.value.changed.length} changed, ${freshness.value.stale.length} stale). Run equator generate.`,
         // The same finding either way; the policy decides whether it blocks. Escalating the
         // severity rather than raising a second code keeps one diagnostic for one fact, and the
         // severity-keyed exit path does the rest.
@@ -2138,7 +2132,7 @@ export async function checkAtlasProject(
       ),
     );
   }
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
       ...compiled.value,
       freshness: freshness.value,
@@ -2152,21 +2146,21 @@ async function applyTextChanges(
   ownerRoot: string,
   changes: readonly TextFileChange[],
   dryRun: boolean,
-): Promise<AtlasResult<AtlasFormatProjectResult>> {
+): Promise<ToolkitResult<FormatProjectResult>> {
   const changed = changes
     .filter(({ previous, contents }) => previous !== contents)
     .sort((left, right) =>
       compareCodePoint(left.portablePath, right.portablePath),
     );
   if (dryRun || changed.length === 0) {
-    return atlasSuccess(
+    return toolkitSuccess(
       Object.freeze({
         changed: changed.length > 0,
         files: Object.freeze(changed.map(({ portablePath: path }) => path)),
       }),
     );
   }
-  const lockPath = resolve(ownerRoot, '.atlas-authoring.lock');
+  const lockPath = resolve(ownerRoot, '.equator-authoring.lock');
   let lockHandle: Awaited<ReturnType<typeof open>> | undefined;
   const transactionId = randomBytes(12).toString('hex');
   const operations: {
@@ -2184,16 +2178,16 @@ async function applyTextChanges(
         : undefined;
       if (current !== change.previous) {
         throw new TypeError(
-          `Atlas input ${change.portablePath} changed before publication.`,
+          `Equator input ${change.portablePath} changed before publication.`,
         );
       }
       const temporary = resolve(
         dirname(change.absolutePath),
-        `.${basename(change.absolutePath)}.atlas-${transactionId}.tmp`,
+        `.${basename(change.absolutePath)}.equator-${transactionId}.tmp`,
       );
       const backup = resolve(
         dirname(change.absolutePath),
-        `.${basename(change.absolutePath)}.atlas-${transactionId}.bak`,
+        `.${basename(change.absolutePath)}.equator-${transactionId}.bak`,
       );
       await writeSynced(temporary, change.contents);
       operations.push({ change, temporary, backup, published: false });
@@ -2209,7 +2203,7 @@ async function applyTextChanges(
       if (operation.change.previous !== undefined)
         await unlink(operation.backup);
     }
-    return atlasSuccess(
+    return toolkitSuccess(
       Object.freeze({
         changed: true,
         files: Object.freeze(changed.map(({ portablePath: path }) => path)),
@@ -2225,18 +2219,18 @@ async function applyTextChanges(
         }
         await rm(operation.temporary, { force: true });
       } catch {
-        return atlasFailure([
-          atlasDiagnostic(
-            'ATL1602',
-            'Atlas authoring publication failed and automatic rollback could not be completed safely.',
+        return toolkitFailure([
+          toolkitDiagnostic(
+            'EQ1602',
+            'Equator authoring publication failed and automatic rollback could not be completed safely.',
           ),
         ]);
       }
     }
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1602',
-        `Atlas authoring publication failed safely: ${error instanceof Error ? error.message : String(error)}`,
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1602',
+        `Equator authoring publication failed safely: ${error instanceof Error ? error.message : String(error)}`,
       ),
     ]);
   } finally {
@@ -2258,25 +2252,23 @@ async function applyTextChanges(
  * Takes the project to work on and whether to write; with no options it formats the project found
  * from the current directory. Reports what it rewrote, or the diagnostics that stopped it.
  */
-export async function formatAtlasProject(
-  options: AtlasFormatProjectOptions = {},
-): Promise<AtlasResult<AtlasFormatProjectResult>> {
-  const project = await loadAtlasProject(options);
+export async function formatProject(
+  options: FormatProjectOptions = {},
+): Promise<ToolkitResult<FormatProjectResult>> {
+  const project = await loadProject(options);
   if (!project.ok) return project;
   const changes: TextFileChange[] = [];
-  const configurationText = formatAtlasConfiguration(
-    project.value.configuration,
-  );
-  const configurationRoundTrip = parseAtlasConfiguration(configurationText);
+  const configurationText = formatConfiguration(project.value.configuration);
+  const configurationRoundTrip = parseConfiguration(configurationText);
   if (
     !configurationRoundTrip.ok ||
     JSON.stringify(configurationRoundTrip.value) !==
       JSON.stringify(project.value.configuration)
   ) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1703',
-        'Atlas refused configuration formatting because semantic equality was not proven.',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1703',
+        'Equator refused configuration formatting because semantic equality was not proven.',
       ),
     ]);
   }
@@ -2290,17 +2282,17 @@ export async function formatAtlasProject(
     project.value.extensions !== undefined &&
     project.value.extensionSource !== undefined
   ) {
-    const contents = formatAtlasExtensionRegistry(project.value.extensions);
-    const roundTrip = parseAtlasExtensionRegistry(contents);
+    const contents = formatExtensionRegistry(project.value.extensions);
+    const roundTrip = parseExtensionRegistry(contents);
     if (
       !roundTrip.ok ||
       JSON.stringify(roundTrip.value) !==
         JSON.stringify(project.value.extensions)
     ) {
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1703',
-          'Atlas refused extension-registry formatting because semantic equality was not proven.',
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1703',
+          'Equator refused extension-registry formatting because semantic equality was not proven.',
         ),
       ]);
     }
@@ -2324,18 +2316,18 @@ export async function formatAtlasProject(
     };
     // The authored document, restyled. Formatting an authored catalog from the semantic model
     // deleted every comment in it, because comments are not in that model.
-    const formatted = formatAtlasCatalogSource(file.source, catalogOptions);
+    const formatted = formatCatalogSource(file.source, catalogOptions);
     if (!formatted.ok) return formatted;
     const contents = formatted.value;
-    const roundTrip = parseAtlasCatalog(contents, catalogOptions);
+    const roundTrip = parseCatalog(contents, catalogOptions);
     if (
       !roundTrip.ok ||
       JSON.stringify(roundTrip.value) !== JSON.stringify(file.catalog)
     ) {
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1703',
-          `Atlas refused formatting ${JSON.stringify(file.portablePath)} because semantic equality was not proven.`,
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1703',
+          `Equator refused formatting ${JSON.stringify(file.portablePath)} because semantic equality was not proven.`,
         ),
       ]);
     }
@@ -2354,24 +2346,24 @@ export async function formatAtlasProject(
 }
 
 async function initOwner(
-  selection: AtlasProjectSelection,
-): Promise<AtlasResult<AtlasProjectLocation>> {
+  selection: ProjectSelection,
+): Promise<ToolkitResult<ProjectLocation>> {
   if (selection.project !== undefined) {
     const owner = await explicitOwner(
       selection.project,
       resolve(selection.cwd ?? process.cwd()),
     );
     if (!owner.ok) return owner;
-    return discoverAtlasProject({ ...selection, project: owner.value });
+    return discoverProject({ ...selection, project: owner.value });
   }
   // `init` is the one command that may proceed when discovery finds nothing: creating the project
-  // is what it is for. Which outcome it was is read from the search rather than from the wording
-  // of the diagnostic. Reading it as `summary.startsWith('No atlas.config.json was found.')` makes
+  // is what it is for. Which outcome it was is read from the search rather than from the wording of
+  // the diagnostic. Reading it as `summary.startsWith('No equator.config.json was found.')` makes
   // improving that sentence turn `init` into a command that refuses an empty directory.
   const ownerRoot = resolve(selection.cwd ?? process.cwd());
   const search = await searchOwnerWithinPackage(ownerRoot);
   if (search.outcome !== 'none') {
-    return discoverAtlasProject(selection);
+    return discoverProject(selection);
   }
   const metadata = await pathMetadata(ownerRoot);
   if (
@@ -2379,14 +2371,14 @@ async function initOwner(
     !metadata.isDirectory() ||
     metadata.isSymbolicLink()
   ) {
-    return atlasFailure([
+    return toolkitFailure([
       projectDiagnostic(
-        'Atlas init requires an existing ordinary owner directory.',
+        'Equator init requires an existing ordinary owner directory.',
       ),
     ]);
   }
   const generatedRoot = await generatedRootPath(ownerRoot);
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
       ownerRoot,
       configurationPath: resolve(ownerRoot, CONFIGURATION_NAME),
@@ -2399,16 +2391,16 @@ async function initOwner(
 }
 
 function requestedConfiguration(
-  options: AtlasInitProjectOptions,
-): AtlasResult<AtlasProjectConfiguration> {
+  options: InitProjectOptions,
+): ToolkitResult<ProjectConfiguration> {
   const requested = (options.configuration ?? {}) as Readonly<
     Record<string, unknown>
   >;
   // Required, and what to type to supply it, both read from the generated option table, which is
-  // itself read from `ATLAS_CONFIGURATION_SCHEMA`. `required` is a schema fact; the flag beside it
+  // itself read from `CONFIGURATION_SCHEMA`. `required` is a schema fact; the flag beside it
   // is how a person sets that field, and a diagnostic about a missing input that does not say what
   // to type has told the reader the half they already knew.
-  const missing = ATLAS_INIT_OPTIONS.filter((option) => {
+  const missing = INIT_OPTIONS.filter((option) => {
     if (!option.required) return false;
     const value = requested[option.key];
     // An empty list is an absence rather than a choice: `locales: []` cannot be what anyone meant,
@@ -2416,10 +2408,10 @@ function requestedConfiguration(
     return value === undefined || (Array.isArray(value) && value.length === 0);
   });
   if (missing.length > 0) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1701',
-        `Noninteractive atlas init requires ${missing
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1701',
+        `Noninteractive equator init requires ${missing
           .map(
             (option) =>
               `${option.flag} ${option.value}${option.repeatable ? ' (repeat for each)' : ''}`,
@@ -2428,7 +2420,7 @@ function requestedConfiguration(
       ),
     ]);
   }
-  // Everything the caller supplied, unexamined. What is acceptable is `parseAtlasConfiguration`'s
+  // Everything the caller supplied, unexamined. What is acceptable is `parseConfiguration`'s
   // question and it is about to be asked: a key list here would answer it a second time, in a
   // second place, and the two would disagree the day one of them was edited.
   const source = `${JSON.stringify(
@@ -2436,14 +2428,14 @@ function requestedConfiguration(
     null,
     2,
   )}\n`;
-  return parseAtlasConfiguration(source, { sourcePath: CONFIGURATION_NAME });
+  return parseConfiguration(source, { sourcePath: CONFIGURATION_NAME });
 }
 
 function updatedPackageSource(
   source: string,
   manifest: Readonly<Record<string, unknown>>,
   generatedRootPortablePath: string,
-): AtlasResult<string> {
+): ToolkitResult<string> {
   const mutable = JSON.parse(JSON.stringify(manifest)) as Record<
     string,
     unknown
@@ -2455,8 +2447,8 @@ function updatedPackageSource(
       currentImports === null ||
       Array.isArray(currentImports))
   ) {
-    return atlasFailure([
-      atlasDiagnostic('ATL1705', 'package.json imports must be an object.'),
+    return toolkitFailure([
+      toolkitDiagnostic('EQ1705', 'package.json imports must be an object.'),
     ]);
   }
   const imports = (currentImports ?? {}) as Record<string, unknown>;
@@ -2465,10 +2457,10 @@ function updatedPackageSource(
   )) {
     const existing = imports[specifier];
     if (existing !== undefined && existing !== target) {
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1705',
-          `Atlas init refuses conflicting package import ${JSON.stringify(specifier)}.`,
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1705',
+          `Equator init refuses conflicting package import ${JSON.stringify(specifier)}.`,
           { path: ['imports', specifier] },
         ),
       ]);
@@ -2483,18 +2475,18 @@ function updatedPackageSource(
       currentScripts === null ||
       Array.isArray(currentScripts))
   ) {
-    return atlasFailure([
-      atlasDiagnostic('ATL1705', 'package.json scripts must be an object.'),
+    return toolkitFailure([
+      toolkitDiagnostic('EQ1705', 'package.json scripts must be an object.'),
     ]);
   }
   const scripts = (currentScripts ?? {}) as Record<string, unknown>;
-  for (const [name, command] of Object.entries(ATLAS_PACKAGE_SCRIPTS)) {
+  for (const [name, command] of Object.entries(PACKAGE_SCRIPTS)) {
     const existing = scripts[name];
     if (existing !== undefined && existing !== command) {
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1705',
-          `Atlas init refuses conflicting package script ${JSON.stringify(name)}.`,
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1705',
+          `Equator init refuses conflicting package script ${JSON.stringify(name)}.`,
           { path: ['scripts', name] },
         ),
       ]);
@@ -2503,7 +2495,7 @@ function updatedPackageSource(
   }
   mutable['scripts'] = scripts;
   const formatted = `${JSON.stringify(mutable, null, 2)}\n`;
-  return atlasSuccess(formatted === source ? source : formatted);
+  return toolkitSuccess(formatted === source ? source : formatted);
 }
 
 /**
@@ -2517,9 +2509,9 @@ function updatedPackageSource(
  * things are left for the project to write and are named in the result's diagnostics: the first
  * catalog, and the recovery message a visitor reads if the translations cannot be loaded.
  */
-export async function initializeAtlasProject(
-  options: AtlasInitProjectOptions,
-): Promise<AtlasResult<AtlasInitProjectResult>> {
+export async function initializeProject(
+  options: InitProjectOptions,
+): Promise<ToolkitResult<InitProjectResult>> {
   const location = await initOwner(options);
   if (!location.ok) return location;
   const packageManifest = await readPackageManifest(location.value, true);
@@ -2538,17 +2530,17 @@ export async function initializeAtlasProject(
   const requested =
     existingConfiguration === undefined || suppliedAny
       ? requestedConfiguration(options)
-      : atlasSuccess(existingConfiguration.value.value);
+      : toolkitSuccess(existingConfiguration.value.value);
   if (!requested.ok) return requested;
   if (
     existingConfiguration !== undefined &&
-    formatAtlasConfiguration(existingConfiguration.value.value) !==
-      formatAtlasConfiguration(requested.value)
+    formatConfiguration(existingConfiguration.value.value) !==
+      formatConfiguration(requested.value)
   ) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1705',
-        'Atlas init arguments conflict with the existing atlas.config.json.',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1705',
+        'Equator init arguments conflict with the existing equator.config.json.',
       ),
     ]);
   }
@@ -2558,7 +2550,7 @@ export async function initializeAtlasProject(
     location.value.generatedRootPath,
   );
   if (!packageSource.ok) return packageSource;
-  const configurationSource = formatAtlasConfiguration(requested.value);
+  const configurationSource = formatConfiguration(requested.value);
   const changes: TextFileChange[] = [
     {
       absolutePath: location.value.configurationPath,
@@ -2569,7 +2561,7 @@ export async function initializeAtlasProject(
     {
       absolutePath: location.value.packagePath,
       portablePath: 'package.json',
-      // A manifest Atlas is creating has no previous contents, and claiming one would make the
+      // A manifest Equator is creating has no previous contents, and claiming one would make the
       // change look like an edit to a file that was never there.
       previous: packageManifest.value.created
         ? undefined
@@ -2590,9 +2582,9 @@ export async function initializeAtlasProject(
   // project is in the moment after `init` and the install line is `init` then `generate`. The one
   // thing a consumer cannot work out for themselves is the directory's name, so `init` makes it.
   //
-  // It writes no catalog. A first catalog would be Atlas's words sitting in a consumer's product,
+  // It writes no catalog. A first catalog would be Equator's words sitting in a consumer's product,
   // and an empty one is not a file that can exist: `messages.minProperties: 1` in
-  // `ATLAS_SOURCE_CATALOG_SCHEMA` refuses `messages: {}`. Relaxing that would admit empty scopes,
+  // `SOURCE_CATALOG_SCHEMA` refuses `messages: {}`. Relaxing that would admit empty scopes,
   // which `specs/04-message-authoring-and-catalogs.spec.md` section 3 prohibits as reservation
   // scaffolding. So: the directory, and nothing.
   const catalogRoot = resolve(location.value.ownerRoot, 'i18n');
@@ -2609,7 +2601,7 @@ export async function initializeAtlasProject(
       )
     : applied.value.files;
 
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
       changed: applied.value.changed || catalogRootMissing,
       files,
@@ -2622,18 +2614,18 @@ export async function initializeAtlasProject(
       //
       // Both are content, and content is the consumer's. The first catalog is their words; the
       // recovery message is the sentence a visitor reads when the translations cannot be loaded.
-      // Atlas writing either would be Atlas's words sitting in someone else's product, so neither
-      // is scaffolded, and what `init` owes instead is to name them.
+      // Equator writing either would be Equator's words sitting in someone else's product, so
+      // neither is scaffolded, and what `init` owes instead is to name them.
       //
-      // The recovery message is here because it is the one nobody expects. `ATL1702` already names
+      // The recovery message is here because it is the one nobody expects. `EQ1702` already names
       // the first catalog at the next `generate`; nothing named the recovery message until
-      // `ATL1310` refused a build that was otherwise finished, by which time the reader has already
+      // `EQ1310` refused a build that was otherwise finished, by which time the reader has already
       // composed `provideLocalization` believing every feature optional. It is not optional for an
       // owner that composes the application runtime, and the honest time to say so is before the
       // composing rather than after it.
-      atlasDiagnostic(
-        'ATL1706',
-        `Atlas init is done. Two things are yours to write: the first catalog at i18n/<scope>/${requested.value.sourceLocale}.yaml, for example i18n/shell/${requested.value.sourceLocale}.yaml, and a recovery message. One plain message passed to provideLocalization through withRecoveryMessage, which is what a visitor reads if the translations cannot be loaded.`,
+      toolkitDiagnostic(
+        'EQ1706',
+        `Equator init is done. Two things are yours to write: the first catalog at i18n/<scope>/${requested.value.sourceLocale}.yaml, for example i18n/shell/${requested.value.sourceLocale}.yaml, and a recovery message. One plain message passed to provideLocalization through withRecoveryMessage, which is what a visitor reads if the translations cannot be loaded.`,
         { severity: 'info' },
       ),
     ],
@@ -2641,7 +2633,7 @@ export async function initializeAtlasProject(
 }
 
 /**
- * Removes Atlas from a project: the generated output, the configuration, and the package scripts.
+ * Removes Equator from a project: the generated output, the configuration, and the package scripts.
  *
  * Takes the project to work on, whether to write, and whether to take the authored catalogs with
  * it; with no options it uninstalls the project found from the current directory and leaves the
@@ -2656,26 +2648,26 @@ export async function initializeAtlasProject(
  * Deleting a project's translations as a side effect of uninstalling a tool would be
  * indefensible.
  *
- * Only what Atlas wrote is taken back. A `#i18n` specifier a consumer has repointed, or a script
+ * Only what Equator wrote is taken back. A `#i18n` specifier a consumer has repointed, or a script
  * they have edited, is theirs now: it is left exactly as it is and named in the result, because
  * silently reverting an edit is the same class of mistake as silently deleting a comment.
  */
-export async function uninstallAtlasProject(
-  options: AtlasUninstallProjectOptions = {},
-): Promise<AtlasResult<AtlasUninstallProjectResult>> {
-  const location = await discoverAtlasProject(options);
+export async function uninstallProject(
+  options: UninstallProjectOptions = {},
+): Promise<ToolkitResult<UninstallProjectResult>> {
+  const location = await discoverProject(options);
   if (!location.ok) return location;
   const dryRun = options.dryRun === true;
 
   // Read while the project can still be loaded. Everything below removes the configuration that
   // makes loading possible, so asking afterwards would find nothing and quietly remove nothing.
   const authoredCatalogs =
-    options.catalogs === true ? await loadAtlasProject(options) : undefined;
+    options.catalogs === true ? await loadProject(options) : undefined;
   if (authoredCatalogs !== undefined && !authoredCatalogs.ok) {
     return authoredCatalogs;
   }
 
-  const cleaned = await cleanAtlasOutput({
+  const cleaned = await cleanOutput({
     ownerRoot: location.value.ownerRoot,
     generatedRoot: location.value.generatedRoot,
     workRoot: location.value.workRoot,
@@ -2717,7 +2709,7 @@ export async function uninstallAtlasProject(
     !Array.isArray(scripts)
   ) {
     const entries = scripts as Record<string, unknown>;
-    for (const [name, command] of Object.entries(ATLAS_PACKAGE_SCRIPTS)) {
+    for (const [name, command] of Object.entries(PACKAGE_SCRIPTS)) {
       if (!(name in entries)) continue;
       if (entries[name] === command) delete entries[name];
       else retained.push(`scripts.${name}`);
@@ -2760,7 +2752,7 @@ export async function uninstallAtlasProject(
     removed.push(...catalogs);
   }
 
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
       changed: removed.length > 0,
       removed: Object.freeze([...new Set(removed)].sort(compareCodePoint)),
@@ -2775,19 +2767,19 @@ export async function uninstallAtlasProject(
  * Removes a project's generated output and leaves everything else alone.
  *
  * The configuration, the authored catalogs and the package scripts stay, which is what `clean`
- * means everywhere else. Removing Atlas itself is `uninstallAtlasProject`, a separate call rather
+ * means everywhere else. Removing Equator itself is `uninstallProject`, a separate call rather
  * than a flag on this one, because a flag that turns "remove build output" into "remove the tool"
  * eventually runs in a pipeline by accident.
  *
  * Takes the project to work on and whether to delete; with no options it cleans the project found
  * from the current directory. Reports what it removed, or the diagnostics that stopped it.
  */
-export async function cleanAtlasProject(
-  options: AtlasCleanProjectOptions = {},
-): Promise<AtlasResult<AtlasCleanOutputResult>> {
-  const location = await discoverAtlasProject(options);
+export async function cleanProject(
+  options: CleanProjectOptions = {},
+): Promise<ToolkitResult<CleanOutputResult>> {
+  const location = await discoverProject(options);
   if (!location.ok) return location;
-  return cleanAtlasOutput({
+  return cleanOutput({
     ownerRoot: location.value.ownerRoot,
     generatedRoot: location.value.generatedRoot,
     workRoot: location.value.workRoot,
@@ -2802,8 +2794,8 @@ function watchIgnored(
   if (fileName === null) return false;
   const path = fileName.toString().replaceAll('\\', '/');
   return (
-    path === '.atlas' ||
-    path.startsWith('.atlas/') ||
+    path === '.equator' ||
+    path.startsWith('.equator/') ||
     path === GENERATED_ROOT ||
     path.startsWith(`${GENERATED_ROOT}/`) ||
     path === 'dist' ||
@@ -2822,10 +2814,10 @@ function watchIgnored(
  * hints: startup reconciles fully, content is reread, and an uncertain or overflowed event
  * widens back to a full bounded reconciliation rather than trusting what the platform reported.
  */
-export async function watchAtlasProject(
-  options: AtlasWatchProjectOptions,
-): Promise<AtlasResult<AtlasWatchProjectResult>> {
-  const location = await discoverAtlasProject(options);
+export async function watchProject(
+  options: WatchProjectOptions,
+): Promise<ToolkitResult<WatchProjectResult>> {
+  const location = await discoverProject(options);
   if (!location.ok) return location;
   const debounce = Math.max(
     10,
@@ -2860,7 +2852,7 @@ export async function watchAtlasProject(
     }
     running = true;
     try {
-      const result = await generateAtlasProject({
+      const result = await generateProject({
         cwd: location.value.ownerRoot,
         project: location.value.ownerRoot,
         ...(options.observability === undefined
@@ -2874,10 +2866,10 @@ export async function watchAtlasProject(
       options.onCycle?.(
         Object.freeze({
           sequence: cycles,
-          result: atlasFailure([
-            atlasDiagnostic(
-              'ATL1703',
-              `Atlas watch reconciliation failed: ${error instanceof Error ? error.message : String(error)}`,
+          result: toolkitFailure([
+            toolkitDiagnostic(
+              'EQ1703',
+              `Equator watch reconciliation failed: ${error instanceof Error ? error.message : String(error)}`,
             ),
           ]),
         }),
@@ -2910,10 +2902,10 @@ export async function watchAtlasProject(
       stop();
     });
   } catch (error) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1703',
-        `Atlas could not start its foreground watcher: ${error instanceof Error ? error.message : String(error)}`,
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1703',
+        `Equator could not start its foreground watcher: ${error instanceof Error ? error.message : String(error)}`,
       ),
     ]);
   }
@@ -2922,12 +2914,12 @@ export async function watchAtlasProject(
   if (options.signal.aborted && !isRunning()) stop();
   await done;
   if (watcherError !== undefined) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1703',
-        `Atlas foreground watcher failed: ${watcherError.message}`,
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1703',
+        `Equator foreground watcher failed: ${watcherError.message}`,
       ),
     ]);
   }
-  return atlasSuccess(Object.freeze({ cycles }));
+  return toolkitSuccess(Object.freeze({ cycles }));
 }

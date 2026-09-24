@@ -32,7 +32,7 @@ importers:
       '@angular/ssr':
         specifier: 22.0.0
         version: 22.0.0(@angular/common@22.0.0(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.4.0))(rxjs@7.4.0))(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.4.0))(@angular/platform-server@22.0.0(@angular/common@22.0.0(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.4.0))(rxjs@7.4.0))(@angular/compiler@22.0.0)(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.4.0))(@angular/platform-browser@22.0.0(@angular/common@22.0.0(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.4.0))(rxjs@7.4.0))(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.4.0)))(rxjs@7.4.0))(@angular/router@22.0.0(@angular/common@22.0.0(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.4.0))(rxjs@7.4.0))(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.4.0))(@angular/platform-browser@22.0.0(@angular/common@22.0.0(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.4.0))(rxjs@7.4.0))(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.4.0)))(rxjs@7.4.0))
-      '@neolorn/atlas':
+      '@neolorn/equator':
         specifier: file:../../../dist/runtime
         version: file:../../../dist/runtime(54eaeabba8d01eaa0c7465ade62b7450)
       rxjs:
@@ -51,7 +51,7 @@ importers:
       '@angular/compiler-cli':
         specifier: 22.0.0
         version: 22.0.0(@angular/compiler@22.0.0)(typescript@6.0.2)
-      '@neolorn/atlas-toolkit':
+      '@neolorn/equator-toolkit':
         specifier: file:../../../dist/toolkit
         version: file:../../../dist/toolkit(@angular/compiler@22.0.0)(typescript@6.0.2)
       '@types/node':
@@ -1117,7 +1117,7 @@ packages:
     resolution: {integrity: sha512-xJIPs+bYuc9ASBl+cvGsKbGrJmS6fAKaSZCnT0lhahT5rhA2VVy9/EcIgd2JhtEuFOJNx7UHNn/qiTPTY4nrQw==}
     engines: {node: '>= 10'}
 
-  '@neolorn/atlas-toolkit@file:../../../dist/toolkit':
+  '@neolorn/equator-toolkit@file:../../../dist/toolkit':
     resolution: {directory: ../../../dist/toolkit, type: directory}
     engines: {node: ^22.22.3 || ^24.15.0 || ^26.0.0}
     hasBin: true
@@ -1125,7 +1125,7 @@ packages:
       '@angular/compiler': '>=22.0.0 <23.0.0'
       typescript: '>=6.0.2 <6.1.0'
 
-  '@neolorn/atlas@file:../../../dist/runtime':
+  '@neolorn/equator@file:../../../dist/runtime':
     resolution: {directory: ../../../dist/runtime, type: directory}
     engines: {node: ^22.22.3 || ^24.15.0 || ^26.0.0}
     peerDependencies:
@@ -3883,7 +3883,7 @@ snapshots:
       '@napi-rs/nice-win32-x64-msvc': 1.1.1
     optional: true
 
-  '@neolorn/atlas-toolkit@file:../../../dist/toolkit(@angular/compiler@22.0.0)(typescript@6.0.2)':
+  '@neolorn/equator-toolkit@file:../../../dist/toolkit(@angular/compiler@22.0.0)(typescript@6.0.2)':
     dependencies:
       '@angular/compiler': 22.0.0
       ajv: 8.20.0
@@ -3893,7 +3893,7 @@ snapshots:
       typescript: 6.0.2
       yaml: 2.9.0
 
-  '@neolorn/atlas@file:../../../dist/runtime(54eaeabba8d01eaa0c7465ade62b7450)':
+  '@neolorn/equator@file:../../../dist/runtime(54eaeabba8d01eaa0c7465ade62b7450)':
     dependencies:
       '@angular/common': 22.0.0(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.4.0))(rxjs@7.4.0)
       '@angular/core': 22.0.0(@angular/compiler@22.0.0)(rxjs@7.4.0)

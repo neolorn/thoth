@@ -29,8 +29,8 @@ The profile covers:
 - a release's own schemas and durable formats;
 - the compiler-host, runtime, and browser ranges, which `02-packages-and-platform.spec.md` owns.
 
-The profile of this release line is `atlas-1`. Its standards editions, and every data source behind
-them, are recorded in `standards/sources.lock.json`.
+The profile of this release line is `equator-1`. Its standards editions, and every data source
+behind them, are recorded in `standards/sources.lock.json`.
 
 A release MUST NOT resolve any part of the profile from an unpinned latest revision at build
 time or at run time, and MUST NOT infer an edition from a package label or from the host runtime's
@@ -263,7 +263,7 @@ The mapping MUST preserve:
 - notes, context, and segment state.
 
 Authored guidance maps to Core notes. A message description and its context are written as `<note>`
-elements carrying the `atlas:description` and `atlas:context` categories, with `appliesTo`
+elements carrying the `equator:description` and `equator:context` categories, with `appliesTo`
 separating guidance about the source message from guidance about the translation. A release MUST
 read back only its own categories: a note written by a translator or by a translation-management
 system is reported and left in the document rather than absorbed into a catalog, and source guidance
@@ -335,9 +335,9 @@ The toolkit package depends on `tslib` and four packages, each bounded to one re
   merge keys, scalars, resources, and semantics before it constructs catalog data.
 - `ajv` 8.20.0 validates the toolkit's own closed JSON Schema Draft 2020-12 contracts. It compiles
   the toolkit's schemas only, resolves nothing over the network, and never enters a browser bundle.
-- `jsonc-parser` 3.3.1 supplies the syntax tree and source locations that admit `atlas.config.json`
-  strictly, detect duplicate keys before construction, and place diagnostics. Comment syntax is
-  disabled and the toolkit constructs its own prototype-safe configuration value.
+- `jsonc-parser` 3.3.1 supplies the syntax tree and source locations that admit
+  `equator.config.json` strictly, detect duplicate keys before construction, and place diagnostics.
+  Comment syntax is disabled and the toolkit constructs its own prototype-safe configuration value.
 - `messageformat` 4.0.0 supplies the LDML 48 MessageFormat 2 parser, its data model, its validation
   and traversal, and its reference function surface. A release owns the normalized semantic model,
   the compiled representation, compatibility identity, diagnostics, and the browser evaluator; the

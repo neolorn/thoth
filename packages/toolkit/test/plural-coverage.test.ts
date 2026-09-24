@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseAtlasCatalog, type AtlasCatalog } from '../src/index.js';
+import { parseCatalog, type Catalog } from '../src/index.js';
 import {
-  ATLAS_MESSAGE_FUNCTION_PROFILE,
-  ATLAS_PLURAL_SELECTOR_FUNCTIONS,
+  MESSAGE_FUNCTION_PROFILE,
+  PLURAL_SELECTOR_FUNCTIONS,
 } from '../src/message-format.js';
-import { analyzeAtlasCatalogSet } from '../src/semantic-model.js';
+import { analyzeCatalogSet } from '../src/semantic-model.js';
 import { testProjectConfiguration } from './fixtures.js';
 import {
-  ATLAS_CARDINAL_PLURAL_CATEGORIES,
-  ATLAS_ORDINAL_PLURAL_CATEGORIES,
-  ATLAS_PLURAL_DATA_PROFILE,
+  CARDINAL_PLURAL_CATEGORIES,
+  ORDINAL_PLURAL_CATEGORIES,
+  PLURAL_DATA_PROFILE,
 } from '../src/plural-categories.generated.js';
 import { pluralCategoriesForLocale } from '../src/semantic-model.js';
 
@@ -21,7 +21,7 @@ import { pluralCategoriesForLocale } from '../src/semantic-model.js';
  * every count then renders the same string: it parses, compiles, ships, and reads as a finished
  * translation. Nothing reported it.
  *
- * The categories come from the CLDR release Atlas pins, not from the host `Intl`, so the answer
+ * The categories come from the CLDR release Equator pins, not from the host `Intl`, so the answer
  * does not change with whichever Node version a build happens to run on.
  *
  * `specs/12-verification.spec.md` section 5 asks for locales that differ in the ways the
@@ -46,8 +46,8 @@ function catalog(
   role: 'source' | 'target',
   locale: string,
   body: string,
-): AtlasCatalog {
-  const result = parseAtlasCatalog(body, {
+): Catalog {
+  const result = parseCatalog(body, {
     role,
     providerId: 'home',
     scopeId: 'shell',
@@ -69,7 +69,7 @@ function analyze(
   requireComplete = false,
   locale = 'ar-EG',
 ) {
-  return analyzeAtlasCatalogSet({
+  return analyzeCatalogSet({
     configuration,
     catalogs: [source, catalog('target', locale, message(targetVariants))],
     ...(requireComplete ? { requireCompleteTargets: true } : {}),
@@ -83,7 +83,7 @@ function analyzeSelect(
   targetVariants: readonly string[],
   sourceVariants: readonly string[] = ['one {{1st item}}', '* {{#th item}}'],
 ) {
-  return analyzeAtlasCatalogSet({
+  return analyzeCatalogSet({
     configuration: testProjectConfiguration(['en-US', targetLocale]),
     catalogs: [
       catalog('source', 'en-US', message(sourceVariants, select)),
@@ -102,12 +102,12 @@ const ALL_SIX = [
 ];
 
 const coverage = (graph: ReturnType<typeof analyze>) =>
-  graph.diagnostics.filter((d) => d.code === 'ATL1308');
+  graph.diagnostics.filter((d) => d.code === 'EQ1308');
 
 describe('plural category coverage', () => {
-  it('pins the category table to the CLDR release Atlas declares', () => {
-    expect(ATLAS_PLURAL_DATA_PROFILE).toBe('cldr-48.2/atlas-plurals-2');
-    expect(ATLAS_CARDINAL_PLURAL_CATEGORIES['ar']).toEqual([
+  it('pins the category table to the CLDR release Equator declares', () => {
+    expect(PLURAL_DATA_PROFILE).toBe('cldr-48.2/equator-plurals-1');
+    expect(CARDINAL_PLURAL_CATEGORIES['ar']).toEqual([
       'zero',
       'one',
       'two',
@@ -115,9 +115,9 @@ describe('plural category coverage', () => {
       'many',
       'other',
     ]);
-    expect(ATLAS_CARDINAL_PLURAL_CATEGORIES['en']).toEqual(['one', 'other']);
-    expect(ATLAS_ORDINAL_PLURAL_CATEGORIES['ar']).toEqual(['other']);
-    expect(ATLAS_ORDINAL_PLURAL_CATEGORIES['en']).toEqual([
+    expect(CARDINAL_PLURAL_CATEGORIES['en']).toEqual(['one', 'other']);
+    expect(ORDINAL_PLURAL_CATEGORIES['ar']).toEqual(['other']);
+    expect(ORDINAL_PLURAL_CATEGORIES['en']).toEqual([
       'one',
       'two',
       'few',
@@ -174,7 +174,7 @@ describe('plural category coverage', () => {
   it('does not invent requirements for a two-category locale', () => {
     // en needs only one and other. A target that supplies them is complete, and must not be
     // reported for lacking categories its grammar does not have.
-    const graph = analyzeAtlasCatalogSet({
+    const graph = analyzeCatalogSet({
       configuration: testProjectConfiguration(['en-US', 'en-GB']),
       catalogs: [
         source,
@@ -203,7 +203,7 @@ describe('plural category coverage', () => {
       'messages:\n  order.state: |-\n    .input {$state :string}\n    .match $state\n    shipped {{تم الشحن}}\n    * {{قيد الانتظار}}\n',
     );
 
-    const graph = analyzeAtlasCatalogSet({
+    const graph = analyzeCatalogSet({
       configuration,
       catalogs: [enumSource, enumTarget],
     });
@@ -273,7 +273,7 @@ describe('plural category coverage follows MF2 select', () => {
     // Bad Option error. Accepting anything else means falling through to the cardinal table, which
     // is the defect this section fixes reappearing by a different route.
     const rejected = (select: string) => {
-      const result = parseAtlasCatalog(message(['* {{x}}'], select), {
+      const result = parseCatalog(message(['* {{x}}'], select), {
         role: 'source',
         providerId: 'home',
         scopeId: 'shell',
@@ -282,7 +282,7 @@ describe('plural category coverage follows MF2 select', () => {
       });
       return result.ok
         ? []
-        : result.diagnostics.filter((d) => d.code === 'ATL1204');
+        : result.diagnostics.filter((d) => d.code === 'EQ1204');
     };
 
     expect(rejected('bogus')).toHaveLength(1);
@@ -317,8 +317,8 @@ describe('plural category coverage follows MF2 select', () => {
  * why asserting on the categories proves nothing. These assert *which row answered*.
  */
 describe('plural table lookup', () => {
-  const cardinal = ATLAS_CARDINAL_PLURAL_CATEGORIES;
-  const ordinal = ATLAS_ORDINAL_PLURAL_CATEGORIES;
+  const cardinal = CARDINAL_PLURAL_CATEGORIES;
+  const ordinal = ORDINAL_PLURAL_CATEGORIES;
 
   it('selects a row keyed by more than one subtag, not its base language', () => {
     // `toBe`, not `toEqual`: `pt-PT` and `pt` are deep-equal in this release, so only the identity
@@ -390,7 +390,7 @@ describe('plural table lookup', () => {
 });
 
 /**
- * `requireCompleteTargets` turns ATL1307 and ATL1308 from warnings into errors.
+ * `requireCompleteTargets` turns EQ1307 and EQ1308 from warnings into errors.
  * Three checks above turn the gate on, or use a complete target: none did both, so nothing said
  * that a translator who has actually finished can turn the gate on and have the build pass.
  *
@@ -436,7 +436,7 @@ describe('requireCompleteTargets accepts a target that is complete', () => {
 
   for (const { locale, select, categories } of COMPLETE) {
     it(`${select} in ${locale}, ${categories.length + 1} categories`, () => {
-      const graph = analyzeAtlasCatalogSet({
+      const graph = analyzeCatalogSet({
         configuration: testProjectConfiguration(['en-US', locale]),
         catalogs: [
           catalog('source', 'en-US', message(sourceVariants(select), select)),
@@ -484,7 +484,7 @@ describe('which functions have plural categories to be missing', () => {
       .join('\n')}\n`;
 
   const analyzeAnnotated = (annotation: string) =>
-    analyzeAtlasCatalogSet({
+    analyzeCatalogSet({
       configuration,
       catalogs: [
         catalog(
@@ -508,17 +508,15 @@ describe('which functions have plural categories to be missing', () => {
   );
 
   it('is derived from the profile rather than kept beside it', () => {
-    expect([...ATLAS_PLURAL_SELECTOR_FUNCTIONS].sort()).toEqual([
+    expect([...PLURAL_SELECTOR_FUNCTIONS].sort()).toEqual([
       'integer',
       'number',
       'offset',
       'percent',
     ]);
     // Every one of them selects, and every function that selects numerically is one of them.
-    for (const { name, selection } of ATLAS_MESSAGE_FUNCTION_PROFILE) {
-      expect(ATLAS_PLURAL_SELECTOR_FUNCTIONS.has(name)).toBe(
-        selection === 'number',
-      );
+    for (const { name, selection } of MESSAGE_FUNCTION_PROFILE) {
+      expect(PLURAL_SELECTOR_FUNCTIONS.has(name)).toBe(selection === 'number');
     }
   });
 });

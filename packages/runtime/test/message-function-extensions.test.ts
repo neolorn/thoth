@@ -4,13 +4,13 @@ import type {
   MessageFunctionInvocation,
   MessageFunctionResult,
   RuntimeMessageFunctionDescriptor,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 import {
-  atlasMessageCustomFunctions,
-  defineAtlasExtensionRegistry,
+  messageCustomFunctions,
+  defineExtensionRegistry,
   type ExtensionValueType,
 } from '../../toolkit/src/extensions.js';
-import { parseAtlasMessage } from '../../toolkit/src/message-format.js';
+import { parseMessageSemanticModel } from '../../toolkit/src/message-format.js';
 import type { CompiledInputContract } from '../src/catalog-runtime.js';
 import { RuntimeExtensions } from '../src/extensions.js';
 import { parse, renderSemantics } from './message-harness.js';
@@ -20,7 +20,7 @@ import { parse, renderSemantics } from './message-harness.js';
  *
  * MessageFormat defines two operations on a resolved value that supports selection:
  * *"Match(`rv`, `k`) returns true for any key `k` that matches `rv`"* and *"BetterThan(`rv`, `k1`,
- * `k2`) returns true ... and `k1` is a better match than `k2`"*, and an Atlas extension could
+ * `k2`) returns true ... and `k1` is a better match than `k2`"*, and an Equator extension could
  * express neither. `MessageFunctionResult` carried one `selectKey`, so a function could not match
  * `1.0` and `1` at once and could not say which of the two it preferred, and the evaluator pinned
  * `betterThan` to false for every extension result. Both are read off one ordered `selectKeys` now:
@@ -42,7 +42,7 @@ const NL = String.fromCharCode(10);
  * refuses it, which is how this test found out.
  */
 const registryOf = (selector: 'none' | 'exact') => {
-  const registry = defineAtlasExtensionRegistry([
+  const registry = defineExtensionRegistry([
     {
       kind: 'message-function',
       id: 'test:select',
@@ -101,7 +101,7 @@ const testSelect = ({
  * parser is told about a registered function is its descriptor's profile, and a literal beside the
  * descriptor is a second statement of it that nothing keeps in step.
  */
-const CUSTOM = atlasMessageCustomFunctions(registryOf('exact'));
+const CUSTOM = messageCustomFunctions(registryOf('exact'));
 
 const select = (
   source: string,
@@ -231,8 +231,8 @@ describe('an extension that selects', () => {
 /**
  * MessageFormat resolves an operand that is itself an annotated expression to a value carrying its
  * options, *"with options on the expression taking priority over any options of the operand"*.
- * Atlas did that for its own numeric functions and not for extensions, so the same message answered
- * differently depending on which function it named.
+ * Equator did that for its own numeric functions and not for extensions, so the same message
+ * answered differently depending on which function it named.
  */
 describe('an extension that inherits its operand', () => {
   const keyedOn = (source: string) => select(source);
@@ -268,7 +268,7 @@ describe('an extension that inherits its operand', () => {
   });
 
   /**
-   * The narrowing that is Atlas's rather than MessageFormat's. A descriptor is a closed statement
+   * The narrowing that is Equator's rather than MessageFormat's. A descriptor is a closed statement
    * of what a function accepts, so inheritance must not be a second door an undeclared name walks
    * through: `:number`'s `signDisplay` reaches the chain but not this function's hands.
    */
@@ -295,7 +295,7 @@ describe('an extension that inherits its operand', () => {
  * What an extension declaration carries into the rest of the message.
  *
  * MessageFormat resolves an expression's options against its operand's, *"with options on the
- * expression taking priority over any options of the operand"*, and Atlas's rule for a custom
+ * expression taking priority over any options of the operand"*, and Equator's rule for a custom
  * function is that the resolved value carries the whole merged mapping while the descriptor narrows
  * only what the function is *called* with. The runtime did that. The compiler could not: it was
  * told a registered function's name and whether it selects, which is not enough to build a profile,
@@ -311,7 +311,7 @@ describe('what a declaration carries when the declaring function is an extension
     resultType: 'date-time' | 'number',
     options: Readonly<Record<string, { readonly type: ExtensionValueType }>>,
   ) => {
-    const registry = defineAtlasExtensionRegistry([
+    const registry = defineExtensionRegistry([
       {
         kind: 'message-function',
         id,
@@ -368,8 +368,8 @@ describe('what a declaration carries when the declaring function is an extension
     source: string,
     registry: ReturnType<typeof registryFor>,
   ): string => {
-    const result = parseAtlasMessage(source, {
-      customFunctions: atlasMessageCustomFunctions(registry),
+    const result = parseMessageSemanticModel(source, {
+      customFunctions: messageCustomFunctions(registry),
     });
     return result.ok
       ? 'ACCEPTED'
@@ -412,7 +412,7 @@ describe('what a declaration carries when the declaring function is an extension
       '{{When: {$t :date timeZone=input}}}';
     expect(refusalOf(source, ZONED)).toBe('ACCEPTED');
     const rendered = renderSemantics(
-      parse(source, atlasMessageCustomFunctions(ZONED)),
+      parse(source, messageCustomFunctions(ZONED)),
       DATE_INPUT,
       { d: LATE },
       boundTo(ZONED),
@@ -448,7 +448,7 @@ describe('what a declaration carries when the declaring function is an extension
       '{{N: {$x :number}}}';
     expect(
       renderSemantics(
-        parse(source, atlasMessageCustomFunctions(NUMERIC)),
+        parse(source, messageCustomFunctions(NUMERIC)),
         NUMBER_INPUT,
         { v: 1234.5 },
         boundTo(NUMERIC),

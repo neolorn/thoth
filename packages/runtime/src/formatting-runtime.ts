@@ -56,7 +56,7 @@ import {
   type RuntimeFormattingAdapterBinding,
   type RuntimeParsingAdapterBinding,
   type ZonedDateTimeValue,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 import { languageForLocale } from './evaluator';
 import { RuntimeExtensions } from './extensions';
 import {
@@ -424,7 +424,7 @@ export class FormattingSurface {
       this.context.snapshot(),
       options,
       // Passed here rather than carried on the formatting context: the context is part of the
-      // snapshot Atlas serializes into the SSR transfer payload, and the table is already in the
+      // snapshot Equator serializes into the SSR transfer payload, and the table is already in the
       // bundle. Absent, the formatter falls back to the CLDR root profile it compiles in.
       ...(this.context.personNames === undefined
         ? []

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseAtlasCatalog } from '../src/index.js';
-import { inspectAtlasAuthoredBidi } from '../src/unicode-safety.js';
+import { parseCatalog } from '../src/index.js';
+import { inspectAuthoredBidi } from '../src/unicode-safety.js';
 
 /**
  * The bidi policy for authored catalog values.
@@ -33,7 +33,7 @@ const WJ = '\u2060';
 const BOM = '\ufeff';
 
 function parse(value: string) {
-  return parseAtlasCatalog(`messages:\n  m: ${JSON.stringify(value)}\n`, {
+  return parseCatalog(`messages:\n  m: ${JSON.stringify(value)}\n`, {
     role: 'source',
     providerId: 'p',
     scopeId: 's',
@@ -46,7 +46,7 @@ describe('characters that can reorder surrounding text', () => {
   it('refuses overrides and embeddings', () => {
     // The spoofing case: "Order <RLO>12345 shipped" displays as "Order deppihs 54321".
     for (const control of [LRE, RLE, PDF, LRO, RLO]) {
-      expect(inspectAtlasAuthoredBidi(`Order ${control}12345 shipped`)).toBe(
+      expect(inspectAuthoredBidi(`Order ${control}12345 shipped`)).toBe(
         'directional-override',
       );
     }
@@ -55,25 +55,25 @@ describe('characters that can reorder surrounding text', () => {
   it('refuses an isolate that is opened and never closed', () => {
     // Leaks exactly like an override: the run it was meant to contain never ends.
     for (const open of [LRI, RLI, FSI]) {
-      expect(inspectAtlasAuthoredBidi(`مرحبا ${open}Acme Ltd`)).toBe(
+      expect(inspectAuthoredBidi(`مرحبا ${open}Acme Ltd`)).toBe(
         'unbalanced-isolate',
       );
     }
   });
 
   it('refuses an isolate that is closed and never opened', () => {
-    expect(inspectAtlasAuthoredBidi(`مرحبا Acme${PDI} Ltd`)).toBe(
+    expect(inspectAuthoredBidi(`مرحبا Acme${PDI} Ltd`)).toBe(
       'unbalanced-isolate',
     );
   });
 
   it('refuses a byte-order mark inside a value', () => {
-    expect(inspectAtlasAuthoredBidi(`SKU${BOM}A`)).toBe('byte-order-mark');
+    expect(inspectAuthoredBidi(`SKU${BOM}A`)).toBe('byte-order-mark');
   });
 
   it('refuses an override hidden inside a balanced isolate', () => {
     // The isolate is well formed, so a balance check alone would pass this.
-    expect(inspectAtlasAuthoredBidi(`a ${FSI}x${RLO}y${PDI} b`)).toBe(
+    expect(inspectAuthoredBidi(`a ${FSI}x${RLO}y${PDI} b`)).toBe(
       'directional-override',
     );
   });
@@ -83,7 +83,7 @@ describe('characters that can reorder surrounding text', () => {
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.diagnostics.map((d) => d.code)).toContain('ATL1103');
+    expect(result.diagnostics.map((d) => d.code)).toContain('EQ1103');
     // The summary has to explain what the character does, since the reader cannot see it.
     expect(result.diagnostics[0]?.summary).toContain('reorders');
   });
@@ -94,31 +94,31 @@ describe('characters the policy keeps', () => {
     // The capability deliberately retained: a translator needs this to wrap a Latin product name
     // inside Arabic prose, and refusing every isolate would remove it with nothing in its place.
     expect(
-      inspectAtlasAuthoredBidi(`مرحبا ${FSI}Acme Ltd${PDI} اليوم`),
+      inspectAuthoredBidi(`مرحبا ${FSI}Acme Ltd${PDI} اليوم`),
     ).toBeUndefined();
     expect(parse(`مرحبا ${FSI}Acme Ltd${PDI} اليوم`).ok).toBe(true);
   });
 
   it('permits nested balanced isolates', () => {
     expect(
-      inspectAtlasAuthoredBidi(`a ${LRI}b ${FSI}c${PDI} d${PDI} e`),
+      inspectAuthoredBidi(`a ${LRI}b ${FSI}c${PDI} d${PDI} e`),
     ).toBeUndefined();
   });
 
   it('permits directional marks', () => {
     // Each nudges one adjacent character and cannot reorder a run.
     for (const mark of [LRM, RLM, ALM]) {
-      expect(inspectAtlasAuthoredBidi(`Total ${mark}42 due`)).toBeUndefined();
+      expect(inspectAuthoredBidi(`Total ${mark}42 due`)).toBeUndefined();
     }
   });
 
   it('permits zero-width space and word joiner', () => {
-    expect(inspectAtlasAuthoredBidi(`SKU${ZWSP}A${WJ}B`)).toBeUndefined();
+    expect(inspectAuthoredBidi(`SKU${ZWSP}A${WJ}B`)).toBeUndefined();
     expect(parse(`SKU${ZWSP}A${WJ}B`).ok).toBe(true);
   });
 
   it('permits ordinary text in either script', () => {
-    expect(inspectAtlasAuthoredBidi('Order 12345 shipped')).toBeUndefined();
-    expect(inspectAtlasAuthoredBidi('مرحبا بالعالم')).toBeUndefined();
+    expect(inspectAuthoredBidi('Order 12345 shipped')).toBeUndefined();
+    expect(inspectAuthoredBidi('مرحبا بالعالم')).toBeUndefined();
   });
 });

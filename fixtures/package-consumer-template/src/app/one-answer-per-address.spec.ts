@@ -17,16 +17,16 @@ import {
   createPathPrefixLocalePolicy,
   withRouting,
   type LocaleUrlPolicy,
-} from '@neolorn/atlas';
-import { provideLocalizedRouter } from '@neolorn/atlas/router';
-import { provideLocalizationTesting } from '@neolorn/atlas/testing';
+} from '@neolorn/equator';
+import { provideLocalizedRouter } from '@neolorn/equator/router';
+import { provideLocalizationTesting } from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 import { routes } from './app.routes';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
@@ -118,7 +118,7 @@ interface Arrival {
  * A browser-supplied arrival, driven by the Router's own initial navigation.
  *
  * Both halves of the address are set, and the pair is load-bearing: `MockPlatformLocation` is what
- * the `LocationStrategy` reads, and jsdom's `history` is what Atlas's `url` locale source reads.
+ * the `LocationStrategy` reads, and jsdom's `history` is what Equator's `url` locale source reads.
  * Setting one and not the other leaves the Router and the committed locale disagreeing, which the
  * three-path fixture measured and recorded.
  */
@@ -133,16 +133,16 @@ async function arriveAt(
     providers: [
       {
         provide: MOCK_PLATFORM_LOCATION_CONFIG,
-        useValue: { startUrl: `https://atlas.example${address}` },
+        useValue: { startUrl: `https://site.example${address}` },
       },
-      provideLocalizedRouter(routes, { origin: 'https://atlas.example' }),
+      provideLocalizedRouter(routes, { origin: 'https://site.example' }),
       provideLocalizationTesting(
         {
           configuration,
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
           routeProjection,
         },
         withRouting({ policy, projection: appRouteProjection }),

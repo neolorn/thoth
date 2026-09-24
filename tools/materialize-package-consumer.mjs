@@ -45,7 +45,7 @@ if (consumerProfile.overlay !== undefined) {
 }
 
 // The compiler this row's application uses. Analysis adopts a consumer's own options, so a row
-// that changes them changes the program every Atlas diagnostic is computed against.
+// that changes them changes the program every Equator diagnostic is computed against.
 if (consumerProfile.compilerOptions !== undefined) {
   const tsconfigPath = resolve(consumerRoot, 'tsconfig.json');
   const tsconfig = JSON.parse(await readFile(tsconfigPath, 'utf8'));
@@ -75,7 +75,7 @@ if (lockExists) {
 
 const manifestPath = resolve(consumerRoot, 'package.json');
 const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-manifest.name = `@neolorn/atlas-feature-lab-${consumerName}`;
+manifest.name = `@neolorn/feature-lab-${consumerName}`;
 for (const dependencySet of [manifest.dependencies, manifest.devDependencies]) {
   for (const dependency of Object.keys(dependencySet)) {
     if (dependency.startsWith('@angular/')) {
@@ -94,8 +94,8 @@ const packageLocator = (outputRoot) => {
   return `file:${path.replaceAll('\\', '/')}`;
 };
 
-manifest.dependencies['@neolorn/atlas'] = packageLocator('dist/runtime');
-manifest.devDependencies['@neolorn/atlas-toolkit'] =
+manifest.dependencies['@neolorn/equator'] = packageLocator('dist/runtime');
+manifest.devDependencies['@neolorn/equator-toolkit'] =
   packageLocator('dist/toolkit');
 
 await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');

@@ -4,10 +4,10 @@ import { resolve } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { formatAtlasProject } from '../src/project-host.js';
+import { formatProject } from '../src/project-host.js';
 
 /**
- * What `atlas format` is allowed to change.
+ * What `equator format` is allowed to change.
  *
  * Building a plain object from the semantic model and stringifying it drops every comment, because
  * comments are not in that model: they go when the YAML becomes the model, several steps before
@@ -32,7 +32,7 @@ async function write(
 }
 
 async function project(catalog: string): Promise<string> {
-  const root = await mkdtemp(resolve(tmpdir(), 'atlas-lossless-'));
+  const root = await mkdtemp(resolve(tmpdir(), 'lossless-'));
   temporaryRoots.push(root);
 
   await write(
@@ -40,7 +40,7 @@ async function project(catalog: string): Promise<string> {
     'package.json',
     `${JSON.stringify(
       {
-        name: '@example/atlas-lossless',
+        name: '@example/lossless',
         version: '0.0.0',
         private: true,
         type: 'module',
@@ -55,7 +55,7 @@ async function project(catalog: string): Promise<string> {
   );
   await write(
     root,
-    'atlas.config.json',
+    'equator.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -94,7 +94,7 @@ async function project(catalog: string): Promise<string> {
 
 async function formatted(catalog: string): Promise<string> {
   const root = await project(catalog);
-  const result = await formatAtlasProject({ project: root });
+  const result = await formatProject({ project: root });
   if (!result.ok)
     throw new Error(
       result.diagnostics.map((d) => `${d.code} ${d.summary}`).join(' | '),
@@ -118,7 +118,7 @@ describe('formatting an authored catalog', () => {
         'messages:',
         '  # Deliberately Arabic in the English catalog: the toggle offers the other language.',
         '  locale-toggle: العربية',
-        '  app-title: Atlas # trailing note',
+        '  app-title: Equator # trailing note',
         '',
       ].join('\n'),
     );
@@ -169,10 +169,10 @@ describe('formatting an authored catalog', () => {
 
   it('drops quotes a scalar does not need', async () => {
     const output = await formatted(
-      ['messages:', '  app-title: "Atlas feature lab"', ''].join('\n'),
+      ['messages:', '  app-title: "Equator feature lab"', ''].join('\n'),
     );
 
-    expect(output).toContain('app-title: Atlas feature lab');
+    expect(output).toContain('app-title: Equator feature lab');
   });
 
   it('keeps a block scalar written as one', async () => {
@@ -196,7 +196,7 @@ describe('formatting an authored catalog', () => {
     const source = [
       '# Shell.',
       'messages:',
-      '  app-title: "Atlas"',
+      '  app-title: "Equator"',
       "  greeting: '{$name}'",
       '',
     ].join('\n');

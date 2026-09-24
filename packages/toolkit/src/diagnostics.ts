@@ -4,78 +4,78 @@
  * A result carrying only warnings is still a success, so a caller that treats any diagnostic as a
  * failure will reject builds that are fine.
  */
-export type AtlasDiagnosticSeverity = 'error' | 'warning' | 'info';
+export type ToolkitDiagnosticSeverity = 'error' | 'warning' | 'info';
 
 /**
- * Every diagnostic Atlas can report, as its stable code.
+ * Every diagnostic Equator can report, as its stable code.
  *
  * Grouped by the thousand: configuration, catalogs, messages, compilation, routing, extensions and
  * output each have their own band. A code is never reused and never changes meaning, which is what
  * lets a build script suppress one particular warning without matching on its wording.
  */
-export type AtlasDiagnosticCode =
-  | 'ATL1001'
-  | 'ATL1002'
-  | 'ATL1003'
-  | 'ATL1004'
-  | 'ATL1005'
-  | 'ATL1006'
-  | 'ATL1007'
-  | 'ATL1101'
-  | 'ATL1102'
-  | 'ATL1103'
-  | 'ATL1104'
-  | 'ATL1105'
-  | 'ATL1201'
-  | 'ATL1202'
-  | 'ATL1203'
-  | 'ATL1204'
-  | 'ATL1205'
-  | 'ATL1206'
-  | 'ATL1301'
-  | 'ATL1302'
-  | 'ATL1303'
-  | 'ATL1304'
-  | 'ATL1305'
-  | 'ATL1306'
-  | 'ATL1307'
-  | 'ATL1308'
-  | 'ATL1309'
-  | 'ATL1310'
-  | 'ATL1311'
-  | 'ATL1401'
-  | 'ATL1402'
-  | 'ATL1403'
-  | 'ATL1404'
-  | 'ATL1405'
-  | 'ATL1406'
-  | 'ATL1407'
-  | 'ATL1408'
-  | 'ATL1409'
-  | 'ATL1410'
-  | 'ATL1411'
-  | 'ATL1412'
-  | 'ATL1501'
-  | 'ATL1502'
-  | 'ATL1503'
-  | 'ATL1601'
-  | 'ATL1602'
-  | 'ATL1603'
-  | 'ATL1701'
-  | 'ATL1702'
-  | 'ATL1703'
-  | 'ATL1704'
-  | 'ATL1705'
-  | 'ATL1706'
-  | 'ATL1801'
-  | 'ATL1802'
-  | 'ATL1803'
-  | 'ATL1804'
-  | 'ATL1805'
-  | 'ATL1806';
+export type ToolkitDiagnosticCode =
+  | 'EQ1001'
+  | 'EQ1002'
+  | 'EQ1003'
+  | 'EQ1004'
+  | 'EQ1005'
+  | 'EQ1006'
+  | 'EQ1007'
+  | 'EQ1101'
+  | 'EQ1102'
+  | 'EQ1103'
+  | 'EQ1104'
+  | 'EQ1105'
+  | 'EQ1201'
+  | 'EQ1202'
+  | 'EQ1203'
+  | 'EQ1204'
+  | 'EQ1205'
+  | 'EQ1206'
+  | 'EQ1301'
+  | 'EQ1302'
+  | 'EQ1303'
+  | 'EQ1304'
+  | 'EQ1305'
+  | 'EQ1306'
+  | 'EQ1307'
+  | 'EQ1308'
+  | 'EQ1309'
+  | 'EQ1310'
+  | 'EQ1311'
+  | 'EQ1401'
+  | 'EQ1402'
+  | 'EQ1403'
+  | 'EQ1404'
+  | 'EQ1405'
+  | 'EQ1406'
+  | 'EQ1407'
+  | 'EQ1408'
+  | 'EQ1409'
+  | 'EQ1410'
+  | 'EQ1411'
+  | 'EQ1412'
+  | 'EQ1501'
+  | 'EQ1502'
+  | 'EQ1503'
+  | 'EQ1601'
+  | 'EQ1602'
+  | 'EQ1603'
+  | 'EQ1701'
+  | 'EQ1702'
+  | 'EQ1703'
+  | 'EQ1704'
+  | 'EQ1705'
+  | 'EQ1706'
+  | 'EQ1801'
+  | 'EQ1802'
+  | 'EQ1803'
+  | 'EQ1804'
+  | 'EQ1805'
+  | 'EQ1806';
 
 /** One point in a source file, given three ways so a caller can use whichever it needs. */
-export interface AtlasSourcePosition {
+export interface SourcePosition {
   /** Characters from the start of the file, counting from zero. */
   readonly offset: number;
   /** Line number, counting from one, which is what an editor shows. */
@@ -85,26 +85,26 @@ export interface AtlasSourcePosition {
 }
 
 /** The stretch of a file a diagnostic is about, from where it starts to where it ends. */
-export interface AtlasSourceSpan {
+export interface SourceSpan {
   /** Which file, when the span came from one. Absent for text that was parsed out of memory. */
   readonly sourcePath?: string;
   /** Where the stretch begins. */
-  readonly start: AtlasSourcePosition;
+  readonly start: SourcePosition;
   /** Where it ends, one past the last character in it. */
-  readonly end: AtlasSourcePosition;
+  readonly end: SourcePosition;
 }
 
 /**
- * One thing Atlas has to say about what it was given: what it is, how much it matters, and where.
+ * One thing Equator has to say about what it was given: what it is, how much it matters, and where.
  *
  * The text is sanitized and bounded before it reaches here, because a diagnostic is printed to a
  * terminal and read by a machine, and neither should be steerable by the file that caused it.
  */
-export interface AtlasDiagnostic {
+export interface ToolkitDiagnostic {
   /** The stable code, for matching on without depending on the wording. */
-  readonly code: AtlasDiagnosticCode;
+  readonly code: ToolkitDiagnosticCode;
   /** Whether this stopped the operation. */
-  readonly severity: AtlasDiagnosticSeverity;
+  readonly severity: ToolkitDiagnosticSeverity;
   /** What is wrong, in a sentence, for a person to read. */
   readonly summary: string;
   /**
@@ -114,24 +114,24 @@ export interface AtlasDiagnostic {
    * names the scope and the message.
    */
   readonly path: readonly (string | number)[];
-  /** Where in the source text, when the input was text Atlas parsed. */
-  readonly span?: AtlasSourceSpan;
+  /** Where in the source text, when the input was text Equator parsed. */
+  readonly span?: SourceSpan;
 }
 
 /** An operation that finished, with what it produced and anything it had to say along the way. */
-export interface AtlasSuccess<T> {
+export interface ToolkitSuccess<T> {
   readonly ok: true;
   /** What the operation produced. */
   readonly value: T;
   /** Warnings and notes. Never an error: an error would have made this a failure. */
-  readonly diagnostics: readonly AtlasDiagnostic[];
+  readonly diagnostics: readonly ToolkitDiagnostic[];
 }
 
 /** An operation that did not finish, with the reasons. There is no partial value to read. */
-export interface AtlasFailure {
+export interface ToolkitFailure {
   readonly ok: false;
   /** Why it failed, with at least one error among them, and possibly warnings beside it. */
-  readonly diagnostics: readonly AtlasDiagnostic[];
+  readonly diagnostics: readonly ToolkitDiagnostic[];
 }
 
 /**
@@ -140,7 +140,7 @@ export interface AtlasFailure {
  * Returned rather than thrown, because a build that produced twelve problems should report twelve
  * rather than the first. Check `ok` before reading `value`.
  */
-export type AtlasResult<T> = AtlasSuccess<T> | AtlasFailure;
+export type ToolkitResult<T> = ToolkitSuccess<T> | ToolkitFailure;
 
 // A diagnostic is printed to a terminal and read by a machine, and
 // `specs/11-diagnostics-and-observability.spec.md` section 2 says neither should be steerable
@@ -164,7 +164,7 @@ function boundedDiagnosticText(
   return result;
 }
 
-function boundedPosition(position: AtlasSourcePosition): AtlasSourcePosition {
+function boundedPosition(position: SourcePosition): SourcePosition {
   const safe = (value: number) =>
     Number.isSafeInteger(value) && value >= 0 ? value : 0;
   return Object.freeze({
@@ -174,7 +174,7 @@ function boundedPosition(position: AtlasSourcePosition): AtlasSourcePosition {
   });
 }
 
-function boundedSpan(span: AtlasSourceSpan): AtlasSourceSpan {
+function boundedSpan(span: SourceSpan): SourceSpan {
   const sourcePath =
     span.sourcePath === undefined
       ? undefined
@@ -187,11 +187,11 @@ function boundedSpan(span: AtlasSourceSpan): AtlasSourceSpan {
 }
 
 function boundedDiagnostics(
-  diagnostics: readonly AtlasDiagnostic[],
-): readonly AtlasDiagnostic[] {
+  diagnostics: readonly ToolkitDiagnostic[],
+): readonly ToolkitDiagnostic[] {
   return Object.freeze(
-    diagnostics.slice(0, ATLAS_RESOURCE_LIMITS.diagnostics).map((diagnostic) =>
-      atlasDiagnostic(diagnostic.code, diagnostic.summary, {
+    diagnostics.slice(0, RESOURCE_LIMITS.diagnostics).map((diagnostic) =>
+      toolkitDiagnostic(diagnostic.code, diagnostic.summary, {
         severity: diagnostic.severity,
         path: diagnostic.path,
         ...(diagnostic.span === undefined
@@ -202,10 +202,10 @@ function boundedDiagnostics(
   );
 }
 
-export function atlasSuccess<T>(
+export function toolkitSuccess<T>(
   value: T,
-  diagnostics: readonly AtlasDiagnostic[] = [],
-): AtlasSuccess<T> {
+  diagnostics: readonly ToolkitDiagnostic[] = [],
+): ToolkitSuccess<T> {
   return Object.freeze({
     ok: true,
     value,
@@ -213,11 +213,11 @@ export function atlasSuccess<T>(
   });
 }
 
-export function atlasFailure(
-  diagnostics: readonly AtlasDiagnostic[],
-): AtlasFailure {
+export function toolkitFailure(
+  diagnostics: readonly ToolkitDiagnostic[],
+): ToolkitFailure {
   if (diagnostics.length === 0) {
-    throw new TypeError('An Atlas failure requires at least one diagnostic.');
+    throw new TypeError('An Equator failure requires at least one diagnostic.');
   }
 
   return Object.freeze({
@@ -235,33 +235,33 @@ export function atlasFailure(
  * joining a list somewhere else.
  *
  * The alternative is what this replaces. The CLI's success path returned 0 unconditionally, and the
- * only severity test in it was `code === 'ATL1602' || code === 'ATL1703'`, so `atlas check
- * --require-complete` reported `"status": "success"` and exit 0 while carrying `ATL1310` at
+ * only severity test in it was `code === 'EQ1602' || code === 'EQ1703'`, so `equator check
+ * --require-complete` reported `"status": "success"` and exit 0 while carrying `EQ1310` at
  * `severity: error`. A hardcoded blocking-codes list is a second register that every new
  * error-severity diagnostic has to be added to, and the one nobody remembers to add is silent. Any
  * fix keyed to codes rather than severity reintroduces exactly that.
  */
-export function atlasDiagnosticsBlock(
-  diagnostics: readonly AtlasDiagnostic[],
+export function diagnosticsBlock(
+  diagnostics: readonly ToolkitDiagnostic[],
 ): boolean {
   return diagnostics.some(({ severity }) => severity === 'error');
 }
 
-export function atlasDiagnostic(
-  code: AtlasDiagnosticCode,
+export function toolkitDiagnostic(
+  code: ToolkitDiagnosticCode,
   summary: string,
   options: {
     readonly path?: readonly (string | number)[];
-    readonly span?: AtlasSourceSpan;
-    readonly severity?: AtlasDiagnosticSeverity;
+    readonly span?: SourceSpan;
+    readonly severity?: ToolkitDiagnosticSeverity;
   } = {},
-): AtlasDiagnostic {
+): ToolkitDiagnostic {
   const safeSummary = boundedDiagnosticText(
     summary,
-    ATLAS_RESOURCE_LIMITS.diagnosticSummaryCharacters,
+    RESOURCE_LIMITS.diagnosticSummaryCharacters,
   );
   const safePath = options.path
-    ?.slice(0, ATLAS_RESOURCE_LIMITS.diagnosticPathSegments)
+    ?.slice(0, RESOURCE_LIMITS.diagnosticPathSegments)
     .map((segment) =>
       typeof segment === 'string'
         ? boundedDiagnosticText(segment, 128)
@@ -272,13 +272,13 @@ export function atlasDiagnostic(
   return Object.freeze({
     code,
     severity: options.severity ?? 'error',
-    summary: safeSummary.length === 0 ? 'Atlas diagnostic.' : safeSummary,
+    summary: safeSummary.length === 0 ? 'Equator diagnostic.' : safeSummary,
     path: Object.freeze([...(safePath ?? [])]),
     ...(options.span === undefined ? {} : { span: boundedSpan(options.span) }),
   });
 }
 
-function positionAt(source: string, offset: number): AtlasSourcePosition {
+function positionAt(source: string, offset: number): SourcePosition {
   const boundedOffset = Math.max(0, Math.min(offset, source.length));
   let line = 0;
   let column = 0;
@@ -296,12 +296,12 @@ function positionAt(source: string, offset: number): AtlasSourcePosition {
   return Object.freeze({ offset: boundedOffset, line, column });
 }
 
-export function atlasSourceSpan(
+export function spanAt(
   source: string,
   offset: number,
   length: number,
   sourcePath?: string,
-): AtlasSourceSpan {
+): SourceSpan {
   const start = positionAt(source, offset);
   const end = positionAt(source, offset + Math.max(0, length));
   return Object.freeze({
@@ -310,4 +310,4 @@ export function atlasSourceSpan(
     end,
   });
 }
-import { ATLAS_RESOURCE_LIMITS } from './resource-limits.js';
+import { RESOURCE_LIMITS } from './resource-limits.js';

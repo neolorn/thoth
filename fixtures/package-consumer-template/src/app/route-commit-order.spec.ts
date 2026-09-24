@@ -14,12 +14,12 @@ import {
   type Routes,
 } from '@angular/router';
 import { filter, firstValueFrom } from 'rxjs';
-import { Localization, withRouting } from '@neolorn/atlas';
+import { Localization, withRouting } from '@neolorn/equator';
 import {
   RouteLocalization,
   provideLocalizedRouter,
-} from '@neolorn/atlas/router';
-import { provideLocalizationTesting } from '@neolorn/atlas/testing';
+} from '@neolorn/equator/router';
+import { provideLocalizationTesting } from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -28,7 +28,7 @@ import { routeProjection } from '#i18n/routes';
 import { messages, providerId, scopeId } from '#i18n/shell';
 
 import { routes as applicationRoutes } from './app.routes';
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
 /**
@@ -66,7 +66,7 @@ const constructedWith: string[] = [];
  * `text()` evaluates once, when the component is constructed, and never again: it is the
  * snapshot read. `textSignal()` is the live one. On a page that offers a locale control, a
  * `text()` binding is still showing the outgoing language after the switch commits, and no
- * amount of correct ordering inside Atlas changes that. The tests below read both, so which
+ * amount of correct ordering inside Equator changes that. The tests below read both, so which
  * one moves is stated rather than assumed.
  */
 @Component({
@@ -94,7 +94,7 @@ class LocaleRecordingRoute {
 })
 class RootHost {}
 
-// The application's own routes, canonical. Atlas no longer wraps them in locale parents, it
+// The application's own routes, canonical. Equator no longer wraps them in locale parents, it
 // derives the locale branches from the route projection and supplies them separately, so this is
 // exactly what a consumer writes.
 const routes: Routes = [
@@ -120,7 +120,7 @@ async function setup(): Promise<{
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
           routeProjection,
         },
         withRouting({
@@ -196,11 +196,11 @@ describe('switching locale, and navigating after one', () => {
     //
     // Asserted as the whole string rather than as a `toContain`, because the half that did *not*
     // move is the more useful half of this reading. `heading` is a `text()` call evaluated in the
-    // constructor: it is a snapshot, it is still English, and Atlas cannot make it otherwise. An
+    // constructor: it is a snapshot, it is still English, and Equator cannot make it otherwise. An
     // application whose visible strings are bound that way has F1's symptom back, the page
     // showing the outgoing language after the commit landed, from its own code rather than from
     // the adapter's ordering. Which binding an application reaches for is the part of this that
-    // is not Atlas's to decide, so the test states the consequence instead of hiding it.
+    // is not Equator's to decide, so the test states the consequence instead of hiding it.
     expect(fixture.nativeElement.textContent).toBe(
       'Home route|الصفحة الرئيسية',
     );
@@ -279,7 +279,7 @@ describe('a Router configuration the adapter cannot make coherent', () => {
           routes,
           { requiredScopes: [{ providerId, scopeId }] },
           // Passed as a router feature, which is also the shape 5.1a warns about: Angular provides
-          // ROUTER_CONFIGURATION non-multi, so this replaces Atlas's own configuration entirely.
+          // ROUTER_CONFIGURATION non-multi, so this replaces Equator's own configuration entirely.
           // That is the mechanism the refusal below has to survive.
           withRouterConfig({ urlUpdateStrategy: 'eager' }),
         ),
@@ -289,7 +289,7 @@ describe('a Router configuration the adapter cannot make coherent', () => {
             catalogSet,
             catalogLoaders,
             recoveryPayload,
-            extensions: atlasRuntimeExtensions,
+            extensions: runtimeExtensions,
             routeProjection,
           },
           withRouting({
@@ -353,12 +353,12 @@ describe('the order of the things one locale commit does', () => {
       providers: [
         {
           provide: MOCK_PLATFORM_LOCATION_CONFIG,
-          useValue: { startUrl: 'https://atlas.example/ar-eg/second' },
+          useValue: { startUrl: 'https://site.example/ar-eg/second' },
         },
         // The application's own routes and a configured origin, because the head is half of what
         // is being ordered and a canonical URL needs both.
         provideLocalizedRouter(applicationRoutes, {
-          origin: 'https://atlas.example',
+          origin: 'https://site.example',
         }),
         provideLocalizationTesting(
           {
@@ -366,7 +366,7 @@ describe('the order of the things one locale commit does', () => {
             catalogSet,
             catalogLoaders,
             recoveryPayload,
-            extensions: atlasRuntimeExtensions,
+            extensions: runtimeExtensions,
             routeProjection,
           },
           withRouting({ policy: routePolicy, projection: appRouteProjection }),
@@ -397,7 +397,7 @@ describe('the order of the things one locale commit does', () => {
       document.querySelector('link[rel="canonical"]')?.getAttribute('href') ??
       null;
     const announced = (): string | null =>
-      document.querySelector('[data-atlas-announcer]')?.textContent ?? null;
+      document.querySelector('[data-equator-announcer]')?.textContent ?? null;
 
     const atTheAddressWrite: unknown[] = [];
     const stopWatching = TestBed.inject(Location).onUrlChange((url) => {
@@ -420,7 +420,7 @@ describe('the order of the things one locale commit does', () => {
       {
         url: '/en-us/second',
         lang: 'en-US',
-        canonical: 'https://atlas.example/ar-eg/second',
+        canonical: 'https://site.example/ar-eg/second',
         announced: '',
       },
     ]);
@@ -430,7 +430,7 @@ describe('the order of the things one locale commit does', () => {
     await new Promise((resolve) => {
       setTimeout(resolve, 30);
     });
-    expect(canonical()).toBe('https://atlas.example/en-us/second');
+    expect(canonical()).toBe('https://site.example/en-us/second');
     expect(announced()).toBe('American English');
   });
 });

@@ -4,7 +4,7 @@
  * `specs/02-packages-and-platform.spec.md` section 11 lists what a distributable has to establish,
  * and most of it is only visible from outside: whether the export map resolves, whether one Angular
  * instance ends up in the graph, whether server rendering and the browser agree. The consumer is
- * materialized from a fixture and installs Atlas the way anyone else would, because a consumer
+ * materialized from a fixture and installs Equator the way anyone else would, because a consumer
  * wired to the workspace would resolve the sources instead of the published files.
  */
 import assert from 'node:assert/strict';
@@ -71,7 +71,7 @@ const readJson = async (path) => JSON.parse(await readFile(path, 'utf8'));
 const verifyWatchCommand = async () => {
   const cliPath = resolve(
     consumerRoot,
-    'node_modules/@neolorn/atlas-toolkit/cli.js',
+    'node_modules/@neolorn/equator-toolkit/cli.js',
   );
   const sourcePath = resolve(consumerRoot, 'src/app/app.ts');
   const originalSource = await readFile(sourcePath, 'utf8');
@@ -106,7 +106,7 @@ const verifyWatchCommand = async () => {
       clearTimeout(ceilingTimer);
       child.kill('SIGTERM');
       rejectPromise(
-        new Error(`Atlas watch probe ${why}.\n${stdout}\n${stderr}`),
+        new Error(`Equator watch probe ${why}.\n${stdout}\n${stderr}`),
       );
     };
     const progressed = () => {
@@ -124,13 +124,13 @@ const verifyWatchCommand = async () => {
     child.stdout.on('data', (chunk) => {
       progressed();
       stdout += chunk.toString();
-      if (!changed && /Atlas watch cycle 1:/u.test(stdout)) {
+      if (!changed && /Equator watch cycle 1:/u.test(stdout)) {
         changed = true;
         setTimeout(() => {
           void writeFile(sourcePath, `${originalSource}\n`, 'utf8');
         }, 100);
       }
-      if (/Atlas watch cycle 2:/u.test(stdout)) {
+      if (/Equator watch cycle 2:/u.test(stdout)) {
         void restore().then(() => child.kill('SIGTERM'));
       }
     });
@@ -150,13 +150,13 @@ const verifyWatchCommand = async () => {
   } finally {
     await restore();
   }
-  assert.match(stdout, /Atlas watch cycle 1:/u, stderr);
-  assert.match(stdout, /Atlas watch cycle 2:/u, stderr);
+  assert.match(stdout, /Equator watch cycle 1:/u, stderr);
+  assert.match(stdout, /Equator watch cycle 2:/u, stderr);
 };
 
 run(['install', '--offline', '--frozen-lockfile']);
 
-const help = run(['run', 'atlas:help']);
+const help = run(['run', 'equator:help']);
 assert.match(
   help.stdout,
   /Compile and safely publish generated #i18n artifacts/,
@@ -165,24 +165,24 @@ assert.match(help.stdout, /Reconcile changes in one foreground process/);
 
 const parseMachineResult = (result) => {
   const value = JSON.parse(result.stdout.trim());
-  assert.equal(value.profile, 'atlas-cli-result/1');
+  assert.equal(value.profile, 'equator-cli-result/1');
   return value;
 };
 
 const invalidInvocation = parseMachineResult(
-  run(['exec', 'atlas', 'check', '--unknown-option', '--json'], 2),
+  run(['exec', 'equator', 'check', '--unknown-option', '--json'], 2),
 );
 assert.equal(invalidInvocation.status, 'invocation-or-configuration-failure');
-assert.equal(invalidInvocation.diagnostics[0]?.code, 'ATL1701');
+assert.equal(invalidInvocation.diagnostics[0]?.code, 'EQ1701');
 
-// Invoked directly rather than through a consumer script. Running `pnpm run atlas:init` would
-// prove that a human had typed that script into the fixture manifest, because Atlas writes no such
-// entry.
+// Invoked directly rather than through a consumer script. Running `pnpm run equator:init` would
+// prove that a human had typed that script into the fixture manifest, because Equator writes no
+// such entry.
 //
 // One statement of what init is asked for, used both to invoke it and to say what it must produce.
-// Comparing Atlas's file against a literal copied from the fixture's own atlas.config.json detects
-// drift and locks no contract; the template ships no such file, so what is asserted is what init
-// authored from these flags.
+// Comparing Equator's file against a literal copied from the fixture's own equator.config.json
+// detects drift and locks no contract; the template ships no such file, so what is asserted is what
+// init authored from these flags.
 const INIT_REQUEST = Object.freeze({
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
@@ -190,7 +190,7 @@ const INIT_REQUEST = Object.freeze({
 });
 const initArguments = [
   'exec',
-  'atlas',
+  'equator',
   'init',
   '--source-locale',
   INIT_REQUEST.sourceLocale,
@@ -199,27 +199,27 @@ const initArguments = [
   ...INIT_REQUEST.locales.flatMap((locale) => ['--locale', locale]),
 ];
 const initialized = run(initArguments);
-// The template no longer ships the Atlas-owned scripts, so the first init has real work to do.
+// The template no longer ships the Equator-owned scripts, so the first init has real work to do.
 // That is the point: a fixture that pre-types them answers the question this gate is asking.
 // Both files, because the template ships neither: init is what authors them.
 assert.match(
   initialized.stdout,
-  /Atlas init updated: atlas\.config\.json, package\.json/u,
+  /Equator init updated: equator\.config\.json, package\.json/u,
 );
 const reinitialized = run(initArguments);
-assert.match(reinitialized.stdout, /Atlas init is already complete/u);
+assert.match(reinitialized.stdout, /Equator init is already complete/u);
 
 // The minimal declaration `specs/10-compiler-and-tooling.spec.md` section 10 specifies: exactly
 // these keys, no more, and every value traceable to what init was asked for. The run around it
 // is section 14 of `specs/10-compiler-and-tooling.spec.md`, an ordinary first run through the
-// built packages and their public exports. An extra key Atlas started writing would fail here,
+// built packages and their public exports. An extra key Equator started writing would fail here,
 // which comparing against a fixture's own file could never do.
 //
 // Asserted here rather than after the build. What it states is what *init* authored, and after
 // the build the file also carries the consumer's own declarations, so asserting it there would
-// mean either weakening it to tolerate them or forbidding a consumer from adding a key Atlas
+// mean either weakening it to tolerate them or forbidding a consumer from adding a key Equator
 // supports.
-assert.deepEqual(await readJson(resolve(consumerRoot, 'atlas.config.json')), {
+assert.deepEqual(await readJson(resolve(consumerRoot, 'equator.config.json')), {
   schemaVersion: 1,
   sourceLocale: INIT_REQUEST.sourceLocale,
   defaultLocale: INIT_REQUEST.defaultLocale,
@@ -228,9 +228,9 @@ assert.deepEqual(await readJson(resolve(consumerRoot, 'atlas.config.json')), {
 
 // Two consumer edits to the configuration, and the only ones this gate makes. First the two
 // pseudo-locales the toolkit generates. Declaring them changes no build, because
-// `pnpm run build` still runs a plain `atlas generate` and produces neither, and the fixture's
+// `pnpm run build` still runs a plain `equator generate` and produces neither, and the fixture's
 // `test` script runs
-// `atlas generate --pseudo`, so the page spec has a real generated catalog to render.
+// `equator generate --pseudo`, so the page spec has a real generated catalog to render.
 const PSEUDO_LOCALES = Object.freeze({
   'en-Latn-XA': { lengthFactor: 0.4, markers: true },
   'en-Arab-XB': { lengthFactor: -0.4, markers: true },
@@ -248,7 +248,7 @@ const LOCALE_FORMATTING = Object.freeze({
   'en-Arab-XB': { numberingSystem: 'arab' },
 });
 await writeFile(
-  resolve(consumerRoot, 'atlas.config.json'),
+  resolve(consumerRoot, 'equator.config.json'),
   `${JSON.stringify(
     {
       schemaVersion: 1,
@@ -263,34 +263,34 @@ await writeFile(
   )}\n`,
   'utf8',
 );
-// And the script entries Atlas claims to own are asserted against Atlas's own declaration, so this
-// fails if Atlas stops writing one rather than if a fixture stops listing one.
-const { ATLAS_PACKAGE_SCRIPTS } = await import(
+// And the script entries Equator claims to own are asserted against Equator's own declaration, so
+// this fails if Equator stops writing one rather than if a fixture stops listing one.
+const { PACKAGE_SCRIPTS } = await import(
   pathToFileURL(
     resolve(
       consumerRoot,
-      'node_modules/@neolorn/atlas-toolkit/project-host.js',
+      'node_modules/@neolorn/equator-toolkit/project-host.js',
     ),
   ).href
 );
 const consumerScripts = (await readJson(resolve(consumerRoot, 'package.json')))
   .scripts;
-for (const [name, command] of Object.entries(ATLAS_PACKAGE_SCRIPTS)) {
+for (const [name, command] of Object.entries(PACKAGE_SCRIPTS)) {
   assert.equal(
     consumerScripts?.[name],
     command,
-    `atlas init did not write the ${name} script it declares`,
+    `equator init did not write the ${name} script it declares`,
   );
 }
-run(['exec', 'atlas', 'format']);
+run(['exec', 'equator', 'format']);
 const canonicalFormat = parseMachineResult(
-  run(['exec', 'atlas', 'format', '--dry-run', '--json']),
+  run(['exec', 'equator', 'format', '--dry-run', '--json']),
 );
 assert.equal(canonicalFormat.status, 'success');
 assert.equal(canonicalFormat.result.changed, false);
 
 const firstGeneration = parseMachineResult(
-  run(['exec', 'atlas', 'generate', '--json']),
+  run(['exec', 'equator', 'generate', '--json']),
 );
 assert.equal(firstGeneration.status, 'success');
 assert.equal(firstGeneration.result.changed, true);
@@ -299,11 +299,11 @@ assert.ok(firstGeneration.result.catalogs >= 2);
 assert.ok(firstGeneration.result.messages >= 4);
 assert.ok(firstGeneration.result.routes >= 2);
 
-// ATL1401 forwards a TypeScript finding from the consumer's own program, so one raised here is a
+// EQ1401 forwards a TypeScript finding from the consumer's own program, so one raised here is a
 // report against the application's own lines. The fixture compiles under its own build, which
 // leaves the generated modules the analysis reads in place of them as the thing that does not.
 const forwardedTypeFindings = firstGeneration.diagnostics.filter(
-  ({ code }) => code === 'ATL1401',
+  ({ code }) => code === 'EQ1401',
 );
 assert.deepEqual(
   forwardedTypeFindings,
@@ -313,11 +313,11 @@ assert.deepEqual(
 
 const generatedManifestPath = resolve(
   consumerRoot,
-  'src/generated/i18n/.atlas-manifest.json',
+  'src/generated/i18n/.equator-manifest.json',
 );
 const firstManifestTimestamp = (await lstat(generatedManifestPath)).mtimeMs;
 const unchangedGeneration = parseMachineResult(
-  run(['exec', 'atlas', 'generate', '--json']),
+  run(['exec', 'equator', 'generate', '--json']),
 );
 assert.equal(unchangedGeneration.result.changed, false);
 assert.equal(unchangedGeneration.result.invalidation.kind, 'none');
@@ -326,30 +326,30 @@ assert.equal(
   firstManifestTimestamp,
 );
 
-const checked = parseMachineResult(run(['exec', 'atlas', 'check', '--json']));
+const checked = parseMachineResult(run(['exec', 'equator', 'check', '--json']));
 assert.equal(checked.status, 'success');
 assert.equal(checked.result.fresh, true);
 
 const dryClean = parseMachineResult(
-  run(['exec', 'atlas', 'clean', '--dry-run', '--json']),
+  run(['exec', 'equator', 'clean', '--dry-run', '--json']),
 );
 assert.equal(dryClean.result.changed, true);
 assert.ok(dryClean.result.removed.length > 0);
-const cleaned = parseMachineResult(run(['exec', 'atlas', 'clean', '--json']));
+const cleaned = parseMachineResult(run(['exec', 'equator', 'clean', '--json']));
 assert.equal(cleaned.result.changed, true);
 await assert.rejects(lstat(resolve(consumerRoot, 'src/generated/i18n')), {
   code: 'ENOENT',
 });
-await assert.rejects(lstat(resolve(consumerRoot, '.atlas')), {
+await assert.rejects(lstat(resolve(consumerRoot, '.equator')), {
   code: 'ENOENT',
 });
 const regenerated = parseMachineResult(
-  run(['exec', 'atlas', 'generate', '--json']),
+  run(['exec', 'equator', 'generate', '--json']),
 );
 assert.equal(regenerated.result.changed, true);
 
 const generatedManifest = await readJson(generatedManifestPath);
-assert.equal(generatedManifest.profile, 'atlas-completion-manifest/1');
+assert.equal(generatedManifest.profile, 'equator-completion-manifest/1');
 for (const required of [
   'index.ts',
   'shell.ts',
@@ -363,7 +363,7 @@ for (const required of [
 ]) {
   assert.ok(
     generatedManifest.files.some(({ path }) => path === required),
-    `Generated Atlas output is missing ${required}`,
+    `Generated Equator output is missing ${required}`,
   );
 }
 const generatedShell = await readFile(
@@ -371,7 +371,7 @@ const generatedShell = await readFile(
   'utf8',
 );
 assert.match(generatedShell, /GeneratedMessageHandle/);
-assert.match(generatedShell, /defineAtlasMessageFamily/);
+assert.match(generatedShell, /defineMessageFamily/);
 assert.match(generatedShell, /feature:uppercase/);
 assert.match(generatedShell, /feature:badge/);
 const generatedIndex = await readFile(
@@ -394,7 +394,7 @@ assert.ok(
 );
 assert.match(
   await readFile(resolve(consumerRoot, 'src/generated/i18n/routes.ts'), 'utf8'),
-  /profile: 'atlas-route-projection\/1'/,
+  /profile: 'equator-route-projection\/1'/,
 );
 const generatedRoutes = await readFile(
   resolve(consumerRoot, 'src/generated/i18n/routes.ts'),
@@ -413,29 +413,29 @@ assert.match(
 assert.match(generatedRoutes, /identity: "sha256-[A-Za-z0-9_-]{43}"/);
 assert.match(
   await readFile(
-    resolve(consumerRoot, '.atlas/cache/compiler-state.json'),
+    resolve(consumerRoot, '.equator/cache/compiler-state.json'),
     'utf8',
   ),
-  /atlas-compiler-cache\/1/,
+  /equator-compiler-cache\/1/,
 );
 
 const negativeCatalogPath = resolve(consumerRoot, 'i18n/shell/ar-EG.yaml');
 const validNegativeCatalog = await readFile(negativeCatalogPath, 'utf8');
 await writeFile(negativeCatalogPath, 'messages:\n  app-title: [\n', 'utf8');
 const invalidCheck = parseMachineResult(
-  run(['exec', 'atlas', 'check', '--json'], 1),
+  run(['exec', 'equator', 'check', '--json'], 1),
 );
 assert.equal(invalidCheck.status, 'diagnostic-failure');
 assert.ok(
   invalidCheck.diagnostics.some(
     ({ code, span }) =>
-      code === 'ATL1101' && span?.sourcePath === 'i18n/shell/ar-EG.yaml',
+      code === 'EQ1101' && span?.sourcePath === 'i18n/shell/ar-EG.yaml',
   ),
   'Machine-readable catalog diagnostics are not source-located',
 );
 await writeFile(negativeCatalogPath, validNegativeCatalog, 'utf8');
 assert.equal(
-  parseMachineResult(run(['exec', 'atlas', 'check', '--json'])).status,
+  parseMachineResult(run(['exec', 'equator', 'check', '--json'])).status,
   'success',
 );
 
@@ -449,12 +449,12 @@ assert.equal(
 // which is the failure this gate exists to avoid.
 const translationStatePath = resolve(
   consumerRoot,
-  '.atlas-translation-state.json',
+  '.equator-translation-state.json',
 );
 const recordedState = JSON.parse(await readFile(translationStatePath, 'utf8'));
 assert.equal(
   recordedState.profile,
-  'atlas-translation-state/1',
+  'equator-translation-state/1',
   'No translation state was recorded by the runs above',
 );
 // Keyed by provider, scope, message and target locale, so the assertion names the parts it
@@ -471,8 +471,8 @@ const originalSourceCatalog = await readFile(sourceCatalogPath, 'utf8');
 await writeFile(
   sourceCatalogPath,
   originalSourceCatalog.replace(
-    'app-title: Atlas feature lab',
-    'app-title: Atlas feature laboratory',
+    'app-title: Equator feature lab',
+    'app-title: Equator feature laboratory',
   ),
   'utf8',
 );
@@ -499,14 +499,14 @@ assert.notEqual(
 // translation record alone; `generate` publishes and re-stamps it, which retires the staleness.
 // Running these after the `generate` below would assert against a condition it had consumed.
 const gatedRun = parseMachineResult(
-  run(['exec', 'atlas', 'check', '--require-complete', '--json'], 1),
+  run(['exec', 'equator', 'check', '--require-complete', '--json'], 1),
 );
 // Both members, and not only the first one found. A run that returns as soon as an escalated
-// `ATL1307` fails the catalog analysis inspects neither output freshness nor the translation
+// `EQ1307` fails the catalog analysis inspects neither output freshness nor the translation
 // record, so the missing translation and the superseded one arrive as one finding rather than two,
 // and turning the gate on gives the pipeline that asked for more information less. A run reports
 // every member it can observe.
-for (const code of ['ATL1307', 'ATL1309']) {
+for (const code of ['EQ1307', 'EQ1309']) {
   assert.ok(
     gatedRun.diagnostics.some(
       (diagnostic) =>
@@ -518,7 +518,7 @@ for (const code of ['ATL1307', 'ATL1309']) {
   );
 }
 
-const consumerConfigurationPath = resolve(consumerRoot, 'atlas.config.json');
+const consumerConfigurationPath = resolve(consumerRoot, 'equator.config.json');
 const consumerConfiguration = await readFile(consumerConfigurationPath, 'utf8');
 await writeFile(
   consumerConfigurationPath,
@@ -535,9 +535,9 @@ await writeFile(
   'utf8',
 );
 const exemptRun = parseMachineResult(
-  run(['exec', 'atlas', 'check', '--require-complete', '--json'], 0),
+  run(['exec', 'equator', 'check', '--require-complete', '--json'], 0),
 );
-for (const code of ['ATL1307', 'ATL1309']) {
+for (const code of ['EQ1307', 'EQ1309']) {
   assert.ok(
     exemptRun.diagnostics.some(
       (diagnostic) =>
@@ -551,16 +551,16 @@ for (const code of ['ATL1307', 'ATL1309']) {
     )}`,
   );
 }
-// The fourth member is in the family because the declaration reached it. `ATL1309` is raised from
+// The fourth member is in the family because the declaration reached it. `EQ1309` is raised from
 // the project host rather than the catalog analysis, so nothing but this says the two halves read
 // the same rule.
 await writeFile(consumerConfigurationPath, consumerConfiguration, 'utf8');
 
 const staleRun = parseMachineResult(
-  run(['exec', 'atlas', 'generate', '--json']),
+  run(['exec', 'equator', 'generate', '--json']),
 );
 const staleReport = staleRun.diagnostics.filter(
-  ({ code }) => code === 'ATL1309',
+  ({ code }) => code === 'EQ1309',
 );
 assert.ok(
   staleReport.some(
@@ -575,8 +575,8 @@ assert.ok(
 await writeFile(sourceCatalogPath, originalSourceCatalog, 'utf8');
 assert.equal(
   parseMachineResult(
-    run(['exec', 'atlas', 'generate', '--json']),
-  ).diagnostics.filter(({ code }) => code === 'ATL1309').length,
+    run(['exec', 'equator', 'generate', '--json']),
+  ).diagnostics.filter(({ code }) => code === 'EQ1309').length,
   0,
   'A translation was still reported stale after its source was restored',
 );
@@ -588,11 +588,11 @@ assert.equal(
  * interface is ordered correctly, English's own data says Japanese names are surname-first,
  * and spaced wrongly, because the spacing belongs to `ja` and `ja` was never generated. Nothing
  * errors, nothing is reported, and only a reader of the language sees it. So the check is that
- * declaring the locale actually changes the artifact, run through `atlas generate` rather than
+ * declaring the locale actually changes the artifact, run through `equator generate` rather than
  * through the library.
  */
 async function verifyDeclaredPersonNameLocales() {
-  const configurationPath = resolve(consumerRoot, 'atlas.config.json');
+  const configurationPath = resolve(consumerRoot, 'equator.config.json');
   const original = await readFile(configurationPath, 'utf8');
   const personNamesPath = resolve(
     consumerRoot,
@@ -618,7 +618,7 @@ async function verifyDeclaredPersonNameLocales() {
     `${JSON.stringify({ ...declared, personNameLocales: ['ja'] }, null, 2)}\n`,
     'utf8',
   );
-  run(['exec', 'atlas', 'generate', '--json']);
+  run(['exec', 'equator', 'generate', '--json']);
   assert.deepEqual(
     await rowTags(),
     ['ar', 'en', 'ja'],
@@ -633,8 +633,8 @@ async function verifyDeclaredPersonNameLocales() {
     'utf8',
   );
   const uncovered = parseMachineResult(
-    run(['exec', 'atlas', 'generate', '--json']),
-  ).diagnostics.filter(({ code }) => code === 'ATL1004');
+    run(['exec', 'equator', 'generate', '--json']),
+  ).diagnostics.filter(({ code }) => code === 'EQ1004');
   assert.ok(
     uncovered.some(
       ({ severity, summary }) =>
@@ -644,7 +644,7 @@ async function verifyDeclaredPersonNameLocales() {
   );
 
   await writeFile(configurationPath, original, 'utf8');
-  run(['exec', 'atlas', 'generate', '--json']);
+  run(['exec', 'equator', 'generate', '--json']);
   assert.deepEqual(
     await rowTags(),
     ['ar', 'en'],
@@ -761,15 +761,15 @@ assert.ok(
 // without the flag is what returns the generated output to production shape, and doing it here
 // rather than trusting the build to is the difference between asserting the switch works and
 // assuming it does: every check below reads what this produced.
-run(['exec', 'atlas', 'generate']);
+run(['exec', 'equator', 'generate']);
 run(['exec', 'ng', 'build', '--stats-json']);
 
 const configuration = await readJson(
-  resolve(consumerRoot, 'atlas.config.json'),
+  resolve(consumerRoot, 'equator.config.json'),
 );
 // What init wrote is asserted above, at init. What is asserted here is that nothing since has
 // changed it except the two declarations this gate made, so a key appearing from anywhere else
-// still fails. `atlas format` rewrote the file between those two points and both survived it.
+// still fails. `equator format` rewrote the file between those two points and both survived it.
 assert.deepEqual(configuration, {
   schemaVersion: 1,
   sourceLocale: INIT_REQUEST.sourceLocale,
@@ -779,7 +779,7 @@ assert.deepEqual(configuration, {
   formatting: LOCALE_FORMATTING,
 });
 
-// The production build ran a plain `atlas generate`, so neither pseudo-locale is in what it
+// The production build ran a plain `equator generate`, so neither pseudo-locale is in what it
 // produced: declared and not generated, which is the whole separation. The control is `ar-EG`
 // in the same text: without it these two absences would pass for a file that was never read.
 //
@@ -808,14 +808,14 @@ assert.deepEqual(consumerPackage.imports, {
   '#i18n': './src/generated/i18n/index.ts',
   '#i18n/*': './src/generated/i18n/*.ts',
 });
-// Checked against Atlas's own declaration above, not against a list copied here. This block used
-// to hardcode an `atlas:init` entry with the fixture's exact locale flags: a value Atlas never
+// Checked against Equator's own declaration above, not against a list copied here. This block used
+// to hardcode an `equator:init` entry with the fixture's exact locale flags: a value Equator never
 // writes and a human had typed.
-for (const [name, command] of Object.entries(ATLAS_PACKAGE_SCRIPTS)) {
+for (const [name, command] of Object.entries(PACKAGE_SCRIPTS)) {
   assert.equal(
     consumerPackage.scripts[name],
     command,
-    `The generated manifest lost the ${name} script Atlas declares`,
+    `The generated manifest lost the ${name} script Equator declares`,
   );
 }
 for (const locale of configuration.locales) {
@@ -860,22 +860,25 @@ assert.equal(
 assert.equal(
   (
     await readJson(
-      resolve(consumerRoot, 'node_modules/@neolorn/atlas/package.json'),
+      resolve(consumerRoot, 'node_modules/@neolorn/equator/package.json'),
     )
   ).name,
-  '@neolorn/atlas',
+  '@neolorn/equator',
 );
 assert.equal(
   (
     await readJson(
-      resolve(consumerRoot, 'node_modules/@neolorn/atlas-toolkit/package.json'),
+      resolve(
+        consumerRoot,
+        'node_modules/@neolorn/equator-toolkit/package.json',
+      ),
     )
   ).name,
-  '@neolorn/atlas-toolkit',
+  '@neolorn/equator-toolkit',
 );
 
 const stats = await readJson(
-  resolve(consumerRoot, 'dist/atlas-feature-lab/stats.json'),
+  resolve(consumerRoot, 'dist/feature-lab/stats.json'),
 );
 assert.equal(typeof stats.inputs, 'object', 'Angular stats inputs are absent');
 assert.equal(
@@ -885,10 +888,10 @@ assert.equal(
 );
 
 const installedRuntimeRoot = await realpath(
-  resolve(consumerRoot, 'node_modules/@neolorn/atlas'),
+  resolve(consumerRoot, 'node_modules/@neolorn/equator'),
 );
 const installedToolkitRoot = await realpath(
-  resolve(consumerRoot, 'node_modules/@neolorn/atlas-toolkit'),
+  resolve(consumerRoot, 'node_modules/@neolorn/equator-toolkit'),
 );
 const installedRuntimePackage = await readJson(
   resolve(installedRuntimeRoot, 'package.json'),
@@ -943,12 +946,12 @@ const canonicalProductionInputs = new Set(
 assert.equal(
   canonicalProductionInputs.has(formsEntry),
   true,
-  'Production feature lab did not consume the Atlas Forms entrypoint',
+  'Production feature lab did not consume the Equator Forms entrypoint',
 );
 assert.equal(
   canonicalProductionInputs.has(routerEntry),
   true,
-  'Production feature lab did not consume the Atlas Router entrypoint',
+  'Production feature lab did not consume the Equator Router entrypoint',
 );
 for (const input of productionInputs) {
   const canonicalInput = await resolveStatsInput(input);
@@ -964,7 +967,7 @@ for (const input of productionInputs) {
   assert.notEqual(
     canonicalInput,
     testingEntry,
-    `Production output contains the Atlas testing entrypoint: ${input}`,
+    `Production output contains the Equator testing entrypoint: ${input}`,
   );
 }
 
@@ -1005,8 +1008,8 @@ while (pendingBrowserOutputs.length > 0) {
   }
 }
 
-const browserRoot = resolve(consumerRoot, 'dist/atlas-feature-lab/browser');
-const serverRoot = resolve(consumerRoot, 'dist/atlas-feature-lab/server');
+const browserRoot = resolve(consumerRoot, 'dist/feature-lab/browser');
+const serverRoot = resolve(consumerRoot, 'dist/feature-lab/server');
 const collectJavaScript = async (root) => {
   const files = [];
 
@@ -1052,7 +1055,7 @@ assert.ok(
  *
  * It is also what holds the canonical suppression. `localizedServerRoutes` declares the canonical
  * spelling of every route `RenderMode.Server`, so `/index.html`, `/second/index.html` and
- * `/articles/atlas-handbook/index.html` are never written. Asserting only that the four expected
+ * `/articles/handbook/index.html` are never written. Asserting only that the four expected
  * files exist would pass with all seven present, which is how this was passing before: nothing
  * suppressed the canonical branch and the consumer's `**` fallback happened to catch it.
  *
@@ -1079,9 +1082,9 @@ const collectPrerendered = async (root, prefix = '') => {
 
 const emittedPrerendered = (await collectPrerendered(browserRoot)).sort();
 const expectedPrerendered = [
-  'ar-eg/articles/دليل-أطلس/index.html',
+  'ar-eg/articles/دليل/index.html',
   'ar-eg/second/index.html',
-  'en-us/articles/atlas-handbook/index.html',
+  'en-us/articles/handbook/index.html',
   'en-us/second/index.html',
 ].sort();
 assert.deepEqual(
@@ -1101,13 +1104,13 @@ for (const localePrefix of ['en-us', 'ar-eg']) {
   );
 }
 
-// One declaration per route, expanded to every locale by the policy Atlas already has. The
+// One declaration per route, expanded to every locale by the policy Equator already has. The
 // article route is the one that is hard by hand: its slug is spelled differently per locale, so
 // its two prerendered addresses share no path segment. A hand-written table that missed one would
 // not fail anywhere: it would ship a page that exists in English and 404s in Arabic.
 for (const [localePrefix, slug, language] of [
-  ['en-us', 'atlas-handbook', 'en-US'],
-  ['ar-eg', 'دليل-أطلس', 'ar-EG'],
+  ['en-us', 'handbook', 'en-US'],
+  ['ar-eg', 'دليل', 'ar-EG'],
 ]) {
   const prerendered = await readFile(
     resolve(browserRoot, localePrefix, 'articles', slug, 'index.html'),
@@ -1125,13 +1128,13 @@ for (const [localePrefix, slug, language] of [
   );
   // The measurement the server-side locale source rests on.
   //
-  // Atlas reads the address being rendered from `PlatformLocation`, because `@angular/ssr`
+  // Equator reads the address being rendered from `PlatformLocation`, because `@angular/ssr`
   // provides `REQUEST` and `REQUEST_CONTEXT` only when the render mode is `Server`: a
   // prerendered page has neither. Two things had to be true for that to work and only one of them
   // was ever measured: that `PlatformLocation` is injectable from an application-config-level
   // factory, and that under prerendering it carries the address being rendered rather than `/`.
   // This is a prerendered page, so a prefix here is that second fact, observed.
-  const probe = /"atlas-feature-lab-ssr-probe":(\{.*?\})/su.exec(prerendered);
+  const probe = /"feature-lab-ssr-probe":(\{.*?\})/su.exec(prerendered);
   assert.ok(
     probe,
     `${localePrefix} prerendered article carried no SSR probe state`,
@@ -1152,9 +1155,9 @@ const browserText = (
   await Promise.all(browserFiles.map((path) => readFile(path, 'utf8')))
 ).join('\n');
 for (const forbidden of [
-  '@neolorn/atlas-toolkit',
+  '@neolorn/equator-toolkit',
   'supported testing entry point remains intentionally empty',
-  'atlas-cli-result/1',
+  'equator-cli-result/1',
   'node:fs',
 ]) {
   assert.equal(
@@ -1168,22 +1171,22 @@ for (const forbidden of [
  * The pseudo-locale outside the browser.
  *
  * Everything above ran against a production build. This rebuilds the same consumer, unchanged
- * except for the flag on `atlas generate`, and asks whether a pseudo-locale renders where there is
- * no browser to switch in: prerendering, which has no request and therefore no negotiation, so
+ * except for the flag on `equator generate`, and asks whether a pseudo-locale renders where there
+ * is no browser to switch in: prerendering, which has no request and therefore no negotiation, so
  * every locale's copy has to be a separate address that exists in the build.
  *
  * It builds to its own output path and puts the generated source back afterwards, so what this
  * step hands on is the production build every later step expects. Building over
- * `dist/atlas-feature-lab` and leaving it there has `verify:browser-assurance` read a six-address
+ * `dist/feature-lab` and leaving it there has `verify:browser-assurance` read a six-address
  * prerender manifest where it expects four, and report `PASS` in one second, because importing the
  * consumer's server bundle installs Angular's `attachNodeGlobalErrorHandlers` and a log-only
  * `uncaughtException` handler stops Node exiting non-zero.
  */
-run(['exec', 'atlas', 'generate', '--pseudo']);
-run(['exec', 'ng', 'build', '--output-path', 'dist/atlas-feature-lab-pseudo']);
+run(['exec', 'equator', 'generate', '--pseudo']);
+run(['exec', 'ng', 'build', '--output-path', 'dist/feature-lab-pseudo']);
 const pseudoBrowserRoot = resolve(
   consumerRoot,
-  'dist/atlas-feature-lab-pseudo/browser',
+  'dist/feature-lab-pseudo/browser',
 );
 
 // The address set, as an exact set for the same reason as above: a prerendered route whose
@@ -1193,7 +1196,7 @@ const pseudoBrowserRoot = resolve(
 const pseudoPrerendered = (await collectPrerendered(pseudoBrowserRoot)).sort();
 const expectedPseudoPrerendered = [
   ...expectedPrerendered,
-  'en-arab-xb/articles/atlas-handbook/index.html',
+  'en-arab-xb/articles/handbook/index.html',
   'en-arab-xb/second/index.html',
 ].sort();
 assert.deepEqual(
@@ -1312,7 +1315,7 @@ assert.ok(
 /*
  * Criterion 2, on a page nobody rendered in a browser.
  *
- * The article's title is content this application owns. Atlas never sees it, so nothing could
+ * The article's title is content this application owns. Equator never sees it, so nothing could
  * pseudo-localize it, and the source supplies the English representation for a locale it has no
  * article in, which is what makes this page the clearest case the criterion has: an
  * application-owned string sitting untransformed beside shell messages that all carry markers.
@@ -1324,17 +1327,17 @@ const pseudoArticle = await readFile(
     pseudoBrowserRoot,
     'en-arab-xb',
     'articles',
-    'atlas-handbook',
+    'handbook',
     'index.html',
   ),
   'utf8',
 );
 assert.ok(
-  pseudoArticle.includes('The Atlas localization handbook'),
+  pseudoArticle.includes('The Equator localization handbook'),
   'The application-owned article title is not on the prerendered pseudo-locale page',
 );
-// And the shell around it did go through Atlas. Without this the assertion above passes for a page
-// where the transform never ran at all.
+// And the shell around it did go through Equator. Without this the assertion above passes for a
+// page where the transform never ran at all.
 assert.ok(
   pseudoArticle.includes('⟦'),
   'The prerendered pseudo-locale article page carries no transformed message',
@@ -1343,7 +1346,7 @@ assert.ok(
 // And the generated source goes back to production shape, because the steps after this one rebuild
 // this consumer from it. The `dist/` they read was never touched; this is the other half of the
 // same tree.
-run(['exec', 'atlas', 'generate']);
+run(['exec', 'equator', 'generate']);
 const restoredLocaleTable = await readFile(
   resolve(generatedRoot, 'index.ts'),
   'utf8',
@@ -1360,5 +1363,5 @@ assert.ok(
 );
 
 process.stdout.write(
-  `Atlas package consumer verified: ${consumerProfile.label}, Angular ${consumerProfile.angular}, TypeScript ${consumerProfile.typescript}, RxJS ${consumerProfile.rxjs}, ${collectedFiles[2]} spec file(s) and ${collectedCases[1]} case(s) passing.\n`,
+  `Equator package consumer verified: ${consumerProfile.label}, Angular ${consumerProfile.angular}, TypeScript ${consumerProfile.typescript}, RxJS ${consumerProfile.rxjs}, ${collectedFiles[2]} spec file(s) and ${collectedCases[1]} case(s) passing.\n`,
 );

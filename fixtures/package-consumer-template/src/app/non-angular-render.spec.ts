@@ -5,14 +5,14 @@ import {
   formatInstant,
   instant,
   languagePresentation,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { messages, providerId, scopeId } from '#i18n/shell';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
  * Localized text with no Angular application.
@@ -39,7 +39,7 @@ function context() {
       catalogSet,
       catalogLoaders,
       recoveryPayload,
-      extensions: atlasRuntimeExtensions,
+      extensions: runtimeExtensions,
     },
     bootstrapScopes: [shellScope],
   });
@@ -50,10 +50,10 @@ describe('a localization context built without Angular', () => {
     const localization = context();
     await localization.initialize();
 
-    expect(localization.text(messages.appTitle)).toBe('Atlas feature lab');
+    expect(localization.text(messages.appTitle)).toBe('Equator feature lab');
 
     await localization.changeLocale('ar-EG');
-    expect(localization.text(messages.appTitle)).toBe('مختبر ميزات Atlas');
+    expect(localization.text(messages.appTitle)).toBe('مختبر ميزات Equator');
 
     localization.dispose();
   });
@@ -105,7 +105,7 @@ describe('a localization context built without Angular', () => {
           ),
         ),
         recoveryPayload,
-        extensions: atlasRuntimeExtensions,
+        extensions: runtimeExtensions,
       },
       bootstrapScopes: [shellScope],
       // The framework-neutral equivalent of `withRecoveryMessage`. Selecting it here is the whole

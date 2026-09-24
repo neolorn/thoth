@@ -9,31 +9,31 @@ import {
 } from 'messageformat';
 
 import {
-  atlasDiagnostic,
-  atlasFailure,
-  atlasSourceSpan,
-  atlasSuccess,
-  type AtlasDiagnostic,
-  type AtlasDiagnosticCode,
-  type AtlasResult,
+  toolkitDiagnostic,
+  toolkitFailure,
+  spanAt,
+  toolkitSuccess,
+  type ToolkitDiagnostic,
+  type ToolkitDiagnosticCode,
+  type ToolkitResult,
 } from './diagnostics.js';
 import {
-  ATLAS_MESSAGE_FUNCTION_OPTIONS,
-  ATLAS_MESSAGE_OPTION_RULES,
-  atlasDateOperandOptions,
-  atlasDateTimeFormatOptions,
-  atlasExtensionOptionProfile,
-  atlasInheritedOptions,
-  atlasMessageOptionProblem,
-  atlasNumberFormatOptions,
-  type AtlasMessageOperandKind,
+  MESSAGE_FUNCTION_OPTIONS,
+  MESSAGE_OPTION_RULES,
+  resolvedDateOptions,
+  dateTimeFormatOptions,
+  extensionOptionProfile,
+  inheritedOptions,
+  messageOptionProblem,
+  numberFormatOptions,
+  type MessageOperandKind,
 } from './message-function-options.js';
-import { ATLAS_NUMBER_LITERAL } from './message-format-syntax.js';
-import { ATLAS_RESOURCE_LIMITS } from './resource-limits.js';
-import { atlasUntrustedText } from './untrusted-text.js';
+import { NUMBER_LITERAL_PATTERN } from './message-format-syntax.js';
+import { RESOURCE_LIMITS } from './resource-limits.js';
+import { untrustedText } from './untrusted-text.js';
 import { compareCodePoint, frozenRecord } from './sorted-records.js';
 
-export type AtlasStandardMessageFunctionName =
+export type StandardMessageFunctionName =
   | 'string'
   | 'number'
   | 'integer'
@@ -45,7 +45,7 @@ export type AtlasStandardMessageFunctionName =
   | 'date'
   | 'time';
 
-export type AtlasMessageFunctionStatus = 'stable' | 'draft';
+export type MessageFunctionStatus = 'stable' | 'draft';
 
 /**
  * How `.match` selects on a value one built-in produced, which is not the same question as whether.
@@ -61,11 +61,11 @@ export type AtlasMessageFunctionStatus = 'stable' | 'draft';
  * `:integer` ships a `.match` on `:offset` or `:percent` with its plural coverage unmeasured. One
  * statement, from the specification, answers both.
  */
-export type AtlasMessageFunctionSelection = 'none' | 'literal' | 'number';
+export type MessageFunctionSelection = 'none' | 'literal' | 'number';
 
-export interface AtlasMessageFunctionProfileEntry {
-  readonly name: AtlasStandardMessageFunctionName;
-  readonly status: AtlasMessageFunctionStatus;
+export interface MessageFunctionProfileEntry {
+  readonly name: StandardMessageFunctionName;
+  readonly status: MessageFunctionStatus;
   /**
    * How `.match` may select on a value this function produced.
    *
@@ -74,7 +74,7 @@ export interface AtlasMessageFunctionProfileEntry {
    * match nothing but the catch-all. Half the profile formats only, so this is a property of the
    * function rather than a rule about a handful of exceptions.
    */
-  readonly selection: AtlasMessageFunctionSelection;
+  readonly selection: MessageFunctionSelection;
 }
 
 /**
@@ -105,7 +105,7 @@ export interface AtlasMessageFunctionProfileEntry {
  * writes one `.match` case for `:currency` and none at all for `:unit`, so the absence of a
  * failing case is not evidence that selection is supported.
  */
-export const ATLAS_MESSAGE_FUNCTION_PROFILE: readonly AtlasMessageFunctionProfileEntry[] =
+export const MESSAGE_FUNCTION_PROFILE: readonly MessageFunctionProfileEntry[] =
   Object.freeze(
     [
       ['string', 'stable', 'literal'],
@@ -121,30 +121,29 @@ export const ATLAS_MESSAGE_FUNCTION_PROFILE: readonly AtlasMessageFunctionProfil
     ].map(([name, status, selection]) =>
       Object.freeze({ name, status, selection }),
     ),
-  ) as readonly AtlasMessageFunctionProfileEntry[];
+  ) as readonly MessageFunctionProfileEntry[];
 
-const standardFunctionNames = new Set<AtlasStandardMessageFunctionName>(
-  ATLAS_MESSAGE_FUNCTION_PROFILE.map(({ name }) => name),
+const standardFunctionNames = new Set<StandardMessageFunctionName>(
+  MESSAGE_FUNCTION_PROFILE.map(({ name }) => name),
 );
 
 const standardSelectorNames = new Set<string>(
-  ATLAS_MESSAGE_FUNCTION_PROFILE.filter(
-    ({ selection }) => selection !== 'none',
-  ).map(({ name }) => name),
+  MESSAGE_FUNCTION_PROFILE.filter(({ selection }) => selection !== 'none').map(
+    ({ name }) => name,
+  ),
 );
 
 /**
  * The built-ins whose keys can be CLDR plural categories, which is what a target translation can be
  * missing coverage of. Derived, so it cannot fall behind the profile the way a hand-kept set did.
  */
-export const ATLAS_PLURAL_SELECTOR_FUNCTIONS: ReadonlySet<string> =
-  Object.freeze(
-    new Set(
-      ATLAS_MESSAGE_FUNCTION_PROFILE.filter(
-        ({ selection }) => selection === 'number',
-      ).map(({ name }) => name),
-    ),
-  ) as ReadonlySet<string>;
+export const PLURAL_SELECTOR_FUNCTIONS: ReadonlySet<string> = Object.freeze(
+  new Set(
+    MESSAGE_FUNCTION_PROFILE.filter(
+      ({ selection }) => selection === 'number',
+    ).map(({ name }) => name),
+  ),
+) as ReadonlySet<string>;
 
 /**
  * Which date option `Intl.DateTimeFormat` refused, said in one line.
@@ -160,14 +159,14 @@ function dateOptionProblem(
   functionName: string,
   resolved: Readonly<Record<string, string>>,
 ): string {
-  for (const [name, rule] of Object.entries(ATLAS_MESSAGE_OPTION_RULES)) {
+  for (const [name, rule] of Object.entries(MESSAGE_OPTION_RULES)) {
     if (rule.kind !== 'constructed') continue;
     const value = resolved[name];
     if (value === undefined) continue;
     try {
       new Intl.DateTimeFormat('en', {
         timeZone: 'UTC',
-        ...atlasDateTimeFormatOptions(functionName, { [name]: value }),
+        ...dateTimeFormatOptions(functionName, { [name]: value }),
       });
     } catch {
       return `MessageFormat option ${name}=${JSON.stringify(value)} on :${functionName} is not ${rule.describes}.`;
@@ -200,20 +199,20 @@ function dateOptionProblem(
  * the same sentence: the runtime still has to answer for a variable operand and for IR it did not
  * compile, so this narrows what reaches it rather than replacing it.
  *
- * Which functions those are is read from `ATLAS_MESSAGE_FUNCTION_OPTIONS` at the one place that
+ * Which functions those are is read from `MESSAGE_FUNCTION_OPTIONS` at the one place that
  * asks, rather than from a second set kept beside it.
  */
-const NUMBER_LITERAL = ATLAS_NUMBER_LITERAL;
+const NUMBER_LITERAL = NUMBER_LITERAL_PATTERN;
 
 /**
  * The `u:` namespace, which MessageFormat 2 reserves for the message syntax itself.
  *
- * Atlas parsed these, folded them in with every other option and dropped them at runtime, so
+ * Equator parsed these, folded them in with every other option and dropped them at runtime, so
  * `{$name :string u:dir=rtl}` produced no diagnostic and no isolation: the worst of the three
  * available behaviours, because the author had no way to find out.
  *
  * `u:dir` and `u:id` are implemented and validated here. Everything else in the namespace is
- * refused rather than ignored: `u:locale` is a real option in the spec that Atlas does not
+ * refused rather than ignored: `u:locale` is a real option in the spec that Equator does not
  * implement, and accepting it quietly would mean a message that formats in the wrong locale with
  * nothing to say so.
  */
@@ -239,20 +238,20 @@ const IMPLEMENTED_UNICODE_OPTIONS = new Set(['u:dir', 'u:id']);
  * that renders. Both were measured. The descriptor already declares every field here; nothing new
  * is being asked of an author.
  */
-export interface AtlasMessageCustomFunction {
+export interface MessageCustomFunction {
   /** The registered function id, without the leading colon. */
   readonly name: string;
   /** Whether the descriptor declares `selector: 'exact'` rather than `selector: 'none'`. */
   readonly selects: boolean;
   /** The operand type the descriptor declares. */
-  readonly operandType: AtlasMessageOperandKind;
+  readonly operandType: MessageOperandKind;
   /** The value type the descriptor declares this function produces. */
-  readonly resultType: AtlasMessageOperandKind;
+  readonly resultType: MessageOperandKind;
   /** The option names the descriptor declares, which is what may be written on it. */
   readonly options: readonly string[];
 }
 
-export interface AtlasMessageParseOptions {
+export interface MessageParseOptions {
   readonly sourcePath?: string;
   readonly path?: readonly (string | number)[];
   /**
@@ -263,18 +262,18 @@ export interface AtlasMessageParseOptions {
    * accept. Every path that parses an authored message passes it, including the pseudo-locale
    * transform, which re-parses what it derived.
    */
-  readonly customFunctions?: readonly AtlasMessageCustomFunction[];
+  readonly customFunctions?: readonly MessageCustomFunction[];
 }
 
 /** Text written directly in the message, rather than a value passed into it. */
-export interface AtlasMessageLiteral {
+export interface MessageLiteral {
   readonly kind: 'literal';
   /** The text itself, with the message syntax's own escapes already resolved. */
   readonly value: string;
 }
 
 /** A value the message names and the caller supplies. */
-export interface AtlasMessageVariableReference {
+export interface MessageVariableReference {
   readonly kind: 'variable';
   /** What the message calls it, without the leading marker the syntax uses. */
   readonly name: string;
@@ -286,9 +285,7 @@ export interface AtlasMessageVariableReference {
  *
  * Check `kind` to tell them apart. Both an operand and an option value are one of these.
  */
-export type AtlasMessageValueReference =
-  | AtlasMessageLiteral
-  | AtlasMessageVariableReference;
+export type MessageValueReference = MessageLiteral | MessageVariableReference;
 
 /**
  * The options written on a function or a markup element, by name.
@@ -296,9 +293,7 @@ export type AtlasMessageValueReference =
  * An option's value may itself be a variable, so a message can ask for two fraction digits or for
  * however many the caller says.
  */
-export type AtlasMessageOptionMap = Readonly<
-  Record<string, AtlasMessageValueReference>
->;
+export type MessageOptionMap = Readonly<Record<string, MessageValueReference>>;
 
 /**
  * What an attribute carries: a literal, or `true` for one written with no value at all.
@@ -306,23 +301,23 @@ export type AtlasMessageOptionMap = Readonly<
  * Never a variable. An attribute is a note to the tools rather than something the message renders,
  * so it cannot depend on what a caller passed.
  */
-export type AtlasMessageAttributeValue = true | AtlasMessageLiteral;
+export type MessageAttributeValue = true | MessageLiteral;
 /**
  * The attributes on an expression or a markup element, by name.
  *
  * Attributes annotate a place in the message for whoever is processing it, a translation tool
  * above all, and nothing in them reaches the rendered output.
  */
-export type AtlasMessageAttributeMap = Readonly<
-  Record<string, AtlasMessageAttributeValue>
+export type MessageAttributeMap = Readonly<
+  Record<string, MessageAttributeValue>
 >;
 
 /** The function an expression applies to its operand, with whatever options it was written with. */
-export interface AtlasMessageFunctionReference {
+export interface MessageFunctionReference {
   /** The name without its leading colon: a built-in, or one a registered extension declares. */
   readonly name: string;
   /** The options written on it. Empty rather than absent when none were. */
-  readonly options: AtlasMessageOptionMap;
+  readonly options: MessageOptionMap;
 }
 
 /**
@@ -331,14 +326,14 @@ export interface AtlasMessageFunctionReference {
  * At least one of the operand and the function is present. An expression with neither would name
  * nothing and format nothing, and the parser refuses it.
  */
-export interface AtlasMessageExpression {
+export interface MessageExpression {
   readonly kind: 'expression';
   /** What is being shown or selected on. Absent for a function called with nothing. */
-  readonly operand?: AtlasMessageValueReference;
+  readonly operand?: MessageValueReference;
   /** How to format or select on it. Absent when the value is shown as it arrives. */
-  readonly function?: AtlasMessageFunctionReference;
+  readonly function?: MessageFunctionReference;
   /** Annotations for whoever processes the message. Empty rather than absent when none. */
-  readonly attributes: AtlasMessageAttributeMap;
+  readonly attributes: MessageAttributeMap;
 }
 
 /**
@@ -348,16 +343,16 @@ export interface AtlasMessageExpression {
  * whole of what a translator controls here, which is where the emphasis and the link sit in the
  * sentence.
  */
-export interface AtlasMessageMarkup {
+export interface MessageMarkup {
   readonly kind: 'markup';
   /** Whether this opens a region, closes one, or stands alone with nothing inside it. */
   readonly markupKind: 'open' | 'standalone' | 'close';
   /** What the region is called, which is the name application code binds against. */
   readonly name: string;
   /** The options written on it. Empty rather than absent when none were. */
-  readonly options: AtlasMessageOptionMap;
+  readonly options: MessageOptionMap;
   /** Annotations for whoever processes the message. Empty rather than absent when none. */
-  readonly attributes: AtlasMessageAttributeMap;
+  readonly attributes: MessageAttributeMap;
 }
 
 /**
@@ -366,12 +361,9 @@ export interface AtlasMessageMarkup {
  * A plain string is the text case, so a message with nothing in it but words is an array of one
  * string.
  */
-export type AtlasMessagePatternPart =
-  | string
-  | AtlasMessageExpression
-  | AtlasMessageMarkup;
+export type MessagePatternPart = string | MessageExpression | MessageMarkup;
 /** A whole message body, in order, as the pieces it is made of. */
-export type AtlasMessagePattern = readonly AtlasMessagePatternPart[];
+export type MessagePattern = readonly MessagePatternPart[];
 
 /**
  * A name the message binds before its body runs.
@@ -379,17 +371,17 @@ export type AtlasMessagePattern = readonly AtlasMessagePatternPart[];
  * Either a statement about a value the caller passes, or a value computed once inside the message
  * and used more than once.
  */
-export interface AtlasMessageDeclaration {
+export interface MessageDeclaration {
   /** `input` for something the caller supplies, `local` for something the message works out. */
   readonly kind: 'input' | 'local';
   /** The name being bound, without the syntax's leading marker. */
   readonly name: string;
   /** What it is bound to, which for an input is how that input is to be read. */
-  readonly value: AtlasMessageExpression;
+  readonly value: MessageExpression;
 }
 
 /** A variant key that matches one exact value: a plural category, a number, an enum member. */
-export interface AtlasMessageLiteralVariantKey {
+export interface MessageLiteralVariantKey {
   readonly kind: 'literal';
   /** What the selector's value is compared against. */
   readonly value: string;
@@ -401,29 +393,29 @@ export interface AtlasMessageLiteralVariantKey {
  * Every selection needs one on every position, so a message has an answer for a value nobody
  * listed.
  */
-export interface AtlasMessageCatchallVariantKey {
+export interface MessageCatchallVariantKey {
   readonly kind: 'catchall';
   /** The name it was written under, kept for round-tripping the source rather than for matching. */
   readonly value?: string;
 }
 
 /** One position of one variant's key list: an exact value to match, or the catch-all. */
-export type AtlasMessageVariantKey =
-  | AtlasMessageLiteralVariantKey
-  | AtlasMessageCatchallVariantKey;
+export type MessageVariantKey =
+  | MessageLiteralVariantKey
+  | MessageCatchallVariantKey;
 
 /** One branch of a selecting message: what it matches, and what it says when it does. */
-export interface AtlasMessageVariant {
+export interface MessageVariant {
   /** One key per selector, in the selectors' own order. */
-  readonly keys: readonly AtlasMessageVariantKey[];
+  readonly keys: readonly MessageVariantKey[];
   /** The message body used when every key matches. */
-  readonly pattern: AtlasMessagePattern;
+  readonly pattern: MessagePattern;
 }
 
-interface AtlasMessageSemanticBase {
+interface MessageSemanticBase {
   readonly source: string;
   readonly canonicalSource: string;
-  readonly declarations: readonly AtlasMessageDeclaration[];
+  readonly declarations: readonly MessageDeclaration[];
   readonly externalInputs: readonly string[];
   readonly functions: readonly string[];
   readonly resultKind: 'plain' | 'structured';
@@ -431,10 +423,10 @@ interface AtlasMessageSemanticBase {
 }
 
 /** A message that says one thing, with no branching in it. */
-export interface AtlasPatternMessageSemanticModel extends AtlasMessageSemanticBase {
+export interface PatternMessageSemanticModel extends MessageSemanticBase {
   readonly kind: 'pattern';
   /** The body. */
-  readonly pattern: AtlasMessagePattern;
+  readonly pattern: MessagePattern;
 }
 
 /**
@@ -444,31 +436,31 @@ export interface AtlasPatternMessageSemanticModel extends AtlasMessageSemanticBa
  * six branches where English needs two, which is why coverage is checked per target rather than
  * against the source.
  */
-export interface AtlasSelectMessageSemanticModel extends AtlasMessageSemanticBase {
+export interface SelectMessageSemanticModel extends MessageSemanticBase {
   readonly kind: 'select';
   /** The names selected on, in the order a variant's keys are written in. */
   readonly selectors: readonly string[];
   /** The branches, each with one key per selector. */
-  readonly variants: readonly AtlasMessageVariant[];
+  readonly variants: readonly MessageVariant[];
 }
 
 /**
  * One authored message, parsed and normalized: what it says, what it needs, and what it produces.
  *
- * What `parseAtlasMessage` returns and what everything downstream reads. Both arms carry the
- * original source, a canonical spelling of it that two equivalent writings share, the names the
- * message declares, the inputs it takes from outside, the functions it calls, whether it renders
- * as plain text or as parts, and the author's comment.
+ * What `parseMessageSemanticModel` returns and what everything downstream reads. Both arms carry
+ * the original source, a canonical spelling of it that two equivalent writings share, the names the
+ * message declares, the inputs it takes from outside, the functions it calls, whether it renders as
+ * plain text or as parts, and the author's comment.
  *
  * Check `kind` to tell a plain message from a selecting one.
  */
-export type AtlasMessageSemanticModel =
-  | AtlasPatternMessageSemanticModel
-  | AtlasSelectMessageSemanticModel;
+export type MessageSemanticModel =
+  | PatternMessageSemanticModel
+  | SelectMessageSemanticModel;
 
 function normalizeValue(
   value: Model.Literal | Model.VariableRef,
-): AtlasMessageValueReference {
+): MessageValueReference {
   return value.type === 'literal'
     ? Object.freeze({ kind: 'literal', value: value.value })
     : Object.freeze({ kind: 'variable', name: value.name });
@@ -476,7 +468,7 @@ function normalizeValue(
 
 function normalizeOptions(
   options: Model.Options | undefined,
-): AtlasMessageOptionMap {
+): MessageOptionMap {
   return frozenRecord(
     Object.entries(options ?? {})
       .sort(([left], [right]) => compareCodePoint(left, right))
@@ -486,7 +478,7 @@ function normalizeOptions(
 
 function normalizeAttributes(
   attributes: Model.Attributes | undefined,
-): AtlasMessageAttributeMap {
+): MessageAttributeMap {
   return frozenRecord(
     Object.entries(attributes ?? {})
       .sort(([left], [right]) => compareCodePoint(left, right))
@@ -504,9 +496,9 @@ function normalizeAttributes(
 
 function normalizeFunction(
   reference: Model.FunctionRef,
-): AtlasMessageFunctionReference {
+): MessageFunctionReference {
   return Object.freeze({
-    name: reference.name as AtlasStandardMessageFunctionName,
+    name: reference.name as StandardMessageFunctionName,
     options: normalizeOptions(reference.options),
   });
 }
@@ -521,9 +513,7 @@ function receivedArg(expression: Model.Expression): unknown {
   return 'arg' in expression ? expression.arg : undefined;
 }
 
-function normalizeExpression(
-  expression: Model.Expression,
-): AtlasMessageExpression {
+function normalizeExpression(expression: Model.Expression): MessageExpression {
   return Object.freeze({
     kind: 'expression',
     ...('arg' in expression && receivedArg(expression) !== undefined
@@ -536,7 +526,7 @@ function normalizeExpression(
   });
 }
 
-function normalizeMarkup(markup: Model.Markup): AtlasMessageMarkup {
+function normalizeMarkup(markup: Model.Markup): MessageMarkup {
   return Object.freeze({
     kind: 'markup',
     markupKind: markup.kind,
@@ -546,7 +536,7 @@ function normalizeMarkup(markup: Model.Markup): AtlasMessageMarkup {
   });
 }
 
-function normalizePattern(pattern: Model.Pattern): AtlasMessagePattern {
+function normalizePattern(pattern: Model.Pattern): MessagePattern {
   return Object.freeze(
     pattern.map((part) => {
       if (typeof part === 'string') {
@@ -561,7 +551,7 @@ function normalizePattern(pattern: Model.Pattern): AtlasMessagePattern {
 
 function normalizeDeclarations(
   declarations: readonly Model.Declaration[],
-): readonly AtlasMessageDeclaration[] {
+): readonly MessageDeclaration[] {
   return Object.freeze(
     declarations.map((declaration) =>
       Object.freeze({
@@ -575,7 +565,7 @@ function normalizeDeclarations(
 
 function normalizeVariantKey(
   key: Model.Literal | Model.CatchallKey,
-): AtlasMessageVariantKey {
+): MessageVariantKey {
   return key.type === 'literal'
     ? Object.freeze({ kind: 'literal', value: key.value })
     : Object.freeze({
@@ -586,7 +576,7 @@ function normalizeVariantKey(
 
 function normalizeVariants(
   variants: readonly Model.Variant[],
-): readonly AtlasMessageVariant[] {
+): readonly MessageVariant[] {
   return Object.freeze(
     variants.map((variant) =>
       Object.freeze({
@@ -598,7 +588,7 @@ function normalizeVariants(
 }
 
 /**
- * What the parser and the validator found, in Atlas's words rather than theirs.
+ * What the parser and the validator found, in Equator's words rather than theirs.
  *
  * `MessageSyntaxError.message` is the type slug followed by the offset, `parse-error at 6`, and
  * `MessageDataModelError` adds nothing to it, so carrying the text whole read
@@ -680,18 +670,18 @@ export function syntaxErrorSentence(error: MessageSyntaxError): string {
 /**
  * Which refusals are Data Model Errors, by the standard's division rather than the parser's stages.
  *
- * `ATL1201` is a message the syntax refuses and `ATL1202` is a message the data model refuses, and
+ * `EQ1201` is a message the syntax refuses and `EQ1202` is a message the data model refuses, and
  * until this table existed the two were told apart by *where* the refusal came from: anything thrown
  * out of `parseMessage` was syntax, anything reported by `validate` was the data model. That is the
  * implementation's division, and for one type it disagrees with the specification's. LDML 48.2 lists
  * Duplicate Option Name among its Data Model Errors, the working group's own suite files it in
  * `data-model-errors.json`, while `messageformat` throws it while parsing, because a repeated
  * option is visible to the parser. Measured over that suite before this changed: five of its six
- * error types arrived as `ATL1202`, and `duplicate-option-name` alone arrived as `ATL1201`.
+ * error types arrived as `EQ1202`, and `duplicate-option-name` alone arrived as `EQ1201`.
  *
- * Which stage notices something is an implementation detail of the parser Atlas embeds; which class
- * of error it is belongs to the message. So the class decides the code, one rule for all six, and a
- * type raised from either stage lands in the same place.
+ * Which stage notices something is an implementation detail of the parser Equator embeds; which
+ * class of error it is belongs to the message. So the class decides the code, one rule for all six,
+ * and a type raised from either stage lands in the same place.
  *
  * A `Record` over the library's own union rather than a list: a type it adds to
  * `MessageDataModelError` fails to compile here rather than falling silently into the syntax half.
@@ -711,51 +701,46 @@ const MESSAGE_FORMAT_DATA_MODEL_ERRORS: Readonly<
 
 function messageFormatErrorCode(
   error: MessageSyntaxError,
-): 'ATL1201' | 'ATL1202' {
+): 'EQ1201' | 'EQ1202' {
   return Object.hasOwn(MESSAGE_FORMAT_DATA_MODEL_ERRORS, error.type)
-    ? 'ATL1202'
-    : 'ATL1201';
+    ? 'EQ1202'
+    : 'EQ1201';
 }
 
 function errorDiagnostic(
   source: string,
   error: MessageSyntaxError,
-  options: AtlasMessageParseOptions,
-  code: 'ATL1201' | 'ATL1202',
-): AtlasDiagnostic {
+  options: MessageParseOptions,
+  code: 'EQ1201' | 'EQ1202',
+): ToolkitDiagnostic {
   const start = Math.max(0, Math.min(error.start, source.length));
   const end = Math.max(start, Math.min(error.end, source.length));
-  return atlasDiagnostic(code, syntaxErrorSentence(error), {
+  return toolkitDiagnostic(code, syntaxErrorSentence(error), {
     ...(options.path === undefined ? {} : { path: options.path }),
-    span: atlasSourceSpan(
-      source,
-      start,
-      Math.max(1, end - start),
-      options.sourcePath,
-    ),
+    span: spanAt(source, start, Math.max(1, end - start), options.sourcePath),
   });
 }
 
-export function parseAtlasMessage(
+export function parseMessageSemanticModel(
   sourceValue: unknown,
-  options: AtlasMessageParseOptions = {},
-): AtlasResult<AtlasMessageSemanticModel> {
-  const sourceText = atlasUntrustedText(
+  options: MessageParseOptions = {},
+): ToolkitResult<MessageSemanticModel> {
+  const sourceText = untrustedText(
     sourceValue,
-    'ATL1201',
+    'EQ1201',
     'MessageFormat source',
-    ATLAS_RESOURCE_LIMITS.messageBytes,
+    RESOURCE_LIMITS.messageBytes,
   );
   if (!sourceText.ok) return sourceText;
   const source = sourceText.value;
-  if (Buffer.byteLength(source, 'utf8') > ATLAS_RESOURCE_LIMITS.messageBytes) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1201',
-        `MessageFormat source exceeds the ${ATLAS_RESOURCE_LIMITS.messageBytes}-byte implementation ceiling.`,
+  if (Buffer.byteLength(source, 'utf8') > RESOURCE_LIMITS.messageBytes) {
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1201',
+        `MessageFormat source exceeds the ${RESOURCE_LIMITS.messageBytes}-byte implementation ceiling.`,
         {
           ...(options.path === undefined ? {} : { path: options.path }),
-          span: atlasSourceSpan(source, 0, source.length, options.sourcePath),
+          span: spanAt(source, 0, source.length, options.sourcePath),
         },
       ),
     ]);
@@ -765,16 +750,16 @@ export function parseAtlasMessage(
     message = parseMessage(source);
   } catch (error) {
     if (error instanceof MessageSyntaxError) {
-      return atlasFailure([
+      return toolkitFailure([
         errorDiagnostic(source, error, options, messageFormatErrorCode(error)),
       ]);
     }
     throw error;
   }
 
-  const dataModelDiagnostics: AtlasDiagnostic[] = [];
+  const dataModelDiagnostics: ToolkitDiagnostic[] = [];
   const validation = validate(message, (type, node) => {
-    // Through the same table as the thrown half, rather than passing `ATL1202` because everything
+    // Through the same table as the thrown half, rather than passing `EQ1202` because everything
     // reported here happens to be one. Two places deciding the same thing is how they come apart.
     const error = new MessageDataModelError(type, node);
     dataModelDiagnostics.push(
@@ -782,7 +767,7 @@ export function parseAtlasMessage(
     );
   });
   if (dataModelDiagnostics.length > 0) {
-    return atlasFailure(dataModelDiagnostics);
+    return toolkitFailure(dataModelDiagnostics);
   }
 
   const customFunctions = options.customFunctions ?? [];
@@ -790,7 +775,7 @@ export function parseAtlasMessage(
   const customProfiles = new Map(
     customFunctions.map((custom) => [
       custom.name,
-      atlasExtensionOptionProfile(custom.operandType, custom.options),
+      extensionOptionProfile(custom.operandType, custom.options),
     ]),
   );
   const selectorNames = new Set<string>([
@@ -800,41 +785,40 @@ export function parseAtlasMessage(
   const unsupportedFunctions = [...validation.functions]
     .filter(
       (name): name is string =>
-        !standardFunctionNames.has(name as AtlasStandardMessageFunctionName) &&
+        !standardFunctionNames.has(name as StandardMessageFunctionName) &&
         !customFunctionNames.has(name),
     )
     .sort(compareCodePoint);
   if (unsupportedFunctions.length > 0) {
-    return atlasFailure(
+    return toolkitFailure(
       unsupportedFunctions.map((name) =>
-        atlasDiagnostic(
-          'ATL1203',
-          `MessageFormat function :${name} is not part of the Atlas 1 profile.`,
+        toolkitDiagnostic(
+          'EQ1203',
+          `MessageFormat function :${name} is not part of the Equator 1 profile.`,
           {
             ...(options.path === undefined ? {} : { path: options.path }),
-            span: atlasSourceSpan(source, 0, source.length, options.sourcePath),
+            span: spanAt(source, 0, source.length, options.sourcePath),
           },
         ),
       ),
     );
   }
 
-  const optionDiagnostics: AtlasDiagnostic[] = [];
-  const report = (code: AtlasDiagnosticCode, summary: string): void => {
+  const optionDiagnostics: ToolkitDiagnostic[] = [];
+  const report = (code: ToolkitDiagnosticCode, summary: string): void => {
     optionDiagnostics.push(
-      atlasDiagnostic(code, summary, {
+      toolkitDiagnostic(code, summary, {
         ...(options.path === undefined ? {} : { path: options.path }),
-        span: atlasSourceSpan(source, 0, source.length, options.sourcePath),
+        span: spanAt(source, 0, source.length, options.sourcePath),
       }),
     );
   };
-  const optionDiagnostic = (summary: string): void =>
-    report('ATL1204', summary);
-  // Its own code rather than ATL1204's: an option written wrongly and an operand that is not a
+  const optionDiagnostic = (summary: string): void => report('EQ1204', summary);
+  // Its own code rather than EQ1204's: an option written wrongly and an operand that is not a
   // number are different mistakes with different fixes, and a consumer filtering on a code is
   // entitled to tell them apart.
   const operandDiagnostic = (summary: string): void =>
-    report('ATL1205', summary);
+    report('EQ1205', summary);
   /**
    * @param where  What the option was written on, for the diagnostic.
    * @param allowDirection  `u:dir` is a Bad Option error on markup: markup resolves to no value, so
@@ -849,7 +833,7 @@ export function parseAtlasMessage(
       if (!name.startsWith(UNICODE_OPTION_PREFIX)) continue;
       if (!IMPLEMENTED_UNICODE_OPTIONS.has(name)) {
         optionDiagnostic(
-          `MessageFormat option ${name} on ${where} is outside the Atlas 1 profile; the profile implements ${[...IMPLEMENTED_UNICODE_OPTIONS].join(' and ')}.`,
+          `MessageFormat option ${name} on ${where} is outside the Equator 1 profile; the profile implements ${[...IMPLEMENTED_UNICODE_OPTIONS].join(' and ')}.`,
         );
         continue;
       }
@@ -936,7 +920,7 @@ export function parseAtlasMessage(
     // A built-in first, then a registered extension, because both are message functions and both
     // carry a profile. A name in neither is not a function this message may use and is refused
     // elsewhere.
-    const standard = ATLAS_MESSAGE_FUNCTION_OPTIONS[functionRef.name];
+    const standard = MESSAGE_FUNCTION_OPTIONS[functionRef.name];
     const profile = standard ?? customProfiles.get(functionRef.name);
     if (profile === undefined) return undefined;
     const written = literalOptions(functionRef.options);
@@ -954,8 +938,8 @@ export function parseAtlasMessage(
     // the runtime does not, which is the same defect this whole change is closing, in reverse.
     const inherited =
       standard?.operand === 'date-time'
-        ? atlasDateOperandOptions(from?.options, written.options, standard)
-        : atlasInheritedOptions(from?.options, written.options, profile);
+        ? resolvedDateOptions(from?.options, written.options, standard)
+        : inheritedOptions(from?.options, written.options, profile);
     return {
       options: Object.fromEntries(
         Object.entries(inherited).filter(([name]) => !dropped.includes(name)),
@@ -979,7 +963,7 @@ export function parseAtlasMessage(
     },
     functionRef: (functionRef, _context, argument) => {
       checkUnicodeOptions(functionRef.options, `:${functionRef.name}`, true);
-      const profile = ATLAS_MESSAGE_FUNCTION_OPTIONS[functionRef.name];
+      const profile = MESSAGE_FUNCTION_OPTIONS[functionRef.name];
       // Not a built-in. An extension's own descriptor is the authority on what it accepts, and
       // `validExtensionOptions` is where that is enforced.
       if (profile === undefined) return;
@@ -1003,7 +987,7 @@ export function parseAtlasMessage(
         if (value.type !== 'literal') {
           // MessageFormat allows a variable option value in general and forbids it for some:
           // *"if the value is not a literal, a Bad Option error is emitted."* Which ones is a
-          // property of the function and the table says it. `select` is singled out for Atlas's
+          // property of the function and the table says it. `select` is singled out for Equator's
           // reason for checking here at all: it decides which CLDR table a target catalog's
           // plural coverage is measured against, and a value that arrives at render time cannot be
           // measured against anything. The date family singles out everything except its three
@@ -1017,7 +1001,7 @@ export function parseAtlasMessage(
           }
           continue;
         }
-        const problem = atlasMessageOptionProblem(
+        const problem = messageOptionProblem(
           functionRef.name,
           name,
           value.value,
@@ -1060,9 +1044,9 @@ export function parseAtlasMessage(
       if (profile.operand === 'string') return;
       if (profile.operand === 'date-time') {
         /**
-         * `input` is a time zone the operand carries, and an Atlas date input is a `Date`. So the
+         * `input` is a time zone the operand carries, and an Equator date input is a `Date`. So the
          * only operand that can answer is one whose own declaration wrote a zone, which is exactly
-         * what the carried map holds, and `atlasDateOperandOptions` has already substituted it if
+         * what the carried map holds, and `resolvedDateOptions` has already substituted it if
          * there was one. An `input` still standing here means nothing in the message provides it.
          *
          * The specification's answer is a Bad Operand error at format time beside a rendered
@@ -1079,11 +1063,11 @@ export function parseAtlasMessage(
         }
         try {
           new Intl.DateTimeFormat('en', {
-            // A zone is supplied because Atlas refuses to format a date without one, and what is
+            // A zone is supplied because Equator refuses to format a date without one, and what is
             // being decided here is whether the message's own options can be honoured. A message
             // that writes no zone takes the consumer's, which is not this file's business.
             timeZone: 'UTC',
-            ...atlasDateTimeFormatOptions(functionRef.name, resolved.options),
+            ...dateTimeFormatOptions(functionRef.name, resolved.options),
           });
         } catch {
           optionDiagnostic(
@@ -1114,7 +1098,7 @@ export function parseAtlasMessage(
       try {
         new Intl.NumberFormat(
           'en',
-          atlasNumberFormatOptions(functionRef.name, resolved.options),
+          numberFormatOptions(functionRef.name, resolved.options),
         );
       } catch {
         optionDiagnostic(
@@ -1163,25 +1147,25 @@ export function parseAtlasMessage(
       if (name === undefined || selectorNames.has(name)) continue;
       // MessageFormat splits its functions into formatters and selectors, and
       // `formatting.md` is explicit about what happens when a `.match` names a formatter: the
-      // selector matches nothing but the catch-all and a *Bad Selector* error is emitted. Atlas
+      // selector matches nothing but the catch-all and a *Bad Selector* error is emitted. Equator
       // knew which functions select before anything ran, the built-in profile is closed and an
       // extension descriptor declares it, and compiled the message anyway.
       //
       // Reported here rather than at render, on
       // `specs/04-message-authoring-and-catalogs.spec.md` section 6: the standard permits
-      // reporting the error and continuing with a fallback, and Atlas does not take that
+      // reporting the error and continuing with a fallback, and Equator does not take that
       // permission. The output of the fallback is the trap. Every keyed variant the author wrote is
       // dead and the catch-all renders, so the string is plausible and nobody is told that four of
       // the five variants in the message can never be chosen.
       report(
-        'ATL1206',
+        'EQ1206',
         `MessageFormat function :${name} formats but does not select, so .match cannot select on $${selector.name}. ` +
           `A selecting function is one of ${selecting.map((each) => `:${each}`).join(', ')}, or an extension whose descriptor declares selector "exact".`,
       );
     }
   }
 
-  if (optionDiagnostics.length > 0) return atlasFailure(optionDiagnostics);
+  if (optionDiagnostics.length > 0) return toolkitFailure(optionDiagnostics);
 
   const base = {
     source,
@@ -1195,7 +1179,7 @@ export function parseAtlasMessage(
     ...(message.comment === undefined ? {} : { comment: message.comment }),
   };
 
-  return atlasSuccess(
+  return toolkitSuccess(
     message.type === 'message'
       ? Object.freeze({
           kind: 'pattern',
@@ -1238,14 +1222,14 @@ export function parseAtlasMessage(
  * literal keys are also a defect, and a different one: they collide in MF2 itself, before any
  * export is involved, and this is not the check that should be reporting them.
  *
- * *No caller yet, deliberately.* Atlas's XLIFF export writes a select message as the whole MF2
+ * *No caller yet, deliberately.* Equator's XLIFF export writes a select message as the whole MF2
  * source in one flat segment, which loses nothing and needs no mapping, so raising this on today's
- * export would be a warning about a format Atlas does not emit. It exists so that the exporter that
- * one day does emit per-case units asks this rather than deriving it again, and so that the
+ * export would be a warning about a format Equator does not emit. It exists so that the exporter
+ * that one day does emit per-case units asks this rather than deriving it again, and so that the
  * reasoning above is recorded where that exporter will look.
  */
-export function atlasCatchallOtherCollisions(
-  variants: readonly AtlasMessageVariant[],
+export function catchallOtherCollisions(
+  variants: readonly MessageVariant[],
 ): readonly (readonly number[])[] {
   const groups = new Map<string, number[]>();
   const catchallSignatures = new Set<string>();

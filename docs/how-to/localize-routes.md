@@ -5,7 +5,7 @@ route. Your Angular routes are unchanged.
 
 ## Before you begin
 
-Run `atlas generate` at least once, so `#i18n/routes` exists.
+Run `equator generate` at least once, so `#i18n/routes` exists.
 
 ## Declare a policy and a projection
 
@@ -50,7 +50,7 @@ renders in whichever locale is committed rather than the one the link named.
 
 ## Choose a policy
 
-Four creators, all exported from `@neolorn/atlas`:
+Four creators, all exported from `@neolorn/equator`:
 
 | Creator                           | Puts the locale                   | Fits a deployment where                     |
 | --------------------------------- | --------------------------------- | ------------------------------------------- |

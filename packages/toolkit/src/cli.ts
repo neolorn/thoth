@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * The eight things a person can ask Atlas to do, and the two that change a project's shape.
+ * The eight things a person can ask Equator to do, and the two that change a project's shape.
  *
  * `specs/10-compiler-and-tooling.spec.md` section 11 separates them that way. Initialization
  * adds the setup an owner is missing and migration changes an established shape; generate,
@@ -13,37 +13,34 @@ import { lstat, open, readFile } from 'node:fs/promises';
 import { posix, resolve, win32 } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 
-import type { AtlasAuthoredChangePlan } from './authoring-transaction.js';
+import type { AuthoredChangePlan } from './authoring-transaction.js';
+import { INIT_HELP, INIT_INVOCATION } from './cli-options.generated.js';
 import {
-  ATLAS_INIT_HELP,
-  ATLAS_INIT_INVOCATION,
-} from './cli-options.generated.js';
-import {
-  atlasDiagnostic,
-  atlasDiagnosticsBlock,
-  atlasFailure,
-  type AtlasDiagnostic,
-  type AtlasResult,
+  toolkitDiagnostic,
+  diagnosticsBlock,
+  toolkitFailure,
+  type ToolkitDiagnostic,
+  type ToolkitResult,
 } from './diagnostics.js';
-import type { AtlasInitConfiguration } from './configuration.js';
+import type { InitConfiguration } from './configuration.js';
 import {
   applyInitOption,
   initOptionForFlag,
   InvocationError,
 } from './init-options.js';
 import type {
-  AtlasCheckProjectResult,
-  AtlasGenerateProjectResult,
-  AtlasInitProjectOptions,
-  AtlasWatchCycle,
+  CheckProjectResult,
+  GenerateProjectResult,
+  InitProjectOptions,
+  WatchCycle,
 } from './project-host.js';
-import { ATLAS_RESOURCE_LIMITS } from './resource-limits.js';
+import { RESOURCE_LIMITS } from './resource-limits.js';
 
 interface PackageManifest {
   readonly version: string;
 }
 
-type AtlasCommand =
+type Command =
   | 'init'
   | 'generate'
   | 'check'
@@ -53,10 +50,10 @@ type AtlasCommand =
   | 'migrate'
   | 'watch';
 
-type AtlasMachineCommand = AtlasCommand | 'unknown';
+type MachineCommand = Command | 'unknown';
 
 interface ParsedInvocation {
-  readonly command: AtlasCommand;
+  readonly command: Command;
   readonly project?: string;
   readonly plan?: string;
   readonly json: boolean;
@@ -67,9 +64,9 @@ interface ParsedInvocation {
   readonly requireFresh: boolean;
   readonly pseudo: boolean;
   /**
-   * The configuration fields this invocation sets, keyed as `atlas.config.json` keys them.
+   * The configuration fields this invocation sets, keyed as `equator.config.json` keys them.
    *
-   * Not one field per flag. The flags are generated from `ATLAS_CONFIGURATION_SCHEMA`, so a named
+   * Not one field per flag. The flags are generated from `CONFIGURATION_SCHEMA`, so a named
    * field here would be a second list to keep in step with the first, and the second list going
    * quiet is the defect 10.5 reports rather than a risk it guards against. What the parser produces
    * is the shape the configuration parser accepts, and that parser is the only thing that decides
@@ -82,7 +79,7 @@ const packageManifest = JSON.parse(
   await readFile(new URL('./package.json', import.meta.url), 'utf8'),
 ) as PackageManifest;
 
-const commands = new Set<AtlasCommand>([
+const commands = new Set<Command>([
   'init',
   'generate',
   'check',
@@ -93,9 +90,9 @@ const commands = new Set<AtlasCommand>([
   'watch',
 ]);
 
-function machineCommand(value: string | undefined): AtlasMachineCommand {
-  return value !== undefined && commands.has(value as AtlasCommand)
-    ? (value as AtlasCommand)
+function machineCommand(value: string | undefined): MachineCommand {
+  return value !== undefined && commands.has(value as Command)
+    ? (value as Command)
     : 'unknown';
 }
 
@@ -103,28 +100,28 @@ const projectHost = () => import('./project-host.js');
 const authoredChanges = () => import('./authoring-transaction.js');
 
 function helpText(): string {
-  return `Atlas toolkit ${packageManifest.version}
+  return `Equator toolkit ${packageManifest.version}
 
-Usage: atlas <command> [options]
+Usage: equator <command> [options]
 
 Commands:
-  init       Add compatible Atlas configuration and package setup
+  init       Add compatible Equator configuration and package setup
   generate   Compile and safely publish generated #i18n artifacts
   check      Validate authored inputs, analysis, and generated freshness
-  format     Canonically format Atlas configuration and catalogs
-  clean      Remove only verified Atlas-owned generated and work state
-  uninstall  Remove Atlas from this owner, keeping authored catalogs
+  format     Canonically format Equator configuration and catalogs
+  clean      Remove only verified Equator-owned generated and work state
+  uninstall  Remove Equator from this owner, keeping authored catalogs
   watch      Reconcile changes in one foreground process
-  migrate    Preview or apply one explicit Atlas-authored migration plan
+  migrate    Preview or apply one explicit Equator-authored migration plan
 
 Common options:
-  --project <path>   Select an owner directory or atlas.config.json
+  --project <path>   Select an owner directory or equator.config.json
   --json             Emit deterministic machine-readable JSON
   --dry-run          Preview init, generate, format, clean, uninstall, or migrate
   --help             Show this help
   --version          Show the toolkit version
 
-${ATLAS_INIT_HELP}
+${INIT_HELP}
 
 Uninstall options:
   --catalogs         Also remove authored catalogs (off by default)
@@ -136,7 +133,7 @@ Check options:
   --pseudo           Also generate the configured pseudo-locales (development only)
 
 Migrate options:
-  --plan <path>      Select one atlas-authored-change-plan/1 JSON file
+  --plan <path>      Select one equator-authored-change-plan/1 JSON file
   --project <owner>  Select the explicit migration owner (required)
 
 Exit codes: 0 success, 1 diagnostics, 2 invocation/configuration, 3 environment, 130 interruption.
@@ -157,17 +154,14 @@ function requireValue(
 
 function parseInvocation(arguments_: readonly string[]): ParsedInvocation {
   const commandValue = arguments_[0];
-  if (
-    commandValue === undefined ||
-    !commands.has(commandValue as AtlasCommand)
-  ) {
+  if (commandValue === undefined || !commands.has(commandValue as Command)) {
     throw new InvocationError(
       commandValue === undefined
-        ? 'Atlas requires a command.'
-        : `Unknown Atlas command: ${commandValue}`,
+        ? 'Equator requires a command.'
+        : `Unknown Equator command: ${commandValue}`,
     );
   }
-  const command = commandValue as AtlasCommand;
+  const command = commandValue as Command;
   let project: string | undefined;
   let plan: string | undefined;
   let json = false;
@@ -232,13 +226,13 @@ function parseInvocation(arguments_: readonly string[]): ParsedInvocation {
         break;
       default: {
         // Every configuration flag arrives here, because there is no case to write for one: the
-        // set of them is `ATLAS_CONFIGURATION_SCHEMA`, read at build time into
+        // set of them is `CONFIGURATION_SCHEMA`, read at build time into
         // `cli-options.generated.ts`. A key added to the parser is a flag on the day it lands, and
         // an unknown flag still falls through to the same error it always did.
         const option = initOptionForFlag(flag);
         if (option === undefined) {
           throw new InvocationError(
-            `Unknown option for atlas ${command}: ${flag}`,
+            `Unknown option for equator ${command}: ${flag}`,
           );
         }
         firstInitFlag ??= flag;
@@ -259,30 +253,30 @@ function parseInvocation(arguments_: readonly string[]): ParsedInvocation {
     )
   ) {
     throw new InvocationError(
-      `--dry-run is not supported by atlas ${command}.`,
+      `--dry-run is not supported by equator ${command}.`,
     );
   }
   if (fix && command !== 'check') {
-    throw new InvocationError(`--fix is not supported by atlas ${command}.`);
+    throw new InvocationError(`--fix is not supported by equator ${command}.`);
   }
   if (catalogs && command !== 'uninstall') {
     throw new InvocationError(
-      '--catalogs is supported only by atlas uninstall.',
+      '--catalogs is supported only by equator uninstall.',
     );
   }
   if (firstInitFlag !== undefined && command !== 'init') {
     throw new InvocationError(
-      `${firstInitFlag} is supported only by atlas init.`,
+      `${firstInitFlag} is supported only by equator init.`,
     );
   }
   if (requireComplete && command !== 'check') {
     throw new InvocationError(
-      '--require-complete is supported only by atlas check.',
+      '--require-complete is supported only by equator check.',
     );
   }
   if (requireFresh && command !== 'check') {
     throw new InvocationError(
-      '--require-fresh is supported only by atlas check.',
+      '--require-fresh is supported only by equator check.',
     );
   }
   // `check` as well as `generate`, and for one reason: `--require-fresh` compares generated output
@@ -291,17 +285,17 @@ function parseInvocation(arguments_: readonly string[]): ParsedInvocation {
   // is exactly correct as stale.
   if (pseudo && command !== 'generate' && command !== 'check') {
     throw new InvocationError(
-      '--pseudo is supported only by atlas generate and atlas check.',
+      '--pseudo is supported only by equator generate and equator check.',
     );
   }
   if (plan !== undefined && command !== 'migrate') {
-    throw new InvocationError('--plan is supported only by atlas migrate.');
+    throw new InvocationError('--plan is supported only by equator migrate.');
   }
   if (command === 'migrate' && project === undefined) {
-    throw new InvocationError('atlas migrate requires --project <owner>.');
+    throw new InvocationError('equator migrate requires --project <owner>.');
   }
   if (command === 'migrate' && plan === undefined) {
-    throw new InvocationError('atlas migrate requires --plan <path>.');
+    throw new InvocationError('equator migrate requires --plan <path>.');
   }
   return Object.freeze({
     command,
@@ -318,7 +312,7 @@ function parseInvocation(arguments_: readonly string[]): ParsedInvocation {
   });
 }
 
-function diagnosticKey(diagnostic: AtlasDiagnostic): string {
+function diagnosticKey(diagnostic: ToolkitDiagnostic): string {
   return [
     diagnostic.span?.sourcePath ?? '',
     String(diagnostic.span?.start.offset ?? -1).padStart(12, '0'),
@@ -330,9 +324,9 @@ function diagnosticKey(diagnostic: AtlasDiagnostic): string {
 }
 
 function orderedDiagnostics(
-  diagnostics: readonly AtlasDiagnostic[],
-): readonly AtlasDiagnostic[] {
-  const unique = new Map<string, AtlasDiagnostic>();
+  diagnostics: readonly ToolkitDiagnostic[],
+): readonly ToolkitDiagnostic[] {
+  const unique = new Map<string, ToolkitDiagnostic>();
   for (const diagnostic of diagnostics) {
     unique.set(diagnosticKey(diagnostic), diagnostic);
   }
@@ -345,20 +339,20 @@ function orderedDiagnostics(
 
 function machineSafeSummary(summary: string): string {
   // A machine-absolute path is the consumer's machine, and
-  // `specs/10-compiler-and-tooling.spec.md` section 7 keeps those out of what Atlas publishes.
+  // `specs/10-compiler-and-tooling.spec.md` section 7 keeps those out of what Equator publishes.
   // It cannot be matched exactly, because a Windows path may contain spaces and so has no
   // reliable end; the stop set is what a path may not contain.
   //
   // The quote is in that set because a path in a summary is written with `JSON.stringify`, which
   // means the closing quote is where it ends: exactly, not heuristically. Without it the redaction
-  // ate the rest of the sentence: `ATL1602` names the two owner identities and the recovery, and in
+  // ate the rest of the sentence: `EQ1602` names the two owner identities and the recovery, and in
   // machine output the whole of that ended at `<machine-path>`, because nothing after the path
   // happened to be a comma. A diagnostic that says what to do only in human output says it to half
   // its readers. A Windows path cannot contain a quote, so nothing that is a path is left behind.
   return summary.replace(/\b[A-Za-z]:[\\/][^\r\n,;)"]*/gu, '<machine-path>');
 }
 
-function machineDiagnostic(diagnostic: AtlasDiagnostic) {
+function machineDiagnostic(diagnostic: ToolkitDiagnostic) {
   const sourcePath = diagnostic.span?.sourcePath?.replaceAll('\\', '/');
   return {
     code: diagnostic.code,
@@ -384,7 +378,7 @@ function machineDiagnostic(diagnostic: AtlasDiagnostic) {
   };
 }
 
-function humanDiagnostic(diagnostic: AtlasDiagnostic): string {
+function humanDiagnostic(diagnostic: ToolkitDiagnostic): string {
   const location =
     diagnostic.span?.sourcePath === undefined
       ? ''
@@ -395,23 +389,23 @@ function humanDiagnostic(diagnostic: AtlasDiagnostic): string {
 }
 
 function failureExitCode(
-  diagnostics: readonly AtlasDiagnostic[],
-  command?: AtlasMachineCommand,
+  diagnostics: readonly ToolkitDiagnostic[],
+  command?: MachineCommand,
 ): number {
   if (
     command === 'migrate' &&
-    diagnostics.some(({ code }) => code === 'ATL1805')
+    diagnostics.some(({ code }) => code === 'EQ1805')
   ) {
     return 2;
   }
   if (
     diagnostics.some(
       ({ code }) =>
-        code === 'ATL1701' ||
-        code === 'ATL1702' ||
-        code === 'ATL1705' ||
-        code === 'ATL1806' ||
-        /^ATL100[1-6]$/u.test(code),
+        code === 'EQ1701' ||
+        code === 'EQ1702' ||
+        code === 'EQ1705' ||
+        code === 'EQ1806' ||
+        /^EQ100[1-6]$/u.test(code),
     )
   ) {
     return 2;
@@ -419,7 +413,7 @@ function failureExitCode(
   if (
     diagnostics.some(
       ({ code, severity }) =>
-        severity === 'error' && (code === 'ATL1602' || code === 'ATL1703'),
+        severity === 'error' && (code === 'EQ1602' || code === 'EQ1703'),
     )
   ) {
     return 3;
@@ -445,14 +439,14 @@ function statusForExit(exitCode: number): string {
 }
 
 function writeMachineResult(
-  command: AtlasMachineCommand,
+  command: MachineCommand,
   exitCode: number,
-  diagnostics: readonly AtlasDiagnostic[],
+  diagnostics: readonly ToolkitDiagnostic[],
   result: unknown,
 ): void {
   process.stdout.write(
     `${JSON.stringify({
-      profile: 'atlas-cli-result/1',
+      profile: 'equator-cli-result/1',
       command,
       status: statusForExit(exitCode),
       diagnostics: orderedDiagnostics(diagnostics).map(machineDiagnostic),
@@ -463,10 +457,10 @@ function writeMachineResult(
 
 function reportFailure(
   invocation: {
-    readonly command: AtlasMachineCommand;
+    readonly command: MachineCommand;
     readonly json: boolean;
   },
-  diagnostics: readonly AtlasDiagnostic[],
+  diagnostics: readonly ToolkitDiagnostic[],
 ): number {
   const ordered = orderedDiagnostics(diagnostics);
   const exitCode = failureExitCode(ordered, invocation.command);
@@ -477,24 +471,24 @@ function reportFailure(
       process.stderr.write(humanDiagnostic(diagnostic));
     if (
       invocation.command === 'init' &&
-      ordered.some(({ code }) => code === 'ATL1701')
+      ordered.some(({ code }) => code === 'EQ1701')
     ) {
       process.stderr.write(
-        `Complete invocation: ${ATLAS_INIT_INVOCATION} [--project <path>]\n`,
+        `Complete invocation: ${INIT_INVOCATION} [--project <path>]\n`,
       );
     } else if (
       invocation.command === 'migrate' &&
-      ordered.some(({ code }) => code === 'ATL1701')
+      ordered.some(({ code }) => code === 'EQ1701')
     ) {
       process.stderr.write(
-        'Complete invocation: atlas migrate --plan <path> --project <owner> [--dry-run] [--json]\n',
+        'Complete invocation: equator migrate --plan <path> --project <owner> [--dry-run] [--json]\n',
       );
     }
   }
   return exitCode;
 }
 
-function generationSummary(result: AtlasGenerateProjectResult) {
+function generationSummary(result: GenerateProjectResult) {
   return {
     changed: result.publication.changed,
     written: result.publication.written,
@@ -513,7 +507,7 @@ function generationSummary(result: AtlasGenerateProjectResult) {
   };
 }
 
-function checkSummary(result: AtlasCheckProjectResult) {
+function checkSummary(result: CheckProjectResult) {
   return {
     fresh: result.freshness.fresh,
     missing: result.freshness.missing,
@@ -534,15 +528,15 @@ function checkSummary(result: AtlasCheckProjectResult) {
 
 function reportSuccess(
   invocation: Pick<ParsedInvocation, 'command' | 'json' | 'dryRun'>,
-  diagnostics: readonly AtlasDiagnostic[],
+  diagnostics: readonly ToolkitDiagnostic[],
   result: unknown,
   human: string,
 ): number {
   const ordered = orderedDiagnostics(diagnostics);
   // A command can do what it was asked to do and still have found something that is not allowed to
-  // pass. Until this existed the success path never looked: `atlas check --require-complete`
-  // returned exit 0 and `"status": "success"` while carrying `ATL1310` at `severity: error`, and
-  // `atlas generate` did the same on the same input.
+  // pass. Until this existed the success path never looked: `equator check --require-complete`
+  // returned exit 0 and `"status": "success"` while carrying `EQ1310` at `severity: error`, and
+  // `equator generate` did the same on the same input.
   //
   // The test is on **severity**, never on a list of codes.
   // `specs/10-compiler-and-tooling.spec.md` section 12 keys it that way, a bare check fails
@@ -551,7 +545,7 @@ function reportSuccess(
   // registered, and the one nobody remembers is silent. `failureExitCode` still chooses *which*
   // non-zero code, because that mapping is about the kind of failure, not about whether there is
   // one.
-  const exitCode = atlasDiagnosticsBlock(ordered)
+  const exitCode = diagnosticsBlock(ordered)
     ? failureExitCode(ordered, invocation.command)
     : 0;
   if (invocation.json) {
@@ -587,7 +581,7 @@ function aliasRecord(
 
 async function interactiveInitOptions(
   invocation: ParsedInvocation,
-): Promise<AtlasInitProjectOptions> {
+): Promise<InitProjectOptions> {
   const hasArguments = Object.keys(invocation.initConfiguration).length > 0;
   if (hasArguments || !process.stdin.isTTY || !process.stderr.isTTY) {
     return {
@@ -596,19 +590,18 @@ async function interactiveInitOptions(
         : { project: invocation.project }),
       // The one cast in this path, and the parser is the next thing that runs. `applyInitOption`
       // builds each value in the shape the generated table says the schema wants, and
-      // `parseAtlasConfiguration` is what decides whether it was right, so a cast here is
+      // `parseConfiguration` is what decides whether it was right, so a cast here is
       // narrowing a value that is about to be validated rather than asserting it is already valid.
       ...(hasArguments
         ? {
-            configuration:
-              invocation.initConfiguration as AtlasInitConfiguration,
+            configuration: invocation.initConfiguration as InitConfiguration,
           }
         : {}),
       dryRun: invocation.dryRun,
     };
   }
-  const { discoverAtlasProject } = await projectHost();
-  const discovered = await discoverAtlasProject({
+  const { discoverProject } = await projectHost();
+  const discovered = await discoverProject({
     ...(invocation.project === undefined
       ? {}
       : { project: invocation.project }),
@@ -661,7 +654,7 @@ async function interactiveInitOptions(
       ...(invocation.project === undefined
         ? {}
         : { project: invocation.project }),
-      // Four questions, because the tooling specification fixes what a bare `atlas init` on a TTY
+      // Four questions, because the tooling specification fixes what a bare `equator init` on a TTY
       // may ask. The fields the flags reach beyond these are set on the command line, and widening
       // the prompt list is a specification change rather than a parser change.
       configuration: {
@@ -678,9 +671,9 @@ async function interactiveInitOptions(
 }
 
 async function executeInit(invocation: ParsedInvocation): Promise<number> {
-  const { initializeAtlasProject } = await projectHost();
+  const { initializeProject } = await projectHost();
   const options = await interactiveInitOptions(invocation);
-  const preview = await initializeAtlasProject({ ...options, dryRun: true });
+  const preview = await initializeProject({ ...options, dryRun: true });
   if (!preview.ok) return reportFailure(invocation, preview.diagnostics);
   if (invocation.dryRun) {
     return reportSuccess(
@@ -693,16 +686,16 @@ async function executeInit(invocation: ParsedInvocation): Promise<number> {
         configuration: preview.value.configuration,
       },
       preview.value.changed
-        ? `Atlas init would update: ${preview.value.files.join(', ')}.`
-        : 'Atlas init is already complete.',
+        ? `Equator init would update: ${preview.value.files.join(', ')}.`
+        : 'Equator init is already complete.',
     );
   }
   if (!invocation.json && preview.value.changed) {
     process.stdout.write(
-      `Atlas init plan: ${preview.value.files.join(', ')}.\n`,
+      `Equator init plan: ${preview.value.files.join(', ')}.\n`,
     );
   }
-  const applied = await initializeAtlasProject({ ...options, dryRun: false });
+  const applied = await initializeProject({ ...options, dryRun: false });
   if (!applied.ok) return reportFailure(invocation, applied.diagnostics);
   return reportSuccess(
     invocation,
@@ -714,14 +707,14 @@ async function executeInit(invocation: ParsedInvocation): Promise<number> {
       configuration: applied.value.configuration,
     },
     applied.value.changed
-      ? `Atlas init updated: ${applied.value.files.join(', ')}.`
-      : 'Atlas init is already complete.',
+      ? `Equator init updated: ${applied.value.files.join(', ')}.`
+      : 'Equator init is already complete.',
   );
 }
 
 async function executeGenerate(invocation: ParsedInvocation): Promise<number> {
-  const { generateAtlasProject } = await projectHost();
-  const result = await generateAtlasProject({
+  const { generateProject } = await projectHost();
+  const result = await generateProject({
     ...(invocation.project === undefined
       ? {}
       : { project: invocation.project }),
@@ -732,11 +725,11 @@ async function executeGenerate(invocation: ParsedInvocation): Promise<number> {
   const summary = generationSummary(result.value);
   const human = invocation.dryRun
     ? result.value.publication.changed
-      ? `Atlas generate would write ${result.value.publication.written.length} and remove ${result.value.publication.removed.length} files.`
-      : 'Atlas generated output is already current.'
+      ? `Equator generate would write ${result.value.publication.written.length} and remove ${result.value.publication.removed.length} files.`
+      : 'Equator generated output is already current.'
     : result.value.publication.changed
-      ? `Atlas generated ${result.value.publication.written.length} files and removed ${result.value.publication.removed.length} stale files.`
-      : 'Atlas generated output is already current.';
+      ? `Equator generated ${result.value.publication.written.length} files and removed ${result.value.publication.removed.length} stale files.`
+      : 'Equator generated output is already current.';
   return reportSuccess(
     invocation,
     result.diagnostics,
@@ -746,8 +739,8 @@ async function executeGenerate(invocation: ParsedInvocation): Promise<number> {
 }
 
 async function executeCheck(invocation: ParsedInvocation): Promise<number> {
-  const { checkAtlasProject } = await projectHost();
-  const result = await checkAtlasProject({
+  const { checkProject } = await projectHost();
+  const result = await checkProject({
     ...(invocation.project === undefined
       ? {}
       : { project: invocation.project }),
@@ -762,14 +755,14 @@ async function executeCheck(invocation: ParsedInvocation): Promise<number> {
     result.diagnostics,
     { fix: invocation.fix, ...checkSummary(result.value) },
     result.value.freshness.fresh
-      ? 'Atlas check passed; generated output is current.'
-      : 'Atlas check passed with a generated-output freshness advisory.',
+      ? 'Equator check passed; generated output is current.'
+      : 'Equator check passed with a generated-output freshness advisory.',
   );
 }
 
 async function executeFormat(invocation: ParsedInvocation): Promise<number> {
-  const { formatAtlasProject } = await projectHost();
-  const result = await formatAtlasProject({
+  const { formatProject } = await projectHost();
+  const result = await formatProject({
     ...(invocation.project === undefined
       ? {}
       : { project: invocation.project }),
@@ -786,15 +779,15 @@ async function executeFormat(invocation: ParsedInvocation): Promise<number> {
     },
     result.value.changed
       ? invocation.dryRun
-        ? `Atlas format would update: ${result.value.files.join(', ')}.`
-        : `Atlas formatted: ${result.value.files.join(', ')}.`
-      : 'Atlas authoring files are already canonical.',
+        ? `Equator format would update: ${result.value.files.join(', ')}.`
+        : `Equator formatted: ${result.value.files.join(', ')}.`
+      : 'Equator authoring files are already canonical.',
   );
 }
 
 async function executeClean(invocation: ParsedInvocation): Promise<number> {
-  const { cleanAtlasProject } = await projectHost();
-  const result = await cleanAtlasProject({
+  const { cleanProject } = await projectHost();
+  const result = await cleanProject({
     ...(invocation.project === undefined
       ? {}
       : { project: invocation.project }),
@@ -811,15 +804,15 @@ async function executeClean(invocation: ParsedInvocation): Promise<number> {
     },
     result.value.changed
       ? invocation.dryRun
-        ? `Atlas clean would remove ${result.value.removed.length} owned files.`
-        : `Atlas clean removed ${result.value.removed.length} owned files.`
-      : 'Atlas clean found no owned state.',
+        ? `Equator clean would remove ${result.value.removed.length} owned files.`
+        : `Equator clean removed ${result.value.removed.length} owned files.`
+      : 'Equator clean found no owned state.',
   );
 }
 
 async function executeUninstall(invocation: ParsedInvocation): Promise<number> {
-  const { uninstallAtlasProject } = await projectHost();
-  const result = await uninstallAtlasProject({
+  const { uninstallProject } = await projectHost();
+  const result = await uninstallProject({
     ...(invocation.project === undefined
       ? {}
       : { project: invocation.project }),
@@ -844,10 +837,10 @@ async function executeUninstall(invocation: ParsedInvocation): Promise<number> {
     result.value.changed
       ? `${
           invocation.dryRun
-            ? `Atlas uninstall would remove ${result.value.removed.length} files or entries.`
-            : `Atlas uninstall removed ${result.value.removed.length} files or entries.`
+            ? `Equator uninstall would remove ${result.value.removed.length} files or entries.`
+            : `Equator uninstall removed ${result.value.removed.length} files or entries.`
         }${retained}`
-      : `Atlas uninstall found nothing of its own to remove.${retained}`,
+      : `Equator uninstall found nothing of its own to remove.${retained}`,
   );
 }
 
@@ -862,7 +855,7 @@ function missingFileError(error: unknown): boolean {
 
 async function readMigrationPlan(
   path: string,
-): Promise<AtlasResult<AtlasAuthoredChangePlan>> {
+): Promise<ToolkitResult<AuthoredChangePlan>> {
   const absolutePath = resolve(path);
   let metadata: Awaited<ReturnType<typeof lstat>>;
   try {
@@ -870,14 +863,14 @@ async function readMigrationPlan(
   } catch (error) {
     if (missingFileError(error)) {
       throw new InvocationError(
-        `Atlas migration plan ${JSON.stringify(path)} does not exist.`,
+        `Equator migration plan ${JSON.stringify(path)} does not exist.`,
       );
     }
     throw error;
   }
   if (!metadata.isFile() || metadata.isSymbolicLink()) {
     throw new InvocationError(
-      'Atlas --plan must select an ordinary non-symbolic JSON file.',
+      'Equator --plan must select an ordinary non-symbolic JSON file.',
     );
   }
   let handle: Awaited<ReturnType<typeof open>>;
@@ -886,7 +879,7 @@ async function readMigrationPlan(
   } catch (error) {
     if (missingFileError(error)) {
       throw new InvocationError(
-        `Atlas migration plan ${JSON.stringify(path)} does not exist.`,
+        `Equator migration plan ${JSON.stringify(path)} does not exist.`,
       );
     }
     throw error;
@@ -895,15 +888,15 @@ async function readMigrationPlan(
     const openedMetadata = await handle.stat();
     if (!openedMetadata.isFile()) {
       throw new InvocationError(
-        'Atlas --plan must select an ordinary JSON file.',
+        'Equator --plan must select an ordinary JSON file.',
       );
     }
-    const maximum = ATLAS_RESOURCE_LIMITS.authoredChangePlanBytes;
+    const maximum = RESOURCE_LIMITS.authoredChangePlanBytes;
     if (openedMetadata.size > maximum) {
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1805',
-          `Atlas authored change plan exceeds the ${maximum}-byte implementation ceiling.`,
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1805',
+          `Equator authored change plan exceeds the ${maximum}-byte implementation ceiling.`,
         ),
       ]);
     }
@@ -918,10 +911,10 @@ async function readMigrationPlan(
       position += bytesRead;
     }
     if (position > maximum) {
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1805',
-          `Atlas authored change plan exceeds the ${maximum}-byte implementation ceiling.`,
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1805',
+          `Equator authored change plan exceeds the ${maximum}-byte implementation ceiling.`,
         ),
       ]);
     }
@@ -931,15 +924,15 @@ async function readMigrationPlan(
         Buffer.concat(chunks, position),
       );
     } catch {
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1805',
-          'Atlas authored change plan must be valid UTF-8 JSON.',
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1805',
+          'Equator authored change plan must be valid UTF-8 JSON.',
         ),
       ]);
     }
-    const { parseAtlasAuthoredChangePlan } = await authoredChanges();
-    return parseAtlasAuthoredChangePlan(source, {
+    const { parseAuthoredChangePlan } = await authoredChanges();
+    return parseAuthoredChangePlan(source, {
       sourcePath: '<migration-plan>',
       kind: 'migration',
     });
@@ -955,18 +948,18 @@ function authoredFiles(count: number): string {
 async function executeMigrate(invocation: ParsedInvocation): Promise<number> {
   if (invocation.project === undefined || invocation.plan === undefined) {
     throw new InvocationError(
-      'atlas migrate requires --plan <path> and --project <owner>.',
+      'equator migrate requires --plan <path> and --project <owner>.',
     );
   }
-  const { discoverAtlasProject } = await projectHost();
-  const location = await discoverAtlasProject({
+  const { discoverProject } = await projectHost();
+  const location = await discoverProject({
     project: invocation.project,
   });
   if (!location.ok) return reportFailure(invocation, location.diagnostics);
   const plan = await readMigrationPlan(invocation.plan);
   if (!plan.ok) return reportFailure(invocation, plan.diagnostics);
-  const { applyAtlasAuthoredChangePlan } = await authoredChanges();
-  const preview = await applyAtlasAuthoredChangePlan({
+  const { applyAuthoredChangePlan } = await authoredChanges();
+  const preview = await applyAuthoredChangePlan({
     ownerRoot: location.value.ownerRoot,
     plan: plan.value,
     dryRun: true,
@@ -985,16 +978,16 @@ async function executeMigrate(invocation: ParsedInvocation): Promise<number> {
         regenerate: plan.value.regenerate,
       },
       preview.value.changed
-        ? `Atlas migrate would apply ${plan.value.id} to ${authoredFiles(preview.value.files.length)}: ${preview.value.files.join(', ')}.`
-        : `Atlas migration ${plan.value.id} is already applied.`,
+        ? `Equator migrate would apply ${plan.value.id} to ${authoredFiles(preview.value.files.length)}: ${preview.value.files.join(', ')}.`
+        : `Equator migration ${plan.value.id} is already applied.`,
     );
   }
   if (!invocation.json && preview.value.changed) {
     process.stdout.write(
-      `Atlas migrate plan ${plan.value.id}: ${authoredFiles(preview.value.files.length)}.\n`,
+      `Equator migrate plan ${plan.value.id}: ${authoredFiles(preview.value.files.length)}.\n`,
     );
   }
-  const applied = await applyAtlasAuthoredChangePlan({
+  const applied = await applyAuthoredChangePlan({
     ownerRoot: location.value.ownerRoot,
     plan: plan.value,
   });
@@ -1011,21 +1004,21 @@ async function executeMigrate(invocation: ParsedInvocation): Promise<number> {
       regenerate: plan.value.regenerate,
     },
     applied.value.changed
-      ? `Atlas migrate applied ${plan.value.id} to ${authoredFiles(applied.value.files.length)}: ${applied.value.files.join(', ')}. Run atlas generate.`
-      : `Atlas migration ${plan.value.id} is already applied.`,
+      ? `Equator migrate applied ${plan.value.id} to ${authoredFiles(applied.value.files.length)}: ${applied.value.files.join(', ')}. Run equator generate.`
+      : `Equator migration ${plan.value.id} is already applied.`,
   );
 }
 
 function writeWatchCycle(
   invocation: ParsedInvocation,
-  cycle: AtlasWatchCycle,
+  cycle: WatchCycle,
 ): void {
   if (!cycle.result.ok) {
     const exitCode = failureExitCode(cycle.result.diagnostics, 'watch');
     if (invocation.json) {
       process.stdout.write(
         `${JSON.stringify({
-          profile: 'atlas-cli-watch-event/1',
+          profile: 'equator-cli-watch-event/1',
           command: 'watch',
           sequence: cycle.sequence,
           status: statusForExit(exitCode),
@@ -1045,7 +1038,7 @@ function writeWatchCycle(
   if (invocation.json) {
     process.stdout.write(
       `${JSON.stringify({
-        profile: 'atlas-cli-watch-event/1',
+        profile: 'equator-cli-watch-event/1',
         command: 'watch',
         sequence: cycle.sequence,
         status: 'success',
@@ -1060,7 +1053,7 @@ function writeWatchCycle(
       process.stderr.write(humanDiagnostic(diagnostic));
     }
     process.stdout.write(
-      `Atlas watch cycle ${cycle.sequence}: ${
+      `Equator watch cycle ${cycle.sequence}: ${
         cycle.result.value.publication.changed ? 'generated changes' : 'current'
       }.\n`,
     );
@@ -1068,7 +1061,7 @@ function writeWatchCycle(
 }
 
 async function executeWatch(invocation: ParsedInvocation): Promise<number> {
-  const { watchAtlasProject } = await projectHost();
+  const { watchProject } = await projectHost();
   const controller = new AbortController();
   let interrupted = false;
   const interrupt = (): void => {
@@ -1081,7 +1074,7 @@ async function executeWatch(invocation: ParsedInvocation): Promise<number> {
   process.once('SIGINT', interrupt);
   process.once('SIGTERM', interrupt);
   try {
-    const result = await watchAtlasProject({
+    const result = await watchProject({
       ...(invocation.project === undefined
         ? {}
         : { project: invocation.project }),
@@ -1142,7 +1135,7 @@ try {
   process.exitCode = await main();
 } catch (error) {
   if (error instanceof InvocationError) {
-    const diagnostic = atlasDiagnostic('ATL1701', error.message);
+    const diagnostic = toolkitDiagnostic('EQ1701', error.message);
     const json = process.argv.includes('--json');
     process.exitCode = reportFailure(
       {
@@ -1153,9 +1146,9 @@ try {
     );
   } else {
     const detail = error instanceof Error ? error.message : String(error);
-    const diagnostic = atlasDiagnostic(
-      'ATL1703',
-      'Atlas could not complete because an environment operation failed.',
+    const diagnostic = toolkitDiagnostic(
+      'EQ1703',
+      'Equator could not complete because an environment operation failed.',
     );
     const json = process.argv.includes('--json');
     if (json) {

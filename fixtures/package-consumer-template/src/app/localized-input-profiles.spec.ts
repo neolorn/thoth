@@ -18,23 +18,23 @@ import {
   provideLocalizationSetup,
   timeZone,
   type LocalizedInputProfile,
-} from '@neolorn/atlas';
-import { LocalizedInput } from '@neolorn/atlas/forms';
+} from '@neolorn/equator';
+import { LocalizedInput } from '@neolorn/equator/forms';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
  * Every `LocalizedInputProfile` kind, driven through the published `/forms` directive.
  *
- * `/forms` was recorded as never exercised by a consumer. That was
- * wrong, this application's own percent field has used it since it was written, but the
- * narrower fact was true, and worse for being specific: **one of eleven profile kinds had any
- * consumer-level evidence.** `LocalizedInput` is one of the places Atlas is ahead of the field, and
- * ten of its eleven kinds shipped on unit tests alone.
+ * `/forms` was recorded as never exercised by a consumer. That was wrong, this application's own
+ * percent field has used it since it was written, but the narrower fact was true, and worse for
+ * being specific: **one of eleven profile kinds had any consumer-level evidence.** `LocalizedInput`
+ * is one of the places Equator is ahead of the field, and ten of its eleven kinds shipped on unit
+ * tests alone.
  *
  * What is asserted is a round trip, not a per-locale expected string. Pinning "١٬٢٣٤٫٥" for
  * ar-EG would pin one ICU version's output and turn every ICU bump into a failure nobody can tell
@@ -65,7 +65,9 @@ interface ProfileCase {
   readonly value: unknown;
 }
 
-const PROFILE_CASE = new InjectionToken<ProfileCase>('atlas.test.profile-case');
+const PROFILE_CASE = new InjectionToken<ProfileCase>(
+  'equator.test.profile-case',
+);
 
 /**
  * The profile and the value arrive through the injector rather than through inputs set after
@@ -202,7 +204,7 @@ async function mount(profileCase: ProfileCase) {
         catalogSet,
         catalogLoaders,
         recoveryPayload,
-        extensions: atlasRuntimeExtensions,
+        extensions: runtimeExtensions,
       }),
     ],
   });
@@ -252,7 +254,7 @@ describe('every LocalizedInputProfile kind round-trips through the published dir
       // never parsed anything at all.
       retype(REJECTED);
       expect(control.errors?.['localizedInput']).toMatchObject({
-        code: expect.stringMatching(/^atlas\.input\./u),
+        code: expect.stringMatching(/^equator\.input\./u),
       });
       expect(control.value).toEqual(profileCase.value);
       retype(englishText);

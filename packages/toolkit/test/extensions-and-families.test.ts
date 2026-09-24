@@ -1,24 +1,24 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  compileAtlasProject,
-  defineAtlasExtensionRegistry,
-  parseAtlasCatalog,
-  parseAtlasConfiguration,
-  type AtlasCatalog,
-  type AtlasExtensionRegistry,
-  type AtlasProjectConfiguration,
+  compileProject,
+  defineExtensionRegistry,
+  parseCatalog,
+  parseConfiguration,
+  type Catalog,
+  type ExtensionRegistry,
+  type ProjectConfiguration,
 } from '../src/index.js';
 import {
-  formatAtlasExtensionRegistry,
-  parseAtlasExtensionRegistry,
+  formatExtensionRegistry,
+  parseExtensionRegistry,
 } from '../src/extensions.js';
-import { generateAtlasContracts } from '../src/generated-contracts.js';
-import { parseAtlasMessage } from '../src/message-format.js';
-import { analyzeAtlasCatalogSet } from '../src/semantic-model.js';
+import { generateContracts } from '../src/generated-contracts.js';
+import { parseMessageSemanticModel } from '../src/message-format.js';
+import { analyzeCatalogSet } from '../src/semantic-model.js';
 
-function configuration(): AtlasProjectConfiguration {
-  const parsed = parseAtlasConfiguration(
+function configuration(): ProjectConfiguration {
+  const parsed = parseConfiguration(
     JSON.stringify({
       schemaVersion: 1,
       sourceLocale: 'en-US',
@@ -30,8 +30,8 @@ function configuration(): AtlasProjectConfiguration {
   return parsed.value;
 }
 
-function registry(): AtlasExtensionRegistry {
-  const defined = defineAtlasExtensionRegistry([
+function registry(): ExtensionRegistry {
+  const defined = defineExtensionRegistry([
     {
       kind: 'message-function',
       id: 'demo:uppercase',
@@ -79,9 +79,9 @@ function catalog(
   role: 'source' | 'target',
   locale: string,
   source: string,
-  extensions: AtlasExtensionRegistry,
-): AtlasCatalog {
-  const parsed = parseAtlasCatalog(source, {
+  extensions: ExtensionRegistry,
+): Catalog {
+  const parsed = parseCatalog(source, {
     role,
     providerId: '@example/extensions',
     scopeId: 'shell',
@@ -93,7 +93,7 @@ function catalog(
   return parsed.value;
 }
 
-function catalogs(extensions: AtlasExtensionRegistry): readonly AtlasCatalog[] {
+function catalogs(extensions: ExtensionRegistry): readonly Catalog[] {
   return [
     catalog(
       'source',
@@ -132,28 +132,28 @@ function catalogs(extensions: AtlasExtensionRegistry): readonly AtlasCatalog[] {
   ];
 }
 
-describe('Atlas application-local extension registry', () => {
+describe('Equator application-local extension registry', () => {
   it('parses strict JSON and formats one deterministic inert registry', () => {
     const expected = registry();
-    const formatted = formatAtlasExtensionRegistry(expected);
-    const parsed = parseAtlasExtensionRegistry(formatted, {
-      sourcePath: 'atlas.extensions.json',
+    const formatted = formatExtensionRegistry(expected);
+    const parsed = parseExtensionRegistry(formatted, {
+      sourcePath: 'equator.extensions.json',
     });
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
     expect(parsed.value).toEqual(expected);
-    expect(formatAtlasExtensionRegistry(parsed.value)).toBe(formatted);
+    expect(formatExtensionRegistry(parsed.value)).toBe(formatted);
 
-    const duplicateKey = parseAtlasExtensionRegistry(
-      '{"profile":"atlas-extension-registry/1","descriptors":[],"descriptors":[]}',
+    const duplicateKey = parseExtensionRegistry(
+      '{"profile":"equator-extension-registry/1","descriptors":[],"descriptors":[]}',
     );
     expect(duplicateKey.ok).toBe(false);
-    expect(duplicateKey.diagnostics[0]?.code).toBe('ATL1805');
+    expect(duplicateKey.diagnostics[0]?.code).toBe('EQ1805');
   });
 
   it('requires registered descriptors while keeping bindings and code out of catalogs', () => {
     const extensions = registry();
-    const withoutRegistry = parseAtlasCatalog(
+    const withoutRegistry = parseCatalog(
       'messages:\n  greeting: "Hello {$name :demo:uppercase}"\n',
       {
         role: 'source',
@@ -164,7 +164,7 @@ describe('Atlas application-local extension registry', () => {
     );
     expect(withoutRegistry.ok).toBe(false);
 
-    const analyzed = analyzeAtlasCatalogSet({
+    const analyzed = analyzeCatalogSet({
       configuration: configuration(),
       catalogs: catalogs(extensions),
       extensions,
@@ -191,19 +191,19 @@ describe('Atlas application-local extension registry', () => {
       ],
     });
 
-    const generated = generateAtlasContracts(analyzed.value);
+    const generated = generateContracts(analyzed.value);
     expect(generated.ok).toBe(true);
     if (!generated.ok) return;
     expect(
       generated.value.find(({ path }) => path === 'shell.ts')?.contents,
-    ).toContain('defineAtlasMessageFamily');
+    ).toContain('defineMessageFamily');
     expect(
       generated.value.find(({ path }) => path === 'index.ts')?.contents,
     ).toContain('demo:sku-format');
 
-    const compiled = compileAtlasProject({
+    const compiled = compileProject({
       owner: {
-        providerId: '@atlas/test-owner',
+        providerId: '@example/test-owner',
         generatedRootPath: 'src/generated/i18n',
       },
       configuration: configuration(),
@@ -221,7 +221,7 @@ describe('Atlas application-local extension registry', () => {
   });
 });
 
-describe('Atlas bounded open message families', () => {
+describe('Equator bounded open message families', () => {
   it('rejects families whose current members do not share one contract', () => {
     const extensions = registry();
     const source = catalog(
@@ -246,29 +246,29 @@ describe('Atlas bounded open message families', () => {
       'messages:\n  status.ready: جاهز\n  status.pending: "قيد الانتظار لـ {$name}"\n',
       extensions,
     );
-    const analyzed = analyzeAtlasCatalogSet({
+    const analyzed = analyzeCatalogSet({
       configuration: configuration(),
       catalogs: [source, target],
       extensions,
     });
     expect(analyzed.ok).toBe(false);
-    expect(analyzed.diagnostics.map(({ code }) => code)).toContain('ATL1305');
+    expect(analyzed.diagnostics.map(({ code }) => code)).toContain('EQ1305');
   });
 });
 /**
  * What an extension descriptor may spell, and what a message may write against it.
  *
  * Two rules that had drifted from the standard in the same direction and for the same reason: both
- * were written against ASCII lower-kebab identifiers, which is Atlas's own convention, and applied
- * to MessageFormat's vocabulary, which is not Atlas's. An option name could not be `decimalPlaces`
- * (nor `signDisplay`, which Atlas's own `:number` has) and an option value could not satisfy an
- * `integer`, `number` or `boolean` type, because a MessageFormat option value is a literal and a
- * literal is text. The second made the first pointless: the name became spellable and the value
- * behind it was still refused.
+ * were written against ASCII lower-kebab identifiers, which is Equator's own convention, and
+ * applied to MessageFormat's vocabulary, which is not Equator's. An option name could not be
+ * `decimalPlaces` (nor `signDisplay`, which Equator's own `:number` has) and an option value could
+ * not satisfy an `integer`, `number` or `boolean` type, because a MessageFormat option value is a
+ * literal and a literal is text. The second made the first pointless: the name became spellable and
+ * the value behind it was still refused.
  */
 describe('a message-function option, as MessageFormat spells one', () => {
   const withOption = (name: string, option: unknown = { type: 'string' }) =>
-    defineAtlasExtensionRegistry([
+    defineExtensionRegistry([
       {
         kind: 'message-function',
         id: 'feature:tag',
@@ -282,7 +282,7 @@ describe('a message-function option, as MessageFormat spells one', () => {
 
   it.each([
     ["decimalPlaces, which the standard's own suite writes", 'decimalPlaces'],
-    ["signDisplay, which Atlas's own :number has", 'signDisplay'],
+    ["signDisplay, which Equator's own :number has", 'signDisplay'],
     ['a dot, which name-char allows', 'decimal.places'],
     ['a leading +, which name-start allows', '+places'],
     ['a leading _, which name-start allows', '_places'],
@@ -296,7 +296,7 @@ describe('a message-function option, as MessageFormat spells one', () => {
     ['a leading digit, which name-start excludes', '9places'],
     ['a space, which no production allows', 'pla ces'],
     [
-      'a bidi wrapper, which the parser strips before Atlas sees it',
+      'a bidi wrapper, which the parser strips before Equator sees it',
       '\u200eplaces\u200e',
     ],
     ['more than 64 code points', 'x'.repeat(65)],
@@ -311,17 +311,20 @@ describe('a message-function option, as MessageFormat spells one', () => {
    * spelling of one that already exists.
    */
   it('sees the option name a message writes with a bidi wrapper without it', () => {
-    const parsed = parseAtlasMessage('{42 :feature:tag \u200eplaces\u200e=1}', {
-      customFunctions: [
-        {
-          name: 'feature:tag',
-          selects: false,
-          operandType: 'number',
-          resultType: 'string',
-          options: ['places'],
-        },
-      ],
-    });
+    const parsed = parseMessageSemanticModel(
+      '{42 :feature:tag \u200eplaces\u200e=1}',
+      {
+        customFunctions: [
+          {
+            name: 'feature:tag',
+            selects: false,
+            operandType: 'number',
+            resultType: 'string',
+            options: ['places'],
+          },
+        ],
+      },
+    );
     expect(parsed.ok).toBe(true);
     if (!parsed.ok || parsed.value.kind !== 'pattern') return;
     const expression = parsed.value.pattern.find(
@@ -351,7 +354,7 @@ describe('a typed option value written as a literal', () => {
     option: Readonly<Record<string, unknown>>,
     written: string,
   ) => {
-    const extensions = defineAtlasExtensionRegistry([
+    const extensions = defineExtensionRegistry([
       {
         kind: 'message-function',
         id: 'demo:typed',
@@ -364,7 +367,7 @@ describe('a typed option value written as a literal', () => {
     ]);
     if (!extensions.ok)
       throw new Error('the descriptor under test was refused');
-    const catalog = parseAtlasCatalog(
+    const catalog = parseCatalog(
       `messages:\n  price: "Costs {42 :demo:typed ${written}}"\n`,
       {
         role: 'source',
@@ -375,7 +378,7 @@ describe('a typed option value written as a literal', () => {
       },
     );
     if (!catalog.ok) throw new Error('the message under test did not parse');
-    return analyzeAtlasCatalogSet({
+    return analyzeCatalogSet({
       configuration: configuration(),
       catalogs: [catalog.value],
       extensions: extensions.value,
@@ -384,7 +387,7 @@ describe('a typed option value written as a literal', () => {
 
   const problems = (graph: ReturnType<typeof typed>) =>
     graph.diagnostics
-      .filter(({ code }) => code === 'ATL1805')
+      .filter(({ code }) => code === 'EQ1805')
       .map(({ summary }) => summary);
 
   it.each([

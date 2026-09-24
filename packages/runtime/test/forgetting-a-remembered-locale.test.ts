@@ -18,7 +18,7 @@ import { describe, expect, it } from 'vitest';
 import { LocaleResolution } from '../src/locale-resolution.js';
 import { memoryStore, profileStore } from '../src/persistence.js';
 import type { LocalizationPersistenceStore } from '../src/persistence.js';
-import type { LocalizationSnapshot } from '@neolorn/atlas/core';
+import type { LocalizationSnapshot } from '@neolorn/equator/core';
 
 const resolutionOver = (stores: readonly LocalizationPersistenceStore[]) =>
   new LocaleResolution({

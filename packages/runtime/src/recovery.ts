@@ -27,14 +27,14 @@ import {
   type LocaleDirection,
   type LocalizationDiagnostic,
   type LocalizationSnapshot,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 import { Localization } from './localization';
 
 /**
  * What the template needs to draw the control, from either source.
  *
- * `language` and `direction` are nullable because they are a claim, and Atlas can only make one
- * about a message it resolved. A string an application typed here has no locale Atlas knows, so
+ * `language` and `direction` are nullable because they are a claim, and Equator can only make one
+ * about a message it resolved. A string an application typed here has no locale Equator knows, so
  * nothing is written and the control inherits the region's own.
  */
 interface RetryControl {

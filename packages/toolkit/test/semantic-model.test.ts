@@ -4,17 +4,17 @@ import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 import {
-  parseAtlasCatalog,
-  parseAtlasConfiguration,
-  type AtlasCatalog,
-  type AtlasProjectConfiguration,
+  parseCatalog,
+  parseConfiguration,
+  type Catalog,
+  type ProjectConfiguration,
 } from '../src/index.js';
-import { generateAtlasContracts } from '../src/generated-contracts.js';
-import { analyzeAtlasCatalogSet } from '../src/semantic-model.js';
-import { analyzeAtlasApplication } from '../src/static-analysis.js';
+import { generateContracts } from '../src/generated-contracts.js';
+import { analyzeCatalogSet } from '../src/semantic-model.js';
+import { analyzeApplication } from '../src/static-analysis.js';
 
-function configuration(): AtlasProjectConfiguration {
-  const result = parseAtlasConfiguration(
+function configuration(): ProjectConfiguration {
+  const result = parseConfiguration(
     JSON.stringify({
       schemaVersion: 1,
       sourceLocale: 'en-US',
@@ -31,8 +31,8 @@ function catalog(
   role: 'source' | 'target',
   locale: string,
   source: string,
-): AtlasCatalog {
-  const result = parseAtlasCatalog(source, {
+): Catalog {
+  const result = parseCatalog(source, {
     role,
     providerId: '@neolorn/feature-lab',
     scopeId: 'shell',
@@ -49,7 +49,7 @@ const sourceCatalog = catalog(
   'en-US',
   [
     'messages:',
-    '  app-title: Atlas feature lab',
+    '  app-title: Equator feature lab',
     '  welcome: "Welcome {$name}!"',
     '  balance: "Balance: {$amount :currency currency=USD}"',
     '  status:',
@@ -70,7 +70,7 @@ const targetCatalog = catalog(
   'ar-EG',
   [
     'messages:',
-    '  app-title: مختبر Atlas',
+    '  app-title: مختبر Equator',
     '  welcome: "مرحبًا {$name}!"',
     '  balance: "الرصيد: {$amount :currency currency=USD}"',
     '  status: "الحالة: {$value}"',
@@ -81,9 +81,9 @@ const targetCatalog = catalog(
   ].join('\n'),
 );
 
-describe('Atlas catalog-set semantic analysis', () => {
+describe('Equator catalog-set semantic analysis', () => {
   it('derives effective input, rich-slot, target, and compatibility contracts', () => {
-    const result = analyzeAtlasCatalogSet({
+    const result = analyzeCatalogSet({
       configuration: configuration(),
       catalogs: [targetCatalog, sourceCatalog],
     });
@@ -148,26 +148,26 @@ describe('Atlas catalog-set semantic analysis', () => {
       'ar-EG',
       'messages:\n  amount: "{#strong}{$value :number}{/strong}"\n',
     );
-    const result = analyzeAtlasCatalogSet({
+    const result = analyzeCatalogSet({
       configuration: configuration(),
       catalogs: [invalidSource, invalidTarget],
     });
     expect(result.ok).toBe(false);
-    expect(result.diagnostics.map(({ code }) => code)).toContain('ATL1302');
-    expect(result.diagnostics.map(({ code }) => code)).toContain('ATL1304');
+    expect(result.diagnostics.map(({ code }) => code)).toContain('EQ1302');
+    expect(result.diagnostics.map(({ code }) => code)).toContain('EQ1304');
   });
 });
 
-describe('Atlas generated contracts and bounded application analysis', () => {
+describe('Equator generated contracts and bounded application analysis', () => {
   it('generates typed deep handle trees and analyzes TypeScript, templates, and routes through public APIs', () => {
-    const graph = analyzeAtlasCatalogSet({
+    const graph = analyzeCatalogSet({
       configuration: configuration(),
       catalogs: [sourceCatalog, targetCatalog],
     });
     expect(graph.ok).toBe(true);
     if (!graph.ok) return;
     const recoveryIdentity = '@neolorn/feature-lab:shell:recovery.unavailable';
-    const generated = generateAtlasContracts(graph.value, {
+    const generated = generateContracts(graph.value, {
       recoveryMessageIdentities: [recoveryIdentity],
     });
     expect(generated.ok).toBe(true);
@@ -194,7 +194,7 @@ describe('Atlas generated contracts and bounded application analysis', () => {
       "import { Component } from '@angular/core';",
       "import { messages } from '#i18n/shell';",
       '@Component({',
-      "  selector: 'atlas-generated-probe',",
+      "  selector: 'generated-probe',",
       "  templateUrl: './app.component.html',",
       '})',
       'export class AppComponent {',
@@ -207,18 +207,18 @@ describe('Atlas generated contracts and bounded application analysis', () => {
       "import type { Routes } from '@angular/router';",
       "import { AppComponent } from './app.component';",
       'export const routes = [',
-      "  { path: '', component: AppComponent, data: { atlasRouteId: 'home', atlasIndexing: 'indexable' } },",
-      "  { path: 'about/:id', loadComponent: () => import('./about.component').then((value) => value.AboutComponent), data: { atlasRouteId: 'about', atlasIndexing: 'non-indexable' } },",
+      "  { path: '', component: AppComponent, data: { equatorRouteId: 'home', equatorIndexing: 'indexable' } },",
+      "  { path: 'about/:id', loadComponent: () => import('./about.component').then((value) => value.AboutComponent), data: { equatorRouteId: 'about', equatorIndexing: 'non-indexable' } },",
       '] satisfies Routes;',
       '',
     ].join('\n');
     const aboutSource = [
       "import { Component } from '@angular/core';",
-      "@Component({ selector: 'atlas-about', template: '<p>About</p>' })",
+      "@Component({ selector: 'about', template: '<p>About</p>' })",
       'export class AboutComponent {}',
       '',
     ].join('\n');
-    const analysis = analyzeAtlasApplication({
+    const analysis = analyzeApplication({
       projectRoot: fixtureRoot,
       rootNames: [appPath, routesPath, aboutPath],
       sources: [
@@ -281,7 +281,7 @@ describe('Atlas generated contracts and bounded application analysis', () => {
         indexing: 'non-indexable',
       },
     ]);
-    const projected = generateAtlasContracts(graph.value, {
+    const projected = generateContracts(graph.value, {
       routes: analysis.value.routes,
     });
     expect(projected.ok).toBe(true);
@@ -290,7 +290,7 @@ describe('Atlas generated contracts and bounded application analysis', () => {
       ({ path }) => path === 'routes.ts',
     );
     expect(routeContract?.contents).toMatch(
-      /profile: 'atlas-route-projection\/1'/u,
+      /profile: 'equator-route-projection\/1'/u,
     );
     expect(routeContract?.contents).toMatch(/identity: "sha256-/u);
     expect(routeContract?.contents).toContain(
@@ -302,7 +302,7 @@ describe('Atlas generated contracts and bounded application analysis', () => {
   });
 });
 
-describe('Atlas analysis under consumer compiler configuration', () => {
+describe('Equator analysis under consumer compiler configuration', () => {
   function analysisFixture(): {
     readonly fixtureRoot: string;
     readonly virtualModules: readonly {
@@ -311,13 +311,13 @@ describe('Atlas analysis under consumer compiler configuration', () => {
     }[];
     readonly knownMessageIdentities: readonly string[];
   } {
-    const graph = analyzeAtlasCatalogSet({
+    const graph = analyzeCatalogSet({
       configuration: configuration(),
       catalogs: [sourceCatalog, targetCatalog],
     });
     expect(graph.ok).toBe(true);
     if (!graph.ok) throw new Error('Catalog fixture failed');
-    const generated = generateAtlasContracts(graph.value, {
+    const generated = generateContracts(graph.value, {
       recoveryMessageIdentities: [
         '@neolorn/feature-lab:shell:recovery.unavailable',
       ],
@@ -341,7 +341,7 @@ describe('Atlas analysis under consumer compiler configuration', () => {
     };
   }
 
-  // Guards the consumer-configuration contract: Atlas analyzes the program the
+  // Guards the consumer-configuration contract: Equator analyzes the program the
   // consumer's compiler builds. Imposing stricter options or discarding the
   // consumer's path aliases reports defects in a program that does not exist,
   // and makes generation unreachable for ordinary Angular workspaces.
@@ -352,7 +352,7 @@ describe('Atlas analysis under consumer compiler configuration', () => {
     const appPath = resolve(fixtureRoot, 'app.component.ts');
     const aliasSource = [
       'export function describeCount(values: readonly string[]): string {',
-      // Valid without noUncheckedIndexedAccess; an error when Atlas imposes it.
+      // Valid without noUncheckedIndexedAccess; an error when Equator imposes it.
       '  const first = values[0];',
       '  return first.toUpperCase();',
       '}',
@@ -366,10 +366,10 @@ describe('Atlas analysis under consumer compiler configuration', () => {
       'interface Label {',
       '  readonly text?: string;',
       '}',
-      // Valid without exactOptionalPropertyTypes; an error when Atlas imposes it.
+      // Valid without exactOptionalPropertyTypes; an error when Equator imposes it.
       'const label: Label = { text: undefined };',
       '@Component({',
-      "  selector: 'atlas-consumer-options-probe',",
+      "  selector: 'consumer-options-probe',",
       "  template: '<p>{{ title }}</p>',",
       '})',
       'export class AppComponent {',
@@ -379,7 +379,7 @@ describe('Atlas analysis under consumer compiler configuration', () => {
       '',
     ].join('\n');
 
-    const analysis = analyzeAtlasApplication({
+    const analysis = analyzeApplication({
       projectRoot: fixtureRoot,
       rootNames: [appPath, aliasPath],
       sources: [
@@ -401,7 +401,7 @@ describe('Atlas analysis under consumer compiler configuration', () => {
     });
 
     // Every regression this fixture exists to catch reports as a *warning*, because a consumer's
-    // own TypeScript problems are consumer-owned and Atlas does not treat them as fatal. An
+    // own TypeScript problems are consumer-owned and Equator does not treat them as fatal. An
     // assertion that filters for errors therefore sees none of them: dropping the consumer's
     // paths, or imposing noUncheckedIndexedAccess, or imposing exactOptionalPropertyTypes, all
     // leave this test green. The subject has to be every diagnostic collected, rather than the
@@ -427,7 +427,7 @@ describe('Atlas analysis under consumer compiler configuration', () => {
       '',
     ].join('\n');
 
-    const analysis = analyzeAtlasApplication({
+    const analysis = analyzeApplication({
       projectRoot: fixtureRoot,
       rootNames: [appPath],
       sources: [{ path: appPath, contents: appSource }],
@@ -445,7 +445,7 @@ describe('Atlas analysis under consumer compiler configuration', () => {
 
     expect(analysis.ok).toBe(true);
     const advisories = analysis.diagnostics.filter(
-      ({ code, severity }) => code === 'ATL1401' && severity === 'warning',
+      ({ code, severity }) => code === 'EQ1401' && severity === 'warning',
     );
     expect(advisories.length).toBeGreaterThan(0);
     expect(
@@ -457,7 +457,7 @@ describe('Atlas analysis under consumer compiler configuration', () => {
     const { fixtureRoot, knownMessageIdentities } = analysisFixture();
     const appPath = resolve(fixtureRoot, 'consumer.ts');
 
-    const analysis = analyzeAtlasApplication({
+    const analysis = analyzeApplication({
       projectRoot: fixtureRoot,
       rootNames: [appPath],
       sources: [
@@ -486,7 +486,7 @@ describe('Atlas analysis under consumer compiler configuration', () => {
     expect(analysis.ok).toBe(false);
     expect(
       analysis.diagnostics.some(
-        ({ code, severity }) => code === 'ATL1401' && severity === 'error',
+        ({ code, severity }) => code === 'EQ1401' && severity === 'error',
       ),
     ).toBe(true);
   });

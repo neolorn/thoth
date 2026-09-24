@@ -11,7 +11,7 @@
  *
  * The configuration page is the schema staged into the built package. Every field,
  * its type, whether it is required, and the sentence describing it all come from the schema, which
- * is also what validates the file and what `atlas init --help` prints its flags from. A key added
+ * is also what validates the file and what `equator init --help` prints its flags from. A key added
  * to the schema appears here on the day it lands.
  *
  * The entry point page is the `exports` map of each built manifest, and what each entry point
@@ -35,10 +35,10 @@
  * mechanism the diagnostics table and the init option table use.
  *
  * One table is not generated and is pinned instead. The README states the supported ranges rather
- * than linking to them, because someone deciding whether to adopt Atlas reads that page and nothing
- * else. That makes it a second copy of a claim whose original is a manifest, and a second copy is
- * held against its original here: a manifest that moves without the README fails this stage rather
- * than shipping a page that promises a range Atlas no longer supports.
+ * than linking to them, because someone deciding whether to adopt Equator reads that page and
+ * nothing else. That makes it a second copy of a claim whose original is a manifest, and a second
+ * copy is held against its original here: a manifest that moves without the README fails this stage
+ * rather than shipping a page that promises a range Equator no longer supports.
  *
  * The CLI is run with its working directory outside this repository. Running it here would look for
  * an owner to act on and find one, and no page is worth that.
@@ -83,7 +83,7 @@ const GENERATED_NOTE =
  * ------------------------------------------------------------------ */
 
 // Outside the repository, because the CLI acts on the directory it is run in.
-const elsewhere = mkdtempSync(join(tmpdir(), 'atlas-help-'));
+const elsewhere = mkdtempSync(join(tmpdir(), 'help-'));
 const help = execFileSync(
   process.execPath,
   [resolve(builtToolkit, 'cli.js'), '--help'],
@@ -93,18 +93,18 @@ const help = execFileSync(
   .trimEnd();
 
 assert.ok(
-  help.includes('Usage: atlas <command> [options]'),
+  help.includes('Usage: equator <command> [options]'),
   'The built CLI printed something that is not its help text.',
 );
 
 // The version line changes on every release and says nothing a reader of this page needs, and
 // carrying it would make this file part of the release diff for no reason.
-const helpBody = help.replace(/^Atlas toolkit [^\n]*\n\n/u, '');
+const helpBody = help.replace(/^Equator toolkit [^\n]*\n\n/u, '');
 
 const cliDocument = `${[
   '# Command line',
   '',
-  'Every command and every flag the `atlas` command line accepts. The text below is the output of',
+  'Every command and every flag the `equator` command line accepts. The text below is the output of',
   '`--help` on the built CLI, captured by running it.',
   '',
   GENERATED_NOTE,
@@ -193,8 +193,8 @@ assert.ok(
 const configurationDocument = `${[
   '# Configuration',
   '',
-  'Every field `atlas.config.json` accepts. The table is read from the schema that validates the',
-  'file and produces the flags of `atlas init --help`.',
+  'Every field `equator.config.json` accepts. The table is read from the schema that validates the',
+  'file and produces the flags of `equator init --help`.',
   '',
   GENERATED_NOTE,
   '',
@@ -210,7 +210,7 @@ const configurationDocument = `${[
   '',
   '## The version field',
   '',
-  '`schemaVersion` is written by `atlas init` and read by everything that opens the file. It is not',
+  '`schemaVersion` is written by `equator init` and read by everything that opens the file. It is not',
   'a field you set: it says which shape the rest of the file is in, and a version this release does',
   'not understand is refused rather than guessed at.',
 ]
@@ -230,22 +230,22 @@ const configurationDocument = `${[
  * point that no longer ships can pass.
  */
 const PURPOSE = Object.freeze({
-  '@neolorn/atlas':
+  '@neolorn/equator':
     'Everything an application component and its bootstrap need.',
-  '@neolorn/atlas/core':
+  '@neolorn/equator/core':
     'The value builders, the contracts and the address helpers, with no Angular injector involved. This is what a library or a test helper imports.',
-  '@neolorn/atlas/forms':
+  '@neolorn/equator/forms':
     'Localized input parsing and the directive that binds it to a form control.',
-  '@neolorn/atlas/http':
+  '@neolorn/equator/http':
     'The locale request handler and its Node adapter: one request in, one response out, with no Angular in the graph.',
-  '@neolorn/atlas/router':
+  '@neolorn/equator/router':
     'Localized routing: the router setup, the link directive, and the address projection behind them.',
-  '@neolorn/atlas/ssr':
+  '@neolorn/equator/ssr':
     'Server rendering: per-route render modes, and the locale the server renders in.',
-  '@neolorn/atlas/testing':
+  '@neolorn/equator/testing':
     'The test harness. It replaces the parts of the runtime a test cannot wait for, and nothing else. Everything in it but the server seat runs under `TestBed`, which needs a DOM and a test runner that installs one.',
-  '@neolorn/atlas-toolkit':
-    'The compiler behind the `atlas` command, as a library. An application does not import this; a build script that needs the compiler without the command line does.',
+  '@neolorn/equator-toolkit':
+    'The compiler behind the `equator` command, as a library. An application does not import this; a build script that needs the compiler without the command line does.',
 });
 
 const runtimeManifest = JSON.parse(
@@ -274,7 +274,7 @@ function entryPointRows() {
       [...text.matchAll(/from '([^']+)'/gu)].map(([, source]) => source),
     );
     rows.push({
-      specifier: `@neolorn/atlas${subpath === '.' ? '' : subpath.slice(1)}`,
+      specifier: `@neolorn/equator${subpath === '.' ? '' : subpath.slice(1)}`,
       names: publishedNames(text),
       text,
       needs: optionalPeers.filter((peer) => imported.has(peer)),
@@ -282,7 +282,7 @@ function entryPointRows() {
   }
   const toolkit = toolkitDeclaration();
   rows.push({
-    specifier: '@neolorn/atlas-toolkit',
+    specifier: '@neolorn/equator-toolkit',
     names: publishedNames(toolkit),
     text: toolkit,
     needs: [],
@@ -293,7 +293,7 @@ function entryPointRows() {
 const entryPoints = entryPointRows();
 
 assert.ok(
-  entryPoints.some(({ specifier }) => specifier === '@neolorn/atlas'),
+  entryPoints.some(({ specifier }) => specifier === '@neolorn/equator'),
   'The built manifests publish no primary entry point, so this page would be rendered from nothing.',
 );
 assert.deepEqual(
@@ -376,9 +376,9 @@ const SELECTS = Object.freeze({
   withFormattingContext:
     'Sets what every formatter starts from: the numbering system, the calendar, the time zone, and the currency display.',
   withLocaleAnnouncement:
-    'Replaces the wording of the locale-change announcement Atlas already makes. Returning nothing leaves the announcing to a live region of your own.',
+    'Replaces the wording of the locale-change announcement Equator already makes. Returning nothing leaves the announcing to a live region of your own.',
   withLocaleSources:
-    'Inserts a locale source of your own into the order Atlas asks in.',
+    'Inserts a locale source of your own into the order Equator asks in.',
   withLocalizationClock:
     'Decides what `now` is for relative time. `fixedClock` makes a test reproducible.',
   withObservability: 'Sends runtime outcomes to a sink you supply.',
@@ -487,8 +487,8 @@ const compatibilityDocument = `${[
       ),
     ),
   '',
-  'Angular is a peer, not a dependency, so the copy that compiles your application is the copy Atlas',
-  'compiles against. There is never a second Angular in your tree because of Atlas.',
+  'Angular is a peer, not a dependency, so the copy that compiles your application is the copy Equator',
+  'compiles against. There is never a second Angular in your tree because of Equator.',
   '',
   '## Peers you install only if you use them',
   '',
@@ -524,7 +524,7 @@ const compatibilityDocument = `${[
   '',
   '## Browsers',
   '',
-  'Atlas targets what your Angular build targets. It adds no browser requirement of its own beyond',
+  'Equator targets what your Angular build targets. It adds no browser requirement of its own beyond',
   '`Intl`, which every browser Angular supports has had for years.',
   '',
   'What varies between browsers is the data behind `Intl`. Two browsers can format the same date',
@@ -534,7 +534,7 @@ const compatibilityDocument = `${[
   '',
   '## When a version outside the range is installed',
   '',
-  'The toolkit checks the host before the compiler does anything and refuses with `ATL1806` rather',
+  'The toolkit checks the host before the compiler does anything and refuses with `EQ1806` rather',
   'than attempting a best effort. A refusal names what it found and what it wanted, so the fix is',
   'the install rather than a bisect.',
 ]
@@ -627,7 +627,7 @@ if (check) {
     );
   }
   process.stdout.write(
-    `Atlas docs reference verified: the command line page is the built CLI's own help, the ` +
+    `Equator docs reference verified: the command line page is the built CLI's own help, the ` +
       `configuration page is ${fields.length} field(s) read from the schema, the entry point ` +
       `page is ${entryPoints.length} entry point(s) read from the built manifests, the features ` +
       `page is ${composableNames.length} composable export(s) read from the built declarations, and the ` +
@@ -640,7 +640,7 @@ if (check) {
     await writeFile(target, contents, 'utf8');
   }
   process.stdout.write(
-    `Atlas docs reference written: ${written.length} page(s), ${fields.length} configuration field(s), ${entryPoints.length} entry point(s), ${consumerProfiles.size} build row(s).\n`,
+    `Equator docs reference written: ${written.length} page(s), ${fields.length} configuration field(s), ${entryPoints.length} entry point(s), ${consumerProfiles.size} build row(s).\n`,
   );
 }
 
@@ -660,6 +660,6 @@ assert.deepEqual(
 
 if (check) {
   process.stdout.write(
-    `Atlas README compatibility pinned: ${README_RANGES.size} range(s) stated there are the ranges the packages declare.\n`,
+    `Equator README compatibility pinned: ${README_RANGES.size} range(s) stated there are the ranges the packages declare.\n`,
   );
 }

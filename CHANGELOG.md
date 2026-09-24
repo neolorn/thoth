@@ -1,7 +1,7 @@
 # Changelog
 
-All notable changes to Atlas are recorded here, for `@neolorn/atlas` and `@neolorn/atlas-toolkit`,
-which share a version.
+All notable changes to Equator are recorded here, for `@neolorn/equator` and
+`@neolorn/equator-toolkit`, which share a version.
 
 The 0.x line and the betas were never published. `1.0.0-rc.2` was the first publish, under the
 `next` tag.
@@ -14,17 +14,17 @@ stage, then the betas, then the release candidates that carry the changes breaki
 
 ### Added
 
-- `LocalizedPageOutcome` in `@neolorn/atlas/core`, with `pageAbsent`, `pageGone` and
+- `LocalizedPageOutcome` in `@neolorn/equator/core`, with `pageAbsent`, `pageGone` and
   `pageOperationalFailure`. A page states that its address is not there, that it is gone, or that it
   failed, and the response carries what it said.
-- `declarePageOutcome` in `@neolorn/atlas/http`, which states the same three from a renderer.
+- `declarePageOutcome` in `@neolorn/equator/http`, which states the same three from a renderer.
 - `RouteLocalizationContext.pageOutcome`, so the `document` callback writes a head for the state the
   page is in rather than for the route that matched.
 - `outcomeDocuments` on `provideLocalizedRouter`, which titles the three responses that have no
   route identity: not found, gone, and an unsupported locale.
 - `documentMessage(handle, inputs)`, so a document title or description carries the values its
   sentence takes. A handle that takes values with none bound is refused before any provider is built.
-- `createLocalizedServerSeat` in `@neolorn/atlas/testing`, which answers an address through the
+- `createLocalizedServerSeat` in `@neolorn/equator/testing`, which answers an address through the
   request handler and reads back the status, the headers, the resolution and the head, with no
   socket, no built bundle and no browser.
 - `localizedInput` binds to `textarea` as well as to `input`.
@@ -71,11 +71,11 @@ stage, then the betas, then the release candidates that carry the changes breaki
 
 ### Added
 
-- `declareOperationalFailure` in `@neolorn/atlas/http`, with `DeclaredOperationalFailure` and
+- `declareOperationalFailure` in `@neolorn/equator/http`, with `DeclaredOperationalFailure` and
   `LocalizedRenderResult`. A renderer returns a `Response` as it always could, or a declaration
   wrapping one.
-- A declared status travels at an address Atlas serves. At an address Atlas answered from its own
-  status table that classification stands, and the declaration is reported once in development.
+- A declared status travels at an address Equator serves. At an address Equator answered from its
+  own status table that classification stands, and the declaration is reported once in development.
 - A response carrying a declaration is classified private and not stored.
 
 ### Changed
@@ -117,7 +117,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Removed
 
-- `ATLAS_XLIFF_EXTENSION_NAMESPACE`.
+- `EQUATOR_XLIFF_EXTENSION_NAMESPACE`.
 
 ## [1.0.0-rc.1]
 
@@ -130,10 +130,10 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Changed
 
-- Every template selector drops the product prefix. `atlas-localized-message` is
-  `localized-message`, `[atlasLabel]` is `[localizedLabel]`, `[atlasLocaleChoice]` is
-  `[localeChoice]`, `atlas-localization-recovery` is `localization-recovery`, and
-  `input[atlasLocalizedInput]` is `input[localizedInput]`.
+- Every template selector drops the product prefix. `equator-localized-message` is
+  `localized-message`, `[equatorLabel]` is `[localizedLabel]`, `[equatorLocaleChoice]` is
+  `[localeChoice]`, `equator-localization-recovery` is `localization-recovery`, and
+  `input[equatorLocalizedInput]` is `input[localizedInput]`.
 - `withRecoveryMessage` takes an options object rather than a bare message.
 
 ### Fixed
@@ -156,39 +156,39 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 ### Added
 
 - A locale falls back to the locale it inherits from before falling back to the source, walked to
-  the end of the chain. `parentLocales` in `atlas.config.json` replaces one hop, and `und` as the
+  the end of the chain. `parentLocales` in `equator.config.json` replaces one hop, and `und` as the
   value says a locale has no parent.
 - `projectSitemap` returns the sitemap files, built from the page projection the head is built
   from. Past the protocol's limits the set splits into an index and numbered siblings, and the name
   given stays the address a crawler was given.
 - A route states its own `changefreq`, `priority` and `lastmod` through `withRouting`, read from a
-  field on the route's own data. `ATL1412` refuses a value the protocol would reject.
+  field on the route's own data. `EQ1412` refuses a value the protocol would reject.
 - `resetLocalizationTestEnvironment` puts the shared test environment back between spec files.
 
 ### Changed
 
-- `atlas check --require-complete` counts a locale complete once its whole inheritance chain is
+- `equator check --require-complete` counts a locale complete once its whole inheritance chain is
   counted.
 - Angular tooling 22.1.7 is supported.
-- A route projection is checked and arranged once when Atlas is handed it, rather than validated
+- A route projection is checked and arranged once when Equator is handed it, rather than validated
   and walked again for every address built or resolved.
 
 ## [0.23.0]
 
 ### Added
 
-- `formatting` in `atlas.config.json`: each locale declares the numbering system, calendar or hour
+- `formatting` in `equator.config.json`: each locale declares the numbering system, calendar or hour
   cycle it is written with.
 - `DIAGNOSTICS.md` inside the toolkit, derived from the codes the toolkit can report.
 
 ### Changed
 
-- `atlas check --require-complete` blocks on every finding that says a locale is unfinished,
-  including `ATL1306`, a scope with no catalog for that locale at all.
+- `equator check --require-complete` blocks on every finding that says a locale is unfinished,
+  including `EQ1306`, a scope with no catalog for that locale at all.
 - A stricter run reports every finding it can still observe.
 - The switcher label for a locale is decided in the build, and reads the same on every browser.
 - Message codes are divided by what a message is wrong about rather than by which stage refused it.
-- `planAtlasMessageRefactor` takes the message usages rather than a whole analysis.
+- `planMessageRefactor` takes the message usages rather than a whole analysis.
 
 ## [0.22.2]
 
@@ -207,8 +207,8 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 - A switcher option points inside the deployment it is rendered in.
 - The address bar spells the current route in the committed locale after a history move, not only
   after a locale change.
-- Adding a scope to a working project no longer fails the next `atlas generate`.
-- `atlas init` run below a configured project no longer initializes the parent. Discovery stops at
+- Adding a scope to a working project no longer fails the next `equator generate`.
+- `equator init` run below a configured project no longer initializes the parent. Discovery stops at
   the package it is standing in.
 - A browser asking for a language written under another subtag is matched, so `no` reaches `nb-NO`
   without an alias written by hand.
@@ -231,7 +231,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Added
 
-- `ATL1411` refuses a `routerLink` whose leading segment the project claims for a locale, at build
+- `EQ1411` refuses a `routerLink` whose leading segment the project claims for a locale, at build
   rather than as a console warning after the click.
 
 ## [0.21.1]
@@ -263,7 +263,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Fixed
 
-- `atlas generate` succeeds on a project with no messages yet.
+- `equator generate` succeeds on a project with no messages yet.
 - A `.match` over a function that formats but does not select is refused.
 
 ## [0.20.0]
@@ -272,7 +272,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 - `localeChoices`: the configured locales as switchable options in one signal, each choice carrying
   the address of the current route in that locale.
-- `atlas init` sets every field the configuration accepts, including `personNameLocales` and
+- `equator init` sets every field the configuration accepts, including `personNameLocales` and
   `pseudoLocales`.
 
 ### Removed
@@ -331,15 +331,15 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 ### Added
 
 - A flat translation that drops a value the source renders is refused on import.
-- `ATL1409` reports a route whose leading segment the project has already claimed for a locale.
+- `EQ1409` reports a route whose leading segment the project has already claimed for a locale.
 
 ## [0.17.0]
 
 ### Added
 
-- `@neolorn/atlas/core`: the classification, the vocabulary and the locale profiles, importing no
+- `@neolorn/equator/core`: the classification, the vocabulary and the locale profiles, importing no
   Angular.
-- `@neolorn/atlas/http`: a handler that takes a request and returns a response with the redirect,
+- `@neolorn/equator/http`: a handler that takes a request and returns a response with the redirect,
   the status, the language header, the indexing header, the cacheability and the preference cookie
   already decided.
 - A route publishes its own metadata: an Open Graph block when the deployment supplies an image, a
@@ -357,7 +357,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Added
 
-- Atlas emits the cache directives its own routing determines, and takes from the application only
+- Equator emits the cache directives its own routing determines, and takes from the application only
   the lifetime it has no basis to guess.
 
 ### Changed
@@ -384,7 +384,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Fixed
 
-- `atlas generate --pseudo` works for an application that registers a message extension.
+- `equator generate --pseudo` works for an application that registers a message extension.
 - An address is published only for a locale the build actually has.
 - A page renders in a locale the application has no content of its own in.
 
@@ -392,8 +392,8 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Added
 
-- `pseudoLocales` in `atlas.config.json`, with `atlas generate --pseudo` deciding whether a build
-  contains them.
+- `pseudoLocales` in `equator.config.json`, with `equator generate --pseudo` deciding whether a
+  build contains them.
 
 ### Changed
 
@@ -407,13 +407,13 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 - `provideLocalizedRouter` replaces the four routing calls with one. It wraps `provideRouter`,
   derives the locale branches from the route projection, installs the localized location strategy
   and keeps the address in step.
-- `provideLocalizedServerRendering`, on `@neolorn/atlas/ssr`, installs server rendering from the
+- `provideLocalizedServerRendering`, on `@neolorn/equator/ssr`, installs server rendering from the
   projection the client already has.
 - Each locale's spelling of an address appears in the route table, and a localized address can be
   prerendered.
-- `ATL1405` reports a route that renders nothing, carrying none of `component`, `loadComponent`,
+- `EQ1405` reports a route that renders nothing, carrying none of `component`, `loadComponent`,
   `redirectTo`, `children` or `loadChildren`.
-- `ATL1406` reports a route that hides addresses from the projection, by computing its own path or
+- `EQ1406` reports a route that hides addresses from the projection, by computing its own path or
   by loading its children from a file it only references.
 - A warning when the application replaces the router configuration or the location strategy that
   the localized router provides.
@@ -421,9 +421,9 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 ### Changed
 
 - A route parameter codec is required to read back the spelling it writes.
-- The address that carries no locale is suppressed by Atlas rather than by a fallback route in the
+- The address that carries no locale is suppressed by Equator rather than by a fallback route in the
   application.
-- An application no longer restates Atlas's own defaults in its composition. The default order of
+- An application no longer restates Equator's own defaults in its composition. The default order of
   locale sources is the default.
 
 ### Fixed
@@ -434,7 +434,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Added
 
-- `personNameLocales` in `atlas.config.json`: an application declares the languages the names it
+- `personNameLocales` in `equator.config.json`: an application declares the languages the names it
   renders are written in.
 
 ### Changed
@@ -455,7 +455,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Added
 
-- Exported XLIFF is validated against the schema it claims, and the identifiers Atlas writes into
+- Exported XLIFF is validated against the schema it claims, and the identifiers Equator writes into
   it are legal for that schema.
 
 ### Changed
@@ -482,7 +482,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Added
 
-- `atlas check --require-fresh` fails on generated output that is out of date.
+- `equator check --require-fresh` fails on generated output that is out of date.
 
 ## [0.9.3]
 
@@ -537,19 +537,19 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 - `withRouting`: routing declared in one place. Routes default to indexable, and the application
   names the route-data field that marks the exceptions.
-- `[atlasLabel]`: a message in attribute position, for `aria-label`, `title`, `placeholder` and
+- `[equatorLabel]`: a message in attribute position, for `aria-label`, `title`, `placeholder` and
   `alt`.
 - `presentIssue` pairs a backend failure code to a message by name.
 - `localizedServerRoutes` derives the prerender table from the routes and the locales.
-- `atlas uninstall` removes Atlas from a project. `clean` keeps its usual meaning of removing build
-  output, and authored catalogs survive both.
+- `equator uninstall` removes Equator from a project. `clean` keeps its usual meaning of removing
+  build output, and authored catalogs survive both.
 
 ### Changed
 
 - Published names say what a thing does rather than carrying the product name.
 - A route identity survives edits that keep the address. Renaming a parameter no longer orphans the
   messages keyed on that route.
-- `atlas.config.json` carries one version marker.
+- `equator.config.json` carries one version marker.
 
 ### Removed
 
@@ -558,7 +558,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Fixed
 
-- `atlas format` keeps the comments in an authored catalog.
+- `equator format` keeps the comments in an authored catalog.
 - A block deferred until interaction hydrates in the locale that is committed.
 
 ## [0.8.0]
@@ -566,7 +566,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 ### Added
 
 - `provideLocalization` is generated into the application's own `#i18n` with the configuration,
-  catalog set, loaders, recovery payload and startup scopes already closed over. Setting Atlas up
+  catalog set, loaders, recovery payload and startup scopes already closed over. Setting Equator up
   is one import and one call.
 - A report when an application runtime selects no recovery message.
 - An advisory listing source messages nothing in the application uses.
@@ -584,7 +584,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
   value, or a value of the wrong type fails at build.
 - `defineRouteProjection` keeps the route identities and parameter names the generated projection
   knows. An unknown identity, a missing parameter or a misspelled parameter name fails at build.
-- `atlas init` creates a package manifest for an application that has none. A workspace with more
+- `equator init` creates a package manifest for an application that has none. A workspace with more
   than one application is a supported layout.
 
 ### Changed
@@ -628,9 +628,9 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 ### Added
 
-- `ATL1307` reports a target locale that omits a message, and names the locale that stands in for
+- `EQ1307` reports a target locale that omits a message, and names the locale that stands in for
   it.
-- `ATL1308` reports the plural categories a target locale leaves out, and says those counts fall
+- `EQ1308` reports the plural categories a target locale leaves out, and says those counts fall
   through to the catch-all.
 - A translation whose source has changed since it was written is reported, and stays reported until
   the translation is updated.
@@ -655,7 +655,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 - A finding in a catalog reports the line and column it sits on.
 - A date formatted with a textual month renders the month.
-- A project carrying more of its own type errors than Atlas reports at once can still generate.
+- A project carrying more of its own type errors than Equator reports at once can still generate.
 - A catalog is admitted once per process rather than once per server request.
 - A catalog that fails at startup shows the recovery surface instead of an empty page.
 
@@ -724,4 +724,4 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 - The toolkit reads the application's own source and generates typed contracts for the messages it
   uses.
 - Catalogs compile to artifacts that are identical for identical input.
-- The `atlas` command line drives a project.
+- The `equator` command line drives a project.

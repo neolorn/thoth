@@ -1,12 +1,12 @@
 # About how a locale is resolved
 
-Every request that reaches your application is answered in one language. Resolution is how Atlas
+Every request that reaches your application is answered in one language. Resolution is how Equator
 chooses it, and it runs once before the first render and again whenever something that fed it
 changes.
 
 ## Four sources, in a fixed order
 
-Atlas asks four sources and takes the first answer:
+Equator asks four sources and takes the first answer:
 
 1. The address, when the locale policy puts one there.
 2. A persisted choice.
@@ -29,7 +29,8 @@ part of the decision one person can send to another. A stored preference that co
 make one link open differently for two people.
 
 The cost is that a visitor who has chosen a language can still land on a page in another one by
-following a link. Atlas takes that cost. The alternative changes what a URL means without saying so.
+following a link. Equator takes that cost. The alternative changes what a URL means without saying
+so.
 
 An address naming a locale you do not serve goes through the same negotiation as any other request,
 and the visitor lands on the closest locale you do serve.
@@ -48,15 +49,15 @@ and date conventions, and what it inherits from. That is why adding a locale is 
 ## Matching what a client asked for
 
 `Accept-Language` is a list of ranges with weights, and it rarely names a locale you serve exactly.
-Atlas uses the lookup from [RFC 4647](https://www.rfc-editor.org/rfc/rfc4647), which truncates a
+Equator uses the lookup from [RFC 4647](https://www.rfc-editor.org/rfc/rfc4647), which truncates a
 range from the right until it matches: `en-GB` finds `en`, and `pt` finds `pt-BR` when that is the
 Portuguese you ship. Script matching and
 [CLDR language matching](https://www.unicode.org/reports/tr35/tr35.html#LanguageMatching) data extend
 it.
 
-Where the standard stops, Atlas adds one step. A range that matched nothing by truncation is answered
-by the first locale declared for the same language, so a browser sending `no` to a site shipping
-`nb-NO` gets Norwegian rather than the default.
+Where the standard stops, Equator adds one step. A range that matched nothing by truncation is
+answered by the first locale declared for the same language, so a browser sending `no` to a site
+shipping `nb-NO` gets Norwegian rather than the default.
 
 That step makes the order of the `locales` array meaningful: it decides which regional variant
 represents a language when a client asks for the language alone. Standard lookup sends that visitor

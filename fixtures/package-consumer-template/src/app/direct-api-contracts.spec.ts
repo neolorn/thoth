@@ -43,7 +43,7 @@ import {
   zonedDateTime,
   type FormattingContext,
   type FormattingResult,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 
 import { routePolicy, appRouteProjection } from './localization.routes';
@@ -76,15 +76,16 @@ function expectExplicitCapability(result: FormattingResult): void {
  * The locale set a production build of this fixture generates.
  *
  * Stated rather than read off `configuration`, because `configuration` carries a third locale when
- * the suite's `atlas generate` was given `--pseudo` and these assertions are about the projection,
- * not about which command ran. The pseudo-locale's own case is asserted directly, below.
+ * the suite's `equator generate` was given `--pseudo` and these assertions are about the
+ * projection, not about which command ran. The pseudo-locale's own case is asserted directly,
+ * below.
  */
 const shippedLocales = Object.freeze(['en-US', 'ar-EG']);
 
 describe('route and SEO contracts, called directly', () => {
   it('uses the generated Angular route projection as the single route authority', () => {
     expect(appRouteProjection.generated).toMatchObject({
-      profile: 'atlas-route-projection/1',
+      profile: 'equator-route-projection/1',
       identity: expect.stringMatching(/^sha256-[A-Za-z0-9_-]{43}$/u),
     });
     expect(
@@ -155,11 +156,11 @@ describe('route and SEO contracts, called directly', () => {
    * byte-identical in every locale, and refuses the segments a path parameter must refuse.
    */
   it('round-trips an opaque identifier parameter and refuses what a path segment must refuse', () => {
-    const address = '/en-us/topics/atlas-handbook';
+    const address = '/en-us/topics/handbook';
 
     expect(
       buildLocalizedRoute(routePolicy, appRouteProjection, 'topic', 'en-US', {
-        topic: 'atlas-handbook',
+        topic: 'handbook',
       }),
     ).toBe(address);
 
@@ -168,9 +169,9 @@ describe('route and SEO contracts, called directly', () => {
     // this would produce two addresses for one resource and split its indexing in half.
     expect(
       buildLocalizedRoute(routePolicy, appRouteProjection, 'topic', 'ar-EG', {
-        topic: 'atlas-handbook',
+        topic: 'handbook',
       }),
-    ).toBe('/ar-eg/topics/atlas-handbook');
+    ).toBe('/ar-eg/topics/handbook');
 
     const resolved = resolveLocalizedRoute(
       address,
@@ -179,7 +180,7 @@ describe('route and SEO contracts, called directly', () => {
     );
     expect(resolved).toMatchObject({ status: 'success', routeId: 'topic' });
     if (resolved.status === 'success') {
-      expect(resolved.parameters).toEqual({ topic: 'atlas-handbook' });
+      expect(resolved.parameters).toEqual({ topic: 'handbook' });
     }
 
     // The permissive half. `.`, `_`, `~` and `-` are legal inside an identifier and a codec that
@@ -361,24 +362,24 @@ describe('route and SEO contracts, called directly', () => {
         routePolicy,
         appRouteProjection,
         { ...configuration, locales: shippedLocales },
-        'https://atlas.example',
+        'https://site.example',
       ),
     ).toEqual({
       indexing: 'indexable',
-      canonical: 'https://atlas.example/en-us/second',
+      canonical: 'https://site.example/en-us/second',
       alternates: [
         {
           locale: 'en-US',
           hreflang: 'en-US',
-          url: 'https://atlas.example/en-us/second',
+          url: 'https://site.example/en-us/second',
         },
         {
           locale: 'ar-EG',
           hreflang: 'ar-EG',
-          url: 'https://atlas.example/ar-eg/second',
+          url: 'https://site.example/ar-eg/second',
         },
       ],
-      xDefault: 'https://atlas.example/',
+      xDefault: 'https://site.example/',
     });
 
     // The other direction of the same rule, and the reason the configuration is an argument at
@@ -391,12 +392,12 @@ describe('route and SEO contracts, called directly', () => {
         routePolicy,
         appRouteProjection,
         { ...configuration, locales: [...shippedLocales, 'en-Arab-XB'] },
-        'https://atlas.example',
+        'https://site.example',
       ).alternates.map(({ url }) => url),
     ).toEqual([
-      'https://atlas.example/en-us/second',
-      'https://atlas.example/ar-eg/second',
-      'https://atlas.example/en-arab-xb/second',
+      'https://site.example/en-us/second',
+      'https://site.example/ar-eg/second',
+      'https://site.example/en-arab-xb/second',
     ]);
 
     expect(routeHttpDescriptor(resolution)).toEqual({
@@ -425,7 +426,7 @@ describe('route and SEO contracts, called directly', () => {
         routePolicy,
         appRouteProjection,
         configuration,
-        'https://atlas.example',
+        'https://site.example',
       ),
     ).toEqual({
       indexing: 'non-indexable',
@@ -456,7 +457,7 @@ describe('native formatting and localized input contracts', () => {
       { dateStyle: 'medium', timeZone: 'UTC' },
     );
     const nativeDuration = formatDuration(duration({ minutes: 5 }), english);
-    const list = formatList(['Atlas', 'Angular', 'Intl'], english);
+    const list = formatList(['Equator', 'Angular', 'Intl'], english);
     const relative = formatRelativeTime(decimal('-1'), 'day', english, {
       numeric: 'auto',
     });
@@ -499,7 +500,7 @@ describe('native formatting and localized input contracts', () => {
     // `{surname} {surname2} {title} {given} {given2} {credentials}`. A space between them,
     // because root has no reason to know that Chinese joins them without one. An application that
     // configures a Chinese locale gets the compact form from the zh profile; this one asserts what
-    // root says, which is what Atlas answers when it was given nothing else.
+    // root says, which is what Equator answers when it was given nothing else.
     expect(
       formatPersonName(
         personName('zh', { given: '明', surname: '王' }),
@@ -525,7 +526,7 @@ describe('native formatting and localized input contracts', () => {
       value: -1,
     });
     expect(
-      segmentText('Atlas works', english, { granularity: 'word' }),
+      segmentText('Equator works', english, { granularity: 'word' }),
     ).toMatchObject({
       ok: true,
     });
@@ -887,9 +888,9 @@ describe('native formatting and localized input contracts', () => {
 
 describe('rich-content, bidi, typography, and icon policy', () => {
   it('requires application-owned destinations and preserves direction semantics', () => {
-    expect(internalDestination('/help?from=atlas')).toEqual({
+    expect(internalDestination('/help?from=equator')).toEqual({
       kind: 'internal',
-      href: '/help?from=atlas',
+      href: '/help?from=equator',
     });
     expect(
       externalDestination('https://support.example/guide', [

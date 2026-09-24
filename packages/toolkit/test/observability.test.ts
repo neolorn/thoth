@@ -5,21 +5,21 @@ import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  ATLAS_TOOLKIT_EVENT_CODES,
-  ATLAS_TOOLKIT_OBSERVABILITY_PROFILE,
-  compileAtlasProject,
-  createAtlasMigrationPlan,
-  exportAtlasXliff22,
-  importAtlasXliff22,
-  parseAtlasCatalog,
-  parseAtlasConfiguration,
-  type AtlasCatalog,
-  type AtlasCatalogParseOptions,
-  type AtlasProjectConfiguration,
-  type AtlasToolkitObservabilityEvent,
-  type AtlasToolkitObservabilitySink,
+  TOOLKIT_EVENT_CODES,
+  TOOLKIT_OBSERVABILITY_PROFILE,
+  compileProject,
+  createMigrationPlan,
+  exportXliff22,
+  importXliff22,
+  parseCatalog,
+  parseConfiguration,
+  type Catalog,
+  type CatalogParseOptions,
+  type ProjectConfiguration,
+  type ToolkitObservabilityEvent,
+  type ToolkitObservabilitySink,
 } from '../src/index.js';
-import { applyAtlasAuthoredChangePlan } from '../src/authoring-transaction.js';
+import { applyAuthoredChangePlan } from '../src/authoring-transaction.js';
 
 const temporaryRoots: string[] = [];
 
@@ -32,17 +32,14 @@ afterEach(async () => {
   );
 });
 
-function catalog(
-  source: string,
-  options: AtlasCatalogParseOptions,
-): AtlasCatalog {
-  const result = parseAtlasCatalog(source, options);
+function catalog(source: string, options: CatalogParseOptions): Catalog {
+  const result = parseCatalog(source, options);
   if (!result.ok) throw new Error('Catalog fixture failed.');
   return result.value;
 }
 
-function configuration(): AtlasProjectConfiguration {
-  const result = parseAtlasConfiguration(
+function configuration(): ProjectConfiguration {
+  const result = parseConfiguration(
     JSON.stringify({
       schemaVersion: 1,
       sourceLocale: 'en-US',
@@ -86,18 +83,18 @@ const target = catalog(
   },
 );
 
-function recordingSink(events: AtlasToolkitObservabilityEvent[]) {
+function recordingSink(events: ToolkitObservabilityEvent[]) {
   return Object.freeze({
-    emit(event: AtlasToolkitObservabilityEvent): void {
+    emit(event: ToolkitObservabilityEvent): void {
       events.push(event);
     },
-  }) satisfies AtlasToolkitObservabilitySink;
+  }) satisfies ToolkitObservabilitySink;
 }
 
-describe('Atlas toolkit observability', () => {
+describe('Equator toolkit observability', () => {
   it('emits exact content-free interchange and compiler events', () => {
-    const interchangeEvents: AtlasToolkitObservabilityEvent[] = [];
-    const exported = exportAtlasXliff22({
+    const interchangeEvents: ToolkitObservabilityEvent[] = [];
+    const exported = exportXliff22({
       source,
       target,
       observability: recordingSink(interchangeEvents),
@@ -105,16 +102,16 @@ describe('Atlas toolkit observability', () => {
     expect(exported.ok).toBe(true);
     expect(interchangeEvents).toEqual([
       {
-        profile: ATLAS_TOOLKIT_OBSERVABILITY_PROFILE,
-        code: ATLAS_TOOLKIT_EVENT_CODES.interchange,
+        profile: TOOLKIT_OBSERVABILITY_PROFILE,
+        code: TOOLKIT_EVENT_CODES.interchange,
         phase: 'interchange',
         status: 'started',
         providerId: '@example/app',
         scopeId: 'shell',
       },
       {
-        profile: ATLAS_TOOLKIT_OBSERVABILITY_PROFILE,
-        code: ATLAS_TOOLKIT_EVENT_CODES.interchange,
+        profile: TOOLKIT_OBSERVABILITY_PROFILE,
+        code: TOOLKIT_EVENT_CODES.interchange,
         phase: 'interchange',
         status: 'succeeded',
         providerId: '@example/app',
@@ -124,10 +121,10 @@ describe('Atlas toolkit observability', () => {
       },
     ]);
 
-    const compilerEvents: AtlasToolkitObservabilityEvent[] = [];
-    const compiled = compileAtlasProject({
+    const compilerEvents: ToolkitObservabilityEvent[] = [];
+    const compiled = compileProject({
       owner: {
-        providerId: '@atlas/test-owner',
+        providerId: '@example/test-owner',
         generatedRootPath: 'src/generated/i18n',
       },
       configuration: configuration(),
@@ -139,14 +136,14 @@ describe('Atlas toolkit observability', () => {
     if (!compiled.ok) return;
     expect(compilerEvents).toEqual([
       {
-        profile: ATLAS_TOOLKIT_OBSERVABILITY_PROFILE,
-        code: ATLAS_TOOLKIT_EVENT_CODES.compilation,
+        profile: TOOLKIT_OBSERVABILITY_PROFILE,
+        code: TOOLKIT_EVENT_CODES.compilation,
         phase: 'compilation',
         status: 'started',
       },
       {
-        profile: ATLAS_TOOLKIT_OBSERVABILITY_PROFILE,
-        code: ATLAS_TOOLKIT_EVENT_CODES.compilation,
+        profile: TOOLKIT_OBSERVABILITY_PROFILE,
+        code: TOOLKIT_EVENT_CODES.compilation,
         phase: 'compilation',
         status: 'succeeded',
         count: compiled.value.artifacts.outputPlan.files.length,
@@ -163,8 +160,8 @@ describe('Atlas toolkit observability', () => {
   });
 
   it('contains thrown sinks without changing the interchange result', () => {
-    const expected = exportAtlasXliff22({ source, target });
-    const actual = exportAtlasXliff22({
+    const expected = exportXliff22({ source, target });
+    const actual = exportXliff22({
       source,
       target,
       observability: {
@@ -178,7 +175,7 @@ describe('Atlas toolkit observability', () => {
 
   it('suppresses duplicate failures for the same sink and safe context', () => {
     vi.spyOn(Date, 'now').mockReturnValue(1_000);
-    const events: AtlasToolkitObservabilityEvent[] = [];
+    const events: ToolkitObservabilityEvent[] = [];
     const observability = recordingSink(events);
     const request = {
       document: '<not-xliff/>',
@@ -186,29 +183,29 @@ describe('Atlas toolkit observability', () => {
       observability,
     } as const;
 
-    expect(importAtlasXliff22(request).ok).toBe(false);
-    expect(importAtlasXliff22(request).ok).toBe(false);
+    expect(importXliff22(request).ok).toBe(false);
+    expect(importXliff22(request).ok).toBe(false);
     expect(events).toEqual([
       {
-        profile: ATLAS_TOOLKIT_OBSERVABILITY_PROFILE,
-        code: ATLAS_TOOLKIT_EVENT_CODES.interchange,
+        profile: TOOLKIT_OBSERVABILITY_PROFILE,
+        code: TOOLKIT_EVENT_CODES.interchange,
         phase: 'interchange',
         status: 'started',
         providerId: '@example/app',
         scopeId: 'shell',
       },
       {
-        profile: ATLAS_TOOLKIT_OBSERVABILITY_PROFILE,
-        code: ATLAS_TOOLKIT_EVENT_CODES.interchange,
+        profile: TOOLKIT_OBSERVABILITY_PROFILE,
+        code: TOOLKIT_EVENT_CODES.interchange,
         phase: 'interchange',
         status: 'failed',
-        diagnosticCode: 'ATL1802',
+        diagnosticCode: 'EQ1802',
         providerId: '@example/app',
         scopeId: 'shell',
       },
       {
-        profile: ATLAS_TOOLKIT_OBSERVABILITY_PROFILE,
-        code: ATLAS_TOOLKIT_EVENT_CODES.interchange,
+        profile: TOOLKIT_OBSERVABILITY_PROFILE,
+        code: TOOLKIT_EVENT_CODES.interchange,
         phase: 'interchange',
         status: 'started',
         providerId: '@example/app',
@@ -219,30 +216,30 @@ describe('Atlas toolkit observability', () => {
   });
 
   it('reports migration completion and unchanged replay without plan content', async () => {
-    const root = await mkdtemp(resolve(tmpdir(), 'atlas-observability-'));
+    const root = await mkdtemp(resolve(tmpdir(), 'observability-'));
     temporaryRoots.push(root);
-    const path = resolve(root, 'atlas.config.json');
+    const path = resolve(root, 'equator.config.json');
     const before = '{"schemaVersion":1}\n';
     const after = '{"schemaVersion":1,"sourceLocale":"en-US"}\n';
     await writeFile(path, before, 'utf8');
-    const plan = createAtlasMigrationPlan({
+    const plan = createMigrationPlan({
       id: 'observability-migration',
       domain: 'configuration',
       fromVersion: '1',
       toVersion: '1.1',
-      changes: [{ path: 'atlas.config.json', before, after }],
+      changes: [{ path: 'equator.config.json', before, after }],
     });
     expect(plan.ok).toBe(true);
     if (!plan.ok) return;
-    const events: AtlasToolkitObservabilityEvent[] = [];
+    const events: ToolkitObservabilityEvent[] = [];
     const observability = recordingSink(events);
 
-    const applied = await applyAtlasAuthoredChangePlan({
+    const applied = await applyAuthoredChangePlan({
       ownerRoot: root,
       plan: plan.value,
       observability,
     });
-    const replayed = await applyAtlasAuthoredChangePlan({
+    const replayed = await applyAuthoredChangePlan({
       ownerRoot: root,
       plan: plan.value,
       observability,
@@ -251,27 +248,27 @@ describe('Atlas toolkit observability', () => {
     expect(replayed).toMatchObject({ ok: true, value: { changed: false } });
     expect(events).toEqual([
       {
-        profile: ATLAS_TOOLKIT_OBSERVABILITY_PROFILE,
-        code: ATLAS_TOOLKIT_EVENT_CODES.migration,
+        profile: TOOLKIT_OBSERVABILITY_PROFILE,
+        code: TOOLKIT_EVENT_CODES.migration,
         phase: 'migration',
         status: 'started',
       },
       {
-        profile: ATLAS_TOOLKIT_OBSERVABILITY_PROFILE,
-        code: ATLAS_TOOLKIT_EVENT_CODES.migration,
+        profile: TOOLKIT_OBSERVABILITY_PROFILE,
+        code: TOOLKIT_EVENT_CODES.migration,
         phase: 'migration',
         status: 'succeeded',
         count: 1,
       },
       {
-        profile: ATLAS_TOOLKIT_OBSERVABILITY_PROFILE,
-        code: ATLAS_TOOLKIT_EVENT_CODES.migration,
+        profile: TOOLKIT_OBSERVABILITY_PROFILE,
+        code: TOOLKIT_EVENT_CODES.migration,
         phase: 'migration',
         status: 'started',
       },
       {
-        profile: ATLAS_TOOLKIT_OBSERVABILITY_PROFILE,
-        code: ATLAS_TOOLKIT_EVENT_CODES.migration,
+        profile: TOOLKIT_OBSERVABILITY_PROFILE,
+        code: TOOLKIT_EVENT_CODES.migration,
         phase: 'migration',
         status: 'unchanged',
         count: 0,

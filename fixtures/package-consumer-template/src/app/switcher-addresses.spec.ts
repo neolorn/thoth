@@ -6,9 +6,9 @@ import {
   createLocaleNeutralPolicy,
   withRouting,
   type LocaleUrlPolicy,
-} from '@neolorn/atlas';
-import { provideLocalizedRouter } from '@neolorn/atlas/router';
-import { provideLocalizationTesting } from '@neolorn/atlas/testing';
+} from '@neolorn/equator';
+import { provideLocalizedRouter } from '@neolorn/equator/router';
+import { provideLocalizationTesting } from '@neolorn/equator/testing';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { configuration } from '#i18n';
@@ -16,7 +16,7 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
 
 import { routePolicy, appRouteProjection } from './localization.routes';
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
  * Where this page lives in every other locale, and who is allowed to know.
@@ -56,7 +56,7 @@ const routes: Routes = [
   {
     path: 'articles/:slug',
     component: RouteProbe,
-    data: { atlasRouteId: 'article', atlasIndexing: 'indexable' },
+    data: { equatorRouteId: 'article', equatorIndexing: 'indexable' },
   },
   { path: '**', component: RouteProbe },
 ];
@@ -81,7 +81,7 @@ const configure = async (
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
           routeProjection,
         },
         withRouting({
@@ -119,7 +119,7 @@ describe('the address a locale switch moves to', () => {
   });
 
   it('carries one address per configured locale, agreeing with the head', async () => {
-    const router = await configure({ origin: 'https://atlas.example' });
+    const router = await configure({ origin: 'https://site.example' });
     await router.navigateByUrl('/second');
 
     const record = addresses();
@@ -151,7 +151,7 @@ describe('the address a locale switch moves to', () => {
     ).toEqual(
       Object.entries(record).map(([locale, address]) => [
         locale,
-        new URL(address, 'https://atlas.example').pathname,
+        new URL(address, 'https://site.example').pathname,
       ]),
     );
   });
@@ -160,7 +160,7 @@ describe('the address a locale switch moves to', () => {
     const router = await configure({});
     await router.navigateByUrl('/second');
 
-    // No origin means no absolute address, so there is nothing a crawler can be told and Atlas
+    // No origin means no absolute address, so there is nothing a crawler can be told and Equator
     // tells it nothing. The reader is not a crawler and still has both addresses.
     expect(alternates()).toEqual([]);
     const record = addresses();
@@ -173,7 +173,7 @@ describe('the address a locale switch moves to', () => {
   });
 
   it('follows the locale, because the address it moves to is the one it came from', async () => {
-    const router = await configure({ origin: 'https://atlas.example' });
+    const router = await configure({ origin: 'https://site.example' });
     await router.navigateByUrl('/second');
     const before = addresses();
 
@@ -212,38 +212,32 @@ describe('a link the switcher can keep', () => {
   });
 
   it('offers an address only for the locale that address is served in', async () => {
-    const router = await configure(
-      { origin: 'https://atlas.example' },
-      NEUTRAL,
-    );
-    await router.navigateByUrl('/articles/atlas-handbook');
+    const router = await configure({ origin: 'https://site.example' }, NEUTRAL);
+    await router.navigateByUrl('/articles/handbook');
 
     // One route, three locales, and only the first survives: each for its own reason.
     //   en-US       is what this address serves a visitor who states no preference.
-    //   ar-EG       would be `/articles/دليل-أطلس`, which answers 308 back to this one.
+    //   ar-EG       would be `/articles/دليل`, which answers 308 back to this one.
     //   en-Arab-XB  has no slug of its own, so its address *is* this one, which is English.
-    expect(addresses()).toEqual({ 'en-US': '/articles/atlas-handbook' });
+    expect(addresses()).toEqual({ 'en-US': '/articles/handbook' });
   });
 
   it('tells a crawler the same thing it tells a reader', async () => {
-    const router = await configure(
-      { origin: 'https://atlas.example' },
-      NEUTRAL,
-    );
-    await router.navigateByUrl('/articles/atlas-handbook');
+    const router = await configure({ origin: 'https://site.example' }, NEUTRAL);
+    await router.navigateByUrl('/articles/handbook');
 
     // The head and the switcher are two readers of one rule, so the interesting assertion is that
     // they agree, not that each is right on its own.
     expect(alternates()).toEqual([
-      ['en-US', 'https://atlas.example/articles/atlas-handbook'],
+      ['en-US', 'https://site.example/articles/handbook'],
     ]);
   });
 
   it('keeps all three where the prefix carries the locale', async () => {
     // The control, on the same route and the same fixture: one policy changed, and the two
     // absences above become presences. A rule that emptied every switcher would satisfy both.
-    const router = await configure({ origin: 'https://atlas.example' });
-    await router.navigateByUrl('/articles/atlas-handbook');
+    const router = await configure({ origin: 'https://site.example' });
+    await router.navigateByUrl('/articles/handbook');
 
     expect(Object.keys(addresses()).sort()).toEqual([
       'ar-EG',

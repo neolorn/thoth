@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createPathPrefixLocalePolicy,
   LocalizationError,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 import { externalDestination } from '../src/destinations.js';
 

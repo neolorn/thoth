@@ -9,14 +9,14 @@ import {
   decimal,
   provideLocalizationSetup,
   type LocalizedInputProfile,
-} from '@neolorn/atlas';
-import { LocalizedInput } from '@neolorn/atlas/forms';
+} from '@neolorn/equator';
+import { LocalizedInput } from '@neolorn/equator/forms';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
  * What a localized field may be written with, and when a write to one may arrive.
@@ -69,7 +69,7 @@ async function configure(): Promise<Localization> {
         catalogSet,
         catalogLoaders,
         recoveryPayload,
-        extensions: atlasRuntimeExtensions,
+        extensions: runtimeExtensions,
       }),
     ],
   });

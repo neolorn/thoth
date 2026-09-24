@@ -1,8 +1,8 @@
 # How to test localized output
 
-`@neolorn/atlas/testing` composes the runtime from the generated `localizationSetup` your application
-composes, with the same features, so a test and the application cannot drift apart. Three properties
-of the test environment decide what a test actually asserts.
+`@neolorn/equator/testing` composes the runtime from the generated `localizationSetup` your
+application composes, with the same features, so a test and the application cannot drift apart.
+Three properties of the test environment decide what a test actually asserts.
 
 Everything here but the server seat runs under `TestBed`, so it needs a DOM and a test runner that
 installs one. A project whose tests run under plain Node has neither, and adding them is a
@@ -37,8 +37,8 @@ and `aria-current`, and drive the switch through the facade.
 ## Reset the environment between files
 
 Angular's unit-test builder reuses one DOM across the spec files that land in one worker, so the
-address bar, the cookie jar and both web storages are shared. Atlas reads the address for the locale
-when routing is configured, and a persistence store when one is composed.
+address bar, the cookie jar and both web storages are shared. Equator reads the address for the
+locale when routing is configured, and a persistence store when one is composed.
 
 A file that leaves the address at `/ar-eg/second` hands the next file an Arabic page to make English
 assertions about. How many files share a DOM depends on how many cores the machine has, so the
@@ -67,11 +67,11 @@ back what was answered:
 ```text
 const seat = createLocalizedServerSeat({ ...serverOptions, origin: 'https://example.com' });
 
-const answered = await seat.request('/en-us/articles/atlas-handbook');
+const answered = await seat.request('/en-us/articles/handbook');
 
 expect(answered.status).toBe(200);
 expect(answered.headers.get('content-language')).toBe('en-US');
-expect(answered.head.canonical).toBe('https://example.com/en-us/articles/atlas-handbook');
+expect(answered.head.canonical).toBe('https://example.com/en-us/articles/handbook');
 expect(answered.head.alternates.map((link) => link.hreflang)).toContain('ar-EG');
 ```
 

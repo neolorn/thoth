@@ -6,18 +6,18 @@ import {
   pageAbsent,
   pageGone,
   pageOperationalFailure,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import {
   LocalizedPageOutcome,
   LocalizedRouteParameters,
-} from '@neolorn/atlas/router';
+} from '@neolorn/equator/router';
 import { messages } from '#i18n/shell';
 
 import { DossierStore } from './dossier-store';
 import { DynamicContentStore } from './dynamic-content';
 
 @Component({
-  selector: 'atlas-feature-home-route',
+  selector: 'feature-home-route',
   standalone: true,
   imports: [RouterLink],
   template: `
@@ -38,13 +38,13 @@ class FeatureLabHomeRoute {
   );
   protected readonly articlePath = computed(() =>
     this.localization.snapshot()?.primaryLocale === 'ar-EG'
-      ? 'articles/دليل-أطلس'
-      : 'articles/atlas-handbook',
+      ? 'articles/دليل'
+      : 'articles/handbook',
   );
 }
 
 @Component({
-  selector: 'atlas-feature-second-route',
+  selector: 'feature-second-route',
   standalone: true,
   imports: [RouterLink],
   template: `
@@ -63,7 +63,7 @@ class FeatureLabSecondRoute {
 }
 
 @Component({
-  selector: 'atlas-feature-item-route',
+  selector: 'feature-item-route',
   standalone: true,
   imports: [RouterLink],
   template: `
@@ -80,7 +80,7 @@ class FeatureLabItemRoute {
 }
 
 @Component({
-  selector: 'atlas-feature-article-route',
+  selector: 'feature-article-route',
   standalone: true,
   imports: [RouterLink],
   template: `
@@ -108,7 +108,7 @@ class FeatureLabArticleRoute {
  * reason two parameter codecs exist, and until now only one of them had a route.
  */
 @Component({
-  selector: 'atlas-feature-topic-route',
+  selector: 'feature-topic-route',
   standalone: true,
   imports: [RouterLink],
   template: `
@@ -134,10 +134,10 @@ class FeatureLabTopicRoute {
    * What the address could not say, said by the page that looked it up.
    *
    * `topics/:topic` accepts any identifier, so every spelling of it resolves to this route and the
-   * status Atlas can derive from the address alone is 200. Whether a topic is filed under the
+   * status Equator can derive from the address alone is 200. Whether a topic is filed under the
    * identifier, whether it was retired, and whether the lookup itself failed are three answers only
    * this component has. The declaration lands after a microtask, which is where a real lookup lands
-   * it, so the head Atlas built for this navigation is corrected rather than built twice.
+   * it, so the head Equator built for this navigation is corrected rather than built twice.
    */
   constructor() {
     const topic = this.route.snapshot.paramMap.get('topic') ?? '';
@@ -153,22 +153,22 @@ class FeatureLabTopicRoute {
 }
 
 /** The topics this application has, which is the fact the address cannot carry. */
-const FILED_TOPICS: readonly string[] = ['atlas-handbook', 'a.b_c~d-e'];
+const FILED_TOPICS: readonly string[] = ['handbook', 'a.b_c~d-e'];
 
 /**
- * A route that tells Atlas how its address is spelled elsewhere.
+ * A route that tells Equator how its address is spelled elsewhere.
  *
  * Three lines of application code, and they are the three that matter: load the record, read the
- * per-locale slugs it carries, declare them. From there Atlas writes the canonical URL, the
+ * per-locale slugs it carries, declare them. From there Equator writes the canonical URL, the
  * `hreflang` alternates, the Open Graph alternates and the address a locale switch moves to:
  * none of which this component mentions.
  *
  * The declaration lands after `NavigationEnd`, because the load is a promise. That is the ordinary
- * position rather than a late one, and it is why Atlas re-projects the head when a declaration
+ * position rather than a late one, and it is why Equator re-projects the head when a declaration
  * arrives instead of only building it once.
  */
 @Component({
-  selector: 'atlas-feature-dossier-route',
+  selector: 'feature-dossier-route',
   standalone: true,
   imports: [RouterLink],
   template: `
@@ -201,7 +201,7 @@ class FeatureLabDossierRoute {
 }
 
 @Component({
-  selector: 'atlas-feature-not-found-route',
+  selector: 'feature-not-found-route',
   standalone: true,
   template: `<p data-route-view="not-found">{{ label() }}</p>`,
 })
@@ -215,7 +215,7 @@ class FeatureLabNotFoundRoute {
 /**
  * Routes as an application writes them.
  *
- * Most declare no identity: Atlas derives one from the address, so adding, renaming or removing a
+ * Most declare no identity: Equator derives one from the address, so adding, renaming or removing a
  * route needs no localization change. The four parameterised routes declare one, which is the case
  * decision section 5 keeps pinning available for: a derived `route:items._` is stable and unique
  * but is not a name anyone would want to write in a cross-application link.
@@ -226,18 +226,18 @@ export const routes = [
     pathMatch: 'full',
     component: FeatureLabHomeRoute,
     // `section` is this application's own word for its own reasons, and `withRouting` is where it
-    // is mapped to what a sitemap says. Atlas reads the field it was pointed at rather than one of
-    // its own, so a project that already groups its routes does not annotate them twice.
-    data: { atlasIndexing: 'indexable', section: 'landing' },
+    // is mapped to what a sitemap says. Equator reads the field it was pointed at rather than one
+    // of its own, so a project that already groups its routes does not annotate them twice.
+    data: { equatorIndexing: 'indexable', section: 'landing' },
   },
   {
     path: 'second',
     component: FeatureLabSecondRoute,
-    // `updated` is a date this page changed on, which nothing but the application knows. Atlas
+    // `updated` is a date this page changed on, which nothing but the application knows. Equator
     // never invents one: a build time is a date the page did not change on, and the one element a
     // crawler actually reads is worth less than nothing when it is wrong.
     data: {
-      atlasIndexing: 'indexable',
+      equatorIndexing: 'indexable',
       section: 'reference',
       updated: '2026-09-01',
     },
@@ -245,15 +245,15 @@ export const routes = [
     //
     // This is what a consumer following Angular's documented route-title API writes, and it is the
     // trap it walks into: Angular calls `TitleStrategy.updateTitle` after `NavigationEnd`,
-    // which is after Atlas has already written the localized title, so without Atlas's strategy
+    // which is after Equator has already written the localized title, so without Equator's strategy
     // installed this string replaces the Arabic title on the Arabic page. Nothing throws and
-    // nothing warns: the page just reads as if Atlas failed to translate.
+    // nothing warns: the page just reads as if Equator failed to translate.
     title: 'Second route, declared in English',
   },
   {
     path: 'items/:id',
     component: FeatureLabItemRoute,
-    data: { atlasRouteId: 'item', atlasIndexing: 'non-indexable' },
+    data: { equatorRouteId: 'item', equatorIndexing: 'non-indexable' },
   },
   {
     // The application's only lazy boundary, and therefore the only reason any scope of this
@@ -261,14 +261,14 @@ export const routes = [
     path: 'lazy',
     loadComponent: () =>
       import('./lazy-route').then((module) => module.FeatureLabLazyRoute),
-    data: { atlasIndexing: 'non-indexable' },
+    data: { equatorIndexing: 'non-indexable' },
   },
   {
     path: 'articles/:slug',
     component: FeatureLabArticleRoute,
     // No `section`. A route whose class the table does not list claims nothing, and an entry with
     // its address and its alternates and nothing else is a complete entry.
-    data: { atlasRouteId: 'article', atlasIndexing: 'indexable' },
+    data: { equatorRouteId: 'article', equatorIndexing: 'indexable' },
   },
   {
     // The counterpart to `articles/:slug`: the same parameter name, and a slug no codec can
@@ -277,12 +277,12 @@ export const routes = [
     // check cannot pass by reading the wrong one.
     path: 'dossiers/:slug',
     component: FeatureLabDossierRoute,
-    data: { atlasRouteId: 'dossier', atlasIndexing: 'indexable' },
+    data: { equatorRouteId: 'dossier', equatorIndexing: 'indexable' },
   },
   {
     path: 'topics/:topic',
     component: FeatureLabTopicRoute,
-    data: { atlasRouteId: 'topic', atlasIndexing: 'indexable' },
+    data: { equatorRouteId: 'topic', equatorIndexing: 'indexable' },
   },
   {
     // The address this application does not serve. No fixture had one, which is why an
@@ -291,6 +291,6 @@ export const routes = [
     // a failure rather than as an answer.
     path: '**',
     component: FeatureLabNotFoundRoute,
-    data: { atlasIndexing: 'non-indexable' },
+    data: { equatorIndexing: 'non-indexable' },
   },
 ] satisfies Routes;

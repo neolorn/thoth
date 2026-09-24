@@ -31,12 +31,12 @@ import { resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
-  ATLAS_PSEUDO_LOCALE_CONTRACTED,
-  ATLAS_PSEUDO_LOCALE_EXPANDED,
-  generateAtlasProject,
-  parseAtlasConfiguration,
+  PSEUDO_LOCALE_CONTRACTED,
+  PSEUDO_LOCALE_EXPANDED,
+  generateProject,
+  parseConfiguration,
 } from '../src/index.js';
-import { initializeAtlasProject } from '../src/project-host.js';
+import { initializeProject } from '../src/project-host.js';
 
 const temporaryRoots: string[] = [];
 
@@ -95,7 +95,7 @@ interface CompiledCatalog {
 }
 
 /**
- * The compiled catalog module Atlas wrote for one locale, read back as data.
+ * The compiled catalog module Equator wrote for one locale, read back as data.
  *
  * Read from the published artifact rather than from the compiler's return value, because the
  * question these tests ask is what a build produces, and a value returned in memory is not that.
@@ -128,7 +128,7 @@ async function createProject(prefix: string): Promise<string> {
     'package.json',
     `${JSON.stringify(
       {
-        name: '@example/atlas-pseudo-fixture',
+        name: '@example/pseudo-fixture',
         version: '0.0.0',
         private: true,
         type: 'module',
@@ -141,7 +141,7 @@ async function createProject(prefix: string): Promise<string> {
       2,
     )}\n`,
   );
-  const initialized = await initializeAtlasProject({
+  const initialized = await initializeProject({
     project: root,
     configuration: {
       sourceLocale: 'en-US',
@@ -203,7 +203,7 @@ async function createProject(prefix: string): Promise<string> {
 
 /** Declare the two shipped pseudo-locales. Configuration only; no source file is touched. */
 async function declarePseudoLocales(root: string): Promise<void> {
-  const path = resolve(root, 'atlas.config.json');
+  const path = resolve(root, 'equator.config.json');
   const existing = JSON.parse(await readFile(path, 'utf8')) as Record<
     string,
     unknown
@@ -214,8 +214,8 @@ async function declarePseudoLocales(root: string): Promise<void> {
       {
         ...existing,
         pseudoLocales: {
-          [ATLAS_PSEUDO_LOCALE_EXPANDED]: { lengthFactor: 0.4, markers: true },
-          [ATLAS_PSEUDO_LOCALE_CONTRACTED]: {
+          [PSEUDO_LOCALE_EXPANDED]: { lengthFactor: 0.4, markers: true },
+          [PSEUDO_LOCALE_CONTRACTED]: {
             lengthFactor: -0.4,
             markers: true,
           },
@@ -230,10 +230,10 @@ async function declarePseudoLocales(root: string): Promise<void> {
 
 describe('pseudo-locales are generated rather than authored', () => {
   it('adds them to the locale table from configuration alone', async () => {
-    const root = await createProject('atlas-pseudo-on-');
+    const root = await createProject('pseudo-on-');
     await declarePseudoLocales(root);
 
-    const generated = await generateAtlasProject({
+    const generated = await generateProject({
       project: root,
       pseudoLocales: true,
     });
@@ -244,8 +244,8 @@ describe('pseudo-locales are generated rather than authored', () => {
     if (!generated.ok) return;
 
     const output = await generatedText(root);
-    expect(output).toContain(ATLAS_PSEUDO_LOCALE_EXPANDED);
-    expect(output).toContain(ATLAS_PSEUDO_LOCALE_CONTRACTED);
+    expect(output).toContain(PSEUDO_LOCALE_EXPANDED);
+    expect(output).toContain(PSEUDO_LOCALE_CONTRACTED);
 
     // What "ordinary catalog" has to mean, checked rather than asserted in prose: the derived
     // catalog compiles to the same contract as the authored one. Same messages, same message ids,
@@ -253,10 +253,7 @@ describe('pseudo-locales are generated rather than authored', () => {
     // can resolve, not text that happened to survive. A transform that accented the inside of
     // `{$name}` would produce a different input list here and fail this.
     const source = await compiledCatalog(root, 'en-US');
-    for (const locale of [
-      ATLAS_PSEUDO_LOCALE_EXPANDED,
-      ATLAS_PSEUDO_LOCALE_CONTRACTED,
-    ]) {
+    for (const locale of [PSEUDO_LOCALE_EXPANDED, PSEUDO_LOCALE_CONTRACTED]) {
       const pseudo = await compiledCatalog(root, locale);
       expect(pseudo.key.catalogLocale).toBe(locale);
       expect(pseudo.applicationContractFingerprint).toBe(
@@ -272,7 +269,7 @@ describe('pseudo-locales are generated rather than authored', () => {
 
     // And the text did change, which is the other half: identical structure with identical text
     // would mean the transform never ran.
-    const expanded = await compiledCatalog(root, ATLAS_PSEUDO_LOCALE_EXPANDED);
+    const expanded = await compiledCatalog(root, PSEUDO_LOCALE_EXPANDED);
     expect(JSON.stringify(expanded.messages)).toContain('⟦');
     expect(JSON.stringify(expanded.messages)).not.toBe(
       JSON.stringify(source.messages),
@@ -280,17 +277,17 @@ describe('pseudo-locales are generated rather than authored', () => {
   });
 
   it('leaves no trace of them when the flag is absent', async () => {
-    const root = await createProject('atlas-pseudo-off-');
+    const root = await createProject('pseudo-off-');
     await declarePseudoLocales(root);
 
     // Same configuration, same sources, no flag. This is the production build.
-    const generated = await generateAtlasProject({ project: root });
+    const generated = await generateProject({ project: root });
     expect(generated.ok).toBe(true);
     if (!generated.ok) return;
 
     const output = await generatedText(root);
-    expect(output).not.toContain(ATLAS_PSEUDO_LOCALE_EXPANDED);
-    expect(output).not.toContain(ATLAS_PSEUDO_LOCALE_CONTRACTED);
+    expect(output).not.toContain(PSEUDO_LOCALE_EXPANDED);
+    expect(output).not.toContain(PSEUDO_LOCALE_CONTRACTED);
     expect(output).not.toContain('⟦');
 
     // The control, without which the three absences above prove only that the file was read. An
@@ -299,7 +296,7 @@ describe('pseudo-locales are generated rather than authored', () => {
   });
 
   it('refuses a pseudo-locale that is also an authored locale', () => {
-    const parsed = parseAtlasConfiguration(
+    const parsed = parseConfiguration(
       JSON.stringify({
         schemaVersion: 1,
         sourceLocale: 'en-US',
@@ -309,11 +306,11 @@ describe('pseudo-locales are generated rather than authored', () => {
       }),
     );
     expect(parsed.ok).toBe(false);
-    expect(parsed.diagnostics.map(({ code }) => code)).toContain('ATL1004');
+    expect(parsed.diagnostics.map(({ code }) => code)).toContain('EQ1004');
   });
 
   it('refuses a pseudo-locale tag that is not a catalog locale identity', () => {
-    const parsed = parseAtlasConfiguration(
+    const parsed = parseConfiguration(
       JSON.stringify({
         schemaVersion: 1,
         sourceLocale: 'en-US',
@@ -326,14 +323,14 @@ describe('pseudo-locales are generated rather than authored', () => {
 
     // The control: the same configuration under a tag that is a catalog locale identity parses.
     // Without it this only shows that some part of the object was rejected.
-    const accepted = parseAtlasConfiguration(
+    const accepted = parseConfiguration(
       JSON.stringify({
         schemaVersion: 1,
         sourceLocale: 'en-US',
         defaultLocale: 'en-US',
         locales: ['en-US'],
         pseudoLocales: {
-          [ATLAS_PSEUDO_LOCALE_CONTRACTED]: { lengthFactor: -0.4 },
+          [PSEUDO_LOCALE_CONTRACTED]: { lengthFactor: -0.4 },
         },
       }),
     );
@@ -341,20 +338,20 @@ describe('pseudo-locales are generated rather than authored', () => {
   });
 
   it('round-trips the declaration through the configuration formatter', () => {
-    const parsed = parseAtlasConfiguration(
+    const parsed = parseConfiguration(
       JSON.stringify({
         schemaVersion: 1,
         sourceLocale: 'en-US',
         defaultLocale: 'en-US',
         locales: ['en-US'],
         pseudoLocales: {
-          [ATLAS_PSEUDO_LOCALE_EXPANDED]: { lengthFactor: 0.4, markers: true },
+          [PSEUDO_LOCALE_EXPANDED]: { lengthFactor: 0.4, markers: true },
         },
       }),
     );
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    expect(parsed.value.pseudoLocales[ATLAS_PSEUDO_LOCALE_EXPANDED]).toEqual({
+    expect(parsed.value.pseudoLocales[PSEUDO_LOCALE_EXPANDED]).toEqual({
       lengthFactor: 0.4,
       markers: true,
     });

@@ -13,45 +13,45 @@ import { isAbsolute, relative, resolve, sep } from 'node:path';
 import ts from 'typescript';
 
 import {
-  digestAtlasCanonicalJson,
-  type AtlasCanonicalJsonObject,
-  type AtlasCanonicalJsonValue,
+  digestCanonicalJson,
+  type CanonicalJsonObject,
+  type CanonicalJsonValue,
 } from './canonical-json.js';
-import type { AtlasCatalog, AtlasCatalogMessage } from './catalog.js';
-import type { AtlasProjectConfiguration } from './configuration.js';
-import { canonicalizeAtlasLocale } from './locales.js';
+import type { Catalog, CatalogMessage } from './catalog.js';
+import type { ProjectConfiguration } from './configuration.js';
+import { canonicalizeLocale } from './locales.js';
 import {
-  atlasDiagnostic,
-  atlasSuccess,
-  type AtlasDiagnostic,
-  type AtlasResult,
+  toolkitDiagnostic,
+  toolkitSuccess,
+  type ToolkitDiagnostic,
+  type ToolkitResult,
 } from './diagnostics.js';
 import {
-  compileAtlasLocalArtifacts,
-  type AtlasOwnerIdentity,
-  type AtlasCompiledLocalArtifacts,
+  compileLocalArtifacts,
+  type OwnerIdentity,
+  type CompiledLocalArtifacts,
 } from './compiled-artifacts.js';
-import { generateAtlasContracts } from './generated-contracts.js';
+import { generateContracts } from './generated-contracts.js';
 import {
-  analyzeAtlasApplication,
-  type AtlasAnalysisSource,
-  type AtlasApplicationAnalysis,
+  analyzeApplication,
+  type AnalysisSource,
+  type ApplicationAnalysis,
 } from './static-analysis.js';
 import {
-  analyzeAtlasCatalogSet,
-  type AtlasSemanticGraph,
-  type AtlasSemanticScope,
+  analyzeCatalogSet,
+  type SemanticGraph,
+  type SemanticScope,
 } from './semantic-model.js';
-import type { AtlasExtensionRegistry } from './extensions.js';
+import type { ExtensionRegistry } from './extensions.js';
 import {
-  ATLAS_TOOLKIT_EVENT_CODES,
-  emitAtlasToolkitEvent,
-  type AtlasToolkitObservabilityOptions,
+  TOOLKIT_EVENT_CODES,
+  emitToolkitEvent,
+  type ToolkitObservabilityOptions,
 } from './observability.js';
 import { compareCodePoint } from './sorted-records.js';
 
 /** The version stamp on the state a compilation carries forward, checked before one is reused. */
-export const ATLAS_COMPILER_STATE_PROFILE = 'atlas-compiler-state/1' as const;
+export const COMPILER_STATE_PROFILE = 'equator-compiler-state/1' as const;
 
 /**
  * What the static analysis needs to read an application's own source and see which messages it
@@ -61,13 +61,13 @@ export const ATLAS_COMPILER_STATE_PROFILE = 'atlas-compiler-state/1' as const;
  * that depends on knowing the application: which messages nothing reaches, which routes are
  * localized, and where a message is used.
  */
-export interface AtlasCompilerAnalysisInput {
+export interface CompilerAnalysisInput {
   /** The directory paths are resolved against. */
   readonly projectRoot: string;
   /** The entry files to analyse from, which is usually what the application's own build compiles. */
   readonly rootNames: readonly string[];
   /** Source text supplied directly, for analysing something that is not on disk. */
-  readonly sources?: readonly AtlasAnalysisSource[];
+  readonly sources?: readonly AnalysisSource[];
   /** The type names to look for, when the application names its handles something of its own. */
   readonly typeNames?: readonly string[];
   /** The most diagnostics to collect before stopping, so one broken file cannot fill a log. */
@@ -78,11 +78,11 @@ export interface AtlasCompilerAnalysisInput {
    * Portable, machine-independent projection of `compilerOptions` used for
    * cache identity. Absolute paths never enter the digest.
    */
-  readonly compilerOptionsDigestInput?: AtlasCanonicalJsonObject;
+  readonly compilerOptionsDigestInput?: CanonicalJsonObject;
 }
 
 /** One input to a compilation, and a digest of what it held, for deciding what changed. */
-export interface AtlasCompilerInputDigest {
+export interface CompilerInputDigest {
   /** What the input is, as a stable name rather than an absolute path. */
   readonly identity: string;
   /** A digest of its content. */
@@ -95,24 +95,24 @@ export interface AtlasCompilerInputDigest {
  * Hand it back as `previousState` on the next run. Everything in it is machine-independent, so a
  * state written on one machine is usable on another and a cache survives a checkout somewhere else.
  */
-export interface AtlasCompilerState {
+export interface CompilerState {
   /** The state-shape version stamp. A state from another version is ignored rather than misread. */
-  readonly profile: typeof ATLAS_COMPILER_STATE_PROFILE;
+  readonly profile: typeof COMPILER_STATE_PROFILE;
   /** A digest of every input together, which is the quick answer to whether anything changed. */
   readonly inputFingerprint: string;
   /** The inputs one by one, which is what says which of them changed. */
-  readonly inputs: readonly AtlasCompilerInputDigest[];
+  readonly inputs: readonly CompilerInputDigest[];
   /** A digest of the files the compilation planned to write. */
   readonly outputPlanDigest: string;
 }
 
-export interface AtlasCompilerInputFingerprint {
+export interface CompilerInputFingerprint {
   readonly inputFingerprint: string;
-  readonly inputs: readonly AtlasCompilerInputDigest[];
+  readonly inputs: readonly CompilerInputDigest[];
 }
 
 /** What a compilation concluded about what had changed since the state it was given. */
-export interface AtlasInvalidationDecision {
+export interface InvalidationDecision {
   /**
    * Whether there was a previous state at all, nothing changed, or something did.
    *
@@ -128,21 +128,21 @@ export interface AtlasInvalidationDecision {
 /**
  * Everything one compilation needs, with nothing read from disk.
  *
- * What `compileAtlasProject` takes. The file reading is `compileAtlasProjectFromDisk`'s job, so a
+ * What `compileProject` takes. The file reading is `compileProjectFromDisk`'s job, so a
  * caller that already has its catalogs in memory, a test or an editor integration, compiles without
  * writing them out first.
  */
-export interface AtlasCompileProjectRequest extends AtlasToolkitObservabilityOptions {
+export interface CompileProjectRequest extends ToolkitObservabilityOptions {
   /** The project's locales, scopes and options, parsed. */
-  readonly configuration: AtlasProjectConfiguration;
+  readonly configuration: ProjectConfiguration;
   /** The catalogs to compile, source and target alike. */
-  readonly catalogs: readonly AtlasCatalog[];
-  /** Who this output belongs to; see {@link AtlasOwnerIdentity}. */
-  readonly owner: AtlasOwnerIdentity;
+  readonly catalogs: readonly Catalog[];
+  /** Who this output belongs to; see {@link OwnerIdentity}. */
+  readonly owner: OwnerIdentity;
   /** The extensions the messages may call. Leaving it out refuses a message that calls one. */
-  readonly extensions?: AtlasExtensionRegistry;
+  readonly extensions?: ExtensionRegistry;
   /** What to analyse the application's own source with. Without it, usage is not measured. */
-  readonly analysis?: AtlasCompilerAnalysisInput;
+  readonly analysis?: CompilerAnalysisInput;
   /**
    * The messages to compile separately, for the failure path.
    *
@@ -151,23 +151,23 @@ export interface AtlasCompileProjectRequest extends AtlasToolkitObservabilityOpt
    */
   readonly recoveryMessageIdentities?: readonly string[];
   /** What the previous compilation remembered, which is what makes this one incremental. */
-  readonly previousState?: AtlasCompilerState;
-  /** Release-gate completeness: see AtlasCatalogSetAnalysisRequest.requireCompleteTargets. */
+  readonly previousState?: CompilerState;
+  /** Release-gate completeness: see CatalogSetAnalysisRequest.requireCompleteTargets. */
   readonly requireCompleteTargets?: boolean;
 }
 
 /** Everything a compilation produced, in memory. Nothing here has been written. */
-export interface AtlasCompileProjectResult {
+export interface CompileProjectResult {
   /** The whole project analysed: every locale, scope and message, with their contracts. */
-  readonly graph: AtlasSemanticGraph;
+  readonly graph: SemanticGraph;
   /** What reading the application's own source found. Absent when no analysis was asked for. */
-  readonly analysis?: AtlasApplicationAnalysis;
+  readonly analysis?: ApplicationAnalysis;
   /** The compiled catalogs, the descriptor, the recovery messages, and what writes them. */
-  readonly artifacts: AtlasCompiledLocalArtifacts;
+  readonly artifacts: CompiledLocalArtifacts;
   /** What to hand back as `previousState` next time. */
-  readonly state: AtlasCompilerState;
+  readonly state: CompilerState;
   /** What changed since the state this run was given. */
-  readonly invalidation: AtlasInvalidationDecision;
+  readonly invalidation: InvalidationDecision;
 }
 
 /**
@@ -190,13 +190,13 @@ export interface AtlasCompileProjectResult {
  * Scopes the first render does not use.
  *
  * A scope is deferred when it is used and every use sits behind a lazy route boundary. Used
- * nowhere Atlas can see is not the same thing: that scope stays a startup scope, because absence
+ * nowhere Equator can see is not the same thing: that scope stays a startup scope, because absence
  * of evidence is not evidence that a route will not reach it, and being wrong in that direction
  * renders a component whose text never arrives.
  */
 function deferredScopeIds(
-  graph: AtlasSemanticGraph,
-  analysis: AtlasApplicationAnalysis,
+  graph: SemanticGraph,
+  analysis: ApplicationAnalysis,
 ): readonly string[] {
   // Absent means nothing is known to be deferred, so everything is a startup scope. Both of this
   // type's derived fields default in the conservative direction, because a caller that constructs
@@ -241,8 +241,8 @@ function deferredScopeIds(
  * committed a locale whose shell catalog had not arrived, and the shell then failed to evaluate.
  */
 function routeScopes(
-  graph: AtlasSemanticGraph,
-  analysis: AtlasApplicationAnalysis,
+  graph: SemanticGraph,
+  analysis: ApplicationAnalysis,
   deferredSourcePaths: readonly string[],
 ): readonly { readonly providerId: string; readonly scopeId: string }[] {
   const deferred = new Set(deferredSourcePaths);
@@ -250,7 +250,7 @@ function routeScopes(
   for (const component of analysis.components) {
     owningSource.set(component.templatePath, component.sourcePath);
   }
-  const scopeOf = new Map<string, AtlasSemanticScope>();
+  const scopeOf = new Map<string, SemanticScope>();
   for (const scope of graph.scopes) {
     for (const message of scope.messages) scopeOf.set(message.identity, scope);
   }
@@ -287,14 +287,14 @@ function routeScopes(
 }
 
 function unusedSourceMessages(
-  graph: AtlasSemanticGraph,
-  analysis: AtlasApplicationAnalysis,
-): readonly AtlasDiagnostic[] {
+  graph: SemanticGraph,
+  analysis: ApplicationAnalysis,
+): readonly ToolkitDiagnostic[] {
   const reached = new Set([
     ...analysis.messageUsages.map(({ identity }) => identity),
     ...analysis.recoveryMessageIdentities,
   ]);
-  const diagnostics: AtlasDiagnostic[] = [];
+  const diagnostics: ToolkitDiagnostic[] = [];
   for (const scope of graph.scopes) {
     const unused = scope.messages
       .filter(({ identity }) => !reached.has(identity))
@@ -303,8 +303,8 @@ function unusedSourceMessages(
     if (unused.length === 0) continue;
     const listed = unused.slice(0, 20);
     diagnostics.push(
-      atlasDiagnostic(
-        'ATL1311',
+      toolkitDiagnostic(
+        'EQ1311',
         `Scope ${scope.scopeId} defines ${unused.length} source ${
           unused.length === 1 ? 'message' : 'messages'
         } nothing reaches: ${listed.map((id) => JSON.stringify(id)).join(', ')}${
@@ -329,15 +329,15 @@ function serializeJson(value: unknown): string | undefined {
   return JSON.stringify(value);
 }
 
-function canonicalValue(value: unknown): AtlasCanonicalJsonValue {
+function canonicalValue(value: unknown): CanonicalJsonValue {
   const serialized = serializeJson(value);
   if (serialized === undefined) {
-    throw new TypeError('Atlas compiler input is not JSON serializable.');
+    throw new TypeError('Equator compiler input is not JSON serializable.');
   }
-  return JSON.parse(serialized) as AtlasCanonicalJsonValue;
+  return JSON.parse(serialized) as CanonicalJsonValue;
 }
 
-function catalogMessageInput(message: AtlasCatalogMessage): unknown {
+function catalogMessageInput(message: CatalogMessage): unknown {
   return {
     kind: message.kind,
     ...(message.kind === 'message'
@@ -363,7 +363,7 @@ function portableAnalysisPath(projectRoot: string, path: string): string {
     isAbsolute(portable)
   ) {
     throw new TypeError(
-      `Atlas analysis input is outside the selected project: ${path}`,
+      `Equator analysis input is outside the selected project: ${path}`,
     );
   }
   const normalized = portable.replaceAll('\\', '/');
@@ -374,19 +374,19 @@ function portableAnalysisPath(projectRoot: string, path: string): string {
       .split('/')
       .some((segment) => segment === '' || segment === '.' || segment === '..')
   ) {
-    throw new TypeError(`Atlas analysis input path is not portable: ${path}`);
+    throw new TypeError(`Equator analysis input path is not portable: ${path}`);
   }
   return normalized;
 }
 
 function compilerInputDigests(
-  request: AtlasCompileProjectRequest,
-): readonly AtlasCompilerInputDigest[] {
-  const inputs: AtlasCompilerInputDigest[] = [
+  request: CompileProjectRequest,
+): readonly CompilerInputDigest[] {
+  const inputs: CompilerInputDigest[] = [
     Object.freeze({
       identity: 'configuration',
-      digest: digestAtlasCanonicalJson(
-        'atlas-compiler-configuration-input/1',
+      digest: digestCanonicalJson(
+        'equator-compiler-configuration-input/1',
         canonicalValue(request.configuration),
       ),
     }),
@@ -404,7 +404,7 @@ function compilerInputDigests(
     inputs.push(
       Object.freeze({
         identity: 'analysis-graph',
-        digest: digestAtlasCanonicalJson('atlas-compiler-analysis-graph/1', {
+        digest: digestCanonicalJson('equator-compiler-analysis-graph/1', {
           rootNames: [...request.analysis.rootNames]
             .map((path) => portableAnalysisPath(projectRoot, path))
             .sort(compareCodePoint),
@@ -426,8 +426,8 @@ function compilerInputDigests(
     inputs.push(
       Object.freeze({
         identity: 'recovery-message-identities',
-        digest: digestAtlasCanonicalJson(
-          'atlas-compiler-recovery-input/1',
+        digest: digestCanonicalJson(
+          'equator-compiler-recovery-input/1',
           [...(request.recoveryMessageIdentities ?? [])].sort(compareCodePoint),
         ),
       }),
@@ -437,8 +437,8 @@ function compilerInputDigests(
     inputs.push(
       Object.freeze({
         identity: `catalog:${catalog.providerId}:${catalog.scopeId}:${catalog.locale}:${catalog.role}`,
-        digest: digestAtlasCanonicalJson(
-          'atlas-compiler-catalog-input/1',
+        digest: digestCanonicalJson(
+          'equator-compiler-catalog-input/1',
           canonicalValue({
             role: catalog.role,
             providerId: catalog.providerId,
@@ -462,8 +462,8 @@ function compilerInputDigests(
     inputs.push(
       Object.freeze({
         identity: `source:${sourcePath}`,
-        digest: digestAtlasCanonicalJson(
-          'atlas-compiler-static-source-input/1',
+        digest: digestCanonicalJson(
+          'equator-compiler-static-source-input/1',
           source.contents,
         ),
       }),
@@ -473,14 +473,14 @@ function compilerInputDigests(
   return Object.freeze(inputs);
 }
 
-export function fingerprintAtlasCompilerInputs(
-  request: AtlasCompileProjectRequest,
-): AtlasCompilerInputFingerprint {
+export function fingerprintCompilerInputs(
+  request: CompileProjectRequest,
+): CompilerInputFingerprint {
   const inputs = compilerInputDigests(request);
   return Object.freeze({
     inputs,
-    inputFingerprint: digestAtlasCanonicalJson(
-      'atlas-compiler-input-set/1',
+    inputFingerprint: digestCanonicalJson(
+      'equator-compiler-input-set/1',
       inputs.map(({ identity, digest }) => ({ identity, digest })),
     ),
   });
@@ -492,19 +492,16 @@ export function fingerprintAtlasCompilerInputs(
  * The state is carried across runs, which means it is read from wherever the caller kept it. A
  * state written by another version of the compiler is the case the profile exists to catch.
  */
-type ReceivedCompilerState = Omit<AtlasCompilerState, 'profile'> & {
+type ReceivedCompilerState = Omit<CompilerState, 'profile'> & {
   readonly profile: unknown;
 };
 
 function invalidationDecision(
   previous: ReceivedCompilerState | undefined,
-  inputs: readonly AtlasCompilerInputDigest[],
+  inputs: readonly CompilerInputDigest[],
   affectedOutputs: readonly string[],
-): AtlasInvalidationDecision {
-  if (
-    previous === undefined ||
-    previous.profile !== ATLAS_COMPILER_STATE_PROFILE
-  ) {
+): InvalidationDecision {
+  if (previous === undefined || previous.profile !== COMPILER_STATE_PROFILE) {
     return Object.freeze({
       kind: 'initial',
       changedInputs: Object.freeze(inputs.map(({ identity }) => identity)),
@@ -543,17 +540,17 @@ function virtualModules(
     {
       specifier: '#i18n/catalog-set',
       contents:
-        "import type { CatalogSetDescriptor } from '@neolorn/atlas';\nexport declare const catalogSet: CatalogSetDescriptor;\n",
+        "import type { CatalogSetDescriptor } from '@neolorn/equator';\nexport declare const catalogSet: CatalogSetDescriptor;\n",
     },
     {
       specifier: '#i18n/catalog-loaders',
       contents:
-        "import type { CatalogLoaders } from '@neolorn/atlas';\nexport declare const catalogLoaders: CatalogLoaders;\n",
+        "import type { CatalogLoaders } from '@neolorn/equator';\nexport declare const catalogLoaders: CatalogLoaders;\n",
     },
     {
       specifier: '#i18n/recovery-payload',
       contents:
-        "import type { RecoveryRepresentation } from '@neolorn/atlas';\nexport declare const recoveryPayload: readonly RecoveryRepresentation[];\n",
+        "import type { RecoveryRepresentation } from '@neolorn/equator';\nexport declare const recoveryPayload: readonly RecoveryRepresentation[];\n",
     },
   ];
 }
@@ -565,11 +562,11 @@ function virtualModules(
  * Nothing is written from here. The result carries one output plan and publication is a separate
  * call, so a compilation that stops halfway leaves no half-written generated root behind it.
  */
-function compileAtlasProjectCore(
-  request: AtlasCompileProjectRequest,
-): AtlasResult<AtlasCompileProjectResult> {
-  const diagnostics: AtlasDiagnostic[] = [];
-  const graph = analyzeAtlasCatalogSet({
+function compileProjectCore(
+  request: CompileProjectRequest,
+): ToolkitResult<CompileProjectResult> {
+  const diagnostics: ToolkitDiagnostic[] = [];
+  const graph = analyzeCatalogSet({
     configuration: request.configuration,
     catalogs: request.catalogs,
     ...(request.extensions === undefined
@@ -590,7 +587,7 @@ function compileAtlasProjectCore(
   // `specs/10-compiler-and-tooling.spec.md` section 3 is the run this belongs to: the overlay
   // serves the analysis pass and is never written, imported at run time, or cached as an
   // authority for what a clean generation produces.
-  const provisionalContracts = generateAtlasContracts(graph.value, {
+  const provisionalContracts = generateContracts(graph.value, {
     provider: 'declaration',
     ...(request.recoveryMessageIdentities === undefined
       ? {}
@@ -599,9 +596,9 @@ function compileAtlasProjectCore(
   if (!provisionalContracts.ok) return provisionalContracts;
   diagnostics.push(...provisionalContracts.diagnostics);
 
-  let analysis: AtlasApplicationAnalysis | undefined;
+  let analysis: ApplicationAnalysis | undefined;
   if (request.analysis !== undefined) {
-    const analyzed = analyzeAtlasApplication({
+    const analyzed = analyzeApplication({
       projectRoot: request.analysis.projectRoot,
       rootNames: request.analysis.rootNames,
       ...(request.analysis.sources === undefined
@@ -646,19 +643,19 @@ function compileAtlasProjectCore(
     // that authored recovery copy and never selected it passed both commands silently, and the
     // first anyone learned of it was a blank page.
     diagnostics.push(
-      atlasDiagnostic(
-        'ATL1310',
-        'This owner composes the Atlas application runtime but selects no recovery message. Pass one to provideLocalization through withRecoveryMessage so a failed bootstrap can still say something.',
+      toolkitDiagnostic(
+        'EQ1310',
+        'This owner composes the Equator application runtime but selects no recovery message. Pass one to provideLocalization through withRecoveryMessage so a failed bootstrap can still say something.',
       ),
     );
   }
 
   // The locale set, stated twice, compared once.
   //
-  // `atlas.config.json` says which locales this owner has catalogs for. The route policy says which
-  // locales have addresses. They are separate statements in separate files and they have to agree,
-  // and until now nothing compared them: the toolkit had no knowledge of the policy, so none of
-  // its diagnostics could have covered this.
+  // `equator.config.json` says which locales this owner has catalogs for. The route policy says
+  // which locales have addresses. They are separate statements in separate files and they have to
+  // agree, and until now nothing compared them: the toolkit had no knowledge of the policy, so none
+  // of its diagnostics could have covered this.
   //
   // Both directions are wrong and they fail differently, which is why both are reported rather than
   // one being treated as the source of truth. A locale with catalogs and no address cannot be
@@ -673,7 +670,7 @@ function compileAtlasProjectCore(
   const policyLocales = analysis?.routePolicy;
   if (policyLocales !== undefined && policyLocales.locales.length > 0) {
     const canonical = (value: string): string => {
-      const result = canonicalizeAtlasLocale(value);
+      const result = canonicalizeLocale(value);
       return result.ok ? result.value : value;
     };
     const declared = new Set(policyLocales.locales.map(canonical));
@@ -711,8 +708,8 @@ function compileAtlasProjectCore(
     };
     if (missingFromPolicy.length > 0) {
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1408',
+        toolkitDiagnostic(
+          'EQ1408',
           `${missingFromPolicy.map((locale) => JSON.stringify(locale)).join(', ')} ${missingFromPolicy.length === 1 ? 'is a configured locale' : 'are configured locales'} that this owner's locale URL policy gives no address. Catalogs are generated for ${missingFromPolicy.length === 1 ? 'it' : 'them'} and nothing can navigate to ${missingFromPolicy.length === 1 ? 'it' : 'them'}. Add ${missingFromPolicy.length === 1 ? 'it' : 'them'} to the policy, or remove ${missingFromPolicy.length === 1 ? 'it' : 'them'} from the configuration.`,
           span,
         ),
@@ -720,8 +717,8 @@ function compileAtlasProjectCore(
     }
     if (missingFromConfiguration.length > 0) {
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1408',
+        toolkitDiagnostic(
+          'EQ1408',
           `${missingFromConfiguration.map((locale) => JSON.stringify(locale)).join(', ')} ${missingFromConfiguration.length === 1 ? 'has an address' : 'have addresses'} in this owner's locale URL policy and no catalogs. ${missingFromConfiguration.length === 1 ? 'That address resolves' : 'Those addresses resolve'} and every message renders in the default locale, which reads as missing translations rather than as a missing locale. Add ${missingFromConfiguration.length === 1 ? 'it' : 'them'} to the configuration, or remove ${missingFromConfiguration.length === 1 ? 'it' : 'them'} from the policy.`,
           span,
         ),
@@ -733,8 +730,8 @@ function compileAtlasProjectCore(
         canonical(graph.value.defaultLocale)
     ) {
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1408',
+        toolkitDiagnostic(
+          'EQ1408',
           `This owner's configuration makes ${JSON.stringify(graph.value.defaultLocale)} the default locale and its locale URL policy makes ${JSON.stringify(policyLocales.defaultLocale)} the default. The policy's default decides which addresses carry no prefix and which locale an unprefixed address means, so the two disagreeing sends visitors to a different locale than the one the application falls back to.`,
           span,
         ),
@@ -786,9 +783,9 @@ function compileAtlasProjectCore(
       const claim = exact.get(leading) ?? folded.get(leading.toLowerCase());
       if (claim === undefined) continue;
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1409',
-          `Route ${JSON.stringify(route.id)} is declared at ${JSON.stringify(`/${route.path}`)} and its leading segment ${JSON.stringify(leading)} is this owner's ${claim.kind} ${JSON.stringify(claim.segment)}. Atlas reads the first segment of an address as the ${claim.kind} before it reads it as a route, so this route is unreachable at its own address and Atlas will publish addresses for it that it cannot resolve. Rename the route's leading segment, or spell the ${claim.kind} differently in ${JSON.stringify(policyDeclaration.sourcePath)}.`,
+        toolkitDiagnostic(
+          'EQ1409',
+          `Route ${JSON.stringify(route.id)} is declared at ${JSON.stringify(`/${route.path}`)} and its leading segment ${JSON.stringify(leading)} is this owner's ${claim.kind} ${JSON.stringify(claim.segment)}. Equator reads the first segment of an address as the ${claim.kind} before it reads it as a route, so this route is unreachable at its own address and Equator will publish addresses for it that it cannot resolve. Rename the route's leading segment, or spell the ${claim.kind} differently in ${JSON.stringify(policyDeclaration.sourcePath)}.`,
           { path: ['routes', route.sourcePath] },
         ),
       );
@@ -801,7 +798,7 @@ function compileAtlasProjectCore(
     // reported was a console warning in development, after the click, to whoever happened to be
     // looking.
     //
-    // `routerLink` alone, and the reason is what Atlas transforms rather than what the HTML
+    // `routerLink` alone, and the reason is what Equator transforms rather than what the HTML
     // specification calls a URL. A click hands the Router the address as written, and
     // `UrlHandlingStrategy.extract` resolves it to its canonical form before anything matches it:
     // the prefix is removed and the page renders in the locale that is committed now. So the link
@@ -815,7 +812,7 @@ function compileAtlasProjectCore(
     // address the Router will not honour.
     //
     // Judged against the claimed segments and not the locale set, which is what makes this the
-    // sibling of the check above rather than a widening of ATL1410. A policy may spell a prefix
+    // sibling of the check above rather than a widening of EQ1410. A policy may spell a prefix
     // differently from the tag, and an alias is claimed too. `folded` is asked and `exact` is not,
     // so the neutral roots are excluded: a locale-neutral root is the one leading segment a
     // policy claims that survives the resolution, so an address that begins with one goes where it
@@ -826,9 +823,9 @@ function compileAtlasProjectCore(
       const claim = folded.get(leading.toLowerCase());
       if (claim === undefined) continue;
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1411',
-          `The template of ${JSON.stringify(address.componentName)} writes routerLink=${JSON.stringify(address.address)}, whose leading segment ${JSON.stringify(leading)} is this owner's ${claim.kind} ${JSON.stringify(claim.segment)}. Atlas resolves a routerLink to its canonical address before the Router matches it, so the locale in this one is discarded and the link opens the page in whichever locale is committed. Write the canonical address without the ${claim.kind}, ${JSON.stringify(address.address.slice(leading.length + 1) || '/')}, and change locale with "Localization.changeLocale()", which is the operation that moves the reader between locales.`,
+        toolkitDiagnostic(
+          'EQ1411',
+          `The template of ${JSON.stringify(address.componentName)} writes routerLink=${JSON.stringify(address.address)}, whose leading segment ${JSON.stringify(leading)} is this owner's ${claim.kind} ${JSON.stringify(claim.segment)}. Equator resolves a routerLink to its canonical address before the Router matches it, so the locale in this one is discarded and the link opens the page in whichever locale is committed. Write the canonical address without the ${claim.kind}, ${JSON.stringify(address.address.slice(leading.length + 1) || '/')}, and change locale with "Localization.changeLocale()", which is the operation that moves the reader between locales.`,
           { path: ['components', address.templatePath] },
         ),
       );
@@ -839,10 +836,10 @@ function compileAtlasProjectCore(
   //
   // A switcher written by hand carries the same thing three or four times per option: the locale as
   // a string, the option's language as a static `lang`, its direction as a static `dir`, and its
-  // name in its own language as literal text. All four are answers Atlas already has, and every one
-  // of them is authored again for each locale, in each template, in a language the author may not
-  // read. Adding a locale then means finding every one of those places, and nothing fails when one
-  // is missed: the option simply reads wrongly, aloud, to the people who need it most.
+  // name in its own language as literal text. All four are answers Equator already has, and every
+  // one of them is authored again for each locale, in each template, in a language the author may
+  // not read. Adding a locale then means finding every one of those places, and nothing fails when
+  // one is missed: the option simply reads wrongly, aloud, to the people who need it most.
   //
   // Judged here rather than in the analysis, which reports what a template says and does not hold
   // the locale set. The same division `routePolicy` is checked under.
@@ -852,7 +849,7 @@ function compileAtlasProjectCore(
   // A locale spelled as a string inside a template expression is an error. There is no form of it
   // that survives a locale being added: the expression is either a switch to a locale the template
   // names, or a branch on one, and in both cases the template has to be edited for a change that
-  // belongs in the configuration. Atlas has the list.
+  // belongs in the configuration. Equator has the list.
   //
   // A static `lang` is a warning, because there is one legitimate form and this check cannot tell
   // it apart: a page carrying a fixed passage in another language marks that passage up exactly
@@ -860,7 +857,7 @@ function compileAtlasProjectCore(
   // warning can do is say so where the author is looking, with the thing to use instead named.
   if (analysis !== undefined && analysis.localeMentions.length > 0) {
     const canonical = (value: string): string => {
-      const result = canonicalizeAtlasLocale(value);
+      const result = canonicalizeLocale(value);
       return result.ok ? result.value.toLowerCase() : value.toLowerCase();
     };
     const configured = new Set(graph.value.locales.map(canonical));
@@ -885,9 +882,9 @@ function compileAtlasProjectCore(
             : `writes lang=${JSON.stringify(mention.text)} and dir=${JSON.stringify(mention.siblingDirection)} by hand`;
       const literal = mention.kind === 'literal';
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1410',
-          `The template of ${JSON.stringify(mention.componentName)} ${what}. Atlas already knows every configured locale, its language subtag, its direction and its name in its own language: read them from "localization.localeChoices()" and put "[localeChoice]" on the control, which writes lang, dir, aria-current and aria-busy and performs the switch. A switcher built that way gains a locale when the configuration gains one.${literal ? '' : ' If this is a fixed passage in another language rather than a locale control, this is the right markup and the warning is expected.'}`,
+        toolkitDiagnostic(
+          'EQ1410',
+          `The template of ${JSON.stringify(mention.componentName)} ${what}. Equator already knows every configured locale, its language subtag, its direction and its name in its own language: read them from "localization.localeChoices()" and put "[localeChoice]" on the control, which writes lang, dir, aria-current and aria-busy and performs the switch. A switcher built that way gains a locale when the configuration gains one.${literal ? '' : ' If this is a fixed passage in another language rather than a locale control, this is the right markup and the warning is expected.'}`,
           {
             ...(literal ? {} : { severity: 'warning' as const }),
             path: ['components', mention.templatePath],
@@ -904,7 +901,7 @@ function compileAtlasProjectCore(
   const deferredScopes =
     analysis === undefined ? [] : deferredScopeIds(graph.value, analysis);
 
-  const contracts = generateAtlasContracts(graph.value, {
+  const contracts = generateContracts(graph.value, {
     // Passed whenever the pass ran, empty included. An analysis that found nothing behind a lazy
     // boundary knows that every scope is needed at startup, and a generation with no analysis
     // knows nothing about either; omitting the option for both would collapse the two answers the
@@ -946,7 +943,7 @@ function compileAtlasProjectCore(
   });
   if (!contracts.ok) return contracts;
   diagnostics.push(...contracts.diagnostics);
-  const artifacts = compileAtlasLocalArtifacts({
+  const artifacts = compileLocalArtifacts({
     graph: graph.value,
     catalogs: request.catalogs,
     owner: request.owner,
@@ -958,9 +955,9 @@ function compileAtlasProjectCore(
   if (!artifacts.ok) return artifacts;
   diagnostics.push(...artifacts.diagnostics);
 
-  const { inputs, inputFingerprint } = fingerprintAtlasCompilerInputs(request);
-  const state: AtlasCompilerState = Object.freeze({
-    profile: ATLAS_COMPILER_STATE_PROFILE,
+  const { inputs, inputFingerprint } = fingerprintCompilerInputs(request);
+  const state: CompilerState = Object.freeze({
+    profile: COMPILER_STATE_PROFILE,
     inputFingerprint,
     inputs,
     outputPlanDigest: artifacts.value.outputPlan.planDigest,
@@ -970,7 +967,7 @@ function compileAtlasProjectCore(
     inputs,
     artifacts.value.outputPlan.files.map(({ path }) => path),
   );
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
       graph: graph.value,
       ...(analysis === undefined ? {} : { analysis }),
@@ -993,40 +990,40 @@ function compileAtlasProjectCore(
  * result says which inputs moved and which outputs they reach.
  *
  * The verb to reach for when the input is not a directory: a test, an editor, a script that
- * assembles catalogs itself. `compileAtlasProjectFromDisk` is the one that reads a project.
+ * assembles catalogs itself. `compileProjectFromDisk` is the one that reads a project.
  */
-export function compileAtlasProject(
-  request: AtlasCompileProjectRequest,
-): AtlasResult<AtlasCompileProjectResult> {
+export function compileProject(
+  request: CompileProjectRequest,
+): ToolkitResult<CompileProjectResult> {
   const sink = request.observability;
-  if (sink === undefined) return compileAtlasProjectCore(request);
-  emitAtlasToolkitEvent(sink, {
-    code: ATLAS_TOOLKIT_EVENT_CODES.compilation,
+  if (sink === undefined) return compileProjectCore(request);
+  emitToolkitEvent(sink, {
+    code: TOOLKIT_EVENT_CODES.compilation,
     phase: 'compilation',
     status: 'started',
   });
-  let result: AtlasResult<AtlasCompileProjectResult>;
+  let result: ToolkitResult<CompileProjectResult>;
   try {
-    result = compileAtlasProjectCore(request);
+    result = compileProjectCore(request);
   } catch (error) {
-    emitAtlasToolkitEvent(sink, {
-      code: ATLAS_TOOLKIT_EVENT_CODES.compilation,
+    emitToolkitEvent(sink, {
+      code: TOOLKIT_EVENT_CODES.compilation,
       phase: 'compilation',
       status: 'failed',
     });
     throw error;
   }
   if (result.ok) {
-    emitAtlasToolkitEvent(sink, {
-      code: ATLAS_TOOLKIT_EVENT_CODES.compilation,
+    emitToolkitEvent(sink, {
+      code: TOOLKIT_EVENT_CODES.compilation,
       phase: 'compilation',
       status: 'succeeded',
       count: result.value.artifacts.outputPlan.files.length,
     });
   } else {
     const diagnosticCode = result.diagnostics[0]?.code;
-    emitAtlasToolkitEvent(sink, {
-      code: ATLAS_TOOLKIT_EVENT_CODES.compilation,
+    emitToolkitEvent(sink, {
+      code: TOOLKIT_EVENT_CODES.compilation,
       phase: 'compilation',
       status: 'failed',
       ...(diagnosticCode === undefined ? {} : { diagnosticCode }),

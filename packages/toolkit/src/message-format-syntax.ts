@@ -1,5 +1,5 @@
 /**
- * The MessageFormat 2 lexical productions Atlas needs on both sides of its package boundary, and
+ * The MessageFormat 2 lexical productions Equator needs on both sides of its package boundary, and
  * the one rule for reading a typed value out of a literal.
  *
  * `packages/runtime` cannot import from `packages/toolkit`: the toolkit is a build-time tool with
@@ -42,9 +42,9 @@ export type ExtensionValueType =
  * name-char  = name-start / DIGIT / "-" / "."
  * ```
  *
- * Atlas constrained a message-function option name to `^[a-z][a-z0-9-]{0,63}$`, which is narrower
+ * Equator constrained a message-function option name to `^[a-z][a-z0-9-]{0,63}$`, which is narrower
  * than the standard in the direction that costs: it rejects `decimalPlaces`, which the standard's
- * own test suite uses, and it rejects every option name Atlas's built-in functions already
+ * own test suite uses, and it rejects every option name Equator's built-in functions already
  * have, among them `signDisplay`, `roundingMode`, `trailingZeroDisplay`, `currencySign`,
  * `fractionDigits`,
  * `minimumIntegerDigits`, `roundingIncrement`. An extension could not spell an option a built-in
@@ -53,13 +53,13 @@ export type ExtensionValueType =
  *
  * **The optional `[bidi]` wrapper is deliberately outside this production, and that is measured
  * rather than assumed.** The parser strips it: a message writing `{42 :ns:f <LRM>places<LRM>=1}`
- * hands Atlas the option name `places`. A descriptor able to declare the wrapped form would be
+ * hands Equator the option name `places`. A descriptor able to declare the wrapped form would be
  * declaring a second spelling of one option: one no message could ever match, and one that
  * collides with the first under any comparison that normalizes. What a descriptor names is the
  * name, not its presentation.
  *
- * This governs a *message-function* option name only. A rich-slot option name is Atlas's own
- * vocabulary rather than MessageFormat's and keeps Atlas's lower-kebab identifier convention.
+ * This governs a *message-function* option name only. A rich-slot option name is Equator's own
+ * vocabulary rather than MessageFormat's and keeps Equator's lower-kebab identifier convention.
  *
  * Written as one string rather than assembled from parts, because a transcription that has been
  * rearranged can no longer be checked against its source by reading.
@@ -105,18 +105,17 @@ const NAME_CHAR = `${NAME_START}0-9.\\-`;
  * Ajv compiles a `pattern` with the `u` flag, so the astral ranges above mean code points here and
  * a lone surrogate is refused rather than matched half a character at a time.
  */
-export const ATLAS_MESSAGE_NAME_PATTERN = `^[${NAME_START}][${NAME_CHAR}]*$`;
+export const MESSAGE_NAME_PATTERN = `^[${NAME_START}][${NAME_CHAR}]*$`;
 
 /** The length bound, in code points. A name is an identifier, not a payload. */
-export const ATLAS_MESSAGE_NAME_CHARACTERS = 64;
+export const MESSAGE_NAME_CHARACTERS = 64;
 
-const messageName = new RegExp(ATLAS_MESSAGE_NAME_PATTERN, 'u');
+const messageName = new RegExp(MESSAGE_NAME_PATTERN, 'u');
 
-/** Whether `value` is a MessageFormat `name` an Atlas descriptor may declare. */
-export function atlasIsMessageName(value: string): boolean {
+/** Whether `value` is a MessageFormat `name` an Equator descriptor may declare. */
+export function isMessageName(value: string): boolean {
   return (
-    [...value].length <= ATLAS_MESSAGE_NAME_CHARACTERS &&
-    messageName.test(value)
+    [...value].length <= MESSAGE_NAME_CHARACTERS && messageName.test(value)
   );
 }
 
@@ -132,7 +131,7 @@ export function atlasIsMessageName(value: string): boolean {
  * Both packages had their own copy of this. They agreed, which is the only reason nothing had gone
  * wrong yet; two transcriptions of one production is one more than there is a source for.
  */
-export const ATLAS_NUMBER_LITERAL =
+export const NUMBER_LITERAL_PATTERN =
   /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][-+]?[0-9]+)?$/u;
 
 /* ------------------------------------------------------------------ *
@@ -144,9 +143,9 @@ export const ATLAS_NUMBER_LITERAL =
  *
  * An option value written in a message is always text, MessageFormat's syntax has literals and
  * variables and no numeric option token, so a check asking "is this a JavaScript number" of a
- * literal answers no for every literal ever written. Atlas asked exactly that on both sides, which
- * made `integer`, `number` and `boolean` unreachable option types: a descriptor could declare one
- * and no message could satisfy it. The standard is explicit that the two spellings are the same
+ * literal answers no for every literal ever written. Equator asked exactly that on both sides,
+ * which made `integer`, `number` and `boolean` unreachable option types: a descriptor could declare
+ * one and no message could satisfy it. The standard is explicit that the two spellings are the same
  * value, requiring of a digit size option that its value "resolves to a numerical integer value 0
  * or 1 or their corresponding string representations `'0'` or `'1'`".
  *
@@ -155,10 +154,10 @@ export const ATLAS_NUMBER_LITERAL =
  * already arrived as its native type, from a variable rather than a literal, is accepted as itself.
  *
  * `undefined` means the value does not spell one of `type`. `date-time` accepts a `Date` or the
- * epoch-millisecond number that stands for one, and never a string: Atlas does not guess a date
+ * epoch-millisecond number that stands for one, and never a string: Equator does not guess a date
  * format, which is the one place a lenient reading would silently pick a calendar.
  */
-export function atlasExtensionOptionValue(
+export function extensionOptionValue(
   value: unknown,
   type: ExtensionValueType,
 ): string | number | boolean | Date | undefined {
@@ -175,7 +174,7 @@ export function atlasExtensionOptionValue(
       const numeric =
         typeof value === 'number'
           ? value
-          : typeof value === 'string' && ATLAS_NUMBER_LITERAL.test(value)
+          : typeof value === 'string' && NUMBER_LITERAL_PATTERN.test(value)
             ? Number(value)
             : undefined;
       if (numeric === undefined || !Number.isFinite(numeric)) return undefined;
@@ -201,7 +200,7 @@ export function atlasExtensionOptionValue(
  * after interpretation, so `decimalPlaces=1` written in a message meets `values: [0, 1]` written in
  * a descriptor.
  */
-export function atlasExtensionOptionValueAllowed(
+export function extensionOptionValueAllowed(
   value: string | number | boolean | Date,
   values: readonly (string | number | boolean)[] | undefined,
 ): boolean {

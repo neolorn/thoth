@@ -8,78 +8,77 @@
  */
 
 import {
-  atlasDiagnostic,
-  atlasFailure,
-  atlasSuccess,
-  type AtlasDiagnostic,
-  type AtlasDiagnosticCode,
-  type AtlasResult,
+  toolkitDiagnostic,
+  toolkitFailure,
+  toolkitSuccess,
+  type ToolkitDiagnostic,
+  type ToolkitDiagnosticCode,
+  type ToolkitResult,
 } from './diagnostics.js';
 import {
-  digestAtlasCanonicalJson,
-  type AtlasCanonicalJsonValue,
+  digestCanonicalJson,
+  type CanonicalJsonValue,
 } from './canonical-json.js';
-import { atlasCatalogPathAnchor } from './catalog.js';
+import { catalogPathAnchor } from './catalog.js';
 import type {
-  AtlasCatalog,
-  AtlasCatalogFamily,
-  AtlasCatalogMessage,
-  AtlasInputLiteral,
-  AtlasInputRefinement,
-  AtlasSlotShape,
+  Catalog,
+  CatalogFamily,
+  CatalogMessage,
+  InputLiteral,
+  InputRefinement,
+  SlotShape,
 } from './catalog.js';
 import {
-  ATLAS_PLURAL_SELECTOR_FUNCTIONS,
-  type AtlasMessageExpression,
-  type AtlasMessagePattern,
-  type AtlasMessageSemanticModel,
-  type AtlasMessageValueReference,
+  PLURAL_SELECTOR_FUNCTIONS,
+  type MessageExpression,
+  type MessagePattern,
+  type MessageSemanticModel,
+  type MessageValueReference,
 } from './message-format.js';
-import { atlasLocaleFallbackChain, type AtlasLocale } from './locales.js';
+import { localeFallbackChain, type CanonicalLocale } from './locales.js';
 import {
-  ATLAS_COMPLETENESS_CODES,
-  atlasCompletenessPolicy,
-  type AtlasCompletenessPolicy,
-  type AtlasLocaleFormatting,
-  type AtlasProjectConfiguration,
+  COMPLETENESS_CODES,
+  completenessPolicy,
+  type CompletenessPolicy,
+  type LocaleFormatting,
+  type ProjectConfiguration,
 } from './configuration.js';
 import {
-  ATLAS_CARDINAL_PLURAL_CATEGORIES,
-  ATLAS_ORDINAL_PLURAL_CATEGORIES,
+  CARDINAL_PLURAL_CATEGORIES,
+  ORDINAL_PLURAL_CATEGORIES,
 } from './plural-categories.generated.js';
 import {
-  atlasExtensionOptionValue,
-  atlasExtensionOptionValueAllowed,
+  extensionOptionValue,
+  extensionOptionValueAllowed,
 } from './message-format-syntax.js';
-import { ATLAS_RESOURCE_LIMITS } from './resource-limits.js';
+import { RESOURCE_LIMITS } from './resource-limits.js';
 import {
-  atlasExtensionDescriptor,
-  type AtlasExtensionDescriptor,
-  type AtlasExtensionRegistry,
+  extensionDescriptor,
+  type ExtensionDescriptor,
+  type ExtensionRegistry,
   type ExtensionValueType,
-  type AtlasRichSlotKindDescriptorInput,
+  type RichSlotKindDescriptorInput,
 } from './extensions.js';
 import { compareCodePoint, frozenRecord } from './sorted-records.js';
 
 /**
  * The version stamp on the interface between generated code and the runtime.
  *
- * It changes when that interface changes, so generated code from one version of Atlas and a runtime
- * from another refuse each other rather than half working.
+ * It changes when that interface changes, so generated code from one version of Equator and a
+ * runtime from another refuse each other rather than half working.
  */
-export const ATLAS_GENERATED_ABI_PROFILE = 'atlas-generated/1' as const;
-export const ATLAS_APPLICATION_CONTRACT_PROFILE =
-  'atlas-application-contract/1' as const;
-export const ATLAS_SEMANTIC_REGISTRY_PROFILE =
-  'atlas-semantic-registry/1' as const;
+export const GENERATED_ABI_PROFILE = 'equator-generated/1' as const;
+export const APPLICATION_CONTRACT_PROFILE =
+  'equator-application-contract/1' as const;
+export const SEMANTIC_REGISTRY_PROFILE = 'equator-semantic-registry/1' as const;
 
 /**
  * The five value types a message input can have, as they cross the boundary into generated code.
  *
- * Deliberately few and deliberately portable: these are the types every host Atlas targets can
+ * Deliberately few and deliberately portable: these are the types every host Equator targets can
  * represent the same way, so a contract means the same thing on a server and in a browser.
  */
-export type AtlasPortableTypeId =
+export type PortableTypeId =
   | 'boolean'
   | 'date-time'
   | 'integer'
@@ -92,13 +91,13 @@ export type AtlasPortableTypeId =
  * Effective, because it is the author's declaration combined with how the message actually uses the
  * value. A message that formats a name as a number has a number here whatever the catalog said.
  */
-export interface AtlasEffectiveInputContract {
+export interface EffectiveInputContract {
   /** The name the caller passes it under. */
   readonly name: string;
   /** Which of the five portable types it is. */
-  readonly type: AtlasPortableTypeId;
+  readonly type: PortableTypeId;
   /** The exact values allowed, when the input is one of a closed set. */
-  readonly enum?: readonly AtlasInputLiteral[];
+  readonly enum?: readonly InputLiteral[];
   /** Whether the caller may leave it out. */
   readonly optional: boolean;
   /** Whether it may be passed as null. */
@@ -113,13 +112,13 @@ export interface AtlasEffectiveInputContract {
  * Settled the same way as an input contract: what the author declared, reconciled with how every
  * translation of the message actually uses the slot.
  */
-export interface AtlasEffectiveSlotContract {
+export interface EffectiveSlotContract {
   /** The name the binding is supplied under. */
   readonly name: string;
   /** What it renders as: a link, an emphasis, a projected template. */
   readonly kind: string;
   /** Whether it wraps text or marks a point. */
-  readonly shape: AtlasSlotShape;
+  readonly shape: SlotShape;
   /** Whether a translation may leave it out. */
   readonly optional: boolean;
   /** Whether a translation may use it more than once. */
@@ -131,11 +130,11 @@ export interface AtlasEffectiveSlotContract {
 }
 
 /** What one translation of a message looks like, as the analysis sees it. */
-export interface AtlasSemanticTargetMessage {
+export interface SemanticTargetMessage {
   /** Which locale this translation is in. */
-  readonly locale: AtlasLocale;
+  readonly locale: CanonicalLocale;
   /** Whether it has been written yet. */
-  readonly kind: AtlasCatalogMessage['kind'];
+  readonly kind: CatalogMessage['kind'];
   /** The normalized text, so two equivalent spellings compare equal. Absent for an empty entry. */
   readonly canonicalSource?: string;
 }
@@ -147,7 +146,7 @@ export interface AtlasSemanticTargetMessage {
  * this is where that is expressed: the inputs and slots are settled across every translation, so a
  * translation that drops a slot is a problem rather than a second contract.
  */
-export interface AtlasSemanticMessage {
+export interface SemanticMessage {
   /** The package that owns it. */
   readonly providerId: string;
   /** The scope within that package. */
@@ -159,21 +158,21 @@ export interface AtlasSemanticMessage {
   /** Whether it renders as a string or as parts. */
   readonly resultKind: 'plain' | 'structured';
   /** What a caller must pass. */
-  readonly inputs: readonly AtlasEffectiveInputContract[];
+  readonly inputs: readonly EffectiveInputContract[];
   /** What an application must bind. */
-  readonly slots: readonly AtlasEffectiveSlotContract[];
+  readonly slots: readonly EffectiveSlotContract[];
   /** A digest of the authored text, which is what tells a translation it has gone stale. */
   readonly sourceFingerprint: string;
   /** Every translation, including the locales where it has not been written yet. */
-  readonly targets: readonly AtlasSemanticTargetMessage[];
+  readonly targets: readonly SemanticTargetMessage[];
 }
 
 /** One of the parts a family's messages vary over, and what a value for it may look like. */
-export interface AtlasSemanticFamilySegment {
+export interface SemanticFamilySegment {
   /** What this part is called in the template. */
   readonly name: string;
-  /** What kind of value it holds, either Atlas's own message part or an extension's type. */
-  readonly type: 'atlas:native-message-part' | string;
+  /** What kind of value it holds, either Equator's own message part or an extension's type. */
+  readonly type: 'equator:native-message-part' | string;
   /** Which spelling a value must follow, which is what keeps generated names predictable. */
   readonly syntax: 'lower-kebab' | 'ascii-token' | 'unicode-token';
   /** The longest a value may be. */
@@ -181,7 +180,7 @@ export interface AtlasSemanticFamilySegment {
 }
 
 /** One message a family generated, and the segment values it came from. */
-export interface AtlasSemanticFamilyMember {
+export interface SemanticFamilyMember {
   /** The key this member ended up with. */
   readonly messageId: string;
   /** The value substituted for each segment. */
@@ -194,21 +193,21 @@ export interface AtlasSemanticFamilyMember {
  * What makes a family worth having: the contract is declared once, so a caller can hold a member
  * chosen at runtime and still know what to pass it.
  */
-export interface AtlasSemanticFamily {
+export interface SemanticFamily {
   /** What the family is called. */
   readonly name: string;
   /** The key template the segments are substituted into. */
   readonly template: string;
   /** The parts the members vary over. */
-  readonly segments: readonly AtlasSemanticFamilySegment[];
+  readonly segments: readonly SemanticFamilySegment[];
   /** Whether the members render as strings or as parts. All of them agree. */
   readonly resultKind: 'plain' | 'structured';
   /** What every member takes. */
-  readonly inputs: readonly AtlasEffectiveInputContract[];
+  readonly inputs: readonly EffectiveInputContract[];
   /** What every member places. */
-  readonly slots: readonly AtlasEffectiveSlotContract[];
+  readonly slots: readonly EffectiveSlotContract[];
   /** The messages the family produced. */
-  readonly members: readonly AtlasSemanticFamilyMember[];
+  readonly members: readonly SemanticFamilyMember[];
 }
 
 /**
@@ -217,24 +216,24 @@ export interface AtlasSemanticFamily {
  * The same shape as the descriptor a plugin declares, named separately because it appears here as a
  * requirement rather than as a declaration.
  */
-export type AtlasReferencedExtension = AtlasExtensionDescriptor;
+export type ReferencedExtension = ExtensionDescriptor;
 
 /** One scope analysed: its messages, its families, and what is needed to compile them. */
-export interface AtlasSemanticScope {
+export interface SemanticScope {
   /** The package that owns it. */
   readonly providerId: string;
   /** Its own identity within that package. */
   readonly scopeId: string;
   /** The locale its messages were authored in. */
-  readonly sourceLocale: AtlasLocale;
+  readonly sourceLocale: CanonicalLocale;
   /** Every locale this scope has a catalog for, including the source. */
-  readonly availableLocales: readonly AtlasLocale[];
+  readonly availableLocales: readonly CanonicalLocale[];
   /** The messages, each across all its locales. */
-  readonly messages: readonly AtlasSemanticMessage[];
+  readonly messages: readonly SemanticMessage[];
   /** The families, each with its members. */
-  readonly families: readonly AtlasSemanticFamily[];
+  readonly families: readonly SemanticFamily[];
   /** The extensions its messages call. */
-  readonly requiredExtensions: readonly AtlasReferencedExtension[];
+  readonly requiredExtensions: readonly ReferencedExtension[];
   /** The application contract digest this scope contributes to. */
   readonly applicationContractFingerprint: string;
   /** The semantic registry digest it was analysed under. */
@@ -244,31 +243,31 @@ export interface AtlasSemanticScope {
 /**
  * The whole of a project's localization, analysed: every locale, every scope, every message.
  *
- * What `analyzeAtlasCatalogSet` produces and what compilation and generation both read. Nothing
+ * What `analyzeCatalogSet` produces and what compilation and generation both read. Nothing
  * downstream reads catalogs again, so a question about the project is answered here once rather
  * than re-derived by each step differently.
  */
-export interface AtlasSemanticGraph {
+export interface SemanticGraph {
   /** The generated interface version this graph is for. */
-  readonly generatedAbi: typeof ATLAS_GENERATED_ABI_PROFILE;
+  readonly generatedAbi: typeof GENERATED_ABI_PROFILE;
   /** The locale messages are authored in. */
-  readonly sourceLocale: AtlasLocale;
+  readonly sourceLocale: CanonicalLocale;
   /** The locale used when nothing else selects one. */
-  readonly defaultLocale: AtlasLocale;
+  readonly defaultLocale: CanonicalLocale;
   /** Every locale the project builds, canonically spelled. */
-  readonly locales: readonly AtlasLocale[];
+  readonly locales: readonly CanonicalLocale[];
   /** Extra locales whose person-name patterns this owner generates. See the configuration key. */
-  readonly personNameLocales: readonly AtlasLocale[];
+  readonly personNameLocales: readonly CanonicalLocale[];
   /** Spellings that resolve to a built locale, so an old tag keeps working after a rename. */
-  readonly aliases: Readonly<Record<string, AtlasLocale>>;
+  readonly aliases: Readonly<Record<string, CanonicalLocale>>;
   /** How each locale is written, where this owner disagrees with CLDR. See the configuration key. */
-  readonly formatting: Readonly<Record<string, AtlasLocaleFormatting>>;
+  readonly formatting: Readonly<Record<string, LocaleFormatting>>;
   /** Which locale each locale inherits from, where this owner disagrees with CLDR. */
-  readonly parentLocales: Readonly<Record<string, AtlasLocale>>;
+  readonly parentLocales: Readonly<Record<string, CanonicalLocale>>;
   /** Every scope in the project, analysed. */
-  readonly scopes: readonly AtlasSemanticScope[];
+  readonly scopes: readonly SemanticScope[];
   /** Every extension the project's messages reference, across all its scopes. */
-  readonly extensionDescriptors: readonly AtlasReferencedExtension[];
+  readonly extensionDescriptors: readonly ReferencedExtension[];
   /**
    * A digest of every message contract in the project.
    *
@@ -280,46 +279,46 @@ export interface AtlasSemanticGraph {
   readonly semanticRegistryFingerprint: string;
 }
 
-export interface AtlasCatalogSetAnalysisRequest {
-  readonly configuration: AtlasProjectConfiguration;
-  readonly catalogs: readonly AtlasCatalog[];
-  readonly extensions?: AtlasExtensionRegistry;
+export interface CatalogSetAnalysisRequest {
+  readonly configuration: ProjectConfiguration;
+  readonly catalogs: readonly Catalog[];
+  readonly extensions?: ExtensionRegistry;
   /**
    * Treat a target catalog that omits a required source message as an error rather than a warning.
    *
    * Off by default because English lands before Arabic in ordinary authoring order, so erroring
    * during development would break the dev loop on every new message and train a team to bypass
-   * the check. Release is where completeness is required, which is what `atlas check
+   * the check. Release is where completeness is required, which is what `equator check
    * --require-complete` turns on.
    */
   readonly requireCompleteTargets?: boolean;
 }
 
 interface InputUsage {
-  readonly explicit: Set<AtlasPortableTypeId>;
+  readonly explicit: Set<PortableTypeId>;
   bare: boolean;
 }
 
 interface PatternSlotSummary {
   readonly counts: ReadonlyMap<string, number>;
   readonly parents: ReadonlyMap<string, ReadonlySet<string>>;
-  readonly shapes: ReadonlyMap<string, ReadonlySet<AtlasSlotShape>>;
+  readonly shapes: ReadonlyMap<string, ReadonlySet<SlotShape>>;
 }
 
 function validateCustomSlotOptions(
-  catalog: AtlasCatalog,
+  catalog: Catalog,
   messageId: string,
   slotName: string,
-  options: AtlasMessagePattern extends readonly (infer Part)[]
+  options: MessagePattern extends readonly (infer Part)[]
     ? Part extends { readonly options: infer Options }
       ? Options
       : never
     : never,
-  descriptor: Readonly<AtlasRichSlotKindDescriptorInput>,
-  diagnostics: AtlasDiagnostic[],
+  descriptor: Readonly<RichSlotKindDescriptorInput>,
+  diagnostics: ToolkitDiagnostic[],
 ): void {
   for (const [name, value] of Object.entries(
-    options as Readonly<Record<string, AtlasMessageValueReference>>,
+    options as Readonly<Record<string, MessageValueReference>>,
   )) {
     const allowed = descriptor.options?.[name];
     if (
@@ -330,7 +329,7 @@ function validateCustomSlotOptions(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1805',
+          'EQ1805',
           `Rich slot ${JSON.stringify(slotName)} uses undeclared or nonportable option ${JSON.stringify(name)}.`,
           ['messages', messageId, 'slots', slotName],
         ),
@@ -339,7 +338,7 @@ function validateCustomSlotOptions(
   }
 }
 
-const portableTypes = new Set<AtlasPortableTypeId>([
+const portableTypes = new Set<PortableTypeId>([
   'boolean',
   'date-time',
   'integer',
@@ -385,18 +384,18 @@ const standardFunctionNames = new Set([
 const nativeMessagePartPattern = /^[a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*$/u;
 
 function semanticDiagnostic(
-  catalog: AtlasCatalog,
-  code: AtlasDiagnosticCode,
+  catalog: Catalog,
+  code: ToolkitDiagnosticCode,
   summary: string,
   path: readonly (string | number)[],
   severity: 'error' | 'warning' | 'info' = 'error',
-): AtlasDiagnostic {
+): ToolkitDiagnostic {
   // One rule for every semantic diagnostic, and the reason it is here rather than at any of the
   // fifty call sites.
   //
-  // Falling back to `atlasSourceSpan('', 0, 0, catalog.sourcePath)` when the pointer does not
+  // Falling back to `spanAt('', 0, 0, catalog.sourcePath)` when the pointer does not
   // resolve gives offset zero of an empty string, which renders `file:1:1`. Every diagnostic
-  // reporting that something is *absent* takes that path by definition, ATL1307 always, and a
+  // reporting that something is *absent* takes that path by definition, EQ1307 always, and a
   // reader sent to line 1 column 1 looks at a line that has nothing to do with it. **A wrong
   // location is worse than no location**, and one expression would produce one fifty times over.
   //
@@ -405,12 +404,12 @@ function semanticDiagnostic(
   // to find anyway. When it had to stop short, the summary says so, because a caret on a line the
   // reader was not told about is its own small mystery. And when there is no honest position at all
   // the diagnostic carries none: the file name alone is a true statement and `file:1:1` is not.
-  const anchor = atlasCatalogPathAnchor(catalog, path);
+  const anchor = catalogPathAnchor(catalog, path);
   const missing =
     anchor === undefined || anchor.resolved >= path.length
       ? ''
       : ` Reported at ${pointerText(path.slice(0, anchor.resolved))}, because ${pointerText(path)} is not in this file.`;
-  return atlasDiagnostic(code, `${summary}${missing}`, {
+  return toolkitDiagnostic(code, `${summary}${missing}`, {
     path,
     severity,
     ...(anchor === undefined ? {} : { span: anchor.span }),
@@ -424,8 +423,8 @@ function pointerText(path: readonly (string | number)[]): string {
 
 function functionOperandType(
   name: string,
-  extensions: AtlasExtensionRegistry | undefined,
-): AtlasPortableTypeId | undefined {
+  extensions: ExtensionRegistry | undefined,
+): PortableTypeId | undefined {
   switch (name) {
     case 'string':
       return 'string';
@@ -442,14 +441,14 @@ function functionOperandType(
     case 'time':
       return 'date-time';
     default:
-      return atlasExtensionDescriptor(extensions, 'message-function', name)
+      return extensionDescriptor(extensions, 'message-function', name)
         ?.operandType;
   }
 }
 
 function registerValueReference(
-  value: AtlasMessageValueReference | undefined,
-  type: AtlasPortableTypeId | undefined,
+  value: MessageValueReference | undefined,
+  type: PortableTypeId | undefined,
   externalInputs: ReadonlySet<string>,
   usages: Map<string, InputUsage>,
 ): void {
@@ -467,15 +466,15 @@ function registerValueReference(
 }
 
 function registerExpression(
-  expression: AtlasMessageExpression,
+  expression: MessageExpression,
   externalInputs: ReadonlySet<string>,
   usages: Map<string, InputUsage>,
-  extensions: AtlasExtensionRegistry | undefined,
+  extensions: ExtensionRegistry | undefined,
 ): void {
   const descriptor =
     expression.function === undefined
       ? undefined
-      : atlasExtensionDescriptor(
+      : extensionDescriptor(
           extensions,
           'message-function',
           expression.function.name,
@@ -501,10 +500,10 @@ function registerExpression(
 }
 
 function registerPatternInputs(
-  pattern: AtlasMessagePattern,
+  pattern: MessagePattern,
   externalInputs: ReadonlySet<string>,
   usages: Map<string, InputUsage>,
-  extensions: AtlasExtensionRegistry | undefined,
+  extensions: ExtensionRegistry | undefined,
 ): void {
   for (const part of pattern) {
     if (typeof part === 'string') {
@@ -521,8 +520,8 @@ function registerPatternInputs(
 }
 
 function inputUsages(
-  semantics: AtlasMessageSemanticModel,
-  extensions: AtlasExtensionRegistry | undefined,
+  semantics: MessageSemanticModel,
+  extensions: ExtensionRegistry | undefined,
 ): ReadonlyMap<string, InputUsage> {
   const externalInputs = new Set(semantics.externalInputs);
   const usages = new Map<string, InputUsage>();
@@ -550,8 +549,8 @@ function inputUsages(
 }
 
 function expressionsInMessage(
-  semantics: AtlasMessageSemanticModel,
-): readonly AtlasMessageExpression[] {
+  semantics: MessageSemanticModel,
+): readonly MessageExpression[] {
   const expressions = semantics.declarations.map(({ value }) => value);
   const patterns =
     semantics.kind === 'pattern'
@@ -585,19 +584,19 @@ function literalSatisfiesExtensionOption(
     readonly values?: readonly (string | number | boolean)[];
   }>,
 ): boolean {
-  const interpreted = atlasExtensionOptionValue(value, option.type);
+  const interpreted = extensionOptionValue(value, option.type);
   return (
     interpreted !== undefined &&
-    atlasExtensionOptionValueAllowed(interpreted, option.values)
+    extensionOptionValueAllowed(interpreted, option.values)
   );
 }
 
 function validateMessageFunctions(
-  catalog: AtlasCatalog,
+  catalog: Catalog,
   messageId: string,
-  message: AtlasCatalogMessage,
-  extensions: AtlasExtensionRegistry | undefined,
-  diagnostics: AtlasDiagnostic[],
+  message: CatalogMessage,
+  extensions: ExtensionRegistry | undefined,
+  diagnostics: ToolkitDiagnostic[],
 ): void {
   if (message.kind === 'empty') return;
   for (const expression of expressionsInMessage(message.semantics)) {
@@ -605,7 +604,7 @@ function validateMessageFunctions(
     if (reference === undefined || standardFunctionNames.has(reference.name)) {
       continue;
     }
-    const descriptor = atlasExtensionDescriptor(
+    const descriptor = extensionDescriptor(
       extensions,
       'message-function',
       reference.name,
@@ -614,7 +613,7 @@ function validateMessageFunctions(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1805',
+          'EQ1805',
           `Message function ${JSON.stringify(reference.name)} has no registered application-local descriptor.`,
           ['messages', messageId],
         ),
@@ -625,7 +624,7 @@ function validateMessageFunctions(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1805',
+          'EQ1805',
           `Custom message function ${JSON.stringify(reference.name)} requires an operand.`,
           ['messages', messageId],
         ),
@@ -639,7 +638,7 @@ function validateMessageFunctions(
         diagnostics.push(
           semanticDiagnostic(
             catalog,
-            'ATL1805',
+            'EQ1805',
             `Custom message function ${JSON.stringify(reference.name)} does not declare option ${JSON.stringify(authored)}.`,
             ['messages', messageId],
           ),
@@ -651,7 +650,7 @@ function validateMessageFunctions(
         diagnostics.push(
           semanticDiagnostic(
             catalog,
-            'ATL1805',
+            'EQ1805',
             `Custom message function option ${JSON.stringify(authored)} is incompatible with its portable descriptor.`,
             ['messages', messageId],
           ),
@@ -663,7 +662,7 @@ function validateMessageFunctions(
         diagnostics.push(
           semanticDiagnostic(
             catalog,
-            'ATL1805',
+            'EQ1805',
             `Custom message function ${JSON.stringify(reference.name)} requires option ${JSON.stringify(name)}.`,
             ['messages', messageId],
           ),
@@ -674,8 +673,8 @@ function validateMessageFunctions(
 }
 
 function compatibleRefinement(
-  inferred: AtlasPortableTypeId,
-  refined: AtlasPortableTypeId,
+  inferred: PortableTypeId,
+  refined: PortableTypeId,
 ): boolean {
   return (
     inferred === refined || (inferred === 'number' && refined === 'integer')
@@ -683,8 +682,8 @@ function compatibleRefinement(
 }
 
 function literalMatchesType(
-  literal: AtlasInputLiteral,
-  type: AtlasPortableTypeId,
+  literal: InputLiteral,
+  type: PortableTypeId,
 ): boolean {
   switch (type) {
     case 'string':
@@ -700,21 +699,21 @@ function literalMatchesType(
 }
 
 function refinementType(
-  catalog: AtlasCatalog,
+  catalog: Catalog,
   messageId: string,
   inputName: string,
-  refinement: AtlasInputRefinement,
-  inferred: AtlasPortableTypeId,
-  diagnostics: AtlasDiagnostic[],
-): AtlasPortableTypeId {
+  refinement: InputRefinement,
+  inferred: PortableTypeId,
+  diagnostics: ToolkitDiagnostic[],
+): PortableTypeId {
   if (refinement.type === undefined) {
     return inferred;
   }
-  if (!portableTypes.has(refinement.type as AtlasPortableTypeId)) {
+  if (!portableTypes.has(refinement.type as PortableTypeId)) {
     diagnostics.push(
       semanticDiagnostic(
         catalog,
-        'ATL1302',
+        'EQ1302',
         `Input ${JSON.stringify(inputName)} uses unknown portable type ${JSON.stringify(refinement.type)}.`,
         ['messages', messageId, 'inputs', inputName, 'type'],
       ),
@@ -722,12 +721,12 @@ function refinementType(
     return inferred;
   }
 
-  const refined = refinement.type as AtlasPortableTypeId;
+  const refined = refinement.type as PortableTypeId;
   if (!compatibleRefinement(inferred, refined)) {
     diagnostics.push(
       semanticDiagnostic(
         catalog,
-        'ATL1302',
+        'EQ1302',
         `Input ${JSON.stringify(inputName)} cannot refine inferred ${inferred} input to ${refined}.`,
         ['messages', messageId, 'inputs', inputName, 'type'],
       ),
@@ -738,19 +737,19 @@ function refinementType(
 }
 
 function effectiveInputs(
-  catalog: AtlasCatalog,
+  catalog: Catalog,
   messageId: string,
-  message: AtlasCatalogMessage,
-  diagnostics: AtlasDiagnostic[],
-  extensions: AtlasExtensionRegistry | undefined,
-  inherited: ReadonlyMap<string, AtlasEffectiveInputContract> = new Map(),
-): readonly AtlasEffectiveInputContract[] {
+  message: CatalogMessage,
+  diagnostics: ToolkitDiagnostic[],
+  extensions: ExtensionRegistry | undefined,
+  inherited: ReadonlyMap<string, EffectiveInputContract> = new Map(),
+): readonly EffectiveInputContract[] {
   if (message.kind === 'empty') {
     if (Object.keys(message.inputs).length > 0) {
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1302',
+          'EQ1302',
           'An explicit-empty message cannot declare inputs because it has no inferred input set.',
           ['messages', messageId, 'inputs'],
         ),
@@ -761,14 +760,13 @@ function effectiveInputs(
 
   const usages = inputUsages(message.semantics, extensions);
   if (
-    message.semantics.externalInputs.length >
-    ATLAS_RESOURCE_LIMITS.inputsPerMessage
+    message.semantics.externalInputs.length > RESOURCE_LIMITS.inputsPerMessage
   ) {
     diagnostics.push(
       semanticDiagnostic(
         catalog,
-        'ATL1302',
-        `Message ${JSON.stringify(messageId)} exceeds the ${ATLAS_RESOURCE_LIMITS.inputsPerMessage}-input implementation ceiling.`,
+        'EQ1302',
+        `Message ${JSON.stringify(messageId)} exceeds the ${RESOURCE_LIMITS.inputsPerMessage}-input implementation ceiling.`,
         ['messages', messageId],
       ),
     );
@@ -778,7 +776,7 @@ function effectiveInputs(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1302',
+          'EQ1302',
           `Input refinement ${JSON.stringify(name)} does not match an inferred external input.`,
           ['messages', messageId, 'inputs', name],
         ),
@@ -786,7 +784,7 @@ function effectiveInputs(
     }
   }
 
-  const contracts: AtlasEffectiveInputContract[] = [];
+  const contracts: EffectiveInputContract[] = [];
   for (const name of message.semantics.externalInputs) {
     const usage = usages.get(name);
     const inheritedContract = inherited.get(name);
@@ -795,7 +793,7 @@ function effectiveInputs(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1302',
+          'EQ1302',
           `Input ${JSON.stringify(name)} has incompatible MessageFormat operand uses: ${explicitTypes.join(', ')}.`,
           ['messages', messageId],
         ),
@@ -822,7 +820,7 @@ function effectiveInputs(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1302',
+          'EQ1302',
           `Input ${JSON.stringify(name)} has an enum value incompatible with ${type}.`,
           ['messages', messageId, 'inputs', name, 'enum'],
         ),
@@ -847,17 +845,17 @@ function effectiveInputs(
 }
 
 function patternSlotSummary(
-  catalog: AtlasCatalog,
+  catalog: Catalog,
   messageId: string,
-  message: AtlasCatalogMessage,
-  pattern: AtlasMessagePattern,
-  diagnostics: AtlasDiagnostic[],
-  extensions: AtlasExtensionRegistry | undefined,
-  inheritedSlots?: ReadonlyMap<string, AtlasEffectiveSlotContract>,
+  message: CatalogMessage,
+  pattern: MessagePattern,
+  diagnostics: ToolkitDiagnostic[],
+  extensions: ExtensionRegistry | undefined,
+  inheritedSlots?: ReadonlyMap<string, EffectiveSlotContract>,
 ): PatternSlotSummary {
   const counts = new Map<string, number>();
   const parents = new Map<string, Set<string>>();
-  const shapes = new Map<string, Set<AtlasSlotShape>>();
+  const shapes = new Map<string, Set<SlotShape>>();
   const stack: string[] = [];
 
   for (const part of pattern) {
@@ -870,7 +868,7 @@ function patternSlotSummary(
         diagnostics.push(
           semanticDiagnostic(
             catalog,
-            'ATL1303',
+            'EQ1303',
             `Rich slot ${JSON.stringify(part.name)} closes ${JSON.stringify(opened ?? 'no open slot')}.`,
             ['messages', messageId],
           ),
@@ -879,10 +877,10 @@ function patternSlotSummary(
       continue;
     }
 
-    const shape: AtlasSlotShape =
+    const shape: SlotShape =
       part.markupKind === 'standalone' ? 'standalone' : 'paired';
     counts.set(part.name, (counts.get(part.name) ?? 0) + 1);
-    const slotShapes = shapes.get(part.name) ?? new Set<AtlasSlotShape>();
+    const slotShapes = shapes.get(part.name) ?? new Set<SlotShape>();
     slotShapes.add(shape);
     shapes.set(part.name, slotShapes);
     const slotParents = parents.get(part.name) ?? new Set<string>();
@@ -893,11 +891,7 @@ function patternSlotSummary(
       message.slots[part.name]?.kind ??
       inheritedSlots?.get(part.name)?.kind ??
       (builtInSlotKinds.has(part.name) ? part.name : 'message-local');
-    const descriptor = atlasExtensionDescriptor(
-      extensions,
-      'rich-slot-kind',
-      kind,
-    );
+    const descriptor = extensionDescriptor(extensions, 'rich-slot-kind', kind);
     if (descriptor !== undefined) {
       validateCustomSlotOptions(
         catalog,
@@ -917,7 +911,7 @@ function patternSlotSummary(
           (builtInSlotKinds.has(name) ? name : 'message-local');
         return (
           interactiveSlotKinds.has(parentKind) ||
-          atlasExtensionDescriptor(extensions, 'rich-slot-kind', parentKind)
+          extensionDescriptor(extensions, 'rich-slot-kind', parentKind)
             ?.interactive === true
         );
       })
@@ -925,7 +919,7 @@ function patternSlotSummary(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1303',
+          'EQ1303',
           `Interactive rich slot ${JSON.stringify(part.name)} cannot be nested inside another interactive slot.`,
           ['messages', messageId],
         ),
@@ -942,7 +936,7 @@ function patternSlotSummary(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1303',
+          'EQ1303',
           `Rich slot ${JSON.stringify(part.name)} cannot be nested inside code.`,
           ['messages', messageId],
         ),
@@ -957,7 +951,7 @@ function patternSlotSummary(
     diagnostics.push(
       semanticDiagnostic(
         catalog,
-        'ATL1303',
+        'EQ1303',
         `Rich slot ${JSON.stringify(stack.at(-1))} is not closed.`,
         ['messages', messageId],
       ),
@@ -968,13 +962,13 @@ function patternSlotSummary(
 }
 
 function effectiveSlots(
-  catalog: AtlasCatalog,
+  catalog: Catalog,
   messageId: string,
-  message: AtlasCatalogMessage,
-  diagnostics: AtlasDiagnostic[],
-  extensions: AtlasExtensionRegistry | undefined,
-  inheritedSlots?: ReadonlyMap<string, AtlasEffectiveSlotContract>,
-): readonly AtlasEffectiveSlotContract[] {
+  message: CatalogMessage,
+  diagnostics: ToolkitDiagnostic[],
+  extensions: ExtensionRegistry | undefined,
+  inheritedSlots?: ReadonlyMap<string, EffectiveSlotContract>,
+): readonly EffectiveSlotContract[] {
   const patterns =
     message.kind === 'empty'
       ? []
@@ -997,13 +991,13 @@ function effectiveSlots(
     for (const name of summary.counts.keys()) names.add(name);
   }
 
-  const contracts: AtlasEffectiveSlotContract[] = [];
-  if (names.size > ATLAS_RESOURCE_LIMITS.slotsPerMessage) {
+  const contracts: EffectiveSlotContract[] = [];
+  if (names.size > RESOURCE_LIMITS.slotsPerMessage) {
     diagnostics.push(
       semanticDiagnostic(
         catalog,
-        'ATL1303',
-        `Message ${JSON.stringify(messageId)} exceeds the ${ATLAS_RESOURCE_LIMITS.slotsPerMessage}-slot implementation ceiling.`,
+        'EQ1303',
+        `Message ${JSON.stringify(messageId)} exceeds the ${RESOURCE_LIMITS.slotsPerMessage}-slot implementation ceiling.`,
         ['messages', messageId],
       ),
     );
@@ -1012,7 +1006,7 @@ function effectiveSlots(
     const refinement = message.slots[name];
     const inherited = inheritedSlots?.get(name);
     const counts = summaries.map((summary) => summary.counts.get(name) ?? 0);
-    const shapes = new Set<AtlasSlotShape>();
+    const shapes = new Set<SlotShape>();
     const parents = new Set<string>();
     for (const summary of summaries) {
       for (const shape of summary.shapes.get(name) ?? []) shapes.add(shape);
@@ -1022,7 +1016,7 @@ function effectiveSlots(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1303',
+          'EQ1303',
           `Rich slot ${JSON.stringify(name)} is used as both paired and standalone.`,
           ['messages', messageId, 'slots', name],
         ),
@@ -1033,11 +1027,7 @@ function effectiveSlots(
       refinement?.kind ??
       inherited?.kind ??
       (builtInSlotKinds.has(name) ? name : 'message-local');
-    const customKind = atlasExtensionDescriptor(
-      extensions,
-      'rich-slot-kind',
-      kind,
-    );
+    const customKind = extensionDescriptor(extensions, 'rich-slot-kind', kind);
     if (
       !builtInSlotKinds.has(kind) &&
       kind !== 'message-local' &&
@@ -1046,7 +1036,7 @@ function effectiveSlots(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1303',
+          'EQ1303',
           `Rich slot ${JSON.stringify(name)} references unregistered semantic kind ${JSON.stringify(kind)}.`,
           ['messages', messageId, 'slots', name, 'kind'],
         ),
@@ -1061,7 +1051,7 @@ function effectiveSlots(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1303',
+          'EQ1303',
           `Unused declared rich slot ${JSON.stringify(name)} requires a determinable kind and shape.`,
           ['messages', messageId, 'slots', name],
         ),
@@ -1072,7 +1062,7 @@ function effectiveSlots(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1303',
+          'EQ1303',
           `Built-in rich slot ${JSON.stringify(name)} must be paired.`,
           ['messages', messageId, 'slots', name, 'shape'],
         ),
@@ -1082,7 +1072,7 @@ function effectiveSlots(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1303',
+          'EQ1303',
           `Rich slot ${JSON.stringify(name)} must use the ${customKind.shape} shape declared by ${JSON.stringify(kind)}.`,
           ['messages', messageId, 'slots', name, 'shape'],
         ),
@@ -1095,7 +1085,7 @@ function effectiveSlots(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1303',
+          'EQ1303',
           `Rich slot ${JSON.stringify(name)} is present in every source variant and cannot be made optional by refinement.`,
           ['messages', messageId, 'slots', name, 'optional'],
         ),
@@ -1105,7 +1095,7 @@ function effectiveSlots(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1303',
+          'EQ1303',
           `Rich slot ${JSON.stringify(name)} is not repeated by the source and cannot be made repeatable by refinement.`,
           ['messages', messageId, 'slots', name, 'repeatable'],
         ),
@@ -1120,7 +1110,7 @@ function effectiveSlots(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1303',
+          'EQ1303',
           `Rich slot ${JSON.stringify(name)} is authored outside its declared within constraint.`,
           ['messages', messageId, 'slots', name, 'within'],
         ),
@@ -1160,7 +1150,7 @@ interface PluralSelector {
 /**
  * Which categories a locale's grammar requires for one `select` kind, from the pinned CLDR release.
  *
- * Derived from the release Atlas pins rather than from the host `Intl`, so the answer does not
+ * Derived from the release Equator pins rather than from the host `Intl`, so the answer does not
  * change with the Node version the build happens to run on.
  *
  * The two tables are not variants of one another, so reading the wrong one is wrong in both
@@ -1177,8 +1167,8 @@ function requiredPluralCategories(
   return (
     pluralCategoriesForLocale(
       kind === 'ordinal'
-        ? ATLAS_ORDINAL_PLURAL_CATEGORIES
-        : ATLAS_CARDINAL_PLURAL_CATEGORIES,
+        ? ORDINAL_PLURAL_CATEGORIES
+        : CARDINAL_PLURAL_CATEGORIES,
       locale,
     ) ?? ['other']
   );
@@ -1246,10 +1236,10 @@ export function pluralCategoriesForLocale(
  *
  * `select=exact` selects on the number itself and has no categories to be missing, so it is not
  * returned. An absent option means `plural`, which is MF2's default. No other value can reach here:
- * `parseAtlasMessage` rejects it (`ATL1204`).
+ * `parseMessageSemanticModel` rejects it (`EQ1204`).
  */
 function pluralSelectorPositions(
-  semantics: AtlasMessageSemanticModel,
+  semantics: MessageSemanticModel,
 ): readonly PluralSelector[] {
   if (semantics.kind !== 'select') return [];
   const byName = new Map(
@@ -1263,7 +1253,7 @@ function pluralSelectorPositions(
     const reference = byName.get(selector)?.value.function;
     if (
       reference === undefined ||
-      !ATLAS_PLURAL_SELECTOR_FUNCTIONS.has(reference.name)
+      !PLURAL_SELECTOR_FUNCTIONS.has(reference.name)
     ) {
       return;
     }
@@ -1280,7 +1270,7 @@ function pluralSelectorPositions(
 
 /** Literal keys supplied at a selector position, ignoring the catch-all. */
 function suppliedKeys(
-  semantics: AtlasMessageSemanticModel,
+  semantics: MessageSemanticModel,
   position: number,
 ): ReadonlySet<string> {
   const keys = new Set<string>();
@@ -1301,12 +1291,12 @@ function suppliedKeys(
  * categories to be missing.
  */
 function validateTargetPluralCoverage(
-  targetCatalog: AtlasCatalog,
+  targetCatalog: Catalog,
   messageId: string,
-  sourceMessage: AtlasCatalogMessage,
-  targetMessage: AtlasCatalogMessage,
-  diagnostics: AtlasDiagnostic[],
-  policy: AtlasCompletenessPolicy,
+  sourceMessage: CatalogMessage,
+  targetMessage: CatalogMessage,
+  diagnostics: ToolkitDiagnostic[],
+  policy: CompletenessPolicy,
 ): void {
   if (sourceMessage.kind !== 'message' || targetMessage.kind !== 'message') {
     return;
@@ -1331,7 +1321,7 @@ function validateTargetPluralCoverage(
     diagnostics.push(
       semanticDiagnostic(
         targetCatalog,
-        'ATL1308',
+        'EQ1308',
         `Target catalog ${targetCatalog.locale} omits ${kind === 'ordinal' ? 'ordinal' : 'plural'} ${missing.length === 1 ? 'category' : 'categories'} ${missing
           .map((category) => JSON.stringify(category))
           .join(
@@ -1345,20 +1335,20 @@ function validateTargetPluralCoverage(
 }
 
 function validateTarget(
-  sourceCatalog: AtlasCatalog,
-  targetCatalog: AtlasCatalog,
+  sourceCatalog: Catalog,
+  targetCatalog: Catalog,
   messageId: string,
-  sourceMessage: AtlasCatalogMessage,
-  sourceInputs: readonly AtlasEffectiveInputContract[],
-  sourceSlots: readonly AtlasEffectiveSlotContract[],
-  diagnostics: AtlasDiagnostic[],
-  extensions: AtlasExtensionRegistry | undefined,
-  policy: AtlasCompletenessPolicy,
-  inherited: readonly AtlasCatalog[],
-): AtlasSemanticTargetMessage | undefined {
+  sourceMessage: CatalogMessage,
+  sourceInputs: readonly EffectiveInputContract[],
+  sourceSlots: readonly EffectiveSlotContract[],
+  diagnostics: ToolkitDiagnostic[],
+  extensions: ExtensionRegistry | undefined,
+  policy: CompletenessPolicy,
+  inherited: readonly Catalog[],
+): SemanticTargetMessage | undefined {
   const targetMessage = targetCatalog.messages[messageId];
   if (targetMessage === undefined) {
-    // A target that *invents* a message was already an error (ATL1304). A target that *omits* one
+    // A target that *invents* a message was already an error (EQ1304). A target that *omits* one
     // returned silently, so a locale could be incomplete and look finished: check exited 0,
     // generation succeeded, and the message fell back to the source locale in a production build
     // with nothing said. Being missing is at least as reportable as being extra.
@@ -1376,7 +1366,7 @@ function validateTarget(
     diagnostics.push(
       semanticDiagnostic(
         targetCatalog,
-        'ATL1307',
+        'EQ1307',
         `Target catalog ${targetCatalog.locale} omits message ${JSON.stringify(messageId)}; ${sourceCatalog.locale} is used in its place.${policy.suffix}`,
         ['messages', messageId],
         policy.severity,
@@ -1418,7 +1408,7 @@ function validateTarget(
       diagnostics.push(
         semanticDiagnostic(
           targetCatalog,
-          'ATL1304',
+          'EQ1304',
           `Target message ${JSON.stringify(messageId)} changes or invents input ${JSON.stringify(input.name)}.`,
           ['messages', messageId],
         ),
@@ -1447,7 +1437,7 @@ function validateTarget(
       diagnostics.push(
         semanticDiagnostic(
           targetCatalog,
-          'ATL1304',
+          'EQ1304',
           `Target message ${JSON.stringify(messageId)} changes or invents rich slot ${JSON.stringify(target.name)}.`,
           ['messages', messageId],
         ),
@@ -1459,7 +1449,7 @@ function validateTarget(
       diagnostics.push(
         semanticDiagnostic(
           targetCatalog,
-          'ATL1304',
+          'EQ1304',
           `Target message ${JSON.stringify(messageId)} omits required rich slot ${JSON.stringify(source.name)}.`,
           ['messages', messageId],
         ),
@@ -1474,9 +1464,7 @@ function validateTarget(
   });
 }
 
-function inputJson(
-  input: AtlasEffectiveInputContract,
-): AtlasCanonicalJsonValue {
+function inputJson(input: EffectiveInputContract): CanonicalJsonValue {
   return {
     name: input.name,
     type: input.type,
@@ -1486,7 +1474,7 @@ function inputJson(
   };
 }
 
-function slotJson(slot: AtlasEffectiveSlotContract): AtlasCanonicalJsonValue {
+function slotJson(slot: EffectiveSlotContract): CanonicalJsonValue {
   return {
     name: slot.name,
     kind: slot.kind,
@@ -1497,9 +1485,7 @@ function slotJson(slot: AtlasEffectiveSlotContract): AtlasCanonicalJsonValue {
   };
 }
 
-function messageContractJson(
-  message: AtlasSemanticMessage,
-): AtlasCanonicalJsonValue {
+function messageContractJson(message: SemanticMessage): CanonicalJsonValue {
   return {
     identity: message.identity,
     resultKind: message.resultKind,
@@ -1509,7 +1495,7 @@ function messageContractJson(
 }
 
 interface ParsedFamilyTemplate {
-  readonly authored: AtlasCatalogFamily;
+  readonly authored: CatalogFamily;
   readonly parts: readonly (
     | { readonly kind: 'literal'; readonly value: string }
     | { readonly kind: 'segment'; readonly name: string }
@@ -1517,11 +1503,11 @@ interface ParsedFamilyTemplate {
 }
 
 function parseFamilyTemplate(
-  catalog: AtlasCatalog,
+  catalog: Catalog,
   familyName: string,
-  authored: AtlasCatalogFamily,
-  extensions: AtlasExtensionRegistry | undefined,
-  diagnostics: AtlasDiagnostic[],
+  authored: CatalogFamily,
+  extensions: ExtensionRegistry | undefined,
+  diagnostics: ToolkitDiagnostic[],
 ): ParsedFamilyTemplate | undefined {
   const parts: ParsedFamilyTemplate['parts'][number][] = [];
   const placeholders = new Set<string>();
@@ -1536,7 +1522,7 @@ function parseFamilyTemplate(
         diagnostics.push(
           semanticDiagnostic(
             catalog,
-            'ATL1305',
+            'EQ1305',
             `Open family ${JSON.stringify(familyName)} repeats placeholder ${JSON.stringify(name)}.`,
             ['families', familyName, 'template'],
           ),
@@ -1552,7 +1538,7 @@ function parseFamilyTemplate(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1305',
+          'EQ1305',
           `Open family ${JSON.stringify(familyName)} has an invalid literal or placeholder part.`,
           ['families', familyName, 'template'],
         ),
@@ -1564,7 +1550,7 @@ function parseFamilyTemplate(
     diagnostics.push(
       semanticDiagnostic(
         catalog,
-        'ATL1305',
+        'EQ1305',
         `Open family ${JSON.stringify(familyName)} requires at least one fixed part and one placeholder.`,
         ['families', familyName, 'template'],
       ),
@@ -1576,7 +1562,7 @@ function parseFamilyTemplate(
     diagnostics.push(
       semanticDiagnostic(
         catalog,
-        'ATL1305',
+        'EQ1305',
         `Open family ${JSON.stringify(familyName)} declares a segment that is absent from its template.`,
         ['families', familyName, 'segments'],
       ),
@@ -1585,13 +1571,12 @@ function parseFamilyTemplate(
   }
   for (const [name, type] of Object.entries(authored.segments)) {
     if (
-      atlasExtensionDescriptor(extensions, 'identifier-segment', type) ===
-      undefined
+      extensionDescriptor(extensions, 'identifier-segment', type) === undefined
     ) {
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1805',
+          'EQ1805',
           `Open family segment ${JSON.stringify(name)} references unregistered identifier type ${JSON.stringify(type)}.`,
           ['families', familyName, 'segments', name],
         ),
@@ -1605,7 +1590,7 @@ function parseFamilyTemplate(
 function familySegmentMatches(
   value: string,
   descriptor:
-    | Extract<AtlasExtensionDescriptor, { readonly kind: 'identifier-segment' }>
+    | Extract<ExtensionDescriptor, { readonly kind: 'identifier-segment' }>
     | undefined,
 ): boolean {
   if (
@@ -1628,7 +1613,7 @@ function familySegmentMatches(
 function familyMatch(
   messageId: string,
   parsed: ParsedFamilyTemplate,
-  extensions: AtlasExtensionRegistry | undefined,
+  extensions: ExtensionRegistry | undefined,
 ): Readonly<Record<string, string>> | undefined {
   const actual = messageId.split('.');
   if (actual.length !== parsed.parts.length) return undefined;
@@ -1646,7 +1631,7 @@ function familyMatch(
     const descriptor =
       type === undefined
         ? undefined
-        : atlasExtensionDescriptor(extensions, 'identifier-segment', type);
+        : extensionDescriptor(extensions, 'identifier-segment', type);
     if (!familySegmentMatches(value, descriptor)) return undefined;
     segments[part.name] = value;
   }
@@ -1657,7 +1642,7 @@ function familyMatch(
   );
 }
 
-function commonContractJson(message: AtlasSemanticMessage): string {
+function commonContractJson(message: SemanticMessage): string {
   return JSON.stringify({
     resultKind: message.resultKind,
     inputs: message.inputs.map(inputJson),
@@ -1666,12 +1651,12 @@ function commonContractJson(message: AtlasSemanticMessage): string {
 }
 
 function analyzeFamilies(
-  catalog: AtlasCatalog,
-  messages: readonly AtlasSemanticMessage[],
-  extensions: AtlasExtensionRegistry | undefined,
-  diagnostics: AtlasDiagnostic[],
-): readonly AtlasSemanticFamily[] {
-  const families: AtlasSemanticFamily[] = [];
+  catalog: Catalog,
+  messages: readonly SemanticMessage[],
+  extensions: ExtensionRegistry | undefined,
+  diagnostics: ToolkitDiagnostic[],
+): readonly SemanticFamily[] {
+  const families: SemanticFamily[] = [];
   const templates = new Map<string, string>();
   const projectedNames = new Map<string, string>();
   const memberships = new Map<string, string>();
@@ -1687,7 +1672,7 @@ function analyzeFamilies(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1305',
+          'EQ1305',
           existingTemplate !== undefined
             ? `Open families ${JSON.stringify(existingTemplate)} and ${JSON.stringify(name)} duplicate one template.`
             : `Open families ${JSON.stringify(existingProjection)} and ${JSON.stringify(name)} collide at generated name ${JSON.stringify(projectedName)}.`,
@@ -1713,14 +1698,12 @@ function analyzeFamilies(
           ? undefined
           : Object.freeze({ messageId: message.messageId, segments });
       })
-      .filter(
-        (member): member is AtlasSemanticFamilyMember => member !== undefined,
-      );
+      .filter((member): member is SemanticFamilyMember => member !== undefined);
     if (members.length === 0) {
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1305',
+          'EQ1305',
           `Open family ${JSON.stringify(name)} has no current source member.`,
           ['families', name],
         ),
@@ -1731,18 +1714,16 @@ function analyzeFamilies(
       ({ messageId }) =>
         messages.find(
           (message) => message.messageId === messageId,
-        ) as AtlasSemanticMessage,
+        ) as SemanticMessage,
     );
-    const common = commonContractJson(
-      memberMessages[0] as AtlasSemanticMessage,
-    );
+    const common = commonContractJson(memberMessages[0] as SemanticMessage);
     if (
       memberMessages.some((message) => commonContractJson(message) !== common)
     ) {
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1305',
+          'EQ1305',
           `Open family ${JSON.stringify(name)} has heterogeneous current message contracts.`,
           ['families', name],
         ),
@@ -1755,7 +1736,7 @@ function analyzeFamilies(
         diagnostics.push(
           semanticDiagnostic(
             catalog,
-            'ATL1305',
+            'EQ1305',
             `Message ${JSON.stringify(member.messageId)} ambiguously matches open families ${JSON.stringify(previous)} and ${JSON.stringify(name)}.`,
             ['families', name],
           ),
@@ -1764,7 +1745,7 @@ function analyzeFamilies(
         memberships.set(member.messageId, name);
       }
     }
-    const exemplar = memberMessages[0] as AtlasSemanticMessage;
+    const exemplar = memberMessages[0] as SemanticMessage;
     const segments = parsed.parts
       .filter(
         (
@@ -1779,10 +1760,10 @@ function analyzeFamilies(
         const descriptor =
           type === undefined
             ? undefined
-            : atlasExtensionDescriptor(extensions, 'identifier-segment', type);
+            : extensionDescriptor(extensions, 'identifier-segment', type);
         return Object.freeze({
           name: segmentName,
-          type: type ?? ('atlas:native-message-part' as const),
+          type: type ?? ('equator:native-message-part' as const),
           syntax: descriptor?.syntax ?? ('lower-kebab' as const),
           maximumLength: descriptor?.maximumLength ?? 128,
         });
@@ -1802,9 +1783,7 @@ function analyzeFamilies(
   return Object.freeze(families);
 }
 
-function familyContractJson(
-  family: AtlasSemanticFamily,
-): AtlasCanonicalJsonValue {
+function familyContractJson(family: SemanticFamily): CanonicalJsonValue {
   return {
     name: family.name,
     template: family.template,
@@ -1825,11 +1804,11 @@ function familyContractJson(
 }
 
 function referencedExtensions(
-  catalogs: readonly AtlasCatalog[],
-  messages: readonly AtlasSemanticMessage[],
-  families: readonly AtlasSemanticFamily[],
-  extensions: AtlasExtensionRegistry | undefined,
-): readonly AtlasReferencedExtension[] {
+  catalogs: readonly Catalog[],
+  messages: readonly SemanticMessage[],
+  families: readonly SemanticFamily[],
+  extensions: ExtensionRegistry | undefined,
+): readonly ReferencedExtension[] {
   const keys = new Set<string>();
   for (const catalog of catalogs) {
     for (const message of Object.values(catalog.messages)) {
@@ -1849,7 +1828,7 @@ function referencedExtensions(
   }
   for (const family of families) {
     for (const segment of family.segments) {
-      if (segment.type !== 'atlas:native-message-part') {
+      if (segment.type !== 'equator:native-message-part') {
         keys.add(`identifier-segment\u0000${segment.type}`);
       }
     }
@@ -1859,7 +1838,7 @@ function referencedExtensions(
       .sort(compareCodePoint)
       .map((key) => {
         const [kind, id] = key.split('\u0000') as [
-          AtlasExtensionDescriptor['kind'],
+          ExtensionDescriptor['kind'],
           string,
         ];
         const descriptor = extensions?.descriptors.find(
@@ -1868,17 +1847,15 @@ function referencedExtensions(
         if (descriptor === undefined) return undefined;
         return descriptor;
       })
-      .filter(
-        (value): value is AtlasReferencedExtension => value !== undefined,
-      ),
+      .filter((value): value is ReferencedExtension => value !== undefined),
   );
 }
 
-export function analyzeAtlasCatalogSet(
-  request: AtlasCatalogSetAnalysisRequest,
-): AtlasResult<AtlasSemanticGraph> {
-  const diagnostics: AtlasDiagnostic[] = [];
-  const groups = new Map<string, AtlasCatalog[]>();
+export function analyzeCatalogSet(
+  request: CatalogSetAnalysisRequest,
+): ToolkitResult<SemanticGraph> {
+  const diagnostics: ToolkitDiagnostic[] = [];
+  const groups = new Map<string, Catalog[]>();
   const supportedLocales = new Set<string>(request.configuration.locales);
 
   for (const catalog of request.catalogs) {
@@ -1886,7 +1863,7 @@ export function analyzeAtlasCatalogSet(
       diagnostics.push(
         semanticDiagnostic(
           catalog,
-          'ATL1301',
+          'EQ1301',
           `Catalog locale ${JSON.stringify(catalog.locale)} is not declared by the project.`,
           [],
         ),
@@ -1898,7 +1875,7 @@ export function analyzeAtlasCatalogSet(
     groups.set(key, group);
   }
 
-  const scopes: AtlasSemanticScope[] = [];
+  const scopes: SemanticScope[] = [];
   for (const catalogs of [...groups.values()].sort((left, right) => {
     const leftKey = `${left[0]?.providerId ?? ''}\u0000${left[0]?.scopeId ?? ''}`;
     const rightKey = `${right[0]?.providerId ?? ''}\u0000${right[0]?.scopeId ?? ''}`;
@@ -1906,13 +1883,13 @@ export function analyzeAtlasCatalogSet(
   })) {
     const exemplar = catalogs[0];
     if (exemplar === undefined) continue;
-    const byLocale = new Map<string, AtlasCatalog>();
+    const byLocale = new Map<string, Catalog>();
     for (const catalog of catalogs) {
       if (byLocale.has(catalog.locale)) {
         diagnostics.push(
           semanticDiagnostic(
             catalog,
-            'ATL1301',
+            'EQ1301',
             `Duplicate catalog for ${catalog.providerId}/${catalog.scopeId}/${catalog.locale}.`,
             [],
           ),
@@ -1927,7 +1904,7 @@ export function analyzeAtlasCatalogSet(
       diagnostics.push(
         semanticDiagnostic(
           exemplar,
-          'ATL1301',
+          'EQ1301',
           `Scope ${exemplar.providerId}/${exemplar.scopeId} requires one source catalog for ${request.configuration.sourceLocale}.`,
           [],
         ),
@@ -1938,8 +1915,8 @@ export function analyzeAtlasCatalogSet(
       diagnostics.push(
         semanticDiagnostic(
           sourceCatalog,
-          'ATL1301',
-          'Empty scopes do not produce Atlas registries or generated output.',
+          'EQ1301',
+          'Empty scopes do not produce Equator registries or generated output.',
           ['messages'],
         ),
       );
@@ -1953,7 +1930,7 @@ export function analyzeAtlasCatalogSet(
         diagnostics.push(
           semanticDiagnostic(
             catalog,
-            'ATL1301',
+            'EQ1301',
             `Catalog ${catalog.locale} must use role ${expectedRole}.`,
             [],
           ),
@@ -1972,7 +1949,7 @@ export function analyzeAtlasCatalogSet(
           diagnostics.push(
             semanticDiagnostic(
               target,
-              'ATL1304',
+              'EQ1304',
               `Target catalog invents message ${JSON.stringify(messageId)}.`,
               ['messages', messageId],
             ),
@@ -1982,15 +1959,15 @@ export function analyzeAtlasCatalogSet(
     }
 
     // Which catalogs each locale inherits from in this scope, nearest first, built once.
-    // `atlasLocaleFallbackChain` walks CLDR's own parents and this project's declarations; what is
+    // `localeFallbackChain` walks CLDR's own parents and this project's declarations; what is
     // kept is the members this scope has a catalog for, since a member with no catalog supplies
     // nothing, and the source is left out because it is already the last resort below.
-    const inheritedCatalogs = new Map<string, readonly AtlasCatalog[]>();
+    const inheritedCatalogs = new Map<string, readonly Catalog[]>();
     for (const locale of request.configuration.locales) {
       inheritedCatalogs.set(
         locale,
         Object.freeze(
-          atlasLocaleFallbackChain(
+          localeFallbackChain(
             locale,
             request.configuration.parentLocales,
           ).flatMap((parent) => {
@@ -2002,9 +1979,9 @@ export function analyzeAtlasCatalogSet(
         ),
       );
     }
-    const noInheritance: readonly AtlasCatalog[] = Object.freeze([]);
+    const noInheritance: readonly Catalog[] = Object.freeze([]);
 
-    const semanticMessages: AtlasSemanticMessage[] = [];
+    const semanticMessages: SemanticMessage[] = [];
     for (const [messageId, sourceMessage] of Object.entries(
       sourceCatalog.messages,
     )) {
@@ -2021,26 +1998,26 @@ export function analyzeAtlasCatalogSet(
       ) {
         if (
           sourceMessage.semantics.selectors.length >
-          ATLAS_RESOURCE_LIMITS.selectorsPerMessage
+          RESOURCE_LIMITS.selectorsPerMessage
         ) {
           diagnostics.push(
             semanticDiagnostic(
               sourceCatalog,
-              'ATL1302',
-              `Message ${JSON.stringify(messageId)} exceeds the ${ATLAS_RESOURCE_LIMITS.selectorsPerMessage}-selector implementation ceiling.`,
+              'EQ1302',
+              `Message ${JSON.stringify(messageId)} exceeds the ${RESOURCE_LIMITS.selectorsPerMessage}-selector implementation ceiling.`,
               ['messages', messageId],
             ),
           );
         }
         if (
           sourceMessage.semantics.variants.length >
-          ATLAS_RESOURCE_LIMITS.variantsPerMessage
+          RESOURCE_LIMITS.variantsPerMessage
         ) {
           diagnostics.push(
             semanticDiagnostic(
               sourceCatalog,
-              'ATL1302',
-              `Message ${JSON.stringify(messageId)} exceeds the ${ATLAS_RESOURCE_LIMITS.variantsPerMessage}-variant implementation ceiling.`,
+              'EQ1302',
+              `Message ${JSON.stringify(messageId)} exceeds the ${RESOURCE_LIMITS.variantsPerMessage}-variant implementation ceiling.`,
               ['messages', messageId],
             ),
           );
@@ -2071,7 +2048,7 @@ export function analyzeAtlasCatalogSet(
             slots,
             diagnostics,
             request.extensions,
-            atlasCompletenessPolicy(
+            completenessPolicy(
               request.configuration,
               request.requireCompleteTargets === true,
               target.locale,
@@ -2080,8 +2057,7 @@ export function analyzeAtlasCatalogSet(
           ),
         )
         .filter(
-          (target): target is AtlasSemanticTargetMessage =>
-            target !== undefined,
+          (target): target is SemanticTargetMessage => target !== undefined,
         );
       const identity = `${sourceCatalog.providerId}:${sourceCatalog.scopeId}:${messageId}`;
       const resultKind =
@@ -2093,9 +2069,9 @@ export function analyzeAtlasCatalogSet(
         resultKind,
         inputs: inputs.map(inputJson),
         slots: slots.map(slotJson),
-      } satisfies AtlasCanonicalJsonValue;
-      const sourceFingerprint = digestAtlasCanonicalJson(
-        'atlas-source-message/1',
+      } satisfies CanonicalJsonValue;
+      const sourceFingerprint = digestCanonicalJson(
+        'equator-source-message/1',
         {
           ...contract,
           source:
@@ -2148,7 +2124,7 @@ export function analyzeAtlasCatalogSet(
         // no catalog of its own beside an `en` it inherits from is a whole locale saying it has
         // nothing to add, and whatever `en` is missing is reported against `en`, once, rather than
         // against every locale that inherits from it.
-        const policy = atlasCompletenessPolicy(
+        const policy = completenessPolicy(
           request.configuration,
           request.requireCompleteTargets === true,
           locale,
@@ -2156,7 +2132,7 @@ export function analyzeAtlasCatalogSet(
         diagnostics.push(
           semanticDiagnostic(
             sourceCatalog,
-            'ATL1306',
+            'EQ1306',
             `Scope ${sourceCatalog.scopeId} has no ${locale} catalog; source-locale fallback remains available.${policy.suffix}`,
             [],
             policy.severity,
@@ -2169,8 +2145,8 @@ export function analyzeAtlasCatalogSet(
     // caller has to satisfy, so message prose stays outside it and translating a message leaves
     // the fingerprint alone. The registry domain is what the runtime has to provide, so it carries
     // descriptor identities and never the implementations behind them.
-    const applicationContractFingerprint = digestAtlasCanonicalJson(
-      'atlas-scope-application-contract/1',
+    const applicationContractFingerprint = digestCanonicalJson(
+      'equator-scope-application-contract/1',
       {
         messages: semanticMessages.map(messageContractJson),
         families: semanticFamilies.map(familyContractJson),
@@ -2183,8 +2159,8 @@ export function analyzeAtlasCatalogSet(
         ),
       ),
     ].sort(compareCodePoint);
-    const semanticRegistryFingerprint = digestAtlasCanonicalJson(
-      'atlas-scope-semantic-registry/1',
+    const semanticRegistryFingerprint = digestCanonicalJson(
+      'equator-scope-semantic-registry/1',
       {
         builtInKinds: referencedKinds,
         extensions: requiredExtensions.map(({ kind, id, fingerprint }) => ({
@@ -2200,7 +2176,7 @@ export function analyzeAtlasCatalogSet(
         scopeId: sourceCatalog.scopeId,
         sourceLocale: sourceCatalog.locale,
         availableLocales: Object.freeze(
-          [...byLocale.keys()].sort(compareCodePoint) as AtlasLocale[],
+          [...byLocale.keys()].sort(compareCodePoint) as CanonicalLocale[],
         ),
         messages: Object.freeze(semanticMessages),
         families: semanticFamilies,
@@ -2222,31 +2198,31 @@ export function analyzeAtlasCatalogSet(
   if (
     diagnostics.some(
       ({ code, severity }) =>
-        severity === 'error' && !ATLAS_COMPLETENESS_CODES.has(code),
+        severity === 'error' && !COMPLETENESS_CODES.has(code),
     )
   ) {
-    return atlasFailure(diagnostics);
+    return toolkitFailure(diagnostics);
   }
 
-  const applicationContractFingerprint = digestAtlasCanonicalJson(
-    'atlas-application-contract/1',
+  const applicationContractFingerprint = digestCanonicalJson(
+    'equator-application-contract/1',
     scopes.map((scope) => ({
       providerId: scope.providerId,
       scopeId: scope.scopeId,
       fingerprint: scope.applicationContractFingerprint,
     })),
   );
-  const semanticRegistryFingerprint = digestAtlasCanonicalJson(
-    'atlas-semantic-registry/1',
+  const semanticRegistryFingerprint = digestCanonicalJson(
+    'equator-semantic-registry/1',
     scopes.map((scope) => ({
       providerId: scope.providerId,
       scopeId: scope.scopeId,
       fingerprint: scope.semanticRegistryFingerprint,
     })),
   );
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
-      generatedAbi: ATLAS_GENERATED_ABI_PROFILE,
+      generatedAbi: GENERATED_ABI_PROFILE,
       sourceLocale: request.configuration.sourceLocale,
       defaultLocale: request.configuration.defaultLocale,
       locales: Object.freeze([...request.configuration.locales]),

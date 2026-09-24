@@ -1,4 +1,4 @@
-export interface AtlasTreeInspection {
+export interface TreeInspection {
   readonly nodes: number;
   readonly depth: number;
   readonly failure?: 'cycle' | 'depth' | 'nodes';
@@ -9,14 +9,14 @@ export interface AtlasTreeInspection {
  * construction or diagnostic walk. Repeated object identity is rejected so
  * the same helper remains safe for programmatic inputs as well as parser ASTs.
  */
-export function inspectAtlasTree<Node extends object>(
+export function inspectTree<Node extends object>(
   root: Node,
   children: (node: Node) => readonly Node[],
   limits: {
     readonly maximumDepth: number;
     readonly maximumNodes: number;
   },
-): AtlasTreeInspection {
+): TreeInspection {
   const pending: Array<readonly [Node, number]> = [[root, 1]];
   const seen = new Set<Node>();
   let nodes = 0;

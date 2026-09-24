@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseAtlasMessage } from '../src/message-format.js';
+import { parseMessageSemanticModel } from '../src/message-format.js';
 
 /**
  * Every built-in function declares the options it accepts, and the compiler builds the
@@ -19,14 +19,14 @@ import { parseAtlasMessage } from '../src/message-format.js';
  */
 describe('the option vocabulary of the built-in functions', () => {
   const refusal = (source: string): string => {
-    const result = parseAtlasMessage(source);
+    const result = parseMessageSemanticModel(source);
     expect(result.ok, `${source} was accepted`).toBe(false);
     if (result.ok) return '';
     return result.diagnostics.map(({ summary }) => summary).join(' | ');
   };
 
   const accepted = (source: string): void => {
-    const result = parseAtlasMessage(source);
+    const result = parseMessageSemanticModel(source);
     expect(
       result.ok,
       `${source} was refused: ${result.ok ? '' : result.diagnostics.map(({ summary }) => summary).join(' | ')}`,
@@ -118,7 +118,7 @@ describe('the option vocabulary of the built-in functions', () => {
   });
 
   /**
-   * `timeZone=input` names the operand's own zone. An Atlas date input is a `Date` and carries
+   * `timeZone=input` names the operand's own zone. An Equator date input is a `Date` and carries
    * none, so the only operand that can answer is one whose declaration wrote a zone.
    *
    * The specification's answer when nothing does is a Bad Operand error at format time beside a

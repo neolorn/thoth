@@ -9,21 +9,17 @@
 
 import { parseMessage, stringifyMessage, type Model } from 'messageformat';
 
-import type {
-  AtlasCatalog,
-  AtlasCatalogMessage,
-  AtlasTextCatalogMessage,
-} from './catalog.js';
+import type { Catalog, CatalogMessage, TextCatalogMessage } from './catalog.js';
 import {
-  atlasDiagnostic,
-  atlasFailure,
-  atlasSuccess,
-  type AtlasResult,
+  toolkitDiagnostic,
+  toolkitFailure,
+  toolkitSuccess,
+  type ToolkitResult,
 } from './diagnostics.js';
-import { canonicalizeAtlasLocale } from './locales.js';
+import { canonicalizeLocale } from './locales.js';
 import {
-  parseAtlasMessage,
-  type AtlasMessageCustomFunction,
+  parseMessageSemanticModel,
+  type MessageCustomFunction,
 } from './message-format.js';
 
 /**
@@ -39,7 +35,7 @@ import {
  * `en-XA` maximizes to `en-Latn-XA` and resolves the same way; stating `Latn` means the reader does
  * not have to know that.
  */
-export const ATLAS_PSEUDO_LOCALE_EXPANDED = 'en-Latn-XA';
+export const PSEUDO_LOCALE_EXPANDED = 'en-Latn-XA';
 
 /**
  * The contracted pseudo-locale: Arabic script, right-to-left, modelling a language shorter than
@@ -56,37 +52,37 @@ export const ATLAS_PSEUDO_LOCALE_EXPANDED = 'en-Latn-XA';
  * nothing to exclude from a production build beyond not generating the catalog.
  *
  * **Why not `en-x-psexpand` and `en-Arab-x-pscontr`, which say what they are?** Because
- * `canonicalizeAtlasLocale` refuses any single-character subtag, and `x` is one, so a private-use
+ * `canonicalizeLocale` refuses any single-character subtag, and `x` is one, so a private-use
  * tag is rejected as a catalog identity. This is recorded here because the private-use form looks
  * correct from outside: it passes `Intl.getCanonicalLocales`, it survives `Intl.Locale.maximize()`,
  * and the runtime's direction lookup returns `rtl` for it. Three external authorities accept it and
- * the one validator that belongs to Atlas does not.
+ * the one validator that belongs to Equator does not.
  * `specs/03-locale-identity-and-resolution.spec.md` section 3 is the reason the validator is right:
  * a private-use subtag carries no application semantics, so admitting one into a catalog identity
  * would let two catalogs differ only in a part that no lookup reads.
  */
-export const ATLAS_PSEUDO_LOCALE_CONTRACTED = 'en-Arab-XB';
+export const PSEUDO_LOCALE_CONTRACTED = 'en-Arab-XB';
 
 /**
  * How a pseudo-locale differs from its source, as settings that combine freely.
  *
- * This was `AtlasPseudoLocaleMode`, two values naming fixed *combinations*, `expansion-accent`
+ * This was `PseudoLocaleMode`, two values naming fixed *combinations*, `expansion-accent`
  * and `bidi-rtl`, which made the behaviours mutually exclusive and welded the boundary markers
  * into one of them. A reader wanting expansion *and* markers, or contraction *without* them, could
  * not ask for it. Nothing about the behaviours requires them to be bundled, so they are not.
  *
  * **Direction is deliberately absent from this interface.** It is carried by the locale tag, not by
  * the transform: direction is derived from the script subtag through the generated `RTL_SCRIPTS`
- * table, so `ATLAS_PSEUDO_LOCALE_CONTRACTED` resolves RTL because `Arab` is an RTL script, through
+ * table, so `PSEUDO_LOCALE_CONTRACTED` resolves RTL because `Arab` is an RTL script, through
  * machinery that already exists and needs no pseudo-locale special case. A direction flag here
  * would mean a runtime branch that reads it, which is a shipped code path the build-time design
  * exists to avoid.
  *
  * **Accenting is not a setting either, because it is what makes the locale a pseudo-locale.** The
- * substituted alphabet is how a reader tells transformed text from text that never reached Atlas,
+ * substituted alphabet is how a reader tells transformed text from text that never reached Equator,
  * and a pseudo-locale with it switched off is just the source language under a different tag.
  */
-export interface AtlasPseudoLocaleTransform {
+export interface PseudoLocaleTransform {
   /**
    * Signed. Positive expands, negative contracts, absent leaves length alone.
    *
@@ -107,7 +103,7 @@ export interface AtlasPseudoLocaleTransform {
    *
    * One pair around the whole message rather than around each literal run, so a message containing
    * a placeholder reads as one bounded string instead of several. That is what makes a hardcoded
-   * string visible: everything Atlas rendered has boundaries and it does not.
+   * string visible: everything Equator rendered has boundaries and it does not.
    */
   readonly markers?: boolean;
 }
@@ -120,7 +116,7 @@ export interface AtlasPseudoLocaleTransform {
  * involved. The transform's own options are inherited; what this adds is the tag it publishes under
  * and the extension functions the derived catalog has to parse with.
  */
-export interface AtlasPseudoLocaleOptions extends AtlasPseudoLocaleTransform {
+export interface PseudoLocaleOptions extends PseudoLocaleTransform {
   /**
    * Message-function names the application has registered, so a derived catalog parses like an
    * authored one.
@@ -130,7 +126,7 @@ export interface AtlasPseudoLocaleOptions extends AtlasPseudoLocaleTransform {
    * this is not a refinement: without it, deriving a pseudo-locale fails outright for any
    * application that registers a message extension.
    */
-  readonly customFunctions?: readonly AtlasMessageCustomFunction[];
+  readonly customFunctions?: readonly MessageCustomFunction[];
   /**
    * The tag the pseudo-locale is published under. Required.
    *
@@ -298,7 +294,7 @@ function transformLiteral(
  */
 function transformPattern(
   pattern: Model.Pattern,
-  transform: AtlasPseudoLocaleTransform,
+  transform: PseudoLocaleTransform,
 ): void {
   for (let index = 0; index < pattern.length; index += 1) {
     const part = pattern[index];
@@ -312,11 +308,11 @@ function transformPattern(
   }
 }
 
-export function pseudoLocalizeAtlasMessage(
+export function pseudoLocalizeMessage(
   source: string,
-  transform: AtlasPseudoLocaleTransform = {},
-  customFunctions: readonly AtlasMessageCustomFunction[] = [],
-): AtlasResult<string> {
+  transform: PseudoLocaleTransform = {},
+  customFunctions: readonly MessageCustomFunction[] = [],
+): ToolkitResult<string> {
   const { lengthFactor } = transform;
   if (
     lengthFactor !== undefined &&
@@ -324,9 +320,9 @@ export function pseudoLocalizeAtlasMessage(
   ) {
     // The lower bound is -1 because that already elides every vowel; there is nothing further to
     // remove without cutting consonants, which stops reading as the same word.
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1804',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1804',
         'Pseudo-localization length factor must be between minus one and two. Positive expands, negative contracts, and omitting it leaves length unchanged.',
       ),
     ]);
@@ -335,9 +331,9 @@ export function pseudoLocalizeAtlasMessage(
   try {
     message = JSON.parse(JSON.stringify(parseMessage(source))) as Model.Message;
   } catch {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1804',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1804',
         'Pseudo-localization requires a valid MessageFormat message.',
       ),
     ]);
@@ -350,19 +346,19 @@ export function pseudoLocalizeAtlasMessage(
     }
   }
   const transformed = stringifyMessage(message);
-  const validated = parseAtlasMessage(transformed, { customFunctions });
+  const validated = parseMessageSemanticModel(transformed, { customFunctions });
   return validated.ok
-    ? atlasSuccess(transformed, validated.diagnostics)
-    : atlasFailure(validated.diagnostics);
+    ? toolkitSuccess(transformed, validated.diagnostics)
+    : toolkitFailure(validated.diagnostics);
 }
 
 function pseudoMessage(
-  message: AtlasCatalogMessage,
-  transform: AtlasPseudoLocaleTransform,
-  customFunctions: readonly AtlasMessageCustomFunction[],
-): AtlasResult<AtlasCatalogMessage> {
+  message: CatalogMessage,
+  transform: PseudoLocaleTransform,
+  customFunctions: readonly MessageCustomFunction[],
+): ToolkitResult<CatalogMessage> {
   if (message.kind === 'empty') {
-    return atlasSuccess(
+    return toolkitSuccess(
       Object.freeze({
         kind: 'empty',
         inputs: Object.freeze({}),
@@ -370,53 +366,53 @@ function pseudoMessage(
       }),
     );
   }
-  const transformed = pseudoLocalizeAtlasMessage(
+  const transformed = pseudoLocalizeMessage(
     message.message,
     transform,
     customFunctions,
   );
   if (!transformed.ok) return transformed;
-  const semantics = parseAtlasMessage(transformed.value, {
+  const semantics = parseMessageSemanticModel(transformed.value, {
     customFunctions,
   });
   if (!semantics.ok) return semantics;
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
       kind: 'message',
       message: transformed.value,
       semantics: semantics.value,
       inputs: Object.freeze({}),
       slots: Object.freeze({}),
-    }) satisfies AtlasTextCatalogMessage,
+    }) satisfies TextCatalogMessage,
   );
 }
 
 /**
  * An ordinary target catalog, derived from a source catalog with no authored translation.
  *
- * Ordinary is the point. What comes back is an `AtlasCatalog` like any other, so it compiles,
+ * Ordinary is the point. What comes back is an `Catalog` like any other, so it compiles,
  * loads and renders through the same path a real translation does, and nothing downstream, least
  * of all the runtime, can tell the difference or needs to. That is what keeps the transform at
  * build time, and what makes a production build's exclusion an absence rather than a guard: this
  * function lives in the toolkit, which is a development dependency and reaches no bundle.
  */
-export function createAtlasPseudoCatalog(
-  source: AtlasCatalog,
-  options: AtlasPseudoLocaleOptions,
-): AtlasResult<AtlasCatalog> {
+export function createPseudoCatalog(
+  source: Catalog,
+  options: PseudoLocaleOptions,
+): ToolkitResult<Catalog> {
   if (source.role !== 'source') {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1804',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1804',
         'Pseudo-locales can be generated only from a source catalog.',
       ),
     ]);
   }
-  const locale = canonicalizeAtlasLocale(options.locale);
+  const locale = canonicalizeLocale(options.locale);
   if (!locale.ok) return locale;
-  const messages: Record<string, AtlasCatalogMessage> = Object.create(
+  const messages: Record<string, CatalogMessage> = Object.create(
     null,
-  ) as Record<string, AtlasCatalogMessage>;
+  ) as Record<string, CatalogMessage>;
   const diagnostics = [];
   for (const [messageId, message] of Object.entries(source.messages)) {
     const transformed = pseudoMessage(
@@ -425,10 +421,10 @@ export function createAtlasPseudoCatalog(
       options.customFunctions ?? [],
     );
     diagnostics.push(...transformed.diagnostics);
-    if (!transformed.ok) return atlasFailure(diagnostics);
+    if (!transformed.ok) return toolkitFailure(diagnostics);
     messages[messageId] = transformed.value;
   }
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
       role: 'target',
       providerId: source.providerId,

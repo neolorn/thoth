@@ -4,20 +4,20 @@ import {
   Localization,
   createLocalizationContext,
   provideLocalizationSetup,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import {
   createInMemoryCatalogLoaders,
   provideLocalizationTesting,
-} from '@neolorn/atlas/testing';
+} from '@neolorn/equator/testing';
 import { TestBed } from '@angular/core/testing';
 import { localizationSetup } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { messages, providerId, scopeId } from '#i18n/shell';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
- * The `@neolorn/atlas/testing` entry point, used the way a consumer would.
+ * The `@neolorn/equator/testing` entry point, used the way a consumer would.
  *
  * `createInMemoryCatalogLoaders` is unusable if its loader resolves the wrapper object it was
  * handed rather than the compiled catalog inside it, because catalog admission refuses that, and
@@ -69,14 +69,14 @@ describe('createInMemoryCatalogLoaders', () => {
       setup: {
         ...localizationSetup,
         catalogLoaders: inMemory,
-        extensions: atlasRuntimeExtensions,
+        extensions: runtimeExtensions,
       },
       bootstrapScopes: [shellScope],
       initialLocale: 'en-US',
     });
 
     await localization.initialize();
-    expect(localization.text(messages.appTitle)).toBe('Atlas feature lab');
+    expect(localization.text(messages.appTitle)).toBe('Equator feature lab');
     localization.dispose();
   });
 });
@@ -95,7 +95,7 @@ describe('provideLocalizationTesting', () => {
       providers: [
         provideLocalizationTesting({
           ...localizationSetup,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
         }),
       ],
     });
@@ -103,9 +103,9 @@ describe('provideLocalizationTesting', () => {
     const localization = TestBed.inject(Localization);
     await localization.initialize();
 
-    expect(localization.text(messages.appTitle)).toBe('Atlas feature lab');
+    expect(localization.text(messages.appTitle)).toBe('Equator feature lab');
     await localization.changeLocale('ar-EG');
-    expect(localization.text(messages.appTitle)).toBe('مختبر ميزات Atlas');
+    expect(localization.text(messages.appTitle)).toBe('مختبر ميزات Equator');
   });
 
   it('is a different entry point from the application provider, not a different runtime', () => {

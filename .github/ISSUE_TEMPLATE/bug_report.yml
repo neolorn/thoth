@@ -1,10 +1,10 @@
 # A defect report.
 #
 # Every field here is either something only the reporter knows or something a maintainer would
-# otherwise have to ask for first. Atlas behaves differently across Angular majors, Node lines and
+# otherwise have to ask for first. Equator behaves differently across Angular majors, Node lines and
 # locales, so a report that names none of them costs a round trip before anyone can try to see it.
 name: Bug report
-description: Something Atlas does that it should not, or does not do that it should.
+description: Something Equator does that it should not, or does not do that it should.
 body:
   - type: markdown
     attributes:
@@ -37,10 +37,10 @@ body:
       required: true
 
   - type: input
-    id: atlas-version
+    id: equator-version
     attributes:
-      label: Atlas version
-      description: The version of `@neolorn/atlas` and `@neolorn/atlas-toolkit`, which share one number.
+      label: Equator version
+      description: The version of `@neolorn/equator` and `@neolorn/equator-toolkit`, which share one number.
       placeholder: 1.0.0-alpha.3
     validations:
       required: true
@@ -66,8 +66,8 @@ body:
     id: diagnostic-code
     attributes:
       label: Diagnostic code
-      description: The code Atlas reported, if it reported one. Every code is listed on the diagnostics page.
-      placeholder: ATL1310
+      description: The code Equator reported, if it reported one. Every code is listed on the diagnostics page.
+      placeholder: EQ1310
     validations:
       required: false
 

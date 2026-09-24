@@ -4,26 +4,22 @@ import { resolve } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import {
-  checkAtlasProject,
-  generateAtlasProject,
-  parseAtlasCatalog,
-} from '../src/index.js';
-import { analyzeAtlasCatalogSet } from '../src/semantic-model.js';
+import { checkProject, generateProject, parseCatalog } from '../src/index.js';
+import { analyzeCatalogSet } from '../src/semantic-model.js';
 import { testProjectConfiguration } from './fixtures.js';
 
 /**
  * Is the release gate about completeness, or about two of its findings?
  *
- * `requireCompleteTargets` escalated `ATL1307` and `ATL1308` and nothing else, so the gate had a
+ * `requireCompleteTargets` escalated `EQ1307` and `EQ1308` and nothing else, so the gate had a
  * hole exactly where the failure is largest. Measured before this changed: with the gate **on**, a
  * locale with no catalog at all returned `ok: true` and one warning, identical to the same call
  * with the gate off, while the same locale missing one message of three returned `ok: false`.
  * Translate two messages of three and the release stopped; translate none of them and it shipped.
  *
- * So the family escalates as one. `ATL1306` (no catalog for this scope), `ATL1307` (a message
- * missing) and `ATL1308` (a plural category missing) are one question at three granularities, and
- * `ATL1309` (a translation written against an older source) is the fourth: it needs a project on
+ * So the family escalates as one. `EQ1306` (no catalog for this scope), `EQ1307` (a message
+ * missing) and `EQ1308` (a plural category missing) are one question at three granularities, and
+ * `EQ1309` (a translation written against an older source) is the fourth: it needs a project on
  * disk and a published translation record, so its cases build one below, and the whole gate is run
  * end-to-end through the built CLI in `tools/verify-package-consumer.mjs`.
  *
@@ -40,7 +36,7 @@ const withDeclaration = testProjectConfiguration(['en-US', 'ar-EG'], {
 });
 
 function catalog(role: 'source' | 'target', locale: string, body: string) {
-  const result = parseAtlasCatalog(body, {
+  const result = parseCatalog(body, {
     role,
     providerId: 'home',
     scopeId: 'shell',
@@ -68,7 +64,7 @@ const analyze = (
   requireComplete: boolean,
   declared = false,
 ) =>
-  analyzeAtlasCatalogSet({
+  analyzeCatalogSet({
     configuration: declared ? withDeclaration : configuration,
     catalogs: [...catalogs],
     ...(requireComplete ? { requireCompleteTargets: true } : {}),
@@ -84,7 +80,7 @@ describe('the release gate covers the completeness family', () => {
     // severity a release policy raised says a locale is unfinished, not that there is no model
     // here. Everything the run reports after the compile depends on it.
     expect(graph.ok).toBe(true);
-    expect(codes(graph)).toContain('ATL1307 error');
+    expect(codes(graph)).toContain('EQ1307 error');
   });
 
   it('blocks a locale that has no catalog at all', () => {
@@ -95,7 +91,7 @@ describe('the release gate covers the completeness family', () => {
     // severity a release policy raised says a locale is unfinished, not that there is no model
     // here. Everything the run reports after the compile depends on it.
     expect(graph.ok).toBe(true);
-    expect(codes(graph)).toContain('ATL1306 error');
+    expect(codes(graph)).toContain('EQ1306 error');
   });
 
   it('leaves that same locale a warning when no release gate asked', () => {
@@ -104,7 +100,7 @@ describe('the release gate covers the completeness family', () => {
     // unusable.
     const graph = analyze([source], false);
     expect(graph.ok).toBe(true);
-    expect(codes(graph)).toEqual(['ATL1306 warning']);
+    expect(codes(graph)).toEqual(['EQ1306 warning']);
   });
 });
 
@@ -114,7 +110,7 @@ describe('a locale the project declares still in progress', () => {
     expect(graph.ok).toBe(true);
     // Reported, not silenced. The difference between an exemption and a blind spot is whether the
     // finding still reaches the person reading the output.
-    expect(codes(graph)).toContain('ATL1307 warning');
+    expect(codes(graph)).toContain('EQ1307 warning');
   });
 
   it('quotes the declared reason into the finding it downgraded', () => {
@@ -127,7 +123,7 @@ describe('a locale the project declares still in progress', () => {
   it('exempts the whole family for that locale, not the message half of it', () => {
     const graph = analyze([source], true, true);
     expect(graph.ok).toBe(true);
-    expect(codes(graph)).toEqual(['ATL1306 warning']);
+    expect(codes(graph)).toEqual(['EQ1306 warning']);
   });
 
   it('says nothing extra when no gate is on, because nothing was downgraded', () => {
@@ -144,14 +140,14 @@ describe('a locale the project declares still in progress', () => {
     const threeLocales = testProjectConfiguration(['en-US', 'ar-EG', 'fr-FR'], {
       inProgress: { 'ar-EG': { note: 'Translation starts in October.' } },
     });
-    const graph = analyzeAtlasCatalogSet({
+    const graph = analyzeCatalogSet({
       configuration: threeLocales,
       catalogs: [source],
       requireCompleteTargets: true,
     });
     expect(graph.ok).toBe(true);
-    expect(codes(graph)).toContain('ATL1306 warning');
-    expect(codes(graph)).toContain('ATL1306 error');
+    expect(codes(graph)).toContain('EQ1306 warning');
+    expect(codes(graph)).toContain('EQ1306 error');
   });
 });
 
@@ -179,19 +175,19 @@ async function write(
  * A project whose only fault is that its translation answers an older question.
  *
  * The lab consumer cannot show this member escalating on its own: it ships a message `ar-EG`
- * deliberately does not translate, so under the gate an `ATL1307` error stops the compile before
+ * deliberately does not translate, so under the gate an `EQ1307` error stops the compile before
  * the translation record is ever reconciled. Here the target is complete, the source moves after
  * the record is written, and staleness is the only thing left to find.
  */
 async function staleProject(
   options: {
-    /** Merged into `atlas.config.json`. */
+    /** Merged into `equator.config.json`. */
     readonly configuration?: Readonly<Record<string, unknown>>;
     /** Drop a message from the target too, so the project is incomplete as well as stale. */
     readonly incomplete?: boolean;
   } = {},
 ): Promise<string> {
-  const root = await mkdtemp(resolve(tmpdir(), 'atlas-stale-family-'));
+  const root = await mkdtemp(resolve(tmpdir(), 'stale-family-'));
   temporaryRoots.push(root);
   await write(
     root,
@@ -212,7 +208,7 @@ async function staleProject(
   );
   await write(
     root,
-    'atlas.config.json',
+    'equator.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -251,12 +247,12 @@ async function staleProject(
   await write(
     root,
     'i18n/shell/en-US.yaml',
-    `messages:\n  app-title: Atlas${tagline}\n`,
+    `messages:\n  app-title: Equator${tagline}\n`,
   );
   await write(
     root,
     'i18n/shell/ar-EG.yaml',
-    `messages:\n  app-title: أطلس${
+    `messages:\n  app-title: Equator${
       options.incomplete === true ? '\n  app-tagline: توطين' : ''
     }\n`,
   );
@@ -276,7 +272,7 @@ async function staleProject(
 
   // Publishing is what writes the translation record; nothing is stale until there is a record of
   // what the translation was written against.
-  const generated = await generateAtlasProject({ project: root });
+  const generated = await generateProject({ project: root });
   if (!generated.ok) {
     throw new Error(
       `the stale-translation fixture did not generate: ${JSON.stringify(
@@ -287,13 +283,13 @@ async function staleProject(
   await write(
     root,
     'i18n/shell/en-US.yaml',
-    `messages:\n  app-title: Atlas, renamed${tagline}\n`,
+    `messages:\n  app-title: Equator, renamed${tagline}\n`,
   );
   if (options.incomplete === true) {
     await write(
       root,
       'i18n/shell/ar-EG.yaml',
-      'messages:\n  app-title: أطلس\n',
+      'messages:\n  app-title: Equator\n',
     );
   }
   return root;
@@ -301,7 +297,7 @@ async function staleProject(
 
 describe('a translation written against an older source', () => {
   it('blocks the release under the same switch as the rest', async () => {
-    const result = await checkAtlasProject({
+    const result = await checkProject({
       project: await staleProject(),
       requireCompleteTargets: true,
     });
@@ -311,20 +307,20 @@ describe('a translation written against an older source', () => {
     // through the built CLI in `tools/verify-package-consumer.mjs`.
     expect(
       result.diagnostics
-        .filter(({ code }) => code === 'ATL1309')
+        .filter(({ code }) => code === 'EQ1309')
         .map(({ severity }) => severity),
     ).toEqual(['error']);
   });
 
   it('is an advisory when no release gate asked', async () => {
-    const result = await checkAtlasProject({ project: await staleProject() });
+    const result = await checkProject({ project: await staleProject() });
     expect(
       result.diagnostics.map(({ code, severity }) => `${code} ${severity}`),
-    ).toContain('ATL1309 warning');
+    ).toContain('EQ1309 warning');
   });
 
   it('is exempted by the same declaration, with its reason carried in', async () => {
-    const result = await checkAtlasProject({
+    const result = await checkProject({
       project: await staleProject({
         configuration: {
           inProgress: {
@@ -334,7 +330,7 @@ describe('a translation written against an older source', () => {
       }),
       requireCompleteTargets: true,
     });
-    const stale = result.diagnostics.filter(({ code }) => code === 'ATL1309');
+    const stale = result.diagnostics.filter(({ code }) => code === 'EQ1309');
     expect(stale.map(({ severity }) => severity)).toEqual(['warning']);
     expect(stale[0]?.summary).toContain('Q4 launch');
   });
@@ -346,8 +342,8 @@ describe('a translation written against an older source', () => {
  * Returning the moment the catalog analysis reports an error means that under the release gate,
  * where an incomplete locale *is* an error, output freshness goes uninspected and the translation
  * record goes unreconciled, so the two findings they would have produced are absent rather than
- * downgraded. On this project, both incomplete and stale: gate off reports `ATL1307`, `ATL1309`
- * and `ATL1704`; gate on reports `ATL1307` alone. A team that turns the gate on to learn more
+ * downgraded. On this project, both incomplete and stale: gate off reports `EQ1307`, `EQ1309`
+ * and `EQ1704`; gate on reports `EQ1307` alone. A team that turns the gate on to learn more
  * learns less.
  *
  * A run reports every member it can observe, and stops at the first only when it cannot go further.
@@ -356,32 +352,32 @@ describe('a translation written against an older source', () => {
 describe('a stricter run reports more', () => {
   it('reports every member either way, and escalates what the run asked about', async () => {
     const root = await staleProject({ incomplete: true });
-    const shape = (result: Awaited<ReturnType<typeof checkAtlasProject>>) =>
+    const shape = (result: Awaited<ReturnType<typeof checkProject>>) =>
       result.diagnostics.map(({ code, severity }) => `${code} ${severity}`);
 
-    expect(shape(await checkAtlasProject({ project: root }))).toEqual([
-      'ATL1307 warning',
-      'ATL1309 warning',
-      'ATL1704 warning',
+    expect(shape(await checkProject({ project: root }))).toEqual([
+      'EQ1307 warning',
+      'EQ1309 warning',
+      'EQ1704 warning',
     ]);
     expect(
       shape(
-        await checkAtlasProject({
+        await checkProject({
           project: root,
           requireCompleteTargets: true,
         }),
       ),
-    ).toEqual(['ATL1307 error', 'ATL1309 error', 'ATL1704 warning']);
+    ).toEqual(['EQ1307 error', 'EQ1309 error', 'EQ1704 warning']);
     // Freshness is a second switch and answers for itself. This row exists so that "everything is
     // reported" cannot be satisfied by reporting everything at one severity.
     expect(
       shape(
-        await checkAtlasProject({
+        await checkProject({
           project: root,
           requireCompleteTargets: true,
           requireFreshOutput: true,
         }),
       ),
-    ).toEqual(['ATL1307 error', 'ATL1309 error', 'ATL1704 error']);
+    ).toEqual(['EQ1307 error', 'EQ1309 error', 'EQ1704 error']);
   });
 });

@@ -8,31 +8,31 @@
  * so a collision is caught at compile time rather than when a consumer adds the second message.
  */
 import {
-  atlasDiagnostic,
-  atlasFailure,
-  atlasSuccess,
-  type AtlasDiagnostic,
-  type AtlasResult,
+  toolkitDiagnostic,
+  toolkitFailure,
+  toolkitSuccess,
+  type ToolkitDiagnostic,
+  type ToolkitResult,
 } from './diagnostics.js';
-import { digestAtlasCanonicalJson } from './canonical-json.js';
-import { atlasMessagePartInCode } from './identities.js';
-import { atlasLocaleEndonym, atlasShippedFallbackChain } from './locales.js';
+import { digestCanonicalJson } from './canonical-json.js';
+import { messagePartInCode } from './identities.js';
+import { localeEndonym, shippedFallbackChain } from './locales.js';
 import {
-  ATLAS_GENERATED_ABI_PROFILE,
-  type AtlasEffectiveInputContract,
-  type AtlasSemanticFamily,
-  type AtlasSemanticGraph,
-  type AtlasSemanticMessage,
-  type AtlasSemanticScope,
+  GENERATED_ABI_PROFILE,
+  type EffectiveInputContract,
+  type SemanticFamily,
+  type SemanticGraph,
+  type SemanticMessage,
+  type SemanticScope,
 } from './semantic-model.js';
 import { compareCodePoint } from './sorted-records.js';
 
-export interface AtlasGeneratedContractFile {
+export interface GeneratedContractFile {
   readonly path: string;
   readonly contents: string;
 }
 
-export interface AtlasGeneratedRouteProjection {
+export interface GeneratedRouteProjection {
   readonly id: string;
   readonly path: string;
   readonly parameterNames: readonly string[];
@@ -64,8 +64,8 @@ export interface AtlasGeneratedRouteProjection {
   readonly sourcePath?: string;
 }
 
-export interface AtlasGenerateContractsOptions {
-  readonly routes?: readonly AtlasGeneratedRouteProjection[];
+export interface GenerateContractsOptions {
+  readonly routes?: readonly GeneratedRouteProjection[];
   readonly recoveryMessageIdentities?: readonly string[];
   /**
    * Scopes whose messages the first render does not use.
@@ -81,7 +81,7 @@ export interface AtlasGenerateContractsOptions {
    *
    * `'implementation'` is the real one, generated into the owner's `#i18n`.
    *
-   * `'declaration'` is what the provisional overlay carries while Atlas analyses the application.
+   * `'declaration'` is what the provisional overlay carries while Equator analyses the application.
    * The implementation imports `@angular/core` and the catalog set, loaders, and recovery payload;
    * an overlay is not an Angular application and has no reason to synthesize those, and an owner
    * that is a library has no `@angular/core` to resolve them against.
@@ -96,7 +96,7 @@ export interface AtlasGenerateContractsOptions {
 }
 
 interface ProjectionNode {
-  message?: AtlasSemanticMessage;
+  message?: SemanticMessage;
   readonly children: Map<string, ProjectionNode>;
 }
 
@@ -104,7 +104,7 @@ function quote(value: string): string {
   return JSON.stringify(value);
 }
 
-function inputBaseType(input: AtlasEffectiveInputContract): string {
+function inputBaseType(input: EffectiveInputContract): string {
   if (input.enum !== undefined) {
     return input.enum
       .map((value) => JSON.stringify(value))
@@ -124,9 +124,7 @@ function inputBaseType(input: AtlasEffectiveInputContract): string {
   }
 }
 
-function inputObjectType(
-  inputs: readonly AtlasEffectiveInputContract[],
-): string {
+function inputObjectType(inputs: readonly EffectiveInputContract[]): string {
   if (inputs.length === 0) return 'Readonly<Record<never, never>>';
   const properties = inputs.map((input) => {
     const property = quote(input.name);
@@ -137,19 +135,19 @@ function inputObjectType(
   return `{ ${properties.join(' ')} }`;
 }
 
-function slotUnion(message: AtlasSemanticMessage): string {
+function slotUnion(message: SemanticMessage): string {
   if (message.slots.length === 0) return 'never';
   return message.slots.map(({ name }) => quote(name)).join(' | ');
 }
 
-function handleExpression(message: AtlasSemanticMessage): string {
+function handleExpression(message: SemanticMessage): string {
   const identityType = quote(message.identity);
   const inputsType = inputObjectType(message.inputs);
   const slotsType = slotUnion(message);
   const resultType = quote(message.resultKind);
   return [
-    `defineAtlasMessageHandle<${identityType}, ${inputsType}, ${slotsType}, ${resultType}>({`,
-    `  generatedAbi: ${quote(ATLAS_GENERATED_ABI_PROFILE)},`,
+    `defineMessageHandle<${identityType}, ${inputsType}, ${slotsType}, ${resultType}>({`,
+    `  generatedAbi: ${quote(GENERATED_ABI_PROFILE)},`,
     `  providerId: ${quote(message.providerId)},`,
     `  scopeId: ${quote(message.scopeId)},`,
     `  messageId: ${quote(message.messageId)},`,
@@ -164,11 +162,11 @@ function handleExpression(message: AtlasSemanticMessage): string {
 function messageReference(messageId: string): string {
   return messageId
     .split('.')
-    .map(atlasMessagePartInCode)
+    .map(messagePartInCode)
     .reduce((value, part) => `${value}[${quote(part)}]`, 'messages');
 }
 
-function familyExpression(family: AtlasSemanticFamily): string {
+function familyExpression(family: SemanticFamily): string {
   const segmentType =
     family.segments.length === 0
       ? 'Readonly<Record<never, never>>'
@@ -187,20 +185,20 @@ function familyExpression(family: AtlasSemanticFamily): string {
   const validation = family.segments
     .map(
       ({ name, syntax, maximumLength }) =>
-        `    if (!isAtlasFamilySegment(segments[${quote(name)}], ${quote(syntax)}, ${maximumLength})) return undefined;`,
+        `    if (!isFamilySegment(segments[${quote(name)}], ${quote(syntax)}, ${maximumLength})) return undefined;`,
     )
     .join('\n');
   const keyValues = family.segments
     .map(({ name }) => `segments[${quote(name)}]`)
     .join(', ');
   return [
-    `defineAtlasMessageFamily<${quote(family.name)}, ${segmentType}, ${handleType}>({`,
+    `defineMessageFamily<${quote(family.name)}, ${segmentType}, ${handleType}>({`,
     `  name: ${quote(family.name)},`,
     `  template: ${quote(family.template)},`,
     `  memberIds: Object.freeze([${family.members.map(({ messageId }) => quote(messageId)).join(', ')}]),`,
     `  segmentNames: Object.freeze([${family.segments.map(({ name }) => quote(name)).join(', ')}]),`,
     `  resolve(segments) {`,
-    `    if (!hasExactAtlasFamilySegments(segments, this.segmentNames)) return undefined;`,
+    `    if (!hasExactFamilySegments(segments, this.segmentNames)) return undefined;`,
     validation,
     `    const members = Object.freeze({`,
     ...memberRows,
@@ -216,15 +214,13 @@ function familyExpression(family: AtlasSemanticFamily): string {
     .join('\n');
 }
 
-function renderFamilies(scope: AtlasSemanticScope): string {
+function renderFamilies(scope: SemanticScope): string {
   if (scope.families.length === 0) return 'Object.freeze({})';
   return [
     'Object.freeze({',
     ...scope.families.map(
       (family) =>
-        `  ${quote(atlasMessagePartInCode(family.name))}: ${familyExpression(
-          family,
-        )
+        `  ${quote(messagePartInCode(family.name))}: ${familyExpression(family)
           .split('\n')
           .map((line, index) => (index === 0 ? line : `  ${line}`))
           .join('\n')},`,
@@ -240,7 +236,7 @@ function renderProjectionNode(node: ProjectionNode): string {
   if (children.length === 0) {
     if (node.message === undefined) {
       throw new TypeError(
-        'An empty Atlas generated projection node is invalid.',
+        'An empty Equator generated projection node is invalid.',
       );
     }
     return handleExpression(node.message);
@@ -264,21 +260,21 @@ function renderProjectionNode(node: ProjectionNode): string {
 }
 
 function projectionTree(
-  scope: AtlasSemanticScope,
-  diagnostics: AtlasDiagnostic[],
+  scope: SemanticScope,
+  diagnostics: ToolkitDiagnostic[],
 ): ProjectionNode {
   const root: ProjectionNode = { children: new Map() };
   const reverse = new Map<string, string>();
   for (const message of scope.messages) {
     const projected = message.messageId
       .split('.')
-      .map(atlasMessagePartInCode)
+      .map(messagePartInCode)
       .join('.');
     const existing = reverse.get(projected);
     if (existing !== undefined && existing !== message.messageId) {
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1305',
+        toolkitDiagnostic(
+          'EQ1305',
           `Message identities ${JSON.stringify(existing)} and ${JSON.stringify(message.messageId)} collide at generated path ${JSON.stringify(projected)}.`,
           { path: ['messages', message.messageId] },
         ),
@@ -287,17 +283,15 @@ function projectionTree(
     }
     reverse.set(projected, message.messageId);
     let node = root;
-    for (const part of message.messageId
-      .split('.')
-      .map(atlasMessagePartInCode)) {
+    for (const part of message.messageId.split('.').map(messagePartInCode)) {
       const child = node.children.get(part) ?? { children: new Map() };
       node.children.set(part, child);
       node = child;
     }
     if (node.message !== undefined) {
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1305',
+        toolkitDiagnostic(
+          'EQ1305',
           `Generated message path ${JSON.stringify(projected)} is duplicated.`,
           { path: ['messages', message.messageId] },
         ),
@@ -309,7 +303,7 @@ function projectionTree(
   return root;
 }
 
-const handlePrelude = `declare const atlasGeneratedMessageHandle: unique symbol;
+const handlePrelude = `declare const generatedMessageHandle: unique symbol;
 
 export interface GeneratedMessageHandle<
   Identity extends string,
@@ -317,19 +311,19 @@ export interface GeneratedMessageHandle<
   Slots extends string,
   ResultKind extends 'plain' | 'structured',
 > {
-  readonly [atlasGeneratedMessageHandle]: {
+  readonly [generatedMessageHandle]: {
     readonly identity: Identity;
     readonly inputs: Inputs;
     readonly slots: Slots;
     readonly resultKind: ResultKind;
   };
   /** Type-only runtime inference contract; no corresponding value is emitted. */
-  readonly __atlasContract?: {
+  readonly __contract?: {
     readonly inputs: Inputs;
     readonly slots: Slots;
     readonly resultKind: ResultKind;
   };
-  readonly generatedAbi: '${ATLAS_GENERATED_ABI_PROFILE}';
+  readonly generatedAbi: '${GENERATED_ABI_PROFILE}';
   readonly providerId: string;
   readonly scopeId: string;
   readonly messageId: string;
@@ -339,13 +333,13 @@ export interface GeneratedMessageHandle<
   readonly slotNames: readonly Slots[];
 }
 
-function defineAtlasMessageHandle<
+function defineMessageHandle<
   Identity extends string,
   Inputs,
   Slots extends string,
   ResultKind extends 'plain' | 'structured',
 >(value: {
-  readonly generatedAbi: '${ATLAS_GENERATED_ABI_PROFILE}';
+  readonly generatedAbi: '${GENERATED_ABI_PROFILE}';
   readonly providerId: string;
   readonly scopeId: string;
   readonly messageId: string;
@@ -377,7 +371,7 @@ const familyPrelude = `export interface GeneratedMessageFamily<
   resolve(segments: Segments): Handle | undefined;
 }
 
-function defineAtlasMessageFamily<
+function defineMessageFamily<
   Name extends string,
   Segments extends Readonly<Record<string, string>>,
   Handle,
@@ -385,7 +379,7 @@ function defineAtlasMessageFamily<
   return Object.freeze(value);
 }
 
-function hasExactAtlasFamilySegments(
+function hasExactFamilySegments(
   segments: Readonly<Record<string, string>>,
   expected: readonly string[],
 ): boolean {
@@ -393,7 +387,7 @@ function hasExactAtlasFamilySegments(
   return actual.length === expected.length && actual.every((name, index) => name === expected[index]);
 }
 
-function isAtlasFamilySegment(
+function isFamilySegment(
   value: unknown,
   syntax: 'lower-kebab' | 'ascii-token' | 'unicode-token',
   maximumLength: number,
@@ -410,14 +404,14 @@ function isAtlasFamilySegment(
 }`;
 
 function scopeModule(
-  scope: AtlasSemanticScope,
-  diagnostics: AtlasDiagnostic[],
+  scope: SemanticScope,
+  diagnostics: ToolkitDiagnostic[],
 ): string {
   const tree = projectionTree(scope, diagnostics);
   const rendered = renderProjectionNode(tree);
   const families = renderFamilies(scope);
   return [
-    '/** Generated by Atlas. Do not edit. */',
+    '/** Generated by Equator. Do not edit. */',
     handlePrelude,
     ...(scope.families.length === 0 ? [] : ['', familyPrelude]),
     '',
@@ -453,7 +447,7 @@ function providerLines(
       ' *',
       ' * The return type asserts nothing, which is the honest thing for a stub to do. `unknown`',
       ' * asserted something false: it made every application`s own providers array report a type',
-      ' * error during analysis, Atlas telling a consumer their correct code is wrong. Naming',
+      ' * error during analysis, Equator telling a consumer their correct code is wrong. Naming',
       ' * `EnvironmentProviders` would be precise and would drag `@angular/core` into the overlay',
       ' * of every owner, including the ones that have no Angular at all. The real provider,',
       ' * generated after analysis, is precisely typed.',
@@ -466,7 +460,7 @@ function providerLines(
       ' * Provisional. The real one is generated once this owner has been analysed.',
       ' *',
       ' * Declared for the same reason as the provider above: an owner`s own test files are part of',
-      ' * the graph Atlas analyses, and a test that imports this must resolve during analysis, before',
+      ' * the graph Equator analyses, and a test that imports this must resolve during analysis, before',
       ' * there is anything to import.',
       ' */',
       'export declare const localizationSetup: any;',
@@ -478,17 +472,17 @@ function providerLines(
 
 function providerImplementationLines(): readonly string[] {
   return [
-    // Decision section 3: one import and one call. Everything closed over here is something Atlas
+    // Decision section 3: one import and one call. Everything closed over here is something Equator
     // generated for itself, which every application was importing by hand to pass straight back.
     // What an application actually decides (locale sources, persistence, recovery message,
-    // extension bindings) stays an argument, because Atlas cannot know it.
+    // extension bindings) stays an argument, because Equator cannot know it.
     "import type { EnvironmentProviders } from '@angular/core';",
-    "import { provideLocalizationSetup } from '@neolorn/atlas';",
-    "import type { LocalizationFeature } from '@neolorn/atlas';",
-    // Package-import specifiers rather than relative paths: the provisional overlay Atlas compiles
-    // during analysis resolves `#i18n/*` and knows nothing about relative paths inside it, and a
-    // consumer's own tsconfig resolves the same specifiers through package imports. One form works
-    // in both places.
+    "import { provideLocalizationSetup } from '@neolorn/equator';",
+    "import type { LocalizationFeature } from '@neolorn/equator';",
+    // Package-import specifiers rather than relative paths: the provisional overlay Equator
+    // compiles during analysis resolves `#i18n/*` and knows nothing about relative paths inside it,
+    // and a consumer's own tsconfig resolves the same specifiers through package imports. One form
+    // works in both places.
     "import { catalogSet } from '#i18n/catalog-set';",
     "import { catalogLoaders } from '#i18n/catalog-loaders';",
     "import { recoveryPayload } from '#i18n/recovery-payload';",
@@ -496,7 +490,7 @@ function providerImplementationLines(): readonly string[] {
     "import { routeProjection } from '#i18n/routes';",
     '',
     // Named, and exported, because the provider is not the only thing that composes it. A test
-    // reaches the runtime through `provideLocalizationTesting()` from `@neolorn/atlas/testing`,
+    // reaches the runtime through `provideLocalizationTesting()` from `@neolorn/equator/testing`,
     // which takes the setup rather than building it, and before this existed every such test
     // hand-assembled these six fields from five generated modules: the exact hand-assembly the
     // provider below was created to remove, reappearing the moment anyone wrote a test.
@@ -510,10 +504,10 @@ function providerImplementationLines(): readonly string[] {
     '  catalogSet: catalogSet,',
     '  catalogLoaders: catalogLoaders,',
     '  recoveryPayload: recoveryPayload,',
-    // Only the configured locales' profiles. Atlas carries the pinned release whole; an
+    // Only the configured locales' profiles. Equator carries the pinned release whole; an
     // application carries what its own locales reach.
     '  personNames: personNames,',
-    // The half of a route projection Atlas knows. `withRouting()` carries the half it cannot
+    // The half of a route projection Equator knows. `withRouting()` carries the half it cannot
     // (the URL policy, localized spellings, parameter codecs) so the table is declared once.
     '  routeProjection: routeProjection,',
     '});',
@@ -549,7 +543,7 @@ function providerImplementationLines(): readonly string[] {
  * the application imports, and assert nothing about the result.
  */
 function indexModule(
-  graph: AtlasSemanticGraph,
+  graph: SemanticGraph,
   deferredScopeIds: readonly string[] | undefined,
   provider: 'implementation' | 'declaration',
 ): string {
@@ -578,7 +572,7 @@ function indexModule(
   // back to the engine there, which is what it did for every locale before this existed.
   const localeNames = Object.fromEntries(
     graph.locales.flatMap((locale) => {
-      const endonym = atlasLocaleEndonym(locale);
+      const endonym = localeEndonym(locale);
       return endonym === undefined ? [] : [[locale, endonym] as const];
     }),
   );
@@ -588,7 +582,7 @@ function indexModule(
   // application whose locales are unrelated to each other carries no table at all.
   const localeFallbacks = Object.fromEntries(
     graph.locales.flatMap((locale) => {
-      const chain = atlasShippedFallbackChain(
+      const chain = shippedFallbackChain(
         locale,
         graph.locales,
         graph.parentLocales,
@@ -606,7 +600,7 @@ function indexModule(
       ? undefined
       : `  formatting: Object.freeze(${JSON.stringify(declaredFormatting)} as const),`;
   return [
-    '/** Generated by Atlas. Do not edit. */',
+    '/** Generated by Equator. Do not edit. */',
     `export const generatedAbi = ${quote(graph.generatedAbi)} as const;`,
     ...startupDeclaration,
     'export const aliases = Object.freeze(Object.assign(',
@@ -670,12 +664,12 @@ function indexModule(
  * not been read yet, and the consumer's own compiler still checks them against the real table.
  */
 function routeModule(
-  routes: readonly AtlasGeneratedRouteProjection[] | undefined,
+  routes: readonly GeneratedRouteProjection[] | undefined,
 ): string {
   if (routes === undefined) {
     return [
-      '/** Generated by Atlas. Do not edit. */',
-      "import type { GeneratedRouteProjection } from '@neolorn/atlas';",
+      '/** Generated by Equator. Do not edit. */',
+      "import type { GeneratedRouteProjection } from '@neolorn/equator';",
       'export declare const routeProjection: GeneratedRouteProjection;',
       '',
     ].join('\n');
@@ -686,8 +680,8 @@ function routeModule(
       `${right.id}\u0000${right.path}\u0000${right.sourcePath ?? ''}`,
     ),
   );
-  const identity = digestAtlasCanonicalJson(
-    'atlas-route-projection/1',
+  const identity = digestCanonicalJson(
+    'equator-route-projection/1',
     ordered.map((route) => ({
       id: route.id,
       path: route.path,
@@ -706,9 +700,7 @@ function routeModule(
           }),
     })),
   );
-  const sitemapClaim = (
-    claim: AtlasGeneratedRouteProjection['sitemap'],
-  ): string => {
+  const sitemapClaim = (claim: GeneratedRouteProjection['sitemap']): string => {
     if (claim === undefined) return '';
     const parts = [
       ...(claim.changefreq === undefined
@@ -728,9 +720,9 @@ function routeModule(
       `    Object.freeze({ id: ${quote(route.id)}, path: ${quote(route.path)}, parameterNames: Object.freeze([${route.parameterNames.map(quote).join(', ')}] as const)${route.indexing === undefined ? '' : `, indexing: ${quote(route.indexing)}`}${sitemapClaim(route.sitemap)}${route.scopes === undefined || route.scopes.length === 0 ? '' : `, scopes: Object.freeze([${route.scopes.map(({ providerId, scopeId }) => `Object.freeze({ providerId: ${quote(providerId)}, scopeId: ${quote(scopeId)} })`).join(', ')}] as const)`}${route.sourcePath === undefined ? '' : `, sourcePath: ${quote(route.sourcePath)}`} }),`,
   );
   return [
-    '/** Generated by Atlas. Do not edit. */',
+    '/** Generated by Equator. Do not edit. */',
     'export const routeProjection = Object.freeze({',
-    "  profile: 'atlas-route-projection/1',",
+    "  profile: 'equator-route-projection/1',",
     `  identity: ${quote(identity)},`,
     '  routes: Object.freeze([',
     ...rows,
@@ -741,9 +733,9 @@ function routeModule(
 }
 
 function recoveryModule(
-  graph: AtlasSemanticGraph,
+  graph: SemanticGraph,
   identities: readonly string[],
-  diagnostics: AtlasDiagnostic[],
+  diagnostics: ToolkitDiagnostic[],
 ): string {
   const messages = new Map(
     graph.scopes.flatMap((scope) =>
@@ -759,8 +751,8 @@ function recoveryModule(
       message.inputs.length > 0
     ) {
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1304',
+        toolkitDiagnostic(
+          'EQ1304',
           `Recovery identity ${JSON.stringify(identity)} must select an existing plain message with no inputs.`,
           { path: ['recovery', identity] },
         ),
@@ -772,7 +764,7 @@ function recoveryModule(
     );
   }
   return [
-    '/** Generated by Atlas. Do not edit. */',
+    '/** Generated by Equator. Do not edit. */',
     'export const recoveryRoots = Object.freeze([',
     ...rows,
     '] as const);',
@@ -780,12 +772,12 @@ function recoveryModule(
   ].join('\n');
 }
 
-export function generateAtlasContracts(
-  graph: AtlasSemanticGraph,
-  options: AtlasGenerateContractsOptions = {},
-): AtlasResult<readonly AtlasGeneratedContractFile[]> {
-  const diagnostics: AtlasDiagnostic[] = [];
-  const files: AtlasGeneratedContractFile[] = [
+export function generateContracts(
+  graph: SemanticGraph,
+  options: GenerateContractsOptions = {},
+): ToolkitResult<readonly GeneratedContractFile[]> {
+  const diagnostics: ToolkitDiagnostic[] = [];
+  const files: GeneratedContractFile[] = [
     Object.freeze({
       path: 'index.ts',
       contents: indexModule(
@@ -816,8 +808,8 @@ export function generateAtlasContracts(
     );
   }
   if (diagnostics.some(({ severity }) => severity === 'error')) {
-    return atlasFailure(diagnostics);
+    return toolkitFailure(diagnostics);
   }
   files.sort((left, right) => compareCodePoint(left.path, right.path));
-  return atlasSuccess(Object.freeze(files), diagnostics);
+  return toolkitSuccess(Object.freeze(files), diagnostics);
 }

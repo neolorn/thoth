@@ -10,7 +10,7 @@
 import {
   LocalizationError,
   type LocalizationDiagnostic,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /**
  * Every ceiling the runtime enforces, as one frozen table of counts and byte sizes.
@@ -19,7 +19,7 @@ import {
  * can check a catalog against `messagesPerCatalog` before shipping it, and a test can assert on the
  * same number the runtime refuses at. Nothing here is a setting. A limit that an artifact or an
  * application could raise would be a limit an attacker could raise, so the values are fixed for a
- * given version of Atlas and a change to one is a change to the package.
+ * given version of Equator and a change to one is a change to the package.
  */
 export const RUNTIME_LIMITS = Object.freeze({
   catalogBytes: 16_777_216,
@@ -127,7 +127,7 @@ export function isDataRecord(
 /**
  * An object that is not an array, without asking what it was constructed from.
  *
- * Weaker than `isDataRecord` on purpose. The callers are walking values Atlas itself produced, or
+ * Weaker than `isDataRecord` on purpose. The callers are walking values Equator itself produced, or
  * participant data an application hands over as its own object, where a class instance is a
  * legitimate answer and the prototype check would refuse it.
  */

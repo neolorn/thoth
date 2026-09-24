@@ -31,7 +31,7 @@ const IGNORED_DIRECTORIES = new Set([
   'node_modules',
   'dist',
   '.git',
-  '.atlas',
+  '.equator',
   'tmp',
 ]);
 
@@ -212,12 +212,12 @@ const diagnostics = output
   .filter((line) => /error TS\d+:/u.test(line));
 if (diagnostics.length > 0 || tsc.status !== 0) {
   process.stderr.write(
-    `${diagnostics.join('\n')}\n\nAtlas typecheck failed with ${diagnostics.length} error(s).\n`,
+    `${diagnostics.join('\n')}\n\nEquator typecheck failed with ${diagnostics.length} error(s).\n`,
   );
   process.exit(1);
 }
 
 process.stdout.write(
-  `Atlas typecheck verified: ${loaded.size} files loaded across ${roots.length} source roots, ` +
+  `Equator typecheck verified: ${loaded.size} files loaded across ${roots.length} source roots, ` +
     `${expected.size} entry points mapped, no type errors.\n`,
 );

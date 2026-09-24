@@ -33,69 +33,69 @@ import {
 import { randomBytes } from 'node:crypto';
 
 import {
-  atlasDiagnostic,
-  atlasFailure,
-  atlasSuccess,
-  type AtlasDiagnostic,
-  type AtlasResult,
+  toolkitDiagnostic,
+  toolkitFailure,
+  toolkitSuccess,
+  type ToolkitDiagnostic,
+  type ToolkitResult,
 } from './diagnostics.js';
 import {
-  ATLAS_COMPLETION_MANIFEST_PATH,
-  createAtlasCompletionManifest,
-  createAtlasOutputPlan,
-  digestAtlasBytes,
-  formatAtlasCompletionManifest,
-  parseAtlasCompletionManifest,
-  type AtlasCompletionManifest,
-  type AtlasOutputPlan,
+  COMPLETION_MANIFEST_PATH,
+  createCompletionManifest,
+  createOutputPlan,
+  digestBytes,
+  formatCompletionManifest,
+  parseCompletionManifest,
+  type CompletionManifest,
+  type OutputPlan,
 } from './output-plan.js';
 import { compareCodePoint } from './sorted-records.js';
 import { pathExists, writeSynced } from './file-system.js';
 
 /**
- * The file that marks a work root as Atlas's, relative to the work root itself.
+ * The file that marks a work root as Equator's, relative to the work root itself.
  *
- * Atlas will create a work root, and will refuse an existing directory that does not carry this
+ * Equator will create a work root, and will refuse an existing directory that does not carry this
  * marker. That refusal is the whole reason the constant is published: a consumer whose tooling
- * removes or relocates Atlas's disposable state has to be able to recognise the directory as
- * Atlas-owned before deleting anything, and recognising it by a path spelled out in the consumer's
- * own script is a guess that goes stale silently. Read the marker, check its `profile` against
- * {@link ATLAS_WORK_OWNER_PROFILE}, and only then treat the directory as Atlas's.
+ * removes or relocates Equator's disposable state has to be able to recognise the directory as
+ * Equator-owned before deleting anything, and recognising it by a path spelled out in the
+ * consumer's own script is a guess that goes stale silently. Read the marker, check its `profile`
+ * against {@link WORK_OWNER_PROFILE}, and only then treat the directory as Equator's.
  *
- * The marker also carries an `ownerId`, which is what makes two Atlas-owned trees in one repository
- * distinguishable. A work root whose `ownerId` does not match the generated output beside it is
- * refused rather than adopted: one project's cache silently serving another's build is the
- * failure this prevents.
+ * The marker also carries an `ownerId`, which is what makes two Equator-owned trees in one
+ * repository distinguishable. A work root whose `ownerId` does not match the generated output
+ * beside it is refused rather than adopted: one project's cache silently serving another's build is
+ * the failure this prevents.
  */
-export const ATLAS_WORK_OWNER_PATH = '.atlas-owner.json' as const;
-export const ATLAS_COMPILER_CACHE_PATH = 'cache/compiler-state.json' as const;
+export const WORK_OWNER_PATH = '.equator-owner.json' as const;
+export const COMPILER_CACHE_PATH = 'cache/compiler-state.json' as const;
 const TRANSACTION_PATH = 'transaction.json';
 const LOCK_PATH = 'generation.lock';
 /**
  * The `profile` value inside a work-root ownership marker, and the version of its shape.
  *
  * Compare against this rather than against the string: the trailing `/1` is a format version, and a
- * future Atlas that changes what the marker holds will bump it. A consumer that matched on the
+ * future Equator that changes what the marker holds will bump it. A consumer that matched on the
  * literal would then keep deleting a directory whose contents it no longer understands, which is
  * the one outcome an ownership check exists to prevent. A marker whose profile is not this one is
- * not a marker this version of Atlas wrote, and the safe reading of it is "leave it alone".
+ * not a marker this version of Equator wrote, and the safe reading of it is "leave it alone".
  */
-export const ATLAS_WORK_OWNER_PROFILE = 'atlas-work-owner/1' as const;
-const TRANSACTION_PROFILE = 'atlas-output-transaction/1';
+export const WORK_OWNER_PROFILE = 'equator-work-owner/1' as const;
+const TRANSACTION_PROFILE = 'equator-output-transaction/1';
 
-export interface AtlasApplyOutputPlanRequest {
+export interface ApplyOutputPlanRequest {
   readonly ownerRoot: string;
   readonly generatedRoot: string;
   readonly workRoot: string;
   readonly ownerId: string;
-  readonly plan: AtlasOutputPlan;
+  readonly plan: OutputPlan;
   readonly dryRun?: boolean;
   readonly expectedInputFingerprint?: string;
   readonly revalidateInputFingerprint?: () => Promise<string>;
 }
 
 /** What writing a plan did to the generated tree. */
-export interface AtlasApplyOutputPlanResult {
+export interface ApplyOutputPlanResult {
   /** Whether anything moved at all, which is what a build reports as a no-op. */
   readonly changed: boolean;
   /** The files created or rewritten. */
@@ -112,25 +112,25 @@ export interface AtlasApplyOutputPlanResult {
  * What a check reports and a pull request fails on: a generated tree somebody forgot to rebuild, or
  * edited by hand, is caught here rather than in a browser.
  */
-export interface AtlasOutputFreshness {
+export interface OutputFreshness {
   /** Whether everything matches. False when any of the three lists below has anything in it. */
   readonly fresh: boolean;
   /** Files the sources produce that are not on disk. */
   readonly missing: readonly string[];
   /** Files on disk holding something other than what the sources produce. */
   readonly changed: readonly string[];
-  /** Files Atlas wrote that the sources no longer produce. */
+  /** Files Equator wrote that the sources no longer produce. */
   readonly stale: readonly string[];
 }
 
-export interface AtlasCleanOutputRequest {
+export interface CleanOutputRequest {
   readonly ownerRoot: string;
   readonly generatedRoot: string;
   readonly workRoot: string;
   readonly dryRun?: boolean;
 }
 
-export interface AtlasCleanOutputResult {
+export interface CleanOutputResult {
   readonly changed: boolean;
   readonly removed: readonly string[];
 }
@@ -174,7 +174,7 @@ function portableRelative(owner: string, candidate: string): string {
 function absoluteFromPortable(owner: string, path: string): string {
   const candidate = resolve(owner, ...path.split('/'));
   if (!containedPath(candidate, owner)) {
-    throw new TypeError(`Atlas transaction path escapes its owner: ${path}`);
+    throw new TypeError(`Equator transaction path escapes its owner: ${path}`);
   }
   return candidate;
 }
@@ -184,7 +184,7 @@ async function assertSafeExistingPath(
   target: string,
 ): Promise<void> {
   if (!containedPath(target, ownerRoot)) {
-    throw new TypeError(`Atlas path escapes its owner: ${target}`);
+    throw new TypeError(`Equator path escapes its owner: ${target}`);
   }
   const relativePath = relative(ownerRoot, target);
   let current = ownerRoot;
@@ -194,7 +194,7 @@ async function assertSafeExistingPath(
     if (!(await pathExists(current))) break;
     const metadata = await lstat(current);
     if (metadata.isSymbolicLink()) {
-      throw new TypeError(`Atlas refuses linked output path: ${current}`);
+      throw new TypeError(`Equator refuses linked output path: ${current}`);
     }
   }
   const existing = await pathExists(target);
@@ -203,7 +203,7 @@ async function assertSafeExistingPath(
     const canonicalTarget = await realpath(target);
     if (!containedPath(canonicalTarget, canonicalOwner)) {
       throw new TypeError(
-        `Atlas output path resolves outside its owner: ${target}`,
+        `Equator output path resolves outside its owner: ${target}`,
       );
     }
   }
@@ -211,7 +211,7 @@ async function assertSafeExistingPath(
 
 async function validateRoots(
   request: Pick<
-    AtlasApplyOutputPlanRequest,
+    ApplyOutputPlanRequest,
     'ownerRoot' | 'generatedRoot' | 'workRoot'
   >,
 ): Promise<{
@@ -225,7 +225,7 @@ async function validateRoots(
   const ownerMetadata = await lstat(ownerRoot);
   if (!ownerMetadata.isDirectory() || ownerMetadata.isSymbolicLink()) {
     throw new TypeError(
-      'Atlas owner root must be an existing ordinary directory.',
+      'Equator owner root must be an existing ordinary directory.',
     );
   }
   if (
@@ -238,7 +238,7 @@ async function validateRoots(
     containedPath(workRoot, generatedRoot)
   ) {
     throw new TypeError(
-      'Atlas generated and work roots must be separate contained owner subdirectories.',
+      'Equator generated and work roots must be separate contained owner subdirectories.',
     );
   }
   await assertSafeExistingPath(ownerRoot, generatedRoot);
@@ -254,14 +254,14 @@ async function collectFiles(root: string): Promise<readonly string[]> {
       const path = resolve(directory, entry.name);
       if (entry.isSymbolicLink()) {
         throw new TypeError(
-          `Atlas refuses linked content in an owned root: ${path}`,
+          `Equator refuses linked content in an owned root: ${path}`,
         );
       }
       if (entry.isDirectory()) await visit(path);
       else if (entry.isFile()) files.push(portableRelative(root, path));
       else
         throw new TypeError(
-          `Atlas refuses special file in an owned root: ${path}`,
+          `Equator refuses special file in an owned root: ${path}`,
         );
     }
   };
@@ -272,25 +272,23 @@ async function collectFiles(root: string): Promise<readonly string[]> {
 
 async function readCurrentManifest(
   generatedRoot: string,
-): Promise<AtlasResult<AtlasCompletionManifest> | undefined> {
+): Promise<ToolkitResult<CompletionManifest> | undefined> {
   if (!(await pathExists(generatedRoot))) return undefined;
-  const manifestPath = resolve(generatedRoot, ATLAS_COMPLETION_MANIFEST_PATH);
+  const manifestPath = resolve(generatedRoot, COMPLETION_MANIFEST_PATH);
   if (!(await pathExists(manifestPath))) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1601',
-        'Atlas refuses an existing generated root without its completion/ownership manifest.',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1601',
+        'Equator refuses an existing generated root without its completion/ownership manifest.',
       ),
     ]);
   }
-  const parsed = parseAtlasCompletionManifest(
-    await readFile(manifestPath, 'utf8'),
-  );
+  const parsed = parseCompletionManifest(await readFile(manifestPath, 'utf8'));
   return parsed.ok
     ? parsed
-    : atlasFailure(
+    : toolkitFailure(
         parsed.diagnostics.map((diagnostic) =>
-          atlasDiagnostic('ATL1601', diagnostic.summary, {
+          toolkitDiagnostic('EQ1601', diagnostic.summary, {
             path: diagnostic.path,
           }),
         ),
@@ -299,19 +297,19 @@ async function readCurrentManifest(
 
 async function verifyOwnedInventory(
   generatedRoot: string,
-  manifest: AtlasCompletionManifest,
-): Promise<readonly AtlasDiagnostic[]> {
-  const diagnostics: AtlasDiagnostic[] = [];
+  manifest: CompletionManifest,
+): Promise<readonly ToolkitDiagnostic[]> {
+  const diagnostics: ToolkitDiagnostic[] = [];
   const expected = new Set([
-    ATLAS_COMPLETION_MANIFEST_PATH,
+    COMPLETION_MANIFEST_PATH,
     ...manifest.files.map(({ path }) => path),
   ]);
   for (const path of await collectFiles(generatedRoot)) {
     if (!expected.has(path)) {
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1601',
-          `Atlas generated root contains unowned file ${JSON.stringify(path)}.`,
+        toolkitDiagnostic(
+          'EQ1601',
+          `Equator generated root contains unowned file ${JSON.stringify(path)}.`,
           { path: ['outputs', path] },
         ),
       );
@@ -321,9 +319,9 @@ async function verifyOwnedInventory(
     const path = absoluteFromPortable(generatedRoot, file.path);
     if (!(await pathExists(path))) {
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1603',
-          `Atlas generated output ${JSON.stringify(file.path)} is missing.`,
+        toolkitDiagnostic(
+          'EQ1603',
+          `Equator generated output ${JSON.stringify(file.path)} is missing.`,
           { path: ['outputs', file.path] },
         ),
       );
@@ -332,12 +330,12 @@ async function verifyOwnedInventory(
     const contents = await readFile(path);
     if (
       contents.byteLength !== file.bytes ||
-      digestAtlasBytes(contents) !== file.digest
+      digestBytes(contents) !== file.digest
     ) {
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1603',
-          `Atlas generated output ${JSON.stringify(file.path)} does not match its completion manifest.`,
+        toolkitDiagnostic(
+          'EQ1603',
+          `Equator generated output ${JSON.stringify(file.path)} does not match its completion manifest.`,
           { path: ['outputs', file.path] },
         ),
       );
@@ -350,69 +348,68 @@ async function ensureWorkOwner(
   workRoot: string,
   ownerId: string,
 ): Promise<void> {
-  const markerPath = resolve(workRoot, ATLAS_WORK_OWNER_PATH);
+  const markerPath = resolve(workRoot, WORK_OWNER_PATH);
   if (!(await pathExists(workRoot))) {
     await mkdir(workRoot, { recursive: true });
     await writeFile(
       markerPath,
-      `${JSON.stringify({ profile: ATLAS_WORK_OWNER_PROFILE, ownerId }, null, 2)}\n`,
+      `${JSON.stringify({ profile: WORK_OWNER_PROFILE, ownerId }, null, 2)}\n`,
       { encoding: 'utf8', flag: 'wx' },
     );
     return;
   }
   if (!(await pathExists(markerPath))) {
     throw new TypeError(
-      `Atlas refuses an existing unmarked work root at ${JSON.stringify(workRoot)}: it holds no ${ATLAS_WORK_OWNER_PATH}, so Atlas cannot tell whether the directory is its own. Remove it, or point this project's work root somewhere Atlas owns.`,
+      `Equator refuses an existing unmarked work root at ${JSON.stringify(workRoot)}: it holds no ${WORK_OWNER_PATH}, so Equator cannot tell whether the directory is its own. Remove it, or point this project's work root somewhere Equator owns.`,
     );
   }
   const found = await readWorkOwnerId(workRoot);
   if (found !== ownerId) {
     // Named on both sides, because the two readings are what tell the two causes apart. A second
-    // Atlas-owned tree in the same repository is a configuration to fix; the identity of a project
-    // that was renamed or that moved where it generates is a work root to discard, and the work
-    // root holds nothing but disposable state.
+    // Equator-owned tree in the same repository is a configuration to fix; the identity of a
+    // project that was renamed or that moved where it generates is a work root to discard, and the
+    // work root holds nothing but disposable state.
     throw new TypeError(
-      `Atlas work root at ${JSON.stringify(workRoot)} belongs to another generated owner: it records ${JSON.stringify(found ?? 'an unreadable identity')} and this project is ${JSON.stringify(ownerId)}. Run atlas clean to discard that work root, it holds only Atlas's own disposable state, or give this project a work root of its own.`,
+      `Equator work root at ${JSON.stringify(workRoot)} belongs to another generated owner: it records ${JSON.stringify(found ?? 'an unreadable identity')} and this project is ${JSON.stringify(ownerId)}. Run equator clean to discard that work root, it holds only Equator's own disposable state, or give this project a work root of its own.`,
     );
   }
   const allowed = new Set([
-    ATLAS_WORK_OWNER_PATH,
-    ATLAS_COMPILER_CACHE_PATH,
+    WORK_OWNER_PATH,
+    COMPILER_CACHE_PATH,
     LOCK_PATH,
     TRANSACTION_PATH,
   ]);
   for (const path of await collectFiles(workRoot)) {
     if (!allowed.has(path)) {
-      throw new TypeError(`Atlas work root contains unowned file ${path}.`);
+      throw new TypeError(`Equator work root contains unowned file ${path}.`);
     }
   }
 }
 
 async function readWorkOwnerId(workRoot: string): Promise<string | undefined> {
   if (!(await pathExists(workRoot))) return undefined;
-  const markerPath = resolve(workRoot, ATLAS_WORK_OWNER_PATH);
+  const markerPath = resolve(workRoot, WORK_OWNER_PATH);
   if (!(await pathExists(markerPath))) {
-    throw new TypeError('Atlas refuses an existing unmarked work root.');
+    throw new TypeError('Equator refuses an existing unmarked work root.');
   }
   let marker: unknown;
   try {
     marker = JSON.parse(await readFile(markerPath, 'utf8'));
   } catch {
-    throw new TypeError('Atlas work-root ownership marker is invalid.');
+    throw new TypeError('Equator work-root ownership marker is invalid.');
   }
   if (
     typeof marker !== 'object' ||
     marker === null ||
     Array.isArray(marker) ||
     Object.keys(marker).sort().join(',') !== 'ownerId,profile' ||
-    (marker as Record<string, unknown>)['profile'] !==
-      ATLAS_WORK_OWNER_PROFILE ||
+    (marker as Record<string, unknown>)['profile'] !== WORK_OWNER_PROFILE ||
     typeof (marker as Record<string, unknown>)['ownerId'] !== 'string' ||
     !/^sha256-[A-Za-z0-9_-]{43}$/u.test(
       (marker as Record<string, unknown>)['ownerId'] as string,
     )
   ) {
-    throw new TypeError('Atlas work-root ownership marker is invalid.');
+    throw new TypeError('Equator work-root ownership marker is invalid.');
   }
   return (marker as Record<string, string>)['ownerId'];
 }
@@ -478,7 +475,7 @@ async function recoverTransaction(
     await readFile(journalPath, 'utf8'),
   ) as ReceivedTransactionJournal;
   if (journal.profile !== TRANSACTION_PROFILE || journal.ownerId !== ownerId) {
-    throw new TypeError('Atlas output transaction journal is incompatible.');
+    throw new TypeError('Equator output transaction journal is incompatible.');
   }
   for (const operation of [...journal.operations].reverse()) {
     const path = absoluteFromPortable(generatedRoot, operation.path);
@@ -504,11 +501,11 @@ async function recoverTransaction(
 async function freshness(
   generatedRoot: string,
   ownerId: string,
-  plan: AtlasOutputPlan,
-): Promise<AtlasResult<AtlasOutputFreshness>> {
+  plan: OutputPlan,
+): Promise<ToolkitResult<OutputFreshness>> {
   const current = await readCurrentManifest(generatedRoot);
   if (current === undefined) {
-    return atlasSuccess(
+    return toolkitSuccess(
       Object.freeze({
         fresh: false,
         missing: Object.freeze(plan.files.map(({ path }) => path)),
@@ -519,10 +516,10 @@ async function freshness(
   }
   if (!current.ok) return current;
   if (current.value.ownerId !== ownerId) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1601',
-        `Atlas generated root at ${JSON.stringify(generatedRoot)} belongs to another owner identity: its completion manifest records ${JSON.stringify(current.value.ownerId)} and this project is ${JSON.stringify(ownerId)}. Run atlas clean to remove the output that manifest describes, or generate into a root of this project's own.`,
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1601',
+        `Equator generated root at ${JSON.stringify(generatedRoot)} belongs to another owner identity: its completion manifest records ${JSON.stringify(current.value.ownerId)} and this project is ${JSON.stringify(ownerId)}. Run equator clean to remove the output that manifest describes, or generate into a root of this project's own.`,
       ),
     ]);
   }
@@ -531,7 +528,7 @@ async function freshness(
     current.value,
   );
   if (inventoryDiagnostics.some(({ severity }) => severity === 'error')) {
-    return atlasFailure(inventoryDiagnostics);
+    return toolkitFailure(inventoryDiagnostics);
   }
   const confirmed = await readCurrentManifest(generatedRoot);
   if (
@@ -540,10 +537,10 @@ async function freshness(
     confirmed.value.ownerId !== current.value.ownerId ||
     confirmed.value.planDigest !== current.value.planDigest
   ) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1603',
-        'Atlas completion manifest changed while generated output was being inspected.',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1603',
+        'Equator completion manifest changed while generated output was being inspected.',
       ),
     ]);
   }
@@ -564,7 +561,7 @@ async function freshness(
   for (const file of current.value.files) {
     if (!desired.has(file.path)) stale.push(file.path);
   }
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
       fresh:
         missing.length === 0 &&
@@ -582,7 +579,7 @@ async function freshness(
  * Whether the generated output on disk is what this output plan would produce, without writing
  * anything.
  *
- * The same comparison `atlas check --require-fresh` makes, published so a consumer's own gate can
+ * The same comparison `equator check --require-fresh` makes, published so a consumer's own gate can
  * ask it without shelling out to the CLI and parsing its output. The result separates three
  * different ways output can be out of date, because they are three different problems: `missing` is
  * a file the output plan expects and disk does not have, `changed` is a file whose contents no
@@ -592,35 +589,35 @@ async function freshness(
  *
  * This reads; it does not repair. A caller that wants disk brought into line runs the generation.
  *
- * Failure here is an `ATL1601` diagnostic rather than a thrown error, in keeping with the rest of
+ * Failure here is an `EQ1601` diagnostic rather than a thrown error, in keeping with the rest of
  * this surface: an unreadable or unowned root is a fact about the project, not a bug in the call.
  */
-export async function inspectAtlasOutputFreshness(
-  request: Omit<AtlasApplyOutputPlanRequest, 'dryRun'>,
-): Promise<AtlasResult<AtlasOutputFreshness>> {
+export async function inspectOutputFreshness(
+  request: Omit<ApplyOutputPlanRequest, 'dryRun'>,
+): Promise<ToolkitResult<OutputFreshness>> {
   try {
     const roots = await validateRoots(request);
     return freshness(roots.generatedRoot, request.ownerId, request.plan);
   } catch (error) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1601',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1601',
         error instanceof Error ? error.message : String(error),
       ),
     ]);
   }
 }
 
-export async function applyAtlasOutputPlan(
-  request: AtlasApplyOutputPlanRequest,
-): Promise<AtlasResult<AtlasApplyOutputPlanResult>> {
+export async function applyOutputPlan(
+  request: ApplyOutputPlanRequest,
+): Promise<ToolkitResult<ApplyOutputPlanResult>> {
   let roots: Awaited<ReturnType<typeof validateRoots>>;
   try {
     roots = await validateRoots(request);
   } catch (error) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1601',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1601',
         error instanceof Error ? error.message : String(error),
       ),
     ]);
@@ -644,10 +641,10 @@ export async function applyAtlasOutputPlan(
       );
     } catch (error) {
       await releaseLock();
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1602',
-          `Atlas could not acquire or recover its output transaction: ${error instanceof Error ? error.message : String(error)}`,
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1602',
+          `Equator could not acquire or recover its output transaction: ${error instanceof Error ? error.message : String(error)}`,
         ),
       ]);
     }
@@ -670,7 +667,7 @@ export async function applyAtlasOutputPlan(
     );
   if (state.value.fresh) {
     await releaseLock();
-    return atlasSuccess(
+    return toolkitSuccess(
       Object.freeze({
         changed: false,
         written: Object.freeze([]),
@@ -685,7 +682,7 @@ export async function applyAtlasOutputPlan(
   const removed = [...state.value.stale].sort(compareCodePoint);
   if (request.dryRun === true) {
     await releaseLock();
-    return atlasSuccess(
+    return toolkitSuccess(
       Object.freeze({
         changed: true,
         written: Object.freeze(written),
@@ -704,35 +701,29 @@ export async function applyAtlasOutputPlan(
       (await request.revalidateInputFingerprint()) !==
         request.expectedInputFingerprint
     ) {
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1602',
-          'Atlas inputs changed after compilation; generation was not published.',
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1602',
+          'Equator inputs changed after compilation; generation was not published.',
         ),
       ]);
     }
-    const manifest = createAtlasCompletionManifest(
-      request.ownerId,
-      request.plan,
-    );
+    const manifest = createCompletionManifest(request.ownerId, request.plan);
     const desired = new Map(
       request.plan.files.map((file) => [file.path, file.contents]),
     );
-    desired.set(
-      ATLAS_COMPLETION_MANIFEST_PATH,
-      formatAtlasCompletionManifest(manifest),
-    );
+    desired.set(COMPLETION_MANIFEST_PATH, formatCompletionManifest(manifest));
     const operationPaths = [
-      ...new Set([...written, ...removed, ATLAS_COMPLETION_MANIFEST_PATH]),
+      ...new Set([...written, ...removed, COMPLETION_MANIFEST_PATH]),
     ].sort((left, right) => {
-      if (left === ATLAS_COMPLETION_MANIFEST_PATH) return 1;
-      if (right === ATLAS_COMPLETION_MANIFEST_PATH) return -1;
+      if (left === COMPLETION_MANIFEST_PATH) return 1;
+      if (right === COMPLETION_MANIFEST_PATH) return -1;
       return compareCodePoint(left, right);
     });
     const operations: TransactionOperation[] = [];
     for (const path of operationPaths) {
       const destination = absoluteFromPortable(roots.generatedRoot, path);
-      const token = `.atlas-${transactionId}`;
+      const token = `.equator-${transactionId}`;
       const backupPath = resolve(
         dirname(destination),
         `.${basename(destination)}${token}.bak`,
@@ -803,7 +794,7 @@ export async function applyAtlasOutputPlan(
     }
     await unlink(journalPath);
     await removeEmptyDirectories(roots.generatedRoot);
-    return atlasSuccess(
+    return toolkitSuccess(
       Object.freeze({
         changed: true,
         written: Object.freeze(written),
@@ -821,17 +812,17 @@ export async function applyAtlasOutputPlan(
         );
       }
     } catch {
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1602',
-          'Atlas output publication failed and automatic rollback could not be completed safely.',
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1602',
+          'Equator output publication failed and automatic rollback could not be completed safely.',
         ),
       ]);
     }
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1602',
-        `Atlas output publication failed safely: ${error instanceof Error ? error.message : String(error)}`,
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1602',
+        `Equator output publication failed safely: ${error instanceof Error ? error.message : String(error)}`,
       ),
     ]);
   } finally {
@@ -840,33 +831,33 @@ export async function applyAtlasOutputPlan(
 }
 
 /**
- * Removes what Atlas generated, and nothing else.
+ * Removes what Equator generated, and nothing else.
  *
- * The inventory is not a pattern and not a directory sweep: it is the completion manifest Atlas
- * wrote when it generated, so every removed path is one Atlas recorded creating. A file that
+ * The inventory is not a pattern and not a directory sweep: it is the completion manifest Equator
+ * wrote when it generated, so every removed path is one Equator recorded creating. A file that
  * appeared in the generated root by another route is not in the manifest, is not removed, and makes
  * the call fail rather than pass quietly: an unrecognised file in an owned directory means the
- * directory is not what Atlas thinks it is, and deleting the rest of it on that assumption is how a
- * cleanup destroys someone's work.
+ * directory is not what Equator thinks it is, and deleting the rest of it on that assumption is how
+ * a cleanup destroys someone's work.
  *
  * Both roots are checked to belong to the same owner before anything is removed. Different owner
- * identities on the generated and work roots is `ATL1601`: two projects have been pointed at one
+ * identities on the generated and work roots is `EQ1601`: two projects have been pointed at one
  * tree, and the right answer is to stop.
  *
  * `dryRun` returns the same `removed` list without touching disk, which is what makes this safe to
  * offer in a consumer's own tooling. It refuses to preview while an output transaction is pending
  * recovery, because the list would describe a tree that is mid-write.
  */
-export async function cleanAtlasOutput(
-  request: AtlasCleanOutputRequest,
-): Promise<AtlasResult<AtlasCleanOutputResult>> {
+export async function cleanOutput(
+  request: CleanOutputRequest,
+): Promise<ToolkitResult<CleanOutputResult>> {
   let roots: Awaited<ReturnType<typeof validateRoots>>;
   try {
     roots = await validateRoots(request);
   } catch (error) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1601',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1601',
         error instanceof Error ? error.message : String(error),
       ),
     ]);
@@ -887,16 +878,16 @@ export async function cleanAtlasOutput(
       workOwnerId !== undefined &&
       generatedOwnerId !== workOwnerId
     ) {
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1601',
-          'Atlas generated and work roots have different owner identities.',
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1601',
+          'Equator generated and work roots have different owner identities.',
         ),
       ]);
     }
     const ownerId = generatedOwnerId ?? workOwnerId;
     if (ownerId === undefined) {
-      return atlasSuccess(
+      return toolkitSuccess(
         Object.freeze({ changed: false, removed: Object.freeze([]) }),
       );
     }
@@ -906,17 +897,17 @@ export async function cleanAtlasOutput(
         manifest.value,
       );
       if (inventoryDiagnostics.length > 0) {
-        return atlasFailure(inventoryDiagnostics);
+        return toolkitFailure(inventoryDiagnostics);
       }
     }
     if (
       request.dryRun === true &&
       (await pathExists(resolve(roots.workRoot, TRANSACTION_PATH)))
     ) {
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1602',
-          'Atlas clean cannot preview while an output transaction requires recovery.',
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1602',
+          'Equator clean cannot preview while an output transaction requires recovery.',
         ),
       ]);
     }
@@ -926,7 +917,7 @@ export async function cleanAtlasOutput(
     const generatedFiles = manifest?.ok
       ? [
           ...manifest.value.files.map(({ path }) => path),
-          ATLAS_COMPLETION_MANIFEST_PATH,
+          COMPLETION_MANIFEST_PATH,
         ]
       : [];
     const workFiles =
@@ -934,11 +925,11 @@ export async function cleanAtlasOutput(
         ? []
         : [
             ...((await pathExists(
-              absoluteFromPortable(roots.workRoot, ATLAS_COMPILER_CACHE_PATH),
+              absoluteFromPortable(roots.workRoot, COMPILER_CACHE_PATH),
             ))
-              ? [ATLAS_COMPILER_CACHE_PATH]
+              ? [COMPILER_CACHE_PATH]
               : []),
-            ATLAS_WORK_OWNER_PATH,
+            WORK_OWNER_PATH,
           ];
     const plannedRemoved = [
       ...generatedFiles.map((path) =>
@@ -955,7 +946,7 @@ export async function cleanAtlasOutput(
       ),
     ].sort(compareCodePoint);
     if (request.dryRun === true) {
-      return atlasSuccess(
+      return toolkitSuccess(
         Object.freeze({
           changed: plannedRemoved.length > 0,
           removed: Object.freeze(plannedRemoved),
@@ -967,9 +958,9 @@ export async function cleanAtlasOutput(
       await removeEmptyDirectories(roots.generatedRoot);
     }
 
-    const emptyPlan = createAtlasOutputPlan([]);
+    const emptyPlan = createOutputPlan([]);
     if (!emptyPlan.ok) return emptyPlan;
-    const emptied = await applyAtlasOutputPlan({
+    const emptied = await applyOutputPlan({
       ownerRoot: roots.ownerRoot,
       generatedRoot: roots.generatedRoot,
       workRoot: roots.workRoot,
@@ -991,7 +982,7 @@ export async function cleanAtlasOutput(
         accepted.value.planDigest !== emptyPlan.value.planDigest
       ) {
         throw new TypeError(
-          'Atlas generated output changed while clean was finalizing.',
+          'Equator generated output changed while clean was finalizing.',
         );
       }
       const acceptedDiagnostics = await verifyOwnedInventory(
@@ -1000,36 +991,34 @@ export async function cleanAtlasOutput(
       );
       if (acceptedDiagnostics.length > 0) {
         throw new TypeError(
-          'Atlas generated output changed while clean was finalizing.',
+          'Equator generated output changed while clean was finalizing.',
         );
       }
-      await unlink(
-        resolve(roots.generatedRoot, ATLAS_COMPLETION_MANIFEST_PATH),
-      );
+      await unlink(resolve(roots.generatedRoot, COMPLETION_MANIFEST_PATH));
       await removeEmptyDirectories(roots.generatedRoot);
       const cachePath = absoluteFromPortable(
         roots.workRoot,
-        ATLAS_COMPILER_CACHE_PATH,
+        COMPILER_CACHE_PATH,
       );
       if (await pathExists(cachePath)) await unlink(cachePath);
       await removeEmptyDirectories(resolve(roots.workRoot, 'cache'));
-      await unlink(resolve(roots.workRoot, ATLAS_WORK_OWNER_PATH));
+      await unlink(resolve(roots.workRoot, WORK_OWNER_PATH));
     } finally {
       await lockHandle.close();
       await rm(lockPath, { force: true });
     }
     await removeEmptyDirectories(roots.workRoot);
-    return atlasSuccess(
+    return toolkitSuccess(
       Object.freeze({
         changed: plannedRemoved.length > 0,
         removed: Object.freeze(plannedRemoved),
       }),
     );
   } catch (error) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1602',
-        `Atlas clean failed safely: ${error instanceof Error ? error.message : String(error)}`,
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1602',
+        `Equator clean failed safely: ${error instanceof Error ? error.message : String(error)}`,
       ),
     ]);
   }

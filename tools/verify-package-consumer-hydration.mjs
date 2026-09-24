@@ -22,22 +22,19 @@ const consumerRoot = resolve(
   'tmp/package-consumer-verification',
   consumerName,
 );
-const serverEntry = resolve(
-  consumerRoot,
-  'dist/atlas-feature-lab/server/server.mjs',
-);
-const browserRoot = resolve(consumerRoot, 'dist/atlas-feature-lab/browser');
+const serverEntry = resolve(consumerRoot, 'dist/feature-lab/server/server.mjs');
+const browserRoot = resolve(consumerRoot, 'dist/feature-lab/browser');
 const prerenderManifestPath = resolve(
   consumerRoot,
-  'dist/atlas-feature-lab/prerendered-routes.json',
+  'dist/feature-lab/prerendered-routes.json',
 );
-// Every locale's copy of every prerendered route, and none that Atlas did not derive. The
+// Every locale's copy of every prerendered route, and none that Equator did not derive. The
 // article's slug is spelled differently per locale, so its two addresses share no path segment
 // after `/articles/`, which is exactly the expansion a hand-written table gets wrong silently.
 const expectedPrerenderRoutes = Object.freeze([
-  '/ar-eg/articles/دليل-أطلس',
+  '/ar-eg/articles/دليل',
   '/ar-eg/second',
-  '/en-us/articles/atlas-handbook',
+  '/en-us/articles/handbook',
   '/en-us/second',
 ]);
 
@@ -89,7 +86,7 @@ const describeError = (error) => {
 
 const failEscaped = (event) => (error) => {
   process.stderr.write(
-    `Atlas browser assurance failed.\nEscaped as an ${event}, outside every handler in this file.\n${describeError(error)}\n`,
+    `Equator browser assurance failed.\nEscaped as an ${event}, outside every handler in this file.\n${describeError(error)}\n`,
   );
   // `process.exit` rather than `process.exitCode`, because an escape can leave the static file
   // server or a browser holding the event loop open, and a gate that fails by hanging is no better
@@ -105,7 +102,7 @@ process.on('unhandledRejection', failEscaped('unhandled rejection'));
 // `verify:browser-assurance:self-test` has just watched this process exit non-zero for both classes
 // of escape, against the same Angular bundle that installs the handlers being overridden, which
 // is why the hook is here, after the import, and not in a unit test that never loads one.
-const selfTest = process.env.ATLAS_ASSURANCE_SELF_TEST;
+const selfTest = process.env.EQUATOR_ASSURANCE_SELF_TEST;
 if (selfTest === 'assertion') {
   assert.fail(
     "Self-test escape: an assertion outside this file's own try block.",
@@ -119,7 +116,7 @@ if (selfTest === 'assertion') {
   // handlers and must escape everything; this one exercises the block that reports a failure the
   // run did catch, and that block only runs for a failure inside the try.
 } else if (selfTest !== undefined) {
-  assert.fail(`Unknown ATLAS_ASSURANCE_SELF_TEST value: ${selfTest}`);
+  assert.fail(`Unknown EQUATOR_ASSURANCE_SELF_TEST value: ${selfTest}`);
 }
 
 // Where this run is, and a bound on how long it may stay there.
@@ -136,11 +133,11 @@ if (selfTest === 'assertion') {
 // is here to convert an unbounded wait into a report, not to police timing) and the environment
 // variable is for a machine slow enough to need one.
 const stageTimeoutMs = Number(
-  process.env.ATLAS_ASSURANCE_STAGE_TIMEOUT_MS ?? 120_000,
+  process.env.EQUATOR_ASSURANCE_STAGE_TIMEOUT_MS ?? 120_000,
 );
 assert.ok(
   Number.isSafeInteger(stageTimeoutMs) && stageTimeoutMs > 0,
-  `ATLAS_ASSURANCE_STAGE_TIMEOUT_MS must be a positive whole number of milliseconds, not ${JSON.stringify(process.env.ATLAS_ASSURANCE_STAGE_TIMEOUT_MS)}`,
+  `EQUATOR_ASSURANCE_STAGE_TIMEOUT_MS must be a positive whole number of milliseconds, not ${JSON.stringify(process.env.EQUATOR_ASSURANCE_STAGE_TIMEOUT_MS)}`,
 );
 // What the row is doing right now, kept so the stage bound can report it.
 //
@@ -176,11 +173,11 @@ assert.ok(
 // 1.50.1 regression closed by PR #35116), and newPage timing out on Firefox (#36551, closed). All
 // closed in releases older than the 1.61.1 pinned here, none of them naming a workaround to adopt.
 const callTimeoutMs = Number(
-  process.env.ATLAS_ASSURANCE_CALL_TIMEOUT_MS ?? 30_000,
+  process.env.EQUATOR_ASSURANCE_CALL_TIMEOUT_MS ?? 30_000,
 );
 assert.ok(
   Number.isSafeInteger(callTimeoutMs) && callTimeoutMs > 0,
-  `ATLAS_ASSURANCE_CALL_TIMEOUT_MS must be a positive whole number of milliseconds, not ${JSON.stringify(process.env.ATLAS_ASSURANCE_CALL_TIMEOUT_MS)}`,
+  `EQUATOR_ASSURANCE_CALL_TIMEOUT_MS must be a positive whole number of milliseconds, not ${JSON.stringify(process.env.EQUATOR_ASSURANCE_CALL_TIMEOUT_MS)}`,
 );
 
 // The argument itself is the name. A line number would name this file, which is not where the wait
@@ -293,8 +290,8 @@ const boundCalls = (target, kind) => {
 // to 9 in 20. An instrument that changes what it measures is not one, and the honest response is a
 // switch rather than an argument about which half did it. Declared here with the rest of the stage
 // state, because the watchdog is armed by the first `enterStage` and reads all of it.
-const traceCalls = process.env.ATLAS_ASSURANCE_TRACE_CALLS === '1';
-const traceRequests = process.env.ATLAS_ASSURANCE_TRACE_REQUESTS === '1';
+const traceCalls = process.env.EQUATOR_ASSURANCE_TRACE_CALLS === '1';
+const traceRequests = process.env.EQUATOR_ASSURANCE_TRACE_REQUESTS === '1';
 
 const rowActivity = {
   lastEvent: 'nothing yet',
@@ -332,7 +329,7 @@ function describeActivity() {
     requestsInFlight: traceRequests ? outstanding.length : 'not tracked',
     outstanding: traceRequests
       ? outstanding
-      : 'set ATLAS_ASSURANCE_TRACE_REQUESTS=1',
+      : 'set EQUATOR_ASSURANCE_TRACE_REQUESTS=1',
   };
 }
 
@@ -361,7 +358,7 @@ const enterStage = (name) => {
   clearTimeout(stageWatchdog);
   stageWatchdog = setTimeout(() => {
     process.stderr.write(
-      `Atlas browser assurance failed.\nStage ${JSON.stringify(name)} did not finish within ${stageTimeoutMs}ms. The bound is what separates a wait for something that is never coming from work in progress.\n` +
+      `Equator browser assurance failed.\nStage ${JSON.stringify(name)} did not finish within ${stageTimeoutMs}ms. The bound is what separates a wait for something that is never coming from work in progress.\n` +
         `What the row was doing when the bound tripped: ${JSON.stringify(describeActivity(), null, 2)}\n` +
         `A last event that is seconds old with nothing in flight is a wait for something that is never coming, rather than work that is slow.\n`,
     );
@@ -379,7 +376,7 @@ const prerenderManifest = JSON.parse(
 assert.deepEqual(
   Object.keys(prerenderManifest.routes ?? {}).sort(),
   expectedPrerenderRoutes,
-  'The built prerender manifest does not contain the exact Atlas prerender rows',
+  'The built prerender manifest does not contain the exact Equator prerender rows',
 );
 const prerenderArtifacts = new Map(
   await Promise.all(
@@ -440,7 +437,7 @@ async function serveBrowserAsset(request, response) {
     return;
   }
 
-  // A directory resolves to the `index.html` inside it, which is the deployment requirement Atlas
+  // A directory resolves to the `index.html` inside it, which is the deployment requirement Equator
   // states in `specs/07-routing-rendering-and-seo.spec.md` section 9, met here rather than
   // assumed.
   //
@@ -548,16 +545,17 @@ function readSnapshot(html) {
   const transferScript = document.querySelector('script#ng-state');
   assert.notEqual(transferScript, null, 'Angular TransferState is absent');
   const transferState = JSON.parse(transferScript.textContent ?? '{}');
-  const atlasTransfer = transferState['@neolorn/atlas:localization-state/1'];
+  const localizationState =
+    transferState['@neolorn/equator:localization-state/1'];
   assert.equal(
-    atlasTransfer?.profile,
-    'atlas-transfer-state/1',
-    'Atlas TransferState is absent',
+    localizationState?.profile,
+    'equator-transfer-state/1',
+    'Equator TransferState is absent',
   );
-  const dynamicTransfer = transferState['@atlas-feature-lab:dynamic-content/1'];
+  const dynamicTransfer = transferState['@feature-lab:dynamic-content/1'];
   assert.equal(
     dynamicTransfer?.profile,
-    'atlas-feature-article-transfer/1',
+    'feature-article-transfer/1',
     'Consumer-owned dynamic-content TransferState is absent',
   );
 
@@ -573,7 +571,7 @@ function readSnapshot(html) {
     label: attribute('data-label'),
     source: attribute('data-source'),
     locale: attribute('data-snapshot-locale'),
-    transfer: atlasTransfer,
+    transfer: localizationState,
     dynamicTransfer,
   };
 }
@@ -585,7 +583,7 @@ const browserRows = Object.freeze([
 ]);
 const assuranceStyle =
   'html,body{min-inline-size:200vw;min-block-size:200vh;margin:0}';
-const assuranceNonce = 'atlas-browser-assurance';
+const assuranceNonce = 'browser-assurance';
 
 function inlineHashSources(html, tagName) {
   const pattern =
@@ -616,7 +614,7 @@ function applyStrictBrowserPolicy(html, url) {
   );
   const documentWithAssuranceStyle = documentWithNonce.replace(
     /<\/head>/iu,
-    `<style data-atlas-browser-assurance>${assuranceStyle}</style></head>`,
+    `<style data-equator-browser-assurance>${assuranceStyle}</style></head>`,
   );
   assert.notEqual(
     documentWithAssuranceStyle,
@@ -630,11 +628,11 @@ function applyStrictBrowserPolicy(html, url) {
   );
 
   // The policy the consumer is served under, and `specs/09-safe-content-and-ux.spec.md` section 6
-  // is what serving it proves: nothing Atlas ships needs an inline script, an unsafe evaluation,
+  // is what serving it proves: nothing Equator ships needs an inline script, an unsafe evaluation,
   // a sanitizer bypass, or a permissive Trusted Types policy. Script comes from the application's
   // own origin and the hashes of what this document actually contains, attribute-position script
   // and plugin content are denied outright, and Trusted Types are required for script, so a
-  // consumer already running under a strict policy pays nothing to add Atlas to it.
+  // consumer already running under a strict policy pays nothing to add Equator to it.
   const scriptHashes = inlineHashSources(documentWithAssuranceStyle, 'script');
   const styleHashes = inlineHashSources(documentWithAssuranceStyle, 'style');
   const policy = [
@@ -658,9 +656,9 @@ function applyStrictBrowserPolicy(html, url) {
 
 async function installStrictBrowserPolicy(context) {
   await context.addInitScript(() => {
-    globalThis.__atlasCspViolations = [];
+    globalThis.__equatorCspViolations = [];
     document.addEventListener('securitypolicyviolation', (event) => {
-      globalThis.__atlasCspViolations.push({
+      globalThis.__equatorCspViolations.push({
         blockedUri: event.blockedURI,
         columnNumber: event.columnNumber,
         directive: event.effectiveDirective,
@@ -699,7 +697,7 @@ async function installStrictBrowserPolicy(context) {
     const headers = {
       ...response.headers(),
       'content-security-policy': protectedDocument.policy,
-      'x-atlas-original-document-sha256': createHash('sha256')
+      'x-equator-original-document-sha256': createHash('sha256')
         .update(originalDocument, 'utf8')
         .digest('hex'),
     };
@@ -773,7 +771,7 @@ function attachBrowserDiagnostics(page, diagnostics) {
 async function collectPolicyDiagnostics(page, diagnostics) {
   if (page.isClosed()) return;
   const violations = await page.evaluate(
-    () => globalThis.__atlasCspViolations ?? [],
+    () => globalThis.__equatorCspViolations ?? [],
   );
   diagnostics.cspViolations.push(...violations);
 }
@@ -809,7 +807,7 @@ async function launchBrowserRow(row) {
     );
   } catch (error) {
     throw new Error(
-      `${row.label} could not start for Atlas browser assurance. ` +
+      `${row.label} could not start for Equator browser assurance. ` +
         `Install the pinned engines with "pnpm exec playwright install chromium firefox webkit" and retry. ` +
         `Original error: ${error instanceof Error ? error.message : String(error)}`,
       { cause: error },
@@ -836,10 +834,10 @@ async function assertTrustedTypesPolicy(page, response, row) {
 async function assertDirectAccessibility(page) {
   assert.equal(await page.getByRole('main').count(), 1);
   assert.equal(await page.getByRole('heading', { level: 1 }).count(), 1);
-  // Atlas builds this region itself. Nothing in the consumer's templates renders it, which is the
+  // Equator builds this region itself. Nothing in the consumer's templates renders it, which is the
   // property under test: an application that forgets to place an announcer still has one.
   const announcer = page.locator(
-    'body > div[data-atlas-announcer][role="status"]',
+    'body > div[data-equator-announcer][role="status"]',
   );
   assert.equal(await announcer.count(), 1);
   assert.equal(await announcer.getAttribute('aria-live'), 'polite');
@@ -903,7 +901,7 @@ async function assertDirectAccessibility(page) {
 }
 
 async function assertKeyboardLocaleAccessibility(page) {
-  const announcer = page.locator('div[data-atlas-announcer][role="status"]');
+  const announcer = page.locator('div[data-equator-announcer][role="status"]');
   // Two events, one ordered stream, both timed.
   //
   // The assertion below is about the order of two things: the document committing to a locale, and
@@ -916,13 +914,13 @@ async function assertKeyboardLocaleAccessibility(page) {
   // `lang` on the document element is watched rather than polled, so the record is of the mutation
   // itself rather than of a sample that happened to catch it.
   await page.evaluate(() => {
-    globalThis.__atlasAnnouncementObserver?.disconnect();
-    globalThis.__atlasDocumentLocaleObserver?.disconnect();
-    globalThis.__atlasAnnouncementObservations = [];
-    const target = document.querySelector('[data-atlas-announcer]');
+    globalThis.__equatorAnnouncementObserver?.disconnect();
+    globalThis.__equatorDocumentLocaleObserver?.disconnect();
+    globalThis.__equatorAnnouncementObservations = [];
+    const target = document.querySelector('[data-equator-announcer]');
     if (target === null) throw new Error('Locale announcer is absent');
     const record = (extra) => {
-      globalThis.__atlasAnnouncementObservations.push({
+      globalThis.__equatorAnnouncementObservations.push({
         at: Math.round(performance.now() * 100) / 100,
         busyArabic: document
           .querySelector('[data-locale-choice="ar-EG"]')
@@ -949,7 +947,7 @@ async function assertKeyboardLocaleAccessibility(page) {
       childList: true,
       subtree: true,
     });
-    globalThis.__atlasAnnouncementObserver = observer;
+    globalThis.__equatorAnnouncementObserver = observer;
     const documentObserver = new MutationObserver(() =>
       record({ kind: 'document-locale' }),
     );
@@ -957,7 +955,7 @@ async function assertKeyboardLocaleAccessibility(page) {
       attributes: true,
       attributeFilter: ['lang', 'dir'],
     });
-    globalThis.__atlasDocumentLocaleObserver = documentObserver;
+    globalThis.__equatorDocumentLocaleObserver = documentObserver;
   });
 
   /**
@@ -967,9 +965,9 @@ async function assertKeyboardLocaleAccessibility(page) {
    * selection restored to a specific wrong offset was computed wrongly, and waiting for a second
    * component to overwrite it would certify the disagreement.
    *
-   * This one was introduced on the argument that focus is different: that nothing of Atlas's runs
+   * This one was introduced on the argument that focus is different: that nothing of Equator's runs
    * between `.focus()` and the read, leaving only the browser's own scheduling. That was wrong.
-   * Atlas's interaction restore runs in there, and it was taking focus back from the control the
+   * Equator's interaction restore runs in there, and it was taking focus back from the control the
    * visitor had just moved to. The wait is what found that: it failed, and it named
    * `[data-locale-choice="ar-EG"]` as the holder, which is the entire diagnosis. An immediate read would have
    * said `false`.
@@ -1019,7 +1017,7 @@ async function assertKeyboardLocaleAccessibility(page) {
     assert.notEqual(controlHandle, null, `${selector} control is absent`);
     const previousAnnouncement = (await announcer.textContent())?.trim() ?? '';
     await page.evaluate(() => {
-      globalThis.__atlasAnnouncementObservations = [];
+      globalThis.__equatorAnnouncementObservations = [];
     });
     await control.focus();
     await waitForFocus(
@@ -1034,13 +1032,14 @@ async function assertKeyboardLocaleAccessibility(page) {
     await page.waitForURL((url) => url.pathname.startsWith(expectedPathPrefix));
     await page.waitForFunction((previous) => {
       const text =
-        document.querySelector('[data-atlas-announcer]')?.textContent?.trim() ??
-        '';
+        document
+          .querySelector('[data-equator-announcer]')
+          ?.textContent?.trim() ?? '';
       return text.length > 0 && text !== previous;
     }, previousAnnouncement);
     // Read once, on purpose, and not through `waitForFocus`. By this line the commit is
     // observably finished: the document locale changed, the URL changed, and the announcer spoke.
-    // Restoring focus across that commit is Atlas's own work, so if focus is not back by the time
+    // Restoring focus across that commit is Equator's own work, so if focus is not back by the time
     // the commit is visible, it is late, and a wait here would hide exactly the defect the
     // assertion exists to catch.
     assert.equal(
@@ -1054,7 +1053,7 @@ async function assertKeyboardLocaleAccessibility(page) {
     // The whole stream, kept for the failure message: the filtered announcements are what the
     // assertions are about, and the unfiltered sequence is what makes a failure readable.
     const observed = await page.evaluate(
-      () => globalThis.__atlasAnnouncementObservations ?? [],
+      () => globalThis.__equatorAnnouncementObservations ?? [],
     );
     const sequence = JSON.stringify(observed, null, 2);
     const committedAnnouncements = observed.filter(
@@ -1110,11 +1109,11 @@ async function assertKeyboardLocaleAccessibility(page) {
     });
   } finally {
     await page.evaluate(() => {
-      globalThis.__atlasAnnouncementObserver?.disconnect();
-      globalThis.__atlasDocumentLocaleObserver?.disconnect();
-      delete globalThis.__atlasAnnouncementObserver;
-      delete globalThis.__atlasDocumentLocaleObserver;
-      delete globalThis.__atlasAnnouncementObservations;
+      globalThis.__equatorAnnouncementObserver?.disconnect();
+      globalThis.__equatorDocumentLocaleObserver?.disconnect();
+      delete globalThis.__equatorAnnouncementObserver;
+      delete globalThis.__equatorDocumentLocaleObserver;
+      delete globalThis.__equatorAnnouncementObservations;
     });
   }
 }
@@ -1136,12 +1135,12 @@ async function assertKeyboardLocaleAccessibility(page) {
  * `Math.abs(scrollX)`, and `fromLeftEdge`, the document x of the viewport's left edge, is
  * `maximum - Math.abs(scrollX)`. In LTR both are `scrollX` and the distinction does not arise.
  *
- * **Which of the two Atlas ought to preserve across a direction change is an open product question
- * and this file does not settle it.** The assertion below reads `fromLeftEdge`, because that is the
- * quantity `LocalizationInteractionRestore` computes and restores (`angular.ts:974`), so the check
- * is falsifiable against a commit that lands anywhere else without asserting that the convention is
- * the right one. Both numbers are printed on every failure, which is what makes the question
- * visible instead of buried in a formula.
+ * **Which of the two Equator ought to preserve across a direction change is an open product
+ * question and this file does not settle it.** The assertion below reads `fromLeftEdge`, because
+ * that is the quantity `LocalizationInteractionRestore` computes and restores (`angular.ts:974`),
+ * so the check is falsifiable against a commit that lands anywhere else without asserting that the
+ * convention is the right one. Both numbers are printed on every failure, which is what makes the
+ * question visible instead of buried in a formula.
  *
  * The raw inputs are returned alongside because a failure reporting only the derived number sends
  * an investigator nowhere, which is how this stood red for a while with the cause unattributed.
@@ -1193,7 +1192,7 @@ const SCROLL_STATE_SOURCE = `() => {
 //
 // `mode` is a runtime argument now rather than something interpolated into source, so there is one
 // definition of this and the wait calls the same one the marks and reads call.
-const INLINE_START_WITNESS_SOURCE = `globalThis.__atlasInlineStartWitness = (mode) => {
+const INLINE_START_WITNESS_SOURCE = `globalThis.__equatorInlineStartWitness = (mode) => {
   const rtl = document.documentElement.dir === 'rtl';
   const x = rtl ? globalThis.innerWidth - 2 : 2;
   const y = Math.round(globalThis.innerHeight / 3);
@@ -1212,23 +1211,23 @@ const INLINE_START_WITNESS_SOURCE = `globalThis.__atlasInlineStartWitness = (mod
           : '.' + Array.from(element.classList).join('.'));
   if (mode === 'mark' && identifiable) {
     document
-      .querySelectorAll('[data-atlas-inline-start-witness]')
+      .querySelectorAll('[data-equator-inline-start-witness]')
       .forEach((previous) =>
-        previous.removeAttribute('data-atlas-inline-start-witness'),
+        previous.removeAttribute('data-equator-inline-start-witness'),
       );
-    held.setAttribute('data-atlas-inline-start-witness', '');
+    held.setAttribute('data-equator-inline-start-witness', '');
   }
   return {
     marked: identifiable,
     cell: held === null ? null : held.closest('[data-inline-cell]')?.dataset.inlineCell ?? null,
     holds:
       held !== null &&
-      held.closest('[data-atlas-inline-start-witness]') !== null,
+      held.closest('[data-equator-inline-start-witness]') !== null,
     at: { x, y },
     dir: document.documentElement.dir,
     found: describe(held),
     expected: describe(
-      document.querySelector('[data-atlas-inline-start-witness]'),
+      document.querySelector('[data-equator-inline-start-witness]'),
     ),
   };
 };`;
@@ -1248,7 +1247,7 @@ const INLINE_START_WITNESS_SOURCE = `globalThis.__atlasInlineStartWitness = (mod
  * Rounded, and no layout forced beyond the one `getBoundingClientRect`, because an instrument
  * whose cost changes the outcome is not an instrument. It runs twice a row.
  */
-const RECT_AGAINST_VIEWPORT_SOURCE = `globalThis.__atlasRectAgainstViewport = (element, selector) => {
+const RECT_AGAINST_VIEWPORT_SOURCE = `globalThis.__equatorRectAgainstViewport = (element, selector) => {
   const rect = element.getBoundingClientRect();
   const width = globalThis.innerWidth;
   const height = globalThis.innerHeight;
@@ -1280,16 +1279,16 @@ async function clickLocaleChoice(page, locale) {
   await page.locator(selector).evaluate((element, name) => {
     if (!(element instanceof HTMLElement))
       throw new Error('Locale control is invalid');
-    const record = globalThis.__atlasScrollRecord;
+    const record = globalThis.__equatorScrollRecord;
     if (
       record !== undefined &&
-      globalThis.__atlasRectAgainstViewport !== undefined
+      globalThis.__equatorRectAgainstViewport !== undefined
     ) {
       // An array rather than a field: this row clicks twice with one recorder installed, and a
       // field would quietly keep the second and describe it as the click the placement pairs with.
       record.clicks ??= [];
       record.clicks.push({
-        ...globalThis.__atlasRectAgainstViewport(element, name),
+        ...globalThis.__equatorRectAgainstViewport(element, name),
         at: Math.round(performance.now() - record.start),
       });
     }
@@ -1300,7 +1299,7 @@ async function clickLocaleChoice(page, locale) {
 // Both readings go through the installed function, so there is nothing to keep in step.
 const inlineStartWitness = (page, mode) =>
   page.evaluate(
-    (requested) => globalThis.__atlasInlineStartWitness(requested),
+    (requested) => globalThis.__equatorInlineStartWitness(requested),
     mode,
   );
 
@@ -1313,7 +1312,7 @@ const RECORDER_SOURCE = `() => {
   // Where the placement sits on this clock, which is a negative number: it happened before the
   // recorder was installed. Without it every reading below is measured from a zero whose relation
   // to the one deliberate scroll in this check is not stated anywhere.
-  const placement = globalThis.__atlasScrollPlacement;
+  const placement = globalThis.__equatorScrollPlacement;
   record.placement =
     placement === undefined
       ? null
@@ -1355,7 +1354,7 @@ const RECORDER_SOURCE = `() => {
       api,
       detail,
       // The consumer bundle is minified, so this names functions rather than lines. That is enough
-      // to separate Atlas from Angular from the engine, which is the question.
+      // to separate Equator from Angular from the engine, which is the question.
       // fromCharCode rather than an escape: this source is produced by a template literal, so a
       // backslash-n here becomes a real newline inside a string literal in the emitted page code,
       // and the page fails to parse. Cost fourteen runs of nothing before it was noticed.
@@ -1391,7 +1390,7 @@ const RECORDER_SOURCE = `() => {
   //
   // The set is switched as a whole because the measurement behind it covers the whole set, and
   // nothing in it separates these three. They are the window's own scroll entry points, and the things that call
-  // them in this row are countable: Atlas's
+  // them in this row are countable: Equator's
   // restore calls scrollTo once per commit, the hold re-applies it a handful of times inside a
   // 150ms window, Angular's scroll-position restoration calls it once per navigation, and this
   // file's own disturbance calls it once. A wrapper on a function called single-digit times per row
@@ -1509,14 +1508,14 @@ const RECORDER_SOURCE = `() => {
     attributeOldValue: true,
   });
 
-  // What Atlas captured, at the moment it captured it.
+  // What Equator captured, at the moment it captured it.
   //
-  // Atlas takes the position by reading scrollX and scrollY off the view, so the read is the
-  // capture: wrapping the getter records the value Atlas saw and when it saw it, with nothing added
-  // to the runtime and nothing prevented. That is what separates the two accounts. A capture before
-  // the reset means Atlas held a good position and something else lost it. A capture after means
-  // Atlas restored a zero it had read faithfully, and the question becomes when in the transaction
-  // the position is taken, which is what a switch moves.
+  // Equator takes the position by reading scrollX and scrollY off the view, so the read is the
+  // capture: wrapping the getter records the value Equator saw and when it saw it, with nothing
+  // added to the runtime and nothing prevented. That is what separates the two accounts. A capture
+  // before the reset means Equator held a good position and something else lost it. A capture after
+  // means Equator restored a zero it had read faithfully, and the question becomes when in the
+  // transaction the position is taken, which is what a switch moves.
   //
   // The recorder reads the same two properties on every scroll event, so it says so while it does,
   // and those reads are not recorded as somebody else's.
@@ -1598,7 +1597,7 @@ const RECORDER_SOURCE = `() => {
     observer.disconnect();
     globalThis.removeEventListener('scroll', onScroll);
   };
-  globalThis.__atlasScrollRecord = record;
+  globalThis.__equatorScrollRecord = record;
 }`;
 
 // Frame timestamps compress to the gaps between them, because a five-second run at 60fps is three
@@ -1623,7 +1622,7 @@ function frameGaps(frames) {
 async function describeRecord(page) {
   const record = await page.evaluate(
     `(() => {
-      const held = globalThis.__atlasScrollRecord;
+      const held = globalThis.__equatorScrollRecord;
       if (held === undefined) return null;
       held.stop();
       return {
@@ -1646,7 +1645,7 @@ async function describeRecord(page) {
     : `${JSON.stringify(record.positions)}, over ${JSON.stringify(frameGaps(record.frames))}, ` +
         `and the calls that could have moved it: ${JSON.stringify(record.calls)}, ` +
         `out of ${JSON.stringify(record.callsWatched)}: an empty array is an absence for those and ` +
-        `says nothing about the rest, which are behind ATLAS_ASSURANCE_TRACE_CALLS=1, ` +
+        `says nothing about the rest, which are behind EQUATOR_ASSURANCE_TRACE_CALLS=1, ` +
         `nor about the engine, which moves the page without calling anything, ` +
         `with what the engine originated: ${JSON.stringify(record.events)}, ` +
         `what left or entered the document: ${JSON.stringify(record.mutations)}, ` +
@@ -1680,14 +1679,14 @@ async function placeVisitorMidPage(page, target = null) {
   await page.evaluate((selector) => {
     globalThis.scrollTo(240, 360);
     const element = selector === null ? null : document.querySelector(selector);
-    globalThis.__atlasScrollPlacement = {
+    globalThis.__equatorScrollPlacement = {
       pageClock: performance.now(),
       scrollRestoration: history.scrollRestoration,
       readyState: document.readyState,
       target:
         element === null
           ? null
-          : globalThis.__atlasRectAgainstViewport(element, selector),
+          : globalThis.__equatorRectAgainstViewport(element, selector),
     };
   }, target);
 }
@@ -1757,11 +1756,11 @@ async function exerciseLocaleContinuity(page) {
   // before the commit is the element there after it.
   //
   // **Not a number, and deliberately not one.** Every numeric form of this check recomputes an
-  // expression Atlas also computes, so it agrees with the implementation by construction on what the
-  // quantity *means* and can only ever check the arithmetic. A check drawn from the same source as
-  // its subject is why a restore that returned the visitor to the wrong content passed this gate
-  // on three engines: the assertion and the runtime shared a definition, and the definition was
-  // the defect.
+  // expression Equator also computes, so it agrees with the implementation by construction on what
+  // the quantity *means* and can only ever check the arithmetic. A check drawn from the same source
+  // as its subject is why a restore that returned the visitor to the wrong content passed this gate
+  // on three engines: the assertion and the runtime shared a definition, and the definition was the
+  // defect.
   //
   // An element cannot be shared with a formula. It is marked here, before anything moves, and read
   // back afterwards; if the commit replaced the node rather than moving it the mark is gone and this
@@ -1826,37 +1825,37 @@ async function exerciseLocaleContinuity(page) {
   // The block axis is not asserted here, against `after`, and the reason is worth keeping: that
   // reading is taken the instant the direction flip lands, before the hold has done its work.
   //
-  // **The block position is Atlas's to keep, and the movement it keeps it against is WebKit's.** On
-  // a writing-direction change WebKit reveals an element that already has focus, moving both axes
-  // some milliseconds after Atlas has written the position, with no scroll call from any script in
-  // between. Reproduced with no Atlas and no framework in the page; `focus({ preventScroll: true })`
-  // is honoured and is not what does it. `holdScroll` re-applies the position against exactly that,
-  // so "Block scroll moved during the RTL commit" is a condition worth failing on, read at a
-  // moment when the answer has settled. Read at the instant of the flip it fails about one run in
-  // five on a page that is behaving correctly.
+  // **The block position is Equator's to keep, and the movement it keeps it against is WebKit's.**
+  // On a writing-direction change WebKit reveals an element that already has focus, moving both
+  // axes some milliseconds after Equator has written the position, with no scroll call from any
+  // script in between. Reproduced with no Equator and no framework in the page;
+  // `focus({ preventScroll: true })` is honoured and is not what does it. `holdScroll` re-applies
+  // the position against exactly that, so "Block scroll moved during the RTL commit" is a condition
+  // worth failing on, read at a moment when the answer has settled. Read at the instant of the flip
+  // it fails about one run in five on a page that is behaving correctly.
   //
   // Reported upstream and open: https://bugs.webkit.org/show_bug.cgi?id=323563,
   // WebKit / Scrolling, *"A focused element is revealed after a writing-direction change,
   // overriding the scroll position the page just set"*. The hold stays whatever happens to it:
   // it is what makes three engines agree, and a fix would arrive in one engine's future version
-  // while Atlas keeps supporting the ones already out. What the bug number changes is that the
+  // while Equator keeps supporting the ones already out. What the bug number changes is that the
   // next person to read this can see whether the behaviour is still WebKit's position.
   //
-  // Atlas holds the position against it for a bounded window, so the honest moment to read the
+  // Equator holds the position against it for a bounded window, so the honest moment to read the
   // page is once it has settled, which is where the inline axis was already being read. Both axes
   // are asserted there, together, in one wait. `after` stays as evidence, because where the page
   // went in between is exactly what a failure needs to show.
 
   // One outcome, required of all three engines, rather than a disjunction that also accepts the
-  // inline-start. The engines do not disagree here: they land where Atlas sends them, every time.
+  // inline-start. The engines do not disagree here: they land where Equator sends them, every time.
   // Accepting the inline-start as well admits a frame of a restore in progress as an outcome, and
   // the row then passes with the restore deleted outright, because a page that never restored and
   // a page mid-restore read identically.
   //
-  // The wait is the honest instrument here for the same reason it is for focus: Atlas has scheduled
-  // the scroll and the browser applies it over frames, with nothing of Atlas's running in between.
-  // The failure prints where the page went and when, so a restore that lands somewhere else and a
-  // restore that never happens are different reports rather than the same timeout.
+  // The wait is the honest instrument here for the same reason it is for focus: Equator has
+  // scheduled the scroll and the browser applies it over frames, with nothing of Equator's running
+  // in between. The failure prints where the page went and when, so a restore that lands somewhere
+  // else and a restore that never happens are different reports rather than the same timeout.
   //
   // Polled on an interval rather than on animation frames. Playwright's default is `raf`, which
   // means the predicate is evaluated inside a `requestAnimationFrame` callback and therefore only
@@ -1875,13 +1874,13 @@ async function exerciseLocaleContinuity(page) {
   const settled = await page
     .waitForFunction(
       // Both axes, one moment. The inline axis is an element, whatever the visitor had at their
-      // inline-start edge, because a number there would be a formula Atlas also computes. The
+      // inline-start edge, because a number there would be a formula Equator also computes. The
       // block axis has no such element to hand: the strip's cells are 900px tall, so a block move
       // of a few hundred pixels finds the same cell and an element check cannot see it.
       // What is asserted instead is the reading taken before the commit, carried in from outside
       // the page. That is a value the harness observed, not an expression it recomputed.
       (expectedBlock) =>
-        globalThis.__atlasInlineStartWitness('read').holds &&
+        globalThis.__equatorInlineStartWitness('read').holds &&
         Math.abs(globalThis.scrollY - expectedBlock) <= 2,
       before.block,
       {
@@ -1954,7 +1953,7 @@ async function exerciseLocaleContinuity(page) {
         `A null "expected" there means the commit replaced the node rather than moving it, which is a different defect from a restore that landed wrongly. ` +
         `Everything below is evidence rather than the expectation. ` +
         `Before ${JSON.stringify(before)}, at the first read after the commit ${JSON.stringify(after)}, ` +
-        `and once the five seconds had expired ${JSON.stringify(settledAt)}, in which \`fromInlineStart\` is the quantity Atlas holds. ` +
+        `and once the five seconds had expired ${JSON.stringify(settledAt)}, in which \`fromInlineStart\` is the quantity Equator holds. ` +
         `Sampled for a further 300ms from there, distinct positions only: ${JSON.stringify(trajectory)}. ` +
         `The sampling begins after the wait expires, so it describes where the page has come to rest and says nothing about what happened during the commit. ` +
         `Every position the page took between the commit and the expiry, and the animation frames that ran while it did: ${during}. ` +
@@ -1964,9 +1963,9 @@ async function exerciseLocaleContinuity(page) {
 
   await page.evaluate(
     `(() => {
-      globalThis.__atlasScrollRecord?.stop();
-      delete globalThis.__atlasScrollRecord;
-      delete globalThis.__atlasScrollPlacement;
+      globalThis.__equatorScrollRecord?.stop();
+      delete globalThis.__equatorScrollRecord;
+      delete globalThis.__equatorScrollPlacement;
     })()`,
   );
 
@@ -1979,13 +1978,13 @@ async function exerciseLocaleContinuity(page) {
   const persistedCookies = await page.context().cookies();
   if (
     !persistedCookies.some(
-      ({ name, value }) => name === 'atlas-locale' && value === 'ar-EG',
+      ({ name, value }) => name === 'equator-locale' && value === 'ar-EG',
     )
   ) {
     // The first WebKit run on Linux failed here, and the message it failed with, five words,
     // could not tell an engine that declined to store the cookie from a harness reading the wrong
     // place for it. Both readings are taken now, because they are different findings and only one
-    // of them is about Atlas.
+    // of them is about Equator.
     const documentCookie = await page
       .evaluate('document.cookie')
       .then((value) => JSON.stringify(value))
@@ -1993,12 +1992,12 @@ async function exerciseLocaleContinuity(page) {
     assert.fail(
       `The locale switch was not remembered. ` +
         `The switch itself landed, everything asserted above this is about the page after it committed, so what is missing is the cookie meant to outlive it. ` +
-        `The lab writes it from script, as \`atlas-locale=ar-EG; Path=/; Max-Age=31536000; SameSite=Lax\` with no \`Secure\`, over ${origin}. ` +
+        `The lab writes it from script, as \`equator-locale=ar-EG; Path=/; Max-Age=31536000; SameSite=Lax\` with no \`Secure\`, over ${origin}. ` +
         `What the document reports: ${documentCookie}. ` +
         `Every cookie this context holds, for every origin: ${JSON.stringify(persistedCookies)}. ` +
         `In the document but not in the context is this harness reading the wrong place. ` +
         `In neither is the engine declining a first-party cookie over loopback, which is a finding about the engine. ` +
-        `In both, under another name or value, is Atlas writing something other than what it documents.`,
+        `In both, under another name or value, is Equator writing something other than what it documents.`,
     );
   }
   const rememberedEntry = await page.request.fetch(`${origin}/`, {
@@ -2098,9 +2097,9 @@ async function exerciseLocaleContinuity(page) {
  * So the movement is supplied on purpose, on every engine, every run. A one-shot disturbance is
  * armed, the page is committed to Arabic, and the first scroll event arriving once the commit has
  * landed *and* the visitor is back at their element scrolls the page to the origin. That is a
- * movement Atlas did not request and no visitor made, delivered inside the hold's window by
- * construction rather than by timing: the trigger is Atlas's own restore landing, so it can arrive
- * neither early nor late.
+ * movement Equator did not request and no visitor made, delivered inside the hold's window by
+ * construction rather than by timing: the trigger is Equator's own restore landing, so it can
+ * arrive neither early nor late.
  *
  * Two things are then required, and the second is what makes this a check rather than a hope: the
  * position comes back, **and the disturbance actually fired**.
@@ -2155,7 +2154,7 @@ async function assertUnrequestedMovementIsUndone(page) {
 
   await page.evaluate(() => {
     const disturbance = { firedAt: null, from: null, to: null, armed: true };
-    globalThis.__atlasDisturbance = disturbance;
+    globalThis.__equatorDisturbance = disturbance;
     globalThis.addEventListener(
       'scroll',
       () => {
@@ -2164,7 +2163,7 @@ async function assertUnrequestedMovementIsUndone(page) {
         // cannot fire on the way in) and not before the restore has landed either, which is what
         // the witness says.
         if (document.documentElement.dir !== 'rtl') return;
-        if (!globalThis.__atlasInlineStartWitness('read').holds) return;
+        if (!globalThis.__equatorInlineStartWitness('read').holds) return;
         disturbance.armed = false;
         disturbance.from = { x: globalThis.scrollX, y: globalThis.scrollY };
         disturbance.firedAt = Math.round(performance.now());
@@ -2185,8 +2184,8 @@ async function assertUnrequestedMovementIsUndone(page) {
   const undone = await page
     .waitForFunction(
       (expectedBlock) =>
-        globalThis.__atlasDisturbance.firedAt !== null &&
-        globalThis.__atlasInlineStartWitness('read').holds &&
+        globalThis.__equatorDisturbance.firedAt !== null &&
+        globalThis.__equatorInlineStartWitness('read').holds &&
         Math.abs(globalThis.scrollY - expectedBlock) <= 2,
       before.block,
       { polling: 100, timeout: 5_000 },
@@ -2195,7 +2194,7 @@ async function assertUnrequestedMovementIsUndone(page) {
       () => true,
       () => false,
     );
-  const record = await page.evaluate(() => globalThis.__atlasDisturbance);
+  const record = await page.evaluate(() => globalThis.__equatorDisturbance);
   if (!undone) {
     const restingAt = await logicalScrollState(page);
     const stillThere = await inlineStartWitness(page, 'read');
@@ -2210,7 +2209,7 @@ async function assertUnrequestedMovementIsUndone(page) {
     assert.fail(
       record.firedAt === null
         ? `The deliberate disturbance never fired, so this run proved nothing about the hold. Its two arming conditions are that the Arabic commit has landed and that the visitor is back at their element; one of them was never met. Observed ${JSON.stringify(record)}, from ${JSON.stringify(before)}, resting at ${JSON.stringify(restingAt)}, with ${JSON.stringify(stillThere)} at the inline-start edge. ${axes}Every position the page took, with the direction it was in at each: ${during}.`
-        : `A movement Atlas did not request and no visitor made was not undone. The page was scrolled from ${JSON.stringify(record.from)} to ${JSON.stringify(record.to)}, and five seconds later it is at ${JSON.stringify(restingAt)} with ${JSON.stringify(stillThere)} at the inline-start edge, against a block offset of ${before.block} before the commit. The hold either did not run, closed too early, or was closed by something on this page that reads as visitor input. ${axes}Every position the page took, with the direction it was in at each: ${during}.`,
+        : `A movement Equator did not request and no visitor made was not undone. The page was scrolled from ${JSON.stringify(record.from)} to ${JSON.stringify(record.to)}, and five seconds later it is at ${JSON.stringify(restingAt)} with ${JSON.stringify(stillThere)} at the inline-start edge, against a block offset of ${before.block} before the commit. The hold either did not run, closed too early, or was closed by something on this page that reads as visitor input. ${axes}Every position the page took, with the direction it was in at each: ${during}.`,
     );
   }
   assert.notEqual(
@@ -2229,11 +2228,11 @@ async function assertUnrequestedMovementIsUndone(page) {
   // happened. If the wrapper is uninstalled, misnamed, or shadowed by something the page does, this
   // is empty and says so on a green run rather than on the next red one.
   //
-  // Atlas's own restore also calls it, and this deliberately does not assert that: what is being
+  // Equator's own restore also calls it, and this deliberately does not assert that: what is being
   // proven is that the instrument records a call, not what the runtime called.
   const watched = await page.evaluate(
     `(() => {
-      const held = globalThis.__atlasScrollRecord;
+      const held = globalThis.__equatorScrollRecord;
       return held === undefined
         ? null
         : { watched: held.callsWatched ?? [], calls: held.calls ?? [] };
@@ -2249,10 +2248,10 @@ async function assertUnrequestedMovementIsUndone(page) {
   );
 
   await page.evaluate(() => {
-    globalThis.__atlasScrollRecord?.stop();
-    delete globalThis.__atlasScrollRecord;
-    delete globalThis.__atlasScrollPlacement;
-    delete globalThis.__atlasDisturbance;
+    globalThis.__equatorScrollRecord?.stop();
+    delete globalThis.__equatorScrollRecord;
+    delete globalThis.__equatorScrollPlacement;
+    delete globalThis.__equatorDisturbance;
   });
   await clickLocaleChoice(page, 'en-US');
   await page.waitForFunction(
@@ -2326,7 +2325,7 @@ async function verifyRenderingModes(row, context, diagnostics) {
   );
   await assertTrustedTypesPolicy(prerenderPage, prerenderResponse, row);
   assert.equal(
-    prerenderResponse.headers()['x-atlas-original-document-sha256'],
+    prerenderResponse.headers()['x-equator-original-document-sha256'],
     prerenderArtifact.digest,
     `${row.label} prerender response did not originate from the built static artifact`,
   );
@@ -2350,7 +2349,7 @@ async function verifyRenderingModes(row, context, diagnostics) {
   );
   assert.equal(
     await prerenderPage.locator('link[rel="canonical"]').getAttribute('href'),
-    'https://atlas.example/en-us/second',
+    'https://site.example/en-us/second',
   );
   await prerenderPage.locator('[data-locale-choice="ar-EG"]').click();
   await prerenderPage.waitForURL((url) => url.pathname === '/ar-eg/second');
@@ -2405,7 +2404,7 @@ async function verifyRenderingModes(row, context, diagnostics) {
       document.documentElement.dir === 'rtl',
   );
 
-  // A locale switch re-renders every localized surface on the page. If Atlas emitted inline
+  // A locale switch re-renders every localized surface on the page. If Equator emitted inline
   // script or style anywhere in that path, it would appear here, and it would be
   // invisible to the violation count, because this harness's policy carries hashes and a nonce
   // that a strict deployed policy does not.
@@ -2429,8 +2428,8 @@ async function verifyRenderingModes(row, context, diagnostics) {
  * strictest policy a consumer realistically deploys carries neither: plain `script-src 'self'`
  * and `style-src 'self'`, with no hashes and no nonce.
  *
- * So "zero CSP violations" alone does not establish that Atlas is safe under such a policy: the
- * allowances could be covering Atlas's own output. What settles it is that Atlas's runtime work
+ * So "zero CSP violations" alone does not establish that Equator is safe under such a policy: the
+ * allowances could be covering Equator's own output. What settles it is that Equator's runtime work
  * adds none: whatever inline content exists is present at load, and boot, hydration and a locale
  * switch introduce nothing further.
  */
@@ -2483,7 +2482,7 @@ async function readLifecycleResourceSnapshot(page) {
     activeAnimations: document
       .getAnimations()
       .filter((animation) => animation.playState !== 'finished').length,
-    announcer: document.querySelectorAll('[data-atlas-announcer]').length,
+    announcer: document.querySelectorAll('[data-equator-announcer]').length,
     busy: document.querySelectorAll('[aria-busy="true"]').length,
     canonical: document.querySelectorAll('link[rel="canonical"]').length,
     domElements: document.querySelectorAll('*').length,
@@ -2821,7 +2820,7 @@ try {
   // public. Different body, different `Location`, same cache key.
   const negotiatedEntry = await fetch(`${origin}/`, {
     redirect: 'manual',
-    headers: { cookie: 'atlas-locale=ar-EG' },
+    headers: { cookie: 'equator-locale=ar-EG' },
     signal: AbortSignal.timeout(15_000),
   });
   assert.equal(negotiatedEntry.status, 307);
@@ -2839,7 +2838,7 @@ try {
   // into an error about a URL that was perfectly valid.
   const unusableEntry = await fetch(`${origin}/`, {
     redirect: 'manual',
-    headers: { cookie: 'atlas-locale=zz-ZZ' },
+    headers: { cookie: 'equator-locale=zz-ZZ' },
     signal: AbortSignal.timeout(15_000),
   });
   assert.equal(unusableEntry.status, 307);
@@ -2847,12 +2846,12 @@ try {
   // And a preference for a locale this policy *does* address, which this build did not generate.
   // `zz-ZZ` above was refused by the policy alone and proves nothing about the build; `en-Arab-XB`
   // has a prefix written for it in `localization.routes.ts` and exists only under
-  // `atlas generate --pseudo`. Until the served policy was narrowed to the generated locale set
+  // `equator generate --pseudo`. Until the served policy was narrowed to the generated locale set
   // this answered `/en-arab-xb`, and the address behind it rendered as a success in markup
   // labelled `lang="en-Arab-XB"` with English text inside it (4.16).
   const unbuiltEntry = await fetch(`${origin}/`, {
     redirect: 'manual',
-    headers: { cookie: 'atlas-locale=en-Arab-XB' },
+    headers: { cookie: 'equator-locale=en-Arab-XB' },
     signal: AbortSignal.timeout(15_000),
   });
   assert.equal(unbuiltEntry.status, 307);
@@ -2953,19 +2952,19 @@ try {
     prerenderedDocument
       .querySelector('link[rel="canonical"]')
       ?.getAttribute('href'),
-    'https://atlas.example/en-us/second',
+    'https://site.example/en-us/second',
   );
-  const articleAlias = await fetch(`${origin}/ar-eg/articles/atlas-handbook`, {
+  const articleAlias = await fetch(`${origin}/ar-eg/articles/handbook`, {
     redirect: 'manual',
     signal: AbortSignal.timeout(15_000),
   });
   assert.equal(articleAlias.status, 308);
   assert.equal(
     articleAlias.headers.get('location'),
-    '/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84-%D8%A3%D8%B7%D9%84%D8%B3',
+    '/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84',
   );
 
-  // Follow it. Asserting the redirect and stopping there proves Atlas can name the address, not
+  // Follow it. Asserting the redirect and stopping there proves Equator can name the address, not
   // that anything serves it, and this is precisely the address that does not serve itself.
   //
   // The build writes the page at the decoded spelling on disk while the browser asks for it encoded.
@@ -2982,7 +2981,7 @@ try {
   // reasons. A check written against the mechanism would have gone green here and told nobody that
   // the mechanism changed.
   const encodedArticle = await fetch(
-    `${origin}/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84-%D8%A3%D8%B7%D9%84%D8%B3`,
+    `${origin}/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84`,
     { signal: AbortSignal.timeout(15_000) },
   );
   assert.equal(
@@ -2995,22 +2994,21 @@ try {
   assert.equal(encodedDocument.documentElement.lang, 'ar-EG');
   assert.equal(
     encodedDocument.title,
-    '\u062f\u0644\u064a\u0644 \u0623\u0637\u0644\u0633 \u0644\u0644\u062a\u0631\u062c\u0645\u0629',
+    '\u062f\u0644\u064a\u0644 Equator \u0644\u0644\u062a\u0631\u062c\u0645\u0629',
   );
   assert.equal(
     encodedDocument
       .querySelector('link[rel="canonical"]')
       ?.getAttribute('href'),
-    'https://atlas.example/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84-%D8%A3%D8%B7%D9%84%D8%B3',
+    'https://site.example/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84',
   );
-  const articleResponse = await fetch(
-    `${origin}/en-us/articles/atlas-handbook`,
-    { signal: AbortSignal.timeout(15_000) },
-  );
+  const articleResponse = await fetch(`${origin}/en-us/articles/handbook`, {
+    signal: AbortSignal.timeout(15_000),
+  });
   assert.equal(articleResponse.status, 200);
   const articleDocument = new JSDOM(await articleResponse.text()).window
     .document;
-  assert.equal(articleDocument.title, 'The Atlas localization handbook');
+  assert.equal(articleDocument.title, 'The Equator localization handbook');
   assert.equal(
     articleDocument
       .querySelector('meta[name="description"]')
@@ -3021,19 +3019,16 @@ try {
     articleDocument
       .querySelector('link[rel="canonical"]')
       ?.getAttribute('href'),
-    'https://atlas.example/en-us/articles/atlas-handbook',
+    'https://site.example/en-us/articles/handbook',
   );
   assert.deepEqual(
     [...articleDocument.querySelectorAll('link[rel="alternate"]')].map(
       (node) => [node.getAttribute('hreflang'), node.getAttribute('href')],
     ),
     [
-      ['en-US', 'https://atlas.example/en-us/articles/atlas-handbook'],
-      [
-        'ar-EG',
-        'https://atlas.example/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84-%D8%A3%D8%B7%D9%84%D8%B3',
-      ],
-      ['x-default', 'https://atlas.example/'],
+      ['en-US', 'https://site.example/en-us/articles/handbook'],
+      ['ar-EG', 'https://site.example/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84'],
+      ['x-default', 'https://site.example/'],
     ],
   );
 
@@ -3067,12 +3062,12 @@ try {
   assert.deepEqual(
     publishedUrls,
     [
-      'https://atlas.example/en-us/second',
-      'https://atlas.example/ar-eg/second',
-      'https://atlas.example/en-us/articles/atlas-handbook',
-      'https://atlas.example/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84-%D8%A3%D8%B7%D9%84%D8%B3',
-      'https://atlas.example/en-us',
-      'https://atlas.example/ar-eg',
+      'https://site.example/en-us/second',
+      'https://site.example/ar-eg/second',
+      'https://site.example/en-us/articles/handbook',
+      'https://site.example/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84',
+      'https://site.example/en-us',
+      'https://site.example/ar-eg',
     ],
     `the sitemap publishes the wrong set of addresses:\n${publishedUrls.join('\n')}`,
   );
@@ -3084,7 +3079,7 @@ try {
   const secondEntry = [...sitemapDocument.querySelectorAll('url')].find(
     (entry) =>
       entry.querySelector('loc')?.textContent ===
-      'https://atlas.example/en-us/second',
+      'https://site.example/en-us/second',
   );
   assert.equal(
     secondEntry?.querySelector('lastmod')?.textContent,
@@ -3098,7 +3093,7 @@ try {
   const articleEntry = [...sitemapDocument.querySelectorAll('url')].find(
     (entry) =>
       entry.querySelector('loc')?.textContent ===
-      'https://atlas.example/en-us/articles/atlas-handbook',
+      'https://site.example/en-us/articles/handbook',
   );
   assert.equal(articleEntry?.querySelector('changefreq'), null);
   assert.equal(articleEntry?.querySelector('priority'), null);
@@ -3122,7 +3117,7 @@ try {
   // above gives: this deployment has two halves that answer, and which one answers an address
   // moves with the engine's version. The prerendered file carries the language on the document and
   // no robots meta, whichever half hands it over; `Content-Language` and `X-Robots-Tag` are set by
-  // the half that runs Atlas. So a header assertion here would be a claim about the plumbing, and
+  // the half that runs Equator. So a header assertion here would be a claim about the plumbing, and
   // what the sitemap promises is a page: at this address, in this language, open to a crawler.
   for (const published of publishedUrls) {
     const path = new URL(published).pathname;
@@ -3140,8 +3135,8 @@ try {
       path.split('/')[1] === 'ar-eg' ? 'ar-EG' : 'en-US',
       `${published} is served in the wrong language`,
     );
-    // Atlas writes this element only for a page it classes out of the index, so its absence is the
-    // assertion. An indexable page carries no robots meta at all.
+    // Equator writes this element only for a page it classes out of the index, so its absence is
+    // the assertion. An indexable page carries no robots meta at all.
     assert.equal(
       servedDocument.querySelector('meta[name="robots"]'),
       null,
@@ -3157,35 +3152,35 @@ try {
     // under a locale whose title is not that string.
     //
     // `second` declares `'Second route, declared in English'`. Angular's `DefaultTitleStrategy`
-    // writes a declared title after `NavigationEnd`, which is after Atlas has written the localized
-    // one, so on a server render this is where the two writers meet. The provider line in
+    // writes a declared title after `NavigationEnd`, which is after Equator has written the
+    // localized one, so on a server render this is where the two writers meet. The provider line in
     // `app.config.ts` is what decides it: take it out and this document says the English string
     // under `lang="ar-EG"`, with nothing thrown and nothing logged.
     render('titled-request', 'ar-EG', '/second'),
     // 8.4. The route whose slug no codec can translate, server-rendered.
     //
-    // `dossierSlugCodec` is identity, so left to itself Atlas advertises the English slug under the
-    // Arabic prefix. The page's component loads the record and declares the per-locale spellings,
-    // and this is the only place that proves the declaration survives a server render: it lands
-    // on a promise after the route activates, so a render that serialized the head before the
-    // application went stable would ship the codec's answer and look entirely normal.
-    render('dossier-request', 'en-US', '/dossiers/atlas-dossier'),
+    // `dossierSlugCodec` is identity, so left to itself Equator advertises the English slug under
+    // the Arabic prefix. The page's component loads the record and declares the per-locale
+    // spellings, and this is the only place that proves the declaration survives a server render:
+    // it lands on a promise after the route activates, so a render that serialized the head before
+    // the application went stable would ship the codec's answer and look entirely normal.
+    render('dossier-request', 'en-US', '/dossiers/dossier'),
   ]);
   const alpha = readSnapshot(alphaHtml);
   const bravo = readSnapshot(bravoHtml);
 
   assert.equal(alpha.document.documentElement.lang, 'en-US');
   assert.equal(alpha.document.documentElement.dir, 'ltr');
-  assert.equal(alpha.document.title, 'Atlas feature lab');
+  assert.equal(alpha.document.title, 'Equator feature lab');
   assert.equal(
     alpha.document
       .querySelector('meta[name="description"]')
       ?.getAttribute('content'),
-    'Atlas localization runtime feature laboratory.',
+    'Equator localization runtime feature laboratory.',
   );
   assert.equal(
     alpha.document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
-    'https://atlas.example/en-us',
+    'https://site.example/en-us',
   );
   assert.deepEqual(
     [...alpha.document.querySelectorAll('link[rel="alternate"]')].map((node) =>
@@ -3195,7 +3190,7 @@ try {
   );
   assert.match(
     alpha.document.querySelector('h1')?.textContent ?? '',
-    /Atlas feature lab/,
+    /Equator feature lab/,
   );
   assert.equal(
     alpha.document
@@ -3205,7 +3200,7 @@ try {
   );
   assert.equal(bravo.document.documentElement.lang, 'ar-EG');
   assert.equal(bravo.document.documentElement.dir, 'rtl');
-  assert.equal(bravo.document.title, 'مختبر ميزات Atlas');
+  assert.equal(bravo.document.title, 'مختبر ميزات Equator');
 
   // Asserted on the rendered document, and asserted twice: what the title is, and what it is not.
   // The second is the load-bearing one: the failure mode is a *different valid title*, not a
@@ -3245,7 +3240,7 @@ try {
     dossier.document
       .querySelector('[data-route-view]')
       ?.getAttribute('data-entity-id'),
-    'atlas-dossier',
+    'dossier',
     'the dossier route did not load its record, so its address proves nothing',
   );
   const dossierAlternate = (hreflang) =>
@@ -3254,22 +3249,22 @@ try {
       ?.getAttribute('href');
   assert.equal(
     dossierAlternate('ar-EG'),
-    `https://atlas.example/ar-eg/dossiers/${encodeURIComponent('ملف-أطلس')}`,
+    `https://site.example/ar-eg/dossiers/${encodeURIComponent('ملف')}`,
   );
   // The codec's own answer, stated so this cannot pass by falling back to it.
   assert.notEqual(
     dossierAlternate('ar-EG'),
-    'https://atlas.example/ar-eg/dossiers/atlas-dossier',
+    'https://site.example/ar-eg/dossiers/dossier',
   );
   assert.equal(
     dossier.document
       .querySelector('link[rel="canonical"]')
       ?.getAttribute('href'),
-    'https://atlas.example/en-us/dossiers/atlas-dossier',
+    'https://site.example/en-us/dossiers/dossier',
   );
   assert.match(
     bravo.document.querySelector('h1')?.textContent ?? '',
-    /مختبر ميزات Atlas/,
+    /مختبر ميزات Equator/,
   );
   assert.equal(
     bravo.document
@@ -3329,12 +3324,12 @@ try {
 
   // The rest of the block, including the four ogp.me calls required, and the description in Arabic
   // rather than the source locale.
-  assert.deepEqual(openGraph(bravo, 'og:title'), ['مختبر ميزات Atlas']);
+  assert.deepEqual(openGraph(bravo, 'og:title'), ['مختبر ميزات Equator']);
   assert.deepEqual(openGraph(bravo, 'og:type'), ['website']);
   assert.deepEqual(openGraph(bravo, 'og:image'), [
-    'https://atlas.example/social/preview.png',
+    'https://site.example/social/preview.png',
   ]);
-  assert.deepEqual(openGraph(bravo, 'og:url'), ['https://atlas.example/ar-eg']);
+  assert.deepEqual(openGraph(bravo, 'og:url'), ['https://site.example/ar-eg']);
 
   assert.equal(alpha.label, 'alpha-request');
   assert.equal(bravo.label, 'bravo-request');
@@ -3379,7 +3374,7 @@ try {
   assert.equal(bravo.transfer.formatting.locale, 'ar-EG');
   assert.deepEqual(alpha.transfer.participants, [
     {
-      profile: 'atlas-participant-state/1',
+      profile: 'equator-participant-state/1',
       participantId: 'feature-article',
       coordination: 'required',
       current: {
@@ -3393,7 +3388,7 @@ try {
             direction: 'ltr',
           },
           identity: {
-            resourceId: 'article:atlas-handbook',
+            resourceId: 'article:handbook',
             representationId: 'article-en',
             revision: 'a-1',
             correlationId: 'source-a:en-US:a-1',
@@ -3412,7 +3407,7 @@ try {
             direction: 'ltr',
           },
           identity: {
-            resourceId: 'article:atlas-handbook',
+            resourceId: 'article:handbook',
             representationId: 'article-en',
             revision: 'a-1',
             correlationId: 'source-a:en-US:a-1',
@@ -3430,12 +3425,14 @@ try {
   assert.equal(
     JSON.stringify(alpha.transfer).includes('consumer-owned-dynamic-payload'),
     false,
-    'Atlas TransferState retained consumer payload',
+    'Equator TransferState retained consumer payload',
   );
   assert.equal(
-    JSON.stringify(alpha.transfer).includes('The Atlas localization handbook'),
+    JSON.stringify(alpha.transfer).includes(
+      'The Equator localization handbook',
+    ),
     false,
-    'Atlas TransferState retained consumer article text',
+    'Equator TransferState retained consumer article text',
   );
   assert.equal(
     alpha.dynamicTransfer.article.payloadMarker,
@@ -3443,27 +3440,27 @@ try {
   );
   assert.equal(
     alpha.dynamicTransfer.article.title,
-    'The Atlas localization handbook',
+    'The Equator localization handbook',
   );
   assert.equal(alpha.dynamicTransfer.article.supplyingLocale, 'en-US');
   assert.equal(bravo.dynamicTransfer.article.supplyingLocale, 'ar-EG');
   assert.equal(
     alpha.document.querySelector('[data-dynamic-title]')?.textContent?.trim(),
-    'The Atlas localization handbook',
+    'The Equator localization handbook',
   );
   assert.equal(
     bravo.document.querySelector('[data-dynamic-title]')?.textContent?.trim(),
-    'دليل أطلس للترجمة',
+    'دليل Equator للترجمة',
   );
   // An attribute-position label has to be in the server's HTML, not written on hydration. A
   // crawler and a screen reader on a page that has not hydrated read the markup as delivered.
   assert.equal(
     alpha.document.querySelector('[data-label]')?.getAttribute('aria-label'),
-    'Atlas feature lab',
+    'Equator feature lab',
   );
   assert.equal(
     bravo.document.querySelector('[data-label]')?.getAttribute('aria-label'),
-    'مختبر ميزات Atlas',
+    'مختبر ميزات Equator',
   );
   assert.equal(
     alpha.document.querySelector('[data-label-alt]')?.getAttribute('alt'),
@@ -3510,7 +3507,7 @@ try {
         'consumer-owned-dynamic-payload',
       ),
       false,
-      'Atlas TransferState retained consumer payload during endurance',
+      'Equator TransferState retained consumer payload during endurance',
     );
     assert.equal(
       snapshot.dynamicTransfer.article.payloadMarker,
@@ -3667,7 +3664,7 @@ try {
   );
   assert.equal(
     await page.locator('[data-dynamic-title]').textContent(),
-    'The Atlas localization handbook',
+    'The Equator localization handbook',
   );
   assert.equal(
     await page
@@ -3712,7 +3709,7 @@ try {
     //
     // The path deliberately opens with a segment no language tag can be: `/no-such-page` would
     // not test this, because `no` is Norwegian and `no-such-page` parses as a language tag, so
-    // Atlas reads it as intent toward an unsupported locale and answers 404 where it stands.
+    // Equator reads it as intent toward an unsupported locale and answers 404 where it stands.
     const unprefixed = boundCalls(await context.newPage(), 'page');
     unprefixed.setDefaultTimeout(15_000);
     await unprefixed.goto(`${origin}/nothing-is-mounted-here`, {
@@ -3782,12 +3779,12 @@ try {
     // rather than writing it. What this asserts is that adoption is not the end of the story: the
     // ordinary update pass runs over the claimed DOM and writes the committed locale into it.
     //
-    // Atlas shipped a `LocalizedDeferredContent` directive that cleared the container first, on the
-    // premise that a claimed block would read English inside an Arabic page forever. That premise is
-    // false (measured across eight binding kinds, every one corrected) and the
-    // clear was a no-op besides, because `ViewContainerRef.clear()` iterates live views and a
-    // dehydrated view is not one. The directive is gone; this stage is what actually holds the
-    // invariant, and it held identically before and after the removal.
+    // Equator shipped a `LocalizedDeferredContent` directive that cleared the container first, on
+    // the premise that a claimed block would read English inside an Arabic page forever. That
+    // premise is false (measured across eight binding kinds, every one corrected) and the clear was
+    // a no-op besides, because `ViewContainerRef.clear()` iterates live views and a dehydrated view
+    // is not one. The directive is gone; this stage is what actually holds the invariant, and it
+    // held identically before and after the removal.
     const probe = boundCalls(await context.newPage(), 'page');
     probe.setDefaultTimeout(15_000);
     await probe.goto(origin, { waitUntil: 'networkidle' });
@@ -3871,13 +3868,13 @@ try {
       document.documentElement.dir === 'rtl' &&
       document
         .querySelector('h1')
-        ?.textContent?.includes('مختبر ميزات Atlas') &&
+        ?.textContent?.includes('مختبر ميزات Equator') &&
       document
         .querySelector('[data-incremental-message]')
         ?.textContent?.includes('حد الترجمة التدريجي جاهز.') &&
       document
         .querySelector('[data-dynamic-title]')
-        ?.textContent?.includes('دليل أطلس للترجمة'),
+        ?.textContent?.includes('دليل Equator للترجمة'),
   );
   await page.waitForURL(
     (url) =>
@@ -3886,7 +3883,7 @@ try {
   );
   assert.equal(
     await page.locator('link[rel="canonical"]').getAttribute('href'),
-    'https://atlas.example/ar-eg',
+    'https://site.example/ar-eg',
   );
   assert.match(
     await page.locator('[data-rich-message]').textContent(),
@@ -3926,7 +3923,7 @@ try {
       document.documentElement.dir === 'ltr' &&
       document
         .querySelector('h1')
-        ?.textContent?.includes('Atlas feature lab') &&
+        ?.textContent?.includes('Equator feature lab') &&
       document
         .querySelector('[data-incremental-message]')
         ?.textContent?.includes('Incremental localization boundary ready.'),
@@ -3957,7 +3954,7 @@ try {
         .querySelector('[data-route-view="second"]')
         ?.textContent?.trim() === 'Second route' &&
       document.querySelector('link[rel="canonical"]')?.getAttribute('href') ===
-        'https://atlas.example/en-us/second',
+        'https://site.example/en-us/second',
   );
   assert.equal(
     await page.locator('[data-route-view="second"]').textContent(),
@@ -3965,7 +3962,7 @@ try {
   );
   assert.equal(
     await page.locator('link[rel="canonical"]').getAttribute('href'),
-    'https://atlas.example/en-us/second',
+    'https://site.example/en-us/second',
   );
   const secondUrl = page.url();
 
@@ -3983,30 +3980,28 @@ try {
   await page.locator('[data-route-link="home"]').click();
   await page.waitForURL((url) => url.pathname === '/en-us');
   await page.locator('[data-route-link="article"]').click();
-  await page.waitForURL(
-    (url) => url.pathname === '/en-us/articles/atlas-handbook',
-  );
+  await page.waitForURL((url) => url.pathname === '/en-us/articles/handbook');
   await page.waitForFunction(
     () =>
-      document.title === 'The Atlas localization handbook' &&
+      document.title === 'The Equator localization handbook' &&
       document
         .querySelector('[data-route-view="article"]')
-        ?.getAttribute('data-entity-id') === 'atlas-handbook',
+        ?.getAttribute('data-entity-id') === 'handbook',
   );
   assert.equal(
     await page.locator('link[rel="canonical"]').getAttribute('href'),
-    'https://atlas.example/en-us/articles/atlas-handbook',
+    'https://site.example/en-us/articles/handbook',
   );
   assert.equal(
     await page
       .locator('link[rel="alternate"][hreflang="ar-EG"]')
       .getAttribute('href'),
-    'https://atlas.example/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84-%D8%A3%D8%B7%D9%84%D8%B3',
+    'https://site.example/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84',
   );
   // The switcher's address and the alternate above are one derivation read twice, and each reader
   // forms its own string: the head states where the page lives, absolutely, on the origin this
   // application is deployed at; the option states where the reader is going, as a path on the host
-  // they are actually on. This lab is served from localhost and declares `https://atlas.example`,
+  // they are actually on. This lab is served from localhost and declares `https://site.example`,
   // so an option carrying the head's string would take the reader off the machine they are on,
   // which is why they are asserted apart rather than compared to each other.
   //
@@ -4015,15 +4010,12 @@ try {
   const arabicAddress = await page
     .locator('[data-locale-choice="ar-EG"]')
     .getAttribute('href');
-  assert.equal(
-    arabicAddress,
-    '/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84-%D8%A3%D8%B7%D9%84%D8%B3',
-  );
+  assert.equal(arabicAddress, '/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84');
 
   enterStage('dynamic-article-locale-switch');
   await page.locator('[data-locale-choice="ar-EG"]').click();
   await page.waitForURL(
-    (url) => decodeURIComponent(url.pathname) === '/ar-eg/articles/دليل-أطلس',
+    (url) => decodeURIComponent(url.pathname) === '/ar-eg/articles/دليل',
   );
   // The link said where the click would go, and it went there. A switcher whose href is derived
   // separately from the switch can disagree with it (on the query the reader is carrying, or on
@@ -4031,15 +4023,15 @@ try {
   assert.equal(new URL(page.url()).pathname, arabicAddress);
   await page.waitForFunction(
     () =>
-      document.title === 'دليل أطلس للترجمة' &&
+      document.title === 'دليل Equator للترجمة' &&
       document.documentElement.lang === 'ar-EG' &&
       document
         .querySelector('[data-dynamic-title]')
-        ?.textContent?.includes('دليل أطلس للترجمة'),
+        ?.textContent?.includes('دليل Equator للترجمة'),
   );
   assert.equal(
     await page.locator('link[rel="canonical"]').getAttribute('href'),
-    'https://atlas.example/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84-%D8%A3%D8%B7%D9%84%D8%B3',
+    'https://site.example/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84',
   );
 
   await collectPolicyDiagnostics(page, chromiumDiagnostics);
@@ -4150,7 +4142,7 @@ try {
 if (verificationFailure !== undefined) {
   const details = describeError(verificationFailure);
   process.stderr.write(
-    `Atlas browser assurance failed.\n${details}\n${JSON.stringify(verificationDiagnostics, null, 2)}\n`,
+    `Equator browser assurance failed.\n${details}\n${JSON.stringify(verificationDiagnostics, null, 2)}\n`,
   );
   process.exitCode = 1;
 }

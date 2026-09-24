@@ -245,7 +245,7 @@ if (failures.length > 0) {
     0,
   );
   console.log(
-    `Atlas specification references verified: ${references} citation(s) across ` +
+    `Equator specification references verified: ${references} citation(s) across ` +
       `${specifications.size} specification(s) resolve, and every one of the ${normative} ` +
       `normative section(s) in the ${numbered} numbered document(s) is cited from the tree.`,
   );

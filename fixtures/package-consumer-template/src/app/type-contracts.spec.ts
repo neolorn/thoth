@@ -8,7 +8,7 @@ import {
   resolveLocalizedRoute,
   type Localization,
   type PlainMessageHandle,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { messages } from '#i18n/shell';
 

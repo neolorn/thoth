@@ -61,5 +61,5 @@ costs of choosing that policy, and it is weighed in
 
 - [How to add a locale switcher](../how-to/add-a-locale-switcher.md)
 - [How to render on the server](../how-to/render-on-the-server.md)
-- [How to extend Atlas](../how-to/extend-atlas.md)
+- [How to extend Equator](../how-to/add-an-extension.md)
 - [How to test localized output](../how-to/test-localized-output.md)

@@ -78,8 +78,8 @@ const entryPoints = [
 // A renamed or empty output directory makes every check below pass on nothing, and a discovered
 // list is exactly the shape that fails that way silently.
 assert.ok(
-  entryPoints.some(({ label }) => label === 'neolorn-atlas'),
-  `No neolorn-atlas.d.ts under ${runtimeTypesRoot}. Every count below would be taken over nothing. Run pnpm run build first.`,
+  entryPoints.some(({ label }) => label === 'neolorn-equator'),
+  `No neolorn-equator.d.ts under ${runtimeTypesRoot}. Every count below would be taken over nothing. Run pnpm run build first.`,
 );
 
 /**
@@ -98,8 +98,8 @@ const publishedSubpaths = Object.keys(runtimeManifest.exports)
   .filter((subpath) => subpath !== './package.json')
   .map((subpath) =>
     subpath === '.'
-      ? 'neolorn-atlas'
-      : `neolorn-atlas-${subpath.replace(/^\.\//u, '')}`,
+      ? 'neolorn-equator'
+      : `neolorn-equator-${subpath.replace(/^\.\//u, '')}`,
   )
   .sort();
 assert.deepEqual(
@@ -181,8 +181,8 @@ function selfDescribing(member) {
  * The own members a consumer has to understand, and nothing else.
  *
  * `symbol.members` rather than `checker.getPropertiesOfType`, because the latter walks the
- * inheritance chain: every member of `AtlasPseudoLocaleTransform` would be counted again under
- * `AtlasPseudoLocaleOptions`, documented in one place and undocumented in the other.
+ * inheritance chain: every member of `PseudoLocaleTransform` would be counted again under
+ * `PseudoLocaleOptions`, documented in one place and undocumented in the other.
  */
 function ownMembers(symbol) {
   const found = [];
@@ -279,7 +279,7 @@ const failures = undocumented.map(
 
 if (failures.length > 0) {
   console.error(
-    `Atlas documentation coverage: ${covered} of ${all.length} items documented (${percent}%).\n`,
+    `Equator documentation coverage: ${covered} of ${all.length} items documented (${percent}%).\n`,
   );
   for (const failure of failures) console.error(`  - ${failure}`);
   console.error(
@@ -295,6 +295,6 @@ if (failures.length > 0) {
     })
     .join(', ');
   console.log(
-    `Atlas documentation coverage verified: ${covered} of ${all.length} items documented (${percent}%), across ${entryPoints.length} published entry points, with nothing undocumented. By entry point: ${perEntryPoint}.`,
+    `Equator documentation coverage verified: ${covered} of ${all.length} items documented (${percent}%), across ${entryPoints.length} published entry points, with nothing undocumented. By entry point: ${perEntryPoint}.`,
   );
 }

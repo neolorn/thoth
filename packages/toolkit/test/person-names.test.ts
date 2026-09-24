@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  ATLAS_PERSON_NAME_PATTERNS,
-  ATLAS_PERSON_NAME_ROWS,
+  PERSON_NAME_PATTERNS,
+  PERSON_NAME_ROWS,
 } from '../src/person-names.generated.js';
 import { personNameProfilesFor } from '../src/person-names.js';
 
@@ -56,9 +56,7 @@ describe('the profiles a set of locales reaches', () => {
 describe('what the emitted set costs', () => {
   it('interns against the subset rather than carrying the whole pool', () => {
     const set = personNameProfilesFor(['en-US', 'ar-EG']);
-    expect(set.patterns.length).toBeLessThan(
-      ATLAS_PERSON_NAME_PATTERNS.length / 4,
-    );
+    expect(set.patterns.length).toBeLessThan(PERSON_NAME_PATTERNS.length / 4);
     // Every index a row carries has to point inside this set's own pool, not the table's.
     for (const row of set.rows) {
       for (const cell of [...row[1], row[2], row[3], row[4], row[5]]) {
@@ -70,8 +68,8 @@ describe('what the emitted set costs', () => {
 
   it('carries a fraction of the table for a handful of locales', () => {
     const whole = JSON.stringify({
-      patterns: ATLAS_PERSON_NAME_PATTERNS,
-      rows: ATLAS_PERSON_NAME_ROWS,
+      patterns: PERSON_NAME_PATTERNS,
+      rows: PERSON_NAME_ROWS,
     }).length;
     const emitted = JSON.stringify(
       personNameProfilesFor(['en-US', 'ar-EG']),
@@ -118,7 +116,7 @@ describe('the subset answers what the whole table would have', () => {
     for (const locale of requested) {
       expect([locale, resolveThrough(set.rows, locale)]).toEqual([
         locale,
-        resolveThrough(ATLAS_PERSON_NAME_ROWS, locale),
+        resolveThrough(PERSON_NAME_ROWS, locale),
       ]);
     }
   });
@@ -126,7 +124,7 @@ describe('the subset answers what the whole table would have', () => {
   it('resolves a locale nobody asked for to nothing, not to a neighbour', () => {
     const set = personNameProfilesFor(['ar-EG']);
     expect(resolveThrough(set.rows, 'hu')).toBeUndefined();
-    expect(resolveThrough(ATLAS_PERSON_NAME_ROWS, 'hu')).toBe('hu');
+    expect(resolveThrough(PERSON_NAME_ROWS, 'hu')).toBe('hu');
   });
 });
 

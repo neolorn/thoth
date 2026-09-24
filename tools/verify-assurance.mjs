@@ -2,7 +2,7 @@
  * Does the suite still fail when it should?
  *
  * A test that cannot fail is worse than an absent one: it reports a guarantee nobody is holding.
- * One was found here: the fixture built to prove Atlas honors a consumer's `paths` and strictness
+ * One was found here: the fixture built to prove Equator honors a consumer's `paths` and strictness
  * kept passing when every one of those behaviors was removed, because it asserted on an outcome
  * flag and one severity while the regressions reported through another channel. The finding is not
  * that one assertion was wrong. It is that nothing was checking whether the checks work.
@@ -42,7 +42,7 @@ const injections = Object.freeze([
   {
     id: 'consumer-paths-discarded',
     invariant:
-      "Atlas overlays its #i18n specifiers on the consumer's own paths instead of replacing them.",
+      "Equator overlays its #i18n specifiers on the consumer's own paths instead of replacing them.",
     source: 'packages/toolkit/src/static-analysis.ts',
     find: PATHS_OVERLAY,
     replace: `    paths: {
@@ -64,7 +64,7 @@ const injections = Object.freeze([
   {
     id: 'strictness-imposed',
     invariant:
-      "Atlas analyzes under the consumer's compiler options and never adds strictness of its own.",
+      "Equator analyzes under the consumer's compiler options and never adds strictness of its own.",
     source: 'packages/toolkit/src/static-analysis.ts',
     find: PATHS_OVERLAY,
     replace: `${PATHS_OVERLAY}
@@ -74,7 +74,7 @@ const injections = Object.freeze([
   {
     id: 'missing-plural-categories-unreported',
     invariant:
-      'A target locale that omits a plural category its rules require is reported (ATL1308).',
+      'A target locale that omits a plural category its rules require is reported (EQ1308).',
     source: 'packages/toolkit/src/semantic-model.ts',
     find: '    if (missing.length === 0) continue;',
     replace: '    if (missing.length >= 0) continue;',
@@ -83,10 +83,10 @@ const injections = Object.freeze([
   {
     id: 'omitted-target-message-unreported',
     invariant:
-      'A target catalog that omits a required message is reported (ATL1307).',
+      'A target catalog that omits a required message is reported (EQ1307).',
     source: 'packages/toolkit/src/semantic-model.ts',
-    find: `        'ATL1307',`,
-    replace: `        'ATL1306',`,
+    find: `        'EQ1307',`,
+    replace: `        'EQ1306',`,
     caughtBy: 'packages/toolkit/test/target-completeness.test.ts',
   },
   {
@@ -94,7 +94,7 @@ const injections = Object.freeze([
     invariant:
       'A bidirectional control that can reorder surrounding text is refused when a catalog is parsed.',
     source: 'packages/toolkit/src/catalog.ts',
-    find: '      const violation = inspectAtlasAuthoredBidi(value);',
+    find: '      const violation = inspectAuthoredBidi(value);',
     replace: '      const violation = undefined as undefined;',
     caughtBy: 'packages/toolkit/test/bidi-policy.test.ts',
   },
@@ -148,7 +148,7 @@ const injections = Object.freeze([
   {
     id: 'build-command-authors-manifest',
     invariant:
-      'Only atlas init creates an owner manifest; build commands never author files.',
+      'Only equator init creates an owner manifest; build commands never author files.',
     source: 'packages/toolkit/src/project-host.ts',
     find: '  const packageManifest = await readPackageManifest(location.value);',
     replace:
@@ -158,7 +158,7 @@ const injections = Object.freeze([
   {
     id: 'unknowable-route-subtree-named-from-the-root',
     invariant:
-      'Routes below an address Atlas cannot know are left unnamed, never named as if they sat at the top of the application.',
+      'Routes below an address Equator cannot know are left unnamed, never named as if they sat at the top of the application.',
     source: 'packages/toolkit/src/static-analysis.ts',
     find: `    parentPath: string | undefined,
     parentLazyEntries: readonly string[],`,
@@ -212,7 +212,7 @@ const injections = Object.freeze([
   {
     id: 'consumer-route-field-ignored',
     invariant:
-      "Route indexing reads the field the consumer named through withRouting, not one of Atlas's invention.",
+      "Route indexing reads the field the consumer named through withRouting, not one of Equator's invention.",
     source: 'packages/toolkit/src/static-analysis.ts',
     find: '  const field = policy?.field ?? DEFAULT_ROUTE_INDEXING_FIELD;',
     replace: '  const field = DEFAULT_ROUTE_INDEXING_FIELD;',
@@ -241,9 +241,9 @@ const injections = Object.freeze([
     invariant:
       'Formatting edits the authored document; regenerating it from the semantic model deletes every comment in it.',
     source: 'packages/toolkit/src/project-host.ts',
-    find: '    const formatted = formatAtlasCatalogSource(file.source, catalogOptions);',
-    replace: `    const formatted = formatAtlasCatalogSource(
-      formatAtlasCatalog(file.catalog),
+    find: '    const formatted = formatCatalogSource(file.source, catalogOptions);',
+    replace: `    const formatted = formatCatalogSource(
+      formatCatalog(file.catalog),
       catalogOptions,
     );`,
     caughtBy: 'packages/toolkit/test/lossless-format.test.ts',
@@ -252,8 +252,8 @@ const injections = Object.freeze([
     id: 'success-path-never-inspects-severity',
     invariant:
       'A command that did what it was asked still fails when it found something at error severity.',
-    // The success path returned 0 unconditionally, so `atlas check --require-complete` reported
-    // `"status": "success"` while carrying ATL1310 at `severity: error`, and every later change
+    // The success path returned 0 unconditionally, so `equator check --require-complete` reported
+    // `"status": "success"` while carrying EQ1310 at `severity: error`, and every later change
     // was verified by a gate that could not fail on the things it depended on.
     //
     // Returning false is the mutation because it is the shape the defect actually had: not a wrong
@@ -285,7 +285,7 @@ const injections = Object.freeze([
     // `localization.ts` or the router's public API.
     //
     // Dropping the numbering system is the regression that would actually happen, and it is
-    // invisible to a self-consistent round trip: Atlas would render `1234` where `١٢٣٤` was asked
+    // invisible to a self-consistent round trip: Equator would render `1234` where `١٢٣٤` was asked
     // for, parse it back to 1234, and be wrong for every reader.
     source: 'packages/runtime/src/formatting.ts',
     //
@@ -315,7 +315,7 @@ const injections = Object.freeze([
       'A number range and a duration are rendered in the numbering system the context asked for.',
     // `NumberFormat.formatRange`, `formatRangeToParts` and `DurationFormat.format` accept
     // a `numberingSystem` option, ignore it, and then report through `resolvedOptions()` that they
-    // honoured it. Atlas builds a `-u-nu-` tag instead; this mutation hands back the bare locale,
+    // honoured it. Equator builds a `-u-nu-` tag instead; this mutation hands back the bare locale,
     // which is what passing the option amounted to.
     //
     // The validation is deliberately left intact, so what this removes is only the delivery. A test
@@ -343,7 +343,7 @@ const injections = Object.freeze([
     invariant:
       'A signed number can be read back in the locales whose sign the platform decorates with a formatting control.',
     // The defect this replaces was live, and it was not subtle: `Intl` writes U+061C, U+200E or
-    // U+200F next to the sign in 27 of the 162 locales this ICU build has data for, Atlas
+    // U+200F next to the sign in 27 of the 162 locales this ICU build has data for, Equator
     // compared the front of the string against a bare minus, and so refused to render a negative
     // decimal in every one of them. Found by the differential on its first run.
     //
@@ -377,7 +377,7 @@ const injections = Object.freeze([
     // Taking the pattern out does not make the codec accept everything, which is what makes this
     // the honest injection rather than a strawman. `Number.isSafeInteger` still holds, so what gets
     // through is narrower and worse: `1e3`, ` 1`, `0x10` and `''` become valid spellings of 1000,
-    // 1, 16 and 0. Each is a second address for a record that already has one, and Atlas's own
+    // 1, 16 and 0. Each is a second address for a record that already has one, and Equator's own
     // canonicalizer will not redirect them: the codec it asks says they are correct.
     source: 'packages/runtime/core/src/routing.ts',
     find: [
@@ -393,7 +393,7 @@ const injections = Object.freeze([
     invariant:
       'A catalog locale identity carries no extension or private-use subtag, so one locale cannot become two catalogs.',
     // `en-US` and `en-US-u-ca-islamic` name the same language to every reader and different
-    // catalogs to Atlas. The check is one line and nothing had ever watched it fail; the property
+    // catalogs to Equator. The check is one line and nothing had ever watched it fail; the property
     // file that now does generates the tags rather than listing four of them, because the failure
     // is a class, any singleton subtag, and not a spelling.
     source: 'packages/toolkit/src/locales.ts',
@@ -404,7 +404,7 @@ const injections = Object.freeze([
   {
     id: 'uninstall-reverts-an-edited-entry',
     invariant:
-      'Uninstall takes back only what Atlas wrote; an edited script or a repointed #i18n specifier is left alone and named.',
+      'Uninstall takes back only what Equator wrote; an edited script or a repointed #i18n specifier is left alone and named.',
     source: 'packages/toolkit/src/project-host.ts',
     find: '      if (entries[specifier] === target) delete entries[specifier];',
     replace: '      if (true) delete entries[specifier];',
@@ -415,8 +415,8 @@ const injections = Object.freeze([
     invariant:
       "Authored catalogs survive an uninstall unless their removal is asked for by name; they are the consumer's content.",
     source: 'packages/toolkit/src/project-host.ts',
-    find: '    options.catalogs === true ? await loadAtlasProject(options) : undefined;',
-    replace: '    true ? await loadAtlasProject(options) : undefined;',
+    find: '    options.catalogs === true ? await loadProject(options) : undefined;',
+    replace: '    true ? await loadProject(options) : undefined;',
     caughtBy: 'packages/toolkit/test/uninstall.test.ts',
   },
   {

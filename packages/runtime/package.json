@@ -1,8 +1,8 @@
 {
-  "name": "@neolorn/atlas",
+  "name": "@neolorn/equator",
   "version": "1.3.0-rc.2",
   "description": "Localization runtime for Angular applications.",
-  "homepage": "https://github.com/neolorn/atlas/tree/main/packages/runtime#readme",
+  "homepage": "https://github.com/neolorn/equator/tree/main/packages/runtime#readme",
   "keywords": [
     "angular",
     "i18n",
@@ -24,11 +24,11 @@
   "author": "Hossam Ismail <hossam@neolorn.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/neolorn/atlas.git",
+    "url": "git+https://github.com/neolorn/equator.git",
     "directory": "packages/runtime"
   },
   "bugs": {
-    "url": "https://github.com/neolorn/atlas/issues"
+    "url": "https://github.com/neolorn/equator/issues"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",

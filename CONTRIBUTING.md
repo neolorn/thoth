@@ -1,6 +1,6 @@
-# Contributing to Atlas
+# Contributing to Equator
 
-Thank you for your interest in contributing to Atlas. This document explains how the project is organized, how to set up a development environment, and what a contribution needs to look like to be merged.
+Thank you for your interest in contributing to Equator. This document explains how the project is organized, how to set up a development environment, and what a contribution needs to look like to be merged.
 
 ## Table of contents
 
@@ -21,15 +21,15 @@ This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md). By particip
 
 ## Reporting bugs and requesting features
 
-Use the [issue templates](https://github.com/neolorn/atlas/issues/new/choose). For a bug, include the versions of `@neolorn/atlas` and `@neolorn/atlas-toolkit`, the Angular version, and the smallest reproduction you can provide: the catalog, the configuration, or the route involved.
+Use the [issue templates](https://github.com/neolorn/equator/issues/new/choose). For a bug, include the versions of `@neolorn/equator` and `@neolorn/equator-toolkit`, the Angular version, and the smallest reproduction you can provide: the catalog, the configuration, or the route involved.
 
-For a feature, open an issue before writing code. Atlas covers localization in general; a capability that only one application needs belongs in that application, and the issue is where that question is settled.
+For a feature, open an issue before writing code. Equator covers localization in general; a capability that only one application needs belongs in that application, and the issue is where that question is settled.
 
 Do not report security vulnerabilities in public issues. See [SECURITY.md](SECURITY.md).
 
 ## Development setup
 
-Atlas is a pnpm workspace with two packages, `packages/runtime` and `packages/toolkit`, and a set of consumer applications under `fixtures/` used for verification.
+Equator is a pnpm workspace with two packages, `packages/runtime` and `packages/toolkit`, and a set of consumer applications under `fixtures/` used for verification.
 
 Requirements:
 
@@ -79,13 +79,13 @@ pnpm run refresh:consumer-locks
 
 `clean` deletes `dist/` and empties `tmp/`. Run it when a build output from an earlier state of the tree is being read by something that should be reading a fresh one, or to discard the work trees and consumer installs the verification suite leaves behind. The suite's attempt ledger stays, because nothing can rebuild it. `pnpm run clean dist` removes the build output alone.
 
-`refresh:consumer` hands the consumer fixtures the packages that are in `dist/` right now. A fixture takes Atlas as a `file:` dependency, which pnpm copies into its store, so a fixture that is already installed goes on running the build it was installed with until this runs.
+`refresh:consumer` hands the consumer fixtures the packages that are in `dist/` right now. A fixture takes Equator as a `file:` dependency, which pnpm copies into its store, so a fixture that is already installed goes on running the build it was installed with until this runs.
 
 `refresh:consumer-locks` regenerates the committed lockfiles of the consumer fixtures. It reaches the network, so run it when a fixture manifest or a dependency range changes and commit what it writes.
 
 ## Making a change
 
-The [specifications](specs/README.md) describe what Atlas accepts, produces, and guarantees. Read the specification that owns the area you are changing before you change its behavior. If the specification is wrong, open an issue; the specification is corrected in the same change as the code.
+The [specifications](specs/README.md) describe what Equator accepts, produces, and guarantees. Read the specification that owns the area you are changing before you change its behavior. If the specification is wrong, open an issue; the specification is corrected in the same change as the code.
 
 A change is one coherent unit of work. Keep unrelated changes in separate commits and separate pull requests.
 
@@ -142,7 +142,7 @@ For style, follow the [Google developer documentation style guide](https://devel
 
 ## Dependencies
 
-Atlas's runtime has no dependencies beyond `tslib`, and the toolkit's dependencies are pinned to exact versions. Adding a dependency, a polyfill, or a use of an undocumented platform or compiler API is a project decision. Open an issue before proposing one.
+Equator's runtime has no dependencies beyond `tslib`, and the toolkit's dependencies are pinned to exact versions. Adding a dependency, a polyfill, or a use of an undocumented platform or compiler API is a project decision. Open an issue before proposing one.
 
 ## Releases
 

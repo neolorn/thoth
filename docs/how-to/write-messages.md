@@ -5,11 +5,11 @@ that does not exist is a compile error at the line that uses it.
 
 ## Before you begin
 
-You need a project that `atlas init` has set up.
+You need a project that `equator init` has set up.
 
 ## Write the catalog
 
-A catalog lives at `i18n/<scope>/<locale>.yaml`. The scope is a name you choose, and `atlas init`
+A catalog lives at `i18n/<scope>/<locale>.yaml`. The scope is a name you choose, and `equator init`
 suggests `shell` for the messages that surround everything else:
 
 ```yaml excerpt i18n/shell/en-US.yaml
@@ -38,7 +38,7 @@ messages:
 ```
 
 ```sh run
-npx atlas generate
+npx equator generate
 ```
 
 A message is a plain string or a record. The record form carries `description` and `context` for
@@ -66,11 +66,11 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Localization, withRecoveryMessage } from '@neolorn/atlas';
+import { Localization, withRecoveryMessage } from '@neolorn/equator';
 import {
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
-} from '@neolorn/atlas/testing';
+} from '@neolorn/equator/testing';
 import { localizationSetup } from '#i18n';
 import { messages as shell } from '#i18n/shell';
 import { messages } from '#i18n/greeting';
@@ -126,7 +126,7 @@ application says what it is made of, so a translator can move it without touchin
 Rendering one is [How to render a message](render-messages.md).
 
 Plural and gender selection, number and date formatting, and each locale's plural categories come
-from the locale data Atlas compiles its profile from, so a translator writing Arabic gets Arabic's
+from the locale data Equator compiles its profile from, so a translator writing Arabic gets Arabic's
 six plural categories rather than English's two.
 
 ## Related

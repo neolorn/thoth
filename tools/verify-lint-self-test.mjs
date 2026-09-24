@@ -14,10 +14,11 @@ import { fileURLToPath } from 'node:url';
  * makes about a gate that had never been seen to fail and could not.
  *
  * The two reasons are the ones the stage was asked for. A floating promise is what the compiler
- * cannot see with every strictness flag Atlas already sets, and it needs types to detect at all, so
- * a run that reports it proves the rule is on *and* that the TypeScript program reached the file. An
- * import cycle is the other half: no compiler flag reports one, it is a property of the module graph
- * rather than of any file, and the module resolver has to be working for the graph to exist.
+ * cannot see with every strictness flag Equator already sets, and it needs types to detect at all,
+ * so a run that reports it proves the rule is on *and* that the TypeScript program reached the
+ * file. An import cycle is the other half: no compiler flag reports one, it is a property of the
+ * module graph rather than of any file, and the module resolver has to be working for the graph to
+ * exist.
  *
  * It seeds real files in the real source tree and runs the real `lint` script, because a fixture
  * project with its own configuration would prove that fixture's rules are on. The stage runs in a
@@ -139,7 +140,7 @@ for (const seed of seeds) {
 }
 
 process.stdout.write(
-  `Atlas lint self-test verified: ${seeds.length} seeded files turn the lint stage red, naming ` +
+  `Equator lint self-test verified: ${seeds.length} seeded files turn the lint stage red, naming ` +
     `${seeds
       .filter(({ rule }) => rule !== undefined)
       .map(({ rule }) => rule)

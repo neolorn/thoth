@@ -6,7 +6,7 @@
 // here reaches the network or shares state between specs.
 //
 // The reset is here because an Angular test host reuses one DOM across spec files, so every file
-// in a worker sees the same address bar, cookie jar and web storage, and Atlas reads the locale
+// in a worker sees the same address bar, cookie jar and web storage, and Equator reads the locale
 // from the address when routing is installed and from a store when persistence is. Every consumer
 // inherits both halves together, so the reset that puts that state back is published rather than
 // described.
@@ -39,7 +39,7 @@ import {
   type LocalizationParticipantReport,
   type LocalizationScope,
   type LocalizationSetup,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 
 interface DeferredPlan {
   readonly started: Promise<void>;
@@ -421,22 +421,22 @@ export function renderedText(element: Element): string {
  *
  * A test host that reuses one DOM across spec files hands every file in a worker the same address
  * bar, the same cookie jar and the same web storages. Angular's own unit-test builder does exactly
- * that by default (`isolate: false`, chosen to match the runner it replaced) and Atlas resolves
+ * that by default (`isolate: false`, chosen to match the runner it replaced) and Equator resolves
  * the locale from the address when routing is configured, and from a persistence store when one is.
  * So a spec that navigates hands the next file a page in another locale: an Arabic heading under an
  * English assertion, in an application with nothing wrong in it. How many files share a DOM is the
  * worker count, and the worker count is the core count, so whether it happens at all is a property
  * of the machine: green on a developer's thirty-two threads, red on a runner's two.
  *
- * Every consumer inherits both halves of that together, Angular's default and Atlas's address
- * source, so the reset belongs to Atlas rather than to each application that has to remember it.
+ * Every consumer inherits both halves of that together, Angular's default and Equator's address
+ * source, so the reset belongs to Equator rather than to each application that has to remember it.
  * Call it from a global `afterEach`. It takes no arguments, so it can be passed as one, and it does
  * nothing where there is nothing to reset: a server-side test environment has no document, and the
  * same setup file is loaded for both.
  */
 export function resetLocalizationTestEnvironment(): void {
   if (typeof document !== 'undefined') {
-    // Only what a path of `/` can reach, which is what Atlas's own stores write.
+    // Only what a path of `/` can reach, which is what Equator's own stores write.
     for (const pair of document.cookie.split(';')) {
       const name = pair.split('=')[0]?.trim();
       if (name !== undefined && name !== '') {

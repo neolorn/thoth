@@ -1,7 +1,7 @@
 /**
  * Mutation testing, on a cadence and not in the gate.
  *
- * Atlas already does this by hand: 53 declared injections across `verify:assurance` and
+ * Equator already does this by hand: 53 declared injections across `verify:assurance` and
  * `verify:assurance:runtime`, each one written the day a defect was fixed, costing 219s and 876s.
  * Over half the gate's stage time is mutation testing already. What it cannot be is exhaustive:
  * those 53 are the mutations somebody thought of, and the value of a general tool is the ones
@@ -23,7 +23,7 @@
  * covered, and the gap is 12,317 mutants in modules these two suites never execute at all:
  * `angular.ts`, `catalog-runtime.ts`, the router providers. Those are guarded by the consumer,
  * browser and injection gates, which Stryker is not running and cannot see. A total read as a
- * coverage figure for Atlas would be wrong by most of its value.
+ * coverage figure for Equator would be wrong by most of its value.
  *
  * ## The reading as it stands
  *
@@ -56,7 +56,7 @@
  * the only genuinely equivalent survivors are message prose.
  *
  * **Equivalent, and they should not be read again: about 20 `StringLiteral` mutants in message
- * text.** Atlas asserts diagnostic codes and outcomes, never message wording. Deliberately, so
+ * text.** Equator asserts diagnostic codes and outcomes, never message wording. Deliberately, so
  * that improving a message is not a test change. Mutating the prose therefore cannot fail a test
  * and never will. The exclusion is not configured, because `StringLiteral` is also what mutates
  * `'.'`, `'..'`, `'http:'` and `'indexable'`, which are values the code compares and are exactly
@@ -140,7 +140,7 @@ export default {
   // toolchains and is not a workspace member; the rest is output, cache, or 414 MiB of portable
   // Node builds.
   ignorePatterns: [
-    '.atlas',
+    '.equator',
     '.runtimes',
     'tmp',
     'dist',

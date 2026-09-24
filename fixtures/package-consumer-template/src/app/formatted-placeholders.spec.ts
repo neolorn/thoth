@@ -5,14 +5,14 @@ import {
   Localization,
   provideLocalizationSetup,
   withFormattingContext,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { messages } from '#i18n/shell';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
  * Formatted placeholders, pinned to exact output.
@@ -62,7 +62,7 @@ function setup(): Localization {
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
         },
         withFormattingContext({ timeZone: ZONE }),
       ),
@@ -156,7 +156,7 @@ describe('formatted placeholders', () => {
 
   it('rejects a temporal input that is not a Date or epoch value', () => {
     // Worth knowing when authoring: `:date` and friends validate against the compiled contract's
-    // `date-time` type, which accepts a Date or a finite number. Atlas's own canonical temporal
+    // `date-time` type, which accepts a Date or a finite number. Equator's own canonical temporal
     // values, plainDate() and instant(), are not accepted as message inputs and are for the direct
     // formatting API instead.
     expect(() =>

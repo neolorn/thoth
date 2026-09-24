@@ -8,14 +8,14 @@ import {
   LocalizePipe,
   LocalizedMessage,
   provideLocalizationSetup,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { messages } from '#i18n/shell';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
  * Translator-supplied bidi controls, after the policy in
@@ -76,7 +76,7 @@ function setup(): Localization {
         catalogSet,
         catalogLoaders,
         recoveryPayload,
-        extensions: atlasRuntimeExtensions,
+        extensions: runtimeExtensions,
       }),
     ],
   });
@@ -178,7 +178,7 @@ describe('isolation of interpolated values', () => {
     });
 
     expect(text).toContain('ABC');
-    // The override is still in the value, because Atlas does not silently rewrite consumer data,
+    // The override is still in the value, because Equator does not silently rewrite consumer data,
     // but it is wrapped, so its effect cannot escape the placeholder.
     const start = text.indexOf(FSI);
     const end = text.indexOf(PDI);

@@ -1,5 +1,5 @@
 /**
- * The `Intl` capabilities Atlas relies on, probed on every engine it claims to support.
+ * The `Intl` capabilities Equator relies on, probed on every engine it claims to support.
  *
  * `specs/01-standards-profile.spec.md` section 5 makes the host's own implementation the engine and
  * requires a capability to be feature-detected before anything rests on it. The probe runs on the
@@ -84,7 +84,7 @@ async function probePlatform() {
   );
 
   const encoder = new TextEncoder();
-  const bytes = encoder.encode('atlas-platform-capability-probe');
+  const bytes = encoder.encode('platform-capability-probe');
   const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
   let ed25519 = false;
 
@@ -117,9 +117,9 @@ async function probePlatform() {
   // Every such control is data rather than an algorithm. LDML part 3 says number patterns may carry
   // LRM, RLM and ALM, and the release ships them inside the symbols themselves: the Arabic minus
   // sign is U+061C followed by the hyphen, the Latin-digit one is U+200E followed by it, and the
-  // Arabic currency pattern opens with U+200F. Atlas builds no numeric text of its own and inserts
-  // none of these, so a control reaches a page only because an engine emitted it out of whatever
-  // release that engine carries.
+  // Arabic currency pattern opens with U+200F. Equator builds no numeric text of its own and
+  // inserts none of these, so a control reaches a page only because an engine emitted it out of
+  // whatever release that engine carries.
   //
   // Which is why the row measures it. A server emitting one set and a browser emitting another
   // differ by characters nobody can see, inside a string this project server-renders and the
@@ -303,7 +303,7 @@ assert.deepEqual(nodeEvidence.localeProfiles, {
 
 const capabilityServer = createServer((_request, response) => {
   response.setHeader('Content-Type', 'text/html; charset=utf-8');
-  response.end('<!doctype html><title>Atlas capability probe</title>');
+  response.end('<!doctype html><title>Equator capability probe</title>');
 });
 
 await new Promise((resolveListen, rejectListen) => {
@@ -339,7 +339,7 @@ try {
       browser = await row.browserType.launch({ headless: true });
     } catch (error) {
       throw new Error(
-        `${row.label} could not start for the Atlas platform capability row. ` +
+        `${row.label} could not start for the Equator platform capability row. ` +
           `Install the pinned browser engines with "pnpm exec playwright install chromium firefox webkit" and retry. ` +
           `Original error: ${error instanceof Error ? error.message : String(error)}`,
         { cause: error },
@@ -422,7 +422,7 @@ const numericControlEvidence = Object.entries(nodeEvidence.formats).map(
 
 process.stdout.write(
   [
-    `Atlas platform capability rows verified against Node ${process.version}.`,
+    `Equator platform capability rows verified against Node ${process.version}.`,
     `Numeric direction controls, agreed by every row above, as code-point index and value: ${numericControlEvidence.join('; ')}.`,
     ...browserResults.flatMap((result) => [
       `${result.label} ${result.version}: native formatting differences=${JSON.stringify(result.formatDifferences)}${result.formatDifferencesReviewed ? ' (reviewed)' : ' (uncharacterized; record after review)'}.`,

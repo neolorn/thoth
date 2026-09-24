@@ -13,14 +13,14 @@ Fixes are released on the current minor version. Older versions do not receive s
 Report vulnerabilities privately, by either route:
 
 - Email [security@neolorn.com](mailto:security@neolorn.com).
-- Use [GitHub's private vulnerability reporting](https://github.com/neolorn/atlas/security/advisories/new).
+- Use [GitHub's private vulnerability reporting](https://github.com/neolorn/equator/security/advisories/new).
 
 Do not open a public issue, discussion, or pull request for a vulnerability.
 
 Include:
 
 - a description of the issue and its impact;
-- the versions of `@neolorn/atlas` and `@neolorn/atlas-toolkit` affected;
+- the versions of `@neolorn/equator` and `@neolorn/equator-toolkit` affected;
 - steps to reproduce, with the catalog, configuration, or route involved where relevant;
 - whether the issue affects the browser runtime, server rendering, or the toolkit at build time.
 
@@ -28,9 +28,9 @@ You will receive an acknowledgement, and you will be kept informed while the rep
 
 ## Scope
 
-Atlas treats translated content as untrusted data. The following are security issues:
+Equator treats translated content as untrusted data. The following are security issues:
 
-- catalog content that executes code, imports modules, compiles a template, or otherwise gains the privileges of Atlas code;
+- catalog content that executes code, imports modules, compiles a template, or otherwise gains the privileges of Equator code;
 - markup or script reaching the page through a message, a slot, or a formatted value;
 - a bidirectional or Unicode sequence that changes how rendered text reads;
 - a compiled artifact that passes an identity, compatibility, integrity, or resource check it should fail, or a check that can be bypassed;
@@ -41,8 +41,8 @@ Atlas treats translated content as untrusted data. The following are security is
 
 The following are out of scope:
 
-- defects without a security consequence, which are ordinary [bug reports](https://github.com/neolorn/atlas/issues/new/choose);
-- vulnerabilities in Angular, Node.js, or other dependencies, unless Atlas is what exposes them; report those to the project that owns them;
+- defects without a security consequence, which are ordinary [bug reports](https://github.com/neolorn/equator/issues/new/choose);
+- vulnerabilities in Angular, Node.js, or other dependencies, unless Equator is what exposes them; report those to the project that owns them;
 - versions outside the [supported ranges](docs/reference/compatibility.md).
 
 ## Disclosure

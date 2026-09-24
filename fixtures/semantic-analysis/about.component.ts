@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 
 @Component({
-  selector: 'atlas-about-probe',
+  selector: 'about-probe',
   standalone: true,
   template: '<p>About</p>',
 })

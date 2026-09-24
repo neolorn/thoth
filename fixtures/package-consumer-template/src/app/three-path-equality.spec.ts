@@ -17,19 +17,19 @@ import {
   type Routes,
 } from '@angular/router';
 import { filter, firstValueFrom } from 'rxjs';
-import { Localization, withRouting } from '@neolorn/atlas';
+import { Localization, withRouting } from '@neolorn/equator';
 import {
   localizedRouteTable,
   provideLocalizedRouter,
-} from '@neolorn/atlas/router';
-import { provideLocalizationTesting } from '@neolorn/atlas/testing';
+} from '@neolorn/equator/router';
+import { provideLocalizationTesting } from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
 /**
@@ -46,7 +46,7 @@ import { routePolicy, appRouteProjection } from './localization.routes';
  * The third had no delocalization on it. `navigateByUrl` is `parseUrl`, then
  * `urlHandlingStrategy.merge`, then `scheduleNavigation`; it consults no `LocationStrategy` at any
  * point. So a prefixed address went to the matcher prefixed, and what it found was a *locale
- * branch*: an entry Atlas derives from the route projection so that `@angular/ssr` has an address
+ * branch*: an entry Equator derives from the route projection so that `@angular/ssr` has an address
  * to walk when it prerenders. A branch carries enough to look renderable. It does not carry the
  * route's `canActivate`, its `resolve`, its `data`, its `title`, or its `providers`, because none
  * of those are addresses.
@@ -189,11 +189,11 @@ type Door = 'canonical' | 'browser-supplied' | 'programmatic-localized';
  * and the equality would be measuring the locale instead. ar-EG is committed before the Router
  * moves in all three cases, and the door is then the only variable left.
  *
- * **Stated twice, and the duplication is the test environment's rather than Atlas's.** In a browser
- * there is one address and everything reads it. Under the unit-test builder there are two:
+ * **Stated twice, and the duplication is the test environment's rather than Equator's.** In a
+ * browser there is one address and everything reads it. Under the unit-test builder there are two:
  * `PlatformLocation` is Angular's `FakeNavigationPlatformLocation`, whose start URL comes from
- * `MOCK_PLATFORM_LOCATION_CONFIG` and which knows nothing about jsdom's `history`, and that is
- * what the `LocationStrategy` reads. Atlas's `url` locale source reads `document.location` instead,
+ * `MOCK_PLATFORM_LOCATION_CONFIG` and which knows nothing about jsdom's `history`, and that is what
+ * the `LocationStrategy` reads. Equator's `url` locale source reads `document.location` instead,
  * because on the browser platform that is the address, and `PlatformLocation` is consulted only on
  * the server where no `document.location` exists. Set only one and the two halves of door 2
  * disagree: measured, `history` alone left the Router at `/` with the locale correct, and the mock
@@ -213,7 +213,7 @@ afterEach(() => {
  * The Router's initial navigation, awaited.
  *
  * `initialNavigation()` reads `Location.path()`, which is `LocationStrategy.path()`, which is
- * Atlas's delocalizing one, so this is door 2 driven by the Router itself rather than by the test
+ * Equator's delocalizing one, so this is door 2 driven by the Router itself rather than by the test
  * handing it an address. It returns void and navigates asynchronously, so the outcome has to be
  * taken off the event stream.
  */
@@ -253,7 +253,7 @@ interface Arrival {
  * branches first, which is the position from which a branch that still matched would win the
  * address before the canonical layer was consulted.
  *
- * Registering them twice is the point rather than a flaw. The branches Atlas supplies are still
+ * Registering them twice is the point rather than a flaw. The branches Equator supplies are still
  * there, behind the canonical layer; these are the same entries in the position the ordering claim
  * says is safe. If a branch ever stops declining, this is the case that goes red first, and it goes
  * red for the reason the claim exists.
@@ -285,7 +285,7 @@ async function arriveAtSecond(
       // The other half of the address. See START above.
       {
         provide: MOCK_PLATFORM_LOCATION_CONFIG,
-        useValue: { startUrl: `https://atlas.example${START[door]}` },
+        useValue: { startUrl: `https://site.example${START[door]}` },
       },
       // The application-wide instance the route's own `providers` must shadow.
       {
@@ -294,14 +294,14 @@ async function arriveAtSecond(
       },
       // Before `provideLocalizedRouter`, which is what makes it the other ordering.
       ...(ordering === 'branches-first' ? [branchesFirst()] : []),
-      provideLocalizedRouter(routes, { origin: 'https://atlas.example' }),
+      provideLocalizedRouter(routes, { origin: 'https://site.example' }),
       provideLocalizationTesting(
         {
           configuration,
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
           routeProjection,
         },
         withRouting({ policy: routePolicy, projection: appRouteProjection }),
@@ -384,7 +384,7 @@ describe('one route reached through each of the three doors', () => {
       'branches-first',
     );
 
-    // The flip took effect. Atlas's own composition puts the pathless canonical parent first, so
+    // The flip took effect. Equator's own composition puts the pathless canonical parent first, so
     // its head is `''`; with the branches ahead the head is a locale prefix. Asserted before the
     // equality, because an equality between two identical configurations is not the claim.
     expect(canonicalHead).toBe('');

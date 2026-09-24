@@ -4,7 +4,7 @@ import { createLocaleRequestHandler } from '../http/src/handler.js';
 import {
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /**
  * 7.3, written before the handler that can violate it.
@@ -12,10 +12,10 @@ import {
  * These two behaviours are requirements on code that did not exist when they were written, which is
  * the whole reason they are written first: a requirement on absent code has nothing to regress
  * against, so it cannot be added later "once the shape is clear" without becoming a description of
- * whatever was built. Atlas has never emitted a `Set-Cookie` at all, because
+ * whatever was built. Equator has never emitted a `Set-Cookie` at all, because
  * `cookieStore().write` returns immediately outside a browser and says why: setting a cookie on
  * the server means owning
- * the response, and until this handler Atlas did not. Owning it is what makes both of these
+ * the response, and until this handler Equator did not. Owning it is what makes both of these
  * possible to get wrong.
  *
  * Neither is invented here. next-intl writes the cookie only when the locale differs, and excludes
@@ -38,8 +38,8 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'atlas-route-projection/1',
-    identity: 'sha256-AtlasBuiltLocaleAddressesTestIdentity012345',
+    profile: 'equator-route-projection/1',
+    identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
       { id: 'route:second', path: 'second', parameterNames: [] },
@@ -54,7 +54,7 @@ const handler = createLocaleRequestHandler({
   policy: POLICY,
   projection: PROJECTION,
   cache: { successMaxAge: 600, permanentRedirectMaxAge: 86_400 },
-  cookie: { name: 'atlas-locale' },
+  cookie: { name: 'equator-locale' },
   render: ({ locale }) =>
     new Response(`<!doctype html><html lang="${locale}"></html>`, {
       headers: { 'content-type': 'text/html' },
@@ -62,14 +62,14 @@ const handler = createLocaleRequestHandler({
 });
 
 const get = (path: string, headers: Record<string, string> = {}) =>
-  handler(new Request(`https://atlas.example${path}`, { headers }));
+  handler(new Request(`https://site.example${path}`, { headers }));
 
 describe('the cookie the handler writes', () => {
   it('writes nothing when the request already carries the locale it resolved to', async () => {
     // The visitor is on `/ar-eg` with `ar-EG` remembered. There is nothing to remember that is not
     // already remembered, and a `Set-Cookie` here is a header on a response that did not need one.
     const unchanged = await get('/ar-eg/second', {
-      cookie: 'atlas-locale=ar-EG',
+      cookie: 'equator-locale=ar-EG',
     });
 
     expect(unchanged.headers.get('set-cookie')).toBeNull();
@@ -79,11 +79,11 @@ describe('the cookie the handler writes', () => {
     // The control for the case above, so "writes nothing" is not passing for a handler that never
     // writes at all.
     const changed = await get('/en-us/second', {
-      cookie: 'atlas-locale=ar-EG',
+      cookie: 'equator-locale=ar-EG',
     });
 
     expect(changed.headers.get('set-cookie')).toMatch(
-      /(^|;\s*)atlas-locale=en-US(;|$)/u,
+      /(^|;\s*)equator-locale=en-US(;|$)/u,
     );
   });
 
@@ -91,7 +91,7 @@ describe('the cookie the handler writes', () => {
     const first = await get('/ar-eg/second');
 
     expect(first.headers.get('set-cookie')).toMatch(
-      /(^|;\s*)atlas-locale=ar-EG(;|$)/u,
+      /(^|;\s*)equator-locale=ar-EG(;|$)/u,
     );
   });
 });
@@ -107,7 +107,7 @@ describe('what a background request may change', () => {
    */
   it('does not let a prefetch change the stored preference', async () => {
     const prefetched = await get('/en-us/second', {
-      cookie: 'atlas-locale=ar-EG',
+      cookie: 'equator-locale=ar-EG',
       'sec-fetch-dest': 'empty',
     });
 
@@ -117,7 +117,7 @@ describe('what a background request may change', () => {
   it('does not let a prerender or a subresource change it either', async () => {
     for (const destination of ['document', 'iframe', 'empty', 'script']) {
       const response = await get('/en-us/second', {
-        cookie: 'atlas-locale=ar-EG',
+        cookie: 'equator-locale=ar-EG',
         'sec-fetch-dest': destination,
         'sec-purpose': 'prefetch;prerender',
       });
@@ -130,13 +130,13 @@ describe('what a background request may change', () => {
   it('still writes for a real navigation, which is the control', async () => {
     // Without this the guard above passes for a handler that stopped writing cookies entirely.
     const navigation = await get('/en-us/second', {
-      cookie: 'atlas-locale=ar-EG',
+      cookie: 'equator-locale=ar-EG',
       'sec-fetch-dest': 'document',
       'sec-fetch-mode': 'navigate',
     });
 
     expect(navigation.headers.get('set-cookie')).toMatch(
-      /(^|;\s*)atlas-locale=en-US(;|$)/u,
+      /(^|;\s*)equator-locale=en-US(;|$)/u,
     );
   });
 });

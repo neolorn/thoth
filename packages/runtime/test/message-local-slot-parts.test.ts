@@ -7,10 +7,10 @@ import type {
   MessageHandle,
   RuntimeRichSlotKindBinding,
   RuntimeRichSlotKindDescriptor,
-} from '@neolorn/atlas/core';
-import { defineAtlasExtensionRegistry } from '../../toolkit/src/extensions.js';
-import { parseAtlasMessage } from '../../toolkit/src/message-format.js';
-import type { AtlasMessageSemanticModel } from '../../toolkit/src/message-format.js';
+} from '@neolorn/equator/core';
+import { defineExtensionRegistry } from '../../toolkit/src/extensions.js';
+import { parseMessageSemanticModel } from '../../toolkit/src/message-format.js';
+import type { MessageSemanticModel } from '../../toolkit/src/message-format.js';
 import type { CompiledCatalog } from '../src/catalog-runtime.js';
 import {
   FormatterCache,
@@ -39,7 +39,7 @@ import { RuntimeExtensions } from '../src/extensions.js';
  */
 
 const REGISTRY = (() => {
-  const registry = defineAtlasExtensionRegistry([
+  const registry = defineExtensionRegistry([
     {
       kind: 'rich-slot-kind',
       id: 'feature:badge',
@@ -71,8 +71,8 @@ const projection: RuntimeRichSlotKindBinding = Object.freeze({
       .join('')}`,
 });
 
-function parse(source: string): AtlasMessageSemanticModel {
-  const parsed = parseAtlasMessage(source);
+function parse(source: string): MessageSemanticModel {
+  const parsed = parseMessageSemanticModel(source);
   if (!parsed.ok) {
     throw new Error(
       `The message under test did not parse: ${parsed.diagnostics
@@ -84,7 +84,7 @@ function parse(source: string): AtlasMessageSemanticModel {
 }
 
 function catalogFor(
-  semantics: AtlasMessageSemanticModel,
+  semantics: MessageSemanticModel,
   locale: string,
 ): CompiledCatalog {
   const body =
@@ -110,9 +110,9 @@ function catalogFor(
     outputParts: 64,
   };
   return {
-    profile: 'atlas-compiled-ir/1',
-    generatedAbi: 'atlas-generated/1',
-    standardsProfile: 'atlas-1',
+    profile: 'equator-compiled-ir/1',
+    generatedAbi: 'equator-generated/1',
+    standardsProfile: 'equator-1',
     key: { providerId: 'slot', scopeId: 'slot', catalogLocale: locale },
     applicationContractFingerprint: 'test',
     semanticRegistryFingerprint: 'test',
@@ -143,7 +143,7 @@ function catalogFor(
 
 function evaluateParts(source: string, locale = 'en-US'): LocalizedParts {
   const handle: MessageHandle = {
-    generatedAbi: 'atlas-generated/1',
+    generatedAbi: 'equator-generated/1',
     providerId: 'slot',
     scopeId: 'slot',
     messageId: 'subject',

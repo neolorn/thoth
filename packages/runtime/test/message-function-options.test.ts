@@ -4,19 +4,19 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import type {
-  AtlasMessageExpression,
-  AtlasMessageSemanticModel,
-  AtlasPatternMessageSemanticModel,
+  MessageExpression,
+  MessageSemanticModel,
+  PatternMessageSemanticModel,
 } from '../../toolkit/src/message-format.js';
 import type { CompiledInputContract } from '../src/catalog-runtime.js';
 import {
-  ATLAS_MESSAGE_OPTION_RULES,
-  ATLAS_MESSAGE_FUNCTION_OPTIONS,
-  atlasDateTimeFormatOptions,
-  atlasNumberFormatOptions,
-  atlasPlatformValues,
-  type AtlasDigitSizeRule,
-  type AtlasMessageOptionRule,
+  MESSAGE_OPTION_RULES,
+  MESSAGE_FUNCTION_OPTIONS,
+  dateTimeFormatOptions,
+  numberFormatOptions,
+  supportedPlatformValues,
+  type DigitSizeRule,
+  type MessageOptionRule,
 } from '../src/message-function-options.js';
 import { parse, render, renderSemantics } from './message-harness.js';
 
@@ -70,12 +70,10 @@ describe('the option table', () => {
   );
 
   it('declares every option each function has and no others', () => {
-    for (const [name, profile] of Object.entries(
-      ATLAS_MESSAGE_FUNCTION_OPTIONS,
-    )) {
+    for (const [name, profile] of Object.entries(MESSAGE_FUNCTION_OPTIONS)) {
       for (const option of profile.accepts) {
         expect(
-          ATLAS_MESSAGE_OPTION_RULES[option],
+          MESSAGE_OPTION_RULES[option],
           `:${name} accepts ${option} and no rule says what a valid value of it is`,
         ).toBeDefined();
       }
@@ -86,7 +84,7 @@ describe('the option table', () => {
         ...profile.excludedFromResolved,
       ]) {
         expect(
-          ATLAS_MESSAGE_OPTION_RULES[option],
+          MESSAGE_OPTION_RULES[option],
           `:${name} names ${option} in a discard list and no rule defines it`,
         ).toBeDefined();
       }
@@ -116,13 +114,13 @@ describe('the option table', () => {
         return false;
       }
     };
-    const digitRules = Object.entries(ATLAS_MESSAGE_OPTION_RULES).filter(
-      (entry): entry is [string, AtlasDigitSizeRule] =>
+    const digitRules = Object.entries(MESSAGE_OPTION_RULES).filter(
+      (entry): entry is [string, DigitSizeRule] =>
         entry[1].kind === 'digit-size',
     );
     expect(digitRules.length).toBeGreaterThan(0);
     for (const [option, rule] of digitRules) {
-      // `add`, `subtract` and `fractionDigits` are Atlas's or the specification's own names; only
+      // `add`, `subtract` and `fractionDigits` are Equator's or the specification's own names; only
       // the five that reach `Intl` under their own name can be probed against it.
       if (!(option in new Intl.NumberFormat().resolvedOptions())) continue;
       expect(accepts(option, rule.minimum), `${option} minimum`).toBe(true);
@@ -148,32 +146,32 @@ describe('the option table', () => {
    * would make every value of that option a refusal.
    */
   it('reads a platform vocabulary the platform actually publishes', () => {
-    const platformRules = Object.entries(ATLAS_MESSAGE_OPTION_RULES).filter(
+    const platformRules = Object.entries(MESSAGE_OPTION_RULES).filter(
       ([, rule]) => rule.kind === 'platform',
     );
     expect(platformRules.length).toBeGreaterThan(0);
     for (const [option, rule] of platformRules) {
       if (rule.kind !== 'platform') throw new Error('rule shape changed');
-      expect(atlasPlatformValues(rule.key).size, option).toBeGreaterThan(0);
+      expect(supportedPlatformValues(rule.key).size, option).toBeGreaterThan(0);
     }
   });
 
   /**
    * Every value the date half of the table declares, through the mapping, into the constructor that
    * will receive it. This is the check the compiler runs on one written expression, asked of the
-   * whole vocabulary at once: a declared value that `Intl.DateTimeFormat` will not take is a message
-   * Atlas accepts and throws on, which is the failure the specification's *"What compiles, renders"*
-   * clause exists to make impossible.
+   * whole vocabulary at once: a declared value that `Intl.DateTimeFormat` will not take is a
+   * message Equator accepts and throws on, which is the failure the specification's *"What
+   * compiles, renders"* clause exists to make impossible.
    */
   it('builds a formatter for every value of every date option', () => {
-    const valuesOf = (rule: AtlasMessageOptionRule): readonly string[] => {
+    const valuesOf = (rule: MessageOptionRule): readonly string[] => {
       switch (rule.kind) {
         case 'enumerated':
           return rule.values;
         case 'boolean':
           return ['true', 'false'];
         case 'platform':
-          return [...atlasPlatformValues(rule.key)];
+          return [...supportedPlatformValues(rule.key)];
         case 'constructed':
           // `input` is not a zone; it names where to find one, and it is answered before the
           // formatter is built.
@@ -183,15 +181,13 @@ describe('the option table', () => {
       }
     };
     let built = 0;
-    for (const [name, profile] of Object.entries(
-      ATLAS_MESSAGE_FUNCTION_OPTIONS,
-    )) {
+    for (const [name, profile] of Object.entries(MESSAGE_FUNCTION_OPTIONS)) {
       if (profile.operand !== 'date-time') continue;
       for (const option of profile.accepts) {
-        const rule = ATLAS_MESSAGE_OPTION_RULES[option];
+        const rule = MESSAGE_OPTION_RULES[option];
         if (rule === undefined) throw new Error(option + ' has no rule');
         for (const value of valuesOf(rule)) {
-          const options = atlasDateTimeFormatOptions(name, { [option]: value });
+          const options = dateTimeFormatOptions(name, { [option]: value });
           expect(
             () =>
               new Intl.DateTimeFormat('en', { timeZone: 'UTC', ...options }),
@@ -210,12 +206,12 @@ describe('the option table', () => {
    * wrote the opposite: accepted, carried, and read as its own negation.
    */
   it('converts hour12 to the boolean Intl reads', () => {
-    expect(
-      atlasDateTimeFormatOptions('time', { hour12: 'false' }),
-    ).toMatchObject({ hour12: false });
-    expect(
-      atlasDateTimeFormatOptions('time', { hour12: 'true' }),
-    ).toMatchObject({ hour12: true });
+    expect(dateTimeFormatOptions('time', { hour12: 'false' })).toMatchObject({
+      hour12: false,
+    });
+    expect(dateTimeFormatOptions('time', { hour12: 'true' })).toMatchObject({
+      hour12: true,
+    });
   });
 
   /**
@@ -224,7 +220,7 @@ describe('the option table', () => {
    * numeric function, but a compiled artifact this runtime did not compile can.
    */
   it('keeps a date option out of Intl.NumberFormat', () => {
-    const options = atlasNumberFormatOptions('number', {
+    const options = numberFormatOptions('number', {
       timeZone: 'UTC',
       minimumFractionDigits: '2',
     });
@@ -235,10 +231,10 @@ describe('the option table', () => {
   /**
    * The `roundingIncrement` list is fifteen values the specification spells out, and this asks
    * `Intl` whether they are the fifteen it takes. If CLDR ever adds one, this fails rather than
-   * Atlas quietly refusing an increment the platform supports.
+   * Equator quietly refusing an increment the platform supports.
    */
   it('lists exactly the rounding increments Intl accepts', () => {
-    const rule = ATLAS_MESSAGE_OPTION_RULES['roundingIncrement'];
+    const rule = MESSAGE_OPTION_RULES['roundingIncrement'];
     if (rule?.kind !== 'enumerated') throw new Error('rule shape changed');
     const takes = (value: number): boolean => {
       try {
@@ -279,7 +275,7 @@ describe('numeric options at render', () => {
   });
 
   it('fixes currency fraction digits with the option the specification gives it', () => {
-    // `fractionDigits` sets both ends at once. Atlas ignored it and took the two names :currency
+    // `fractionDigits` sets both ends at once. Equator ignored it and took the two names :currency
     // does not have, so `fractionDigits=0` printed the cents it was asked to drop.
     expect(
       render('{42.5 :currency currency=USD fractionDigits=0}', NONE, {}),
@@ -349,9 +345,9 @@ describe('numeric options in IR the compiler did not produce', () => {
     source: string,
     from: string,
     to: string,
-  ): AtlasMessageSemanticModel => {
-    const model = parse(source) as AtlasPatternMessageSemanticModel;
-    const expression = model.pattern[0] as AtlasMessageExpression;
+  ): MessageSemanticModel => {
+    const model = parse(source) as PatternMessageSemanticModel;
+    const expression = model.pattern[0] as MessageExpression;
     const options = { ...expression.function?.options } as Record<
       string,
       unknown
@@ -364,7 +360,7 @@ describe('numeric options in IR the compiler did not produce', () => {
         {
           ...expression,
           function: { ...expression.function, options },
-        } as AtlasMessageExpression,
+        } as MessageExpression,
       ]),
     };
   };

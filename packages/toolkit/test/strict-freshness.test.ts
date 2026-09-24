@@ -18,18 +18,18 @@ import { resolve } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { atlasDiagnosticsBlock } from '../src/diagnostics.js';
-import { checkAtlasProject, generateAtlasProject } from '../src/index.js';
-import { initializeAtlasProject } from '../src/project-host.js';
+import { diagnosticsBlock } from '../src/diagnostics.js';
+import { checkProject, generateProject } from '../src/index.js';
+import { initializeProject } from '../src/project-host.js';
 
 /**
  * Whether the gate can fail at all.
  *
- * Everything else here is verified by `atlas check` or by the `verify` scripts, and until this
- * existed neither could fail on the things the rest of it depends on. `atlas check --require-complete` returned
- * exit 0 and `"status": "success"` while carrying `ATL1310` at `severity: error`; `atlas generate`
- * did the same on the same input. A gate that cannot report a failure is not a weaker gate, it is
- * a claim nobody is holding.
+ * Everything else here is verified by `equator check` or by the `verify` scripts, and until this
+ * existed neither could fail on the things the rest of it depends on.
+ * `equator check --require-complete` returned exit 0 and `"status": "success"` while carrying
+ * `EQ1310` at `severity: error`; `equator generate` did the same on the same input. A gate that
+ * cannot report a failure is not a weaker gate, it is a claim nobody is holding.
  *
  * These are the criteria for 0.1 and 0.2, written so that the fix each one warns against fails
  * them.
@@ -64,7 +64,7 @@ async function createProject(prefix: string): Promise<string> {
     'package.json',
     `${JSON.stringify(
       {
-        name: '@example/atlas-gate-fixture',
+        name: '@example/gate-fixture',
         version: '0.0.0',
         private: true,
         type: 'module',
@@ -73,7 +73,7 @@ async function createProject(prefix: string): Promise<string> {
       2,
     )}\n`,
   );
-  const initialized = await initializeAtlasProject({
+  const initialized = await initializeProject({
     project: root,
     configuration: {
       sourceLocale: 'en-US',
@@ -86,14 +86,14 @@ async function createProject(prefix: string): Promise<string> {
     [
       'en-US',
       [
-        '  app-title: Atlas gate fixture',
+        '  app-title: Equator gate fixture',
         '  recovery.unavailable: Localization is temporarily unavailable.',
       ],
     ],
     [
       'ar-EG',
       [
-        '  app-title: تطبيق Atlas',
+        '  app-title: تطبيق Equator',
         '  recovery.unavailable: الترجمة غير متاحة مؤقتًا.',
       ],
     ],
@@ -136,17 +136,15 @@ async function createProject(prefix: string): Promise<string> {
 }
 describe('strict freshness is an opt-in, and both halves are asserted', () => {
   it('advises on stale output by default and blocks on it under the opt-in', async () => {
-    const root = await createProject('atlas-freshness-');
-    const generated = await generateAtlasProject({ project: root });
+    const root = await createProject('freshness-');
+    const generated = await generateProject({ project: root });
     expect(generated.ok).toBe(true);
 
-    const fresh = await checkAtlasProject({ project: root });
+    const fresh = await checkProject({ project: root });
     expect(fresh.ok).toBe(true);
     if (!fresh.ok) return;
     expect(fresh.value.freshness.fresh).toBe(true);
-    expect(fresh.diagnostics.some(({ code }) => code === 'ATL1704')).toBe(
-      false,
-    );
+    expect(fresh.diagnostics.some(({ code }) => code === 'EQ1704')).toBe(false);
 
     // Authoring a message without regenerating is the ordinary way output goes stale, and the
     // reason friendly mode must not fail on it.
@@ -155,7 +153,7 @@ describe('strict freshness is an opt-in, and both halves are asserted', () => {
       'i18n/shell/en-US.yaml',
       [
         'messages:',
-        '  app-title: Atlas gate fixture',
+        '  app-title: Equator gate fixture',
         '  added-later: Added after generation',
         '  recovery.unavailable: Localization is temporarily unavailable.',
         '',
@@ -165,29 +163,29 @@ describe('strict freshness is an opt-in, and both halves are asserted', () => {
     // Off: the advisory is raised, and it does not block. Asserting the off case is the point:
     // a flag that is parsed and never consulted makes both halves pass unless this half pins the
     // advisory to `warning`.
-    const advisory = await checkAtlasProject({ project: root });
+    const advisory = await checkProject({ project: root });
     expect(advisory.ok).toBe(true);
     if (!advisory.ok) return;
     expect(advisory.value.freshness.fresh).toBe(false);
-    const advised = advisory.diagnostics.find(({ code }) => code === 'ATL1704');
+    const advised = advisory.diagnostics.find(({ code }) => code === 'EQ1704');
     expect(advised?.severity).toBe('warning');
-    expect(atlasDiagnosticsBlock(advisory.diagnostics)).toBe(false);
+    expect(diagnosticsBlock(advisory.diagnostics)).toBe(false);
 
     // On: same input, same finding, now blocking.
-    const strict = await checkAtlasProject({
+    const strict = await checkProject({
       project: root,
       requireFreshOutput: true,
     });
     expect(strict.ok).toBe(true);
     if (!strict.ok) return;
-    const blocked = strict.diagnostics.find(({ code }) => code === 'ATL1704');
+    const blocked = strict.diagnostics.find(({ code }) => code === 'EQ1704');
     expect(blocked?.severity).toBe('error');
-    expect(atlasDiagnosticsBlock(strict.diagnostics)).toBe(true);
+    expect(diagnosticsBlock(strict.diagnostics)).toBe(true);
   });
 
   it('is separate from completeness, so neither switch implies the other', async () => {
-    const root = await createProject('atlas-freshness-orthogonal-');
-    expect((await generateAtlasProject({ project: root })).ok).toBe(true);
+    const root = await createProject('freshness-orthogonal-');
+    expect((await generateProject({ project: root })).ok).toBe(true);
     // Added to *both* locales, so the catalogs stay complete and staleness is the only thing left
     // for either switch to react to. Adding it to the source alone would make the check fail on
     // completeness, which proves nothing about freshness.
@@ -196,7 +194,7 @@ describe('strict freshness is an opt-in, and both halves are asserted', () => {
       'i18n/shell/ar-EG.yaml',
       [
         'messages:',
-        '  app-title: تطبيق Atlas',
+        '  app-title: تطبيق Equator',
         '  added-later: أضيف بعد التوليد',
         '  recovery.unavailable: الترجمة غير متاحة مؤقتًا.',
         '',
@@ -207,7 +205,7 @@ describe('strict freshness is an opt-in, and both halves are asserted', () => {
       'i18n/shell/en-US.yaml',
       [
         'messages:',
-        '  app-title: Atlas gate fixture',
+        '  app-title: Equator gate fixture',
         '  added-later: Added after generation',
         '  recovery.unavailable: Localization is temporarily unavailable.',
         '',
@@ -217,14 +215,14 @@ describe('strict freshness is an opt-in, and both halves are asserted', () => {
     // Completeness alone must not block on staleness. If freshness were folded into one strictness
     // switch, this would fail, which is what makes the two-switch shape checkable rather than a
     // stated intention.
-    const completeOnly = await checkAtlasProject({
+    const completeOnly = await checkProject({
       project: root,
       requireCompleteTargets: true,
     });
     expect(completeOnly.ok).toBe(true);
     if (!completeOnly.ok) return;
     expect(
-      completeOnly.diagnostics.find(({ code }) => code === 'ATL1704')?.severity,
+      completeOnly.diagnostics.find(({ code }) => code === 'EQ1704')?.severity,
     ).toBe('warning');
   });
 });

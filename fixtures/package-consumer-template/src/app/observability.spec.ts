@@ -12,13 +12,13 @@ import {
   withOverlayLocale,
   type LocalizationObservabilityEvent,
   type LocalizationObservabilitySink,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { messages, providerId, scopeId } from '#i18n/shell';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 const scope = Object.freeze({ providerId, scopeId });
 
@@ -27,7 +27,7 @@ function setup() {
     configuration,
     catalogSet,
     catalogLoaders,
-    extensions: atlasRuntimeExtensions,
+    extensions: runtimeExtensions,
   } as const;
 }
 
@@ -195,7 +195,7 @@ describe('Angular observability boundaries', () => {
     const events: LocalizationObservabilityEvent[] = [];
     const transferState = new TransferState();
     transferState.set(
-      makeStateKey<unknown>('@neolorn/atlas:localization-state/1'),
+      makeStateKey<unknown>('@neolorn/equator:localization-state/1'),
       {
         profile: 'hostile-transfer-secret',
         primaryLocale: 'ar-EG',

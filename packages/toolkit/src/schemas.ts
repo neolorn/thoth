@@ -1,8 +1,8 @@
 import {
-  ATLAS_MESSAGE_NAME_CHARACTERS,
-  ATLAS_MESSAGE_NAME_PATTERN,
+  MESSAGE_NAME_CHARACTERS,
+  MESSAGE_NAME_PATTERN,
 } from './message-format-syntax.js';
-import { ATLAS_RESOURCE_LIMITS } from './resource-limits.js';
+import { RESOURCE_LIMITS } from './resource-limits.js';
 
 const localeTextSchema = {
   type: 'string',
@@ -156,26 +156,26 @@ const familySchema = {
 } as const;
 
 /**
- * The JSON Schema for `atlas.config.json`.
+ * The JSON Schema for `equator.config.json`.
  *
  * Published so an editor can validate and complete the file as it is typed, and so a build script
  * can check one before running anything. It is the same schema the parser uses, so what an editor
- * accepts and what Atlas accepts cannot drift apart.
+ * accepts and what Equator accepts cannot drift apart.
  */
-export const ATLAS_CONFIGURATION_SCHEMA = Object.freeze({
+export const CONFIGURATION_SCHEMA = Object.freeze({
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  title: 'Atlas project configuration',
+  title: 'Equator project configuration',
   type: 'object',
   additionalProperties: false,
   required: ['schemaVersion', 'sourceLocale', 'defaultLocale', 'locales'],
   // Every settable property carries a `description`, and it is not decoration.
   //
-  // `atlas init`'s option table is generated from this schema by `tools/generate-cli-options.mjs`,
-  // and `--help` prints these lines. A settable property without one fails that generator, so the
-  // install line states what the configuration accepts because it is reading the thing that
-  // decides rather than a second list of it. They ship too, this constant is staged as
-  // `schemas/configuration.v1.schema.json`, so an editor's JSON Schema tooling shows the same
-  // sentence a consumer reads in `--help`.
+  // `equator init`'s option table is generated from this schema by
+  // `tools/generate-cli-options.mjs`, and `--help` prints these lines. A settable property without
+  // one fails that generator, so the install line states what the configuration accepts because it
+  // is reading the thing that decides rather than a second list of it. They ship too, this constant
+  // is staged as `schemas/configuration.v1.schema.json`, so an editor's JSON Schema tooling shows
+  // the same sentence a consumer reads in `--help`.
   //
   // `description` is a standard JSON Schema annotation and Ajv runs `strict: true`, so a
   // non-standard keyword here would throw at compile time. That is why the *flag spelling* lives in
@@ -190,12 +190,12 @@ export const ATLAS_CONFIGURATION_SCHEMA = Object.freeze({
     defaultLocale: {
       ...localeTextSchema,
       description:
-        'The locale served when a request asks for none Atlas supports.',
+        'The locale served when a request asks for none Equator supports.',
     },
     locales: {
       type: 'array',
       minItems: 1,
-      maxItems: ATLAS_RESOURCE_LIMITS.localesPerProject,
+      maxItems: RESOURCE_LIMITS.localesPerProject,
       uniqueItems: true,
       items: localeTextSchema,
       description: 'Every locale this project supports. Repeat for each one.',
@@ -203,7 +203,7 @@ export const ATLAS_CONFIGURATION_SCHEMA = Object.freeze({
     personNameLocales: {
       type: 'array',
       minItems: 1,
-      maxItems: ATLAS_RESOURCE_LIMITS.localesPerProject,
+      maxItems: RESOURCE_LIMITS.localesPerProject,
       uniqueItems: true,
       items: localeTextSchema,
       description:
@@ -212,7 +212,7 @@ export const ATLAS_CONFIGURATION_SCHEMA = Object.freeze({
     pseudoLocales: {
       type: 'object',
       minProperties: 1,
-      maxProperties: ATLAS_RESOURCE_LIMITS.localesPerProject,
+      maxProperties: RESOURCE_LIMITS.localesPerProject,
       propertyNames: localeTextSchema,
       additionalProperties: {
         type: 'object',
@@ -249,7 +249,7 @@ export const ATLAS_CONFIGURATION_SCHEMA = Object.freeze({
     // A time zone is not a fact about a locale at all (it belongs to the reader or to the
     // business, and Cairo is Cairo in both languages) so it stays application-wide, where a
     // consumer sets it once and per-request. Putting it here would let a configuration say
-    // "Arabic means Egypt", which is a market model Atlas would then have to defend.
+    // "Arabic means Egypt", which is a market model Equator would then have to defend.
     //
     // The values are checked for well-formedness and not for availability. `latn` and `zzzz` are
     // both well-formed `-u-` type subtags; whether this runtime has data for one is a question only
@@ -258,7 +258,7 @@ export const ATLAS_CONFIGURATION_SCHEMA = Object.freeze({
     formatting: {
       type: 'object',
       minProperties: 1,
-      maxProperties: ATLAS_RESOURCE_LIMITS.localesPerProject,
+      maxProperties: RESOURCE_LIMITS.localesPerProject,
       propertyNames: localeTextSchema,
       additionalProperties: {
         type: 'object',
@@ -289,7 +289,7 @@ export const ATLAS_CONFIGURATION_SCHEMA = Object.freeze({
     },
     // Which locales are still being translated, and why.
     //
-    // The release completeness gate (`atlas check --require-complete`) requires every locale this
+    // The release completeness gate (`equator check --require-complete`) requires every locale this
     // project ships to carry every source message. The default is that every locale is required,
     // because a locale nobody has said anything about is one somebody expects to be finished. A
     // locale named here is exempt: its findings are still reported, at `warning`, and they no
@@ -307,7 +307,7 @@ export const ATLAS_CONFIGURATION_SCHEMA = Object.freeze({
     inProgress: {
       type: 'object',
       minProperties: 1,
-      maxProperties: ATLAS_RESOURCE_LIMITS.localesPerProject,
+      maxProperties: RESOURCE_LIMITS.localesPerProject,
       propertyNames: localeTextSchema,
       additionalProperties: {
         type: 'object',
@@ -341,12 +341,12 @@ export const ATLAS_CONFIGURATION_SCHEMA = Object.freeze({
     //
     // The four CLDR parents that change the language are the reason this key exists: `hi-Latn`
     // inherits from `en-IN`, `ht` from `fr-HT`, and `nb` and `nn` from `no`. Leaving those out of
-    // the chain would be Atlas overriding pinned data on taste, so they are followed, and this is
+    // the chain would be Equator overriding pinned data on taste, so they are followed, and this is
     // where a project that disagrees says so.
     parentLocales: {
       type: 'object',
       minProperties: 1,
-      maxProperties: ATLAS_RESOURCE_LIMITS.localesPerProject,
+      maxProperties: RESOURCE_LIMITS.localesPerProject,
       propertyNames: localeTextSchema,
       additionalProperties: localeTextSchema,
       description:
@@ -355,7 +355,7 @@ export const ATLAS_CONFIGURATION_SCHEMA = Object.freeze({
     aliases: {
       type: 'object',
       minProperties: 1,
-      maxProperties: ATLAS_RESOURCE_LIMITS.localeAliasesPerProject,
+      maxProperties: RESOURCE_LIMITS.localeAliasesPerProject,
       propertyNames: {
         type: 'string',
         minLength: 1,
@@ -373,9 +373,9 @@ export const ATLAS_CONFIGURATION_SCHEMA = Object.freeze({
  * Stricter than the target schema: a source catalog is where a message's inputs and slots are
  * declared, so it carries shapes a translation does not.
  */
-export const ATLAS_SOURCE_CATALOG_SCHEMA = Object.freeze({
+export const SOURCE_CATALOG_SCHEMA = Object.freeze({
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  title: 'Atlas source catalog',
+  title: 'Equator source catalog',
   type: 'object',
   additionalProperties: false,
   required: ['messages'],
@@ -383,7 +383,7 @@ export const ATLAS_SOURCE_CATALOG_SCHEMA = Object.freeze({
     messages: {
       type: 'object',
       minProperties: 1,
-      maxProperties: ATLAS_RESOURCE_LIMITS.messagesPerCatalog,
+      maxProperties: RESOURCE_LIMITS.messagesPerCatalog,
       propertyNames: {
         type: 'string',
         pattern:
@@ -396,7 +396,7 @@ export const ATLAS_SOURCE_CATALOG_SCHEMA = Object.freeze({
     families: {
       type: 'object',
       minProperties: 1,
-      maxProperties: ATLAS_RESOURCE_LIMITS.familiesPerCatalog,
+      maxProperties: RESOURCE_LIMITS.familiesPerCatalog,
       propertyNames: {
         type: 'string',
         pattern: '^[a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*$',
@@ -412,9 +412,9 @@ export const ATLAS_SOURCE_CATALOG_SCHEMA = Object.freeze({
  * Allows a message to be present with no text, which is how an entry waiting for a translator is
  * recorded without losing the brief that came with it.
  */
-export const ATLAS_TARGET_CATALOG_SCHEMA = Object.freeze({
+export const TARGET_CATALOG_SCHEMA = Object.freeze({
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  title: 'Atlas target catalog',
+  title: 'Equator target catalog',
   type: 'object',
   additionalProperties: false,
   required: ['messages'],
@@ -422,7 +422,7 @@ export const ATLAS_TARGET_CATALOG_SCHEMA = Object.freeze({
     messages: {
       type: 'object',
       minProperties: 1,
-      maxProperties: ATLAS_RESOURCE_LIMITS.messagesPerCatalog,
+      maxProperties: RESOURCE_LIMITS.messagesPerCatalog,
       propertyNames: {
         type: 'string',
         pattern:
@@ -462,17 +462,17 @@ const extensionValueTypeSchema = {
  * adapters, and no code. A registry that validates against this is one the toolkit can read without
  * loading anything of the application's.
  */
-export const ATLAS_EXTENSION_REGISTRY_SCHEMA = Object.freeze({
+export const EXTENSION_REGISTRY_SCHEMA = Object.freeze({
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  title: 'Atlas application-local extension registry',
+  title: 'Equator application-local extension registry',
   type: 'object',
   additionalProperties: false,
   required: ['profile', 'descriptors'],
   properties: {
-    profile: { const: 'atlas-extension-registry/1' },
+    profile: { const: 'equator-extension-registry/1' },
     descriptors: {
       type: 'array',
-      maxItems: ATLAS_RESOURCE_LIMITS.extensionDescriptors,
+      maxItems: RESOURCE_LIMITS.extensionDescriptors,
       items: {
         oneOf: [
           {
@@ -492,12 +492,11 @@ export const ATLAS_EXTENSION_REGISTRY_SCHEMA = Object.freeze({
               operandType: extensionValueTypeSchema,
               options: {
                 type: 'object',
-                maxProperties:
-                  ATLAS_RESOURCE_LIMITS.extensionOptionsPerDescriptor,
+                maxProperties: RESOURCE_LIMITS.extensionOptionsPerDescriptor,
                 propertyNames: {
                   type: 'string',
-                  maxLength: ATLAS_MESSAGE_NAME_CHARACTERS,
-                  pattern: ATLAS_MESSAGE_NAME_PATTERN,
+                  maxLength: MESSAGE_NAME_CHARACTERS,
+                  pattern: MESSAGE_NAME_PATTERN,
                 },
                 additionalProperties: {
                   type: 'object',
@@ -509,7 +508,7 @@ export const ATLAS_EXTENSION_REGISTRY_SCHEMA = Object.freeze({
                     values: {
                       type: 'array',
                       minItems: 1,
-                      maxItems: ATLAS_RESOURCE_LIMITS.extensionValuesPerOption,
+                      maxItems: RESOURCE_LIMITS.extensionValuesPerOption,
                       uniqueItems: true,
                       items: {
                         anyOf: [
@@ -562,8 +561,7 @@ export const ATLAS_EXTENSION_REGISTRY_SCHEMA = Object.freeze({
               },
               options: {
                 type: 'object',
-                maxProperties:
-                  ATLAS_RESOURCE_LIMITS.extensionOptionsPerDescriptor,
+                maxProperties: RESOURCE_LIMITS.extensionOptionsPerDescriptor,
                 propertyNames: {
                   type: 'string',
                   pattern: '^[a-z][a-z0-9-]{0,63}$',
@@ -571,7 +569,7 @@ export const ATLAS_EXTENSION_REGISTRY_SCHEMA = Object.freeze({
                 additionalProperties: {
                   type: 'array',
                   minItems: 1,
-                  maxItems: ATLAS_RESOURCE_LIMITS.extensionValuesPerOption,
+                  maxItems: RESOURCE_LIMITS.extensionValuesPerOption,
                   uniqueItems: true,
                   items: { type: 'string', minLength: 1, maxLength: 128 },
                 },
@@ -637,16 +635,16 @@ const cliDiagnosticSchema = {
   additionalProperties: false,
   required: ['code', 'severity', 'summary', 'path'],
   properties: {
-    code: { type: 'string', pattern: '^ATL[0-9]{4}$' },
+    code: { type: 'string', pattern: '^EQ[0-9]{4}$' },
     severity: { enum: ['error', 'warning', 'info'] },
     summary: {
       type: 'string',
       minLength: 1,
-      maxLength: ATLAS_RESOURCE_LIMITS.diagnosticSummaryCharacters,
+      maxLength: RESOURCE_LIMITS.diagnosticSummaryCharacters,
     },
     path: {
       type: 'array',
-      maxItems: ATLAS_RESOURCE_LIMITS.diagnosticPathSegments,
+      maxItems: RESOURCE_LIMITS.diagnosticPathSegments,
       items: {
         oneOf: [
           { type: 'string', maxLength: 128 },
@@ -689,14 +687,14 @@ const cliResultValueSchema = {
  * against the shape it happened to see. A successful command carries its result; a failed one
  * carries diagnostics and a null result.
  */
-export const ATLAS_CLI_RESULT_SCHEMA = Object.freeze({
+export const CLI_RESULT_SCHEMA = Object.freeze({
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  title: 'Atlas CLI machine result',
+  title: 'Equator CLI machine result',
   type: 'object',
   additionalProperties: false,
   required: ['profile', 'command', 'status', 'diagnostics', 'result'],
   properties: {
-    profile: { const: 'atlas-cli-result/1' },
+    profile: { const: 'equator-cli-result/1' },
     command: {
       enum: [
         'init',
@@ -712,7 +710,7 @@ export const ATLAS_CLI_RESULT_SCHEMA = Object.freeze({
     status: cliStatusSchema,
     diagnostics: {
       type: 'array',
-      maxItems: ATLAS_RESOURCE_LIMITS.diagnostics,
+      maxItems: RESOURCE_LIMITS.diagnostics,
       items: cliDiagnosticSchema,
     },
     result: cliResultValueSchema,
@@ -742,9 +740,9 @@ export const ATLAS_CLI_RESULT_SCHEMA = Object.freeze({
  * A watch prints one of these per pass rather than one result at the end, so a tool following it
  * can react to each rebuild as it happens.
  */
-export const ATLAS_CLI_WATCH_EVENT_SCHEMA = Object.freeze({
+export const CLI_WATCH_EVENT_SCHEMA = Object.freeze({
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  title: 'Atlas CLI watch machine event',
+  title: 'Equator CLI watch machine event',
   type: 'object',
   additionalProperties: false,
   required: [
@@ -756,13 +754,13 @@ export const ATLAS_CLI_WATCH_EVENT_SCHEMA = Object.freeze({
     'result',
   ],
   properties: {
-    profile: { const: 'atlas-cli-watch-event/1' },
+    profile: { const: 'equator-cli-watch-event/1' },
     command: { const: 'watch' },
     sequence: { type: 'integer', minimum: 1 },
     status: cliStatusSchema,
     diagnostics: {
       type: 'array',
-      maxItems: ATLAS_RESOURCE_LIMITS.diagnostics,
+      maxItems: RESOURCE_LIMITS.diagnostics,
       items: cliDiagnosticSchema,
     },
     result: cliResultValueSchema,

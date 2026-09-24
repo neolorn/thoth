@@ -10,10 +10,10 @@
 import { createHash } from 'node:crypto';
 import { compareCodePoint } from './sorted-records.js';
 
-export interface AtlasCanonicalJsonArray extends ReadonlyArray<AtlasCanonicalJsonValue> {}
+export interface CanonicalJsonArray extends ReadonlyArray<CanonicalJsonValue> {}
 
-export interface AtlasCanonicalJsonObject {
-  readonly [key: string]: AtlasCanonicalJsonValue;
+export interface CanonicalJsonObject {
+  readonly [key: string]: CanonicalJsonValue;
 }
 
 /**
@@ -23,13 +23,13 @@ export interface AtlasCanonicalJsonObject {
  * bodies and digest inputs are this type, so nothing downstream has to decide whether a value is
  * safe to read.
  */
-export type AtlasCanonicalJsonValue =
+export type CanonicalJsonValue =
   | null
   | boolean
   | number
   | string
-  | AtlasCanonicalJsonArray
-  | AtlasCanonicalJsonObject;
+  | CanonicalJsonArray
+  | CanonicalJsonObject;
 
 function assertValidUnicode(value: string): void {
   for (let index = 0; index < value.length; index += 1) {
@@ -38,19 +38,19 @@ function assertValidUnicode(value: string): void {
       const following = value.charCodeAt(index + 1);
       if (!(following >= 0xdc00 && following <= 0xdfff)) {
         throw new TypeError(
-          'Atlas canonical JSON rejects an unpaired high surrogate.',
+          'Equator canonical JSON rejects an unpaired high surrogate.',
         );
       }
       index += 1;
     } else if (code >= 0xdc00 && code <= 0xdfff) {
       throw new TypeError(
-        'Atlas canonical JSON rejects an unpaired low surrogate.',
+        'Equator canonical JSON rejects an unpaired low surrogate.',
       );
     }
   }
 }
 
-function canonicalize(value: AtlasCanonicalJsonValue): string {
+function canonicalize(value: CanonicalJsonValue): string {
   if (value === null || typeof value === 'boolean') {
     return JSON.stringify(value);
   }
@@ -63,12 +63,12 @@ function canonicalize(value: AtlasCanonicalJsonValue): string {
   if (typeof value === 'number') {
     if (!Number.isFinite(value) || Object.is(value, -0)) {
       throw new TypeError(
-        'Atlas canonical JSON requires finite numbers without negative zero.',
+        'Equator canonical JSON requires finite numbers without negative zero.',
       );
     }
     if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
       throw new TypeError(
-        'Atlas canonical JSON requires safe integer numbers.',
+        'Equator canonical JSON requires safe integer numbers.',
       );
     }
     return JSON.stringify(value);
@@ -78,35 +78,33 @@ function canonicalize(value: AtlasCanonicalJsonValue): string {
     return `[${value.map((item) => canonicalize(item)).join(',')}]`;
   }
 
-  const record = value as Readonly<Record<string, AtlasCanonicalJsonValue>>;
+  const record = value as Readonly<Record<string, CanonicalJsonValue>>;
   return `{${Object.keys(record)
     .sort(compareCodePoint)
     .map((key) => {
       assertValidUnicode(key);
-      return `${JSON.stringify(key)}:${canonicalize(record[key] as AtlasCanonicalJsonValue)}`;
+      return `${JSON.stringify(key)}:${canonicalize(record[key] as CanonicalJsonValue)}`;
     })
     .join(',')}}`;
 }
 
-export function stringifyAtlasCanonicalJson(
-  value: AtlasCanonicalJsonValue,
-): string {
+export function stringifyCanonicalJson(value: CanonicalJsonValue): string {
   return canonicalize(value);
 }
 
-export function digestAtlasCanonicalJson(
+export function digestCanonicalJson(
   domain: string,
-  value: AtlasCanonicalJsonValue,
+  value: CanonicalJsonValue,
 ): string {
   if (domain.length === 0 || /[\u0000\r\n]/u.test(domain)) {
     throw new TypeError(
-      'An Atlas fingerprint domain must be a nonempty single-line identifier.',
+      'An Equator fingerprint domain must be a nonempty single-line identifier.',
     );
   }
   assertValidUnicode(domain);
 
   return `sha256-${createHash('sha256')
     .update(`${domain}\u0000`, 'utf8')
-    .update(stringifyAtlasCanonicalJson(value), 'utf8')
+    .update(stringifyCanonicalJson(value), 'utf8')
     .digest('base64url')}`;
 }

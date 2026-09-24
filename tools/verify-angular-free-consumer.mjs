@@ -10,7 +10,8 @@ const run = promisify(execFile);
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
- * A consumer with no Angular anywhere, importing `@neolorn/atlas/http` and `@neolorn/atlas/core`.
+ * A consumer with no Angular anywhere, importing `@neolorn/equator/http` and
+ * `@neolorn/equator/core`.
  *
  * *Why this exists.* Two entry points exist for the sole reason that they load where the rest of the
  * package cannot: a worker, a serverless function, a server that is not the Angular one. That claim
@@ -32,9 +33,9 @@ const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
  * meant to prove absent. Here, absence is a property of the directory.
  */
 
-const scratch = await mkdtemp(resolve(tmpdir(), 'atlas-angular-free-'));
+const scratch = await mkdtemp(resolve(tmpdir(), 'angular-free-'));
 try {
-  const packageRoot = resolve(scratch, 'node_modules/@neolorn/atlas');
+  const packageRoot = resolve(scratch, 'node_modules/@neolorn/equator');
   await mkdir(packageRoot, { recursive: true });
   await cp(resolve(workspaceRoot, 'dist/runtime'), packageRoot, {
     recursive: true,
@@ -45,20 +46,20 @@ try {
   assert.deepEqual(
     installed,
     ['@neolorn'],
-    `the consumer must have nothing installed but Atlas, found: ${installed.join(', ')}`,
+    `the consumer must have nothing installed but Equator, found: ${installed.join(', ')}`,
   );
 
   await writeFile(
     resolve(scratch, 'package.json'),
-    `${JSON.stringify({ name: 'atlas-angular-free-consumer', private: true, type: 'module' }, null, 2)}\n`,
+    `${JSON.stringify({ name: 'angular-free-consumer', private: true, type: 'module' }, null, 2)}\n`,
   );
 
   // --- the runtime half -------------------------------------------------------------------------
   await writeFile(
     resolve(scratch, 'use.mjs'),
     `import assert from 'node:assert/strict';
-import { createLocaleRequestHandler, toWebRequest } from '@neolorn/atlas/http';
-import { directionForLocale, resolveLocalizedRoute } from '@neolorn/atlas/core';
+import { createLocaleRequestHandler, toWebRequest } from '@neolorn/equator/http';
+import { directionForLocale, resolveLocalizedRoute } from '@neolorn/equator/core';
 
 assert.equal(directionForLocale('ar-EG'), 'rtl');
 
@@ -73,8 +74,8 @@ const policy = {
 };
 const projection = {
   generated: {
-    profile: 'atlas-route-projection/1',
-    identity: 'sha256-AtlasBuiltLocaleAddressesTestIdentity012345',
+    profile: 'equator-route-projection/1',
+    identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
       { id: 'route:second', path: 'second', parameterNames: [] },
@@ -93,18 +94,18 @@ const handler = createLocaleRequestHandler({
   policy,
   projection,
   cache: { successMaxAge: 600, permanentRedirectMaxAge: 86400 },
-  cookie: { name: 'atlas-locale' },
+  cookie: { name: 'equator-locale' },
   render: ({ locale }) => new Response('<!doctype html><html lang="' + locale + '"></html>'),
 });
 
-const redirect = await handler(new Request('https://atlas.example/second'));
+const redirect = await handler(new Request('https://site.example/second'));
 assert.equal(redirect.status, 307);
 assert.equal(redirect.headers.get('location'), '/en-us/second');
 
-const page = await handler(new Request('https://atlas.example/ar-eg/second'));
+const page = await handler(new Request('https://site.example/ar-eg/second'));
 assert.equal(page.status, 200);
 assert.equal(page.headers.get('content-language'), 'ar-EG');
-assert.match(page.headers.get('set-cookie') ?? '', /atlas-locale=ar-EG/u);
+assert.match(page.headers.get('set-cookie') ?? '', /equator-locale=ar-EG/u);
 assert.equal(
   page.headers.get('cache-control'),
   'public, max-age=600, must-revalidate',
@@ -112,10 +113,10 @@ assert.equal(
 
 // The Node adapter, without a socket and without \`node:http\` types.
 const adapted = toWebRequest(
-  { method: 'GET', url: '/ar-eg/second', headers: { host: 'atlas.example' } },
-  'http://atlas.example',
+  { method: 'GET', url: '/ar-eg/second', headers: { host: 'site.example' } },
+  'http://site.example',
 );
-assert.equal(adapted.url, 'http://atlas.example/ar-eg/second');
+assert.equal(adapted.url, 'http://site.example/ar-eg/second');
 
 process.stdout.write('angular-free runtime use verified\\n');
 `,
@@ -127,13 +128,13 @@ process.stdout.write('angular-free runtime use verified\\n');
   // --- the type half ----------------------------------------------------------------------------
   await writeFile(
     resolve(scratch, 'use.ts'),
-    `import { createLocaleRequestHandler } from '@neolorn/atlas/http';
-import type { LocaleRequestHandler, NodeRequestLike } from '@neolorn/atlas/http';
+    `import { createLocaleRequestHandler } from '@neolorn/equator/http';
+import type { LocaleRequestHandler, NodeRequestLike } from '@neolorn/equator/http';
 import type {
   LocaleUrlPolicy,
   RouteResolution,
   RouteRuntimeProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 export declare const policy: LocaleUrlPolicy;
 export declare const projection: RouteRuntimeProjection;
@@ -184,7 +185,7 @@ export const handler: LocaleRequestHandler = createLocaleRequestHandler({
   }
 
   process.stdout.write(
-    'Atlas Angular-free consumer verified: runtime and declarations.\n',
+    'Equator Angular-free consumer verified: runtime and declarations.\n',
   );
 } finally {
   await rm(scratch, { recursive: true, force: true });

@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { generateAtlasProject } from '../src/index.js';
+import { generateProject } from '../src/index.js';
 
 /**
  * How a locale is written, declared where the locales are declared.
@@ -38,7 +38,7 @@ interface ProjectOptions {
 
 async function project(options: ProjectOptions = {}): Promise<string> {
   const locales = options.locales ?? ['en-US', 'ar-EG'];
-  const root = await mkdtemp(resolve(tmpdir(), 'atlas-locale-formatting-'));
+  const root = await mkdtemp(resolve(tmpdir(), 'locale-formatting-'));
   temporaryRoots.push(root);
 
   await write(
@@ -60,7 +60,7 @@ async function project(options: ProjectOptions = {}): Promise<string> {
   );
   await write(
     root,
-    'atlas.config.json',
+    'equator.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -118,9 +118,9 @@ async function generated(root: string): Promise<{
   readonly codes: readonly string[];
   readonly index: string;
 }> {
-  const result = await generateAtlasProject({ project: root });
+  const result = await generateProject({ project: root });
   const codes = result.diagnostics.map(({ code }) => code);
-  const index = codes.some((code) => code.startsWith('ATL1'))
+  const index = codes.some((code) => code.startsWith('EQ1'))
     ? ''
     : await readFile(
         resolve(root, 'src/generated/i18n/index.ts'),
@@ -174,7 +174,7 @@ describe('a locale declares how it is written', () => {
         formatting: { 'fa-IR': { numberingSystem: 'arabext' } },
       }),
     );
-    expect(codes).toContain('ATL1004');
+    expect(codes).toContain('EQ1004');
   });
 
   it('refuses a key that is not a locale identity at all', async () => {
@@ -183,7 +183,7 @@ describe('a locale declares how it is written', () => {
         formatting: { 'not a locale': { calendar: 'gregory' } },
       }),
     );
-    expect(codes).toContain('ATL1003');
+    expect(codes).toContain('EQ1003');
   });
 
   it('refuses an entry that states nothing', async () => {
@@ -194,7 +194,7 @@ describe('a locale declares how it is written', () => {
     expect(codes.length).toBeGreaterThan(0);
   });
 
-  it('refuses an option Atlas does not carry per locale', async () => {
+  it('refuses an option Equator does not carry per locale', async () => {
     // `timeZone` is the fourth field of a formatting context and is deliberately not here: it
     // belongs to the reader or to the deployment, not to the language, and one page is read in one
     // zone whichever language it is in.

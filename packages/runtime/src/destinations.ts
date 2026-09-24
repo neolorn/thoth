@@ -2,7 +2,7 @@ import {
   LocalizationError,
   type LocalizationDiagnostic,
   type TrustedDestination,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 import { RUNTIME_LIMITS, containsUrlSpoofingControl } from './runtime-safety';
 
 function unsafeUrlText(value: unknown, maximum: number): boolean {
@@ -61,7 +61,7 @@ export function internalDestination(href: string): TrustedDestination {
   }
   let parsed: URL;
   try {
-    parsed = new URL(href, 'https://atlas.invalid');
+    parsed = new URL(href, 'https://site.invalid');
   } catch (cause) {
     return invalidDestination(
       'The internal rich-message destination is invalid.',
@@ -69,7 +69,7 @@ export function internalDestination(href: string): TrustedDestination {
       cause,
     );
   }
-  if (parsed.origin !== 'https://atlas.invalid') {
+  if (parsed.origin !== 'https://site.invalid') {
     return invalidDestination('The internal destination cannot change origin.');
   }
   return Object.freeze({

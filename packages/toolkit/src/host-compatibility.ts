@@ -10,11 +10,11 @@ import { VERSION as angularCompilerVersion } from '@angular/compiler';
 import ts from 'typescript';
 
 import {
-  atlasDiagnostic,
-  atlasFailure,
-  atlasSuccess,
-  type AtlasDiagnostic,
-  type AtlasResult,
+  toolkitDiagnostic,
+  toolkitFailure,
+  toolkitSuccess,
+  type ToolkitDiagnostic,
+  type ToolkitResult,
 } from './diagnostics.js';
 
 /**
@@ -25,22 +25,22 @@ import {
  * `specs/02-packages-and-platform.spec.md` section 9 names, and `verify:packages` compares all three
  * values against what the packages declare, so it is a copy that cannot drift silently.
  */
-export const ATLAS_HOST_COMPATIBILITY_PROFILE = Object.freeze({
-  profile: 'atlas-host-compatibility/1' as const,
+export const HOST_COMPATIBILITY_PROFILE = Object.freeze({
+  profile: 'equator-host-compatibility/1' as const,
   node: '^22.22.3 || ^24.15.0 || ^26.0.0' as const,
   typescript: '>=6.0.2 <6.1.0' as const,
   angularCompiler: '>=22.0.0 <23.0.0' as const,
 });
 
-export interface AtlasHostVersions {
+export interface HostVersions {
   readonly node: string;
   readonly typescript: string;
   readonly angularCompiler: string;
 }
 
-export interface AtlasHostCompatibilityAdmission {
-  readonly profile: 'atlas-host-compatibility/1';
-  readonly versions: AtlasHostVersions;
+export interface HostCompatibilityAdmission {
+  readonly profile: 'equator-host-compatibility/1';
+  readonly versions: HostVersions;
 }
 
 interface SemanticVersion {
@@ -104,7 +104,7 @@ function supportedAngularCompiler(version: SemanticVersion): boolean {
   return !version.prerelease && version.major === 22;
 }
 
-export function currentAtlasHostVersions(): AtlasHostVersions {
+export function currentHostVersions(): HostVersions {
   return Object.freeze({
     node: process.versions.node,
     typescript: ts.version,
@@ -112,16 +112,16 @@ export function currentAtlasHostVersions(): AtlasHostVersions {
   });
 }
 
-export function admitAtlasHostCompatibility(
-  versions: AtlasHostVersions = currentAtlasHostVersions(),
-): AtlasResult<AtlasHostCompatibilityAdmission> {
-  const diagnostics: AtlasDiagnostic[] = [];
+export function admitHostCompatibility(
+  versions: HostVersions = currentHostVersions(),
+): ToolkitResult<HostCompatibilityAdmission> {
+  const diagnostics: ToolkitDiagnostic[] = [];
   const node = parseSemanticVersion(versions.node);
   if (node === undefined || !supportedNode(node)) {
     diagnostics.push(
-      atlasDiagnostic(
-        'ATL1806',
-        `Unsupported Node.js host version ${JSON.stringify(versions.node)}; Atlas requires ${ATLAS_HOST_COMPATIBILITY_PROFILE.node}. Install a supported Node.js version before running Atlas compiler work.`,
+      toolkitDiagnostic(
+        'EQ1806',
+        `Unsupported Node.js host version ${JSON.stringify(versions.node)}; Equator requires ${HOST_COMPATIBILITY_PROFILE.node}. Install a supported Node.js version before running Equator compiler work.`,
         { path: ['host', 'node'] },
       ),
     );
@@ -129,9 +129,9 @@ export function admitAtlasHostCompatibility(
   const typescript = parseSemanticVersion(versions.typescript);
   if (typescript === undefined || !supportedTypeScript(typescript)) {
     diagnostics.push(
-      atlasDiagnostic(
-        'ATL1806',
-        `Unsupported TypeScript host version ${JSON.stringify(versions.typescript)}; Atlas requires ${ATLAS_HOST_COMPATIBILITY_PROFILE.typescript}. Install a supported TypeScript version before running Atlas compiler work.`,
+      toolkitDiagnostic(
+        'EQ1806',
+        `Unsupported TypeScript host version ${JSON.stringify(versions.typescript)}; Equator requires ${HOST_COMPATIBILITY_PROFILE.typescript}. Install a supported TypeScript version before running Equator compiler work.`,
         { path: ['host', 'typescript'] },
       ),
     );
@@ -139,17 +139,17 @@ export function admitAtlasHostCompatibility(
   const angular = parseSemanticVersion(versions.angularCompiler);
   if (angular === undefined || !supportedAngularCompiler(angular)) {
     diagnostics.push(
-      atlasDiagnostic(
-        'ATL1806',
-        `Unsupported Angular compiler host version ${JSON.stringify(versions.angularCompiler)}; Atlas requires ${ATLAS_HOST_COMPATIBILITY_PROFILE.angularCompiler}. Install a supported @angular/compiler version before running Atlas compiler work.`,
+      toolkitDiagnostic(
+        'EQ1806',
+        `Unsupported Angular compiler host version ${JSON.stringify(versions.angularCompiler)}; Equator requires ${HOST_COMPATIBILITY_PROFILE.angularCompiler}. Install a supported @angular/compiler version before running Equator compiler work.`,
         { path: ['host', 'angularCompiler'] },
       ),
     );
   }
-  if (diagnostics.length > 0) return atlasFailure(diagnostics);
-  return atlasSuccess(
+  if (diagnostics.length > 0) return toolkitFailure(diagnostics);
+  return toolkitSuccess(
     Object.freeze({
-      profile: ATLAS_HOST_COMPATIBILITY_PROFILE.profile,
+      profile: HOST_COMPATIBILITY_PROFILE.profile,
       versions: Object.freeze({ ...versions }),
     }),
   );

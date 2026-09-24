@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "atlas-document-consumer": {
+    "document-consumer": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -56,10 +56,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "atlas-document-consumer:build:production"
+              "buildTarget": "document-consumer:build:production"
             },
             "development": {
-              "buildTarget": "atlas-document-consumer:build:development"
+              "buildTarget": "document-consumer:build:development"
             }
           },
           "defaultConfiguration": "development"

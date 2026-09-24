@@ -1,8 +1,8 @@
 /**
- * The template and type analysis Atlas performs, done through published compiler APIs only.
+ * The template and type analysis Equator performs, done through published compiler APIs only.
  *
  * `specs/02-packages-and-platform.spec.md` section 10 requires documented, supported APIs behind
- * Atlas-owned adapters, and the way that requirement fails quietly is a private export that keeps
+ * Equator-owned adapters, and the way that requirement fails quietly is a private export that keeps
  * working until a patch release removes it. So the same analysis the toolkit performs is run here
  * against a fixture using nothing but what `@angular/compiler` and TypeScript publish. If the
  * public surface stops being enough, this stops passing before a release goes out.

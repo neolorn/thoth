@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ATLAS_ENCOMPASSED_LANGUAGE_PROFILE } from '../src/encompassed-languages.generated.js';
+import { ENCOMPASSED_LANGUAGE_PROFILE } from '../src/encompassed-languages.generated.js';
 import {
   negotiateLocale,
   parseAcceptLanguage,
@@ -24,8 +24,8 @@ const canonicalize = (value: string): string | undefined => {
 };
 
 /**
- * RFC 9110 12.4.2 introduces the parameter as *"q" (case-insensitive)* and says the weight
- * *"is normalized to a real number in the range 0 through 1"*. Atlas matched `q` in lower case only
+ * RFC 9110 12.4.2 introduces the parameter as *"q" (case-insensitive)* and says the weight *"is
+ * normalized to a real number in the range 0 through 1"*. Equator matched `q` in lower case only
  * and read any value the pattern happened to admit.
  */
 describe('Accept-Language weights', () => {
@@ -116,7 +116,7 @@ describe('RFC 4647 lookup truncation', () => {
 });
 
 /**
- * 3.7b. Step 3 of `negotiateLocale` is Atlas's addition to RFC 4647 lookup, and it is a good one:
+ * 3.7b. Step 3 of `negotiateLocale` is Equator's addition to RFC 4647 lookup, and it is a good one:
  * without it `ar-SA` goes unmatched against a supported `ar-EG` and an Arabic speaker is answered in
  * English. It compared the language subtag alone, so it also answered `zh-Hans-CN` to `zh-Hant`.
  */
@@ -229,8 +229,8 @@ describe('a language written under another subtag', () => {
   it('names the two snapshots it is derived from', () => {
     // The string moves when either source moves, so a regeneration that changes what negotiation
     // answers cannot land as a silent data update.
-    expect(ATLAS_ENCOMPASSED_LANGUAGE_PROFILE).toBe(
-      'cldr-48.2+iana-2026-06-14/atlas-encompassed-1',
+    expect(ENCOMPASSED_LANGUAGE_PROFILE).toBe(
+      'cldr-48.2+iana-2026-06-14/equator-encompassed-1',
     );
   });
 

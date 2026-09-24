@@ -7,9 +7,9 @@
 // page and the renderer differ only in where the declaration is made.
 //
 // The carrier lives here rather than beside either of them. The declaration is written from the
-// Angular render, in `@neolorn/atlas/router`, and read by the request handler, in
-// `@neolorn/atlas/http`. Neither of those entry points may import the other, so the channel sits in
-// the base both already depend on.
+// Angular render, in `@neolorn/equator/router`, and read by the request handler, in
+// `@neolorn/equator/http`. Neither of those entry points may import the other, so the channel sits
+// in the base both already depend on.
 
 import type { RouteHttpDescriptor } from './routing';
 
@@ -30,7 +30,7 @@ export interface PageOutcomeOperationalFailure {
   /** Distinguishes this member of the declaration union. */
   readonly outcome: 'operational-failure';
   /**
-   * The status to send, which is the application's rather than Atlas's.
+   * The status to send, which is the application's rather than Equator's.
    *
    * Section 5 fixes a status table for routing outcomes and states that an operational failure is
    * not one of them, so there is no table to derive this from.
@@ -43,8 +43,8 @@ export interface PageOutcomeOperationalFailure {
  *
  * The two routing arms carry the fact and not the status, because the status for an absent entity
  * and for a permanent removal is already fixed by section 5's table and an application writing one
- * here would be restating a rule Atlas applies anyway. The operational arm carries its own status,
- * because nothing fixes that one.
+ * here would be restating a rule Equator applies anyway. The operational arm carries its own
+ * status, because nothing fixes that one.
  */
 export type PageOutcomeDeclaration =
   | PageOutcomeAbsent
@@ -80,8 +80,8 @@ export function pageGone(): PageOutcomeGone {
  * The render could not produce this page, and the application states what that is worth.
  *
  * Serving maintenance and reporting a failed load are both this. The status is the caller's because
- * Atlas has no table for one, and it is checked here rather than where the response is built, so a
- * value that could not be sent is refused at the call that names it.
+ * Equator has no table for one, and it is checked here rather than where the response is built, so
+ * a value that could not be sent is refused at the call that names it.
  */
 export function pageOperationalFailure(
   status: number,
@@ -102,11 +102,11 @@ interface PageOutcomeChannel {
 /**
  * The declaration channel, keyed on the request object the render and the handler share.
  *
- * The same carrier `rawTargetOf` uses in `@neolorn/atlas/http`, and for the same reasons. A header
- * is observable and a client can send one, so a declaration carried in one would reach the handler
- * as though the page had made it. An injection token provided by the host is the shape Angular
- * withdrew as `REQUEST_CONTEXT`: wiring documented nowhere and silent when omitted. A key that is
- * the request answers both, and it answers a third: a `Request` is created per request and
+ * The same carrier `rawTargetOf` uses in `@neolorn/equator/http`, and for the same reasons. A
+ * header is observable and a client can send one, so a declaration carried in one would reach the
+ * handler as though the page had made it. An injection token provided by the host is the shape
+ * Angular withdrew as `REQUEST_CONTEXT`: wiring documented nowhere and silent when omitted. A key
+ * that is the request answers both, and it answers a third: a `Request` is created per request and
  * unreachable from the next one, so a declaration cannot outlive the render that made it.
  */
 const channels = new WeakMap<Request, PageOutcomeChannel>();

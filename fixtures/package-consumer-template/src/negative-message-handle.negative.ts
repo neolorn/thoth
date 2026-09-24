@@ -2,7 +2,7 @@ import {
   resolveLocalizedRoute,
   type Localization,
   type PlainMessageHandle,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { messages } from '#i18n/shell';
 
 import { routePolicy, appRouteProjection } from './app/localization.routes';
@@ -30,7 +30,7 @@ localization.text(messages.welcome);
 
 // The same guarantee from the other side: an input the message does not declare.
 // EXPECT: 'nmae' does not exist in type
-localization.text(messages.welcome, { nmae: 'Atlas' });
+localization.text(messages.welcome, { nmae: 'Equator' });
 
 // A structured handle is not a plain one. `PlainMessageHandle` widening far enough to accept the
 // call above would generally also accept this, and a structured message rendered through the plain

@@ -130,11 +130,11 @@ const refreshTemplateLock = async (templateRoot, stagingRoot, label) => {
 
   const manifestPath = resolve(stagingRoot, 'package.json');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-  manifest.dependencies['@neolorn/atlas'] = packageLocator(
+  manifest.dependencies['@neolorn/equator'] = packageLocator(
     stagingRoot,
     'dist/runtime',
   );
-  manifest.devDependencies['@neolorn/atlas-toolkit'] = packageLocator(
+  manifest.devDependencies['@neolorn/equator-toolkit'] = packageLocator(
     stagingRoot,
     'dist/toolkit',
   );

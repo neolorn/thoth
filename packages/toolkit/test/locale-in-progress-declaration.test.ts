@@ -4,8 +4,8 @@ import { resolve } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { generateAtlasProject, parseAtlasConfiguration } from '../src/index.js';
-import { formatAtlasConfiguration } from '../src/configuration.js';
+import { generateProject, parseConfiguration } from '../src/index.js';
+import { formatConfiguration } from '../src/configuration.js';
 
 /**
  * Which locales must be finished, declared where the locales are.
@@ -33,7 +33,7 @@ const configurationText = (extra: Readonly<Record<string, unknown>>) =>
   });
 
 const parse = (extra: Readonly<Record<string, unknown>>) =>
-  parseAtlasConfiguration(configurationText(extra));
+  parseConfiguration(configurationText(extra));
 
 const codesOf = (result: ReturnType<typeof parse>) =>
   result.diagnostics.map(({ code }) => code);
@@ -78,13 +78,13 @@ describe('a project declares which locales are still being translated', () => {
   it('refuses a key that is not a locale identity', () => {
     expect(
       codesOf(parse({ inProgress: { 'not a locale': { note: 'x' } } })),
-    ).toContain('ATL1003');
+    ).toContain('EQ1003');
   });
 
   it('refuses a locale the project does not serve', () => {
     expect(
       codesOf(parse({ inProgress: { 'fr-FR': { note: 'Later.' } } })),
-    ).toContain('ATL1004');
+    ).toContain('EQ1004');
   });
 
   it('refuses the source locale, which defines what complete means', () => {
@@ -92,11 +92,11 @@ describe('a project declares which locales are still being translated', () => {
     // an outcome, and an entry that can never do anything reads as a decision somebody made.
     expect(
       codesOf(parse({ inProgress: { 'en-US': { note: 'Still writing.' } } })),
-    ).toContain('ATL1004');
+    ).toContain('EQ1004');
   });
 
   it('refuses a pseudo-locale, which is derived rather than written', () => {
-    const result = parseAtlasConfiguration(
+    const result = parseConfiguration(
       JSON.stringify({
         schemaVersion: 1,
         sourceLocale: 'en-US',
@@ -107,7 +107,7 @@ describe('a project declares which locales are still being translated', () => {
       }),
     );
     expect(result.ok).toBe(false);
-    expect(result.diagnostics.map(({ code }) => code)).toContain('ATL1004');
+    expect(result.diagnostics.map(({ code }) => code)).toContain('EQ1004');
   });
 
   it('refuses an entry with no reason', () => {
@@ -123,15 +123,15 @@ describe('a project declares which locales are still being translated', () => {
     const bare = parse({});
     expect(declared.ok && bare.ok).toBe(true);
     if (!declared.ok || !bare.ok) return;
-    expect(formatAtlasConfiguration(declared.value)).toContain('"inProgress"');
-    expect(formatAtlasConfiguration(bare.value)).not.toContain('inProgress');
+    expect(formatConfiguration(declared.value)).toContain('"inProgress"');
+    expect(formatConfiguration(bare.value)).not.toContain('inProgress');
   });
 
   it('never reaches the generated module, because the runtime has no release', () => {
     // A release policy is answered before anything ships. Carrying it into the bundle would put a
     // build-time decision in front of a reader at runtime, where nothing can act on it.
     return (async () => {
-      const root = await mkdtemp(resolve(tmpdir(), 'atlas-in-progress-'));
+      const root = await mkdtemp(resolve(tmpdir(), 'in-progress-'));
       temporaryRoots.push(root);
       await write(
         root,
@@ -152,7 +152,7 @@ describe('a project declares which locales are still being translated', () => {
       );
       await write(
         root,
-        'atlas.config.json',
+        'equator.config.json',
         `${configurationText({
           inProgress: { 'ar-EG': { note: 'Translation starts in October.' } },
         })}\n`,
@@ -194,11 +194,11 @@ describe('a project declares which locales are still being translated', () => {
         ].join('\n'),
       );
 
-      const result = await generateAtlasProject({ project: root });
+      const result = await generateProject({ project: root });
       expect(
         result.diagnostics
           .map(({ code }) => code)
-          .filter((code) => code.startsWith('ATL1')),
+          .filter((code) => code.startsWith('EQ1')),
       ).toEqual([]);
       const index = await readFile(
         resolve(root, 'src/generated/i18n/index.ts'),

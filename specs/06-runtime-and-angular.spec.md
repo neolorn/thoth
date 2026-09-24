@@ -1,6 +1,6 @@
 # Runtime and Angular
 
-What a running application gets from `@neolorn/atlas`: how a message is evaluated, what the
+What a running application gets from `@neolorn/equator`: how a message is evaluated, what the
 localization state holds, how a locale change is prepared and committed, and how all of it behaves
 under the rendering modes Angular supports.
 
@@ -248,7 +248,7 @@ let that disposal reach another context or a consumer application's own store.
 
 ## 12. The testing surface
 
-`@neolorn/atlas/testing` exports seven things: the testing providers, an in-memory catalog loader
+`@neolorn/equator/testing` exports seven things: the testing providers, an in-memory catalog loader
 factory, a controllable participant, a controller over deferred catalog loads and participant
 attempts, a rendered-text helper, an environment reset, and a server seat. A release MUST
 provide deterministic control over deferred loading and participant outcomes through them, without a

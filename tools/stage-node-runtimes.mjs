@@ -18,7 +18,7 @@ const versions = Object.freeze(
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const nodeRoot = resolve(
-  process.env.ATLAS_NODE_COMPATIBILITY_ROOT ??
+  process.env.EQUATOR_NODE_COMPATIBILITY_ROOT ??
     resolve(workspaceRoot, '.runtimes/node'),
 );
 

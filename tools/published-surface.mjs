@@ -73,8 +73,8 @@ export function runtimeDeclarations() {
       text: readFileSync(join(root, file), 'utf8'),
     }));
   assert.ok(
-    found.some(({ entryPoint }) => entryPoint === 'neolorn-atlas'),
-    `No neolorn-atlas.d.ts under ${root}. Every reader of this would pass by finding nothing. Run \`pnpm run build\` first.`,
+    found.some(({ entryPoint }) => entryPoint === 'neolorn-equator'),
+    `No neolorn-equator.d.ts under ${root}. Every reader of this would pass by finding nothing. Run \`pnpm run build\` first.`,
   );
   return found;
 }

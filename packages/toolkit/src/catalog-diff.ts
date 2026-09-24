@@ -1,14 +1,18 @@
-import type { AtlasCatalog } from './catalog.js';
+import type { Catalog } from './catalog.js';
 import {
-  digestAtlasCanonicalJson,
-  type AtlasCanonicalJsonValue,
+  digestCanonicalJson,
+  type CanonicalJsonValue,
 } from './canonical-json.js';
-import type { AtlasProjectConfiguration } from './configuration.js';
-import { atlasFailure, atlasSuccess, type AtlasResult } from './diagnostics.js';
+import type { ProjectConfiguration } from './configuration.js';
 import {
-  analyzeAtlasCatalogSet,
-  type AtlasSemanticGraph,
-  type AtlasSemanticMessage,
+  toolkitFailure,
+  toolkitSuccess,
+  type ToolkitResult,
+} from './diagnostics.js';
+import {
+  analyzeCatalogSet,
+  type SemanticGraph,
+  type SemanticMessage,
 } from './semantic-model.js';
 import { compareCodePoint } from './sorted-records.js';
 
@@ -19,7 +23,7 @@ import { compareCodePoint } from './sorted-records.js';
  * apart: a changed source invalidates every translation of it, a changed translation invalidates
  * nothing, and a changed contract is a code change as well as a wording one.
  */
-export type AtlasCatalogDiffKind =
+export type CatalogDiffKind =
   | 'added'
   | 'removed'
   | 'identity-contract-changed'
@@ -29,11 +33,11 @@ export type AtlasCatalogDiffKind =
   | 'fallback-impact';
 
 /** One side of a comparison: a project's configuration and its catalogs at one moment. */
-export interface AtlasCatalogDiffSnapshot {
+export interface CatalogDiffSnapshot {
   /** The configuration in force, which is what says which locales are expected. */
-  readonly configuration: AtlasProjectConfiguration;
+  readonly configuration: ProjectConfiguration;
   /** The catalogs as they stood. */
-  readonly catalogs: readonly AtlasCatalog[];
+  readonly catalogs: readonly Catalog[];
 }
 
 /**
@@ -43,7 +47,7 @@ export interface AtlasCatalogDiffSnapshot {
  * Without it a rename throws away every translation of the message, because nothing in the two
  * snapshots says the new identity is the old one under another name.
  */
-export interface AtlasCatalogIdentityMove {
+export interface CatalogIdentityMove {
   /** What it was called before. Must exist in the earlier snapshot. */
   readonly from: string;
   /** What it is called now. Must exist in the later one. */
@@ -51,24 +55,24 @@ export interface AtlasCatalogIdentityMove {
 }
 
 /** What to compare: two snapshots, and any renames between them. */
-export interface AtlasCatalogDiffRequest {
+export interface CatalogDiffRequest {
   /** The earlier state. */
-  readonly before: AtlasCatalogDiffSnapshot;
+  readonly before: CatalogDiffSnapshot;
   /** The later state. */
-  readonly after: AtlasCatalogDiffSnapshot;
+  readonly after: CatalogDiffSnapshot;
   /**
    * The messages that were renamed rather than replaced.
    *
    * Each identity may appear once on each side. A move naming something absent from its snapshot
    * fails the comparison rather than being ignored.
    */
-  readonly identityMoves?: readonly AtlasCatalogIdentityMove[];
+  readonly identityMoves?: readonly CatalogIdentityMove[];
 }
 
 /** One thing that changed, and enough about it to act on without reading the catalogs again. */
-export interface AtlasCatalogDiffEntry {
+export interface CatalogDiffEntry {
   /** What happened. */
-  readonly kind: AtlasCatalogDiffKind;
+  readonly kind: CatalogDiffKind;
   /** Which message, by its identity in the later snapshot. */
   readonly identity: string;
   /** What it was called before, on an entry that came from a rename. */
@@ -82,18 +86,18 @@ export interface AtlasCatalogDiffEntry {
 }
 
 /** Everything that changed between two snapshots, in a stable order. */
-export interface AtlasCatalogDiff {
+export interface CatalogDiff {
   /** The shape's version stamp. */
-  readonly profile: 'atlas-semantic-catalog-diff/1';
+  readonly profile: 'equator-semantic-catalog-diff/1';
   /** The changes, sorted, so two runs over the same pair produce the same list. */
-  readonly entries: readonly AtlasCatalogDiffEntry[];
+  readonly entries: readonly CatalogDiffEntry[];
   /** A digest of the whole comparison, for recognizing one that has already been acted on. */
   readonly digest: string;
 }
 
 function messageMap(
-  graph: AtlasSemanticGraph,
-): ReadonlyMap<string, AtlasSemanticMessage> {
+  graph: SemanticGraph,
+): ReadonlyMap<string, SemanticMessage> {
   return new Map(
     graph.scopes.flatMap((scope) =>
       scope.messages.map((message) => [message.identity, message] as const),
@@ -101,16 +105,16 @@ function messageMap(
   );
 }
 
-function contractFingerprint(message: AtlasSemanticMessage): string {
-  return digestAtlasCanonicalJson('atlas-message-contract/1', {
+function contractFingerprint(message: SemanticMessage): string {
+  return digestCanonicalJson('equator-message-contract/1', {
     resultKind: message.resultKind,
-    inputs: message.inputs as unknown as AtlasCanonicalJsonValue,
-    slots: message.slots as unknown as AtlasCanonicalJsonValue,
+    inputs: message.inputs as unknown as CanonicalJsonValue,
+    slots: message.slots as unknown as CanonicalJsonValue,
   });
 }
 
 function catalogMessageFingerprint(
-  snapshot: AtlasCatalogDiffSnapshot,
+  snapshot: CatalogDiffSnapshot,
   identity: string,
   locale: string,
 ): string | undefined {
@@ -130,20 +134,20 @@ function catalogMessageFingerprint(
       catalog.locale === locale,
   )?.messages[messageId];
   if (message === undefined) return undefined;
-  return digestAtlasCanonicalJson('atlas-translation-view/1', {
+  return digestCanonicalJson('equator-translation-view/1', {
     kind: message.kind,
     source:
       message.kind === 'message' ? message.semantics.canonicalSource : null,
   });
 }
 
-function entryKey(entry: AtlasCatalogDiffEntry): string {
+function entryKey(entry: CatalogDiffEntry): string {
   return `${entry.identity}\u0000${entry.previousIdentity ?? ''}\u0000${entry.locale ?? ''}\u0000${entry.kind}`;
 }
 
 function addEntry(
-  entries: Map<string, AtlasCatalogDiffEntry>,
-  entry: AtlasCatalogDiffEntry,
+  entries: Map<string, CatalogDiffEntry>,
+  entry: CatalogDiffEntry,
 ): void {
   entries.set(entryKey(entry), Object.freeze(entry));
 }
@@ -158,13 +162,13 @@ function addEntry(
  * A rename must be declared through `identityMoves`; without that it reads as a deletion and an
  * addition, which throws away the translations.
  */
-export function diffAtlasCatalogSets(
-  request: AtlasCatalogDiffRequest,
-): AtlasResult<AtlasCatalogDiff> {
-  const before = analyzeAtlasCatalogSet(request.before);
-  const after = analyzeAtlasCatalogSet(request.after);
+export function diffCatalogSets(
+  request: CatalogDiffRequest,
+): ToolkitResult<CatalogDiff> {
+  const before = analyzeCatalogSet(request.before);
+  const after = analyzeCatalogSet(request.after);
   const diagnostics = [...before.diagnostics, ...after.diagnostics];
-  if (!before.ok || !after.ok) return atlasFailure(diagnostics);
+  if (!before.ok || !after.ok) return toolkitFailure(diagnostics);
 
   const beforeMessages = messageMap(before.value);
   const afterMessages = messageMap(after.value);
@@ -177,10 +181,10 @@ export function diffAtlasCatalogSets(
       !beforeMessages.has(move.from) ||
       !afterMessages.has(move.to)
     ) {
-      return atlasFailure([
+      return toolkitFailure([
         ...diagnostics,
         {
-          code: 'ATL1805',
+          code: 'EQ1805',
           severity: 'error',
           summary:
             'Semantic catalog diff received an ambiguous or unavailable identity move.',
@@ -192,7 +196,7 @@ export function diffAtlasCatalogSets(
     reverseMoves.set(move.to, move.from);
   }
 
-  const entries = new Map<string, AtlasCatalogDiffEntry>();
+  const entries = new Map<string, CatalogDiffEntry>();
   const identities = new Set([
     ...beforeMessages.keys(),
     ...afterMessages.keys(),
@@ -233,12 +237,8 @@ export function diffAtlasCatalogSets(
   }
 
   for (const pair of pairs) {
-    const prior = beforeMessages.get(
-      pair.beforeIdentity,
-    ) as AtlasSemanticMessage;
-    const current = afterMessages.get(
-      pair.afterIdentity,
-    ) as AtlasSemanticMessage;
+    const prior = beforeMessages.get(pair.beforeIdentity) as SemanticMessage;
+    const current = afterMessages.get(pair.afterIdentity) as SemanticMessage;
     const priorContract = contractFingerprint(prior);
     const currentContract = contractFingerprint(current);
     if (pair.moved || priorContract !== currentContract) {
@@ -324,13 +324,13 @@ export function diffAtlasCatalogSets(
   const ordered = [...entries.values()].sort((left, right) =>
     compareCodePoint(entryKey(left), entryKey(right)),
   );
-  const digest = digestAtlasCanonicalJson(
-    'atlas-semantic-catalog-diff/1',
-    ordered as unknown as AtlasCanonicalJsonValue,
+  const digest = digestCanonicalJson(
+    'equator-semantic-catalog-diff/1',
+    ordered as unknown as CanonicalJsonValue,
   );
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
-      profile: 'atlas-semantic-catalog-diff/1',
+      profile: 'equator-semantic-catalog-diff/1',
       entries: Object.freeze(ordered),
       digest,
     }),

@@ -1,5 +1,5 @@
 messages:
-  app-title: Atlas feature lab
+  app-title: Equator feature lab
   welcome: 'Welcome, {$name}!'
   learn-more:
     message: 'Read the {#strong}guide{/strong}.'
@@ -10,8 +10,8 @@ messages:
   source-only: Source fallback remains truthful.
   unsafe-literal: '<img src=x onerror=alert(1)> remains inert text.'
   recovery.unavailable: Localization is temporarily unavailable.
-  document.title: Atlas feature lab
-  document.description: Atlas localization runtime feature laboratory.
+  document.title: Equator feature lab
+  document.description: Equator localization runtime feature laboratory.
   document.second.title: Second address
   document.second.description: A second address, to prove one route's metadata is its own.
   document.item.title: Item detail
@@ -30,7 +30,7 @@ messages:
   document.unsupported-locale.description: This deployment does not serve the language this address names.
   document.topic-absent.title: Topic not found
   document.topic-absent.description: No topic is filed under this address.
-  social.image-alt: The Atlas feature lab preview card
+  social.image-alt: The Equator feature lab preview card
   route.home: Home route
   route.second: Second route
   route.item: Item route
@@ -52,7 +52,7 @@ messages:
       badge: feature:badge
   feature-state.ready: Feature state ready
   feature-state.pending: Feature state pending
-  asset.alt: Atlas handbook cover
+  asset.alt: Equator handbook cover
   control.retry: Retry
   control.submit: Submit
   counter.label: count

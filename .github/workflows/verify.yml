@@ -4,11 +4,11 @@
 # verdict are the ones in the repository; nothing about the run is described twice, and a stage
 # added to `tools/verify.mjs` is in this job the moment it lands, with no edit here.
 #
-# What this job does that the local gate does not is run on a different operating system. Atlas has
-# only ever been verified on Windows, and the tooling carries twenty-eight `process.platform`
+# What this job does that the local gate does not is run on a different operating system. Equator
+# has only ever been verified on Windows, and the tooling carries twenty-eight `process.platform`
 # branches whose other half has never executed. Anything this finds is a defect in the thing it
-# names (a path joined with a backslash, a line ending assumed, a store location hard-coded)
-# and belongs fixed there rather than worked around in this file.
+# names (a path joined with a backslash, a line ending assumed, a store location hard-coded) and
+# belongs fixed there rather than worked around in this file.
 name: verify
 
 # Every push to `main`, every pull request, and on request. This ran on dispatch alone while the
@@ -18,7 +18,7 @@ name: verify
 # this is gone and the cost of an automatic run is wall time nobody is waiting on.
 #
 # Every commit is gate-green locally before it is pushed, so what this adds is Linux rather than a
-# second opinion on the same stages. Atlas is developed on Windows, and the tooling carries
+# second opinion on the same stages. Equator is developed on Windows, and the tooling carries
 # `process.platform` branches whose other half only executes here.
 on:
   push:
@@ -58,7 +58,7 @@ jobs:
 
       # `packageManager` in package.json is the pin, and it is the only place the version is
       # written. Installed rather than activated through Corepack, which Node no longer ships in
-      # every line Atlas supports.
+      # every line Equator supports.
       - name: Install pnpm
         run: |
           version="$(node -p "require('./package.json').packageManager.split('@')[1]")"

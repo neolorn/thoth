@@ -5,7 +5,7 @@ import {
   type FormattingContext,
   type PersonNameFormatOptions,
   type PersonNameValue,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -56,7 +56,7 @@ describe('the generated artifact carries the configured locales and no more', ()
   });
 
   it('declares the derivation the runtime knows how to read', () => {
-    expect(personNames.profile).toBe('cldr-48.2/atlas-person-names-1');
+    expect(personNames.profile).toBe('cldr-48.2/equator-person-names-1');
   });
 });
 
@@ -150,7 +150,7 @@ describe('an Arabic name in the Arabic interface', () => {
 describe('a name whose locale the application did not configure', () => {
   it('orders a Hungarian name given-first, because English says so about Hungarian names', () => {
     // The list that decides this is the *interface*`s. CLDR 48 gives en a surnameFirst list of
-    // ja, ko, vi, yue and zh: Hungarian is not in it. Atlas`s hand-written table had `hu` in a
+    // ja, ko, vi, yue and zh: Hungarian is not in it. Equator`s hand-written table had `hu` in a
     // single global list and rendered this the other way round, in every interface at once.
     const ferenc = personName('hu', { given: 'Ferenc', surname: 'Molnár' });
     expect(render(ferenc, english)).toBe('Ferenc Molnár');
@@ -179,7 +179,7 @@ describe('formatting without the generated artifact', () => {
       english,
       {},
       {
-        profile: 'cldr-99/atlas-person-names-7',
+        profile: 'cldr-99/equator-person-names-7',
         patterns: [],
         rows: [],
       },

@@ -18,17 +18,17 @@ import {
   withPersistence,
   withRecoveryMessage,
   withRouting,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import {
   LocalizedTitleStrategy,
   provideLocalizedRouter,
-} from '@neolorn/atlas/router';
+} from '@neolorn/equator/router';
 import { provideLocalization } from '#i18n';
 import { messages } from '#i18n/shell';
 
 import { routes } from './app.routes';
 import { localeCookie } from './locale-cookie';
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 import { DynamicContentStore, provideDynamicContent } from './dynamic-content';
 import {
   routePolicy,
@@ -54,20 +54,20 @@ export const appFormattingContext = Object.freeze({
 });
 
 /**
- * The one social fact a deployment has to supply, and the reason Atlas asks for it.
+ * The one social fact a deployment has to supply, and the reason Equator asks for it.
  *
  * `og:image` is required by ogp.me and is an absolute URL to this application's own artwork, so it
- * can only come from here: an image URL inside Atlas would be consumer content in a
+ * can only come from here: an image URL inside Equator would be consumer content in a
  * product-neutral library. Supplying it is also what turns the Open Graph block on: everything else
- * in that block, including the `og:locale` spelling that is the whole point, Atlas derives.
+ * in that block, including the `og:locale` spelling that is the whole point, Equator derives.
  */
 const SOCIAL_PREVIEW = {
-  image: 'https://atlas.example/social/preview.png',
+  image: 'https://site.example/social/preview.png',
   card: 'summary_large_image',
   // A brand name, not a sentence. It is the same string in every language on purpose, which is why
   // it stays here and the alt text does not: alt text describes a picture to someone who cannot
   // see it, and that is reading, so it comes from the catalog below.
-  siteName: 'Atlas package consumer',
+  siteName: 'Equator package consumer',
 } as const;
 
 /**
@@ -78,7 +78,7 @@ const SOCIAL_PREVIEW = {
  * `/items/42` and `/lazy` all claimed to be the home page, in both languages, and nothing said so.
  * A chain always has a last branch, so it never stops compiling and never stops answering.
  *
- * They are messages rather than strings for one reason worth stating: `atlas check
+ * They are messages rather than strings for one reason worth stating: `equator check
  * --require-complete` already fails when a target catalog omits a message, so a title with no Arabic
  * translation is a build failure and not a page that quietly serves English. A bespoke metadata
  * format would have needed its own completeness check, and a second completeness mechanism is one
@@ -123,7 +123,7 @@ const ROUTE_DOCUMENTS = {
  * in both languages, with a canonical link to prove it.
  *
  * Messages for the same reason the route documents are messages: a missing Arabic translation here
- * is a build failure under `atlas check --require-complete` rather than an English title on an
+ * is a build failure under `equator check --require-complete` rather than an English title on an
  * Arabic page.
  */
 const OUTCOME_DOCUMENTS = {
@@ -151,13 +151,13 @@ export const appConfig: ApplicationConfig = {
     // otherwise be a second provider call. Adding a route, adding a locale or changing one path
     // spelling in one locale touches none of it.
     //
-    // No `LocationStrategy` provider line: Atlas installs its own from inside, as
+    // No `LocationStrategy` provider line: Equator installs its own from inside, as
     // `withHashLocation()` does, and warns in development if anything else wins the token.
     //
-    // No `withRouterConfig` either. Atlas needs nothing from `canceledNavigationResolution`: the
+    // No `withRouterConfig` either. Equator needs nothing from `canceledNavigationResolution`: the
     // two modes differ only on a cancelled navigation, and the difference reproduces identically
-    // with Atlas and without it. Passing one here warns, because Angular provides
-    // ROUTER_CONFIGURATION non-multi and a consumer's feature replaces Atlas's config entirely.
+    // with Equator and without it. Passing one here warns, because Angular provides
+    // ROUTER_CONFIGURATION non-multi and a consumer's feature replaces Equator's config entirely.
     provideLocalizedRouter(
       routes,
       {
@@ -173,7 +173,7 @@ export const appConfig: ApplicationConfig = {
             ...SOCIAL_PREVIEW,
             imageAlt: localization.text(messages.social.imageAlt),
           };
-          // A route that resolved and turned out to hold nothing. Atlas withdraws the canonical
+          // A route that resolved and turned out to hold nothing. Equator withdraws the canonical
           // link and the alternates on its own, because those are claims about the address; the
           // wording is this application's, and this is where it says it.
           if (
@@ -196,11 +196,11 @@ export const appConfig: ApplicationConfig = {
       },
       // An ordinary application setting, and the one that makes interaction preservation provable.
       // A locale switch is a navigation, so with restoration on the Router sends the page to the
-      // top and Atlas has to put the visitor back. Without it nothing moves, the hook restores
-      // what was never lost, and the scroll assertions below pass whether Atlas acts or not.
+      // top and Equator has to put the visitor back. Without it nothing moves, the hook restores
+      // what was never lost, and the scroll assertions below pass whether Equator acts or not.
       withInMemoryScrolling({ scrollPositionRestoration: 'top' }),
     ),
-    // The one line Atlas asks an application to write, and the reason it is a line rather than
+    // The one line Equator asks an application to write, and the reason it is a line rather than
     // something `provideLocalizedRouter` does. Angular offers no router feature for this token, so
     // claiming it from inside would silently replace a strategy an application had set on purpose,
     // and applications do set it. Omitting the line is not silent: `provideLocalizedRouter`
@@ -208,17 +208,17 @@ export const appConfig: ApplicationConfig = {
     { provide: TitleStrategy, useClass: LocalizedTitleStrategy },
     provideClientHydration(withEventReplay()),
     // One import, one call. The configuration, catalog set, loaders, recovery payload and startup
-    // scopes are all things Atlas generated, so importing each one here by hand would be passing
+    // scopes are all things Equator generated, so importing each one here by hand would be passing
     // them straight back. What remains is what this application actually decides.
     provideLocalization(
-      withExtensions(atlasRuntimeExtensions),
+      withExtensions(runtimeExtensions),
       // The locale URL policy, declared once. The Router integration, the `url` locale source,
       // canonical URLs and reciprocal `hreflang` links all read this one copy; the route table
-      // itself is not here because Atlas generated it and passes it already.
+      // itself is not here because Equator generated it and passes it already.
       withRouting({
         policy: routePolicy,
         projection: appRouteProjection,
-        // Read from this file's source text when Atlas compiles this owner, like the indexing
+        // Read from this file's source text when Equator compiles this owner, like the indexing
         // field, and inert at runtime. `priority` is a number here and a string would not do:
         // route data carries the class, and the class is what carries the numbers.
         sitemap: {
@@ -230,7 +230,7 @@ export const appConfig: ApplicationConfig = {
           lastmodField: 'updated',
         },
       }),
-      // No `withLocaleSources` line. This application wants Atlas's order (URL, then what this
+      // No `withLocaleSources` line. This application wants Equator's order (URL, then what this
       // visitor chose before, then what their client asked for, then the configured default) and
       // that is the default, so writing it out said nothing and made a second place to maintain.
       // `locale-sources.spec.ts` asserts the order this application actually negotiates, so the
@@ -244,7 +244,7 @@ export const appConfig: ApplicationConfig = {
         retryLabel: messages.control.retry,
       }),
       withFormattingContext(appFormattingContext),
-      // Declared rather than defaulted. `systemClock()` is what Atlas would install anyway, and
+      // Declared rather than defaulted. `systemClock()` is what Equator would install anyway, and
       // naming it is what makes the substitution in a test a change to one line rather than a
       // change of shape: the application already says which clock it uses.
       withLocalizationClock(systemClock()),

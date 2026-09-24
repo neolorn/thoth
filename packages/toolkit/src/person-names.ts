@@ -9,9 +9,9 @@
  */
 
 import {
-  ATLAS_PERSON_NAME_DATA_PROFILE,
-  ATLAS_PERSON_NAME_PATTERNS,
-  ATLAS_PERSON_NAME_ROWS,
+  PERSON_NAME_DATA_PROFILE,
+  PERSON_NAME_PATTERNS,
+  PERSON_NAME_ROWS,
 } from './person-names.generated.js';
 
 /**
@@ -21,7 +21,7 @@ import {
  * cell the locale does not fill. Positional rather than named because there are hundreds of them
  * and the names would outweigh the data by an order of magnitude in generated source.
  */
-export type AtlasPersonNameRow = readonly [
+export type PersonNameRow = readonly [
   tag: string,
   cells: readonly number[],
   initial: number,
@@ -34,17 +34,17 @@ export type AtlasPersonNameRow = readonly [
   surnameFirstLocales: readonly string[],
 ];
 
-export interface AtlasPersonNameProfileSet {
-  readonly profile: typeof ATLAS_PERSON_NAME_DATA_PROFILE;
+export interface PersonNameProfileSet {
+  readonly profile: typeof PERSON_NAME_DATA_PROFILE;
   readonly patterns: readonly string[];
-  readonly rows: readonly AtlasPersonNameRow[];
+  readonly rows: readonly PersonNameRow[];
 }
 
 /** The longest row tag that prefixes `tag` on a subtag boundary. Mirrors the runtime lookup. */
 function resolveRow(
-  rows: ReadonlyMap<string, AtlasPersonNameRow>,
+  rows: ReadonlyMap<string, PersonNameRow>,
   tag: string,
-): AtlasPersonNameRow | undefined {
+): PersonNameRow | undefined {
   let candidate = tag.toLowerCase();
   for (;;) {
     const row = rows.get(candidate);
@@ -55,17 +55,17 @@ function resolveRow(
   }
 }
 
-const INDEX: ReadonlyMap<string, AtlasPersonNameRow> = new Map(
-  ATLAS_PERSON_NAME_ROWS.map((row) => [row[0].toLowerCase(), row]),
+const INDEX: ReadonlyMap<string, PersonNameRow> = new Map(
+  PERSON_NAME_ROWS.map((row) => [row[0].toLowerCase(), row]),
 );
 
 /**
  * The person-name profiles a set of locales resolves to, and nothing else.
  *
- * Atlas carries the whole pinned release in this package because it cannot know which locales an
+ * Equator carries the whole pinned release in this package because it cannot know which locales an
  * application will configure. The application's generated artifact carries only what its own
  * locales reach (typically two or three rows, against 379) because a table that is almost
- * entirely index for locales nobody uses is the one place Atlas would stop being
+ * entirely index for locales nobody uses is the one place Equator would stop being
  * pay-for-what-you-use.
  *
  * **Rows keep their own tag, not the tag that asked for them.** A consumer configuring `ar-EG`
@@ -79,8 +79,8 @@ const INDEX: ReadonlyMap<string, AtlasPersonNameRow> = new Map(
  */
 export function personNameProfilesFor(
   locales: readonly string[],
-): AtlasPersonNameProfileSet {
-  const selected = new Map<string, AtlasPersonNameRow>();
+): PersonNameProfileSet {
+  const selected = new Map<string, PersonNameRow>();
   for (const locale of locales) {
     const row = resolveRow(INDEX, locale);
     if (row !== undefined) selected.set(row[0], row);
@@ -92,7 +92,7 @@ export function personNameProfilesFor(
   const poolIndex = new Map<string, number>();
   const intern = (index: number): number => {
     if (index < 0) return -1;
-    const value = ATLAS_PERSON_NAME_PATTERNS[index] as string;
+    const value = PERSON_NAME_PATTERNS[index] as string;
     const existing = poolIndex.get(value);
     if (existing !== undefined) return existing;
     poolIndex.set(value, pool.length);
@@ -101,7 +101,7 @@ export function personNameProfilesFor(
   };
 
   const rows = [...selected.keys()].sort().map((tag) => {
-    const row = selected.get(tag) as AtlasPersonNameRow;
+    const row = selected.get(tag) as PersonNameRow;
     return Object.freeze([
       row[0],
       Object.freeze(row[1].map(intern)),
@@ -113,11 +113,11 @@ export function personNameProfilesFor(
       row[7],
       Object.freeze([...row[8]]),
       Object.freeze([...row[9]]),
-    ]) as AtlasPersonNameRow;
+    ]) as PersonNameRow;
   });
 
   return Object.freeze({
-    profile: ATLAS_PERSON_NAME_DATA_PROFILE,
+    profile: PERSON_NAME_DATA_PROFILE,
     patterns: Object.freeze(pool),
     rows: Object.freeze(rows),
   });

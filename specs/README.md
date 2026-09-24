@@ -7,8 +7,8 @@ documents, each owning one subject, plus this index.
 
 Equator is a localization framework for Angular applications, covering the rendering environments
 Angular itself supports: browser, server rendering, prerendering, and hydration. It is delivered as
-two packages, `@neolorn/atlas` for the runtime and `@neolorn/atlas-toolkit` for the compiler and its
-command line.
+two packages, `@neolorn/equator` for the runtime and `@neolorn/equator-toolkit` for the compiler and
+its command line.
 
 An application declares which locales it serves and writes what its messages say. It owns its routes
 and public URLs, its domain values and business rules, its content and the services that supply it,

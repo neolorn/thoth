@@ -28,7 +28,7 @@ import {
   type LocalizationParticipantReport,
   type LocalizationParticipantRepresentation,
   type LocalizationParticipantState,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 import { type LocalizationParticipantRegistration } from './angular-contracts';
 import { computed, signal, type Signal } from '@angular/core';
 import { isRecord } from './runtime-safety';
@@ -59,7 +59,7 @@ export interface ParticipantTransferAttempt {
 }
 
 export interface ParticipantTransferRecord {
-  readonly profile: 'atlas-participant-state/1';
+  readonly profile: 'equator-participant-state/1';
   readonly participantId: string;
   readonly coordination: LocalizationParticipantCoordination;
   readonly current?: LocalizationParticipantCurrent;
@@ -519,7 +519,7 @@ export function sanitizeParticipantTransferRecords(
         'current',
         'attempt',
       ]) ||
-      item['profile'] !== 'atlas-participant-state/1' ||
+      item['profile'] !== 'equator-participant-state/1' ||
       typeof item['participantId'] !== 'string' ||
       !PARTICIPANT_ID_PATTERN.test(item['participantId']) ||
       (item['coordination'] !== 'required' &&
@@ -545,7 +545,7 @@ export function sanitizeParticipantTransferRecords(
     records.set(
       item['participantId'],
       Object.freeze({
-        profile: 'atlas-participant-state/1',
+        profile: 'equator-participant-state/1',
         participantId: item['participantId'],
         coordination: item[
           'coordination'
@@ -1325,7 +1325,7 @@ export class ParticipantCoordinator {
                   : { report: attempt.report }),
               });
         return Object.freeze({
-          profile: 'atlas-participant-state/1' as const,
+          profile: 'equator-participant-state/1' as const,
           participantId: adapter.id,
           coordination: adapter.coordination,
           ...(state.current === undefined ? {} : { current: state.current }),

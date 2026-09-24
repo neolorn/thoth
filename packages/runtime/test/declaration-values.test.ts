@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AtlasPatternMessageSemanticModel } from '../../toolkit/src/message-format.js';
+import type { PatternMessageSemanticModel } from '../../toolkit/src/message-format.js';
 import type { CompiledInputContract } from '../src/catalog-runtime.js';
 import { parse, render, renderSemantics } from './message-harness.js';
 
@@ -176,10 +176,10 @@ describe('MF2 declaration values', () => {
   it('refuses a select option that arrives from the operand of compiled IR', () => {
     const setter = parse(
       '.local $sel = {1 :integer select=exact}\n{{{$sel}}}',
-    ) as AtlasPatternMessageSemanticModel;
+    ) as PatternMessageSemanticModel;
     const reader = parse(
       '.local $bad = {$other :integer}\n{{{$bad}}}',
-    ) as AtlasPatternMessageSemanticModel;
+    ) as PatternMessageSemanticModel;
     const reannotation = reader.declarations[0];
     const repointed = {
       ...reannotation,
@@ -188,7 +188,7 @@ describe('MF2 declaration values', () => {
         operand: { kind: 'variable' as const, name: 'sel' },
       },
     } as (typeof reader.declarations)[number];
-    const spliced: AtlasPatternMessageSemanticModel = {
+    const spliced: PatternMessageSemanticModel = {
       ...reader,
       declarations: Object.freeze([setter.declarations[0]!, repointed]),
     };

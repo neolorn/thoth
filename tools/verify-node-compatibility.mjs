@@ -31,7 +31,7 @@ import {
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const defaultNodeRoot = resolve(workspaceRoot, '.runtimes/node');
 const nodeRoot = resolve(
-  process.env.ATLAS_NODE_COMPATIBILITY_ROOT ?? defaultNodeRoot,
+  process.env.EQUATOR_NODE_COMPATIBILITY_ROOT ?? defaultNodeRoot,
 );
 const rowWorker = resolve(
   workspaceRoot,
@@ -62,7 +62,7 @@ const rows = Object.freeze(
     .map((row) =>
       Object.freeze({
         ...row,
-        environment: `ATLAS_NODE_${row.version.replaceAll('.', '_')}_EXECUTABLE`,
+        environment: `EQUATOR_NODE_${row.version.replaceAll('.', '_')}_EXECUTABLE`,
       }),
     ),
 );
@@ -186,7 +186,7 @@ async function locateRows() {
   }
   if (failures.length > 0) {
     throw new Error(
-      `Portable Node compatibility rows are incomplete. No downloads are performed by this verifier. Set ATLAS_NODE_COMPATIBILITY_ROOT to use a different portable-runtime root.\n\n${failures.join('\n\n')}`,
+      `Portable Node compatibility rows are incomplete. No downloads are performed by this verifier. Set EQUATOR_NODE_COMPATIBILITY_ROOT to use a different portable-runtime root.\n\n${failures.join('\n\n')}`,
     );
   }
   return Object.freeze(located);
@@ -214,7 +214,7 @@ async function dependencySource(specifier) {
 async function createHarness(runtimeManifest, toolkitManifest) {
   await mkdir(nodeRoot, { recursive: true });
   const harnessRoot = await mkdtemp(
-    resolve(nodeRoot, '.atlas-node-compatibility-harness-'),
+    resolve(nodeRoot, '.node-compatibility-harness-'),
   );
   try {
     const nodeModules = resolve(harnessRoot, 'node_modules');
@@ -222,14 +222,14 @@ async function createHarness(runtimeManifest, toolkitManifest) {
     await mkdir(scopeRoot, { recursive: true });
     await cp(
       resolve(workspaceRoot, 'dist/runtime'),
-      resolve(scopeRoot, 'atlas'),
+      resolve(scopeRoot, 'equator'),
       {
         recursive: true,
       },
     );
     await cp(
       resolve(workspaceRoot, 'dist/toolkit'),
-      resolve(scopeRoot, 'atlas-toolkit'),
+      resolve(scopeRoot, 'equator-toolkit'),
       { recursive: true },
     );
 
@@ -269,13 +269,13 @@ async function verifyBuiltInputs() {
     !(await isFile(toolkitManifestPath))
   ) {
     throw new Error(
-      'Built Atlas packages are missing. Run `pnpm run build` before Node compatibility verification.',
+      'Built Equator packages are missing. Run `pnpm run build` before Node compatibility verification.',
     );
   }
   const runtimeManifest = await readJson(runtimeManifestPath);
   const toolkitManifest = await readJson(toolkitManifestPath);
-  assert.equal(runtimeManifest.name, '@neolorn/atlas');
-  assert.equal(toolkitManifest.name, '@neolorn/atlas-toolkit');
+  assert.equal(runtimeManifest.name, '@neolorn/equator');
+  assert.equal(toolkitManifest.name, '@neolorn/equator-toolkit');
   // What shipped against what the packages declare. The range itself is not restated here: it is
   // read from the source manifests, so this compares the build to its own declaration.
   assert.equal(runtimeManifest.engines?.node, nodeRange);
@@ -319,25 +319,25 @@ async function main() {
       }
       const recordLine = result.stdout
         .split(/\r?\n/u)
-        .find((line) => line.startsWith('ATLAS_NODE_ROW '));
+        .find((line) => line.startsWith('EQUATOR_NODE_ROW '));
       assert.notEqual(
         recordLine,
         undefined,
         `${row.id} did not emit compatibility evidence`,
       );
-      const record = JSON.parse(recordLine.slice('ATLAS_NODE_ROW '.length));
-      assert.equal(record.profile, 'atlas-node-compatibility/1');
+      const record = JSON.parse(recordLine.slice('EQUATOR_NODE_ROW '.length));
+      assert.equal(record.profile, 'equator-node-compatibility/1');
       assert.equal(record.row, row.id);
       assert.equal(record.node, row.version);
       assert.equal(
         record.formatting?.profile,
-        'atlas-node-localized-output/1',
+        'equator-node-localized-output/1',
         `${row.id} produced no localized output evidence`,
       );
       formattingByRow.set(row.id, record.formatting);
       assert.equal(
         record.toolkitWorkflow?.profile,
-        'atlas-node-toolkit-workflow/1',
+        'equator-node-toolkit-workflow/1',
       );
       assert.equal(record.toolkitWorkflow?.initialGenerate, 'changed');
       assert.equal(
@@ -389,7 +389,7 @@ async function main() {
       );
     }
 
-    process.stdout.write('Atlas built-package Node compatibility:\n');
+    process.stdout.write('Equator built-package Node compatibility:\n');
     for (const row of evidence) {
       process.stdout.write(
         `  ${row.row} ${row.node} (${row.platform}/${row.architecture}) - runtime ${row.runtimeEntrypoints.length} entry point(s), toolkit API, host admission, CLI help, identical ar-EG and en-US output, generate changed->stable, check fresh (${row.toolkitWorkflow.generatedFiles} files/${row.toolkitWorkflow.generatedBytes} bytes)\n`,
@@ -403,7 +403,7 @@ async function main() {
           dirname(resolvedHarness) === nodeRoot &&
           resolvedHarness
             .slice(nodeRoot.length + 1)
-            .startsWith('.atlas-node-compatibility-harness-'),
+            .startsWith('.node-compatibility-harness-'),
         `Refusing to remove unexpected harness path ${resolvedHarness}`,
       );
       await rm(resolvedHarness, { recursive: true, force: true });
@@ -413,7 +413,7 @@ async function main() {
 
 main().catch((error) => {
   process.stderr.write(
-    `Atlas Node compatibility verification failed: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
+    `Equator Node compatibility verification failed: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
   );
   process.exitCode = 1;
 });

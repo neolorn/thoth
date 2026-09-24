@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseAtlasCatalog } from '../src/index.js';
-import { analyzeAtlasCatalogSet } from '../src/semantic-model.js';
+import { parseCatalog } from '../src/index.js';
+import { analyzeCatalogSet } from '../src/semantic-model.js';
 import { testProjectConfiguration } from './fixtures.js';
 
 /**
  * NEW-1: a target catalog that omits a required source message.
  *
- * `semantic-model.ts` errored when a target *invented* a message (ATL1304) and returned silently
- * when a target *omitted* one. So an incomplete locale looked finished: `atlas check` exited 0,
+ * `semantic-model.ts` errored when a target *invented* a message (EQ1304) and returned silently
+ * when a target *omitted* one. So an incomplete locale looked finished: `equator check` exited 0,
  * generation succeeded, a re-check reported output current, and the message fell back to the
  * source locale in a production build with nothing said anywhere.
  *
@@ -17,7 +17,7 @@ import { testProjectConfiguration } from './fixtures.js';
  * filled later.
  *
  * The severity is settled: warn during development, fail in CI through an explicit
- * `atlas check --require-complete`. English lands before Arabic in ordinary authoring order, so
+ * `equator check --require-complete`. English lands before Arabic in ordinary authoring order, so
  * erroring during development would break the dev loop on every new message and train a team to
  * bypass the check.
  */
@@ -25,7 +25,7 @@ import { testProjectConfiguration } from './fixtures.js';
 const configuration = testProjectConfiguration(['en-US', 'ar-EG']);
 
 function catalog(role: 'source' | 'target', locale: string, body: string) {
-  const result = parseAtlasCatalog(body, {
+  const result = parseCatalog(body, {
     role,
     providerId: 'home',
     scopeId: 'shell',
@@ -61,7 +61,7 @@ const missingTwo = catalog(
 );
 
 const analyze = (target: ReturnType<typeof catalog>, requireComplete = false) =>
-  analyzeAtlasCatalogSet({
+  analyzeCatalogSet({
     configuration,
     catalogs: [source, target],
     ...(requireComplete ? { requireCompleteTargets: true } : {}),
@@ -76,7 +76,7 @@ describe('a target locale that omits a source message', () => {
 
   it('reports each omission by name', () => {
     const graph = analyze(missingTwo);
-    const omissions = graph.diagnostics.filter((d) => d.code === 'ATL1307');
+    const omissions = graph.diagnostics.filter((d) => d.code === 'EQ1307');
 
     expect(omissions).toHaveLength(2);
     const summaries = omissions.map((d) => d.summary).join(' ');
@@ -92,7 +92,7 @@ describe('a target locale that omits a source message', () => {
     const graph = analyze(missingOne);
 
     expect(graph.ok).toBe(true);
-    const omissions = graph.diagnostics.filter((d) => d.code === 'ATL1307');
+    const omissions = graph.diagnostics.filter((d) => d.code === 'EQ1307');
     expect(omissions).toHaveLength(1);
     expect(omissions[0]?.severity).toBe('warning');
   });
@@ -102,9 +102,9 @@ describe('a target locale that omits a source message', () => {
 
     // On the severity, and `ok` stays true: an escalated completeness finding says the
     // locale is unfinished, not that the analysis has no graph to give. What blocks the
-    // run is the severity, and the run is what `checkAtlasProject` and the CLI decide.
+    // run is the severity, and the run is what `checkProject` and the CLI decide.
     expect(graph.ok).toBe(true);
-    const omissions = graph.diagnostics.filter((d) => d.code === 'ATL1307');
+    const omissions = graph.diagnostics.filter((d) => d.code === 'EQ1307');
     expect(omissions).toHaveLength(1);
     expect(omissions[0]?.severity).toBe('error');
   });
@@ -121,13 +121,13 @@ describe('a target locale that omits a source message', () => {
     for (const requireComplete of [false, true]) {
       const graph = analyze(invented, requireComplete);
       expect(graph.ok).toBe(false);
-      expect(graph.diagnostics.map((d) => d.code)).toContain('ATL1304');
+      expect(graph.diagnostics.map((d) => d.code)).toContain('EQ1304');
     }
   });
 
   it('carries the message identity in the diagnostic path', () => {
     const graph = analyze(missingOne);
-    const omission = graph.diagnostics.find((d) => d.code === 'ATL1307');
+    const omission = graph.diagnostics.find((d) => d.code === 'EQ1307');
 
     expect(omission?.path).toEqual(['messages', 'nav.products']);
   });

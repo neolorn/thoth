@@ -1,7 +1,7 @@
 /**
  * The HTTP layer: one request in, one response out, with no Angular anywhere in the graph.
  *
- * A secondary entry point rather than part of `@neolorn/atlas`, on the *environment* reason
+ * A secondary entry point rather than part of `@neolorn/equator`, on the *environment* reason
  * `specs/02-packages-and-platform.spec.md` section 2 allows rather than the optional-peer reason the
  * other three sit on. It carries no peer at all, and that is precisely
  * what it demonstrates: every existing entry point throws `PlatformLocation needs the JIT compiler`

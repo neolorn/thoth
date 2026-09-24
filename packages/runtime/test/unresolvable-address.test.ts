@@ -13,7 +13,7 @@ import {
   type GeneratedConfiguration,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /**
  * An address is built without asking whether it can be resolved.
@@ -24,10 +24,10 @@ import {
  * leading segment spells one of them is not a route at a free address. It is an address this
  * library reads as a locale, and the route behind it is unreachable at the address it declared.
  *
- * Atlas built such addresses and handed them out: `buildLocalizedRoute` returned `/ar-eg` for a
+ * Equator built such addresses and handed them out: `buildLocalizedRoute` returned `/ar-eg` for a
  * route its own resolver answered not-found for, and `localizedServerRoutes` scheduled a rendered
  * file there. That is the same class of defect as a codec that cannot parse its own serialization,
- * one layer up, and it gets the same answer: what Atlas writes, Atlas reads back.
+ * one layer up, and it gets the same answer: what Equator writes, Equator reads back.
  *
  * The property asserted here is that one sentence and not a list of cases: **for every route, in
  * every locale, under every policy, either the address is refused or the resolver answers it.**
@@ -37,7 +37,7 @@ import {
  * failure here rather than a page that 404s in production.
  */
 
-const IDENTITY = 'sha256-AtlasRouteProjectionTestIdentity0123456789_';
+const IDENTITY = 'sha256-RouteProjectionTestIdentity012345678901234_';
 
 /**
  * Ordinary routes and colliding ones in one projection, which is the point of the fixture.
@@ -48,7 +48,7 @@ const IDENTITY = 'sha256-AtlasRouteProjectionTestIdentity0123456789_';
  */
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'atlas-route-projection/1',
+    profile: 'equator-route-projection/1',
     identity: IDENTITY,
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
@@ -83,7 +83,7 @@ const ORDINARY = ['route:_index', 'tools', 'article'] as const;
  */
 const VALID: RouteRuntimeProjection = {
   generated: {
-    profile: 'atlas-route-projection/1',
+    profile: 'equator-route-projection/1',
     identity: IDENTITY,
     routes: PROJECTION.generated.routes.filter(({ id }) =>
       [...ORDINARY, 'page'].includes(id),
@@ -138,7 +138,7 @@ const POLICIES: readonly (readonly [string, LocaleUrlPolicy])[] = [
 ];
 
 const CONFIGURATION: GeneratedConfiguration = {
-  generatedAbi: 'atlas-generated/1',
+  generatedAbi: 'equator-generated/1',
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
   locales: ['en-US', 'ar-EG'],
@@ -175,7 +175,7 @@ function pathOf(address: string): string {
   return address.startsWith('http') ? new URL(address).pathname : address;
 }
 
-describe('every address Atlas emits, Atlas resolves', () => {
+describe('every address Equator emits, Equator resolves', () => {
   /**
    * The whole item in one assertion, run over every route, locale and policy.
    *

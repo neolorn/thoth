@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
-import { analyzeAtlasApplication } from '../src/static-analysis.js';
+import { analyzeApplication } from '../src/static-analysis.js';
 
 /**
  * What this guards is the path a forwarded finding carries when it sits inside a generated module.
@@ -17,7 +17,7 @@ const projectRoot = resolve('fixtures/semantic-analysis/virtual-module-paths');
 const appPath = resolve(projectRoot, 'app.ts');
 
 function pathsOfFindings(specifier: string): readonly string[] {
-  const analysis = analyzeAtlasApplication({
+  const analysis = analyzeApplication({
     projectRoot,
     rootNames: [appPath],
     sources: [
@@ -55,16 +55,16 @@ function pathsOfFindings(specifier: string): readonly string[] {
 
 describe('the path a finding inside a generated module carries', () => {
   it('spells the module the overlay stands in for', () => {
-    expect(pathsOfFindings('#i18n/lazy')).toContain('.atlas-virtual/lazy.ts');
+    expect(pathsOfFindings('#i18n/lazy')).toContain('.equator-virtual/lazy.ts');
   });
 
   it('spells a nested generated module the same way', () => {
     expect(pathsOfFindings('#i18n/catalogs/shell')).toContain(
-      '.atlas-virtual/catalogs/shell.ts',
+      '.equator-virtual/catalogs/shell.ts',
     );
   });
 
   it('names the root module index', () => {
-    expect(pathsOfFindings('#i18n')).toContain('.atlas-virtual/index.ts');
+    expect(pathsOfFindings('#i18n')).toContain('.equator-virtual/index.ts');
   });
 });

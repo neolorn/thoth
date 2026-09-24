@@ -22,8 +22,8 @@ describe('a transferred switch address', () => {
     // slug, the reader's query, a fragment, and a path that is only the root.
     for (const address of [
       '/en-us',
-      '/ar-eg/articles/atlas-handbook',
-      '/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84-%D8%A3%D8%B7%D9%84%D8%B3',
+      '/ar-eg/articles/handbook',
+      '/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84',
       '/en-us/search?q=chair&page=2',
       '/en-us/guide#section-3',
       '/',

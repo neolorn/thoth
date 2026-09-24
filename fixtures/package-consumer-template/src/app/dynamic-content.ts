@@ -21,9 +21,9 @@ import {
   type LocalizationParticipantRegistration,
   type LocalizationParticipantRepresentation,
   type LocalizationParticipantState,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 
-export const FEATURE_ARTICLE_ID = 'atlas-handbook';
+export const FEATURE_ARTICLE_ID = 'handbook';
 
 export interface FeatureComment {
   readonly id: string;
@@ -74,7 +74,7 @@ const COMMENTS: readonly FeatureComment[] = Object.freeze([
   }),
   Object.freeze({
     id: 'community-multilingual',
-    text: 'Atlas works: أطلس يعمل',
+    text: 'Equator works: Equator يعمل',
     representation: Object.freeze({
       kind: 'multilingual',
       languages: Object.freeze([
@@ -106,15 +106,15 @@ const COMMENTS: readonly FeatureComment[] = Object.freeze([
 
 const ARTICLES = Object.freeze({
   'en-US': Object.freeze({
-    slug: 'atlas-handbook',
-    title: 'The Atlas localization handbook',
+    slug: 'handbook',
+    title: 'The Equator localization handbook',
     summary: 'Consumer-owned content coordinated through metadata only.',
     direction: 'ltr' as const,
   }),
   'ar-EG': Object.freeze({
-    slug: 'دليل-أطلس',
-    title: 'دليل أطلس للترجمة',
-    summary: 'محتوى يملكه التطبيق وينسقه أطلس عبر البيانات الوصفية فقط.',
+    slug: 'دليل',
+    title: 'دليل Equator للترجمة',
+    summary: 'محتوى يملكه التطبيق وينسقه Equator عبر البيانات الوصفية فقط.',
     direction: 'rtl' as const,
   }),
 });
@@ -148,8 +148,8 @@ export class MemoryFeatureArticleSource implements FeatureArticleSource {
     }
     // Content this application owns, for a locale it has no content in.
     //
-    // Atlas transforms catalogs. It never sees an article title, so a pseudo-locale has no
-    // pseudo-localized article and nothing could produce one: the text is in a store Atlas has
+    // Equator transforms catalogs. It never sees an article title, so a pseudo-locale has no
+    // pseudo-localized article and nothing could produce one: the text is in a store Equator has
     // no access to. An application still has to answer, and answering `unavailable` for every
     // locale outside this table makes the page unopenable: the participant is required, so a
     // pseudo-locale build fails to render at all rather than rendering something a developer can
@@ -157,12 +157,12 @@ export class MemoryFeatureArticleSource implements FeatureArticleSource {
     //
     // So the source locale's representation is supplied and `supplyingLocale` says so, which is
     // the same decision this fixture already made one layer up: `articleSlugCodec` serializes the
-    // English spelling for every locale but `ar-EG`, so `/en-arab-xb/articles/atlas-handbook` is
+    // English spelling for every locale but `ar-EG`, so `/en-arab-xb/articles/handbook` is
     // already addressing the English article.
     //
-    // The consequence is the point rather than a compromise. On a pseudo-locale page every Atlas
+    // The consequence is the point rather than a compromise. On a pseudo-locale page every Equator
     // message carries its markers and this title does not, which is exactly what an untransformed
-    // string is supposed to look like, and content that never went through Atlas is the largest
+    // string is supposed to look like, and content that never went through Equator is the largest
     // class of them.
     const representation =
       ARTICLES[targetLocale as keyof typeof ARTICLES] ?? ARTICLES['en-US'];
@@ -192,7 +192,7 @@ export class MemoryFeatureArticleSource implements FeatureArticleSource {
 }
 
 interface FeatureArticleTransfer {
-  readonly profile: 'atlas-feature-article-transfer/1';
+  readonly profile: 'feature-article-transfer/1';
   readonly article: FeatureArticle;
   readonly report: LocalizationParticipantCommitReport;
 }
@@ -432,7 +432,7 @@ export class DynamicContentStore {
     if (article !== undefined && staged?.article !== undefined) {
       this.transfer?.write(
         Object.freeze({
-          profile: 'atlas-feature-article-transfer/1',
+          profile: 'feature-article-transfer/1',
           article,
           report,
         }),
@@ -465,10 +465,10 @@ export class DynamicContentStore {
 }
 
 const DYNAMIC_CONTENT_SOURCE = new InjectionToken<FeatureArticleSource>(
-  'atlas-feature-lab-dynamic-content-source',
+  'feature-lab-dynamic-content-source',
 );
 const transferKey = makeStateKey<FeatureArticleTransfer>(
-  '@atlas-feature-lab:dynamic-content/1',
+  '@feature-lab:dynamic-content/1',
 );
 
 export function provideDynamicContent(

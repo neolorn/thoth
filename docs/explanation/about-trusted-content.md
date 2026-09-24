@@ -1,8 +1,8 @@
 # About the trust model for translated content
 
 A translated string is content from outside your codebase. It was written by someone who is not on
-your team, it arrived through a workflow you do not control, and it is rendered into your page. Atlas
-treats it as data, and that decision is what bounds what a catalog entry can do.
+your team, it arrived through a workflow you do not control, and it is rendered into your page.
+Equator treats it as data, and that decision is what bounds what a catalog entry can do.
 
 ## Messages and markup
 
@@ -29,16 +29,16 @@ A catalog supplies neither, so no URL can reach the page through a translated st
 
 An Arabic sentence containing an English product name, or an English sentence containing an Arabic
 one, needs isolation per [UAX #9](https://www.unicode.org/reports/tr9/) or the punctuation lands in
-the wrong place. Atlas isolates what it interpolates, so a name inside a right-to-left sentence does
-not drag the full stop to the other end of the line.
+the wrong place. Equator isolates what it interpolates, so a name inside a right-to-left sentence
+does not drag the full stop to the other end of the line.
 
 The document's `dir` follows the committed locale, and so does each switcher option's, which is why a
 locale option is laid out in its own direction rather than the page's. The document's `lang` follows
 it too, which is what a screen reader reads to choose a voice.
 
 A widget rendered inside a host page that maintains its own `lang` and `dir` composes
-`withoutDocumentLocale()`, and Atlas leaves the document alone. It is named for the withdrawal rather
-than taking a flag, so the default behavior has no spelling of its own.
+`withoutDocumentLocale()`, and Equator leaves the document alone. It is named for the withdrawal
+rather than taking a flag, so the default behavior has no spelling of its own.
 
 [Unicode](https://home.unicode.org/)'s own hazards are diagnostics at compile time rather than
 surprises on the page: a catalog entry carrying an unpaired directional override, or characters that

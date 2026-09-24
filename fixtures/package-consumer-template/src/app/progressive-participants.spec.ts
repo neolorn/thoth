@@ -9,16 +9,16 @@ import {
   type LocalizationParticipant,
   type LocalizationParticipantContext,
   type LocalizationParticipantRegistration,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
- * Progressive participants, which is Atlas's answer to the region that must not hold up the page.
+ * Progressive participants, which is Equator's answer to the region that must not hold up the page.
  *
  * Nothing else guards this invariant: with `startIndependentParticipants` handed an empty list,
  * the rest of the consumer suite passes, because this application registers exactly one participant
@@ -30,7 +30,7 @@ import { atlasRuntimeExtensions } from './runtime-extensions';
  * the old one forever. Nothing throws, so nothing without a test notices.
  *
  * Both halves are needed and neither is sufficient. That the region *starts* would still hold if
- * Atlas awaited it like a required participant, which is the opposite bug and the one that makes
+ * Equator awaited it like a required participant, which is the opposite bug and the one that makes
  * progressive coordination pointless. That it *finishes* would hold in that world too. What pins
  * the behaviour is the pair: the primary commit lands with the region still in flight, and the
  * region completes afterwards on its own.
@@ -90,11 +90,11 @@ function setup(region: IndependentRegion) {
         catalogSet,
         catalogLoaders,
         recoveryPayload,
-        extensions: atlasRuntimeExtensions,
+        extensions: runtimeExtensions,
       }),
       // From a provider, which is where an application registers a participant and is the reason
       // this reaches the path it does. Registering imperatively after `TestBed.inject` looks
-      // equivalent and is not: by then Atlas's app initializer has already started, so the
+      // equivalent and is not: by then Equator's app initializer has already started, so the
       // registration arrives late and is picked up by the catch-up path instead of by the
       // dispatch that runs at the end of initialization. Both paths work; only one of them is
       // this invariant, and the other is the one a test reaches by accident.

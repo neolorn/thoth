@@ -3,19 +3,19 @@ import {
   Localization,
   LocalizationRecovery,
   createLocalizationContext,
-} from '@neolorn/atlas';
-import { LocalizationTestingController } from '@neolorn/atlas/testing';
+} from '@neolorn/equator';
+import { LocalizationTestingController } from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { messages, providerId, scopeId } from '#i18n/shell';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 const scope = { providerId, scopeId } as const;
 
-describe('Atlas runtime failure and recovery contracts', () => {
+describe('Equator runtime failure and recovery contracts', () => {
   it('publishes independent recovery text and retries initialization explicitly', async () => {
     const sourceIdentity = `${providerId}:${scopeId}:en-US` as const;
     const sourceLoader = catalogLoaders[sourceIdentity];
@@ -35,7 +35,7 @@ describe('Atlas runtime failure and recovery contracts', () => {
           },
         },
         recoveryPayload,
-        extensions: atlasRuntimeExtensions,
+        extensions: runtimeExtensions,
       },
       bootstrapScopes: [scope],
       recoveryMessage: messages.recovery.unavailable,
@@ -88,7 +88,7 @@ describe('Atlas runtime failure and recovery contracts', () => {
         catalogSet,
         catalogLoaders,
         recoveryPayload,
-        extensions: atlasRuntimeExtensions,
+        extensions: runtimeExtensions,
         fallbackPolicy: 'strict',
       },
       bootstrapScopes: [scope],
@@ -112,7 +112,7 @@ describe('Atlas runtime failure and recovery contracts', () => {
         configuration,
         catalogSet,
         catalogLoaders: controller.catalogLoaders,
-        extensions: atlasRuntimeExtensions,
+        extensions: runtimeExtensions,
       },
       bootstrapScopes: [scope],
     });

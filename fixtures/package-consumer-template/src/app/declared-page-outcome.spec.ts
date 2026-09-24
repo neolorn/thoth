@@ -3,12 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, RouterOutlet, TitleStrategy } from '@angular/router';
-import { Localization, withRouting } from '@neolorn/atlas';
+import { Localization, withRouting } from '@neolorn/equator';
 import {
   LocalizedTitleStrategy,
   provideLocalizedRouter,
-} from '@neolorn/atlas/router';
-import { provideLocalizationTesting } from '@neolorn/atlas/testing';
+} from '@neolorn/equator/router';
+import { provideLocalizationTesting } from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -17,7 +17,7 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
 
 import { routes } from './app.routes';
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 import { provideDynamicContent } from './dynamic-content';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
@@ -36,12 +36,12 @@ import { routePolicy, appRouteProjection } from './localization.routes';
  */
 
 const ARABIC = 'ar-EG';
-const ORIGIN = 'https://atlas.example';
+const ORIGIN = 'https://site.example';
 
 /**
  * A host with an outlet, because the declaration comes from the route's own component.
  *
- * Without a rendered outlet nothing declares and every assertion below reads the head Atlas built
+ * Without a rendered outlet nothing declares and every assertion below reads the head Equator built
  * from the address alone, which is the head this file exists to say is not enough.
  */
 @Component({
@@ -95,7 +95,7 @@ async function configure(): Promise<Router> {
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
           routeProjection,
         },
         withRouting({ policy: routePolicy, projection: appRouteProjection }),
@@ -137,11 +137,11 @@ describe('a route whose entity turned out to be absent', () => {
     // The control, measured rather than argued. A filed topic is an ordinary indexable page, so
     // every assertion below is distinguishable from one that simply found no head at all.
     const router = await configure();
-    await router.navigateByUrl('/topics/atlas-handbook');
+    await router.navigateByUrl('/topics/handbook');
     await settle();
 
     expect(document.title).toBe('Topic');
-    expect(canonical()).toBe(`${ORIGIN}/en-us/topics/atlas-handbook`);
+    expect(canonical()).toBe(`${ORIGIN}/en-us/topics/handbook`);
     expect(alternates()).toBeGreaterThan(0);
     expect(robots()).toBeNull();
   });
@@ -177,9 +177,9 @@ describe('a route whose entity turned out to be absent', () => {
     // The trap the navigation stamp exists to prevent: the page after a missing one is an ordinary
     // page, and a declaration held anywhere but on the navigation that made it would answer for
     // both.
-    await router.navigateByUrl('/topics/atlas-handbook');
+    await router.navigateByUrl('/topics/handbook');
     await settle();
-    expect(canonical()).toBe(`${ORIGIN}/en-us/topics/atlas-handbook`);
+    expect(canonical()).toBe(`${ORIGIN}/en-us/topics/handbook`);
     expect(robots()).toBeNull();
     expect(document.title).toBe('Topic');
   });
@@ -200,7 +200,7 @@ describe('a route whose entity turned out to be absent', () => {
 describe('a response that reached no route at all', () => {
   it('writes the head of an address this application does not serve', async () => {
     const router = await configure();
-    await router.navigateByUrl('/topics/atlas-handbook');
+    await router.navigateByUrl('/topics/handbook');
     await settle();
     expect(document.title).toBe('Topic');
 

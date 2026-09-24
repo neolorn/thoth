@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { CompiledInputContract } from '../src/catalog-runtime.js';
 import { render } from './message-harness.js';
-import type { FormattingContext } from '@neolorn/atlas/core';
+import type { FormattingContext } from '@neolorn/equator/core';
 
 /**
  * What the date family's options do to a rendering, measured by what changes when the instant does.
@@ -327,7 +327,7 @@ describe('the time zone', () => {
   });
 
   /**
-   * *"`input` ... means that the time zone of the operand is used."* An Atlas date input is a
+   * *"`input` ... means that the time zone of the operand is used."* An Equator date input is a
    * `Date`, which carries no zone, so the only operand that can answer is one whose declaration
    * wrote a zone, and the answer has to be that zone, not the context's.
    */

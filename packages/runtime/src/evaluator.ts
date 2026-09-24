@@ -31,7 +31,7 @@ import {
   type LocalizedValuePart,
   type MessageHandle,
   type RuntimeMessageFunctionDescriptor,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 import type {
   CompiledCatalog,
   CompiledInputContract,
@@ -40,19 +40,19 @@ import type {
 } from './catalog-runtime';
 import { RuntimeExtensions } from './extensions';
 import {
-  ATLAS_MESSAGE_FUNCTION_OPTIONS,
-  atlasDateOperandOptions,
-  atlasDateTimeFormatOptions,
-  atlasExtensionOptionProfile,
-  atlasInheritedOptions,
-  atlasMessageOptionProblem,
-  atlasNumberFormatOptions,
-  type AtlasMessageOperandKind,
+  MESSAGE_FUNCTION_OPTIONS,
+  resolvedDateOptions,
+  dateTimeFormatOptions,
+  extensionOptionProfile,
+  inheritedOptions,
+  messageOptionProblem,
+  numberFormatOptions,
+  type MessageOperandKind,
 } from './message-function-options';
 import {
-  ATLAS_NUMBER_LITERAL,
-  atlasExtensionOptionValue,
-  atlasExtensionOptionValueAllowed,
+  NUMBER_LITERAL_PATTERN,
+  extensionOptionValue,
+  extensionOptionValueAllowed,
 } from './message-format-syntax';
 import {
   type AsReceived,
@@ -80,8 +80,8 @@ interface ResolvedValue {
   /**
    * MF2's directionality of a resolved value, which is not the direction of its locale.
    *
-   * Text Atlas formatted itself runs the way its locale runs. Text that arrived from a consumer
-   * does not, and Atlas will not claim to know which language it is in, so it answers `auto` and
+   * Text Equator formatted itself runs the way its locale runs. Text that arrived from a consumer
+   * does not, and Equator will not claim to know which language it is in, so it answers `auto` and
    * lets the first-strong rule decide.
    */
   readonly contentDirection: ContentDirection;
@@ -199,7 +199,7 @@ function invalidInput(
 /**
  * The numbering systems this runtime has data for.
  *
- * Read once. `Intl.supportedValuesOf` walks ICU's tables to answer, and every formatter Atlas
+ * Read once. `Intl.supportedValuesOf` walks ICU's tables to answer, and every formatter Equator
  * builds consults this.
  */
 let cachedNumberingSystems: ReadonlySet<string> | undefined;
@@ -225,12 +225,12 @@ function supportedNumberingSystems(): ReadonlySet<string> {
  *
  * Built through `Intl.Locale` and never by concatenation. `${locale}-u-nu-${system}` throws on any
  * locale that already carries a `-u-` extension, because RFC 5646 §2.2.6 forbids a repeated
- * singleton, and Atlas canonicalizes through `Intl.getCanonicalLocales`, which preserves them.
+ * singleton, and Equator canonicalizes through `Intl.getCanonicalLocales`, which preserves them.
  * `Intl.Locale` merges into the extension already there: `ar-EG-u-ca-islamic` becomes
  * `ar-EG-u-ca-islamic-nu-latn`.
  *
- * This tag is for constructing formatters and is never the locale Atlas reports as active. Nothing
- * reads `resolvedOptions().locale`, which would report `ar-EG-u-nu-latn` here.
+ * This tag is for constructing formatters and is never the locale Equator reports as active.
+ * Nothing reads `resolvedOptions().locale`, which would report `ar-EG-u-nu-latn` here.
  */
 export function formattingLocale(
   context: FormattingContext,
@@ -474,10 +474,10 @@ function validExtensionOptions(
     // Not `matchesExtensionType`, which is for an operand and a result: those are real values, and
     // an option is whatever the message spelled. A literal reaches here as text even when the
     // descriptor declared `integer`.
-    const interpreted = atlasExtensionOptionValue(value, contract.type);
+    const interpreted = extensionOptionValue(value, contract.type);
     if (
       interpreted === undefined ||
-      !atlasExtensionOptionValueAllowed(interpreted, contract.values)
+      !extensionOptionValueAllowed(interpreted, contract.values)
     ) {
       return false;
     }
@@ -493,7 +493,7 @@ function validExtensionOptions(
  * one after the other: a key that looks like a number is compared only against the value's exact
  * serialization, and a key that is a plural keyword only against the rule-selected category.
  */
-const NUMBER_LITERAL = ATLAS_NUMBER_LITERAL;
+const NUMBER_LITERAL = NUMBER_LITERAL_PATTERN;
 
 /** The six CLDR plural categories, which are the only non-numeric keys a numeric selector takes. */
 const PLURAL_KEYWORDS: ReadonlySet<string> = Object.freeze(
@@ -541,7 +541,7 @@ function plainResolved(
     text,
     locale,
     direction,
-    // Nothing here was formatted by Atlas: this is whatever the consumer passed in. Giving it the
+    // Nothing here was formatted by Equator: this is whatever the consumer passed in. Giving it the
     // message locale's direction is the assumption that produced the defect this replaces: a
     // customer name typed in Arabic inside an English message is not left-to-right because the
     // message is. `auto` where the content could reorder, so the renderer's first-strong rule
@@ -658,12 +658,12 @@ interface UnicodeOptions {
  * Read the `u:` namespace out of an option mapping.
  *
  * MessageFormat 2 reserves `u:` for options that belong to the message syntax rather than to any
- * function. Atlas parsed them, folded them in with everything else and then dropped them, which is
- * the worst of the three available behaviours: an author who wrote `u:dir=rtl` got no diagnostic
+ * function. Equator parsed them, folded them in with everything else and then dropped them, which
+ * is the worst of the three available behaviours: an author who wrote `u:dir=rtl` got no diagnostic
  * and no isolation.
  *
  * Anything outside `u:dir` and `u:id` is refused rather than ignored. `u:locale` is a real option
- * in the spec that Atlas does not implement, and quietly accepting it would mean a message that
+ * in the spec that Equator does not implement, and quietly accepting it would mean a message that
  * formats in the wrong locale with nothing to show for it. The toolkit rejects all of this at parse
  * time; this is the same rule applied to a compiled artifact that did not come through it.
  */
@@ -702,7 +702,7 @@ function unicodeOptions(
       continue;
     }
     invalidMessage(
-      `MessageFormat option ${name} on ${context} is outside the Atlas 1 profile.`,
+      `MessageFormat option ${name} on ${context} is outside the Equator 1 profile.`,
     );
   }
   return Object.freeze({
@@ -727,7 +727,7 @@ function withoutUnicodeOptions(
  *
  * `inherit` is not the same as writing nothing. Written explicitly it says the value is ordinary
  * text of the message's own locale, which turns off the content check `plainResolved` applies by
- * default: the one escape hatch an author has when Atlas isolates something it need not.
+ * default: the one escape hatch an author has when Equator isolates something it need not.
  */
 function applyUnicodeOptions(
   value: ResolvedValue,
@@ -750,7 +750,7 @@ function applyUnicodeOptions(
  *
  * An option can reach here as a literal from the message, as whatever a consumer passed for
  * `maximumFractionDigits=$digits`, or carried on an operand's resolved value. `String` is applied
- * once, here, so `atlasMessageOptionProblem` sees the same shape in all three cases and there is
+ * once, here, so `messageOptionProblem` sees the same shape in all three cases and there is
  * one answer to what a valid option is rather than one per arrival route.
  */
 function optionText(
@@ -776,7 +776,7 @@ function checkFunctionOptions(
   options: Readonly<Record<string, string>>,
   written: boolean,
 ): void {
-  const profile = ATLAS_MESSAGE_FUNCTION_OPTIONS[functionName];
+  const profile = MESSAGE_FUNCTION_OPTIONS[functionName];
   if (profile === undefined) return;
   for (const [name, value] of Object.entries(options)) {
     // An option the function does not define is carried, not applied: the specification puts an
@@ -791,7 +791,7 @@ function checkFunctionOptions(
               `it takes ${[...profile.accepts].sort().join(', ')}.`,
       );
     }
-    const problem = atlasMessageOptionProblem(functionName, name, value);
+    const problem = messageOptionProblem(functionName, name, value);
     if (problem !== undefined) {
       invalidInput(
         `MessageFormat option ${name}=${JSON.stringify(value)} on :${functionName} ${problem}.`,
@@ -809,7 +809,7 @@ function checkFunctionOptions(
  * options of the operand".
  *
  * **`select` is the exception the specification names.** *"If the `select` option is set by an
- * implementation-defined type used as an operand, a Bad Option Error is emitted."* Atlas refuses
+ * implementation-defined type used as an operand, a Bad Option Error is emitted."* Equator refuses
  * rather than reports, for the reason it refuses everywhere else: `select` decides which CLDR table
  * a target catalog's plural coverage is checked against, so a message whose selection behaviour
  * arrives by inheritance is one whose translations were checked against the wrong table.
@@ -837,7 +837,7 @@ function checkFunctionOptions(
  * What one extension call resolves its options to: the operand's, then the expression's over them,
  * narrowed to what the descriptor declares.
  *
- * The narrowing is the part that is Atlas's rather than MessageFormat's. A descriptor is a closed
+ * The narrowing is the part that is Equator's rather than MessageFormat's. A descriptor is a closed
  * statement of the options a function accepts and `validExtensionOptions` enforces it on the way
  * in, so inheritance must not be a second door an undeclared name walks through. The unnarrowed
  * mapping is still what the resolved value carries forward, because the next annotation in the
@@ -848,14 +848,14 @@ function extensionOperandOptions(
   declared: Readonly<Record<string, unknown>>,
   descriptor: RuntimeMessageFunctionDescriptor,
 ): Readonly<Record<string, unknown>> {
-  return atlasInheritedOptions(
+  return inheritedOptions(
     referenced?.kind === 'variable' ? referenced.value.options : undefined,
     declared,
     // The same profile the compiler builds from the same descriptor. Written as one call rather
     // than as a spread that happens to agree with one, because the compiler refusing exactly what
     // this could not honour is the property, and two merges that agree today are two merges.
-    atlasExtensionOptionProfile(
-      descriptor.operandType as AtlasMessageOperandKind,
+    extensionOptionProfile(
+      descriptor.operandType as MessageOperandKind,
       Object.keys(descriptor.options ?? {}),
     ),
   );
@@ -885,7 +885,7 @@ function numericOperandOptions(
   const carried =
     referenced?.kind === 'variable' ? referenced.value.options : undefined;
   if (carried === undefined) return declared;
-  const profile = ATLAS_MESSAGE_FUNCTION_OPTIONS[functionName];
+  const profile = MESSAGE_FUNCTION_OPTIONS[functionName];
   if (
     profile?.accepts.includes('select') === true &&
     carried['select'] !== undefined &&
@@ -897,7 +897,7 @@ function numericOperandOptions(
         'elsewhere cannot be translated against a known plural table.',
     );
   }
-  return atlasInheritedOptions(carried, declared, profile);
+  return inheritedOptions(carried, declared, profile);
 }
 
 /**
@@ -917,10 +917,10 @@ function dateOperandOptions(
   checkFunctionOptions(functionName, written, true);
   const carried =
     referenced?.kind === 'variable' ? referenced.value.options : undefined;
-  return atlasDateOperandOptions(
+  return resolvedDateOptions(
     carried === undefined ? undefined : optionText(carried),
     written,
-    ATLAS_MESSAGE_FUNCTION_OPTIONS[functionName],
+    MESSAGE_FUNCTION_OPTIONS[functionName],
   );
 }
 
@@ -940,7 +940,7 @@ function resolvedNumberOptions(
   declared: Readonly<Record<string, string>>,
 ): Readonly<Record<string, string>> {
   const excluded =
-    ATLAS_MESSAGE_FUNCTION_OPTIONS[functionName]?.excludedFromResolved ?? [];
+    MESSAGE_FUNCTION_OPTIONS[functionName]?.excludedFromResolved ?? [];
   if (excluded.length === 0) return Object.freeze({ ...declared });
   return Object.freeze(
     Object.fromEntries(
@@ -975,7 +975,7 @@ function numericResolved(
   const declared = optionText(sourceOptions);
   checkFunctionOptions(functionName, declared, false);
   let value = operand;
-  const options = atlasNumberFormatOptions(functionName, declared) as Record<
+  const options = numberFormatOptions(functionName, declared) as Record<
     string,
     unknown
   >;
@@ -1045,7 +1045,7 @@ function numericResolved(
     options: resolvedNumberOptions(functionName, declared),
     locale: environment.formatting.locale,
     direction: directionForLocale(environment.formatting.locale),
-    // Atlas formatted this text, in this locale, so it runs the way the locale runs. No sniff.
+    // Equator formatted this text, in this locale, so it runs the way the locale runs. No sniff.
     contentDirection: directionForLocale(environment.formatting.locale),
     isolate: false,
     selects: NUMERIC_SELECTOR_FUNCTIONS.has(functionName),
@@ -1112,7 +1112,7 @@ function dateResolved(
     // The components, the month length and the precision are all that mapping, and a second copy
     // of it here is how `fields`, `timeZoneStyle` and four other options come to be accepted and
     // never read.
-    ...atlasDateTimeFormatOptions(functionName, resolved),
+    ...dateTimeFormatOptions(functionName, resolved),
   };
   if (options.timeZone === undefined) {
     unsupportedFormatting(
@@ -1147,7 +1147,7 @@ function dateResolved(
     functionName,
     locale: environment.formatting.locale,
     direction: directionForLocale(environment.formatting.locale),
-    // Atlas formatted this text, in this locale, so it runs the way the locale runs. No sniff.
+    // Equator formatted this text, in this locale, so it runs the way the locale runs. No sniff.
     contentDirection: directionForLocale(environment.formatting.locale),
     isolate: false,
     // Carried so a later annotation can read the three date/time override options off it, which is
@@ -1442,13 +1442,14 @@ function applyDeclarations(
  * applying Unicode Normalization Form C [UAX#15] to `k`."*
  *
  * The citation is the point of this function existing. `NormalizeKey` is a step the standard gives
- * to whatever performs selection, and selection is performed here, so this is Atlas implementing
- * a rule it is required to implement, not Atlas repeating work a dependency happens to have done.
+ * to whatever performs selection, and selection is performed here, so this is Equator implementing
+ * a rule it is required to implement, not Equator repeating work a dependency happens to have done.
  * The two read the same from the outside and are not the same thing: one is a guarantee, the other
  * is a coincidence that holds until someone changes a version.
  *
- * It belongs on the key, which is where the spec puts it. Atlas applied it to the *value* instead,
- * so a key authored in NFD never matched a value equal to it and fell through to the catch-all.
+ * It belongs on the key, which is where the spec puts it. Equator applied it to the *value*
+ * instead, so a key authored in NFD never matched a value equal to it and fell through to the
+ * catch-all.
  *
  * **Where this can fail, since no catalog compiled here will ever reach it.** `messageformat`'s
  * parser normalizes a variant key while parsing, so a key authored in NFD is already NFC by the
@@ -1865,10 +1866,10 @@ const STRONG_RTL = new RegExp(RTL_STRONG_CHARACTERS, 'u');
 /**
  * Whether a value's own content can reposition the text around it.
  *
- * Only consulted for values Atlas did not format: a consumer's string, where Atlas has no locale
- * to take a direction from and will not claim to know the language. MessageFormat 2 says
+ * Only consulted for values Equator did not format: a consumer's string, where Equator has no
+ * locale to take a direction from and will not claim to know the language. MessageFormat 2 says
  * directionality "SHOULD NOT be determined by introspecting the character sequence", and the
- * alternative it offers is the operand's locale, which Atlas does not have: an interpolated value
+ * alternative it offers is the operand's locale, which Equator does not have: an interpolated value
  * inherits the message's locale, so consulting it answers "the message's direction" every time and
  * isolates nothing. `u:dir` is the author's way to say what this cannot know, and writing
  * `u:dir=inherit` turns this off.
@@ -1888,7 +1889,7 @@ export function mayReorder(text: string): boolean {
  * The structured component wraps every value in `<bdi>`, which stops an order reference or a
  * customer name from reordering the sentence it sits in. The pipe returns a string and has no
  * element to carry that, so the same value was left bare on that path. An isolate is the
- * string-level equivalent of `<bdi>`, and applying it in the formatter means Atlas owns
+ * string-level equivalent of `<bdi>`, and applying it in the formatter means Equator owns
  * isolation rather than every call site remembering it.
  *
  * The strategy, verbatim in shape:

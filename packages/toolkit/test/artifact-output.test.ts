@@ -21,25 +21,25 @@ import { resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
-  compileAtlasProject,
-  parseAtlasCatalog,
-  parseAtlasConfiguration,
-  type AtlasCatalog,
-  type AtlasProjectConfiguration,
+  compileProject,
+  parseCatalog,
+  parseConfiguration,
+  type Catalog,
+  type ProjectConfiguration,
 } from '../src/index.js';
-import { stringifyAtlasCanonicalJson } from '../src/canonical-json.js';
-import { compileAtlasLocalArtifacts } from '../src/compiled-artifacts.js';
-import { generateAtlasContracts } from '../src/generated-contracts.js';
-import { parseAtlasMessage } from '../src/message-format.js';
-import { applyAtlasOutputPlan } from '../src/output-host.js';
+import { stringifyCanonicalJson } from '../src/canonical-json.js';
+import { compileLocalArtifacts } from '../src/compiled-artifacts.js';
+import { generateContracts } from '../src/generated-contracts.js';
+import { parseMessageSemanticModel } from '../src/message-format.js';
+import { applyOutputPlan } from '../src/output-host.js';
 import {
-  createAtlasCompletionManifest,
-  createAtlasOutputPlan,
-  formatAtlasCompletionManifest,
-  parseAtlasCompletionManifest,
+  createCompletionManifest,
+  createOutputPlan,
+  formatCompletionManifest,
+  parseCompletionManifest,
 } from '../src/output-plan.js';
-import { ATLAS_RESOURCE_LIMITS } from '../src/resource-limits.js';
-import { analyzeAtlasCatalogSet } from '../src/semantic-model.js';
+import { RESOURCE_LIMITS } from '../src/resource-limits.js';
+import { analyzeCatalogSet } from '../src/semantic-model.js';
 
 const temporaryRoots: string[] = [];
 
@@ -51,8 +51,8 @@ afterEach(async () => {
   );
 });
 
-function configuration(): AtlasProjectConfiguration {
-  const result = parseAtlasConfiguration(
+function configuration(): ProjectConfiguration {
+  const result = parseConfiguration(
     JSON.stringify({
       schemaVersion: 1,
       sourceLocale: 'en-US',
@@ -68,8 +68,8 @@ function catalog(
   role: 'source' | 'target',
   locale: string,
   contents: string,
-): AtlasCatalog {
-  const result = parseAtlasCatalog(contents, {
+): Catalog {
+  const result = parseCatalog(contents, {
     role,
     providerId: '@neolorn/artifact-lab',
     scopeId: 'shell',
@@ -115,19 +115,19 @@ function compiledFixture() {
       '',
     ].join('\n'),
   );
-  const graph = analyzeAtlasCatalogSet({
+  const graph = analyzeCatalogSet({
     configuration: configuration(),
     catalogs: [source, target],
   });
   if (!graph.ok) throw new Error(JSON.stringify(graph.diagnostics));
   const recovery = '@neolorn/artifact-lab:shell:recovery.unavailable';
-  const contracts = generateAtlasContracts(graph.value, {
+  const contracts = generateContracts(graph.value, {
     recoveryMessageIdentities: [recovery],
   });
   if (!contracts.ok) throw new Error(JSON.stringify(contracts.diagnostics));
-  const compiled = compileAtlasLocalArtifacts({
+  const compiled = compileLocalArtifacts({
     owner: {
-      providerId: '@atlas/test-owner',
+      providerId: '@example/test-owner',
       generatedRootPath: 'src/generated/i18n',
     },
     graph: graph.value,
@@ -138,7 +138,7 @@ function compiledFixture() {
   return { compiled, source, target };
 }
 
-describe('Atlas deterministic compiled artifacts', () => {
+describe('Equator deterministic compiled artifacts', () => {
   it('emits inert IR, full identities, resource summaries, recovery data, and one deterministic output plan', () => {
     const first = compiledFixture().compiled;
     const second = compiledFixture().compiled;
@@ -172,7 +172,7 @@ describe('Atlas deterministic compiled artifacts', () => {
     );
     expect(catalogSet).toBeDefined();
     const parsed = JSON.parse(catalogSet?.contents ?? 'null');
-    expect(stringifyAtlasCanonicalJson(parsed)).toBe(catalogSet?.contents);
+    expect(stringifyCanonicalJson(parsed)).toBe(catalogSet?.contents);
     const compiledModule = first.value.outputPlan.files.find(({ path }) =>
       path.startsWith('catalogs/'),
     );
@@ -183,9 +183,9 @@ describe('Atlas deterministic compiled artifacts', () => {
   it('runs one pure compiler pipeline with deterministic bootstrap contracts and incremental invalidation decisions', () => {
     const { source, target } = compiledFixture();
     const recovery = '@neolorn/artifact-lab:shell:recovery.unavailable';
-    const initial = compileAtlasProject({
+    const initial = compileProject({
       owner: {
-        providerId: '@atlas/test-owner',
+        providerId: '@example/test-owner',
         generatedRootPath: 'src/generated/i18n',
       },
       configuration: configuration(),
@@ -199,9 +199,9 @@ describe('Atlas deterministic compiled artifacts', () => {
       0,
     );
 
-    const repeated = compileAtlasProject({
+    const repeated = compileProject({
       owner: {
-        providerId: '@atlas/test-owner',
+        providerId: '@example/test-owner',
         generatedRootPath: 'src/generated/i18n',
       },
       configuration: configuration(),
@@ -220,62 +220,60 @@ describe('Atlas deterministic compiled artifacts', () => {
   });
 
   it('rejects unsafe output paths and bounds excessive MessageFormat input before parsing', () => {
-    const traversal = createAtlasOutputPlan([
+    const traversal = createOutputPlan([
       { path: '../escape.ts', contents: 'unsafe' },
     ]);
     expect(traversal.ok).toBe(false);
-    expect(traversal.diagnostics[0]?.code).toBe('ATL1503');
+    expect(traversal.diagnostics[0]?.code).toBe('EQ1503');
 
-    const collision = createAtlasOutputPlan([
+    const collision = createOutputPlan([
       { path: 'Scope.ts', contents: 'a' },
       { path: 'scope.ts', contents: 'b' },
     ]);
     expect(collision.ok).toBe(false);
 
-    const excessive = parseAtlasMessage(
-      'x'.repeat(ATLAS_RESOURCE_LIMITS.messageBytes + 1),
+    const excessive = parseMessageSemanticModel(
+      'x'.repeat(RESOURCE_LIMITS.messageBytes + 1),
     );
     expect(excessive.ok).toBe(false);
-    expect(excessive.diagnostics[0]?.code).toBe('ATL1201');
-    expect(() => stringifyAtlasCanonicalJson('\ud800')).toThrow(
+    expect(excessive.diagnostics[0]?.code).toBe('EQ1201');
+    expect(() => stringifyCanonicalJson('\ud800')).toThrow(
       /unpaired high surrogate/u,
     );
   });
 
   it('rejects completion-manifest extensions and case-insensitive inventory collisions', () => {
-    const plan = createAtlasOutputPlan([
-      { path: 'scope.ts', contents: 'ok\n' },
-    ]);
+    const plan = createOutputPlan([{ path: 'scope.ts', contents: 'ok\n' }]);
     expect(plan.ok).toBe(true);
     if (!plan.ok) return;
     const ownerId = 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-    const manifest = createAtlasCompletionManifest(ownerId, plan.value);
+    const manifest = createCompletionManifest(ownerId, plan.value);
     const extended = { ...manifest, consumerField: true };
-    expect(
-      parseAtlasCompletionManifest(`${JSON.stringify(extended)}\n`).ok,
-    ).toBe(false);
+    expect(parseCompletionManifest(`${JSON.stringify(extended)}\n`).ok).toBe(
+      false,
+    );
 
     const collision = {
       ...manifest,
       files: [manifest.files[0], { ...manifest.files[0], path: 'SCOPE.ts' }],
     };
-    expect(
-      parseAtlasCompletionManifest(`${JSON.stringify(collision)}\n`).ok,
-    ).toBe(false);
-    expect(
-      parseAtlasCompletionManifest(formatAtlasCompletionManifest(manifest)).ok,
-    ).toBe(true);
+    expect(parseCompletionManifest(`${JSON.stringify(collision)}\n`).ok).toBe(
+      false,
+    );
+    expect(parseCompletionManifest(formatCompletionManifest(manifest)).ok).toBe(
+      true,
+    );
   });
 });
 
-describe('Atlas owned output publication', () => {
+describe('Equator owned output publication', () => {
   it('publishes once, preserves unchanged mtimes, removes only manifest-owned stale files, and recovers an interrupted replacement', async () => {
-    const ownerRoot = await mkdtemp(resolve(tmpdir(), 'atlas-output-test-'));
+    const ownerRoot = await mkdtemp(resolve(tmpdir(), 'output-test-'));
     temporaryRoots.push(ownerRoot);
     const generatedRoot = resolve(ownerRoot, 'src/generated/i18n');
-    const workRoot = resolve(ownerRoot, '.atlas');
+    const workRoot = resolve(ownerRoot, '.equator');
     const ownerId = `sha256-${'a'.repeat(43)}`;
-    const firstPlan = createAtlasOutputPlan([
+    const firstPlan = createOutputPlan([
       { path: 'a.txt', contents: 'alpha\n' },
       { path: 'nested/b.txt', contents: 'bravo\n' },
     ]);
@@ -288,27 +286,27 @@ describe('Atlas owned output publication', () => {
       ownerId,
       plan: firstPlan.value,
     };
-    const first = await applyAtlasOutputPlan(request);
+    const first = await applyOutputPlan(request);
     expect(first).toMatchObject({ ok: true, value: { changed: true } });
     const before = await stat(resolve(generatedRoot, 'a.txt'));
-    const unchanged = await applyAtlasOutputPlan(request);
+    const unchanged = await applyOutputPlan(request);
     const after = await stat(resolve(generatedRoot, 'a.txt'));
     expect(unchanged).toMatchObject({ ok: true, value: { changed: false } });
     expect(after.mtimeMs).toBe(before.mtimeMs);
 
-    const backup = resolve(generatedRoot, '.a.txt.atlas-crash.bak');
+    const backup = resolve(generatedRoot, '.a.txt.equator-crash.bak');
     await rename(resolve(generatedRoot, 'a.txt'), backup);
     await writeFile(resolve(generatedRoot, 'a.txt'), 'interrupted\n');
     await writeFile(
       resolve(workRoot, 'transaction.json'),
       `${JSON.stringify(
         {
-          profile: 'atlas-output-transaction/1',
+          profile: 'equator-output-transaction/1',
           ownerId,
           operations: [
             {
               path: 'a.txt',
-              backup: '.a.txt.atlas-crash.bak',
+              backup: '.a.txt.equator-crash.bak',
               hadOriginal: true,
             },
           ],
@@ -317,19 +315,19 @@ describe('Atlas owned output publication', () => {
         2,
       )}\n`,
     );
-    const recovered = await applyAtlasOutputPlan(request);
+    const recovered = await applyOutputPlan(request);
     expect(recovered).toMatchObject({ ok: true, value: { changed: false } });
     expect(await readFile(resolve(generatedRoot, 'a.txt'), 'utf8')).toBe(
       'alpha\n',
     );
 
-    const secondPlan = createAtlasOutputPlan([
+    const secondPlan = createOutputPlan([
       { path: 'nested/b.txt', contents: 'bravo two\n' },
       { path: 'c.txt', contents: 'charlie\n' },
     ]);
     expect(secondPlan.ok).toBe(true);
     if (!secondPlan.ok) return;
-    const second = await applyAtlasOutputPlan({
+    const second = await applyOutputPlan({
       ...request,
       plan: secondPlan.value,
     });
@@ -343,25 +341,25 @@ describe('Atlas owned output publication', () => {
   });
 
   it('refuses mixed ownership and revalidates inputs before publishing changes', async () => {
-    const ownerRoot = await mkdtemp(resolve(tmpdir(), 'atlas-output-guard-'));
+    const ownerRoot = await mkdtemp(resolve(tmpdir(), 'output-guard-'));
     temporaryRoots.push(ownerRoot);
     const generatedRoot = resolve(ownerRoot, 'generated');
-    const workRoot = resolve(ownerRoot, '.atlas');
+    const workRoot = resolve(ownerRoot, '.equator');
     const ownerId = `sha256-${'b'.repeat(43)}`;
-    const firstPlan = createAtlasOutputPlan([
+    const firstPlan = createOutputPlan([
       { path: 'owned.txt', contents: 'owned\n' },
     ]);
     if (!firstPlan.ok) return;
     const base = { ownerRoot, generatedRoot, workRoot, ownerId };
     expect(
-      await applyAtlasOutputPlan({ ...base, plan: firstPlan.value }),
+      await applyOutputPlan({ ...base, plan: firstPlan.value }),
     ).toMatchObject({ ok: true });
 
-    const changedPlan = createAtlasOutputPlan([
+    const changedPlan = createOutputPlan([
       { path: 'owned.txt', contents: 'changed\n' },
     ]);
     if (!changedPlan.ok) return;
-    const staleInput = await applyAtlasOutputPlan({
+    const staleInput = await applyOutputPlan({
       ...base,
       plan: changedPlan.value,
       expectedInputFingerprint: 'before',
@@ -373,25 +371,25 @@ describe('Atlas owned output publication', () => {
     );
 
     await writeFile(resolve(generatedRoot, 'consumer-owned.txt'), 'preserve');
-    const mixed = await applyAtlasOutputPlan({
+    const mixed = await applyOutputPlan({
       ...base,
       plan: changedPlan.value,
     });
     expect(mixed.ok).toBe(false);
-    expect(mixed.diagnostics[0]?.code).toBe('ATL1601');
+    expect(mixed.diagnostics[0]?.code).toBe('EQ1601');
     expect(
       await readFile(resolve(generatedRoot, 'consumer-owned.txt'), 'utf8'),
     ).toBe('preserve');
   });
 
   it('keeps dry-run publication read-only for an absent generated root', async () => {
-    const ownerRoot = await mkdtemp(resolve(tmpdir(), 'atlas-output-dry-'));
+    const ownerRoot = await mkdtemp(resolve(tmpdir(), 'output-dry-'));
     temporaryRoots.push(ownerRoot);
     const generatedRoot = resolve(ownerRoot, 'generated');
-    const workRoot = resolve(ownerRoot, '.atlas');
-    const plan = createAtlasOutputPlan([{ path: 'file.txt', contents: 'x' }]);
+    const workRoot = resolve(ownerRoot, '.equator');
+    const plan = createOutputPlan([{ path: 'file.txt', contents: 'x' }]);
     if (!plan.ok) return;
-    const result = await applyAtlasOutputPlan({
+    const result = await applyOutputPlan({
       ownerRoot,
       generatedRoot,
       workRoot,

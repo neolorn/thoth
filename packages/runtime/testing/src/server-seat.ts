@@ -17,11 +17,11 @@ import {
   type LocaleRequestHandler,
   type LocaleRequestHandlerOptions,
   type ɵAnsweredRequest,
-} from '@neolorn/atlas/http';
+} from '@neolorn/equator/http';
 import type {
   PageOutcomeDeclaration,
   RouteResolution,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /**
  * One `<link>` the answered head carried.
@@ -100,7 +100,7 @@ export interface AnsweredAddress {
   readonly locale: string | undefined;
   /** What the page or the renderer declared, absent where neither did. */
   readonly pageOutcome: AnsweredPageOutcome | undefined;
-  /** Whether Atlas declined the address, which is a static asset or a locale-neutral root. */
+  /** Whether Equator declined the address, which is a static asset or a locale-neutral root. */
   readonly declined: boolean;
 }
 
@@ -186,7 +186,7 @@ export function createLocalizedServerSeat(
     const response = await handler(request);
     const observed = answers.get(request);
     if (observed === undefined) {
-      throw new Error('Atlas server seat invariant failed.');
+      throw new Error('Equator server seat invariant failed.');
     }
     const body = await response.clone().text();
     return Object.freeze({

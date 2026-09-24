@@ -5,7 +5,7 @@
     "packageManager": "pnpm"
   },
   "projects": {
-    "atlas-minimal": {
+    "minimal": {
       "projectType": "application",
       "root": "",
       "sourceRoot": "src",

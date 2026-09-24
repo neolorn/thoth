@@ -1,5 +1,5 @@
 {
-  "name": "atlas-document-consumer",
+  "name": "document-consumer",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -16,7 +16,7 @@
     "@angular/forms": "^22.1.0",
     "@angular/platform-browser": "^22.1.0",
     "@angular/router": "^22.1.0",
-    "@neolorn/atlas": "file:../../../dist/runtime",
+    "@neolorn/equator": "file:../../../dist/runtime",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
@@ -24,7 +24,7 @@
     "@angular/build": "^22.1.7",
     "@angular/cli": "^22.1.7",
     "@angular/compiler-cli": "^22.1.0",
-    "@neolorn/atlas-toolkit": "file:../../../dist/toolkit",
+    "@neolorn/equator-toolkit": "file:../../../dist/toolkit",
     "jsdom": "^28.1.0",
     "typescript": "~6.0.2",
     "vitest": "^4.1.11"

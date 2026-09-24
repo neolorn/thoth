@@ -3,21 +3,21 @@ import { describe, expect, it } from 'vitest';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, RouterOutlet, TitleStrategy } from '@angular/router';
-import { Localization, withRouting } from '@neolorn/atlas';
-import { pageGone } from '@neolorn/atlas/core';
+import { Localization, withRouting } from '@neolorn/equator';
+import { pageGone } from '@neolorn/equator/core';
 import {
   declarePageOutcome,
   type LocaleRenderer,
   type LocaleRequestOutcome,
-} from '@neolorn/atlas/http';
+} from '@neolorn/equator/http';
 import {
   LocalizedTitleStrategy,
   provideLocalizedRouter,
-} from '@neolorn/atlas/router';
+} from '@neolorn/equator/router';
 import {
   createLocalizedServerSeat,
   provideLocalizationTesting,
-} from '@neolorn/atlas/testing';
+} from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -26,7 +26,7 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
 
 import { routes } from './app.routes';
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 import { provideDynamicContent } from './dynamic-content';
 import {
   routePolicy,
@@ -37,15 +37,15 @@ import {
 /**
  * The seat a consumer asserts a response from, exercised against the built packages.
  *
- * Section 12 of `specs/06-runtime-and-angular.spec.md` puts it in `@neolorn/atlas/testing` and
+ * Section 12 of `specs/06-runtime-and-angular.spec.md` puts it in `@neolorn/equator/testing` and
  * requires it to answer through the request handler a deployment uses, with no socket, no built
  * bundle and no browser. This file is the half the package's own unit suite cannot reach: whether
- * `@neolorn/atlas/testing` resolves `@neolorn/atlas/http` once it is installed as a package, and
- * whether the head it reads is the head Atlas actually writes rather than one written here.
+ * `@neolorn/equator/testing` resolves `@neolorn/equator/http` once it is installed as a package,
+ * and whether the head it reads is the head Equator actually writes rather than one written here.
  *
  * The renderer below is the component seat: it commits the locale the handler resolved, navigates
  * to the address it resolved, and hands back the document. That is what makes the canonical link
- * and the `hreflang` cluster in the assertions Atlas's own output.
+ * and the `hreflang` cluster in the assertions Equator's own output.
  */
 
 const CACHE = { successMaxAge: 300, permanentRedirectMaxAge: 86_400 } as const;
@@ -92,7 +92,7 @@ async function configure(): Promise<Router> {
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
           routeProjection,
         },
         withRouting({ policy: routePolicy, projection: appRouteProjection }),
@@ -151,7 +151,7 @@ describe('an address answered through the server seat', () => {
     );
   });
 
-  it('hands back the head Atlas wrote, rather than one the test wrote', async () => {
+  it('hands back the head Equator wrote, rather than one the test wrote', async () => {
     const answered = await seat().request('/ar-eg/second');
 
     expect(answered.head.lang).toBe('ar-EG');

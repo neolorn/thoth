@@ -197,7 +197,7 @@ const steps = Object.freeze([
     reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
   },
   // Reads the built schema rather than the source, so it waits for `build`, and it is the stage
-  // that fails when a settable configuration key has no `atlas init` flag. `dist:toolkit` is the
+  // that fails when a settable configuration key has no `equator init` flag. `dist:toolkit` is the
   // input; `source:packages` is the checked-in table it compares against.
   {
     id: 'verify:cli-options',
@@ -284,10 +284,10 @@ const steps = Object.freeze([
     writes: ['consumer:package'],
   },
   { id: 'verify:cost-budget', reads: ['consumer:package', 'source:packages'] },
-  // What a new project costs Atlas between `atlas init` and its second scope, run cold against the
-  // installed toolkit rather than against the workspace. It reads that consumer and writes nothing
-  // it does not create itself, under `tmp/cold-start`, which is nested and so is not an artefact
-  // any other stage can see.
+  // What a new project costs Equator between `equator init` and its second scope, run cold against
+  // the installed toolkit rather than against the workspace. It reads that consumer and writes
+  // nothing it does not create itself, under `tmp/cold-start`, which is nested and so is not an
+  // artefact any other stage can see.
   //
   // Its own stage rather than a case inside `verify:packages`: that stage reads `dist/toolkit`, and
   // a staged package cannot run its own CLI. Nothing resolves its dependencies in place. The only
@@ -310,7 +310,7 @@ const steps = Object.freeze([
     id: 'verify:document-blocks',
     reads: ['dist:runtime', 'dist:toolkit', 'source:docs', 'source:packages'],
   },
-  // The one check in this list whose cases Atlas did not write. It compiles each of the working
+  // The one check in this list whose cases Equator did not write. It compiles each of the working
   // group's MessageFormat 2 cases with the installed toolkit and evaluates it through the built
   // runtime.
   // "What compiles, renders", as an invariant rather than as cases. Every option in the built-in
@@ -386,7 +386,7 @@ const steps = Object.freeze([
       },
     ],
   },
-  // Rewrites the built packages with `.atlas-package-refresh` siblings and re-hands them to the
+  // Rewrites the built packages with `.package-refresh` siblings and re-hands them to the
   // consumer. Under the list it declared only `verify:consumer` and worked solely because it was
   // written second to last; the three writes below are why that placement was load-bearing.
   {
@@ -416,7 +416,7 @@ const steps = Object.freeze([
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Forward slashes, always. `NODE_OPTIONS` is parsed as a command line, so a quoted Windows path
-// loses every backslash to escape processing and node preloads `F:ProjectsUnisonAtlastools...`,
+// loses every backslash to escape processing and node preloads `C:workequatortools...`,
 // which fails every stage at once with a module-not-found from `internal/preload`. Windows accepts
 // forward slashes everywhere; the quotes stay for a workspace path containing a space.
 const tracerPath = resolve(workspaceRoot, 'tools/trace-artefacts.cjs')
@@ -779,14 +779,14 @@ const runStep = (id, timeoutSeconds, root) =>
         // itself. Its workspace scan is the runner's work, not the stage's, and attributing it to
         // the stage gave three stages an undeclared read of `source:packages` on the runs where
         // pnpm happened not to skip that scan.
-        ATLAS_TRACE_LAUNCHER: '1',
+        EQUATOR_TRACE_LAUNCHER: '1',
         // The trace goes to the repository, because the tree it describes is about to be removed.
-        ATLAS_TRACE_FILE: resolve(runDirectory, `${safeName(id)}.jsonl`),
+        EQUATOR_TRACE_FILE: resolve(runDirectory, `${safeName(id)}.jsonl`),
         // Traced against the tree the stage actually ran in, so a path resolves to the same
         // artefact name wherever it was touched. That is what makes the drift check mean the same
         // thing in a private tree as in the shared one.
-        ATLAS_TRACE_ROOT: root,
-        ATLAS_NODE_COMPATIBILITY_ROOT: nodeRuntimesRoot,
+        EQUATOR_TRACE_ROOT: root,
+        EQUATOR_NODE_COMPATIBILITY_ROOT: nodeRuntimesRoot,
         // Temporary, and a deliberate trade against an instrument's own cost rather than a lapse.
         //
         // The five page-side wrappers behind this switch cover the hot paths (element scrolling,
@@ -795,7 +795,7 @@ const runStep = (id, timeoutSeconds, root) =>
         // a rate. It is trying to catch one occurrence with the wrappers on, and for that a higher
         // rate is welcome. So they run on unattended gate runs, where the occurrences happen, and
         // this line comes out the moment one is caught with them installed.
-        ATLAS_ASSURANCE_TRACE_CALLS: '1',
+        EQUATOR_ASSURANCE_TRACE_CALLS: '1',
       },
     });
 

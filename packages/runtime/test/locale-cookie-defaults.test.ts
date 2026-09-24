@@ -16,10 +16,10 @@ import { type CookieStoreOptions, cookieStore } from '../src/persistence.js';
 import {
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /**
- * One cookie, written by two halves of Atlas, asserted once.
+ * One cookie, written by two halves of Equator, asserted once.
  *
  * The browser store and the server handler write the same cookie for the same visitor: the handler
  * sets it on the response of the first request, and the store rewrites it once the application has
@@ -49,8 +49,8 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'atlas-route-projection/1',
-    identity: 'sha256-AtlasLocaleCookieDefaultsTestIdentity012345',
+    profile: 'equator-route-projection/1',
+    identity: 'sha256-LocaleCookieDefaultsTestIdentity01234567890',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
       { id: 'route:second', path: 'second', parameterNames: [] },
@@ -115,7 +115,7 @@ async function serverHeader(
   });
 
   const response = await handler(
-    new Request(`https://atlas.example${path}`, {
+    new Request(`https://site.example${path}`, {
       headers: { 'sec-fetch-dest': 'document', 'sec-fetch-mode': 'navigate' },
     }),
   );
@@ -125,7 +125,7 @@ async function serverHeader(
   return written ?? '';
 }
 
-describe('the cookie both halves of Atlas write', () => {
+describe('the cookie both halves of Equator write', () => {
   it('is Secure by default, on both of them', async () => {
     expect(await clientHeader({}, 'ar-EG')).toContain('; Secure');
     expect(await serverHeader({}, '/ar-eg/second')).toContain('; Secure');
@@ -140,7 +140,10 @@ describe('the cookie both halves of Atlas write', () => {
   });
 
   it('is the same header when a deployment turns Secure off, which is what a loopback lab does', async () => {
-    const options: CookieStoreOptions = { name: 'atlas-locale', secure: false };
+    const options: CookieStoreOptions = {
+      name: 'equator-locale',
+      secure: false,
+    };
 
     expect(await clientHeader(options, 'ar-EG')).toBe(
       await serverHeader(options, '/ar-eg/second'),

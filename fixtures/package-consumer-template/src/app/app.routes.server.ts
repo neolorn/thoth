@@ -1,5 +1,5 @@
 import { RenderMode } from '@angular/ssr';
-import { provideLocalizedServerRendering } from '@neolorn/atlas/ssr';
+import { provideLocalizedServerRendering } from '@neolorn/equator/ssr';
 import { configuration } from '#i18n';
 
 import { routePolicy, appRouteProjection } from './localization.routes';
@@ -14,8 +14,8 @@ import { routePolicy, appRouteProjection } from './localization.routes';
  * a page that is simply absent in Arabic.
  *
  * The `article` route shows the part that is genuinely hard by hand: its slug is spelled
- * differently per locale, so its prerendered addresses are `/en-us/articles/atlas-handbook` and
- * `/ar-eg/articles/دليل-أطلس`, from one declaration and the codecs the projection already carries.
+ * differently per locale, so its prerendered addresses are `/en-us/articles/handbook` and
+ * `/ar-eg/articles/دليل`, from one declaration and the codecs the projection already carries.
  *
  * `routeId` is checked against the projection, so a misspelling here is a compile error rather
  * than a throw when this module is first evaluated, and `RenderMode` is the only thing still
@@ -23,7 +23,7 @@ import { routePolicy, appRouteProjection } from './localization.routes';
  *
  * The generated `configuration` is the third argument and it is what decides which locales get
  * addresses. The policy names three; a production build generates two, so two are emitted. The
- * same table under `atlas generate --pseudo` emits six. Nothing here changes between the two
+ * same table under `equator generate --pseudo` emits six. Nothing here changes between the two
  * builds, which is the point: a development locale must not cost a source edit in either
  * direction.
  */
@@ -44,7 +44,7 @@ export const publishedRoutes = [
   {
     routeId: 'article',
     renderMode: RenderMode.Prerender,
-    prerender: [{ slug: 'atlas-handbook' }],
+    prerender: [{ slug: 'handbook' }],
   },
   { routeId: 'item', renderMode: RenderMode.Client },
 ] as const;
@@ -57,7 +57,7 @@ export const serverRendering = provideLocalizedServerRendering(
   {
     // The addresses the two-layer table produces and nobody visits: `/second`, `/articles/:slug`,
     // `/items/:id`. Rendered on demand, so the build writes a file only where a visitor can
-    // actually arrive. Atlas refuses to emit the table without this under a prefixing policy:
+    // actually arrive. Equator refuses to emit the table without this under a prefixing policy:
     // leaving it to the `**` fallback worked, and worked equally well if someone answered the
     // build error by declaring them `Prerender` instead.
     canonicalRenderMode: RenderMode.Server,

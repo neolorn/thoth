@@ -4,17 +4,14 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import {
-  ATLAS_CONFIGURATION_SCHEMA,
-  parseAtlasConfiguration,
-} from '../src/index.js';
-import { initializeAtlasProject } from '../src/project-host.js';
+import { CONFIGURATION_SCHEMA, parseConfiguration } from '../src/index.js';
+import { initializeProject } from '../src/project-host.js';
 // Direct, because the flag parser is beside the CLI rather than published from it: widening the
 // package's API so a test can reach it would trade the thing being protected for the protection.
 import {
-  ATLAS_INIT_HELP,
-  ATLAS_INIT_INVOCATION,
-  ATLAS_INIT_OPTIONS,
+  INIT_HELP,
+  INIT_INVOCATION,
+  INIT_OPTIONS,
 } from '../src/cli-options.generated.js';
 import {
   applyInitOption,
@@ -23,16 +20,16 @@ import {
 } from '../src/init-options.js';
 
 /**
- * Can `atlas init` state everything `atlas.config.json` accepts?
+ * Can `equator init` state everything `equator.config.json` accepts?
  *
- * It could not: `AtlasInitProjectOptions` named four of the six settable keys, so
+ * It could not: `InitProjectOptions` named four of the six settable keys, so
  * `personNameLocales` and `pseudoLocales` were unreachable from the install line. A test that
  * passed `personNameLocales` had it silently discarded, and the project it produced was *valid*, so
- * nothing failed and nothing said anything. A consumer met the field by reading Atlas's source or
+ * nothing failed and nothing said anything. A consumer met the field by reading Equator's source or
  * by failing at runtime.
  *
  * Closing those two by hand would have fixed the report and left the defect: the seventh key would
- * go the same way. So the option set is not a list that agrees with `ATLAS_CONFIGURATION_SCHEMA`;
+ * go the same way. So the option set is not a list that agrees with `CONFIGURATION_SCHEMA`;
  * it is generated from it, and `verify:cli-options` fails when the checked-in table and the schema
  * have drifted apart. **The first two tests below are the ones that cannot go stale**, they are
  * written against the schema rather than against six names, and everything after them is about
@@ -40,7 +37,7 @@ import {
  */
 
 const option = (key: string) => {
-  const found = ATLAS_INIT_OPTIONS.find((entry) => entry.key === key);
+  const found = INIT_OPTIONS.find((entry) => entry.key === key);
   if (found === undefined) throw new Error(`no init option for ${key}`);
   return found;
 };
@@ -63,7 +60,7 @@ describe('the option set is the configuration schema', () => {
     // Read from the schema, not listed here. A key added to the parser makes this fail until it has
     // a flag, which is the whole mechanism: six names written out below would agree today and go
     // quiet on the seventh.
-    const settable = Object.entries(ATLAS_CONFIGURATION_SCHEMA.properties)
+    const settable = Object.entries(CONFIGURATION_SCHEMA.properties)
       .filter(
         ([, property]) =>
           (property as { readonly const?: unknown }).const === undefined,
@@ -71,33 +68,31 @@ describe('the option set is the configuration schema', () => {
       .map(([key]) => key)
       .sort();
     expect(settable.length).toBeGreaterThan(0);
-    expect([...ATLAS_INIT_OPTIONS].map(({ key }) => key).sort()).toEqual(
-      settable,
-    );
+    expect([...INIT_OPTIONS].map(({ key }) => key).sort()).toEqual(settable);
   });
 
   it('names every one of them in --help and in the complete invocation', () => {
     // The two places a person finds out a field exists. Both were written by hand beside a parser
     // that had moved on, and both named four fields while the file accepted six.
-    for (const { flag, description } of ATLAS_INIT_OPTIONS) {
-      expect(ATLAS_INIT_HELP).toContain(flag);
-      expect(ATLAS_INIT_HELP).toContain(description);
-      expect(ATLAS_INIT_INVOCATION).toContain(flag);
+    for (const { flag, description } of INIT_OPTIONS) {
+      expect(INIT_HELP).toContain(flag);
+      expect(INIT_HELP).toContain(description);
+      expect(INIT_INVOCATION).toContain(flag);
     }
     // The control for the two assertions above: a flag that is not offered must not appear, or
     // `toContain` would be passing on a string that says everything.
-    expect(ATLAS_INIT_HELP).not.toContain('--invented-locale');
-    expect(ATLAS_INIT_INVOCATION).not.toContain('--invented-locale');
+    expect(INIT_HELP).not.toContain('--invented-locale');
+    expect(INIT_INVOCATION).not.toContain('--invented-locale');
   });
 
   it('writes all six fields into a project, through one serializer', async () => {
-    const root = await mkdtemp(resolve(tmpdir(), 'atlas-init-options-'));
+    const root = await mkdtemp(resolve(tmpdir(), 'init-options-'));
     await writeFile(
       resolve(root, 'package.json'),
       `${JSON.stringify({ name: 'init-options-lab', private: true }, null, 2)}\n`,
       'utf8',
     );
-    const initialized = await initializeAtlasProject({
+    const initialized = await initializeProject({
       project: root,
       configuration: {
         sourceLocale: 'en-US',
@@ -112,8 +107,11 @@ describe('the option set is the configuration schema', () => {
     if (!initialized.ok) return;
 
     // Read back off disk rather than off the result, because the defect was in what got written.
-    const written = await readFile(resolve(root, 'atlas.config.json'), 'utf8');
-    const reparsed = parseAtlasConfiguration(written);
+    const written = await readFile(
+      resolve(root, 'equator.config.json'),
+      'utf8',
+    );
+    const reparsed = parseConfiguration(written);
     expect(reparsed.ok).toBe(true);
     if (!reparsed.ok) return;
     expect(reparsed.value.personNameLocales).toEqual(['ja']);
@@ -124,21 +122,19 @@ describe('the option set is the configuration schema', () => {
   });
 
   it('says what to type when a required field is missing', async () => {
-    const root = await mkdtemp(resolve(tmpdir(), 'atlas-init-options-'));
+    const root = await mkdtemp(resolve(tmpdir(), 'init-options-'));
     await writeFile(
       resolve(root, 'package.json'),
       `${JSON.stringify({ name: 'init-options-lab', private: true }, null, 2)}\n`,
       'utf8',
     );
-    const attempted = await initializeAtlasProject({
+    const attempted = await initializeProject({
       project: root,
       configuration: { sourceLocale: 'en-US' },
     });
     expect(attempted.ok).toBe(false);
     if (attempted.ok) return;
-    const refusal = attempted.diagnostics.find(
-      ({ code }) => code === 'ATL1701',
-    );
+    const refusal = attempted.diagnostics.find(({ code }) => code === 'EQ1701');
     expect(refusal?.summary).toContain('--default-locale <locale>');
     expect(refusal?.summary).toContain('--locale <locale> (repeat for each)');
     // The one that was supplied is not asked for again.

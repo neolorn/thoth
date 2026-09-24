@@ -32,8 +32,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const traceFile = process.env['ATLAS_TRACE_FILE'];
-const workspaceRoot = process.env['ATLAS_TRACE_ROOT'];
+const traceFile = process.env['EQUATOR_TRACE_FILE'];
+const workspaceRoot = process.env['EQUATOR_TRACE_ROOT'];
 
 /**
  * The launcher is not the stage, and it was being measured as one.
@@ -60,8 +60,8 @@ const workspaceRoot = process.env['ATLAS_TRACE_ROOT'];
  * entry lives wherever it was installed, and a rule that reads correctly under corepack and silently
  * stops matching under a local install is a check that fails open.
  */
-const launcher = process.env['ATLAS_TRACE_LAUNCHER'] === '1';
-if (launcher) delete process.env['ATLAS_TRACE_LAUNCHER'];
+const launcher = process.env['EQUATOR_TRACE_LAUNCHER'] === '1';
+if (launcher) delete process.env['EQUATOR_TRACE_LAUNCHER'];
 
 if (!launcher && traceFile !== undefined && workspaceRoot !== undefined) {
   install(traceFile, workspaceRoot);

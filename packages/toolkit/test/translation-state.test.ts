@@ -1,21 +1,21 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseAtlasCatalog } from '../src/index.js';
-import { analyzeAtlasCatalogSet } from '../src/semantic-model.js';
+import { parseCatalog } from '../src/index.js';
+import { analyzeCatalogSet } from '../src/semantic-model.js';
 import { testProjectConfiguration } from './fixtures.js';
 import {
-  ATLAS_TRANSLATION_STATE_PROFILE,
-  EMPTY_ATLAS_TRANSLATION_STATE,
-  formatAtlasTranslationState,
-  parseAtlasTranslationState,
-  reconcileAtlasTranslationState,
+  TRANSLATION_STATE_PROFILE,
+  EMPTY_TRANSLATION_STATE,
+  formatTranslationState,
+  parseTranslationState,
+  reconcileTranslationState,
 } from '../src/translation-state.js';
 
 /**
  * The English wording changes and the old translation stays.
  *
  * Nothing recorded what a translation was written against, so this produced success with an empty
- * diagnostics array. Atlas now keeps that record itself.
+ * diagnostics array. Equator now keeps that record itself.
  *
  * The property worth protecting is that a report survives being seen. An advisory derived from a
  * cache clears itself on the next run, and one derived from a marker a person deletes depends on
@@ -25,7 +25,7 @@ import {
 const configuration = testProjectConfiguration(['en-US', 'ar-EG']);
 
 function catalog(role: 'source' | 'target', locale: string, text: string) {
-  const result = parseAtlasCatalog(`messages:\n  nav.home: ${text}\n`, {
+  const result = parseCatalog(`messages:\n  nav.home: ${text}\n`, {
     role,
     providerId: 'home',
     scopeId: 'shell',
@@ -37,7 +37,7 @@ function catalog(role: 'source' | 'target', locale: string, text: string) {
 }
 
 function graphOf(english: string, arabic: string) {
-  const analysis = analyzeAtlasCatalogSet({
+  const analysis = analyzeCatalogSet({
     configuration,
     catalogs: [
       catalog('source', 'en-US', english),
@@ -50,9 +50,7 @@ function graphOf(english: string, arabic: string) {
 
 describe('translation provenance', () => {
   it('records nothing to report the first time it sees a translation', () => {
-    const reconciled = reconcileAtlasTranslationState(
-      graphOf('Home', 'الرئيسية'),
-    );
+    const reconciled = reconcileTranslationState(graphOf('Home', 'الرئيسية'));
 
     expect(reconciled.stale).toHaveLength(0);
     expect(Object.keys(reconciled.state.entries)).toHaveLength(1);
@@ -60,8 +58,8 @@ describe('translation provenance', () => {
   });
 
   it('reports a translation whose source has moved underneath it', () => {
-    const first = reconcileAtlasTranslationState(graphOf('Home', 'الرئيسية'));
-    const second = reconcileAtlasTranslationState(
+    const first = reconcileTranslationState(graphOf('Home', 'الرئيسية'));
+    const second = reconcileTranslationState(
       graphOf('Home page', 'الرئيسية'),
       first.state,
     );
@@ -74,11 +72,11 @@ describe('translation provenance', () => {
   it('keeps reporting it until the translation actually changes', () => {
     // The whole reason the record is durable. A reminder that expires on the run that raises it
     // is worse than none, because a later clean run reads as "nothing wrong".
-    const first = reconcileAtlasTranslationState(graphOf('Home', 'الرئيسية'));
+    const first = reconcileTranslationState(graphOf('Home', 'الرئيسية'));
     let state = first.state;
 
     for (let run = 0; run < 3; run += 1) {
-      const reconciled = reconcileAtlasTranslationState(
+      const reconciled = reconcileTranslationState(
         graphOf('Home page', 'الرئيسية'),
         state,
       );
@@ -88,12 +86,12 @@ describe('translation provenance', () => {
   });
 
   it('clears itself when the translation is updated, with nothing asked of anyone', () => {
-    const first = reconcileAtlasTranslationState(graphOf('Home', 'الرئيسية'));
-    const stale = reconcileAtlasTranslationState(
+    const first = reconcileTranslationState(graphOf('Home', 'الرئيسية'));
+    const stale = reconcileTranslationState(
       graphOf('Home page', 'الرئيسية'),
       first.state,
     );
-    const updated = reconcileAtlasTranslationState(
+    const updated = reconcileTranslationState(
       graphOf('Home page', 'الصفحة الرئيسية'),
       stale.state,
     );
@@ -103,8 +101,8 @@ describe('translation provenance', () => {
 
   it('says nothing when a translation changes on its own', () => {
     // Retranslating without a source change is ordinary work, not staleness.
-    const first = reconcileAtlasTranslationState(graphOf('Home', 'الرئيسية'));
-    const second = reconcileAtlasTranslationState(
+    const first = reconcileTranslationState(graphOf('Home', 'الرئيسية'));
+    const second = reconcileTranslationState(
       graphOf('Home', 'الصفحة الرئيسية'),
       first.state,
     );
@@ -113,7 +111,7 @@ describe('translation provenance', () => {
   });
 
   it('drops entries for messages that no longer exist', () => {
-    const populated = reconcileAtlasTranslationState(
+    const populated = reconcileTranslationState(
       graphOf('Home', 'الرئيسية'),
     ).state;
     const withStrayEntry = {
@@ -124,7 +122,7 @@ describe('translation provenance', () => {
       },
     };
 
-    const reconciled = reconcileAtlasTranslationState(
+    const reconciled = reconcileTranslationState(
       graphOf('Home', 'الرئيسية'),
       withStrayEntry,
     );
@@ -136,22 +134,16 @@ describe('translation provenance', () => {
     // A corrupt or hand-edited file re-stamps from scratch, which reports nothing rather than
     // something false, and never stops work.
     for (const text of ['', 'not json', '{}', '{"profile":"other"}', '[]']) {
-      expect(parseAtlasTranslationState(text)).toEqual(
-        EMPTY_ATLAS_TRANSLATION_STATE,
-      );
+      expect(parseTranslationState(text)).toEqual(EMPTY_TRANSLATION_STATE);
     }
   });
 
   it('round-trips and serialises deterministically', () => {
-    const state = reconcileAtlasTranslationState(
-      graphOf('Home', 'الرئيسية'),
-    ).state;
-    const text = formatAtlasTranslationState(state);
+    const state = reconcileTranslationState(graphOf('Home', 'الرئيسية')).state;
+    const text = formatTranslationState(state);
 
-    expect(text).toContain(ATLAS_TRANSLATION_STATE_PROFILE);
-    expect(parseAtlasTranslationState(text)).toEqual(state);
-    expect(formatAtlasTranslationState(parseAtlasTranslationState(text))).toBe(
-      text,
-    );
+    expect(text).toContain(TRANSLATION_STATE_PROFILE);
+    expect(parseTranslationState(text)).toEqual(state);
+    expect(formatTranslationState(parseTranslationState(text))).toBe(text);
   });
 });

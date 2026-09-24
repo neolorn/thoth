@@ -3,8 +3,8 @@
  *
  * `specs/02-packages-and-platform.spec.md` section 4 says what this package publishes: a
  * side-effect-free programmatic API, the schemas of its public file formats, its own manifest, and
- * the `atlas` executable. The schemas are exports because a consumer validating a file against the
- * schema Atlas used has to resolve it by name; reaching a path inside the installed directory
+ * the `equator` executable. The schemas are exports because a consumer validating a file against
+ * the schema Equator used has to resolve it by name; reaching a path inside the installed directory
  * would make the package's internal layout a consumer's dependency.
  *
  * The manifest is derived from the source one so the two cannot disagree about a version, a peer
@@ -66,7 +66,7 @@ const outputPackage = {
     './package.json': './package.json',
   },
   bin: {
-    atlas: './cli.js',
+    equator: './cli.js',
   },
 };
 
@@ -88,15 +88,12 @@ const schemas = await import(
   pathToFileURL(resolve(outputRoot, 'schemas.js')).href
 );
 for (const [fileName, schema] of [
-  ['cli-result.v1.schema.json', schemas.ATLAS_CLI_RESULT_SCHEMA],
-  ['cli-watch-event.v1.schema.json', schemas.ATLAS_CLI_WATCH_EVENT_SCHEMA],
-  ['configuration.v1.schema.json', schemas.ATLAS_CONFIGURATION_SCHEMA],
-  ['source-catalog.v1.schema.json', schemas.ATLAS_SOURCE_CATALOG_SCHEMA],
-  ['target-catalog.v1.schema.json', schemas.ATLAS_TARGET_CATALOG_SCHEMA],
-  [
-    'extension-registry.v1.schema.json',
-    schemas.ATLAS_EXTENSION_REGISTRY_SCHEMA,
-  ],
+  ['cli-result.v1.schema.json', schemas.CLI_RESULT_SCHEMA],
+  ['cli-watch-event.v1.schema.json', schemas.CLI_WATCH_EVENT_SCHEMA],
+  ['configuration.v1.schema.json', schemas.CONFIGURATION_SCHEMA],
+  ['source-catalog.v1.schema.json', schemas.SOURCE_CATALOG_SCHEMA],
+  ['target-catalog.v1.schema.json', schemas.TARGET_CATALOG_SCHEMA],
+  ['extension-registry.v1.schema.json', schemas.EXTENSION_REGISTRY_SCHEMA],
 ]) {
   if (
     typeof schema !== 'object' ||
@@ -104,7 +101,7 @@ for (const [fileName, schema] of [
     schema.$schema !== 'https://json-schema.org/draft/2020-12/schema'
   ) {
     throw new TypeError(
-      `Refusing to stage an invalid Atlas schema: ${fileName}`,
+      `Refusing to stage an invalid Equator schema: ${fileName}`,
     );
   }
   await writeFile(

@@ -7,33 +7,29 @@
  * whose source disagree about what a message is called.
  */
 
-import type { AtlasCatalog, AtlasCatalogMessage } from './catalog.js';
-import { formatAtlasCatalog } from './catalog.js';
+import type { Catalog, CatalogMessage } from './catalog.js';
+import { formatCatalog } from './catalog.js';
 import {
-  createAtlasAuthoredChangePlan,
-  type AtlasAuthoredChangePlan,
-  type AtlasAuthoredFileChangeInput,
+  createAuthoredChangePlan,
+  type AuthoredChangePlan,
+  type AuthoredFileChangeInput,
 } from './authoring-transaction.js';
 import {
-  atlasDiagnostic,
-  atlasFailure,
-  atlasSuccess,
-  type AtlasResult,
+  toolkitDiagnostic,
+  toolkitFailure,
+  toolkitSuccess,
+  type ToolkitResult,
 } from './diagnostics.js';
-import {
-  parseAtlasMessageId,
-  parseAtlasProviderId,
-  parseAtlasScopeId,
-} from './identities.js';
+import { parseMessageId, parseProviderId, parseScopeId } from './identities.js';
 import type {
-  AtlasAnalysisSource,
-  AtlasApplicationAnalysis,
-  AtlasMessageUsage,
+  AnalysisSource,
+  ApplicationAnalysis,
+  MessageUsage,
 } from './static-analysis.js';
 import { compareCodePoint } from './sorted-records.js';
 
 /** Where a message lives, as the three parts that identify it. */
-export interface AtlasMessageRefactorIdentity {
+export interface MessageRefactorIdentity {
   /** The package that owns it. */
   readonly providerId: string;
   /** The scope within that package. */
@@ -43,29 +39,29 @@ export interface AtlasMessageRefactorIdentity {
 }
 
 /** What moving a message needs: where it is, where it should be, and everything that names it. */
-export interface AtlasMessageRefactorRequest {
+export interface MessageRefactorRequest {
   /** Where the message is now. Must exist. */
-  readonly from: AtlasMessageRefactorIdentity;
+  readonly from: MessageRefactorIdentity;
   /** Where it should end up. Must not already be taken. */
-  readonly to: AtlasMessageRefactorIdentity;
+  readonly to: MessageRefactorIdentity;
   /** Every catalog the message appears in, across all its locales. */
-  readonly catalogs: readonly AtlasCatalog[];
+  readonly catalogs: readonly Catalog[];
   /**
    * The message usages, and nothing else the analysis knows.
    *
    * A refactor reads one field: where the message being moved is named. Asking for the whole
-   * `AtlasApplicationAnalysis` made a caller build six required fields to have one of them read,
+   * `ApplicationAnalysis` made a caller build six required fields to have one of them read,
    * and tied this signature to a type that grows: every field the analysis gains is a field a
    * caller of this function would have to invent. `Pick` says what is used, and a caller holding a
    * real analysis still passes it unchanged.
    */
-  readonly analysis: Pick<AtlasApplicationAnalysis, 'messageUsages'>;
+  readonly analysis: Pick<ApplicationAnalysis, 'messageUsages'>;
   /** The text of the files those usages are in, so a rename can be worked out over them. */
-  readonly sources: readonly AtlasAnalysisSource[];
+  readonly sources: readonly AnalysisSource[];
 }
 
 /** A rename written down: every catalog and every call site the move touches, and nothing applied. */
-export interface AtlasMessageRefactorPlan extends AtlasAuthoredChangePlan {
+export interface MessageRefactorPlan extends AuthoredChangePlan {
   readonly kind: 'refactor';
   /** The full identity being moved from, as one string. */
   readonly fromIdentity: string;
@@ -75,7 +71,7 @@ export interface AtlasMessageRefactorPlan extends AtlasAuthoredChangePlan {
   readonly affectedUsages: number;
 }
 
-function fullIdentity(identity: AtlasMessageRefactorIdentity): string {
+function fullIdentity(identity: MessageRefactorIdentity): string {
   return `${identity.providerId}:${identity.scopeId}:${identity.messageId}`;
 }
 
@@ -94,12 +90,12 @@ function conventionalCatalogPath(scopeId: string, locale: string): string {
 }
 
 function catalogKey(
-  catalog: Pick<AtlasCatalog, 'providerId' | 'scopeId' | 'locale'>,
+  catalog: Pick<Catalog, 'providerId' | 'scopeId' | 'locale'>,
 ): string {
   return `${catalog.providerId}\u0000${catalog.scopeId}\u0000${catalog.locale}`;
 }
 
-function catalogPath(catalog: AtlasCatalog): string {
+function catalogPath(catalog: Catalog): string {
   return (
     catalog.sourcePath ??
     conventionalCatalogPath(catalog.scopeId, catalog.locale)
@@ -107,9 +103,9 @@ function catalogPath(catalog: AtlasCatalog): string {
 }
 
 function sourceForPath(
-  sources: readonly AtlasAnalysisSource[],
+  sources: readonly AnalysisSource[],
   path: string,
-): AtlasAnalysisSource | undefined {
+): AnalysisSource | undefined {
   const normalized = path.replaceAll('\\', '/');
   return sources.find((source) => {
     const candidate = source.path.replaceAll('\\', '/');
@@ -119,7 +115,7 @@ function sourceForPath(
 
 function rewriteUsage(
   source: string,
-  usage: AtlasMessageUsage,
+  usage: MessageUsage,
   fromMessageId: string,
   toMessageId: string,
 ): string | undefined {
@@ -141,25 +137,25 @@ function rewriteUsage(
 }
 
 function changedSourceFiles(
-  request: AtlasMessageRefactorRequest,
+  request: MessageRefactorRequest,
   fromIdentity: string,
-): AtlasResult<readonly AtlasAuthoredFileChangeInput[]> {
-  const byPath = new Map<string, AtlasMessageUsage[]>();
+): ToolkitResult<readonly AuthoredFileChangeInput[]> {
+  const byPath = new Map<string, MessageUsage[]>();
   for (const usage of request.analysis.messageUsages) {
     if (usage.identity !== fromIdentity) continue;
     const items = byPath.get(usage.sourcePath) ?? [];
     items.push(usage);
     byPath.set(usage.sourcePath, items);
   }
-  const changes: AtlasAuthoredFileChangeInput[] = [];
+  const changes: AuthoredFileChangeInput[] = [];
   for (const [path, usages] of [...byPath.entries()].sort(([left], [right]) =>
     compareCodePoint(left, right),
   )) {
     const source = sourceForPath(request.sources, path);
     if (source === undefined) {
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1805',
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1805',
           `Semantic refactor cannot read analyzed source ${JSON.stringify(path)}.`,
         ),
       ]);
@@ -175,9 +171,9 @@ function changedSourceFiles(
         request.to.messageId,
       );
       if (replacement === undefined) {
-        return atlasFailure([
-          atlasDiagnostic(
-            'ATL1805',
+        return toolkitFailure([
+          toolkitDiagnostic(
+            'EQ1805',
             `Semantic refactor could not safely rewrite an analyzed ${usage.surface} handle.`,
             { path: ['sources', path] },
           ),
@@ -187,14 +183,14 @@ function changedSourceFiles(
     }
     changes.push({ path, before: source.contents, after: contents });
   }
-  return atlasSuccess(Object.freeze(changes));
+  return toolkitSuccess(Object.freeze(changes));
 }
 
 function cloneCatalog(
-  catalog: AtlasCatalog,
-  messages: Readonly<Record<string, AtlasCatalogMessage>>,
+  catalog: Catalog,
+  messages: Readonly<Record<string, CatalogMessage>>,
   sourcePath?: string,
-): AtlasCatalog {
+): Catalog {
   return Object.freeze({
     role: catalog.role,
     providerId: catalog.providerId,
@@ -209,15 +205,15 @@ function cloneCatalog(
 }
 
 function changedCatalogFiles(
-  request: AtlasMessageRefactorRequest,
-): AtlasResult<readonly AtlasAuthoredFileChangeInput[]> {
+  request: MessageRefactorRequest,
+): ToolkitResult<readonly AuthoredFileChangeInput[]> {
   const catalogs = new Map(
     request.catalogs.map((catalog) => [catalogKey(catalog), catalog]),
   );
   const beforeByPath = new Map(
     request.catalogs.map((catalog) => [
       catalogPath(catalog),
-      formatAtlasCatalog(catalog),
+      formatCatalog(catalog),
     ]),
   );
   const touched = new Set<string>();
@@ -231,19 +227,19 @@ function changedCatalogFiles(
   )) {
     found = true;
     const sourceKey = catalogKey(sourceCatalog);
-    const currentSource = catalogs.get(sourceKey) as AtlasCatalog;
-    const sourceMessages: Record<string, AtlasCatalogMessage> = Object.create(
+    const currentSource = catalogs.get(sourceKey) as Catalog;
+    const sourceMessages: Record<string, CatalogMessage> = Object.create(
       null,
-    ) as Record<string, AtlasCatalogMessage>;
+    ) as Record<string, CatalogMessage>;
     Object.assign(sourceMessages, currentSource.messages);
-    const moved = sourceMessages[request.from.messageId] as AtlasCatalogMessage;
+    const moved = sourceMessages[request.from.messageId] as CatalogMessage;
     delete sourceMessages[request.from.messageId];
 
     if (request.from.scopeId === request.to.scopeId) {
       if (sourceMessages[request.to.messageId] !== undefined) {
-        return atlasFailure([
-          atlasDiagnostic(
-            'ATL1805',
+        return toolkitFailure([
+          toolkitDiagnostic(
+            'EQ1805',
             'Semantic refactor destination message already exists.',
           ),
         ]);
@@ -267,14 +263,15 @@ function changedCatalogFiles(
       destination === undefined
         ? conventionalCatalogPath(request.to.scopeId, currentSource.locale)
         : catalogPath(destination);
-    const destinationMessages: Record<string, AtlasCatalogMessage> =
-      Object.create(null) as Record<string, AtlasCatalogMessage>;
+    const destinationMessages: Record<string, CatalogMessage> = Object.create(
+      null,
+    ) as Record<string, CatalogMessage>;
     if (destination !== undefined)
       Object.assign(destinationMessages, destination.messages);
     if (destinationMessages[request.to.messageId] !== undefined) {
-      return atlasFailure([
-        atlasDiagnostic(
-          'ATL1805',
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1805',
           'Semantic move destination message already exists.',
         ),
       ]);
@@ -285,7 +282,7 @@ function changedCatalogFiles(
       Object.freeze({
         role: currentSource.role,
         providerId: currentSource.providerId,
-        scopeId: request.to.scopeId as AtlasCatalog['scopeId'],
+        scopeId: request.to.scopeId as Catalog['scopeId'],
         locale: currentSource.locale,
         sourcePath: destinationPath,
         messages: Object.freeze({}),
@@ -298,9 +295,9 @@ function changedCatalogFiles(
     touched.add(destinationPath);
   }
   if (!found) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1805',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1805',
         'Semantic refactor source message is unavailable.',
       ),
     ]);
@@ -308,7 +305,7 @@ function changedCatalogFiles(
 
   const afterByPath = new Map<string, string>();
   for (const catalog of catalogs.values()) {
-    afterByPath.set(catalogPath(catalog), formatAtlasCatalog(catalog));
+    afterByPath.set(catalogPath(catalog), formatCatalog(catalog));
   }
   const changes = [...touched].sort(compareCodePoint).map((path) => ({
     path,
@@ -319,7 +316,7 @@ function changedCatalogFiles(
       ? {}
       : { after: afterByPath.get(path) as string }),
   }));
-  return atlasSuccess(Object.freeze(changes));
+  return toolkitSuccess(Object.freeze(changes));
 }
 
 /**
@@ -332,15 +329,15 @@ function changedCatalogFiles(
  * that is already taken. Applying a rename plan is a separate step, and it is refused there if a
  * file it expects has changed since.
  */
-export function planAtlasMessageRefactor(
-  request: AtlasMessageRefactorRequest,
-): AtlasResult<AtlasMessageRefactorPlan> {
-  const providerFrom = parseAtlasProviderId(request.from.providerId);
-  const providerTo = parseAtlasProviderId(request.to.providerId);
-  const scopeFrom = parseAtlasScopeId(request.from.scopeId);
-  const scopeTo = parseAtlasScopeId(request.to.scopeId);
-  const messageFrom = parseAtlasMessageId(request.from.messageId);
-  const messageTo = parseAtlasMessageId(request.to.messageId);
+export function planMessageRefactor(
+  request: MessageRefactorRequest,
+): ToolkitResult<MessageRefactorPlan> {
+  const providerFrom = parseProviderId(request.from.providerId);
+  const providerTo = parseProviderId(request.to.providerId);
+  const scopeFrom = parseScopeId(request.from.scopeId);
+  const scopeTo = parseScopeId(request.to.scopeId);
+  const messageFrom = parseMessageId(request.from.messageId);
+  const messageTo = parseMessageId(request.to.messageId);
   const identityDiagnostics = [
     ...providerFrom.diagnostics,
     ...providerTo.diagnostics,
@@ -359,10 +356,10 @@ export function planAtlasMessageRefactor(
     request.from.providerId !== request.to.providerId ||
     fullIdentity(request.from) === fullIdentity(request.to)
   ) {
-    return atlasFailure([
+    return toolkitFailure([
       ...identityDiagnostics,
-      atlasDiagnostic(
-        'ATL1805',
+      toolkitDiagnostic(
+        'EQ1805',
         'Version 1 semantic refactors require distinct identities within one application-local provider.',
       ),
     ]);
@@ -373,13 +370,13 @@ export function planAtlasMessageRefactor(
   if (!catalogs.ok) return catalogs;
   const sources = changedSourceFiles(request, fromIdentity);
   if (!sources.ok) return sources;
-  const base = createAtlasAuthoredChangePlan(
+  const base = createAuthoredChangePlan(
     `message-refactor/${request.from.scopeId}-to-${request.to.scopeId}`,
     'refactor',
     [...catalogs.value, ...sources.value],
   );
   if (!base.ok) return base;
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
       ...base.value,
       kind: 'refactor',

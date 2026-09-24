@@ -11,7 +11,7 @@ import {
   type GeneratedRouteProjectionEntry,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /**
  * Every condition `validateRouteProjection` and `parseTarget` refuse input on, one case each.
@@ -30,7 +30,7 @@ import {
  * red.
  */
 
-const IDENTITY = 'sha256-AtlasRefusalsNothingWatchedTestIdentity0123';
+const IDENTITY = 'sha256-RefusalsNothingWatchedTestIdentity012345678';
 
 const SLUG: RouteParameterCodec<string> = Object.freeze({
   parse: (value: string) => Object.freeze({ ok: true as const, value }),
@@ -73,7 +73,7 @@ const valid = (overrides: Overrides = {}): RouteRuntimeProjection => ({
     // `validateRouteProjection` from a generated file on disk, where no type held it. The runtime
     // check exists for exactly the value the compiler will not let this file name.
     profile: (overrides.profile ??
-      'atlas-route-projection/1') as 'atlas-route-projection/1',
+      'equator-route-projection/1') as 'equator-route-projection/1',
     identity: overrides.identity ?? IDENTITY,
     routes: overrides.routes ?? ROUTES,
   },
@@ -110,7 +110,7 @@ describe('what a generated route projection is refused for', () => {
   });
 
   it('refuses a profile or an identity it did not write', () => {
-    expect(validating({ profile: 'atlas-route-projection/2' })).toContain(
+    expect(validating({ profile: 'equator-route-projection/2' })).toContain(
       'profile or identity',
     );
     // The identity is a sha256 in base64url and its length is the check: 43 characters after the
@@ -301,21 +301,21 @@ describe('what an address is refused for before any route sees it', () => {
     // and answered. Whose origin it names is not this function's question: only a `locale-host`
     // policy reads the origin, and it has its own resolver.
     expect(statusOf('https://elsewhere.example/en-us/second')).toBe('success');
-    expect(statusOf('http://atlas.example/en-us/second')).toBe('success');
+    expect(statusOf('http://site.example/en-us/second')).toBe('success');
     // The scheme is still an allowlist, so an address that would execute rather than navigate is
     // refused before anything reads it.
     expect(statusOf('javascript:alert(1)')).toBe('malformed');
     expect(statusOf('data:text/html,x')).toBe('malformed');
-    expect(statusOf('ftp://atlas.example/en-us/second')).toBe('malformed');
+    expect(statusOf('ftp://site.example/en-us/second')).toBe('malformed');
     // A traversal inside an absolute address never reaches the refusals below, because `URL` has
     // already resolved it: `/en-us/..` arrives as `/` and `/en-us/../../etc` arrives as `/etc`.
     // Measured rather than assumed: this was written expecting `malformed` and the run said
     // otherwise, which is the more useful fact. The traversal is neutralized by normalization here
     // and refused by the guard on the relative path, and both have to keep working.
-    expect(statusOf('https://atlas.example/en-us/..')).toBe('redirect');
+    expect(statusOf('https://site.example/en-us/..')).toBe('redirect');
     // `/etc` is a leading segment this policy reads as a locale and does not have, which is the
     // answer an address above the application's root should get.
-    expect(statusOf('https://atlas.example/en-us/../../etc')).toBe(
+    expect(statusOf('https://site.example/en-us/../../etc')).toBe(
       'unsupported-locale',
     );
   });
@@ -328,7 +328,7 @@ describe('what an address is refused for before any route sees it', () => {
       ).toBe('malformed');
     }
     // A backslash is a path separator to some parsers and a literal to others, so an address
-    // carrying one means different things to Atlas and to whatever serves the file.
+    // carrying one means different things to Equator and to whatever serves the file.
     expect(statusOf('/en-us\\second')).toBe('malformed');
   });
 
@@ -374,7 +374,7 @@ describe('what an address is refused for before any route sees it', () => {
 
 describe('the credential-free origin rule, at both sites that apply it', () => {
   const CONFIGURATION: GeneratedConfiguration = {
-    generatedAbi: 'atlas-generated/1',
+    generatedAbi: 'equator-generated/1',
     sourceLocale: 'en-US',
     defaultLocale: 'en-US',
     locales: ['en-US', 'ar-EG'],
@@ -390,7 +390,7 @@ describe('the credential-free origin rule, at both sites that apply it', () => {
     refusal(() =>
       createHostLocalePolicy({
         defaultLocale: 'en-US',
-        origins: { 'en-US': origin, 'ar-EG': 'https://ar.atlas.example' },
+        origins: { 'en-US': origin, 'ar-EG': 'https://ar.site.example' },
       }),
     );
 
@@ -414,19 +414,19 @@ describe('the credential-free origin rule, at both sites that apply it', () => {
 
   const REFUSED = [
     // Not HTTP at all. `javascript:` and `data:` are the reason this is an allowlist.
-    'ftp://atlas.example',
+    'ftp://site.example',
     'javascript:alert(1)',
     'data:text/html,x',
     // Credentials in the origin, which would be written into a canonical URL in a document head.
-    'https://user@atlas.example',
-    'https://user:secret@atlas.example',
+    'https://user@site.example',
+    'https://user:secret@site.example',
     // Anything beyond the origin: a path, a query or a fragment, each of which would be
     // concatenated with the route's own path and produce an address nothing serves.
-    'https://atlas.example/base',
-    'https://atlas.example/?a=1',
-    'https://atlas.example/#a',
+    'https://site.example/base',
+    'https://site.example/?a=1',
+    'https://site.example/#a',
     // Not a URL.
-    'atlas.example',
+    'site.example',
     '',
   ];
 
@@ -434,10 +434,10 @@ describe('the credential-free origin rule, at both sites that apply it', () => {
     for (const origin of REFUSED) {
       expect(asPolicyOrigin(origin), origin).toBeDefined();
     }
-    expect(asPolicyOrigin('https://atlas.example')).toBeUndefined();
+    expect(asPolicyOrigin('https://site.example')).toBeUndefined();
     // A trailing slash is the empty path and is the same origin, so it is accepted, which says
     // the path clause above is about a path rather than about the character.
-    expect(asPolicyOrigin('https://atlas.example/')).toBeUndefined();
+    expect(asPolicyOrigin('https://site.example/')).toBeUndefined();
     expect(asPolicyOrigin('http://localhost:4200')).toBeUndefined();
   });
 
@@ -445,8 +445,8 @@ describe('the credential-free origin rule, at both sites that apply it', () => {
     for (const origin of REFUSED) {
       expect(asSeoOrigin(origin), origin).toBeDefined();
     }
-    expect(asSeoOrigin('https://atlas.example')).toBeUndefined();
-    expect(asSeoOrigin('https://atlas.example/')).toBeUndefined();
+    expect(asSeoOrigin('https://site.example')).toBeUndefined();
+    expect(asSeoOrigin('https://site.example/')).toBeUndefined();
   });
 });
 

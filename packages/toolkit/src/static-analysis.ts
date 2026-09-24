@@ -36,39 +36,39 @@ import {
 import ts from 'typescript';
 
 import {
-  atlasDiagnostic,
-  atlasFailure,
-  atlasSourceSpan,
-  atlasSuccess,
-  type AtlasDiagnostic,
-  type AtlasDiagnosticSeverity,
-  type AtlasResult,
+  toolkitDiagnostic,
+  toolkitFailure,
+  spanAt,
+  toolkitSuccess,
+  type ToolkitDiagnostic,
+  type ToolkitDiagnosticSeverity,
+  type ToolkitResult,
 } from './diagnostics.js';
-import { admitAtlasHostCompatibility } from './host-compatibility.js';
+import { admitHostCompatibility } from './host-compatibility.js';
 import { containedPath } from './output-host.js';
-import { ATLAS_RESOURCE_LIMITS } from './resource-limits.js';
-import { ATLAS_GENERATED_ABI_PROFILE } from './semantic-model.js';
+import { RESOURCE_LIMITS } from './resource-limits.js';
+import { GENERATED_ABI_PROFILE } from './semantic-model.js';
 import { compareCodePoint } from './sorted-records.js';
 import { portablePath } from './file-system.js';
 
 /** A source file supplied directly rather than read from disk, for analysing something in memory. */
-export interface AtlasAnalysisSource {
+export interface AnalysisSource {
   /** The path it is to be treated as having, which is what diagnostics about it will name. */
   readonly path: string;
   /** Its text. */
   readonly contents: string;
 }
 
-export interface AtlasVirtualModule {
+export interface VirtualModule {
   readonly specifier: string;
   readonly contents: string;
 }
 
-export interface AtlasApplicationAnalysisRequest {
+export interface ApplicationAnalysisRequest {
   readonly projectRoot: string;
   readonly rootNames: readonly string[];
-  readonly sources?: readonly AtlasAnalysisSource[];
-  readonly virtualModules?: readonly AtlasVirtualModule[];
+  readonly sources?: readonly AnalysisSource[];
+  readonly virtualModules?: readonly VirtualModule[];
   readonly knownMessageIdentities?: readonly string[];
   readonly typeNames?: readonly string[];
   readonly maxDiagnostics?: number;
@@ -87,7 +87,7 @@ export interface AtlasApplicationAnalysisRequest {
  * Collected across the whole application, which is what answers both directions: which messages
  * nothing reaches, and where a message would have to be changed if it were renamed.
  */
-export interface AtlasMessageUsage {
+export interface MessageUsage {
   /** Which message, by the identity its handle carries. */
   readonly identity: string;
   /** The file it is used in. */
@@ -106,7 +106,7 @@ export interface AtlasMessageUsage {
  * What localized routing is derived from: the translated spellings, the reciprocal alternates, the
  * sitemap entry, and which messages arrive with which lazily loaded route.
  */
-export interface AtlasRouteProjection {
+export interface RouteProjection {
   /**
    * A stable name for this address.
    *
@@ -114,7 +114,7 @@ export interface AtlasRouteProjection {
    * `:id` to `:orderId` leaves the URL, the page, and its indexed copy untouched, so it must leave
    * the key those messages are authored under untouched too. Every parameter therefore collapses
    * to one mark and only literal segments contribute names. A consumer that wants a different
-   * name declares `data.atlasRouteId`.
+   * name declares `data.equatorRouteId`.
    */
   readonly id: string;
   /** The route's full path as authored, with its parameters still in it. */
@@ -144,7 +144,7 @@ export interface AtlasRouteProjection {
    * The files this route brings in that the first render does not.
    *
    * A route behind `loadComponent` or `loadChildren` downloads its code when it activates, and the
-   * messages that code uses have to arrive with it. Deriving the set here is what lets Atlas load
+   * messages that code uses have to arrive with it. Deriving the set here is what lets Equator load
    * them without any application listing scopes per route: the same analysis already decided
    * which scopes are not startup scopes, and this says which route is responsible for each.
    */
@@ -168,7 +168,7 @@ export interface AtlasRouteProjection {
  * string in an expression (a click handler, an attribute binding, a comparison) and the option's
  * language and direction arrive as static attributes that repeat what the runtime already knows.
  */
-export interface AtlasTemplateLocaleMention {
+export interface TemplateLocaleMention {
   readonly kind: 'literal' | 'attribute';
   /** `lang`, for a static attribute mention. */
   readonly attribute?: string;
@@ -185,12 +185,12 @@ export interface AtlasTemplateLocaleMention {
 /**
  * An address a template hands to the Router, in the forms a build can read one.
  *
- * Reported, not judged, on the same division as `AtlasTemplateLocaleMention` above: this layer
+ * Reported, not judged, on the same division as `TemplateLocaleMention` above: this layer
  * knows that a template writes `routerLink="/ar-eg/articles"` and does not know that `ar-eg` is a
  * segment this owner's policy claims. The layer that holds the policy decides.
  *
  * `routerLink` alone, and that is the scope rather than an omission. It is the one attribute whose
- * value Atlas resolves on the way out: the click hands the Router the address as written, and
+ * value Equator resolves on the way out: the click hands the Router the address as written, and
  * `UrlHandlingStrategy.extract` rewrites it to its canonical form before anything matches it. An
  * `href` is a full-page address the browser supplies and `LocationStrategy.path()` delocalizes on
  * arrival, so a locale in one is a working link to that locale's page and legitimate content.
@@ -199,7 +199,7 @@ export interface AtlasTemplateLocaleMention {
  * be silent for the other two. The address is assembled here because assembling it is reading:
  * an array is a list of commands the Router joins, and joining them is not a judgement.
  */
-export interface AtlasTemplateAddress {
+export interface TemplateAddress {
   readonly attribute: string;
   /** `static` for `routerLink="..."`, `bound` for a string expression, `array` for the command list. */
   readonly form: 'static' | 'bound' | 'array';
@@ -213,7 +213,7 @@ export interface AtlasTemplateAddress {
 }
 
 /** A component whose template lives in its own file, and where both of them are. */
-export interface AtlasComponentTemplateAnalysis {
+export interface ComponentTemplateAnalysis {
   /** The component class's name. */
   readonly componentName: string;
   /** The file the class is declared in. */
@@ -225,13 +225,13 @@ export interface AtlasComponentTemplateAnalysis {
 /**
  * What reading the application's own source found out about how it uses localization.
  *
- * Everything Atlas knows that a catalog cannot say. Reported rather than judged: this layer knows
+ * Everything Equator knows that a catalog cannot say. Reported rather than judged: this layer knows
  * what the source says and not what the configuration says, and comparing the two belongs to the
  * layer holding both.
  */
-export interface AtlasApplicationAnalysis {
+export interface ApplicationAnalysis {
   /** Every place a message is used, in code and in templates. */
-  readonly messageUsages: readonly AtlasMessageUsage[];
+  readonly messageUsages: readonly MessageUsage[];
   /**
    * The messages selected for the failure path, found by resolving the symbol rather than by name.
    *
@@ -246,12 +246,12 @@ export interface AtlasApplicationAnalysis {
    * that an owner had. So the error could
    * never fire: an owner authoring recovery copy and never selecting it passed generate and check
    * with no diagnostics at all. Detected the same way recovery selection itself
-   * is: by resolving the symbol and requiring its declaration to come from the Atlas package,
+   * is: by resolving the symbol and requiring its declaration to come from the Equator package,
    * rather than by matching a name any consumer could shadow.
    */
   readonly selectsApplicationRuntime?: boolean;
   /** Every route the application declares, with what each one claims about itself. */
-  readonly routes: readonly AtlasRouteProjection[];
+  readonly routes: readonly RouteProjection[];
   /**
    * The locale set this owner's route policy declares, when it declares one readably.
    *
@@ -259,20 +259,20 @@ export interface AtlasApplicationAnalysis {
    * configuration says, and comparing the two is the job of the layer that holds both. Absent when
    * the owner builds no policy, or builds one from something a build cannot read.
    */
-  readonly routePolicy?: AtlasRoutePolicyDeclaration;
+  readonly routePolicy?: RoutePolicyDeclaration;
   /** Every component whose template is a separate file, so a usage in one can be traced back. */
-  readonly components: readonly AtlasComponentTemplateAnalysis[];
+  readonly components: readonly ComponentTemplateAnalysis[];
   /** Every locale-shaped thing a component template spells out for itself. */
-  readonly localeMentions: readonly AtlasTemplateLocaleMention[];
+  readonly localeMentions: readonly TemplateLocaleMention[];
   /** Every absolute address a component template hands to the Router. */
-  readonly templateAddresses: readonly AtlasTemplateAddress[];
+  readonly templateAddresses: readonly TemplateAddress[];
   /**
    * Files a route reaches only through a lazy boundary, and everything they pull in.
    *
    * Angular splits an application at `loadComponent` and `loadChildren`, and the code behind those
    * boundaries is not downloaded until the route activates. The messages used there should not be
-   * either. Deriving the set is what lets Atlas load only what the first render needs without any
-   * application listing scopes by hand: the list was a workaround for analysis Atlas can do.
+   * either. Deriving the set is what lets Equator load only what the first render needs without any
+   * application listing scopes by hand: the list was a workaround for analysis Equator can do.
    */
   readonly deferredSourcePaths?: readonly string[];
 }
@@ -287,7 +287,7 @@ function sourceSpan(
   length: number,
   sourcePath: string,
 ) {
-  return atlasSourceSpan(source, start, length, sourcePath);
+  return spanAt(source, start, length, sourcePath);
 }
 
 function diagnosticMessage(diagnostic: ts.Diagnostic): string {
@@ -297,22 +297,22 @@ function diagnosticMessage(diagnostic: ts.Diagnostic): string {
 function typeScriptDiagnostic(
   projectRoot: string,
   diagnostic: ts.Diagnostic,
-  severity: AtlasDiagnosticSeverity = 'error',
-): AtlasDiagnostic {
+  severity: ToolkitDiagnosticSeverity = 'error',
+): ToolkitDiagnostic {
   if (
     diagnostic.file === undefined ||
     diagnostic.start === undefined ||
     diagnostic.length === undefined
   ) {
-    return atlasDiagnostic(
-      'ATL1401',
+    return toolkitDiagnostic(
+      'EQ1401',
       `TypeScript: ${diagnosticMessage(diagnostic)}`,
       { severity },
     );
   }
   const path = portablePath(projectRoot, diagnostic.file.fileName);
-  return atlasDiagnostic(
-    'ATL1401',
+  return toolkitDiagnostic(
+    'EQ1401',
     `TypeScript: ${diagnosticMessage(diagnostic)}`,
     {
       severity,
@@ -374,7 +374,7 @@ function typeMessageIdentity(
 ): string | undefined {
   if (
     propertyStringLiteral(checker, type, 'generatedAbi', node) !==
-      ATLAS_GENERATED_ABI_PROFILE ||
+      GENERATED_ABI_PROFILE ||
     !['plain', 'structured'].includes(
       propertyStringLiteral(checker, type, 'resultKind', node) ?? '',
     )
@@ -387,7 +387,7 @@ function typeMessageIdentity(
 /**
  * The symbol an expression names, with import aliases followed to what they alias.
  *
- * Every Atlas call is recognized this way rather than by name: a consumer function called
+ * Every Equator call is recognized this way rather than by name: a consumer function called
  * `withRouting` configures nothing, and one called `provideLocalization` composes nothing.
  */
 function resolvedSymbol(
@@ -412,7 +412,7 @@ function declaredIn(symbol: ts.Symbol, fragment: string): boolean {
 }
 
 /**
- * A call that composes this owner's Atlas application runtime.
+ * A call that composes this owner's Equator application runtime.
  *
  * Two spellings reach the same place. An application ordinarily calls the generated
  * `provideLocalization()`, whose declaration is in this owner's generated `#i18n`: that is the
@@ -422,9 +422,9 @@ function declaredIn(symbol: ts.Symbol, fragment: string): boolean {
  * Matching only the package spelling was what this did after `provideLocalization` was renamed to
  * `provideLocalizationSetup` there, and it stopped recognizing every real consumer: they all call
  * the generated wrapper. Nothing noticed, because the test for it declared its own
- * `provideLocalization` in a `@neolorn/atlas` stub: an API that no longer existed.
+ * `provideLocalization` in a `@neolorn/equator` stub: an API that no longer existed.
  */
-function atlasProvideLocalization(
+function isLocalizationProviderCall(
   checker: ts.TypeChecker,
   node: ts.CallExpression,
   generatedRoot: string,
@@ -433,7 +433,7 @@ function atlasProvideLocalization(
   if (resolved === undefined) return false;
   if (
     resolved.name === 'provideLocalizationSetup' &&
-    declaredIn(resolved, '/@neolorn/atlas/')
+    declaredIn(resolved, '/@neolorn/equator/')
   ) {
     return true;
   }
@@ -443,17 +443,17 @@ function atlasProvideLocalization(
   );
 }
 
-const ATLAS_MESSAGE_GROUP_DEPTH = 8;
-const ATLAS_MESSAGE_GROUP_MEMBERS = 4096;
+const MESSAGE_GROUP_DEPTH = 8;
+const MESSAGE_GROUP_MEMBERS = 4096;
 
 /**
  * Every message inside an expression that is a group of them.
  *
- * A message selected by a value only the running program has, a failure code from a service,
- * cannot be named in source, so the code that selects it hands Atlas the group instead and Atlas
- * counts every member as used. Anything less would report those messages unused and eventually
- * drop them, and the first sign of it would be a customer reading a generic apology in place of
- * what actually went wrong.
+ * A message selected by a value only the running program has, a failure code from a service, cannot
+ * be named in source, so the code that selects it hands Equator the group instead and Equator
+ * counts every member as used. Anything less would report those messages unused and eventually drop
+ * them, and the first sign of it would be a customer reading a generic apology in place of what
+ * actually went wrong.
  *
  * Bounded on both depth and count: this walks a type a consumer wrote, and a type can be as deep
  * and as wide as a consumer likes.
@@ -465,12 +465,12 @@ function groupMessageIdentities(
   const found: string[] = [];
   const seen = new Set<ts.Type>();
   const walk = (type: ts.Type, depth: number): void => {
-    if (depth > ATLAS_MESSAGE_GROUP_DEPTH) return;
-    if (found.length >= ATLAS_MESSAGE_GROUP_MEMBERS) return;
+    if (depth > MESSAGE_GROUP_DEPTH) return;
+    if (found.length >= MESSAGE_GROUP_MEMBERS) return;
     if (seen.has(type)) return;
     seen.add(type);
     for (const property of checker.getPropertiesOfType(type)) {
-      if (found.length >= ATLAS_MESSAGE_GROUP_MEMBERS) return;
+      if (found.length >= MESSAGE_GROUP_MEMBERS) return;
       const propertyType = checker.getTypeOfSymbolAtLocation(property, node);
       const identity = typeMessageIdentity(checker, propertyType, node);
       if (identity !== undefined) {
@@ -493,10 +493,10 @@ function groupMessageIdentities(
  *
  * Read out of the `withRouting()` call's source text rather than by running it: `field` and the
  * values beside it are string literals precisely so that they can be. A consumer that classifies
- * its routes already points Atlas at the field it already has; one that does not gets
- * `atlasIndexing`.
+ * its routes already points Equator at the field it already has; one that does not gets
+ * `equatorIndexing`.
  */
-interface AtlasRouteIndexingPolicy {
+interface RouteIndexingPolicy {
   readonly field: string;
   readonly values: ReadonlyMap<
     string,
@@ -504,27 +504,27 @@ interface AtlasRouteIndexingPolicy {
   >;
 }
 
-const DEFAULT_ROUTE_INDEXING_FIELD = 'atlasIndexing';
+const DEFAULT_ROUTE_INDEXING_FIELD = 'equatorIndexing';
 
 /**
  * What a class of routes claims in a sitemap, read out of `withRouting()` the same way.
  *
  * The seven `changefreq` values are the protocol's own enumeration and `priority` is bounded at 0
  * and 1, so a declaration outside either is refused here rather than written into a document a
- * validator then rejects. Refused, not dropped: a value somebody typed and Atlas silently ignored
+ * validator then rejects. Refused, not dropped: a value somebody typed and Equator silently ignored
  * is the failure this whole declaration exists to avoid.
  *
  * `lastmodField` names a second route-data field carrying a date. It is separate because a date
  * belongs to one page and a class does not have one, and it is read rather than computed, because
  * a build time is not a date the page changed on.
  */
-interface AtlasRouteSitemapPolicy {
+interface RouteSitemapPolicy {
   readonly field: string;
-  readonly values: ReadonlyMap<string, AtlasRouteSitemapClass>;
+  readonly values: ReadonlyMap<string, RouteSitemapClass>;
   readonly lastmodField?: string;
 }
 
-interface AtlasRouteSitemapClass {
+interface RouteSitemapClass {
   readonly changefreq?: string;
   readonly priority?: number;
 }
@@ -542,7 +542,7 @@ const SITEMAP_CHANGE_FREQUENCIES = new Set([
 const SITEMAP_W3C_DATE =
   /^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))?$/u;
 
-const ATLAS_DEFAULT_ROUTE_INDEXING_VALUES = new Map<
+const DEFAULT_ROUTE_INDEXING_VALUES = new Map<
   string,
   'indexable' | 'non-indexable' | 'private'
 >([
@@ -564,7 +564,7 @@ function routeSitemapPolicy(
   node: ts.CallExpression,
 ):
   | {
-      readonly policy: AtlasRouteSitemapPolicy;
+      readonly policy: RouteSitemapPolicy;
       readonly refusals: readonly string[];
     }
   | undefined {
@@ -572,7 +572,7 @@ function routeSitemapPolicy(
   if (
     resolved === undefined ||
     resolved.name !== 'withRouting' ||
-    !declaredIn(resolved, '/@neolorn/atlas/')
+    !declaredIn(resolved, '/@neolorn/equator/')
   ) {
     return undefined;
   }
@@ -588,7 +588,7 @@ function routeSitemapPolicy(
   if (field === undefined || !ts.isStringLiteralLike(field)) return undefined;
   const lastmodField = objectProperty(sitemap, 'lastmodField');
   const refusals: string[] = [];
-  const values = new Map<string, AtlasRouteSitemapClass>();
+  const values = new Map<string, RouteSitemapClass>();
   const table = objectProperty(sitemap, 'values');
   if (table !== undefined && ts.isObjectLiteralExpression(table)) {
     for (const item of table.properties) {
@@ -647,12 +647,12 @@ function routeSitemapPolicy(
 function routeIndexingPolicy(
   checker: ts.TypeChecker,
   node: ts.CallExpression,
-): AtlasRouteIndexingPolicy | undefined {
+): RouteIndexingPolicy | undefined {
   const resolved = resolvedSymbol(checker, node.expression);
   if (
     resolved === undefined ||
     resolved.name !== 'withRouting' ||
-    !declaredIn(resolved, '/@neolorn/atlas/')
+    !declaredIn(resolved, '/@neolorn/equator/')
   ) {
     return undefined;
   }
@@ -693,7 +693,7 @@ function routeIndexingPolicy(
 /**
  * What a route policy declares, read out of the call that builds it.
  *
- * An application states its locales twice and always has: once in `atlas.config.json`, which is
+ * An application states its locales twice and always has: once in `equator.config.json`, which is
  * what generates the catalogs, and once in the call that builds its locale URL policy, which is
  * what turns a locale into an address. The two have to agree and nothing compared them: the
  * toolkit had no knowledge of the policy at all, so none of its diagnostics could have covered it.
@@ -733,7 +733,7 @@ function routeIndexingPolicy(
  * What catches a route named `en` in a project whose addresses begin with a locale: the two would
  * collide, and which one wins would depend on the order they were registered in.
  */
-export interface AtlasClaimedRouteSegment {
+export interface ClaimedRouteSegment {
   /** The segment itself, as it appears at the start of an address. */
   readonly segment: string;
   /** Why it is taken: a locale, a spelling that resolves to one, or a root kept out of the scheme. */
@@ -747,7 +747,7 @@ export interface AtlasClaimedRouteSegment {
  * build cannot read. Compared against the configuration by the layer that holds both, which is what
  * catches a policy naming locales the project does not build.
  */
-export interface AtlasRoutePolicyDeclaration {
+export interface RoutePolicyDeclaration {
   /** Where the policy puts the locale: in the path, in the host, or nowhere. */
   readonly kind: 'path-prefix' | 'locale-host' | 'locale-neutral';
   /** The locales it names. */
@@ -757,7 +757,7 @@ export interface AtlasRoutePolicyDeclaration {
    * locale-neutral roots. Empty for a policy that puts no locale in the path and declares no
    * neutral roots.
    */
-  readonly claimedSegments: readonly AtlasClaimedRouteSegment[];
+  readonly claimedSegments: readonly ClaimedRouteSegment[];
   /** Whether the default locale's addresses carry no prefix, so a route's own segment leads. */
   readonly omitDefaultPrefix: boolean;
   /** The locale the policy treats as the default, when it names one. */
@@ -771,7 +771,7 @@ export interface AtlasRoutePolicyDeclaration {
 }
 
 interface RoutePolicyFactory {
-  readonly kind: AtlasRoutePolicyDeclaration['kind'];
+  readonly kind: RoutePolicyDeclaration['kind'];
   /** The option holding the locale table, and whether locales are its keys or its elements. */
   readonly localeOption: string;
   readonly localesAre: 'keys' | 'elements';
@@ -845,9 +845,9 @@ function routePolicyDeclaration(
   checker: ts.TypeChecker,
   sourceFile: ts.SourceFile,
   node: ts.CallExpression,
-): AtlasRoutePolicyDeclaration | undefined {
+): RoutePolicyDeclaration | undefined {
   const resolved = resolvedSymbol(checker, node.expression);
-  if (resolved === undefined || !declaredIn(resolved, '/@neolorn/atlas/')) {
+  if (resolved === undefined || !declaredIn(resolved, '/@neolorn/equator/')) {
     return undefined;
   }
   const factory = ROUTE_POLICY_FACTORIES.get(resolved.name);
@@ -870,11 +870,8 @@ function routePolicyDeclaration(
   const table = objectProperty(argument, factory.localeOption);
   const defaultLocale = objectProperty(argument, 'defaultLocale');
   const locales: string[] = [];
-  const claimed = new Map<string, AtlasClaimedRouteSegment>();
-  const claim = (
-    segment: string,
-    kind: AtlasClaimedRouteSegment['kind'],
-  ): void => {
+  const claimed = new Map<string, ClaimedRouteSegment>();
+  const claim = (segment: string, kind: ClaimedRouteSegment['kind']): void => {
     if (!claimed.has(segment)) claimed.set(segment, { segment, kind });
   };
   if (factory.localesAre === 'elements') {
@@ -1091,7 +1088,7 @@ function metadataString(
  */
 const LANGUAGE_TAG_SHAPE = /^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{2,8}){0,3}$/;
 
-/** The attribute whose value Atlas resolves, and the only one this reports. */
+/** The attribute whose value Equator resolves, and the only one this reports. */
 const ROUTER_LINK = 'routerLink';
 
 /**
@@ -1341,7 +1338,7 @@ function routeIdentity(fullPath: string): string | undefined {
  * Naming cannot happen while reading: a collision is a fact about two routes, and the second one
  * may be declared in another file.
  */
-interface AtlasRouteDraft {
+interface RouteDraft {
   readonly declaredId?: string;
   readonly path: string;
   readonly parameterNames: readonly string[];
@@ -1360,10 +1357,10 @@ interface AtlasRouteDraft {
   readonly end: number;
 }
 
-const ATLAS_ROUTE_DATA_ENTRIES = 32;
-const ATLAS_ROUTE_DATA_VALUE_CHARACTERS = 128;
+const ROUTE_DATA_ENTRIES = 32;
+const ROUTE_DATA_VALUE_CHARACTERS = 128;
 
-function declaresRouteData(draft: AtlasRouteDraft): boolean {
+function declaresRouteData(draft: RouteDraft): boolean {
   return draft.declaredId !== undefined || draft.data.length > 0;
 }
 
@@ -1380,23 +1377,23 @@ function declaresRouteData(draft: AtlasRouteDraft): boolean {
  * that never enables it should not fail to compile over the name of a route it does not index.
  */
 function resolveRouteIdentities(
-  drafts: readonly AtlasRouteDraft[],
-  policy: AtlasRouteIndexingPolicy | undefined,
-  sitemapPolicy: AtlasRouteSitemapPolicy | undefined,
-  deferredFor: (draft: AtlasRouteDraft) => readonly string[],
-  diagnostics: AtlasDiagnostic[],
-): AtlasRouteProjection[] {
+  drafts: readonly RouteDraft[],
+  policy: RouteIndexingPolicy | undefined,
+  sitemapPolicy: RouteSitemapPolicy | undefined,
+  deferredFor: (draft: RouteDraft) => readonly string[],
+  diagnostics: ToolkitDiagnostic[],
+): RouteProjection[] {
   const field = policy?.field ?? DEFAULT_ROUTE_INDEXING_FIELD;
-  const values = policy?.values ?? ATLAS_DEFAULT_ROUTE_INDEXING_VALUES;
+  const values = policy?.values ?? DEFAULT_ROUTE_INDEXING_VALUES;
   /**
    * A route's sitemap claim, or nothing.
    *
-   * There is no Atlas default field here, unlike indexing. A route with no claim is published with
-   * its address and its alternates and says nothing more, which is a complete entry; a route with
-   * no indexing class has to be sorted into one, because whether a crawler may see it is not a
+   * There is no Equator default field here, unlike indexing. A route with no claim is published
+   * with its address and its alternates and says nothing more, which is a complete entry; a route
+   * with no indexing class has to be sorted into one, because whether a crawler may see it is not a
    * question a document can decline to answer.
    */
-  const claimOf = (draft: AtlasRouteDraft): AtlasRouteProjection['sitemap'] => {
+  const claimOf = (draft: RouteDraft): RouteProjection['sitemap'] => {
     if (sitemapPolicy === undefined) return undefined;
     const written = draft.data.find(
       ([key]) => key === sitemapPolicy.field,
@@ -1410,8 +1407,8 @@ function resolveRouteIdentities(
         : draft.data.find(([key]) => key === lastmodField)?.[1];
     if (lastmod !== undefined && !SITEMAP_W3C_DATE.test(lastmod)) {
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1412',
+        toolkitDiagnostic(
+          'EQ1412',
           `Route ${JSON.stringify(`/${draft.path}`)} declares ${JSON.stringify(lastmodField)} as ${JSON.stringify(lastmod)}, which is not a W3C date such as 2026-09-08 or 2026-09-08T17:33:30+03:00. It is left out of the sitemap rather than written into a document a validator refuses.`,
           { path: ['routes', draft.sourcePath], severity: 'warning' },
         ),
@@ -1434,14 +1431,14 @@ function resolveRouteIdentities(
   // error: a consumer's field classifies routes for the consumer's own reasons, and most of those
   // reasons say nothing about indexing.
   const classify = (
-    draft: AtlasRouteDraft,
+    draft: RouteDraft,
   ): 'indexable' | 'non-indexable' | 'private' => {
     const written = draft.data.find(([key]) => key === field)?.[1];
     return written === undefined
       ? 'indexable'
       : (values.get(written) ?? 'indexable');
   };
-  const byPath = new Map<string, AtlasRouteDraft>();
+  const byPath = new Map<string, RouteDraft>();
   for (const draft of drafts) {
     const existing = byPath.get(draft.path);
     if (
@@ -1452,13 +1449,13 @@ function resolveRouteIdentities(
     }
   }
 
-  const named: { readonly id: string; readonly draft: AtlasRouteDraft }[] = [];
+  const named: { readonly id: string; readonly draft: RouteDraft }[] = [];
   for (const draft of byPath.values()) {
     if (draft.declaredId !== undefined) {
       if (!ROUTE_IDENTITY_PATTERN.test(draft.declaredId)) {
         diagnostics.push(
-          atlasDiagnostic(
-            'ATL1404',
+          toolkitDiagnostic(
+            'EQ1404',
             `Route ${JSON.stringify(`/${draft.path}`)} declares the identity ${JSON.stringify(draft.declaredId)}, which the localization runtime will refuse. An identity begins with a letter or digit and continues with letters, digits, and ".", "_", ":", or "-", up to 128 characters.`,
             { path: ['routes', draft.sourcePath], severity: 'warning' },
           ),
@@ -1471,9 +1468,9 @@ function resolveRouteIdentities(
     const identity = routeIdentity(draft.path);
     if (identity === undefined) {
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1404',
-          `Atlas could not derive a stable identity for route ${JSON.stringify(`/${draft.path}`)}. Declare one as \`data.atlasRouteId\` to index it.`,
+        toolkitDiagnostic(
+          'EQ1404',
+          `Equator could not derive a stable identity for route ${JSON.stringify(`/${draft.path}`)}. Declare one as \`data.equatorRouteId\` to index it.`,
           { path: ['routes', draft.sourcePath], severity: 'warning' },
         ),
       );
@@ -1482,22 +1479,22 @@ function resolveRouteIdentities(
     named.push({ id: identity, draft });
   }
 
-  const byIdentity = new Map<string, AtlasRouteDraft[]>();
+  const byIdentity = new Map<string, RouteDraft[]>();
   for (const entry of named) {
     const group = byIdentity.get(entry.id);
     if (group === undefined) byIdentity.set(entry.id, [entry.draft]);
     else group.push(entry.draft);
   }
 
-  const projections: AtlasRouteProjection[] = [];
+  const projections: RouteProjection[] = [];
   for (const entry of named) {
-    const group = byIdentity.get(entry.id) as AtlasRouteDraft[];
+    const group = byIdentity.get(entry.id) as RouteDraft[];
     if (group.length > 1) {
       if (group[0] === entry.draft) {
         diagnostics.push(
-          atlasDiagnostic(
-            'ATL1404',
-            `Routes ${group.map(({ path }) => JSON.stringify(`/${path}`)).join(', ')} all resolve to the identity ${JSON.stringify(entry.id)}. Declare \`data.atlasRouteId\` on each to separate them; none is indexed until they differ.`,
+          toolkitDiagnostic(
+            'EQ1404',
+            `Routes ${group.map(({ path }) => JSON.stringify(`/${path}`)).join(', ')} all resolve to the identity ${JSON.stringify(entry.id)}. Declare \`data.equatorRouteId\` on each to separate them; none is indexed until they differ.`,
             { path: ['routes', entry.draft.sourcePath], severity: 'warning' },
           ),
         );
@@ -1525,10 +1522,10 @@ function analyzeRoutes(
   projectRoot: string,
   checker: ts.TypeChecker,
   sourceFile: ts.SourceFile,
-  routes: AtlasRouteDraft[],
+  routes: RouteDraft[],
   program: ts.Program,
   lazyEntryFiles: Set<ts.SourceFile>,
-  diagnostics: AtlasDiagnostic[],
+  diagnostics: ToolkitDiagnostic[],
   childRouteFiles: Set<string>,
 ): void {
   const unwrap = (expression: ts.Expression): ts.Expression => {
@@ -1582,7 +1579,7 @@ function analyzeRoutes(
     }
     const entries: (readonly [string, string])[] = [];
     for (const item of unwrapped.properties) {
-      if (entries.length >= ATLAS_ROUTE_DATA_ENTRIES) break;
+      if (entries.length >= ROUTE_DATA_ENTRIES) break;
       if (!ts.isPropertyAssignment(item)) continue;
       const key = ts.isIdentifier(item.name)
         ? item.name.text
@@ -1593,7 +1590,7 @@ function analyzeRoutes(
       if (
         key === undefined ||
         !ts.isStringLiteralLike(value) ||
-        value.text.length > ATLAS_ROUTE_DATA_VALUE_CHARACTERS
+        value.text.length > ROUTE_DATA_VALUE_CHARACTERS
       ) {
         continue;
       }
@@ -1603,7 +1600,7 @@ function analyzeRoutes(
   };
   const join = (parent: string, child: string): string =>
     [parent, child].filter((segment) => segment.length > 0).join('/');
-  // `parentPath` has no default on purpose: `undefined` means "an address Atlas cannot know", and
+  // `parentPath` has no default on purpose: `undefined` means "an address Equator cannot know", and
   // a default would quietly turn that into the root, naming a whole subtree as if it sat at the
   // top of the application.
   const visitArray = (
@@ -1621,7 +1618,7 @@ function analyzeRoutes(
       const pathExpression =
         pathInitializer === undefined ? undefined : unwrap(pathInitializer);
       // A route with no `path` is pathless: it renders without contributing a URL segment, so it
-      // has its parent's address rather than none. A computed `path` is an address Atlas cannot
+      // has its parent's address rather than none. A computed `path` is an address Equator cannot
       // know, which leaves the subtree below it unnameable rather than invisible. Ending the visit
       // at either hides every route beneath a pathless layout, and with them every lazy boundary
       // beneath it: those messages then load eagerly, forever, with nothing to say so.
@@ -1684,8 +1681,8 @@ function analyzeRoutes(
       // (`@angular/router/fesm2022/_router-chunk.mjs:2788`), and both of its call sites sit inside
       // `if (typeof ngDevMode === 'undefined' || ngDevMode)`. A production build validates no route
       // config at all: a route nothing can render ships, and surfaces only for whoever next runs a
-      // development build. Atlas reads the same table at generate time, before either build, and is
-      // the only thing standing between such a route and the projection, which would otherwise
+      // development build. Equator reads the same table at generate time, before either build, and
+      // is the only thing standing between such a route and the projection, which would otherwise
       // give it an identity, a localized spelling per locale, and a place in the catalog.
       if (
         redirect === undefined &&
@@ -1695,8 +1692,8 @@ function analyzeRoutes(
         property(unwrapped, 'loadComponent') === undefined
       ) {
         diagnostics.push(
-          atlasDiagnostic(
-            'ATL1405',
+          toolkitDiagnostic(
+            'EQ1405',
             `${address} carries none of \`component\`, \`loadComponent\`, \`redirectTo\`, \`children\` or \`loadChildren\`, so nothing renders it. Angular refuses this route too, but only in a development build.`,
             { path: ['routes', portableSourcePath] },
           ),
@@ -1705,23 +1702,23 @@ function analyzeRoutes(
 
       // What the projection cannot reach, said out loud.
       //
-      // Atlas localizes the routes its analysis can name, and a route it was never shown is not one
-      // of them. Two constructs hide addresses and neither is exotic: a `path` that is not a string
-      // literal makes the route and everything beneath it unnameable, and `loadChildren` puts the
-      // child table in a file this one only references. The consequence is not a missing page,
-      // the Router serves it either way, but a prerendered file at a localized address rendered
-      // in the default locale, which is worse than no file, because it looks right.
+      // Equator localizes the routes its analysis can name, and a route it was never shown is not
+      // one of them. Two constructs hide addresses and neither is exotic: a `path` that is not a
+      // string literal makes the route and everything beneath it unnameable, and `loadChildren`
+      // puts the child table in a file this one only references. The consequence is not a missing
+      // page, the Router serves it either way, but a prerendered file at a localized address
+      // rendered in the default locale, which is worse than no file, because it looks right.
       //
       // Diagnosed rather than covered, deliberately. Following the `loadChildren` target would
       // close this instance and none of the class: a table assembled at runtime, spread in from a
       // helper, or returned by a function hides routes in exactly the same way and would each need
-      // their own reader. What Atlas owes is to know which routes it covers and to be loud about
+      // their own reader. What Equator owes is to know which routes it covers and to be loud about
       // the rest.
       //
       // A warning rather than a refusal, and the deciding reason is what a check can be made to
       // fail on rather than any argument about `loadChildren`.
       //
-      // `analyzeAtlasApplication` returns `atlasFailure` on any error-severity diagnostic, and it
+      // `analyzeApplication` returns `toolkitFailure` on any error-severity diagnostic, and it
       // returns there **before** the lazy closure is computed and before any value reaches a caller.
       // So at error severity two behaviours below this line stop being observable: the boundary
       // reading under an unnameable address, which decides whether those messages defer, and the
@@ -1731,30 +1728,30 @@ function analyzeRoutes(
       //
       // The check and the thing it checks share a source here, in a shape that is not a test:
       // this function's own failure path, so the check agrees by construction and stays green
-      // either way. With `ATL1406` at error severity, disabling the drop entirely changes no test
+      // either way. With `EQ1406` at error severity, disabling the drop entirely changes no test
       // in the suite. At warning severity the same mutation fails, reporting `route:detail` beside
       // `route:section`. A severity that makes its own neighbours unfalsifiable is the wrong
       // severity whatever else recommends it.
       //
       // The rest of the case, which would not have been enough on its own: `loadChildren` is
       // ordinary, supported Angular, and refusing to generate on it would mean no application
-      // containing one anywhere can adopt Atlas at all, with "restructure your routing" as the only
-      // remedy. That is a wall rather than a limit, and Atlas is meant to sit in applications it did
-      // not design. What the item actually requires is that this not be silent, and a named warning
-      // carrying the route, the consequence and the remedy is not silence.
+      // containing one anywhere can adopt Equator at all, with "restructure your routing" as the
+      // only remedy. That is a wall rather than a limit, and Equator is meant to sit in
+      // applications it did not design. What the item actually requires is that this not be silent,
+      // and a named warning carrying the route, the consequence and the remedy is not silence.
       if (parentPath !== undefined && ownPath === undefined) {
         diagnostics.push(
-          atlasDiagnostic(
-            'ATL1406',
-            `A route under ${JSON.stringify(`/${parentPath}`)} computes its \`path\`, so Atlas can name neither it nor anything below it. Those addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Give the route a string-literal \`path\`, or keep the subtree out of the localized table on purpose.`,
+          toolkitDiagnostic(
+            'EQ1406',
+            `A route under ${JSON.stringify(`/${parentPath}`)} computes its \`path\`, so Equator can name neither it nor anything below it. Those addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Give the route a string-literal \`path\`, or keep the subtree out of the localized table on purpose.`,
             { path: ['routes', portableSourcePath], severity: 'warning' },
           ),
         );
       }
       if (defersChildRoutes) {
         diagnostics.push(
-          atlasDiagnostic(
-            'ATL1406',
+          toolkitDiagnostic(
+            'EQ1406',
             `${address} loads its children through \`loadChildren\`, so their addresses live in a file this route only references and stay outside the localized route table. They are served at their canonical spelling, in the default locale, including under a locale prefix, where the address looks localized and the page is not. Declare those children inline to localize them.`,
             { path: ['routes', portableSourcePath], severity: 'warning' },
           ),
@@ -1768,7 +1765,7 @@ function analyzeRoutes(
         // A wildcard matches every address, at any depth, so it names none of them.
         !routeSegments(fullPath).includes('**')
       ) {
-        const declaredId = dataLiteral(unwrapped, 'atlasRouteId');
+        const declaredId = dataLiteral(unwrapped, 'equatorRouteId');
         routes.push(
           Object.freeze({
             ...(declaredId === undefined ? {} : { declaredId }),
@@ -1801,29 +1798,29 @@ function analyzeRoutes(
 }
 
 function sourceMap(
-  sources: readonly AtlasAnalysisSource[],
+  sources: readonly AnalysisSource[],
 ): ReadonlyMap<string, string> {
   return new Map(
     sources.map((source) => [normalizePath(source.path), source.contents]),
   );
 }
 
-export function analyzeAtlasApplication(
-  request: AtlasApplicationAnalysisRequest,
-): AtlasResult<AtlasApplicationAnalysis> {
-  const hostCompatibility = admitAtlasHostCompatibility();
+export function analyzeApplication(
+  request: ApplicationAnalysisRequest,
+): ToolkitResult<ApplicationAnalysis> {
+  const hostCompatibility = admitHostCompatibility();
   if (!hostCompatibility.ok) return hostCompatibility;
   const projectRoot = resolve(request.projectRoot);
-  const diagnostics: AtlasDiagnostic[] = [];
+  const diagnostics: ToolkitDiagnostic[] = [];
   const suppliedSources = sourceMap(request.sources ?? []);
-  const virtualRoot = resolve(projectRoot, '.atlas-virtual');
+  const virtualRoot = resolve(projectRoot, '.equator-virtual');
   const virtualPaths = new Map<string, string>();
   const virtualSources = new Map<string, string>();
   for (const module of request.virtualModules ?? []) {
     if (!module.specifier.startsWith('#i18n')) {
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1403',
+        toolkitDiagnostic(
+          'EQ1403',
           `Virtual analysis module ${JSON.stringify(module.specifier)} is outside the generated #i18n namespace.`,
         ),
       );
@@ -1838,7 +1835,7 @@ export function analyzeAtlasApplication(
     virtualPaths.set(module.specifier, path);
     virtualSources.set(normalizePath(path), module.contents);
   }
-  if (diagnostics.length > 0) return atlasFailure(diagnostics);
+  if (diagnostics.length > 0) return toolkitFailure(diagnostics);
 
   // Used only when the owner exposes no selectable TypeScript configuration.
   // A consumer that has one governs its own program.
@@ -1922,28 +1919,26 @@ export function analyzeAtlasApplication(
     host,
   });
   const maximum = Math.max(1, Math.min(request.maxDiagnostics ?? 100, 1000));
-  // A defect inside a generated #i18n module is Atlas's own and must block.
+  // A defect inside a generated #i18n module is Equator's own and must block.
   // A finding in consumer source is reported for visibility but never blocks:
   // the consumer's build is the authority on whether their application
   // compiles, and generation must stay reachable so a missing #i18n contract
   // can always be restored.
   const virtualModulePaths = new Set(virtualSources.keys());
-  const isAtlasOwned = (diagnostic: ts.Diagnostic): boolean =>
+  const isOwned = (diagnostic: ts.Diagnostic): boolean =>
     diagnostic.file !== undefined &&
     virtualModulePaths.has(normalizePath(diagnostic.file.fileName));
 
   // The cap is a bound on reporting volume, and volume comes from consumer source. Partitioning
-  // before truncating keeps it from doing two things it was never meant to do: discarding Atlas's
+  // before truncating keeps it from doing two things it was never meant to do: discarding Equator's
   // own errors because enough consumer findings sorted ahead of them, and turning a pile of
   // individually non-blocking findings into one blocking result.
   const preEmit = ts.getPreEmitDiagnostics(program);
-  const atlasOwned = preEmit.filter(isAtlasOwned);
-  const consumerOwned = preEmit.filter(
-    (diagnostic) => !isAtlasOwned(diagnostic),
-  );
+  const owned = preEmit.filter(isOwned);
+  const consumerOwned = preEmit.filter((diagnostic) => !isOwned(diagnostic));
 
   diagnostics.push(
-    ...atlasOwned.map((diagnostic) =>
+    ...owned.map((diagnostic) =>
       typeScriptDiagnostic(projectRoot, diagnostic, 'error'),
     ),
     ...consumerOwned
@@ -1955,8 +1950,8 @@ export function analyzeAtlasApplication(
 
   if (consumerOwned.length > maximum) {
     diagnostics.push(
-      atlasDiagnostic(
-        'ATL1401',
+      toolkitDiagnostic(
+        'EQ1401',
         `TypeScript analysis reported the first ${maximum} of ${consumerOwned.length} findings in consumer source.`,
         // A truncation notice inherits the severity of what it truncated. These are the consumer's
         // own findings, which do not block, so neither does the notice that there were more of
@@ -1968,33 +1963,33 @@ export function analyzeAtlasApplication(
 
   const checker = program.getTypeChecker();
   const knownIdentities = new Set(request.knownMessageIdentities ?? []);
-  const usages: AtlasMessageUsage[] = [];
+  const usages: MessageUsage[] = [];
   const recoveryMessageIdentities = new Set<string>();
   let selectsApplicationRuntime = false;
-  let declaredRouteIndexing: AtlasRouteIndexingPolicy | undefined;
-  let declaredRouteSitemap: AtlasRouteSitemapPolicy | undefined;
-  let declaredRoutePolicy: AtlasRoutePolicyDeclaration | undefined;
-  const routes: AtlasRouteDraft[] = [];
+  let declaredRouteIndexing: RouteIndexingPolicy | undefined;
+  let declaredRouteSitemap: RouteSitemapPolicy | undefined;
+  let declaredRoutePolicy: RoutePolicyDeclaration | undefined;
+  const routes: RouteDraft[] = [];
   const lazyEntryFiles = new Set<ts.SourceFile>();
   const childRouteFiles = new Set<string>();
-  const components: AtlasComponentTemplateAnalysis[] = [];
-  const localeMentions: AtlasTemplateLocaleMention[] = [];
-  const templateAddresses: AtlasTemplateAddress[] = [];
+  const components: ComponentTemplateAnalysis[] = [];
+  const localeMentions: TemplateLocaleMention[] = [];
+  const templateAddresses: TemplateAddress[] = [];
   const seenUsage = new Set<string>();
   const addUsage = (
     identity: string,
     sourcePath: string,
     start: number,
     end: number,
-    surface: AtlasMessageUsage['surface'],
+    surface: MessageUsage['surface'],
   ): void => {
     const key = `${surface}\u0000${sourcePath}\u0000${start}\u0000${identity}`;
     if (seenUsage.has(key)) return;
     seenUsage.add(key);
     if (knownIdentities.size > 0 && !knownIdentities.has(identity)) {
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1403',
+        toolkitDiagnostic(
+          'EQ1403',
           `Static analysis resolved unknown generated message identity ${JSON.stringify(identity)}.`,
           { path: ['message', identity] },
         ),
@@ -2036,7 +2031,7 @@ export function analyzeAtlasApplication(
       }
       if (ts.isCallExpression(node)) {
         if (
-          atlasProvideLocalization(checker, node, normalizePath(virtualRoot))
+          isLocalizationProviderCall(checker, node, normalizePath(virtualRoot))
         ) {
           selectsApplicationRuntime = true;
         }
@@ -2051,13 +2046,13 @@ export function analyzeAtlasApplication(
             declaredRoutePolicy = policy;
           } else {
             // Two policies in one owner is not automatically wrong, a test fixture builds extra
-            // ones, but only one can be the application's, and Atlas cannot tell which. Reported
+            // ones, but only one can be the application's, and Equator cannot tell which. Reported
             // rather than guessed at, and the first is the one carried forward, matching what the
             // indexing field above does when it meets the same situation.
             diagnostics.push(
-              atlasDiagnostic(
-                'ATL1408',
-                `This owner builds more than one locale URL policy, so Atlas cannot tell which one states the application's locales. The first is the one it checked. Build the application's policy once and pass that object where it is needed.`,
+              toolkitDiagnostic(
+                'EQ1408',
+                `This owner builds more than one locale URL policy, so Equator cannot tell which one states the application's locales. The first is the one it checked. Build the application's policy once and pass that object where it is needed.`,
                 { path: ['routes', portableSourcePath], severity: 'warning' },
               ),
             );
@@ -2067,8 +2062,8 @@ export function analyzeAtlasApplication(
         if (declaredSitemap !== undefined) {
           for (const refusal of declaredSitemap.refusals) {
             diagnostics.push(
-              atlasDiagnostic(
-                'ATL1412',
+              toolkitDiagnostic(
+                'EQ1412',
                 `This owner's sitemap declaration cannot be used as written: ${refusal}. That class claims nothing until the value is corrected.`,
                 { path: ['routes', portableSourcePath], severity: 'warning' },
               ),
@@ -2080,9 +2075,9 @@ export function analyzeAtlasApplication(
             declaredRouteSitemap.field !== declaredSitemap.policy.field
           ) {
             diagnostics.push(
-              atlasDiagnostic(
-                'ATL1412',
-                `This owner declares two route sitemap fields, ${JSON.stringify(declaredRouteSitemap.field)} and ${JSON.stringify(declaredSitemap.policy.field)}. One owner classifies its routes one way; the first declaration is the one Atlas used.`,
+              toolkitDiagnostic(
+                'EQ1412',
+                `This owner declares two route sitemap fields, ${JSON.stringify(declaredRouteSitemap.field)} and ${JSON.stringify(declaredSitemap.policy.field)}. One owner classifies its routes one way; the first declaration is the one Equator used.`,
                 { path: ['routes', portableSourcePath], severity: 'warning' },
               ),
             );
@@ -2094,9 +2089,9 @@ export function analyzeAtlasApplication(
             declaredRouteIndexing = declared;
           } else if (declaredRouteIndexing.field !== declared.field) {
             diagnostics.push(
-              atlasDiagnostic(
-                'ATL1404',
-                `This owner declares two route indexing fields, ${JSON.stringify(declaredRouteIndexing.field)} and ${JSON.stringify(declared.field)}. One owner classifies its routes one way; the first declaration is the one Atlas used.`,
+              toolkitDiagnostic(
+                'EQ1404',
+                `This owner declares two route indexing fields, ${JSON.stringify(declaredRouteIndexing.field)} and ${JSON.stringify(declared.field)}. One owner classifies its routes one way; the first declaration is the one Equator used.`,
                 { path: ['routes', portableSourcePath], severity: 'warning' },
               ),
             );
@@ -2205,12 +2200,12 @@ export function analyzeAtlasApplication(
         } else if (!containedPath(absoluteTemplatePath, projectRoot)) {
           // B2. The project host already filtered escaping paths out of suppliedSources by
           // containment, and this fallback then read them from disk anyway, so a templateUrl of
-          // '../../secret/leak.html' was opened and parsed. Atlas analyses the selected owner and
+          // '../../secret/leak.html' was opened and parsed. Equator analyses the selected owner and
           // nothing else; a path outside it is refused rather than read.
           diagnostics.push(
-            atlasDiagnostic(
-              'ATL1402',
-              `Angular component template ${JSON.stringify(templatePath)} resolves outside the selected Atlas owner and was not read.`,
+            toolkitDiagnostic(
+              'EQ1402',
+              `Angular component template ${JSON.stringify(templatePath)} resolves outside the selected Equator owner and was not read.`,
               { path: ['components', portableSourcePath] },
             ),
           );
@@ -2220,8 +2215,8 @@ export function analyzeAtlasApplication(
             templateSource = readFileSync(absoluteTemplatePath, 'utf8');
           } catch {
             diagnostics.push(
-              atlasDiagnostic(
-                'ATL1402',
+              toolkitDiagnostic(
+                'EQ1402',
                 `Angular component template ${JSON.stringify(templatePath)} could not be read.`,
                 {
                   span: sourceSpan(
@@ -2246,7 +2241,7 @@ export function analyzeAtlasApplication(
         const start = error.span.start.offset;
         const end = error.span.end.offset;
         diagnostics.push(
-          atlasDiagnostic('ATL1402', `Angular template: ${error.msg}`, {
+          toolkitDiagnostic('EQ1402', `Angular template: ${error.msg}`, {
             span: sourceSpan(
               templateSource,
               start,
@@ -2259,11 +2254,11 @@ export function analyzeAtlasApplication(
       const componentName = statement.name?.text ?? '<anonymous>';
       const noteMention = (
         mention: Omit<
-          AtlasTemplateLocaleMention,
+          TemplateLocaleMention,
           'componentName' | 'sourcePath' | 'templatePath'
         >,
       ): void => {
-        if (localeMentions.length >= ATLAS_RESOURCE_LIMITS.diagnostics) return;
+        if (localeMentions.length >= RESOURCE_LIMITS.diagnostics) return;
         localeMentions.push(
           Object.freeze({
             ...mention,
@@ -2275,12 +2270,11 @@ export function analyzeAtlasApplication(
       };
       const noteAddress = (
         address: Omit<
-          AtlasTemplateAddress,
+          TemplateAddress,
           'componentName' | 'sourcePath' | 'templatePath'
         >,
       ): void => {
-        if (templateAddresses.length >= ATLAS_RESOURCE_LIMITS.diagnostics)
-          return;
+        if (templateAddresses.length >= RESOURCE_LIMITS.diagnostics) return;
         templateAddresses.push(
           Object.freeze({
             ...address,
@@ -2380,7 +2374,7 @@ export function analyzeAtlasApplication(
   }
 
   if (diagnostics.some(({ severity }) => severity === 'error')) {
-    return atlasFailure(diagnostics);
+    return toolkitFailure(diagnostics);
   }
   usages.sort((left, right) =>
     compareCodePoint(
@@ -2392,10 +2386,10 @@ export function analyzeAtlasApplication(
   //
   // The pass above visits every file declaring a `Routes` constant, and a child route table is one
   // of those files. Visited on its own it has no parent, so `detail` enters the projection at
-  // `detail` while the application serves it at `section/detail`. That is not a route Atlas failed
-  // to cover; it is a route Atlas invented, and a localized branch built from it addresses nothing.
-  // The diagnostic above has already said the subtree is uncovered: this stops the projection
-  // from simultaneously claiming otherwise.
+  // `detail` while the application serves it at `section/detail`. That is not a route Equator
+  // failed to cover; it is a route Equator invented, and a localized branch built from it addresses
+  // nothing. The diagnostic above has already said the subtree is uncovered: this stops the
+  // projection from simultaneously claiming otherwise.
   if (childRouteFiles.size > 0) {
     routes.splice(
       0,
@@ -2433,7 +2427,7 @@ export function analyzeAtlasApplication(
   // Writing `loadComponent: () => import('./page')` while anything in the initial bundle also
   // imports `./page` puts the component in that bundle and leaves every other signal intact: chunk
   // names, prerendered output and the route table all read exactly as they do when the split works.
-  // Atlas notices because it has to, it decides which messages ship with the first render out of
+  // Equator notices because it has to, it decides which messages ship with the first render out of
   // this same closure, so the route's messages are correctly marked eager while whoever wrote the
   // loader believes they are deferred.
   //
@@ -2452,8 +2446,8 @@ export function analyzeAtlasApplication(
       if (!eagerClosure.has(entry) || reportedEagerEntries.has(entry)) continue;
       reportedEagerEntries.add(entry);
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1407',
+        toolkitDiagnostic(
+          'EQ1407',
           `Route ${JSON.stringify(`/${draft.path}`)} loads ${JSON.stringify(portablePath(projectRoot, entry))} through a lazy boundary, but something in the initial bundle imports it statically, so it ships with the first render and the boundary defers nothing.`,
           { path: ['routes', draft.sourcePath], severity: 'warning' },
         ),
@@ -2463,7 +2457,7 @@ export function analyzeAtlasApplication(
   // Which route is responsible for which of those files. A file is attributed to a route when
   // that route's own boundary reaches it, so the route that downloads the code is the route that
   // has to bring its messages with it.
-  const deferredFor = (draft: AtlasRouteDraft): readonly string[] => {
+  const deferredFor = (draft: RouteDraft): readonly string[] => {
     if (draft.lazyEntries.length === 0) return Object.freeze([]);
     const entries = draft.lazyEntries
       .map((path) => program.getSourceFile(path))
@@ -2482,7 +2476,7 @@ export function analyzeAtlasApplication(
     .sort(compareCodePoint);
   // Non-blocking findings must still reach the caller; a successful analysis
   // that silently drops its advisories hides consumer-source problems.
-  return atlasSuccess(
+  return toolkitSuccess(
     Object.freeze({
       messageUsages: Object.freeze(usages),
       deferredSourcePaths: Object.freeze(deferredSourcePaths),

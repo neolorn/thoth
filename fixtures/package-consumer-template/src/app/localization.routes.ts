@@ -5,7 +5,7 @@ import {
   defineRouteProjection,
   type RouteParameterContext,
   type RouteParameterCodec,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { routeProjection } from '#i18n/routes';
 
 /**
@@ -15,13 +15,13 @@ import { routeProjection } from '#i18n/routes';
  * A prerendered page has no request, so a locale that is never in a URL can never be prerendered
  * or server-rendered: it is reachable only by a client-side switch, which is half the product.
  * Giving it a prefix here says where it lives *if this build has it*. Whether it has it is decided
- * by `atlas generate --pseudo`, and `localizedServerRoutes` reads the generated configuration to
+ * by `equator generate --pseudo`, and `localizedServerRoutes` reads the generated configuration to
  * find out: a production build lists no `en-Arab-XB` catalog, so no address for it is emitted, no
  * page is prerendered at it, and no `hreflang` advertises it.
  *
  * That division is why this line is safe to write once and leave. Before the configuration reached
  * the routing layer it was not: the same three entries produced `/en-arab-xb/second` and
- * `/en-arab-xb/articles/atlas-handbook` in a production build. Redirects rather than fake
+ * `/en-arab-xb/articles/handbook` in a production build. Redirects rather than fake
  * content, but two published addresses for a locale that only exists on a developer's machine.
  */
 /**
@@ -32,7 +32,7 @@ import { routeProjection } from '#i18n/routes';
  * addresses the head of every page contradicts, which is exactly the disagreement the two are
  * supposed to be incapable of.
  */
-export const SITE_ORIGIN = 'https://atlas.example';
+export const SITE_ORIGIN = 'https://site.example';
 
 export const routePolicy = createPathPrefixLocalePolicy({
   defaultLocale: 'en-US',
@@ -52,28 +52,28 @@ export const routePolicy = createPathPrefixLocalePolicy({
 export const articleSlugCodec: RouteParameterCodec<string> = Object.freeze({
   parse: (slug: string) =>
     Object.freeze(
-      slug === 'atlas-handbook' || slug === 'دليل-أطلس'
-        ? { ok: true, value: 'atlas-handbook' }
+      slug === 'handbook' || slug === 'دليل'
+        ? { ok: true, value: 'handbook' }
         : { ok: false },
     ),
   serialize: (entityId: string, context?: RouteParameterContext) => {
-    if (entityId !== 'atlas-handbook') return undefined;
-    return context?.locale === 'ar-EG' ? 'دليل-أطلس' : 'atlas-handbook';
+    if (entityId !== 'handbook') return undefined;
+    return context?.locale === 'ar-EG' ? 'دليل' : 'handbook';
   },
 });
 
 /**
  * A codec for a slug no function can translate.
  *
- * Identity in both directions, and it takes no `RouteParameterContext` at all: the omission is
- * the statement. `articleSlugCodec` above knows both spellings because they are in its source; a
+ * Identity in both directions, and it takes no `RouteParameterContext` at all: the omission is the
+ * statement. `articleSlugCodec` above knows both spellings because they are in its source; a
  * dossier's Arabic slug is in a database, so no synchronous pure function can produce it and this
- * one does not pretend to. Without a declaration Atlas therefore advertises the English slug under
- * the Arabic prefix, which resolves and is not Arabic. `LocalizedRouteParameters` is what supplies
- * the fact this cannot.
+ * one does not pretend to. Without a declaration Equator therefore advertises the English slug
+ * under the Arabic prefix, which resolves and is not Arabic. `LocalizedRouteParameters` is what
+ * supplies the fact this cannot.
  *
  * It still has to *read* every spelling, including the ones it could never have written: an
- * address Atlas emits and cannot resolve is worse than one it never emitted, and
+ * address Equator emits and cannot resolve is worse than one it never emitted, and
  * `buildLocalizedRoute` refuses a declared spelling this rejects.
  */
 export const dossierSlugCodec: RouteParameterCodec<string> = Object.freeze({
@@ -96,7 +96,7 @@ export const dossierSlugCodec: RouteParameterCodec<string> = Object.freeze({
  */
 export const parameterlessProjection = defineRouteProjection({
   generated: Object.freeze({
-    profile: 'atlas-route-projection/1',
+    profile: 'equator-route-projection/1',
     identity: 'sha256-parameterless-projection-fixture',
     routes: Object.freeze([
       Object.freeze({

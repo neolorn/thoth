@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  formatAtlasCatalog,
-  parseAtlasCatalog,
-  parseAtlasConfiguration,
-  type AtlasCatalogParseOptions,
+  formatCatalog,
+  parseCatalog,
+  parseConfiguration,
+  type CatalogParseOptions,
 } from '../src/index.js';
-import { formatAtlasConfiguration } from '../src/configuration.js';
+import { formatConfiguration } from '../src/configuration.js';
 
-const sourceCatalogOptions: AtlasCatalogParseOptions = {
+const sourceCatalogOptions: CatalogParseOptions = {
   role: 'source',
   providerId: '@neolorn/example',
   scopeId: 'account',
@@ -16,7 +16,7 @@ const sourceCatalogOptions: AtlasCatalogParseOptions = {
   sourcePath: 'i18n/account/en-US.yaml',
 };
 
-const targetCatalogOptions: AtlasCatalogParseOptions = {
+const targetCatalogOptions: CatalogParseOptions = {
   ...sourceCatalogOptions,
   role: 'target',
   locale: 'ar-EG',
@@ -25,8 +25,8 @@ const targetCatalogOptions: AtlasCatalogParseOptions = {
 
 function expectFailureCode(
   result:
-    | ReturnType<typeof parseAtlasConfiguration>
-    | ReturnType<typeof parseAtlasCatalog>,
+    | ReturnType<typeof parseConfiguration>
+    | ReturnType<typeof parseCatalog>,
   code: string,
 ): void {
   expect(result.ok).toBe(false);
@@ -35,9 +35,9 @@ function expectFailureCode(
   ).toBe(true);
 }
 
-describe('Atlas project configuration', () => {
+describe('Equator project configuration', () => {
   it('canonicalizes locale declarations and builds a prototype-safe alias table', () => {
-    const result = parseAtlasConfiguration(
+    const result = parseConfiguration(
       JSON.stringify({
         schemaVersion: 1,
         sourceLocale: 'EN-us',
@@ -64,7 +64,7 @@ describe('Atlas project configuration', () => {
     // The whole point of the key: `ja` and `ko` are not in `locales` and must not have to be.
     // An application translated into English and Arabic still renders names people wrote in
     // Japanese, and nothing in its sources says so.
-    const result = parseAtlasConfiguration(
+    const result = parseConfiguration(
       JSON.stringify({
         schemaVersion: 1,
         sourceLocale: 'en-US',
@@ -81,7 +81,7 @@ describe('Atlas project configuration', () => {
   });
 
   it('defaults name locales to none when the key is absent', () => {
-    const result = parseAtlasConfiguration(
+    const result = parseConfiguration(
       '{"locales":["en"],"defaultLocale":"en","sourceLocale":"en","schemaVersion":1}',
     );
 
@@ -91,7 +91,7 @@ describe('Atlas project configuration', () => {
   });
 
   it('reports a malformed or repeated name locale against its own position', () => {
-    const malformed = parseAtlasConfiguration(
+    const malformed = parseConfiguration(
       JSON.stringify({
         schemaVersion: 1,
         sourceLocale: 'en',
@@ -105,13 +105,11 @@ describe('Atlas project configuration', () => {
     expect(
       malformed.diagnostics.some(
         ({ code, path }) =>
-          code === 'ATL1003' &&
-          path[0] === 'personNameLocales' &&
-          path[1] === 1,
+          code === 'EQ1003' && path[0] === 'personNameLocales' && path[1] === 1,
       ),
     ).toBe(true);
 
-    const repeated = parseAtlasConfiguration(
+    const repeated = parseConfiguration(
       JSON.stringify({
         schemaVersion: 1,
         sourceLocale: 'en',
@@ -125,18 +123,18 @@ describe('Atlas project configuration', () => {
     expect(
       repeated.diagnostics.some(
         ({ code, path }) =>
-          code === 'ATL1004' && path[0] === 'personNameLocales',
+          code === 'EQ1004' && path[0] === 'personNameLocales',
       ),
     ).toBe(true);
   });
 
   it('writes name locales back in the declaration and omits them when there are none', () => {
-    const declared = parseAtlasConfiguration(
+    const declared = parseConfiguration(
       '{"schemaVersion":1,"sourceLocale":"en","defaultLocale":"en","locales":["en"],"personNameLocales":["ja"]}',
     );
     expect(declared.ok).toBe(true);
     if (!declared.ok) return;
-    expect(formatAtlasConfiguration(declared.value)).toBe(
+    expect(formatConfiguration(declared.value)).toBe(
       [
         '{',
         '  "schemaVersion": 1,',
@@ -155,13 +153,13 @@ describe('Atlas project configuration', () => {
   });
 
   it('formats the minimal declaration deterministically and omits empty aliases', () => {
-    const result = parseAtlasConfiguration(
+    const result = parseConfiguration(
       '{"locales":["en"],"defaultLocale":"en","sourceLocale":"en","schemaVersion":1}',
     );
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(formatAtlasConfiguration(result.value)).toBe(
+    expect(formatConfiguration(result.value)).toBe(
       [
         '{',
         '  "schemaVersion": 1,',
@@ -181,76 +179,76 @@ describe('Atlas project configuration', () => {
     ['trailing commas', '{"schemaVersion":1,}'],
     ['empty input', ''],
   ])('rejects JSON extensions: %s', (_label, source) => {
-    expectFailureCode(parseAtlasConfiguration(source), 'ATL1001');
+    expectFailureCode(parseConfiguration(source), 'EQ1001');
   });
 
   it('detects duplicate keys before configuration construction', () => {
-    const result = parseAtlasConfiguration(
+    const result = parseConfiguration(
       '{"schemaVersion":1,"schemaVersion":1,"sourceLocale":"en","defaultLocale":"en","locales":["en"]}',
-      { sourcePath: 'atlas.config.json' },
+      { sourcePath: 'equator.config.json' },
     );
 
-    expectFailureCode(result, 'ATL1001');
+    expectFailureCode(result, 'EQ1001');
     expect(result.diagnostics[0]?.path).toEqual(['schemaVersion']);
-    expect(result.diagnostics[0]?.span?.sourcePath).toBe('atlas.config.json');
+    expect(result.diagnostics[0]?.span?.sourcePath).toBe('equator.config.json');
     expect(result.diagnostics[0]?.span?.start.line).toBe(0);
   });
 
   it('rejects unknown configuration fields through a closed schema', () => {
-    const result = parseAtlasConfiguration(
+    const result = parseConfiguration(
       '{"schemaVersion":1,"sourceLocale":"en","defaultLocale":"en","locales":["en"],"remoteCatalog":"https://example.test"}',
     );
-    expectFailureCode(result, 'ATL1002');
+    expectFailureCode(result, 'EQ1002');
   });
 
   it('rejects the withdrawn `profile` declaration', () => {
-    // `profile` was a second version marker beside `schemaVersion` that told Atlas nothing it did
-    // not already know, and the standards bundle it named is a property of the Atlas release
+    // `profile` was a second version marker beside `schemaVersion` that told Equator nothing it did
+    // not already know, and the standards bundle it named is a property of the Equator release
     // rather than of the consumer's project: it is recorded on compiled artifacts, where
     // compatibility checking actually reads it.
     //
     // The closed schema is what makes the withdrawal a real one. Without this, re-adding the key
     // to `schemas.ts` would pass every other test in the suite, because nothing else in the
     // codebase would notice a field that is merely accepted and ignored.
-    const result = parseAtlasConfiguration(
-      '{"schemaVersion":1,"profile":"atlas-1","sourceLocale":"en","defaultLocale":"en","locales":["en"]}',
+    const result = parseConfiguration(
+      '{"schemaVersion":1,"profile":"equator-1","sourceLocale":"en","defaultLocale":"en","locales":["en"]}',
     );
-    expectFailureCode(result, 'ATL1002');
+    expectFailureCode(result, 'EQ1002');
   });
 
   it('rejects duplicate canonical locales and undeclared source/default locales', () => {
-    const duplicate = parseAtlasConfiguration(
+    const duplicate = parseConfiguration(
       '{"schemaVersion":1,"sourceLocale":"en-US","defaultLocale":"en-US","locales":["en-US","EN-us"]}',
     );
-    expectFailureCode(duplicate, 'ATL1004');
+    expectFailureCode(duplicate, 'EQ1004');
 
-    const undeclared = parseAtlasConfiguration(
+    const undeclared = parseConfiguration(
       '{"schemaVersion":1,"sourceLocale":"en","defaultLocale":"ar","locales":["en"]}',
     );
-    expectFailureCode(undeclared, 'ATL1004');
+    expectFailureCode(undeclared, 'EQ1004');
   });
 
   it('rejects malformed, shadowing, and unsupported aliases', () => {
-    const malformed = parseAtlasConfiguration(
+    const malformed = parseConfiguration(
       '{"schemaVersion":1,"sourceLocale":"en","defaultLocale":"en","locales":["en"],"aliases":{"bad_alias":"en"}}',
     );
-    expectFailureCode(malformed, 'ATL1005');
+    expectFailureCode(malformed, 'EQ1005');
 
-    const shadowing = parseAtlasConfiguration(
+    const shadowing = parseConfiguration(
       '{"schemaVersion":1,"sourceLocale":"en-US","defaultLocale":"en-US","locales":["en-US"],"aliases":{"en-us":"en-US"}}',
     );
-    expectFailureCode(shadowing, 'ATL1006');
+    expectFailureCode(shadowing, 'EQ1006');
 
-    const unsupported = parseAtlasConfiguration(
+    const unsupported = parseConfiguration(
       '{"schemaVersion":1,"sourceLocale":"en","defaultLocale":"en","locales":["en"],"aliases":{"arabic":"ar"}}',
     );
-    expectFailureCode(unsupported, 'ATL1006');
+    expectFailureCode(unsupported, 'EQ1006');
   });
 });
 
-describe('Atlas canonical catalogs', () => {
+describe('Equator canonical catalogs', () => {
   it('normalizes source shorthand, structured messages, inputs, slots, and empty output', () => {
-    const result = parseAtlasCatalog(
+    const result = parseCatalog(
       [
         'messages:',
         '  account.title: "Account"',
@@ -288,7 +286,7 @@ describe('Atlas canonical catalogs', () => {
   });
 
   it('preserves a valid message named constructor in a prototype-safe map', () => {
-    const result = parseAtlasCatalog(
+    const result = parseCatalog(
       'messages:\n  constructor: "Safe"\n',
       sourceCatalogOptions,
     );
@@ -313,39 +311,39 @@ describe('Atlas canonical catalogs', () => {
       '        type: string',
       '',
     ].join('\n');
-    const parsed = parseAtlasCatalog(source, sourceCatalogOptions);
+    const parsed = parseCatalog(source, sourceCatalogOptions);
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
 
-    const formatted = formatAtlasCatalog(parsed.value);
+    const formatted = formatCatalog(parsed.value);
     expect(formatted.indexOf('a.first')).toBeLessThan(
       formatted.indexOf('z.last'),
     );
-    const reparsed = parseAtlasCatalog(formatted, sourceCatalogOptions);
+    const reparsed = parseCatalog(formatted, sourceCatalogOptions);
     expect(reparsed).toEqual(parsed);
-    expect(
-      formatAtlasCatalog(reparsed.ok ? reparsed.value : parsed.value),
-    ).toBe(formatted);
+    expect(formatCatalog(reparsed.ok ? reparsed.value : parsed.value)).toBe(
+      formatted,
+    );
   });
 
   it('allows target wording and metadata but rejects target-owned input and slot contracts', () => {
-    const accepted = parseAtlasCatalog(
+    const accepted = parseCatalog(
       'messages:\n  account.title:\n    message: "الحساب"\n    context: "Page heading"\n',
       targetCatalogOptions,
     );
     expect(accepted.ok).toBe(true);
 
-    const inputs = parseAtlasCatalog(
+    const inputs = parseCatalog(
       'messages:\n  account.greeting:\n    message: "مرحبًا {$name}"\n    inputs:\n      name: string\n',
       targetCatalogOptions,
     );
-    expectFailureCode(inputs, 'ATL1105');
+    expectFailureCode(inputs, 'EQ1105');
 
-    const slots = parseAtlasCatalog(
+    const slots = parseCatalog(
       'messages:\n  account.greeting:\n    message: "مرحبًا"\n    slots:\n      strong: strong\n',
       targetCatalogOptions,
     );
-    expectFailureCode(slots, 'ATL1105');
+    expectFailureCode(slots, 'EQ1105');
   });
 
   it.each([
@@ -360,57 +358,54 @@ describe('Atlas canonical catalogs', () => {
     ],
     ['non-finite numbers', 'messages:\n  title: !!float .inf\n'],
   ])('rejects unsafe YAML structure: %s', (_label, source) => {
-    expectFailureCode(
-      parseAtlasCatalog(source, sourceCatalogOptions),
-      'ATL1101',
-    );
+    expectFailureCode(parseCatalog(source, sourceCatalogOptions), 'EQ1101');
   });
 
   it('detects duplicate YAML keys before construction', () => {
-    const result = parseAtlasCatalog(
+    const result = parseCatalog(
       'messages:\n  title: "First"\n  title: "Second"\n',
       sourceCatalogOptions,
     );
-    expectFailureCode(result, 'ATL1103');
+    expectFailureCode(result, 'EQ1103');
     expect(result.diagnostics[0]?.path).toEqual(['messages', 'title']);
     expect(result.diagnostics[0]?.span?.start.line).toBe(2);
   });
 
   it('rejects unknown root features and malformed message identities through closed contracts', () => {
-    const deferredFeature = parseAtlasCatalog(
+    const deferredFeature = parseCatalog(
       'messages:\n  title: "Hi"\nfuture-feature:\n  status: "status.{value}"\n',
       sourceCatalogOptions,
     );
-    expectFailureCode(deferredFeature, 'ATL1102');
+    expectFailureCode(deferredFeature, 'EQ1102');
 
-    const identity = parseAtlasCatalog(
+    const identity = parseCatalog(
       'messages:\n  Not.Valid: "Hi"\n',
       sourceCatalogOptions,
     );
-    expectFailureCode(identity, 'ATL1102');
+    expectFailureCode(identity, 'EQ1102');
   });
 
   it('rejects malformed provider, scope, and locale context independently of content', () => {
     expectFailureCode(
-      parseAtlasCatalog('messages:\n  title: "Hi"\n', {
+      parseCatalog('messages:\n  title: "Hi"\n', {
         ...sourceCatalogOptions,
         providerId: 'Bad Provider',
       }),
-      'ATL1104',
+      'EQ1104',
     );
     expectFailureCode(
-      parseAtlasCatalog('messages:\n  title: "Hi"\n', {
+      parseCatalog('messages:\n  title: "Hi"\n', {
         ...sourceCatalogOptions,
         scopeId: 'BadScope',
       }),
-      'ATL1104',
+      'EQ1104',
     );
     expectFailureCode(
-      parseAtlasCatalog('messages:\n  title: "Hi"\n', {
+      parseCatalog('messages:\n  title: "Hi"\n', {
         ...sourceCatalogOptions,
         locale: 'en_US',
       }),
-      'ATL1003',
+      'EQ1003',
     );
   });
 });

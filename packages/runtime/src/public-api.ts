@@ -1,4 +1,4 @@
-export * from '@neolorn/atlas/core';
+export * from '@neolorn/equator/core';
 
 export {
   type LocalizationParticipantRegistration,
@@ -117,7 +117,7 @@ export {
   type RouteResolutionContext,
   type RouteRuntimeProjection,
   type RouteSeoProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 export {
   LocalizedDecimalPipe,
   LocalizedDurationPipe,

@@ -1,5 +1,5 @@
 /**
- * Reading a parsed JSON tree, for the two authored files Atlas accepts in JSON.
+ * Reading a parsed JSON tree, for the two authored files Equator accepts in JSON.
  *
  * The project configuration and the authored change plan are both read as a tree rather than as a
  * parsed value, because an author needs to be told where the mistake is and `JSON.parse` keeps no
@@ -9,17 +9,17 @@
 import { type Node as JsonNode } from 'jsonc-parser';
 
 import {
-  atlasDiagnostic,
-  atlasSourceSpan,
-  type AtlasDiagnostic,
-  type AtlasDiagnosticCode,
-  type AtlasSourceSpan,
+  toolkitDiagnostic,
+  spanAt,
+  type ToolkitDiagnostic,
+  type ToolkitDiagnosticCode,
+  type SourceSpan,
 } from './diagnostics.js';
-import { ATLAS_RESOURCE_LIMITS } from './resource-limits.js';
+import { RESOURCE_LIMITS } from './resource-limits.js';
 
 /** How a caller names a duplicate key, which is all that separates the two of them. */
-export interface AtlasDuplicateKeyReport {
-  readonly code: AtlasDiagnosticCode;
+export interface DuplicateKeyReport {
+  readonly code: ToolkitDiagnosticCode;
   readonly summary: (key: string) => string;
 }
 
@@ -28,10 +28,10 @@ export function jsonNodeSpan(
   source: string,
   node: JsonNode | undefined,
   sourcePath: string | undefined,
-): AtlasSourceSpan | undefined {
+): SourceSpan | undefined {
   return node === undefined
     ? undefined
-    : atlasSourceSpan(source, node.offset, node.length, sourcePath);
+    : spanAt(source, node.offset, node.length, sourcePath);
 }
 
 /**
@@ -44,9 +44,9 @@ export function duplicateJsonKeys(
   source: string,
   node: JsonNode,
   sourcePath: string | undefined,
-  report: AtlasDuplicateKeyReport,
-): readonly AtlasDiagnostic[] {
-  const diagnostics: AtlasDiagnostic[] = [];
+  report: DuplicateKeyReport,
+): readonly ToolkitDiagnostic[] {
+  const diagnostics: ToolkitDiagnostic[] = [];
   collectDuplicateKeys(source, node, sourcePath, report, [], diagnostics);
   return Object.freeze(diagnostics);
 }
@@ -61,11 +61,11 @@ function collectDuplicateKeys(
   source: string,
   node: JsonNode,
   sourcePath: string | undefined,
-  report: AtlasDuplicateKeyReport,
+  report: DuplicateKeyReport,
   path: readonly (string | number)[],
-  diagnostics: AtlasDiagnostic[],
+  diagnostics: ToolkitDiagnostic[],
 ): void {
-  if (diagnostics.length >= ATLAS_RESOURCE_LIMITS.diagnostics) return;
+  if (diagnostics.length >= RESOURCE_LIMITS.diagnostics) return;
 
   if (node.type === 'object') {
     const seen = new Set<string>();
@@ -80,7 +80,7 @@ function collectDuplicateKeys(
       if (seen.has(keyNode.value)) {
         const span = jsonNodeSpan(source, keyNode, sourcePath);
         diagnostics.push(
-          atlasDiagnostic(report.code, report.summary(keyNode.value), {
+          toolkitDiagnostic(report.code, report.summary(keyNode.value), {
             path: propertyPath,
             ...(span === undefined ? {} : { span }),
           }),
@@ -99,7 +99,7 @@ function collectDuplicateKeys(
           diagnostics,
         );
       }
-      if (diagnostics.length >= ATLAS_RESOURCE_LIMITS.diagnostics) break;
+      if (diagnostics.length >= RESOURCE_LIMITS.diagnostics) break;
     }
   } else if (node.type === 'array') {
     for (const [index, item] of (node.children ?? []).entries()) {
@@ -111,7 +111,7 @@ function collectDuplicateKeys(
         [...path, index],
         diagnostics,
       );
-      if (diagnostics.length >= ATLAS_RESOURCE_LIMITS.diagnostics) break;
+      if (diagnostics.length >= RESOURCE_LIMITS.diagnostics) break;
     }
   }
 }

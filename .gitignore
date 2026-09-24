@@ -1,7 +1,7 @@
 node_modules/
 dist/
 .angular/
-.atlas/
+.equator/
 # Where the gate writes its work trees, the consumers it materializes, its traces and its attempt
 # ledger. Large, specific to one machine, and rebuilt by the next run.
 tmp/

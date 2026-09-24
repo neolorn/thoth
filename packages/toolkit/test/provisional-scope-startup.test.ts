@@ -3,10 +3,10 @@ import { resolve } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
-import { compileAtlasProject, parseAtlasCatalog } from '../src/index.js';
-import { generateAtlasContracts } from '../src/generated-contracts.js';
-import { analyzeAtlasCatalogSet } from '../src/semantic-model.js';
-import { analyzeAtlasApplication } from '../src/static-analysis.js';
+import { compileProject, parseCatalog } from '../src/index.js';
+import { generateContracts } from '../src/generated-contracts.js';
+import { analyzeCatalogSet } from '../src/semantic-model.js';
+import { analyzeApplication } from '../src/static-analysis.js';
 import { testProjectConfiguration } from './fixtures.js';
 
 /**
@@ -21,7 +21,7 @@ import { testProjectConfiguration } from './fixtures.js';
  */
 
 function catalog(scopeId: string, body: string) {
-  const parsed = parseAtlasCatalog(body, {
+  const parsed = parseCatalog(body, {
     role: 'source',
     providerId: 'home',
     scopeId,
@@ -33,9 +33,9 @@ function catalog(scopeId: string, body: string) {
 }
 
 const indexModule = (
-  options: Parameters<typeof generateAtlasContracts>[1],
+  options: Parameters<typeof generateContracts>[1],
 ): string => {
-  const graph = analyzeAtlasCatalogSet({
+  const graph = analyzeCatalogSet({
     configuration: testProjectConfiguration(['en-US']),
     catalogs: [
       catalog('shell', 'messages:\n  nav.home: Home\n'),
@@ -43,7 +43,7 @@ const indexModule = (
     ],
   });
   if (!graph.ok) throw new Error(JSON.stringify(graph.diagnostics));
-  const contracts = generateAtlasContracts(graph.value, options);
+  const contracts = generateContracts(graph.value, options);
   if (!contracts.ok) throw new Error(JSON.stringify(contracts.diagnostics));
   const file = contracts.value.find(({ path }) => path === 'index.ts');
   if (file === undefined) throw new Error('no index.ts was generated');
@@ -90,7 +90,7 @@ const projectRoot = resolve('fixtures/semantic-analysis/scope-startup');
 const appPath = resolve(projectRoot, 'src/app.ts');
 
 const compiledIndexModule = (analysed: boolean): string => {
-  const compiled = compileAtlasProject({
+  const compiled = compileProject({
     owner: { providerId: 'home', generatedRootPath: 'src/generated/i18n' },
     configuration: testProjectConfiguration(['en-US']),
     catalogs: [
@@ -140,9 +140,9 @@ describe('the scope table a compilation writes', () => {
  * The reading an application performs on the table it declared.
  *
  * `startup` is part of the runtime's scope contract, so an application may ask which scopes its
- * first render needs. It compiles that reading against the real table, and Atlas compiles the same
- * lines against the overlay, so a field the overlay drops out of the type is reported back to the
- * application as a property that does not exist on a table it wrote correctly.
+ * first render needs. It compiles that reading against the real table, and Equator compiles the
+ * same lines against the overlay, so a field the overlay drops out of the type is reported back to
+ * the application as a property that does not exist on a table it wrote correctly.
  */
 const readsTheStartupField = [
   "import { configuration } from '#i18n';",
@@ -164,9 +164,9 @@ const readsTheStartupField = [
 const readingPath = resolve(projectRoot, 'src/reads-startup.ts');
 
 function findingsAgainstTheApplication(
-  options: Parameters<typeof generateAtlasContracts>[1],
+  options: Parameters<typeof generateContracts>[1],
 ): readonly string[] {
-  const analysis = analyzeAtlasApplication({
+  const analysis = analyzeApplication({
     projectRoot,
     rootNames: [readingPath],
     sources: [{ path: readingPath, contents: readsTheStartupField }],

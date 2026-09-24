@@ -7,33 +7,33 @@
  * so no reader downstream has to decide whether a value is safe to evaluate.
  */
 import {
-  digestAtlasCanonicalJson,
-  stringifyAtlasCanonicalJson,
-  type AtlasCanonicalJsonValue,
+  digestCanonicalJson,
+  stringifyCanonicalJson,
+  type CanonicalJsonValue,
 } from './canonical-json.js';
-import type { AtlasCatalog, AtlasCatalogMessage } from './catalog.js';
+import type { Catalog, CatalogMessage } from './catalog.js';
 import {
-  atlasDiagnostic,
-  atlasFailure,
-  atlasSuccess,
-  type AtlasDiagnostic,
-  type AtlasResult,
+  toolkitDiagnostic,
+  toolkitFailure,
+  toolkitSuccess,
+  type ToolkitDiagnostic,
+  type ToolkitResult,
 } from './diagnostics.js';
-import type { AtlasGeneratedContractFile } from './generated-contracts.js';
-import type { AtlasMessageSemanticModel } from './message-format.js';
-import { createAtlasOutputPlan, type AtlasOutputPlan } from './output-plan.js';
+import type { GeneratedContractFile } from './generated-contracts.js';
+import type { MessageSemanticModel } from './message-format.js';
+import { createOutputPlan, type OutputPlan } from './output-plan.js';
 import {
   personNameProfilesFor,
-  type AtlasPersonNameProfileSet,
+  type PersonNameProfileSet,
 } from './person-names.js';
-import { ATLAS_RESOURCE_LIMITS } from './resource-limits.js';
+import { RESOURCE_LIMITS } from './resource-limits.js';
 import type {
-  AtlasEffectiveInputContract,
-  AtlasEffectiveSlotContract,
-  AtlasReferencedExtension,
-  AtlasSemanticGraph,
-  AtlasSemanticMessage,
-  AtlasSemanticScope,
+  EffectiveInputContract,
+  EffectiveSlotContract,
+  ReferencedExtension,
+  SemanticGraph,
+  SemanticMessage,
+  SemanticScope,
 } from './semantic-model.js';
 import { compareCodePoint } from './sorted-records.js';
 
@@ -41,16 +41,16 @@ import { compareCodePoint } from './sorted-records.js';
  * The version stamp on every compiled catalog, which a loader checks before reading one.
  *
  * It changes when the compiled shape changes in a way a reader would notice, so an artifact built
- * by one version of Atlas and loaded by another is refused rather than misread.
+ * by one version of Equator and loaded by another is refused rather than misread.
  */
-export const COMPILED_IR_PROFILE = 'atlas-compiled-ir/1' as const;
+export const COMPILED_IR_PROFILE = 'equator-compiled-ir/1' as const;
 /** The version stamp on the descriptor that lists a build's compiled catalogs. */
-export const ATLAS_CATALOG_DESCRIPTOR_PROFILE = 'atlas-catalog-set/1' as const;
+export const CATALOG_DESCRIPTOR_PROFILE = 'equator-catalog-set/1' as const;
 /** The version stamp on the resource counts carried beside a compiled catalog. */
-export const RESOURCE_SUMMARY_PROFILE = 'atlas-resource-summary/1' as const;
+export const RESOURCE_SUMMARY_PROFILE = 'equator-resource-summary/1' as const;
 
 /** What identifies one compiled catalog: whose it is, which scope, and which locale. */
-export interface AtlasCompiledCatalogKey {
+export interface CompiledCatalogKey {
   /** The package that owns the messages. */
   readonly providerId: string;
   /** The scope within it, which is the unit the runtime loads. */
@@ -129,7 +129,7 @@ export interface CatalogResourceSummary {
  * survive the trip. That is what lets the evaluator read it without deciding whether any part of it
  * is safe to touch.
  */
-export interface AtlasCompiledMessage {
+export interface CompiledMessage {
   /** The message's key within its scope. */
   readonly messageId: string;
   /** Whether it has text, or is a declaration still waiting for a translation. */
@@ -143,11 +143,11 @@ export interface AtlasCompiledMessage {
    */
   readonly sourceFingerprint: string;
   /** The values it takes, with the types the generated code declares for them. */
-  readonly inputs: readonly AtlasEffectiveInputContract[];
+  readonly inputs: readonly EffectiveInputContract[];
   /** The named regions it places, with what each one must be bound to. */
-  readonly slots: readonly AtlasEffectiveSlotContract[];
+  readonly slots: readonly EffectiveSlotContract[];
   /** The compiled body, as plain data. */
-  readonly body: AtlasCanonicalJsonValue;
+  readonly body: CanonicalJsonValue;
 }
 
 /**
@@ -156,23 +156,23 @@ export interface AtlasCompiledMessage {
  * Everything above the messages is there so a loader can refuse an artifact it cannot honor before
  * it evaluates anything out of it.
  */
-export interface AtlasCompiledCatalog {
+export interface CompiledCatalog {
   /** The compiled-shape version stamp. */
   readonly profile: typeof COMPILED_IR_PROFILE;
   /** Which generated interface this was built against, so old output and new code do not mix. */
   readonly generatedAbi: string;
   /** Which standards profile the messages were compiled under. */
-  readonly standardsProfile: 'atlas-1';
+  readonly standardsProfile: 'equator-1';
   /** Whose catalog this is, which scope, and which locale. */
-  readonly key: AtlasCompiledCatalogKey;
+  readonly key: CompiledCatalogKey;
   /** A digest of the application's message contracts, which a loader matches against its own. */
   readonly applicationContractFingerprint: string;
   /** A digest of the semantic registry the messages were compiled against. */
   readonly semanticRegistryFingerprint: string;
   /** The extensions that must be registered before any of this can be evaluated. */
-  readonly requiredExtensions: readonly AtlasReferencedExtension[];
+  readonly requiredExtensions: readonly ReferencedExtension[];
   /** The messages. */
-  readonly messages: readonly AtlasCompiledMessage[];
+  readonly messages: readonly CompiledMessage[];
   /** What loading and evaluating this catalog costs. */
   readonly resources: CatalogResourceSummary;
 }
@@ -186,15 +186,15 @@ export interface AtlasCompiledCatalog {
  */
 export interface ArtifactAddress {
   /** Whose catalog, which scope, which locale. */
-  readonly key: AtlasCompiledCatalogKey;
+  readonly key: CompiledCatalogKey;
   /** The compiled-shape version stamp the artifact carries. */
   readonly compiledIrProfile: typeof COMPILED_IR_PROFILE;
   /** The schema of the file itself. */
-  readonly schema: 'atlas-compiled-catalog/1';
+  readonly schema: 'equator-compiled-catalog/1';
   /** Runtime capabilities the artifact needs, which a host without them can refuse on. */
   readonly requiredFeatures: readonly string[];
   /** The standards profile it was compiled under. */
-  readonly standardsProfile: 'atlas-1';
+  readonly standardsProfile: 'equator-1';
   /** The generated interface version it matches. */
   readonly generatedAbi: string;
   /** The application contract digest it was built against. */
@@ -202,7 +202,7 @@ export interface ArtifactAddress {
   /** The semantic registry digest it was built against. */
   readonly semanticRegistryFingerprint: string;
   /** The extensions it needs registered. */
-  readonly requiredExtensions: readonly AtlasReferencedExtension[];
+  readonly requiredExtensions: readonly ReferencedExtension[];
   /** A digest of the artifact's content, for cache keys and for telling two builds apart. */
   readonly contentDigest: string;
 }
@@ -235,7 +235,7 @@ export interface ProviderCatalogSet {
  */
 export interface CatalogSetDescriptor {
   /** The descriptor-shape version stamp. */
-  readonly profile: typeof ATLAS_CATALOG_DESCRIPTOR_PROFILE;
+  readonly profile: typeof CATALOG_DESCRIPTOR_PROFILE;
   /** The generated interface version every artifact in it matches. */
   readonly generatedAbi: string;
   /** The application contract digest they were all built against. */
@@ -260,30 +260,30 @@ export interface RecoveryRepresentation {
   /** A digest of the source it was compiled from. */
   readonly sourceFingerprint: string;
   /** The compiled body, as plain data. */
-  readonly body: AtlasCanonicalJsonValue;
+  readonly body: CanonicalJsonValue;
 }
 
 /**
  * Which project this generated output belongs to, and where it writes.
  *
- * Two Atlas-owned trees can sit in one repository, and the work root and the generated root each
+ * Two Equator-owned trees can sit in one repository, and the work root and the generated root each
  * carry an owner identity so that one project's disposable state can never be adopted by another's
  * build. This is what that identity is made of, and the two fields are the whole of it: the package
  * that owns the catalogs, and the path it generates into, relative to that package.
  *
  * **It is deliberately not derived from anything the owner generates.** An identity that digests
- * the scope list changes the first time a consumer writes a catalog and again every time they add
- * a scope, so the work root records an owner the next run no longer computes, and `atlas generate`
- * refuses with `ATL1602` until `atlas clean` removes the marker. Adding a scope is ordinary
- * localization work and must cost no Atlas step. An identity that moves when the work moves is not
- * an identity; it is a digest of the work, which the completion manifest already keeps under
+ * the scope list changes the first time a consumer writes a catalog and again every time they add a
+ * scope, so the work root records an owner the next run no longer computes, and `equator generate`
+ * refuses with `EQ1602` until `equator clean` removes the marker. Adding a scope is ordinary
+ * localization work and must cost no Equator step. An identity that moves when the work moves is
+ * not an identity; it is a digest of the work, which the completion manifest already keeps under
  * `planDigest`.
  *
  * What does move it is a project becoming a different project: a renamed package, or a generated
  * root pointed somewhere else. Re-owning is the correct outcome for both.
  */
-export interface AtlasOwnerIdentity {
-  /** The owning package's Atlas provider identity, which is its package name. */
+export interface OwnerIdentity {
+  /** The owning package's Equator provider identity, which is its package name. */
   readonly providerId: string;
   /** Where this owner generates, as a portable path relative to the owner root. */
   readonly generatedRootPath: string;
@@ -292,25 +292,25 @@ export interface AtlasOwnerIdentity {
 /**
  * The identity recorded in the work-root marker and the completion manifest.
  *
- * Published because a consumer's own tooling may need to recognise which of several Atlas-owned
+ * Published because a consumer's own tooling may need to recognise which of several Equator-owned
  * trees a directory belongs to without running a compilation to find out.
  */
-export function atlasOwnerId(owner: AtlasOwnerIdentity): string {
-  return digestAtlasCanonicalJson('atlas-generated-owner/2', {
+export function generatedOwnerId(owner: OwnerIdentity): string {
+  return digestCanonicalJson('equator-generated-owner/1', {
     providerId: owner.providerId,
     generatedRootPath: owner.generatedRootPath,
   });
 }
 
-export interface AtlasCompileLocalArtifactsRequest {
-  readonly graph: AtlasSemanticGraph;
-  readonly catalogs: readonly AtlasCatalog[];
+export interface CompileLocalArtifactsRequest {
+  readonly graph: SemanticGraph;
+  readonly catalogs: readonly Catalog[];
   /**
    * Who this output belongs to. Required, and supplied rather than derived: which project is
    * generating, and where, is a fact about the project on disk that a pure compilation cannot see.
    */
-  readonly owner: AtlasOwnerIdentity;
-  readonly contractFiles?: readonly AtlasGeneratedContractFile[];
+  readonly owner: OwnerIdentity;
+  readonly contractFiles?: readonly GeneratedContractFile[];
   readonly recoveryMessageIdentities?: readonly string[];
 }
 
@@ -320,17 +320,17 @@ export interface AtlasCompileLocalArtifactsRequest {
  * Compilation and writing are separate on purpose: a caller can compile, inspect what came out, and
  * decide whether to apply an output plan. Applying one is what puts anything on disk.
  */
-export interface AtlasCompiledLocalArtifacts {
+export interface CompiledLocalArtifacts {
   /** Which project this output belongs to, so one project cannot adopt another's generated tree. */
   readonly ownerId: string;
   /** The compiled catalogs, one per scope and locale. */
-  readonly catalogs: readonly AtlasCompiledCatalog[];
+  readonly catalogs: readonly CompiledCatalog[];
   /** The index listing them. */
   readonly descriptor: CatalogSetDescriptor;
   /** The recovery messages, compiled apart from the catalogs they exist for the failure of. */
   readonly recovery: readonly RecoveryRepresentation[];
   /** The files to write, with what is already current left out of it. */
-  readonly outputPlan: AtlasOutputPlan;
+  readonly outputPlan: OutputPlan;
 }
 
 interface JsonMetrics {
@@ -351,15 +351,15 @@ function serializeJson(value: unknown): string | undefined {
   return JSON.stringify(value);
 }
 
-function canonicalValue(value: unknown): AtlasCanonicalJsonValue {
+function canonicalValue(value: unknown): CanonicalJsonValue {
   const serialized = serializeJson(value);
   if (serialized === undefined) {
-    throw new TypeError('Atlas compiled data is not JSON serializable.');
+    throw new TypeError('Equator compiled data is not JSON serializable.');
   }
-  return JSON.parse(serialized) as AtlasCanonicalJsonValue;
+  return JSON.parse(serialized) as CanonicalJsonValue;
 }
 
-function compiledBody(message: AtlasCatalogMessage): AtlasCanonicalJsonValue {
+function compiledBody(message: CatalogMessage): CanonicalJsonValue {
   if (message.kind === 'empty') return { kind: 'empty' };
   const semantics = message.semantics;
   return semantics.kind === 'pattern'
@@ -376,7 +376,7 @@ function compiledBody(message: AtlasCatalogMessage): AtlasCanonicalJsonValue {
       });
 }
 
-function jsonMetrics(value: AtlasCanonicalJsonValue, depth = 1): JsonMetrics {
+function jsonMetrics(value: CanonicalJsonValue, depth = 1): JsonMetrics {
   if (
     value === null ||
     typeof value === 'string' ||
@@ -387,7 +387,7 @@ function jsonMetrics(value: AtlasCanonicalJsonValue, depth = 1): JsonMetrics {
   }
   const children = Array.isArray(value)
     ? value
-    : Object.values(value as Readonly<Record<string, AtlasCanonicalJsonValue>>);
+    : Object.values(value as Readonly<Record<string, CanonicalJsonValue>>);
   let nodes = 1;
   let maximumDepth = depth;
   let literals = 0;
@@ -402,7 +402,7 @@ function jsonMetrics(value: AtlasCanonicalJsonValue, depth = 1): JsonMetrics {
     functions += metrics.functions;
   }
   if (!Array.isArray(value)) {
-    const record = value as Readonly<Record<string, AtlasCanonicalJsonValue>>;
+    const record = value as Readonly<Record<string, CanonicalJsonValue>>;
     if (record['kind'] === 'variable') references += 1;
     if (typeof record['function'] === 'object' && record['function'] !== null) {
       functions += 1;
@@ -417,7 +417,7 @@ function jsonMetrics(value: AtlasCanonicalJsonValue, depth = 1): JsonMetrics {
   };
 }
 
-function outputPartCount(semantics: AtlasMessageSemanticModel): number {
+function outputPartCount(semantics: MessageSemanticModel): number {
   return semantics.kind === 'pattern'
     ? semantics.pattern.length
     : semantics.variants.reduce(
@@ -427,9 +427,9 @@ function outputPartCount(semantics: AtlasMessageSemanticModel): number {
 }
 
 function messageSummary(
-  catalogMessage: AtlasCatalogMessage,
-  semanticMessage: AtlasSemanticMessage,
-  body: AtlasCanonicalJsonValue,
+  catalogMessage: CatalogMessage,
+  semanticMessage: SemanticMessage,
+  body: CanonicalJsonValue,
 ): MessageResourceSummary {
   const metrics = jsonMetrics(body);
   const semantics =
@@ -483,16 +483,16 @@ function maximumMessageSummary(
  * understates what a catalog costs is refused before the catalog is admitted.
  */
 function catalogResourceSummary(
-  messages: readonly AtlasCompiledMessage[],
-  sourceMessages: readonly AtlasCatalogMessage[],
-  semanticMessages: readonly AtlasSemanticMessage[],
+  messages: readonly CompiledMessage[],
+  sourceMessages: readonly CatalogMessage[],
+  semanticMessages: readonly SemanticMessage[],
   canonicalCatalog: string,
 ): CatalogResourceSummary {
   const bodies = messages.map(({ body }) => jsonMetrics(body));
   const messageSummaries = messages.map((message, index) =>
     messageSummary(
-      sourceMessages[index] as AtlasCatalogMessage,
-      semanticMessages[index] as AtlasSemanticMessage,
+      sourceMessages[index] as CatalogMessage,
+      semanticMessages[index] as SemanticMessage,
       message.body,
     ),
   );
@@ -541,21 +541,21 @@ function catalogResourceSummary(
 }
 
 function semanticMessagesById(
-  scope: AtlasSemanticScope,
-): ReadonlyMap<string, AtlasSemanticMessage> {
+  scope: SemanticScope,
+): ReadonlyMap<string, SemanticMessage> {
   return new Map(scope.messages.map((message) => [message.messageId, message]));
 }
 
 function compileCatalog(
-  graph: AtlasSemanticGraph,
-  scope: AtlasSemanticScope,
-  catalog: AtlasCatalog,
-  diagnostics: AtlasDiagnostic[],
-): AtlasCompiledCatalog {
+  graph: SemanticGraph,
+  scope: SemanticScope,
+  catalog: Catalog,
+  diagnostics: ToolkitDiagnostic[],
+): CompiledCatalog {
   const semanticMessages = semanticMessagesById(scope);
-  const compiledMessages: AtlasCompiledMessage[] = [];
-  const sourceMessages: AtlasCatalogMessage[] = [];
-  const alignedSemanticMessages: AtlasSemanticMessage[] = [];
+  const compiledMessages: CompiledMessage[] = [];
+  const sourceMessages: CatalogMessage[] = [];
+  const alignedSemanticMessages: SemanticMessage[] = [];
   for (const [messageId, message] of Object.entries(catalog.messages).sort(
     ([left], [right]) => compareCodePoint(left, right),
   )) {
@@ -579,7 +579,7 @@ function compileCatalog(
   const base = {
     profile: COMPILED_IR_PROFILE,
     generatedAbi: graph.generatedAbi,
-    standardsProfile: 'atlas-1' as const,
+    standardsProfile: 'equator-1' as const,
     key: Object.freeze({
       providerId: catalog.providerId,
       scopeId: catalog.scopeId,
@@ -590,40 +590,38 @@ function compileCatalog(
     requiredExtensions: scope.requiredExtensions,
     messages: Object.freeze(compiledMessages),
   };
-  const canonicalBase = stringifyAtlasCanonicalJson(canonicalValue(base));
+  const canonicalBase = stringifyCanonicalJson(canonicalValue(base));
   const resources = catalogResourceSummary(
     compiledMessages,
     sourceMessages,
     alignedSemanticMessages,
     canonicalBase,
   );
-  if (resources.irNodes > ATLAS_RESOURCE_LIMITS.irNodesPerCatalog) {
+  if (resources.irNodes > RESOURCE_LIMITS.irNodesPerCatalog) {
     diagnostics.push(
-      atlasDiagnostic(
-        'ATL1502',
-        `Compiled catalog ${catalog.providerId}/${catalog.scopeId}/${catalog.locale} exceeds the ${ATLAS_RESOURCE_LIMITS.irNodesPerCatalog}-node IR ceiling.`,
+      toolkitDiagnostic(
+        'EQ1502',
+        `Compiled catalog ${catalog.providerId}/${catalog.scopeId}/${catalog.locale} exceeds the ${RESOURCE_LIMITS.irNodesPerCatalog}-node IR ceiling.`,
       ),
     );
   }
-  if (resources.depth > ATLAS_RESOURCE_LIMITS.irDepth) {
+  if (resources.depth > RESOURCE_LIMITS.irDepth) {
     diagnostics.push(
-      atlasDiagnostic(
-        'ATL1502',
-        `Compiled catalog ${catalog.providerId}/${catalog.scopeId}/${catalog.locale} exceeds the IR depth ceiling of ${ATLAS_RESOURCE_LIMITS.irDepth}.`,
+      toolkitDiagnostic(
+        'EQ1502',
+        `Compiled catalog ${catalog.providerId}/${catalog.scopeId}/${catalog.locale} exceeds the IR depth ceiling of ${RESOURCE_LIMITS.irDepth}.`,
       ),
     );
   }
   return Object.freeze({ ...base, resources });
 }
 
-function requiredFeatures(catalog: AtlasCompiledCatalog): readonly string[] {
+function requiredFeatures(catalog: CompiledCatalog): readonly string[] {
   const features = new Set<string>();
   for (const message of catalog.messages) {
     if (message.kind === 'empty') features.add('explicit-empty');
     if (message.resultKind === 'structured') features.add('structured-output');
-    const body = message.body as Readonly<
-      Record<string, AtlasCanonicalJsonValue>
-    >;
+    const body = message.body as Readonly<Record<string, CanonicalJsonValue>>;
     if (body['kind'] === 'select') features.add('selection');
   }
   return Object.freeze([...features].sort(compareCodePoint));
@@ -636,27 +634,27 @@ function requiredFeatures(catalog: AtlasCompiledCatalog): readonly string[] {
  * content digest is the last of them and serves as the artifact's version, so nothing authored
  * carries one.
  */
-function artifactAddress(catalog: AtlasCompiledCatalog): ArtifactAddress {
+function artifactAddress(catalog: CompiledCatalog): ArtifactAddress {
   return Object.freeze({
     key: catalog.key,
     compiledIrProfile: COMPILED_IR_PROFILE,
-    schema: 'atlas-compiled-catalog/1',
+    schema: 'equator-compiled-catalog/1',
     requiredFeatures: requiredFeatures(catalog),
-    standardsProfile: 'atlas-1',
+    standardsProfile: 'equator-1',
     generatedAbi: catalog.generatedAbi,
     applicationContractFingerprint: catalog.applicationContractFingerprint,
     semanticRegistryFingerprint: catalog.semanticRegistryFingerprint,
     requiredExtensions: catalog.requiredExtensions,
-    contentDigest: digestAtlasCanonicalJson(
-      'atlas-compiled-catalog/1',
+    contentDigest: digestCanonicalJson(
+      'equator-compiled-catalog/1',
       canonicalValue(catalog),
     ),
   });
 }
 
-function artifactPath(catalog: AtlasCompiledCatalog): string {
-  const provider = digestAtlasCanonicalJson(
-    'atlas-provider-output-path/1',
+function artifactPath(catalog: CompiledCatalog): string {
+  const provider = digestCanonicalJson(
+    'equator-provider-output-path/1',
     catalog.key.providerId,
   ).slice('sha256-'.length);
   return `catalogs/${provider}/${catalog.key.scopeId}/${catalog.key.catalogLocale}.ts`;
@@ -666,9 +664,7 @@ function artifactIdentity(address: ArtifactAddress): string {
   return `${address.key.providerId}:${address.key.scopeId}:${address.key.catalogLocale}`;
 }
 
-function addressIdentityJson(
-  address: ArtifactAddress,
-): AtlasCanonicalJsonValue {
+function addressIdentityJson(address: ArtifactAddress): CanonicalJsonValue {
   return canonicalValue(address);
 }
 
@@ -680,10 +676,10 @@ function addressIdentityJson(
  * stay out of it, because moving a chunk does not change what a catalog says.
  */
 function catalogDescriptor(
-  graph: AtlasSemanticGraph,
-  catalogs: readonly AtlasCompiledCatalog[],
+  graph: SemanticGraph,
+  catalogs: readonly CompiledCatalog[],
 ): CatalogSetDescriptor {
-  const providers = new Map<string, AtlasCompiledCatalog[]>();
+  const providers = new Map<string, CompiledCatalog[]>();
   for (const catalog of catalogs) {
     const entries = providers.get(catalog.key.providerId) ?? [];
     entries.push(catalog);
@@ -705,8 +701,8 @@ function catalogDescriptor(
           resources: catalog.resources,
         }),
       );
-      const catalogSetId = digestAtlasCanonicalJson(
-        'atlas-provider-catalog-set/1',
+      const catalogSetId = digestCanonicalJson(
+        'equator-provider-catalog-set/1',
         artifacts.map(({ address }) => addressIdentityJson(address)),
       );
       return Object.freeze({
@@ -716,7 +712,7 @@ function catalogDescriptor(
       });
     });
   return Object.freeze({
-    profile: ATLAS_CATALOG_DESCRIPTOR_PROFILE,
+    profile: CATALOG_DESCRIPTOR_PROFILE,
     generatedAbi: graph.generatedAbi,
     applicationContractFingerprint: graph.applicationContractFingerprint,
     semanticRegistryFingerprint: graph.semanticRegistryFingerprint,
@@ -726,7 +722,7 @@ function catalogDescriptor(
 
 function dataModule(exportName: string, value: unknown): string {
   return [
-    '/** Generated by Atlas. Do not edit. */',
+    '/** Generated by Equator. Do not edit. */',
     `export const ${exportName} = ${JSON.stringify(value, null, 2)} as const;`,
     '',
   ].join('\n');
@@ -739,9 +735,9 @@ function dataModule(exportName: string, value: unknown): string {
  * printing them costs about twenty times the bytes to say the same thing. `prettier-ignore`
  * because a consumer that formats its generated root would otherwise reflow it on every run.
  */
-function personNamesModule(profileSet: AtlasPersonNameProfileSet): string {
+function personNamesModule(profileSet: PersonNameProfileSet): string {
   return [
-    '/** Generated by Atlas. Do not edit. */',
+    '/** Generated by Equator. Do not edit. */',
     '/**',
     ' * Person-name patterns for the configured locales, from pinned CLDR.',
     ' *',
@@ -785,7 +781,7 @@ function loaderModule(descriptor: CatalogSetDescriptor): string {
     }),
   );
   return [
-    '/** Generated by Atlas. Do not edit. */',
+    '/** Generated by Equator. Do not edit. */',
     'export const catalogLoaders = Object.freeze({',
     ...rows,
     '});',
@@ -794,10 +790,10 @@ function loaderModule(descriptor: CatalogSetDescriptor): string {
 }
 
 function recoveryRepresentations(
-  graph: AtlasSemanticGraph,
-  catalogs: readonly AtlasCompiledCatalog[],
+  graph: SemanticGraph,
+  catalogs: readonly CompiledCatalog[],
   identities: readonly string[],
-  diagnostics: AtlasDiagnostic[],
+  diagnostics: ToolkitDiagnostic[],
 ): readonly RecoveryRepresentation[] {
   const selected = new Set(identities);
   const semantic = new Map(
@@ -814,8 +810,8 @@ function recoveryRepresentations(
       message.slots.length > 0
     ) {
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1501',
+        toolkitDiagnostic(
+          'EQ1501',
           `Recovery identity ${JSON.stringify(identity)} must resolve to one plain message without inputs or slots.`,
           { path: ['recovery', identity] },
         ),
@@ -846,23 +842,23 @@ function recoveryRepresentations(
   return Object.freeze(result);
 }
 
-export function compileAtlasLocalArtifacts(
-  request: AtlasCompileLocalArtifactsRequest,
-): AtlasResult<AtlasCompiledLocalArtifacts> {
-  const diagnostics: AtlasDiagnostic[] = [];
+export function compileLocalArtifacts(
+  request: CompileLocalArtifactsRequest,
+): ToolkitResult<CompiledLocalArtifacts> {
+  const diagnostics: ToolkitDiagnostic[] = [];
   const scopeMap = new Map(
     request.graph.scopes.map((scope) => [
       `${scope.providerId}\u0000${scope.scopeId}`,
       scope,
     ]),
   );
-  const catalogs: AtlasCompiledCatalog[] = [];
+  const catalogs: CompiledCatalog[] = [];
   for (const catalog of request.catalogs) {
     const scope = scopeMap.get(`${catalog.providerId}\u0000${catalog.scopeId}`);
     if (scope === undefined) {
       diagnostics.push(
-        atlasDiagnostic(
-          'ATL1501',
+        toolkitDiagnostic(
+          'EQ1501',
           `Catalog ${catalog.providerId}/${catalog.scopeId}/${catalog.locale} is absent from the accepted semantic graph.`,
         ),
       );
@@ -888,8 +884,8 @@ export function compileAtlasLocalArtifacts(
       continue;
     }
     diagnostics.push(
-      atlasDiagnostic(
-        'ATL1004',
+      toolkitDiagnostic(
+        'EQ1004',
         `The pinned CLDR release carries no person-name patterns for ${JSON.stringify(locale)}, so declaring it changes nothing. Names in that locale are formatted with the interface's own patterns.`,
         { path: ['personNameLocales'], severity: 'warning' },
       ),
@@ -904,7 +900,7 @@ export function compileAtlasLocalArtifacts(
     diagnostics,
   );
   if (diagnostics.some(({ severity }) => severity === 'error')) {
-    return atlasFailure(diagnostics);
+    return toolkitFailure(diagnostics);
   }
   const files = [
     ...(request.contractFiles ?? []),
@@ -914,7 +910,7 @@ export function compileAtlasLocalArtifacts(
     })),
     {
       path: 'catalog-set.json',
-      contents: stringifyAtlasCanonicalJson(canonicalValue(descriptor)),
+      contents: stringifyCanonicalJson(canonicalValue(descriptor)),
     },
     {
       path: 'catalog-set.ts',
@@ -934,7 +930,7 @@ export function compileAtlasLocalArtifacts(
     },
     {
       path: 'resource-summary.json',
-      contents: stringifyAtlasCanonicalJson(
+      contents: stringifyCanonicalJson(
         canonicalValue(
           descriptor.providers.flatMap((provider) =>
             provider.artifacts.map((artifact) => ({
@@ -946,10 +942,10 @@ export function compileAtlasLocalArtifacts(
       ),
     },
   ];
-  const outputPlan = createAtlasOutputPlan(files);
+  const outputPlan = createOutputPlan(files);
   if (!outputPlan.ok) return outputPlan;
-  const ownerId = atlasOwnerId(request.owner);
-  return atlasSuccess(
+  const ownerId = generatedOwnerId(request.owner);
+  return toolkitSuccess(
     Object.freeze({
       ownerId,
       catalogs: Object.freeze(catalogs),

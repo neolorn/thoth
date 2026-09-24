@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolveLocalizedRoute, routeHttpDescriptor } from '@neolorn/atlas';
+import { resolveLocalizedRoute, routeHttpDescriptor } from '@neolorn/equator';
 
 import { routePolicy, appRouteProjection } from './localization.routes';
 
 /**
  * The one place a path-prefix policy has to decide a locale for itself.
  *
- * Under `/en-us` and `/ar-eg` prefixes the URL says which locale it wants, and Atlas obeys it. The
- * exception is a URL with no prefix: `/`, or a link someone typed without one. That request states
- * no locale, so something has to choose, and `resolveLocalizedRoute` already accepted a resolution
- * context for exactly that purpose.
+ * Under `/en-us` and `/ar-eg` prefixes the URL says which locale it wants, and Equator obeys it.
+ * The exception is a URL with no prefix: `/`, or a link someone typed without one. That request
+ * states no locale, so something has to choose, and `resolveLocalizedRoute` already accepted a
+ * resolution context for exactly that purpose.
  *
  * It then dropped it. `resolveLocalizedRoute` passed the context to the locale-neutral branch and
  * not to the prefix branch, so a request resolved to `ar-EG` produced the byte-identical redirect
@@ -41,12 +41,12 @@ describe('a URL that states no locale', () => {
   });
 
   it('builds the destination in that locale, not merely under its prefix', () => {
-    // The article slug is locale-specific: `atlas-handbook` in English, `دليل-أطلس` in Arabic.
-    // Prefixing the English segments would produce `/ar-eg/articles/atlas-handbook`, which is not
+    // The article slug is locale-specific: `handbook` in English, `دليل` in Arabic.
+    // Prefixing the English segments would produce `/ar-eg/articles/handbook`, which is not
     // that route's Arabic URL, so the visitor would arrive and be redirected a second time, or land
     // on a 404. The destination has to be built in the destination's own locale.
     const resolution = resolveLocalizedRoute(
-      '/articles/atlas-handbook',
+      '/articles/handbook',
       routePolicy,
       appRouteProjection,
       { locale: 'ar-EG' },
@@ -60,7 +60,7 @@ describe('a URL that states no locale', () => {
     });
     if (resolution.status !== 'redirect') return;
     expect(resolution.location).toBe(
-      `/ar-eg/articles/${encodeURIComponent('دليل-أطلس')}`,
+      `/ar-eg/articles/${encodeURIComponent('دليل')}`,
     );
   });
 
@@ -125,8 +125,8 @@ describe('what the redirect may be cached as', () => {
    * language to the next; marking only the other one private prevents nothing, because that request
    * is answered from the cache and never reaches this function.
    *
-   * `Vary` is not the way out. Atlas is never given the request, the host reads the preference
-   * and passes a locale in, so Atlas cannot name the header that varied. For a cookie-borne
+   * `Vary` is not the way out. Equator is never given the request, the host reads the preference
+   * and passes a locale in, so Equator cannot name the header that varied. For a cookie-borne
    * preference `private` is the right answer regardless.
    *
    * These pinned the opposite until 6.1, on the argument that a redirect that consulted nothing is

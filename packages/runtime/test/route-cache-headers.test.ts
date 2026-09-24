@@ -9,19 +9,19 @@ import {
   type LocaleUrlPolicy,
   type RouteHttpDescriptor,
   type RouteRuntimeProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /**
  * Two questions live in a response's cache headers and only one of them is the consumer's.
  *
- * Whether a shared cache may hold a response is Atlas's conclusion about its own routing. How long
- * one should then hold it is a fact about a deployment. A consumer answering both, by mapping
+ * Whether a shared cache may hold a response is Equator's conclusion about its own routing. How
+ * long one should then hold it is a fact about a deployment. A consumer answering both, by mapping
  * classifications to directive strings in a conditional chain, compiles, answers, and goes on
  * compiling and answering after a classification changes meaning, because a conditional chain
  * always has a last branch.
  *
- * A third thing is in the split, and it is the one Atlas genuinely cannot derive: where
- * the host read the visitor's locale preference. Atlas never sees the request. It knows that an
+ * A third thing is in the split, and it is the one Equator genuinely cannot derive: where
+ * the host read the visitor's locale preference. Equator never sees the request. It knows that an
  * answer varied by locale; it cannot know whether that came from `Accept-Language`, which a shared
  * cache can hold one variant of per language, or from a cookie, which it cannot.
  *
@@ -43,7 +43,7 @@ const FRESHNESS = {
   localePreference: 'none',
 } as const;
 
-describe('the cache headers Atlas determines', () => {
+describe('the cache headers Equator determines', () => {
   it('emits storability itself and takes freshness from the consumer', () => {
     expect(routeCacheHeaders(descriptorFor('public'), FRESHNESS)).toStrictEqual(
       {
@@ -197,8 +197,8 @@ describe('what a locale-neutral policy does to cacheability', () => {
 
   const PROJECTION: RouteRuntimeProjection = {
     generated: {
-      profile: 'atlas-route-projection/1',
-      identity: 'sha256-AtlasBuiltLocaleAddressesTestIdentity012345',
+      profile: 'equator-route-projection/1',
+      identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
       routes: [{ id: 'route:about', path: 'about', parameterNames: [] }],
     },
     localizedPaths: { 'route:about': { 'en-US': 'about', 'ar-EG': 'about' } },

@@ -85,7 +85,7 @@ const pnpm = (args, expectedStatus = 0) =>
 
 const parseMachineResult = (result) => {
   const value = JSON.parse(result.stdout.trim());
-  assert.equal(value.profile, 'atlas-cli-result/1');
+  assert.equal(value.profile, 'equator-cli-result/1');
   return value;
 };
 
@@ -124,8 +124,8 @@ const packageLocator = (outputRoot) => {
   const path = relative(consumerRoot, resolve(workspaceRoot, outputRoot));
   return `file:${path.replaceAll('\\', '/')}`;
 };
-manifest.dependencies['@neolorn/atlas'] = packageLocator('dist/runtime');
-manifest.devDependencies['@neolorn/atlas-toolkit'] =
+manifest.dependencies['@neolorn/equator'] = packageLocator('dist/runtime');
+manifest.devDependencies['@neolorn/equator-toolkit'] =
   packageLocator('dist/toolkit');
 await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 
@@ -134,37 +134,41 @@ await assert.rejects(lstat(generatedRoot), { code: 'ENOENT' });
 pnpm(['install', '--offline', '--frozen-lockfile']);
 
 const firstGeneration = parseMachineResult(
-  pnpm(['exec', 'atlas', 'generate', '--json']),
+  pnpm(['exec', 'equator', 'generate', '--json']),
 );
 assert.equal(firstGeneration.status, 'success');
 assert.equal(firstGeneration.result.changed, true);
 const generatedSnapshot = await snapshotFiles(generatedRoot);
 assert.ok(generatedSnapshot.length > 0, 'Minimal generation emitted no files.');
 
-const checked = parseMachineResult(pnpm(['exec', 'atlas', 'check', '--json']));
+const checked = parseMachineResult(
+  pnpm(['exec', 'equator', 'check', '--json']),
+);
 assert.equal(checked.status, 'success');
 assert.equal(checked.result.fresh, true);
 const unchangedGeneration = parseMachineResult(
-  pnpm(['exec', 'atlas', 'generate', '--json']),
+  pnpm(['exec', 'equator', 'generate', '--json']),
 );
 assert.equal(unchangedGeneration.result.changed, false);
 assert.deepEqual(await snapshotFiles(generatedRoot), generatedSnapshot);
 
-const cleaned = parseMachineResult(pnpm(['exec', 'atlas', 'clean', '--json']));
+const cleaned = parseMachineResult(
+  pnpm(['exec', 'equator', 'clean', '--json']),
+);
 assert.equal(cleaned.status, 'success');
 assert.equal(cleaned.result.changed, true);
 await assert.rejects(lstat(generatedRoot), { code: 'ENOENT' });
-await assert.rejects(lstat(resolve(consumerRoot, '.atlas')), {
+await assert.rejects(lstat(resolve(consumerRoot, '.equator')), {
   code: 'ENOENT',
 });
 
 const regenerated = parseMachineResult(
-  pnpm(['exec', 'atlas', 'generate', '--json']),
+  pnpm(['exec', 'equator', 'generate', '--json']),
 );
 assert.equal(regenerated.result.changed, true);
 assert.deepEqual(await snapshotFiles(generatedRoot), generatedSnapshot);
 assert.equal(
-  parseMachineResult(pnpm(['exec', 'atlas', 'check', '--json'])).status,
+  parseMachineResult(pnpm(['exec', 'equator', 'check', '--json'])).status,
   'success',
 );
 
@@ -172,10 +176,7 @@ pnpm(['run', 'test']);
 pnpm(['exec', 'ng', 'build', '--stats-json']);
 
 const stats = JSON.parse(
-  await readFile(
-    resolve(consumerRoot, 'dist/atlas-minimal/stats.json'),
-    'utf8',
-  ),
+  await readFile(resolve(consumerRoot, 'dist/minimal/stats.json'), 'utf8'),
 );
 assert.equal(typeof stats.inputs, 'object', 'Angular stats inputs are absent.');
 assert.equal(
@@ -185,10 +186,10 @@ assert.equal(
 );
 
 const installedRuntimeRoot = await realpath(
-  resolve(consumerRoot, 'node_modules/@neolorn/atlas'),
+  resolve(consumerRoot, 'node_modules/@neolorn/equator'),
 );
 const installedToolkitRoot = await realpath(
-  resolve(consumerRoot, 'node_modules/@neolorn/atlas-toolkit'),
+  resolve(consumerRoot, 'node_modules/@neolorn/equator-toolkit'),
 );
 const installedRuntimePackage = JSON.parse(
   await readFile(resolve(installedRuntimeRoot, 'package.json'), 'utf8'),
@@ -230,13 +231,13 @@ const canonicalProductionInputs = new Set(
 assert.equal(
   canonicalProductionInputs.has(runtimeEntries['.']),
   true,
-  'Minimal consumer did not bundle the supported Atlas runtime entrypoint.',
+  'Minimal consumer did not bundle the supported Equator runtime entrypoint.',
 );
 for (const entrypoint of ['./forms', './router', './testing']) {
   assert.equal(
     canonicalProductionInputs.has(runtimeEntries[entrypoint]),
     false,
-    `Minimal consumer retained the unused Atlas ${entrypoint} entrypoint.`,
+    `Minimal consumer retained the unused Equator ${entrypoint} entrypoint.`,
   );
 }
 for (const [input, canonicalInput] of await Promise.all(
@@ -304,7 +305,7 @@ while (pendingBrowserOutputs.length > 0) {
   }
 }
 
-const browserRoot = resolve(consumerRoot, 'dist/atlas-minimal/browser');
+const browserRoot = resolve(consumerRoot, 'dist/minimal/browser');
 const outputFiles = await readdir(browserRoot, { recursive: true });
 const maps = outputFiles.filter((path) => path.endsWith('.js.map'));
 assert.ok(
@@ -319,15 +320,15 @@ for (const mapPath of maps) {
 const publicImport = run(process.execPath, [
   '--input-type=module',
   '--eval',
-  "await import('@angular/compiler'); await import('@neolorn/atlas');",
+  "await import('@angular/compiler'); await import('@neolorn/equator');",
 ]);
 assert.equal(publicImport.stderr, '');
-const privateRuntimeSpecifier = '@neolorn/atlas/fesm2022/neolorn-atlas.mjs';
-const privateTypesSpecifier = '@neolorn/atlas/types/neolorn-atlas';
+const privateRuntimeSpecifier = '@neolorn/equator/fesm2022/neolorn-equator.mjs';
+const privateTypesSpecifier = '@neolorn/equator/types/neolorn-equator';
 assert.equal((await lstat(runtimeEntries['.'])).isFile(), true);
 assert.equal(
   (
-    await lstat(resolve(installedRuntimeRoot, 'types/neolorn-atlas.d.ts'))
+    await lstat(resolve(installedRuntimeRoot, 'types/neolorn-equator.d.ts'))
   ).isFile(),
   true,
 );
@@ -368,5 +369,5 @@ assert.match(
 );
 
 process.stdout.write(
-  'Atlas focused package consumers verified: deterministic minimal generation, zoneless runtime behavior, optional-entrypoint tree shaking, toolkit and Node isolation, declarations, and deep-import rejection.\n',
+  'Equator focused package consumers verified: deterministic minimal generation, zoneless runtime behavior, optional-entrypoint tree shaking, toolkit and Node isolation, declarations, and deep-import rejection.\n',
 );

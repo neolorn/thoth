@@ -8,10 +8,10 @@ import {
 import {
   type FormattingContext,
   type LocalizedInputProfile,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /**
- * Atlas's numeric rendering, checked against the platform's own idea of each locale.
+ * Equator's numeric rendering, checked against the platform's own idea of each locale.
  *
  * `localized-input-profiles.spec.ts` proves the round trip for all eleven profile kinds, at one
  * value per kind, through the directive. That is the integration claim and it is the right one. It
@@ -20,12 +20,12 @@ import {
  * decimal separator where the group separator belongs, would round-trip perfectly against its own
  * parser and fail every reader.
  *
- * The only honest answer to that is a differential against something Atlas did not write, which
+ * The only honest answer to that is a differential against something Equator did not write, which
  * here is `Intl` itself, and specifically `Intl.NumberFormat.prototype.formatToParts`, which is a
  * different question to the platform than "format this number". Parts name each piece: which
  * characters are this locale's digits, which is its group separator, which is its decimal
- * separator. Nothing about Atlas's rendering is assumed; it is decoded using what the platform says
- * the locale's conventions are, and the decoded value must be the value that went in.
+ * separator. Nothing about Equator's rendering is assumed; it is decoded using what the platform
+ * says the locale's conventions are, and the decoded value must be the value that went in.
  *
  * **No pinned strings, and the reason matters more than the rule.** Writing
  * `expect(text).toBe('١٬٢٣٤٫٥')` pins one ICU edition's Arabic-Indic rendering of one number. When
@@ -51,7 +51,7 @@ import {
  * built package, which is the claim only the lab can make.
  *
  * `specs/12-verification.spec.md` section 8 asks for formatting and parsing to be checked
- * against an authority Atlas did not write, because a formatter that is only self-consistent
+ * against an authority Equator did not write, because a formatter that is only self-consistent
  * round-trips perfectly and fails every reader.
  */
 
@@ -158,7 +158,7 @@ interface Conventions {
    * isolates. Presentation, not value, so the decoder skips them.
    *
    * Learned, not listed. A written character class here would be the same hand-maintained copy of
-   * CLDR that this file exists to catch Atlas keeping.
+   * CLDR that this file exists to catch Equator keeping.
    */
   readonly marks: ReadonlySet<string>;
 }
@@ -218,7 +218,7 @@ function conventions(context: FormattingContext): Conventions {
 }
 
 /**
- * Atlas's rendering, read back through the platform's conventions into a plain ASCII decimal.
+ * Equator's rendering, read back through the platform's conventions into a plain ASCII decimal.
  *
  * Returns `undefined` for any character the locale does not account for, which is a failure and is
  * asserted as one rather than quietly dropped.
@@ -283,7 +283,7 @@ const PROFILE: LocalizedInputProfile = Object.freeze({
   allowGrouping: true,
 });
 
-describe('Atlas renders numbers the way the platform says the locale does', () => {
+describe('Equator renders numbers the way the platform says the locale does', () => {
   for (const row of ROWS) {
     it(`decodes back to the value that went in, in ${row.name}`, () => {
       const random = createRandom(SEED);
@@ -300,7 +300,7 @@ describe('Atlas renders numbers the way the platform says the locale does', () =
         if (!formatted.ok) continue;
 
         const decoded = decode(formatted.value.text, convention);
-        // An undefined decode means Atlas emitted a character this locale does not use for
+        // An undefined decode means Equator emitted a character this locale does not use for
         // numbers, which is the failure a self-consistent round trip cannot see.
         expect(decoded, `${source} -> ${formatted.value.text}`).toBeTypeOf(
           'string',
@@ -372,7 +372,7 @@ describe('Atlas renders numbers the way the platform says the locale does', () =
    * for: U+061C ARABIC LETTER MARK in `ar-EG`, U+200E LEFT-TO-RIGHT MARK in `he-IL`, U+200F in
    * `ckb-IQ`, and in seven locales one on *each* side of it. It carries no value and it is reported
    * as a `literal` part, so a parser that expects the sign at the front of the string does not find
-   * it there. The consequence is not a cosmetic one: Atlas refuses to render what it cannot read
+   * it there. The consequence is not a cosmetic one: Equator refuses to render what it cannot read
    * back, so a negative number became unrenderable in every one of those locales at once.
    *
    * The generated rows above would catch this only when a negative happens to be drawn in a

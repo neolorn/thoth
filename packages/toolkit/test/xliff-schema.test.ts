@@ -5,27 +5,28 @@ import { validateXML } from 'xmllint-wasm';
 import { describe, expect, it } from 'vitest';
 
 import {
-  exportAtlasXliff22,
-  formatAtlasCatalog,
-  importAtlasXliff22,
-  parseAtlasCatalog,
-  type AtlasCatalog,
-  type AtlasCatalogParseOptions,
+  exportXliff22,
+  formatCatalog,
+  importXliff22,
+  parseCatalog,
+  type Catalog,
+  type CatalogParseOptions,
 } from '../src/index.js';
 
 /**
  * Every document this package writes, against the schema OASIS publishes for the version it claims.
  *
  * `specs/01-standards-profile.spec.md` section 10 pins that version, and section 11 of
- * `specs/01-standards-profile.spec.md` requires what Atlas writes to validate against its schemas.
- * The defect took the shape of a version attribute naming one edition beside a namespace
+ * `specs/01-standards-profile.spec.md` requires what Equator writes to validate against its
+ * schemas. The defect took the shape of a version attribute naming one edition beside a namespace
  * belonging to another, which a test that only reads the document back cannot see.
  *
  * Nothing here is a round trip. An importer built against its own exporter accepts whatever that
  * exporter writes, which is why three separate conformance defects survived every interchange test
- * in the suite: the `id` attributes were not `xs:NMTOKEN`s, and `atlas:empty` sat on `<source>` and
- * `<target>`, the two elements inside a unit that admit no foreign attributes at all. The documents
- * were well-formed, self-consistent, round-tripped perfectly, and validated against nothing.
+ * in the suite: the `id` attributes were not `xs:NMTOKEN`s, and `equator:empty` sat on `<source>`
+ * and `<target>`, the two elements inside a unit that admit no foreign attributes at all. The
+ * documents were well-formed, self-consistent, round-tripped perfectly, and validated against
+ * nothing.
  *
  * The schemas are the vendored XLIFF 2.2 CS01 set under `standards/`, and the validator makes no
  * network requests: a gate that reaches the internet is a gate that fails when the internet does.
@@ -44,7 +45,7 @@ const preload = readdirSync(schemaDirectory)
 
 async function schemaErrors(document: string): Promise<readonly string[]> {
   const result = await validateXML({
-    xml: [{ fileName: 'atlas-export.xlf', contents: document }],
+    xml: [{ fileName: 'export.xlf', contents: document }],
     schema: [
       {
         fileName: CORE_SCHEMA,
@@ -63,23 +64,20 @@ async function schemaErrors(document: string): Promise<readonly string[]> {
   );
 }
 
-const sourceOptions: AtlasCatalogParseOptions = {
+const sourceOptions: CatalogParseOptions = {
   role: 'source',
   providerId: '@example/app',
   scopeId: 'shell',
   locale: 'en-US',
 };
-const targetOptions: AtlasCatalogParseOptions = {
+const targetOptions: CatalogParseOptions = {
   ...sourceOptions,
   role: 'target',
   locale: 'ar-EG',
 };
 
-function catalog(
-  text: string,
-  options: AtlasCatalogParseOptions,
-): AtlasCatalog {
-  const parsed = parseAtlasCatalog(text, options);
+function catalog(text: string, options: CatalogParseOptions): Catalog {
+  const parsed = parseCatalog(text, options);
   if (!parsed.ok) {
     throw new Error(
       parsed.diagnostics.map((entry) => entry.summary).join('; '),
@@ -165,34 +163,34 @@ const target = catalog(
   targetOptions,
 );
 
-describe('Atlas XLIFF 2.2 documents against the OASIS schema', () => {
+describe('Equator XLIFF 2.2 documents against the OASIS schema', () => {
   it('validates a bilingual export of every message shape', async () => {
-    const exported = exportAtlasXliff22({ source, target });
+    const exported = exportXliff22({ source, target });
     expect(exported.ok).toBe(true);
     if (!exported.ok) return;
     expect(await schemaErrors(exported.value)).toEqual([]);
   });
 
   it('validates a source-only export, which has no <target> at all', async () => {
-    const exported = exportAtlasXliff22({ source, targetLocale: 'ar-EG' });
+    const exported = exportXliff22({ source, targetLocale: 'ar-EG' });
     expect(exported.ok).toBe(true);
     if (!exported.ok) return;
     expect(await schemaErrors(exported.value)).toEqual([]);
   });
 
   it('round-trips every shape back to the target catalog it came from', () => {
-    const exported = exportAtlasXliff22({ source, target });
+    const exported = exportXliff22({ source, target });
     expect(exported.ok).toBe(true);
     if (!exported.ok) return;
-    const imported = importAtlasXliff22({ document: exported.value, source });
+    const imported = importXliff22({ document: exported.value, source });
     expect(imported.ok).toBe(true);
     if (!imported.ok) return;
-    expect(formatAtlasCatalog(imported.value)).toBe(formatAtlasCatalog(target));
+    expect(formatCatalog(imported.value)).toBe(formatCatalog(target));
   });
 });
 
-describe('Atlas XLIFF inline codes', () => {
-  const exported = exportAtlasXliff22({ source, target });
+describe('Equator XLIFF inline codes', () => {
+  const exported = exportXliff22({ source, target });
 
   it('carries a placeholder as an element and its text as original data', () => {
     expect(exported.ok).toBe(true);
@@ -276,7 +274,7 @@ describe('Atlas XLIFF inline codes', () => {
     // The words are still there and the markup around them is gone. The text parses as a perfectly
     // good message; it is simply the wrong one, and a flat run of MessageFormat could never have
     // said so: a deleted `{#strong}` leaves text that still parses.
-    const imported = importAtlasXliff22({
+    const imported = importXliff22({
       document: retranslate(exported.value, 'greeting', 'Bonjour toi !'),
       source,
     });
@@ -286,7 +284,7 @@ describe('Atlas XLIFF inline codes', () => {
   it('names the placeholder a translation is missing', () => {
     expect(exported.ok).toBe(true);
     if (!exported.ok) return;
-    const imported = importAtlasXliff22({
+    const imported = importXliff22({
       document: retranslate(exported.value, 'repeated', 'Rien du tout'),
       source,
     });
@@ -304,7 +302,7 @@ describe('Atlas XLIFF inline codes', () => {
     // valid MessageFormat and refers to a declared input; it is simply not a translation of this
     // source message, and the only thing that can say so is the code table.
     const inner = targetSpan(exported.value, 'greeting').inner;
-    const imported = importAtlasXliff22({
+    const imported = importXliff22({
       document: retranslate(
         exported.value,
         'greeting',
@@ -325,7 +323,7 @@ describe('Atlas XLIFF inline codes', () => {
     const [first, second] = targetSpan(exported.value, 'repeated')
       .inner.split(' et encore ')
       .map((part) => part.trim());
-    const imported = importAtlasXliff22({
+    const imported = importXliff22({
       document: retranslate(
         exported.value,
         'repeated',
@@ -343,7 +341,7 @@ describe('Atlas XLIFF inline codes', () => {
   it('reads a brace a translator typed as a brace, not as a placeholder', () => {
     expect(exported.ok).toBe(true);
     if (!exported.ok) return;
-    const imported = importAtlasXliff22({ document: exported.value, source });
+    const imported = importXliff22({ document: exported.value, source });
     expect(imported.ok).toBe(true);
     if (!imported.ok) return;
     const braces = imported.value.messages['braces'] as { message?: string };

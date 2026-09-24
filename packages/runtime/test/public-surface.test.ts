@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
  * cost that is the whole point of the layer.
  *
  * A direct module import can reach anything the module exports, including things no consumer can
- * call. Tests written against those would pin Atlas's internal shape: the sign-mark fix rewrote
+ * call. Tests written against those would pin Equator's internal shape: the sign-mark fix rewrote
  * `numberSyntax`, and a test of `numberSyntax` would have had to be rewritten with it, for no gain
  * in confidence. So the rule is not "import the barrel", it cannot be, but **exercise only what
  * the barrel re-exports**, and this asserts it rather than trusting it.

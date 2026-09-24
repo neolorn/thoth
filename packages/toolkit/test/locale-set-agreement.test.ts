@@ -4,13 +4,13 @@ import { resolve } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { atlasDiagnosticsBlock } from '../src/diagnostics.js';
-import { checkAtlasProject, generateAtlasProject } from '../src/index.js';
+import { diagnosticsBlock } from '../src/diagnostics.js';
+import { checkProject, generateProject } from '../src/index.js';
 
 /**
  * An application states its locales twice, and the two statements have to agree.
  *
- * `atlas.config.json` decides which locales get catalogs. The locale URL policy decides which
+ * `equator.config.json` decides which locales get catalogs. The locale URL policy decides which
  * locales get addresses. They are separate files written at separate times, and nothing compared
  * them: the toolkit had no knowledge of the policy at all, so none of its diagnostic codes could
  * have covered this.
@@ -60,7 +60,7 @@ interface ProjectOptions {
 }
 
 async function project(options: ProjectOptions): Promise<string> {
-  const root = await mkdtemp(resolve(tmpdir(), 'atlas-locale-set-'));
+  const root = await mkdtemp(resolve(tmpdir(), 'locale-set-'));
   temporaryRoots.push(root);
   const defaultLocale = options.configuredDefault ?? 'en-US';
 
@@ -83,7 +83,7 @@ async function project(options: ProjectOptions): Promise<string> {
   );
   await write(
     root,
-    'atlas.config.json',
+    'equator.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -135,7 +135,7 @@ async function project(options: ProjectOptions): Promise<string> {
 
   await write(
     root,
-    'node_modules/@neolorn/atlas/index.d.ts',
+    'node_modules/@neolorn/equator/index.d.ts',
     [
       'export declare function createPathPrefixLocalePolicy(',
       '  options: unknown,',
@@ -146,9 +146,9 @@ async function project(options: ProjectOptions): Promise<string> {
   );
   await write(
     root,
-    'node_modules/@neolorn/atlas/package.json',
+    'node_modules/@neolorn/equator/package.json',
     `${JSON.stringify(
-      { name: '@neolorn/atlas', version: '0.0.0', types: './index.d.ts' },
+      { name: '@neolorn/equator', version: '0.0.0', types: './index.d.ts' },
       null,
       2,
     )}\n`,
@@ -180,7 +180,7 @@ async function project(options: ProjectOptions): Promise<string> {
       "import { messages } from '#i18n/shell';",
       ...(options.policyLocales === undefined || options.shadowed
         ? []
-        : [`import { ${factoryName} } from '@neolorn/atlas';`]),
+        : [`import { ${factoryName} } from '@neolorn/equator';`]),
       '',
       ...(options.shadowed
         ? [
@@ -206,7 +206,7 @@ async function project(options: ProjectOptions): Promise<string> {
 }
 
 async function codes(root: string, pseudo = false): Promise<readonly string[]> {
-  const generated = await generateAtlasProject({
+  const generated = await generateProject({
     project: root,
     pseudoLocales: pseudo,
   });
@@ -214,9 +214,9 @@ async function codes(root: string, pseudo = false): Promise<readonly string[]> {
 }
 
 async function summaries(root: string): Promise<readonly string[]> {
-  const generated = await generateAtlasProject({ project: root });
+  const generated = await generateProject({ project: root });
   return generated.diagnostics
-    .filter(({ code }) => code === 'ATL1408')
+    .filter(({ code }) => code === 'EQ1408')
     .map(({ summary }) => summary);
 }
 
@@ -247,8 +247,8 @@ describe('a pseudo-locale is exempt from locale-set agreement', () => {
       policyLocales: ['en-US', 'ar-EG'],
       pseudoLocales: ['en-Arab-XB'],
     });
-    expect(await codes(root, true)).not.toContain('ATL1408');
-    expect(await codes(root, false)).not.toContain('ATL1408');
+    expect(await codes(root, true)).not.toContain('EQ1408');
+    expect(await codes(root, false)).not.toContain('EQ1408');
   });
 
   it('may be given an address without failing the build that omits it', async () => {
@@ -259,20 +259,20 @@ describe('a pseudo-locale is exempt from locale-set agreement', () => {
       policyLocales: ['en-US', 'ar-EG', 'en-Arab-XB'],
       pseudoLocales: ['en-Arab-XB'],
     });
-    expect(await codes(root, true)).not.toContain('ATL1408');
-    expect(await codes(root, false)).not.toContain('ATL1408');
+    expect(await codes(root, true)).not.toContain('EQ1408');
+    expect(await codes(root, false)).not.toContain('EQ1408');
   });
 
   it('still reports an ordinary locale that the exemption does not cover', async () => {
-    // The control. Without it the two cases above pass for an exemption that silenced ATL1408
+    // The control. Without it the two cases above pass for an exemption that silenced EQ1408
     // entirely, which is the cheapest wrong way to make them green.
     const root = await project({
       configuredLocales: ['en-US', 'ar-EG'],
       policyLocales: ['en-US', 'ar-EG', 'fr-FR'],
       pseudoLocales: ['en-Arab-XB'],
     });
-    expect(await codes(root, true)).toContain('ATL1408');
-    expect(await codes(root, false)).toContain('ATL1408');
+    expect(await codes(root, true)).toContain('EQ1408');
+    expect(await codes(root, false)).toContain('EQ1408');
   });
 });
 
@@ -283,7 +283,7 @@ describe('the locale set an application states twice', () => {
       policyLocales: ['en-US', 'ar-EG'],
     });
 
-    expect(await codes(root)).not.toContain('ATL1408');
+    expect(await codes(root)).not.toContain('EQ1408');
   });
 
   it('reports a configured locale the policy gives no address', async () => {
@@ -341,7 +341,7 @@ describe('the locale set an application states twice', () => {
     // Neither direction has a legitimate form and both are silent at runtime, so this is an error.
     // An advisory here would be a finding that ships.
     //
-    // Asserted through `atlasDiagnosticsBlock`, which is what actually decides a gate's exit code,
+    // Asserted through `diagnosticsBlock`, which is what actually decides a gate's exit code,
     // and on the severity it reads, not on the result's `ok`, which reports whether the compile
     // produced output rather than whether the gate passes. `diagnostics.ts` records the bug that
     // came from testing anything other than severity here.
@@ -350,13 +350,13 @@ describe('the locale set an application states twice', () => {
       policyLocales: ['en-US'],
     });
 
-    const generated = await generateAtlasProject({ project: root });
+    const generated = await generateProject({ project: root });
     const reported = generated.diagnostics.filter(
-      ({ code }) => code === 'ATL1408',
+      ({ code }) => code === 'EQ1408',
     );
 
     expect(reported.map(({ severity }) => severity)).toEqual(['error']);
-    expect(atlasDiagnosticsBlock(generated.diagnostics)).toBe(true);
+    expect(diagnosticsBlock(generated.diagnostics)).toBe(true);
   });
 
   it('is reported by bare check too, because that is what a gate runs', async () => {
@@ -365,9 +365,9 @@ describe('the locale set an application states twice', () => {
       policyLocales: ['en-US'],
     });
 
-    const checked = await checkAtlasProject({ project: root });
+    const checked = await checkProject({ project: root });
 
-    expect(checked.diagnostics.map(({ code }) => code)).toContain('ATL1408');
+    expect(checked.diagnostics.map(({ code }) => code)).toContain('EQ1408');
   });
 
   it('reads the host policy, which states the same set under another key', async () => {
@@ -399,7 +399,7 @@ describe('the locale set an application states twice', () => {
 
   it('declares nothing from a consumer function of the same name', async () => {
     // The negative control. Recognition resolves the symbol and requires its declaration to come
-    // from inside the Atlas package, so a local function called `createPathPrefixLocalePolicy`
+    // from inside the Equator package, so a local function called `createPathPrefixLocalePolicy`
     // configures nothing, and this test going green while the others pass is what separates
     // "resolves the symbol" from "matches the name".
     const root = await project({
@@ -408,12 +408,12 @@ describe('the locale set an application states twice', () => {
       shadowed: true,
     });
 
-    expect(await codes(root)).not.toContain('ATL1408');
+    expect(await codes(root)).not.toContain('EQ1408');
   });
 
   it('says nothing about an owner that builds no policy', async () => {
     const root = await project({ configuredLocales: ['en-US', 'ar-EG'] });
 
-    expect(await codes(root)).not.toContain('ATL1408');
+    expect(await codes(root)).not.toContain('EQ1408');
   });
 });

@@ -32,13 +32,13 @@ import {
   zonedDateTime,
   type LocalizationObservabilityEvent,
   type LocalizationObservabilitySink,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
  * One pipe per canonical value kind, in both locales, and what a failure puts on the page.
@@ -168,7 +168,7 @@ function setup(): Localization {
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
         },
         withFormattingContext({ timeZone: 'UTC' }),
         withObservability(sink),
@@ -241,7 +241,7 @@ describe('a value the formatter will not write', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    // Nothing on the page. Not an apology in Atlas words, and not a thrown error taking a view
+    // Nothing on the page. Not an apology in Equator words, and not a thrown error taking a view
     // down over one value.
     expect(textOf(fixture, 'data-unformattable')).toBe('');
 

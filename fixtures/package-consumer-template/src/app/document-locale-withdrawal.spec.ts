@@ -14,17 +14,17 @@ import {
   Localization,
   provideLocalizationSetup,
   withoutDocumentLocale,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
- * `withoutDocumentLocale()`, which withdraws the one Atlas default that touches a document Atlas
- * may not own.
+ * `withoutDocumentLocale()`, which withdraws the one Equator default that touches a document
+ * Equator may not own.
  *
  * This sat in progressive coordination's exact position: a public feature provider, a live
  * runtime branch, and no consumer anywhere. It was verified by hand and it worked; a hand
@@ -52,11 +52,11 @@ import { atlasRuntimeExtensions } from './runtime-extensions';
  * attributes, not better.
  */
 
-const ANNOUNCER = '[data-atlas-announcer]';
+const ANNOUNCER = '[data-equator-announcer]';
 
 /**
- * Sentinel values no locale produces, so "Atlas left it alone" is asserted against something Atlas
- * would have had to overwrite rather than against an empty attribute that was always empty.
+ * Sentinel values no locale produces, so "Equator left it alone" is asserted against something
+ * Equator would have had to overwrite rather than against an empty attribute that was always empty.
  */
 const HOST_LANGUAGE = 'fr-CA';
 const HOST_DIRECTION = 'ltr';
@@ -71,7 +71,7 @@ function setup(withdrawn: boolean) {
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
         },
         ...(withdrawn ? [withoutDocumentLocale()] : []),
       ),

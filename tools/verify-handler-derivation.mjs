@@ -60,7 +60,7 @@ import { createLocaleRequestHandler } from '../http/src/handler.js';
 import type {
   LocaleUrlPolicy,
   RouteRuntimeProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 const POLICY: LocaleUrlPolicy = {
   kind: 'path-prefix',
@@ -74,8 +74,8 @@ const POLICY: LocaleUrlPolicy = {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'atlas-route-projection/1',
-    identity: 'sha256-AtlasBuiltLocaleAddressesTestIdentity012345',
+    profile: 'equator-route-projection/1',
+    identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
       { id: 'route:second', path: 'second', parameterNames: [] },
@@ -90,12 +90,12 @@ describe('the handler under a mutated classification', () => {
       policy: POLICY,
       projection: PROJECTION,
       cache: { successMaxAge: 600, permanentRedirectMaxAge: 86_400 },
-      cookie: { name: 'atlas-locale' },
+      cookie: { name: 'equator-locale' },
       render: () => new Response('<!doctype html>'),
     });
 
     const response = await handler(
-      new Request('https://atlas.example/ar-eg/second'),
+      new Request('https://site.example/ar-eg/second'),
     );
 
     // Unmutated this address answers 'public, max-age=600, must-revalidate'. If it still does, the
@@ -162,5 +162,5 @@ assert.equal(
 );
 
 process.stdout.write(
-  'Atlas handler derivation verified: the handler follows the descriptor.\n',
+  'Equator handler derivation verified: the handler follows the descriptor.\n',
 );

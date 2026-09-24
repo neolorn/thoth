@@ -3,7 +3,7 @@
  *
  * `specs/07-routing-rendering-and-seo.spec.md` section 11 leaves delivery to the application,
  * because a published URL is composed from six values the application only holds when it runs.
- * What Atlas produces is the complete set with each file's name, contents, kind, count and
+ * What Equator produces is the complete set with each file's name, contents, kind, count and
  * size, and the split is on the count and the byte size together: with an alternate cluster in
  * every entry the size limit arrives first, so a split that counted only URLs would write a
  * file no crawler reads.
@@ -25,7 +25,7 @@ import {
   type RouteRuntimeProjection,
   type SitemapDocument,
   type SitemapRouteDeclaration,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /**
  * What a build publishes to a crawler as a file, from the projection it publishes in a head.
@@ -51,8 +51,8 @@ function projectionWith(
 ): RouteRuntimeProjection {
   return {
     generated: {
-      profile: 'atlas-route-projection/1',
-      identity: 'sha256-AtlasSitemapProjectionTestIdentity012345678',
+      profile: 'equator-route-projection/1',
+      identity: 'sha256-SitemapProjectionTestIdentity01234567890123',
       routes,
     },
     // Only where the table has the route to localize. The many-route projections below are the
@@ -83,7 +83,7 @@ const PROJECTION = projectionWith([
 ]);
 
 const CONFIGURATION: GeneratedConfiguration = {
-  generatedAbi: 'atlas-generated/1',
+  generatedAbi: 'equator-generated/1',
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
   locales: ['en-US', 'ar-EG'],
@@ -93,7 +93,7 @@ const CONFIGURATION: GeneratedConfiguration = {
   scopes: [],
 };
 
-const ORIGIN = 'https://atlas.example';
+const ORIGIN = 'https://site.example';
 
 function sitemap(
   routes: readonly { readonly routeId: string }[],
@@ -163,8 +163,8 @@ describe('the sitemap and the head are one projection', () => {
   it('publishes one entry per locale, and each entry names itself', () => {
     const [file] = sitemap([{ routeId: 'route:second' }]);
     expect(locations(file?.contents ?? '')).toEqual([
-      'https://atlas.example/en-us/second',
-      'https://atlas.example/ar-eg/%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A',
+      'https://site.example/en-us/second',
+      'https://site.example/ar-eg/%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A',
     ]);
     // Google requires the cluster to list every version including the page's own, which is the
     // same rule the head follows, so the count is locales squared plus one x-default each.
@@ -273,24 +273,24 @@ describe('one file, one host', () => {
     const hosts = createHostLocalePolicy({
       defaultLocale: 'en-US',
       origins: {
-        'en-US': 'https://en.atlas.example',
-        'ar-EG': 'https://ar.atlas.example',
+        'en-US': 'https://en.site.example',
+        'ar-EG': 'https://ar.site.example',
       },
     });
     const [file] = sitemap([{ routeId: 'route:second' }], {
       policy: hosts,
-      origin: 'https://en.atlas.example',
+      origin: 'https://en.site.example',
     });
     // The protocol requires every URL in one file to be on one host, and this policy puts each
     // locale on its own. So a host lists its own pages and names the others as alternates, which
     // is what an alternate is for, and a three-host deployment calls this three times.
     expect(locations(file?.contents ?? '')).toEqual([
-      'https://en.atlas.example/second',
+      'https://en.site.example/second',
     ]);
     // The Arabic alternate is on the other host and spelled in Arabic, because a `locale-host`
     // policy changes the origin and the projection still changes the path.
     expect(file?.contents).toContain(
-      'href="https://ar.atlas.example/%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A"',
+      'href="https://ar.site.example/%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A"',
     );
   });
 
@@ -302,7 +302,7 @@ describe('one file, one host', () => {
     // `route:_index` has no localized path, so under this policy every locale genuinely arrives at
     // one address. Listing it per locale would claim one page twice.
     const [file] = sitemap([{ routeId: 'route:_index' }], { policy: neutral });
-    expect(locations(file?.contents ?? '')).toEqual(['https://atlas.example/']);
+    expect(locations(file?.contents ?? '')).toEqual(['https://site.example/']);
   });
 
   it('publishes both where the same policy gives each locale its own path', () => {
@@ -316,15 +316,15 @@ describe('one file, one host', () => {
     // policy read.
     const [file] = sitemap([{ routeId: 'route:second' }], { policy: neutral });
     expect(locations(file?.contents ?? '')).toEqual([
-      'https://atlas.example/second',
-      'https://atlas.example/%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A',
+      'https://site.example/second',
+      'https://site.example/%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A',
     ]);
   });
 
   it('mounts every URL under the sub-path the application is served from', () => {
     const [file] = sitemap([{ routeId: 'route:second' }], { baseHref: '/app' });
     expect(locations(file?.contents ?? '')[0]).toBe(
-      'https://atlas.example/app/en-us/second',
+      'https://site.example/app/en-us/second',
     );
   });
 });
@@ -347,8 +347,8 @@ describe('splitting', () => {
   } {
     const projection: RouteRuntimeProjection = {
       generated: {
-        profile: 'atlas-route-projection/1',
-        identity: 'sha256-AtlasSitemapProjectionTestIdentity012345678',
+        profile: 'equator-route-projection/1',
+        identity: 'sha256-SitemapProjectionTestIdentity01234567890123',
         routes: [
           {
             id: 'route:article',
@@ -363,7 +363,7 @@ describe('splitting', () => {
     };
     const values: Readonly<Record<string, unknown>>[] = [];
     for (let index = 0; index < pages; index += 1) {
-      values.push({ slug: `atlas-handbook-chapter-${index}` });
+      values.push({ slug: `handbook-chapter-${index}` });
     }
     return {
       projection,
@@ -453,7 +453,7 @@ describe('splitting', () => {
       files.filter(({ kind }) => kind === 'urlset').map(({ name }) => name),
     ).toEqual(['sitemap-1.xml', 'sitemap-2.xml']);
     expect(index?.contents).toContain(
-      '<loc>https://atlas.example/sitemap-1.xml</loc>',
+      '<loc>https://site.example/sitemap-1.xml</loc>',
     );
     expect(index?.urls).toBe(2);
   });

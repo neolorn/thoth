@@ -1,5 +1,5 @@
 /**
- * Showing a domain value or a failure code to a reader, including one Atlas has never seen.
+ * Showing a domain value or a failure code to a reader, including one Equator has never seen.
  *
  * `specs/08-formatting-parsing-and-domain.spec.md` section 10 keeps machine equality and
  * persistence on the invariant value rather than on the localized label, so what is presented
@@ -19,7 +19,7 @@ import {
   type NotificationMessage,
   type MessageHandle,
   type PlainMessageHandle,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 import { issueMessage } from './issue-convention';
 import type { Localization } from './localization';
 

@@ -1,7 +1,7 @@
 /**
- * Hand a materialized consumer the Atlas packages that are in `dist/` right now.
+ * Hand a materialized consumer the Equator packages that are in `dist/` right now.
  *
- * The consumer takes Atlas as a `file:` dependency, which pnpm imports into its store rather than
+ * The consumer takes Equator as a `file:` dependency, which pnpm imports into its store rather than
  * linking through to `dist`. A rebuild replaces those files, so the consumer goes on running the
  * build it was installed with until something re-imports them, and two gates depend on that
  * happening: the one that mutates the runtime and asks whether the consumer's suite notices, and

@@ -13,7 +13,7 @@ import { escapeXml } from './xml-text';
  * Checked when a projection is validated, so a projection produced by an older build is refused
  * rather than read as though its fields meant what they mean now.
  */
-export const ROUTE_PROJECTION_PROFILE = 'atlas-route-projection/1' as const;
+export const ROUTE_PROJECTION_PROFILE = 'equator-route-projection/1' as const;
 
 /**
  * What a route says to a crawler.
@@ -25,29 +25,29 @@ export const ROUTE_PROJECTION_PROFILE = 'atlas-route-projection/1' as const;
 export type RouteIndexingClass = 'indexable' | 'non-indexable' | 'private';
 
 /**
- * The route-data field Atlas reads when a consumer does not name one of its own.
+ * The route-data field Equator reads when a consumer does not name one of its own.
  *
- * A project that already classifies its routes points Atlas at the field it already has. A
+ * A project that already classifies its routes points Equator at the field it already has. A
  * project that does not gets this.
  *
  * `specs/07-routing-rendering-and-seo.spec.md` section 14 is why this is a field name and a table
  * of literals rather than a predicate: the declaration is read from the provider file's source
- * text when the owner is compiled, and Atlas does not execute consumer code to find out how an
+ * text when the owner is compiled, and Equator does not execute consumer code to find out how an
  * application classifies its own routes.
  */
-export const DEFAULT_ROUTE_INDEXING_FIELD = 'atlasIndexing';
+export const DEFAULT_ROUTE_INDEXING_FIELD = 'equatorIndexing';
 
 /**
  * How a consumer's own route data says which routes are indexable.
  *
- * Atlas must not read a field name belonging to a particular consumer, so the field is named here
- * rather than assumed, and the values in it are the consumer's words rather than Atlas's. Only the
- * exceptions need naming: a route whose field is absent, or carries a value this policy does not
- * list, is indexable. Marking every route would be the cost this option exists to avoid.
+ * Equator must not read a field name belonging to a particular consumer, so the field is named here
+ * rather than assumed, and the values in it are the consumer's words rather than Equator's. Only
+ * the exceptions need naming: a route whose field is absent, or carries a value this policy does
+ * not list, is indexable. Marking every route would be the cost this option exists to avoid.
  *
  * This is read from the provider file's source text at build time, which is why it is a field
  * name and a table of literals rather than a predicate. A function body cannot be evaluated
- * without executing consumer code, and Atlas does not execute consumer code.
+ * without executing consumer code, and Equator does not execute consumer code.
  */
 export interface RouteIndexingPolicy {
   /** The route-data field to read the class out of. */
@@ -82,9 +82,10 @@ export interface SitemapRouteClass {
 /**
  * How a consumer's own route data says what a route claims in a sitemap.
  *
- * The same shape as the indexing policy above and for the same reason: Atlas reads a field name it
- * was given rather than one of its own invention, and a table of literals rather than a predicate,
- * because the declaration is read from source text and Atlas does not execute consumer code.
+ * The same shape as the indexing policy above and for the same reason: Equator reads a field name
+ * it was given rather than one of its own invention, and a table of literals rather than a
+ * predicate, because the declaration is read from source text and Equator does not execute consumer
+ * code.
  *
  * The mapping is class to value rather than route to value. A project that groups its routes at
  * all has already written the grouping, and a project that wants one route to differ names a class
@@ -92,7 +93,7 @@ export interface SitemapRouteClass {
  * a crawler.
  *
  * `lastmodField` is separate because `lastmod` is not a class property: it is a date belonging to
- * one page. It names a second route-data field whose value is read as written. Atlas never
+ * one page. It names a second route-data field whose value is read as written. Equator never
  * computes one, because a build time or a file time is a date the page did not change on, and a
  * `lastmod` that is not accurate is worse than none.
  */
@@ -196,7 +197,7 @@ export interface RouteParameterContext {
  * the same text. That is not a style rule: it is the mechanism a locale change runs on. Changing
  * locale re-addresses the current page by parsing the address in the locale it was written in and
  * serializing the result in the new one, so a codec that writes a spelling it cannot read has
- * produced an address Atlas emits and then cannot resolve. The visitor sees a link that leads
+ * produced an address Equator emits and then cannot resolve. The visitor sees a link that leads
  * nowhere, or a page that silently reverts to the default locale, and nothing on the way there
  * looks wrong.
  *
@@ -210,9 +211,9 @@ export interface RouteParameterContext {
  * be a route parameter under this contract. Put the identifier in the URL and fetch the copy
  * behind it, or generate the localized paths and let `localizedPaths` carry them.
  *
- * When `parse` rejects a spelling it should have accepted, Atlas does not guess. The route declines
- * to match, resolution answers `not-found`, and the address is handed back unchanged for the
- * application to answer: the same outcome as a URL naming no route at all. That is the safe
+ * When `parse` rejects a spelling it should have accepted, Equator does not guess. The route
+ * declines to match, resolution answers `not-found`, and the address is handed back unchanged for
+ * the application to answer: the same outcome as a URL naming no route at all. That is the safe
  * failure, because the alternative is serving one page's content at another page's address.
  */
 export interface RouteParameterCodec<Value = unknown> {
@@ -234,7 +235,7 @@ export interface RouteParameterCodec<Value = unknown> {
  *
  * This does not replace the codec. The codec still decides what a parameter looks like for routes
  * whose spelling is derivable, and it still has to *read* every spelling declared here: an address
- * Atlas emits and cannot resolve is worse than one it never emitted.
+ * Equator emits and cannot resolve is worse than one it never emitted.
  */
 export type LocalizedParameterSpellings = Readonly<
   Record<string, Readonly<Record<string, string>>>
@@ -643,7 +644,7 @@ export interface RouteSeoProjection {
  * The response a server should send for one address: its status, its headers, and its caching.
  *
  * Derived from resolving the address rather than decided by the application, because whether an
- * address redirects, is gone, or may be held in a shared cache is a conclusion about Atlas's own
+ * address redirects, is gone, or may be held in a shared cache is a conclusion about Equator's own
  * routing. How long it may be held is the deployment's, and `routeCacheHeaders` takes that.
  */
 export interface RouteHttpDescriptor {
@@ -664,15 +665,15 @@ export interface RouteHttpDescriptor {
 }
 
 /**
- * How long this application's infrastructure holds a response Atlas has said may be shared.
+ * How long this application's infrastructure holds a response Equator has said may be shared.
  *
- * Only the two shared classifications take a number, and neither number is one Atlas could pick:
+ * Only the two shared classifications take a number, and neither number is one Equator could pick:
  * how long a CDN should hold a page, or a permanent correction, is a fact about a deployment.
  * `private-no-store` takes none, because a response that is never stored has no freshness.
  *
  * The durations alone, without the one fact only the caller knows, because a caller that reads
  * the request derives that fact rather than being told it, and the handler in
- * `@neolorn/atlas/http` does exactly that.
+ * `@neolorn/equator/http` does exactly that.
  */
 export interface RouteCacheDurations {
   /** Seconds a shared cache may serve a successful localized response before revalidating. */
@@ -696,7 +697,7 @@ export interface RouteCacheDurations {
  */
 export interface RouteCacheFreshness extends RouteCacheDurations {
   /**
-   * Where the host reads a visitor's locale preference, which is the one fact in this file Atlas
+   * Where the host reads a visitor's locale preference, which is the one fact in this file Equator
    * cannot derive: it never sees the request.
    *
    * Required, with no default, because every possible default is wrong for somebody and the wrong
@@ -710,7 +711,7 @@ export interface RouteCacheFreshness extends RouteCacheDurations {
  * Where a locale preference was read from, and therefore what a shared cache can do with it.
  *
  * A closed set of three rather than a header name, and that is the point rather than a
- * simplification. `Vary: Cookie` is not a thing Atlas will emit: MDN's guidance for content
+ * simplification. `Vary: Cookie` is not a thing Equator will emit: MDN's guidance for content
  * personalized by cookie is `Cache-Control: private` instead, because cookies carry everything and
  * a cache keyed on the whole of one stores a variant per visitor, which is not a shared cache. So
  * there is no input here that names a header, and `Vary: Cookie` is not a value this function can
@@ -724,12 +725,12 @@ export interface RouteCacheFreshness extends RouteCacheDurations {
 export type LocalePreferenceSource = 'none' | 'accept-language' | 'cookie';
 
 /**
- * The response headers Atlas determines, by lowercase name.
+ * The response headers Equator determines, by lowercase name.
  *
  * A map rather than a string, because `Cache-Control` stopped being the only header the
  * classification implies the moment `Vary` became one of the answers. A consumer writes them with
- * one loop and gains a header Atlas adds later without changing a line; a consumer handed a string
- * plus an optional second value has a branch to forget, which is the shape 6.3 removed.
+ * one loop and gains a header Equator adds later without changing a line; a consumer handed a
+ * string plus an optional second value has a branch to forget, which is the shape 6.3 removed.
  */
 export interface RouteCacheHeaders {
   /** The `Cache-Control` value. */
@@ -742,12 +743,12 @@ export interface RouteCacheHeaders {
  * The `Cache-Control` value for a resolved route, given the freshness this deployment chose.
  *
  * Two different questions live in that header and only one of them is the consumer's. **Whether a
- * shared cache may hold this response at all** is a conclusion about Atlas's own routing: an entry
- * address carries a different answer per preference, a canonical correction is the same answer
- * forever, a malformed target is nobody's to keep. A consumer retyping that conclusion cannot
- * improve on it and can only diverge from it. **How long** a shared cache should then hold one is a
- * fact about a deployment (traffic, budget, how often content is retranslated) that Atlas has no
- * basis to guess.
+ * shared cache may hold this response at all** is a conclusion about Equator's own routing: an
+ * entry address carries a different answer per preference, a canonical correction is the same
+ * answer forever, a malformed target is nobody's to keep. A consumer retyping that conclusion
+ * cannot improve on it and can only diverge from it. **How long** a shared cache should then hold
+ * one is a fact about a deployment (traffic, budget, how often content is retranslated) that
+ * Equator has no basis to guess.
  *
  * So the storability half is emitted and the freshness half is taken as an argument. What this
  * replaces is a mapping every consumer wrote by hand from the three classifications to three
@@ -787,7 +788,7 @@ export function routeCacheHeaders(
           return Object.freeze({ 'cache-control': 'private, no-store' });
         case 'none':
           routeError(
-            'This response varied by locale preference and `localePreference` is `none`, which are two statements that cannot both be true. Atlas resolved a locale from a preference the host supplied, so the host reads one somewhere; name where, so the answer can say whether a shared cache may hold it.',
+            'This response varied by locale preference and `localePreference` is `none`, which are two statements that cannot both be true. Equator resolved a locale from a preference the host supplied, so the host reads one somewhere; name where, so the answer can say whether a shared cache may hold it.',
           );
       }
   }
@@ -854,8 +855,8 @@ function validPrefix(value: string): boolean {
  *
  * A locale URL policy is a source file. It says where a locale lives *if the build has it*, and it
  * is the same file in every build. What a build actually generated catalogs for is in the generated
- * configuration, and that varies: a pseudo-locale exists only in a build that asked for one, and
- * an ordinary locale exists only once someone has configured it. Atlas publishes addresses from the
+ * configuration, and that varies: a pseudo-locale exists only in a build that asked for one, and an
+ * ordinary locale exists only once someone has configured it. Equator publishes addresses from the
  * first and had no way to consult the second, so a locale the policy named and the build never
  * generated got a prerendered file, a server route and an `hreflang` link, all pointing at a locale
  * that resolves to nothing and redirects away.
@@ -891,7 +892,7 @@ function builtLocales(
  * have, spelled this way in a URL. The generated configuration states fact: these are the locales
  * whose catalogs exist. The two are allowed to disagree (a locale is given an address before its
  * translations land, or dropped from the configuration and left in the policy) and every place
- * Atlas turns the policy into a published address has to answer for the disagreement.
+ * Equator turns the policy into a published address has to answer for the disagreement.
  *
  * Filtering at each such place answers it once per place and misses the next one. Matching any
  * prefix the policy names means a build with no German catalog answers `/de/zweite` with a 200,
@@ -1065,7 +1066,7 @@ export function createDefaultLocalePrefixPolicy(
 }
 
 /**
- * The one definition of what an origin Atlas will write into an address has to be.
+ * The one definition of what an origin Equator will write into an address has to be.
  *
  * Every value that reaches here is concatenated with a route's own path and published: a canonical
  * URL, an `hreflang` alternate, an `x-default`. Credentials in one of those are written into a
@@ -1128,7 +1129,7 @@ function trustedXDefaultPath(value: string | undefined): string | undefined {
   }
   try {
     if (
-      new URL(value, 'https://atlas.invalid').origin !== 'https://atlas.invalid'
+      new URL(value, 'https://site.invalid').origin !== 'https://site.invalid'
     ) {
       routeError('x-default cannot change origin.');
     }
@@ -1232,10 +1233,10 @@ export function createHostLocalePolicy(
  * development stops working the moment it is served under its own domains, and the failure arrives
  * as a `400` with no mention of localization in it.
  *
- * **Atlas cannot check this one.** The server configuration is not reachable from a build, so there
- * is no point at which a mismatch could be refused the way `provideLocalizedRouter`'s `origin` is.
- * What is left is to make the second registration a copy of the first rather than a second list
- * someone maintains: this derives it, and the consumer passes it once.
+ * **Equator cannot check this one.** The server configuration is not reachable from a build, so
+ * there is no point at which a mismatch could be refused the way `provideLocalizedRouter`'s
+ * `origin` is. What is left is to make the second registration a copy of the first rather than a
+ * second list someone maintains: this derives it, and the consumer passes it once.
  *
  * Hostnames, not origins and not hosts. `@angular/ssr` parses the `Host` header and compares its
  * `hostname`, so a scheme or a port in the value would never match anything. Measured against
@@ -1260,7 +1261,7 @@ export function allowedLocaleHosts(policy: LocaleUrlPolicy): readonly string[] {
  * carried between calls makes the same text match on one call and not the next.
  *
  * `parse` reports a refusal rather than throwing, which resolves to a not-found. `serialize` throws
- * a `LocalizationError` on a value the pattern refuses: writing an address Atlas cannot read back
+ * a `LocalizationError` on a value the pattern refuses: writing an address Equator cannot read back
  * is worse than failing where the mistake is.
  */
 export function createIdentifierParameterCodec(
@@ -1481,7 +1482,7 @@ function checkRouteProjection(
   }
   const historical = Object.entries(projection.historical ?? {});
   if (historical.length > 256) {
-    routeError('Historical route outcomes exceed Atlas bounds.');
+    routeError('Historical route outcomes exceed Equator bounds.');
   }
   for (const [path, outcome] of historical) {
     if (
@@ -1555,14 +1556,14 @@ interface RouteLocaleIndex {
 }
 
 /**
- * What Atlas works out about a projection the first time it is handed one.
+ * What Equator works out about a projection the first time it is handed one.
  *
  * Worked out once rather than on every call. Validating the whole projection per resolve and per
  * URL build, then walking it again to compute each route's spelling for the locale, costs two
  * passes over every route in the application per address. That is invisible at the size a route
- * table is usually written by hand and it is the whole cost at the size Atlas is built for: twenty
- * thousand routes take thirty-two seconds to build a thousand addresses that way, and a site cannot
- * publish a sitemap it cannot finish.
+ * table is usually written by hand and it is the whole cost at the size Equator is built for:
+ * twenty thousand routes take thirty-two seconds to build a thousand addresses that way, and a site
+ * cannot publish a sitemap it cannot finish.
  *
  * So the work happens once. Validation asks about the projection rather than about the request and
  * has one answer for as long as the object exists, and the index is that same pass kept instead of
@@ -1571,7 +1572,7 @@ interface RouteLocaleIndex {
  * routes, which is a property of the table.
  *
  * Held against the projection object rather than on it, because the type is the consumer's and a
- * field of Atlas's own would be one they can read, copy, and set. A projection that is discarded
+ * field of Equator's own would be one they can read, copy, and set. A projection that is discarded
  * takes its index with it.
  */
 interface PreparedRouteProjection {
@@ -1975,13 +1976,13 @@ function claimedLeadingSegment(
 }
 
 /**
- * Refuse an address Atlas is about to emit and could not read back.
+ * Refuse an address Equator is about to emit and could not read back.
  *
  * The same rule as the declared-spelling refusal one layer down, where a codec that cannot parse
- * its own serialization is refused rather than allowed to produce a link: what Atlas writes, Atlas
- * reads back. Here the unreadable part is not a parameter but the leading segment, and it is only
- * unreadable when no locale prefix stands in front of it, with a prefix the resolver removes the
- * prefix first and the route's own segments are read as the route's.
+ * its own serialization is refused rather than allowed to produce a link: what Equator writes,
+ * Equator reads back. Here the unreadable part is not a parameter but the leading segment, and it
+ * is only unreadable when no locale prefix stands in front of it, with a prefix the resolver
+ * removes the prefix first and the route's own segments are read as the route's.
  *
  * Called with the route's segments before encoding, because that is what the resolver compares:
  * it decodes before it reads the first segment.
@@ -1994,7 +1995,7 @@ function refuseClaimedAddress(refusal: {
 }): never {
   const { claimed, routeId, locale, segments } = refusal;
   return routeError(
-    `Route ${routeId} is addressed at ${JSON.stringify(`/${segments.join('/')}`)} in ${locale}, where this policy emits no locale prefix, and its leading segment ${JSON.stringify(segments[0] ?? '')} is this policy's ${claimed.kind} ${JSON.stringify(claimed.spelling)}. Atlas's own resolver reads that segment as the ${claimed.kind} and never reaches the route, so this is an address Atlas would emit and could not resolve. Rename the route's leading segment, or spell the ${claimed.kind} differently.`,
+    `Route ${routeId} is addressed at ${JSON.stringify(`/${segments.join('/')}`)} in ${locale}, where this policy emits no locale prefix, and its leading segment ${JSON.stringify(segments[0] ?? '')} is this policy's ${claimed.kind} ${JSON.stringify(claimed.spelling)}. Equator's own resolver reads that segment as the ${claimed.kind} and never reaches the route, so this is an address Equator would emit and could not resolve. Rename the route's leading segment, or spell the ${claimed.kind} differently.`,
   );
 }
 
@@ -2214,8 +2215,8 @@ function resolvePathPrefixRoute(
       // from the cache and never arrives here. `private` keeps a response from being stored. It
       // does not evict one already held.
       //
-      // `Vary` is not available as the alternative. Atlas never sees the request, the host reads
-      // the preference and passes a locale in, so Atlas cannot name the header that varied, and
+      // `Vary` is not available as the alternative. Equator never sees the request, the host reads
+      // the preference and passes a locale in, so Equator cannot name the header that varied, and
       // for a cookie-borne preference `private` is the right answer regardless.
       const cache = 'private-no-store' as const;
       if (preferred !== undefined && preferred !== policy.defaultLocale) {
@@ -2599,7 +2600,7 @@ function resolveHostRoute(
  *
  * So it is asserted once, at the boundary where the widened internal representation becomes the
  * public contract, rather than left for every consumer to assert at the join with
- * `buildLocalizedRoute`. That is the trade: one assertion inside Atlas, where the invariant is
+ * `buildLocalizedRoute`. That is the trade: one assertion inside Equator, where the invariant is
  * known, instead of one in each consumer, at the one place a mistyped route identity would
  * otherwise have been caught.
  *
@@ -2820,7 +2821,7 @@ function localizedRouteSegments(
       // another locale the parameter's value *is* that locale's slug, so parsing a declared
       // spelling yields a different value than the one this page was addressed with, and requiring
       // them to match would reject every correct declaration. What must still hold is the reason
-      // that check exists, Atlas has to be able to resolve the address it is about to emit, so
+      // that check exists, Equator has to be able to resolve the address it is about to emit, so
       // the declared spelling is required to parse, and required to be a safe segment.
       if (!safeParameterSegment(declared)) {
         return { ok: false, reason: 'unsafe', parameter: name };
@@ -2843,12 +2844,12 @@ function localizedRouteSegments(
     // This is the one property the whole design rests on and the only one a codec can quietly not
     // have. A locale change re-addresses the current page by parsing the address in its old locale
     // and serializing the parts in the new one, so a codec that writes a spelling it cannot read
-    // builds an address Atlas emits and then fails to resolve. Nothing about that looks wrong on
+    // builds an address Equator emits and then fails to resolve. Nothing about that looks wrong on
     // the way out: the URL is well formed, the segments are safe, the link renders. It fails when
     // someone follows it, as a page that quietly reverts to the default locale.
     //
     // Checked as text rather than by comparing values, because a codec may parse to anything
-    // (an object, a branded type) and Atlas has no equality to apply to it. Serializing what came
+    // (an object, a branded type) and Equator has no equality to apply to it. Serializing what came
     // back and comparing the two strings asks the same question without needing one.
     //
     // Paid on every URL build, which is the hot path, and worth it: the inbound direction already
@@ -2931,8 +2932,8 @@ export function defineRouteProjection<
 /**
  * One address a build should render ahead of time, in one locale.
  *
- * `renderMode` is whatever the caller put in: Atlas never imports `@angular/ssr` and has no
- * opinion about its enum. What Atlas contributes is the path, every supported locale's spelling
+ * `renderMode` is whatever the caller put in: Equator never imports `@angular/ssr` and has no
+ * opinion about its enum. What Equator contributes is the path, every supported locale's spelling
  * of a route it already knows, and, for a parameterised route, the parameter values serialized
  * through that locale's codecs.
  */
@@ -2944,7 +2945,7 @@ export interface LocalizedServerRoute<Mode> {
   /**
    * A mutable array, deliberately, and the property is `readonly` while the array is not.
    *
-   * This value is not Atlas's to protect: the caller hands it to `withRoutes`, whose declared
+   * This value is not Equator's to protect: the caller hands it to `withRoutes`, whose declared
    * shape is `getPrerenderParams: () => Promise<Record<string, string>[]>`. A `readonly` array is
    * not assignable to a mutable one, so declaring one here forces every consumer to write
    * `as ServerRoute[]` over the whole table: a cast that silences far more than the thing it was
@@ -2965,7 +2966,7 @@ export interface LocalizedServerRoute<Mode> {
  * the whole table: a cast wide enough to hide a genuine mistake in any of the entries under it.
  *
  * Distributing gives `LocalizedServerRoute<Prerender> | LocalizedServerRoute<Client> | ...`, and
- * each of those matches the corresponding `ServerRoute` member on its own. Atlas still imports
+ * each of those matches the corresponding `ServerRoute` member on its own. Equator still imports
  * nothing from `@angular/ssr` here; the shape is compatible rather than shared, which is what lets
  * this stay on the primary entry point under `specs/02-packages-and-platform.spec.md` section 6.
  */
@@ -3015,7 +3016,7 @@ export interface LocalizedServerRouteDeclaration<Mode, Projection = unknown> {
    * Domain parameter values to render ahead of time, written once.
    *
    * Serialized per locale through the route's codecs, so an article prerendered as
-   * `/en-us/articles/atlas-handbook` is prerendered as `/ar-eg/articles/دليل-أطلس` from the same
+   * `/en-us/articles/handbook` is prerendered as `/ar-eg/articles/دليل` from the same
    * entry. Writing the localized spellings by hand is the part nobody gets right, and getting it
    * wrong produces a page that exists in one language and 404s in the other.
    *
@@ -3039,9 +3040,9 @@ export interface LocalizedServerRoutesOptions<Mode> {
    * is redirected to their locale's spelling. Prerendered, it writes a file at an address no link
    * points to, in whatever locale that render happened to resolve.
    *
-   * Atlas emits these entries rather than leaving them to the consumer, because they are Atlas's
-   * addresses. A consumer never wrote `/second`; the two-layer table did. Left undeclared they
-   * fail the build, `@angular/ssr` errors on a client route no server route matches, and the
+   * Equator emits these entries rather than leaving them to the consumer, because they are
+   * Equator's addresses. A consumer never wrote `/second`; the two-layer table did. Left undeclared
+   * they fail the build, `@angular/ssr` errors on a client route no server route matches, and the
    * obvious way to answer that error is to declare them, at which point whether they prerender
    * becomes a decision made by someone who does not know the addresses exist.
    *
@@ -3112,7 +3113,7 @@ export function localizedServerRoutes<
     const route = routeById(projection, declaration.routeId);
     const parameterised = route.parameterNames.length > 0;
     // No check that a parameterised route supplies values. Whether one needs them depends on its
-    // render mode, and the render mode is the caller's enum: Atlas does not import
+    // render mode, and the render mode is the caller's enum: Equator does not import
     // `@angular/ssr` and cannot read meaning into a value it only passes through. A route that
     // needs enumerating and has nothing to enumerate is Angular's build error to report, in its
     // own words.
@@ -3205,7 +3206,7 @@ export function localizedServerRoutes<
   if (options.fallback !== undefined) {
     routes.push(Object.freeze({ path: '**', renderMode: options.fallback }));
   }
-  // Entries frozen, array not. The entries are Atlas's statement about each address and nothing
+  // Entries frozen, array not. The entries are Equator's statement about each address and nothing
   // downstream has cause to rewrite one. The array is the caller's: it was built for them, they
   // pass it to `withRoutes`, and `withRoutes` declares it mutable. Freezing something being
   // handed away is half of what made the consumer's cast unavoidable.
@@ -3278,7 +3279,7 @@ function prerenderParameters(
  * question. `buildLocalizedRoute` is being asked for an address and must refuse rather than hand
  * back one nothing can resolve. The address translators are being asked to rewrite a URL and must
  * decline rather than fail: they already hand an address they cannot place straight back, on the
- * stated ground that Atlas does not own every address in the application, and a route with no
+ * stated ground that Equator does not own every address in the application, and a route with no
  * address in the default locale is that same fact arriving from the builder instead of the
  * resolver. Making this throw would turn a request for `/ar-eg/ar-eg`, a page whose slug happens
  * to spell a locale prefix, into a crash on navigation, which is a URL deciding whether the
@@ -3327,8 +3328,8 @@ function localizedRouteAddress(
         `Route ${route.id} produced an unsafe parameter ${built.parameter}.`,
       );
     }
-    // A configuration failure, not an unavailable representation. The codec produced a spelling
-    // for this locale and then could not read it back, so the address would be one Atlas emits and
+    // A configuration failure, not an unavailable representation. The codec produced a spelling for
+    // this locale and then could not read it back, so the address would be one Equator emits and
     // cannot resolve. Refusing to build it is what keeps that from becoming a link.
     if (built.reason === 'unreadable') {
       routeError(
@@ -3364,7 +3365,8 @@ function localizedRouteAddress(
       segments: serialized,
     });
   }
-  if (query.length > 32) routeError('Route query state exceeds Atlas bounds.');
+  if (query.length > 32)
+    routeError('Route query state exceeds Equator bounds.');
   const queryText = query
     .map(
       ({ name, value }) =>
@@ -3372,7 +3374,7 @@ function localizedRouteAddress(
     )
     .join('&');
   if (fragment !== undefined && [...fragment].length > 512) {
-    routeError('Route fragment state exceeds Atlas bounds.');
+    routeError('Route fragment state exceeds Equator bounds.');
   }
   const routeText = encodedSegments(serialized);
   const suffix = `${queryText.length === 0 ? '' : `?${queryText}`}${fragment === undefined ? '' : `#${encodeURIComponent(fragment)}`}`;
@@ -3445,10 +3447,10 @@ export function buildLocalizedRoute<
  * own string from it.
  *
  * Keyed by the canonical locale, which is the spelling the generated configuration uses:
- * `canonicalizeAtlasLocale` runs `Intl.getCanonicalLocales` over every configured locale at build
+ * `canonicalizeLocale` runs `Intl.getCanonicalLocales` over every configured locale at build
  * time and `canonicalLocale` runs it again here, so a policy that spells a locale differently
  * still lands on the key its runtime speaks. A locale whose parameters have no spelling in that
- * locale is absent rather than approximated: an address Atlas cannot build is one it must not
+ * locale is absent rather than approximated: an address Equator cannot build is one it must not
  * publish, which is the same rule the alternates are filtered by.
  *
  * The visitor's query and fragment are carried, because this is the address the switch moves to and
@@ -3492,7 +3494,7 @@ export function localizedRouteAddresses(
 /**
  * Whether arriving at this address, with no preference stated, actually yields this locale.
  *
- * Two things Atlas publishes are the same public claim: an `hreflang` alternate tells a crawler
+ * Two things Equator publishes are the same public claim: an `hreflang` alternate tells a crawler
  * that this URL serves that language, and a switcher option's `href` tells a reader that following
  * it takes them there. Both are only true if the address *selects* the locale on its own, with no
  * cookie, no `Accept-Language`, no session. So both are decided here, by asking the resolver what a
@@ -3764,7 +3766,7 @@ function sitemapEntryXml(entry: SitemapEntry): string {
  * A parameterised route with no values contributes nothing, because a sitemap lists pages and a
  * pattern is not one. That is silent rather than an error for the same reason the render table
  * leaves it to Angular: whether a route needs enumerating is a property of how it is rendered,
- * which Atlas does not read.
+ * which Equator does not read.
  */
 export interface SitemapRouteDeclaration {
   /** One of the identities the projection declares. */
@@ -3842,14 +3844,14 @@ export interface SitemapProjectionOptions {
  * into numbered files beside it, so the address the application published does not change when the
  * site grows past a limit.
  *
- * **This returns files rather than writing them, and that is the layering rather than a choice.**
- * A sitemap is a list of addresses, and an address does not exist until six things do: the locale
- * URL policy, the route projection, the parameter codecs, the parameter values that turn a pattern
- * into pages, the origin this build answers at, and the mount point it is served under. All six are
- * values the application holds when it runs. `atlas generate` reads source text and cannot see any
- * of them, so a generator writing files at build time could be right only for a site with no
+ * **This returns files rather than writing them, and that is the layering rather than a choice.** A
+ * sitemap is a list of addresses, and an address does not exist until six things do: the locale URL
+ * policy, the route projection, the parameter codecs, the parameter values that turn a pattern into
+ * pages, the origin this build answers at, and the mount point it is served under. All six are
+ * values the application holds when it runs. `equator generate` reads source text and cannot see
+ * any of them, so a generator writing files at build time could be right only for a site with no
  * localized paths and no parameterized indexable pages, and would be quietly wrong for every other
- * one. So Atlas supplies the projection and the validation and the application supplies the
+ * one. So Equator supplies the projection and the validation and the application supplies the
  * delivery, which is section 10 as written: where the files are written, how they are served, and
  * the `Sitemap:` line in `robots.txt` are the application's.
  */
@@ -4117,7 +4119,7 @@ export function routeHttpDescriptor(
  *   toExternalPath()  canonical internal -> localized external
  *   toInternalPath()  localized external -> canonical internal
  *
- * Mirror images of the same pair of Atlas calls: `resolveLocalizedRoute` reads an address into a
+ * Mirror images of the same pair of Equator calls: `resolveLocalizedRoute` reads an address into a
  * route identity and its parameters, `buildLocalizedRoute` writes that pair back out in whichever
  * locale the direction wants. Outbound wants the active locale. Inbound wants the default one,
  * because the internal address is by definition the one the authored route table matches.
@@ -4244,10 +4246,10 @@ function basePathPrefix(baseHref: string): string {
  * The address without the sub-path the application is deployed under.
  *
  * An application served at `https://example.com/app` sees `/app/ar-eg/second` in every address the
- * browser hands it, and `/app` is not part of any address Atlas knows: the policy addresses routes
- * from the application's own root. So the base path comes off before anything reads a locale out of
- * an address, and `withBasePath` puts it back before one reaches the browser. Every caller that
- * does one owes the other.
+ * browser hands it, and `/app` is not part of any address Equator knows: the policy addresses
+ * routes from the application's own root. So the base path comes off before anything reads a locale
+ * out of an address, and `withBasePath` puts it back before one reaches the browser. Every caller
+ * that does one owes the other.
  *
  * **Both directions are needed in two places, which is why this is one function rather than a line
  * in each.** The `LocationStrategy` strips it to delocalize and restores it to write; locale
@@ -4311,8 +4313,8 @@ export function withBasePath(address: string, baseHref: string): string {
  * its parameters, then written out again in the default locale, which is what the route table was
  * authored in. Query and fragment are carried through.
  *
- * An address Atlas cannot place is returned unchanged, so an application's own catch-all route and
- * any locale-neutral root still answer for it.
+ * An address Equator cannot place is returned unchanged, so an application's own catch-all route
+ * and any locale-neutral root still answer for it.
  */
 export function toInternalPath(
   external: string,
@@ -4326,9 +4328,9 @@ export function toInternalPath(
     policy,
     projection,
   );
-  // An address Atlas cannot place is handed back untouched, so the application's own `**` route
+  // An address Equator cannot place is handed back untouched, so the application's own `**` route
   // and any locale-neutral root still answer for it. Declining is the correct outcome here, not a
-  // failure: Atlas does not own every address in the application.
+  // failure: Equator does not own every address in the application.
   if (resolution.status !== 'success') return external;
   // A route with no address in the default locale has no internal address either, and that is a
   // request the visitor can cause: a slug spelling a locale prefix reaches here from the URL bar.

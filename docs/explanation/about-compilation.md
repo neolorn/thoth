@@ -1,18 +1,19 @@
 # About compilation and generated contracts
 
-Atlas compiles catalogs instead of looking messages up at runtime. The output is TypeScript your
+Equator compiles catalogs instead of looking messages up at runtime. The output is TypeScript your
 application imports, and the properties that follow from that decision run through the rest of the
 system.
 
 ## What the two commands own
 
-`atlas init` writes `atlas.config.json`, maps `#i18n` in `package.json`, creates `i18n/`, and adds
-the `atlas:generate`, `atlas:check`, `atlas:format`, `atlas:clean` and `atlas:watch` scripts. It
-stops on anything that would conflict rather than overwriting it, so running it in a project that
-already has an `i18n/` directory reports what it found.
+`equator init` writes `equator.config.json`, maps `#i18n` in `package.json`, creates `i18n/`, and
+adds the `equator:generate`, `equator:check`, `equator:format`, `equator:clean` and `equator:watch`
+scripts. It stops on anything that would conflict rather than overwriting it, so running it in a
+project that already has an `i18n/` directory reports what it found.
 
-`atlas generate` compiles the catalogs and writes the `#i18n` modules. Those modules are output: they
-are not checked in, they carry an ownership marker, and `atlas clean` removes them and nothing else.
+`equator generate` compiles the catalogs and writes the `#i18n` modules. Those modules are output:
+they are not checked in, they carry an ownership marker, and `equator clean` removes them and
+nothing else.
 
 Three of them are worth knowing by name.
 
@@ -69,9 +70,9 @@ Generated output that no longer matches its sources still compiles, and renders 
 generated from. The type system does not catch it, because the stale module is internally
 consistent.
 
-`atlas check --require-fresh` is what catches it, and it belongs where your build runs `generate`. A
-translation written against a source message that has since changed is the same failure one level up,
-reported by `--require-complete` as one of the four ways a locale is not finished.
+`equator check --require-fresh` is what catches it, and it belongs where your build runs `generate`.
+A translation written against a source message that has since changed is the same failure one level
+up, reported by `--require-complete` as one of the four ways a locale is not finished.
 
 ## Artifact verification
 

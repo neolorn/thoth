@@ -5,7 +5,7 @@ import {
   Localization,
   provideLocalizationSetup,
   withFormattingContext,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -13,7 +13,7 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 import { messages } from '#i18n/shell';
 
 import { appFormattingContext } from './app.config';
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
  * Does the formatting context this application declares reach rendered output?
@@ -50,7 +50,7 @@ function setup(): Localization {
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
         },
         // The application's own object, not a copy of its values. A copy would keep passing after
         // someone edited the declaration, which is the failure this spec exists to prevent.

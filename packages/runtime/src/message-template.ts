@@ -30,7 +30,7 @@ import {
   type MessageInputArguments,
   type MessageInputs,
   type MessageSlots,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 import { Localization } from './localization';
 
 function requireBindings(
@@ -97,7 +97,7 @@ function requireBindings(
               supplied the value, which for an interpolated value is always the message's own, so
               binding it here told the browser what it already knew and left an Arabic name in an
               English message marked left-to-right. contentDirection carries u:dir when the author
-              wrote one, and auto when Atlas defers, which is what bdi does by default.
+              wrote one, and auto when Equator defers, which is what bdi does by default.
               MessageFormat 2's u:id is on the part and deliberately not bound to the DOM: an id
               attribute must be unique in a document, and a message rendered twice would produce
               two of them.

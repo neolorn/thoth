@@ -5,8 +5,8 @@ import { resolve } from 'node:path';
 import ts from 'typescript';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { analyzeAtlasApplication } from '../src/static-analysis.js';
-import type { AtlasDiagnostic, AtlasRouteProjection } from '../src/index.js';
+import { analyzeApplication } from '../src/static-analysis.js';
+import type { ToolkitDiagnostic, RouteProjection } from '../src/index.js';
 
 /**
  * What a route is called, and whether that name can be relied on.
@@ -56,41 +56,41 @@ const ROUTER_MANIFEST = `${JSON.stringify(
 )}
 `;
 
-// A stub of the Atlas package. `withRouting` is recognized the same way every other Atlas symbol
-// is: the symbol is resolved and its declaration is required to come from inside @neolorn/atlas,
-// so a consumer's own function of the same name configures nothing.
-const ATLAS_STUB =
+// A stub of the Equator package. `withRouting` is recognized the same way every other Equator
+// symbol is: the symbol is resolved and its declaration is required to come from inside
+// @neolorn/equator, so a consumer's own function of the same name configures nothing.
+const STUB =
   'export declare function withRouting(options: unknown): unknown;\n';
 
-const ATLAS_MANIFEST = `${JSON.stringify(
-  { name: '@neolorn/atlas', version: '0.0.0', types: './index.d.ts' },
+const MANIFEST = `${JSON.stringify(
+  { name: '@neolorn/equator', version: '0.0.0', types: './index.d.ts' },
   null,
   2,
 )}
 `;
 
 interface Analysed {
-  readonly routes: readonly AtlasRouteProjection[];
-  readonly diagnostics: readonly AtlasDiagnostic[];
+  readonly routes: readonly RouteProjection[];
+  readonly diagnostics: readonly ToolkitDiagnostic[];
   readonly deferredSourcePaths: readonly string[];
 }
 
 async function analyse(
   files: Readonly<Record<string, string>>,
 ): Promise<Analysed> {
-  const root = await mkdtemp(resolve(tmpdir(), 'atlas-route-id-'));
+  const root = await mkdtemp(resolve(tmpdir(), 'route-id-'));
   temporaryRoots.push(root);
   const all = {
     'node_modules/@angular/router/index.d.ts': ROUTER_STUB,
     'node_modules/@angular/router/package.json': ROUTER_MANIFEST,
-    'node_modules/@neolorn/atlas/index.d.ts': ATLAS_STUB,
-    'node_modules/@neolorn/atlas/package.json': ATLAS_MANIFEST,
+    'node_modules/@neolorn/equator/index.d.ts': STUB,
+    'node_modules/@neolorn/equator/package.json': MANIFEST,
     ...files,
   };
   for (const [path, contents] of Object.entries(all)) {
     await write(root, path, contents);
   }
-  const analysis = analyzeAtlasApplication({
+  const analysis = analyzeApplication({
     projectRoot: root,
     rootNames: Object.keys(all).map((path) => resolve(root, path)),
     compilerOptions: {
@@ -135,11 +135,11 @@ function childRouteApplication(): Readonly<Record<string, string>> {
 
 async function analyseFailure(
   files: Readonly<Record<string, string>>,
-): Promise<readonly AtlasDiagnostic[]> {
+): Promise<readonly ToolkitDiagnostic[]> {
   try {
     await analyse(files);
   } catch (error) {
-    return (error as { readonly diagnostics: readonly AtlasDiagnostic[] })
+    return (error as { readonly diagnostics: readonly ToolkitDiagnostic[] })
       .diagnostics;
   }
   throw new Error('the analysis was expected to fail');
@@ -175,7 +175,7 @@ function classes(analysed: Analysed): Readonly<Record<string, string>> {
 function routingProvider(indexing: string): Record<string, string> {
   return {
     'src/app.config.ts': [
-      "import { withRouting } from '@neolorn/atlas';",
+      "import { withRouting } from '@neolorn/equator';",
       '',
       `export const routing = withRouting({ indexing: ${indexing} });`,
       '',
@@ -187,7 +187,7 @@ function routingProvider(indexing: string): Record<string, string> {
 function routingOptions(options: string): Record<string, string> {
   return {
     'src/app.config.ts': [
-      "import { withRouting } from '@neolorn/atlas';",
+      "import { withRouting } from '@neolorn/equator';",
       '',
       `export const routing = withRouting({ ${options} });`,
       '',
@@ -197,7 +197,7 @@ function routingOptions(options: string): Record<string, string> {
 
 function claims(
   analysed: Analysed,
-): Readonly<Record<string, AtlasRouteProjection['sitemap']>> {
+): Readonly<Record<string, RouteProjection['sitemap']>> {
   return Object.fromEntries(
     analysed.routes.map((route) => [route.id, route.sitemap]),
   );
@@ -218,7 +218,7 @@ afterEach(async () => {
 /**
  * Which routes are indexable.
  *
- * Atlas must not read a field name belonging to a particular consumer, so the field is named by
+ * Equator must not read a field name belonging to a particular consumer, so the field is named by
  * the consumer through `withRouting()` and read out of that call's source text when the owner is
  * compiled. Routes default to indexable: an application marks its exceptions rather than
  * annotating every route it has.
@@ -235,7 +235,7 @@ describe('route indexing', () => {
   it('reads its own field when the consumer names none', async () => {
     const analysed = await analyse(
       routeFile(
-        "[{ path: 'admin', data: { atlasIndexing: 'private' }, component: Page }, { path: 'draft', data: { atlasIndexing: 'non-indexable' }, component: Page }]",
+        "[{ path: 'admin', data: { equatorIndexing: 'private' }, component: Page }, { path: 'draft', data: { equatorIndexing: 'non-indexable' }, component: Page }]",
       ),
     );
 
@@ -246,7 +246,7 @@ describe('route indexing', () => {
   });
 
   it("reads the consumer's own field when one is named", async () => {
-    // The point of the option. A project that already classifies its routes points Atlas at the
+    // The point of the option. A project that already classifies its routes points Equator at the
     // field it already has, in its own vocabulary, and writes nothing new on any route.
     const analysed = await analyse({
       ...routingProvider(
@@ -267,21 +267,21 @@ describe('route indexing', () => {
 
   it('stops reading its own field once the consumer names one', async () => {
     // Two fields would mean two answers. Naming a field replaces the default rather than adding to
-    // it, so `atlasIndexing` left behind by an earlier setup cannot quietly override the field the
-    // application actually classifies by.
+    // it, so `equatorIndexing` left behind by an earlier setup cannot quietly override the field
+    // the application actually classifies by.
     const analysed = await analyse({
       ...routingProvider(
         "{ field: 'routeClass', values: { hidden: 'private' } }",
       ),
       ...routeFile(
-        "[{ path: 'admin', data: { atlasIndexing: 'private' }, component: Page }]",
+        "[{ path: 'admin', data: { equatorIndexing: 'private' }, component: Page }]",
       ),
     });
 
     expect(classes(analysed)).toEqual({ 'route:admin': 'indexable' });
   });
 
-  it('ignores a withRouting that is not the one Atlas exports', async () => {
+  it('ignores a withRouting that is not the one Equator exports', async () => {
     const analysed = await analyse({
       'src/app.config.ts': [
         'function withRouting(options: unknown): unknown {',
@@ -363,14 +363,15 @@ describe('route identity', () => {
   });
 
   it('refuses a route with an address and nothing to render it', async () => {
-    // Angular's own rule, and the reason Atlas has to restate it: `validateNode` throws on a route
-    // carrying none of `component`, `loadComponent`, `redirectTo`, `children` or `loadChildren`,
-    // but both of its call sites sit inside `if (typeof ngDevMode === 'undefined' || ngDevMode)`.
-    // A production build validates no route config at all, so such a route ships and surfaces only
-    // for whoever next runs a development build. Atlas reads the same table before either build.
+    // Angular's own rule, and the reason Equator has to restate it: `validateNode` throws on a
+    // route carrying none of `component`, `loadComponent`, `redirectTo`, `children` or
+    // `loadChildren`, but both of its call sites sit inside
+    // `if (typeof ngDevMode === 'undefined' || ngDevMode)`. A production build validates no route
+    // config at all, so such a route ships and surfaces only for whoever next runs a development
+    // build. Equator reads the same table before either build.
     const failure = await analyseFailure(routeFile("[{ path: 'orders' }]"));
 
-    const unrenderable = failure.filter(({ code }) => code === 'ATL1405');
+    const unrenderable = failure.filter(({ code }) => code === 'EQ1405');
     expect(unrenderable).toHaveLength(1);
     expect(unrenderable[0]?.severity).toBe('error');
     expect(unrenderable[0]?.summary).toContain('/orders');
@@ -386,7 +387,7 @@ describe('route identity', () => {
     );
 
     expect(
-      analysed.diagnostics.filter(({ code }) => code === 'ATL1405'),
+      analysed.diagnostics.filter(({ code }) => code === 'EQ1405'),
     ).toEqual([]);
   });
 
@@ -418,7 +419,7 @@ describe('route identity', () => {
     expect(analysed.deferredSourcePaths).toContain('src/admin.ts');
 
     const uncovered = analysed.diagnostics.filter(
-      ({ code }) => code === 'ATL1406',
+      ({ code }) => code === 'EQ1406',
     );
     expect(uncovered).toHaveLength(1);
     expect(uncovered[0]?.severity).toBe('warning');
@@ -432,7 +433,7 @@ describe('route identity', () => {
     const analysed = await analyse(childRouteApplication());
 
     const uncovered = analysed.diagnostics.filter(
-      ({ code }) => code === 'ATL1406',
+      ({ code }) => code === 'EQ1406',
     );
     expect(uncovered).toHaveLength(1);
     expect(uncovered[0]?.summary).toContain('/section');
@@ -477,7 +478,7 @@ describe('route identity', () => {
     expect(identities(analysed)).toEqual([]);
 
     const collision = analysed.diagnostics.filter(
-      ({ code }) => code === 'ATL1404',
+      ({ code }) => code === 'EQ1404',
     );
     expect(collision).toHaveLength(1);
     expect(collision[0]?.severity).toBe('warning');
@@ -492,15 +493,15 @@ describe('route identity', () => {
 
     expect(identities(analysed)).toEqual([]);
     expect(
-      analysed.diagnostics.filter(({ code }) => code === 'ATL1404'),
+      analysed.diagnostics.filter(({ code }) => code === 'EQ1404'),
     ).toHaveLength(1);
-    expect(analysed.diagnostics[0]?.summary).toContain('atlasRouteId');
+    expect(analysed.diagnostics[0]?.summary).toContain('equatorRouteId');
   });
 
-  it('lets a declared identity name what Atlas could not', async () => {
+  it('lets a declared identity name what Equator could not', async () => {
     const analysed = await analyse(
       routeFile(
-        "[{ path: 'الطلبات', data: { atlasRouteId: 'route:orders' }, component: Page }]",
+        "[{ path: 'الطلبات', data: { equatorRouteId: 'route:orders' }, component: Page }]",
       ),
     );
 
@@ -513,13 +514,13 @@ describe('route identity', () => {
     // that fails there should fail here, where there is a file and a line to point at.
     const analysed = await analyse(
       routeFile(
-        "[{ path: 'orders', data: { atlasRouteId: 'has spaces' }, component: Page }]",
+        "[{ path: 'orders', data: { equatorRouteId: 'has spaces' }, component: Page }]",
       ),
     );
 
     expect(identities(analysed)).toEqual([]);
     expect(
-      analysed.diagnostics.filter(({ code }) => code === 'ATL1404'),
+      analysed.diagnostics.filter(({ code }) => code === 'EQ1404'),
     ).toHaveLength(1);
   });
 
@@ -527,7 +528,7 @@ describe('route identity', () => {
     // The index child renders the page, so its route data is the more specific statement about it.
     const analysed = await analyse(
       routeFile(
-        "[{ path: 'admin', children: [{ path: '', data: { atlasRouteId: 'route:dashboard' }, component: Page }] }]",
+        "[{ path: 'admin', children: [{ path: '', data: { equatorRouteId: 'route:dashboard' }, component: Page }] }]",
       ),
     );
 
@@ -547,7 +548,7 @@ describe('route identity', () => {
 
     expect(identities(analysed)).toEqual([]);
     expect(
-      analysed.diagnostics.filter(({ code }) => code === 'ATL1404'),
+      analysed.diagnostics.filter(({ code }) => code === 'EQ1404'),
     ).toHaveLength(1);
   });
 });
@@ -555,11 +556,11 @@ describe('route identity', () => {
 /**
  * What a route claims about itself in a sitemap.
  *
- * The same shape as the indexing declaration above and for the same reason: Atlas reads a field
+ * The same shape as the indexing declaration above and for the same reason: Equator reads a field
  * name it was given rather than one of its own invention, from source text, because it does not
- * execute consumer code. What differs is that there is no Atlas default field. A route that claims
- * nothing is published with its address and its alternates, which is a complete entry, where a
- * route with no indexing class has to be sorted into one.
+ * execute consumer code. What differs is that there is no Equator default field. A route that
+ * claims nothing is published with its address and its alternates, which is a complete entry, where
+ * a route with no indexing class has to be sorted into one.
  *
  * The refusals here are refusals rather than omissions. `changefreq` is a closed enumeration and
  * `priority` is bounded, both in the schema, so a value outside either produces a document a
@@ -617,7 +618,7 @@ describe('route sitemap claims', () => {
         "sitemap: { field: 'section', lastmodField: 'updated' }",
       ),
     });
-    expect(codes(analysed)).toContain('ATL1412');
+    expect(codes(analysed)).toContain('EQ1412');
     expect(claims(analysed)).toEqual({ 'route:news': undefined });
   });
 
@@ -630,7 +631,7 @@ describe('route sitemap claims', () => {
         "sitemap: { field: 'section', values: { editorial: { changefreq: 'fortnightly' } } }",
       ),
     });
-    expect(codes(analysed)).toContain('ATL1412');
+    expect(codes(analysed)).toContain('EQ1412');
     expect(claims(analysed)).toEqual({ 'route:news': undefined });
   });
 
@@ -643,7 +644,7 @@ describe('route sitemap claims', () => {
         "sitemap: { field: 'section', values: { editorial: { changefreq: 'daily', priority: 1.5 } } }",
       ),
     });
-    expect(codes(analysed)).toContain('ATL1412');
+    expect(codes(analysed)).toContain('EQ1412');
     // The bad half is refused and the good half stands. An entry with a changefreq and no priority
     // is a valid entry, so throwing the class away would lose something the consumer got right.
     expect(claims(analysed)).toEqual({ 'route:news': { changefreq: 'daily' } });
@@ -655,14 +656,14 @@ describe('route sitemap claims', () => {
         "[{ path: 'news', component: Page, data: { section: 'editorial' } }]",
       ),
       'src/app.config.ts': [
-        "import { withRouting } from '@neolorn/atlas';",
+        "import { withRouting } from '@neolorn/equator';",
         '',
         "export const routing = withRouting({ sitemap: { field: 'section', values: { editorial: { priority: 0.9 } } } });",
         "export const other = withRouting({ sitemap: { field: 'kind', values: { editorial: { priority: 0.1 } } } });",
         '',
       ].join('\n'),
     });
-    expect(codes(analysed)).toContain('ATL1412');
+    expect(codes(analysed)).toContain('EQ1412');
     expect(claims(analysed)).toEqual({ 'route:news': { priority: 0.9 } });
   });
 });

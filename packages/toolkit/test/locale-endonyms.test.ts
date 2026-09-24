@@ -4,18 +4,18 @@ import { resolve } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { ATLAS_LOCALE_ENDONYMS } from '../src/endonyms.generated.js';
-import { generateAtlasProject } from '../src/index.js';
-import { atlasLocaleEndonym } from '../src/locales.js';
+import { LOCALE_ENDONYMS } from '../src/endonyms.generated.js';
+import { generateProject } from '../src/index.js';
+import { localeEndonym } from '../src/locales.js';
 
 /**
  * A locale's own name, decided by the build rather than by the visitor's browser.
  *
  * `selfName` was `new Intl.DisplayNames([locale], { type: 'language' }).of(locale)`, read wherever
- * the switcher happened to render. Measured over sixteen locales on the four engines Atlas gates
+ * the switcher happened to render. Measured over sixteen locales on the four engines Equator gates
  * on, three disagreed: WebKit 26.5 title-cases the language name, and Chromium 149 prints the
- * untranslated variant subtag as `VALENCIA`. Atlas server-renders the switcher on Node, so the
- * label could change under a WebKit visitor on hydration: from a string Atlas itself had sent.
+ * untranslated variant subtag as `VALENCIA`. Equator server-renders the switcher on Node, so the
+ * label could change under a WebKit visitor on hydration: from a string Equator itself had sent.
  *
  * This is the channel from the pinned CLDR release to the generated module. Whether the rendered
  * switcher agrees with the server is a claim about the composed application and is asserted in the
@@ -35,7 +35,7 @@ async function write(
 }
 
 async function project(locales: readonly string[]): Promise<string> {
-  const root = await mkdtemp(resolve(tmpdir(), 'atlas-endonyms-'));
+  const root = await mkdtemp(resolve(tmpdir(), 'endonyms-'));
   temporaryRoots.push(root);
 
   await write(
@@ -57,7 +57,7 @@ async function project(locales: readonly string[]): Promise<string> {
   );
   await write(
     root,
-    'atlas.config.json',
+    'equator.config.json',
     `${JSON.stringify(
       {
         schemaVersion: 1,
@@ -110,7 +110,7 @@ async function project(locales: readonly string[]): Promise<string> {
 
 async function generatedIndex(locales: readonly string[]): Promise<string> {
   const root = await project(locales);
-  const result = await generateAtlasProject({ project: root });
+  const result = await generateProject({ project: root });
   const blocking = result.diagnostics.filter(
     ({ severity }) => severity === 'error',
   );
@@ -132,34 +132,28 @@ describe('a locale is named by the pinned release', () => {
    * 48's own answers: lowercase where CLDR is lowercase, and the `valencia` subtag translated.
    */
   it('answers the three locales the engines disagreed about', () => {
-    expect(atlasLocaleEndonym('pt-BR')).toBe('português (Brasil)');
-    expect(atlasLocaleEndonym('es-419')).toBe('español latinoamericano');
-    expect(atlasLocaleEndonym('ca-ES-valencia')).toBe(
-      'català (Espanya, valencià)',
-    );
+    expect(localeEndonym('pt-BR')).toBe('português (Brasil)');
+    expect(localeEndonym('es-419')).toBe('español latinoamericano');
+    expect(localeEndonym('ca-ES-valencia')).toBe('català (Espanya, valencià)');
   });
 
   it('names both pseudo-locales, which are locales a developer sees in a switcher', () => {
-    expect(atlasLocaleEndonym('en-Latn-XA')).toBe(
-      'English (Latin, Pseudo-Accents)',
-    );
-    expect(atlasLocaleEndonym('en-Arab-XB')).toBe(
-      'English (Arabic, Pseudo-Bidi)',
-    );
+    expect(localeEndonym('en-Latn-XA')).toBe('English (Latin, Pseudo-Accents)');
+    expect(localeEndonym('en-Arab-XB')).toBe('English (Arabic, Pseudo-Bidi)');
   });
 
   /*
    * A tag CLDR does not list is answered by the locale above it rather than by a name assembled
-   * out of subtags Atlas has no words for. Composing is what produces `VALENCIA`.
+   * out of subtags Equator has no words for. Composing is what produces `VALENCIA`.
    *
    * `de-CH` is the example worth having, because CLDR does not compose it either: it is not
    * "Deutsch (Schweiz)" but a name of its own, which is exactly the kind of thing a table knows
    * and an assembly rule does not.
    */
   it('answers an unlisted tag with its parent, not with an invented name', () => {
-    expect(ATLAS_LOCALE_ENDONYMS['de-CH-1901']).toBeUndefined();
-    expect(atlasLocaleEndonym('de-CH')).toBe('Schweizer Hochdeutsch');
-    expect(atlasLocaleEndonym('de-CH-1901')).toBe('Schweizer Hochdeutsch');
+    expect(LOCALE_ENDONYMS['de-CH-1901']).toBeUndefined();
+    expect(localeEndonym('de-CH')).toBe('Schweizer Hochdeutsch');
+    expect(localeEndonym('de-CH-1901')).toBe('Schweizer Hochdeutsch');
   });
 
   /*
@@ -168,9 +162,9 @@ describe('a locale is named by the pinned release', () => {
    * name in the wrong language beats a raw tag.
    */
   it('says it has no name rather than inventing one', () => {
-    expect(atlasLocaleEndonym('aa')).toBeUndefined();
-    expect(atlasLocaleEndonym('aa-DJ')).toBeUndefined();
-    expect(atlasLocaleEndonym('qaa-x-private')).toBeUndefined();
+    expect(localeEndonym('aa')).toBeUndefined();
+    expect(localeEndonym('aa-DJ')).toBeUndefined();
+    expect(localeEndonym('qaa-x-private')).toBeUndefined();
   });
 });
 

@@ -1,5 +1,5 @@
 {
-  "name": "@neolorn/atlas-workspace",
+  "name": "@neolorn/equator-workspace",
   "version": "1.3.0-rc.2",
   "private": true,
   "type": "module",
@@ -11,8 +11,8 @@
   "scripts": {
     "clean": "node ./tools/clean.mjs",
     "build": "pnpm run clean dist && pnpm run build:runtime && pnpm run build:toolkit",
-    "build:runtime": "pnpm --filter @neolorn/atlas build",
-    "build:toolkit": "pnpm --filter @neolorn/atlas-toolkit build",
+    "build:runtime": "pnpm --filter @neolorn/equator build",
+    "build:toolkit": "pnpm --filter @neolorn/equator-toolkit build",
     "generate:locale-profile": "node ./tools/generate-locale-profile.mjs",
     "generate:person-names": "node ./tools/generate-person-names.mjs",
     "generate:cli-options": "node ./tools/generate-cli-options.mjs",

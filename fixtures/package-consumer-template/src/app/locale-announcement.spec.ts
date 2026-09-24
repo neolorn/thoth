@@ -18,15 +18,15 @@ import {
   provideLocalizationSetup,
   withLocaleAnnouncement,
   type LocalizationSnapshot,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
-const ANNOUNCER = '[data-atlas-announcer]';
+const ANNOUNCER = '[data-equator-announcer]';
 
 const announced = () =>
   document.querySelector(ANNOUNCER)?.textContent ?? undefined;
@@ -49,7 +49,7 @@ function setup(
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
         },
         ...(format === undefined ? [] : [withLocaleAnnouncement(format)]),
       ),

@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import { TestBed } from '@angular/core/testing';
 import { NavigationEnd, Router, TitleStrategy } from '@angular/router';
-import { Localization, withRouting } from '@neolorn/atlas';
+import { Localization, withRouting } from '@neolorn/equator';
 import {
   LocalizedTitleStrategy,
   provideLocalizedRouter,
-} from '@neolorn/atlas/router';
-import { provideLocalizationTesting } from '@neolorn/atlas/testing';
+} from '@neolorn/equator/router';
+import { provideLocalizationTesting } from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -15,34 +15,34 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
 
 import { routes } from './app.routes';
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
 /**
  * Who writes `document.title` last, in both of the configurations an application can be in.
  *
  * Angular emits `NavigationEnd` and then calls `titleStrategy.updateTitle(...)` synchronously in
- * the same `tap` (`@angular/router` 22.1.3, `_router-chunk.mjs:3964-3965`). Atlas writes the title
- * during route resolution, before activation, so Angular's strategy always writes afterwards.
+ * the same `tap` (`@angular/router` 22.1.3, `_router-chunk.mjs:3964-3965`). Equator writes the
+ * title during route resolution, before activation, so Angular's strategy always writes afterwards.
  * `DefaultTitleStrategy` writes whenever the route tree declares a title (`:3403-3407`), and
  * `app.routes.ts` declares one, in English, on `second`.
  *
- * So the failure this file is written against is not "Atlas's provider is missing". It is "another
- * string replaced the localized title and nothing said so", and every assertion here reads the
- * document rather than the injector for that reason: a check on
+ * So the failure this file is written against is not "Equator's provider is missing". It is
+ * "another string replaced the localized title and nothing said so", and every assertion here reads
+ * the document rather than the injector for that reason: a check on
  * `inject(TitleStrategy) instanceof LocalizedTitleStrategy` is green for a strategy that is
- * installed and does the wrong thing. What Atlas *reports* about the token is the other file,
+ * installed and does the wrong thing. What Equator *reports* about the token is the other file,
  * `localized-router-diagnostics.spec.ts`.
  */
 
-/** What Atlas projects, per locale. Both differ from the route's declared title. */
-const ATLAS_TITLE_EN = 'Atlas feature lab';
-const ATLAS_TITLE_AR = 'مختبر ميزات Atlas';
+/** What Equator projects, per locale. Both differ from the route's declared title. */
+const TITLE_EN = 'Equator feature lab';
+const TITLE_AR = 'مختبر ميزات Equator';
 const DECLARED_TITLE = 'Second route, declared in English';
 
 const OPTIONS = {
   document: ({ resolution }: { resolution: { locale: string } }) => ({
-    title: resolution.locale === 'ar-EG' ? ATLAS_TITLE_AR : ATLAS_TITLE_EN,
+    title: resolution.locale === 'ar-EG' ? TITLE_AR : TITLE_EN,
   }),
 } as const;
 
@@ -71,7 +71,7 @@ async function bootstrap(
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
           routeProjection,
         },
         withRouting({ policy: routePolicy, projection: appRouteProjection }),
@@ -89,7 +89,7 @@ async function bootstrap(
   //
   // `RouteLocalization` subscribes to `router.events` in its constructor, and nothing constructs it
   // until the first navigation's resolver injects it. So on a first navigation a subscriber added
-  // here is registered *before* Atlas's and runs before it, and the reading below would be the
+  // here is registered *before* Equator's and runs before it, and the reading below would be the
   // order this test happened to subscribe in rather than the order the application runs in.
   // Measured: without this line the title reads as empty at `NavigationEnd` in every
   // configuration, which says nothing about who wrote it.
@@ -98,7 +98,7 @@ async function bootstrap(
   // Read at two points, because which one is read is the difference between seeing this defect and
   // not. A subscriber to `NavigationEnd` runs *before* `updateTitle`: Angular emits the event and
   // calls the strategy in that order inside one `tap`, so at that instant the title is still the
-  // one Atlas wrote, in every configuration.
+  // one Equator wrote, in every configuration.
   let atNavigationEnd = '';
   const subscription = router.events.subscribe((event) => {
     if (event instanceof NavigationEnd) atNavigationEnd = document.title;
@@ -112,15 +112,15 @@ async function bootstrap(
 }
 
 describe('who writes the document title after a navigation', () => {
-  it('keeps the projected title when Atlas’s strategy is installed', async () => {
+  it('keeps the projected title when Equator’s strategy is installed', async () => {
     const { afterNavigation } = await bootstrap('installed');
-    expect(afterNavigation).toBe(ATLAS_TITLE_EN);
+    expect(afterNavigation).toBe(TITLE_EN);
     expect(afterNavigation).not.toBe(DECLARED_TITLE);
   });
 
   it('loses the projected title to the declared one when the line is omitted', async () => {
     // The defect, observed rather than inferred. Not "the provider is missing": the page is
-    // serving the route's hardcoded string in place of the one Atlas resolved for this locale.
+    // serving the route's hardcoded string in place of the one Equator resolved for this locale.
     const { afterNavigation } = await bootstrap('omitted');
     expect(afterNavigation).toBe(DECLARED_TITLE);
   });
@@ -131,12 +131,12 @@ describe('who writes the document title after a navigation', () => {
     // `NavigationEnd` handler is green for the omitted case: a check that exists and proves
     // nothing.
     const omitted = await bootstrap('omitted');
-    expect(omitted.atNavigationEnd).toBe(ATLAS_TITLE_EN);
+    expect(omitted.atNavigationEnd).toBe(TITLE_EN);
     expect(omitted.afterNavigation).toBe(DECLARED_TITLE);
 
     const installed = await bootstrap('installed');
-    expect(installed.atNavigationEnd).toBe(ATLAS_TITLE_EN);
-    expect(installed.afterNavigation).toBe(ATLAS_TITLE_EN);
+    expect(installed.atNavigationEnd).toBe(TITLE_EN);
+    expect(installed.afterNavigation).toBe(TITLE_EN);
   });
 
   /**
@@ -158,6 +158,6 @@ describe('who writes the document title after a navigation', () => {
     expect(omitted.afterNavigation).toBe(DECLARED_TITLE);
 
     const installed = await bootstrap('installed', '/ar-eg/second');
-    expect(installed.afterNavigation).toBe(ATLAS_TITLE_EN);
+    expect(installed.afterNavigation).toBe(TITLE_EN);
   });
 });

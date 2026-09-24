@@ -12,7 +12,7 @@ import {
   type LocalizedAddressContext,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /**
  * The half of the location strategy a unit test can reach.
@@ -26,8 +26,8 @@ import {
 
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
-    profile: 'atlas-route-projection/1',
-    identity: 'sha256-AtlasRouteProjectionTestIdentity0123456789_',
+    profile: 'equator-route-projection/1',
+    identity: 'sha256-RouteProjectionTestIdentity012345678901234_',
     routes: [
       { id: 'route:_index', path: '', parameterNames: [] },
       { id: 'route:second', path: 'second', parameterNames: [] },
@@ -38,7 +38,7 @@ const PROJECTION: RouteRuntimeProjection = {
     'route:second': { 'en-US': 'second', 'ar-EG': 'الثاني' },
     article: { 'en-US': 'articles/:slug', 'ar-EG': 'مقالات/:slug' },
   },
-  // A parameter value passes through unchanged; only the static segments localize. Atlas's own
+  // A parameter value passes through unchanged; only the static segments localize. Equator's own
   // identifier codec rather than a two-entry fixture table, which would be a cooperating stub for
   // exactly the case that has to work.
   parameters: { article: { slug: createIdentifierParameterCodec() } },
@@ -88,9 +88,9 @@ const ARTICLES_ENC = '%D9%85%D9%82%D8%A7%D9%84%D8%A7%D8%AA';
  */
 const ONE_WAY_SLUG: RouteParameterCodec<string> = {
   parse: (value) =>
-    value === 'atlas-handbook' ? { ok: true, value } : { ok: false },
+    value === 'handbook' ? { ok: true, value } : { ok: false },
   serialize: (value, context) =>
-    context?.locale === 'ar-EG' ? 'dalil-atlas' : value,
+    context?.locale === 'ar-EG' ? 'dalil' : value,
 };
 
 /** A codec that reads its own output as a different value: idempotent in neither direction. */
@@ -109,7 +109,7 @@ function withCodec(codec: RouteParameterCodec<string>): RouteRuntimeProjection {
 describe('a parameter codec that cannot read its own spelling', () => {
   it('refuses to build an address it could not resolve', () => {
     // The failure is refused where it is created rather than where it is followed. Left to build,
-    // `/ar-eg/مقالات/dalil-atlas` is an address Atlas emits and then cannot place, so it renders as
+    // `/ar-eg/مقالات/dalil` is an address Equator emits and then cannot place, so it renders as
     // a link that leads nowhere, and it leads nowhere in Arabic only, which is how a codec like
     // this survives every test written in the default locale.
     expect(() =>
@@ -119,7 +119,7 @@ describe('a parameter codec that cannot read its own spelling', () => {
         'article',
         'ar-EG',
         {
-          slug: 'atlas-handbook',
+          slug: 'handbook',
         },
       ),
     ).toThrow(/cannot read its own ar-EG spelling back/u);
@@ -135,10 +135,10 @@ describe('a parameter codec that cannot read its own spelling', () => {
         'article',
         'en-US',
         {
-          slug: 'atlas-handbook',
+          slug: 'handbook',
         },
       ),
-    ).toBe('/en-us/articles/atlas-handbook');
+    ).toBe('/en-us/articles/handbook');
   });
 
   it('refuses a codec that reads its output back as something else', () => {
@@ -152,7 +152,7 @@ describe('a parameter codec that cannot read its own spelling', () => {
         'article',
         'en-US',
         {
-          slug: 'atlas-handbook',
+          slug: 'handbook',
         },
       ),
     ).toThrow(/cannot read its own en-US spelling back/u);
@@ -167,7 +167,7 @@ describe('a parameter codec that cannot read its own spelling', () => {
       policy: PREFIXED,
       projection: withCodec(ONE_WAY_SLUG),
     };
-    const rejected = `/ar-eg/${ARTICLES_ENC}/dalil-atlas`;
+    const rejected = `/ar-eg/${ARTICLES_ENC}/dalil`;
 
     const resolution = resolveLocalizedRoute(
       rejected,
@@ -189,15 +189,15 @@ describe('inbound: localized external to canonical internal', () => {
   });
 
   it('carries a parameter through a translated segment', () => {
-    expect(
-      toInternalPath(`/ar-eg/${ARTICLES_ENC}/atlas-handbook`, CONTEXT),
-    ).toBe('/articles/atlas-handbook');
+    expect(toInternalPath(`/ar-eg/${ARTICLES_ENC}/handbook`, CONTEXT)).toBe(
+      '/articles/handbook',
+    );
   });
 
   it('corrects a decoded spelling rather than declining it', () => {
     // Every inbound case above is fed the encoded form, because that is what
     // `document.location.pathname` yields. A decoded spelling can only come from application code,
-    // and it is not an address Atlas fails to place: the resolver knows the route and answers
+    // and it is not an address Equator fails to place: the resolver knows the route and answers
     // `canonical-correction`, a 308 to the encoded form, which is what a server sends a visitor who
     // types it. Handing it straight back has the server correcting it and the client not: the
     // one-address-two-answers split, on the one door where nobody looks.
@@ -217,7 +217,7 @@ describe('inbound: localized external to canonical internal', () => {
   });
 
   it('hands back an address it cannot place, so the app can answer', () => {
-    // Declining is the correct outcome, not a failure. Atlas does not own every address in the
+    // Declining is the correct outcome, not a failure. Equator does not own every address in the
     // application: the consumer's own `**` route and its locale-neutral roots still answer, and
     // they can only do that if the address reaches them unchanged.
     expect(toInternalPath('/ar-eg/nope', CONTEXT)).toBe('/ar-eg/nope');
@@ -242,8 +242,8 @@ describe('outbound: canonical internal to localized external', () => {
   });
 
   it('localizes a parameterised address without touching the parameter', () => {
-    expect(toExternalPath('/articles/atlas-handbook', 'ar-EG', CONTEXT)).toBe(
-      `/ar-eg/${ARTICLES_ENC}/atlas-handbook`,
+    expect(toExternalPath('/articles/handbook', 'ar-EG', CONTEXT)).toBe(
+      `/ar-eg/${ARTICLES_ENC}/handbook`,
     );
   });
 
@@ -264,7 +264,7 @@ describe('outbound: canonical internal to localized external', () => {
 
 describe('the two directions are mirror images', () => {
   it('round-trips every projected address through both locales', () => {
-    for (const internal of ['/', '/second', '/articles/atlas-handbook']) {
+    for (const internal of ['/', '/second', '/articles/handbook']) {
       for (const locale of ['en-US', 'ar-EG']) {
         const external = toExternalPath(internal, locale, CONTEXT);
         expect(toInternalPath(external, CONTEXT)).toBe(internal);
@@ -287,7 +287,7 @@ describe('a policy that omits the default prefix', () => {
   });
 
   it('round-trips', () => {
-    for (const internal of ['/', '/second', '/articles/atlas-handbook']) {
+    for (const internal of ['/', '/second', '/articles/handbook']) {
       for (const locale of ['en-US', 'ar-EG']) {
         const external = toExternalPath(internal, locale, OMITTED);
         expect(toInternalPath(external, OMITTED)).toBe(internal);
@@ -404,7 +404,7 @@ describe('policies that do not distinguish locales in the path', () => {
  * one.
  *
  * An application served at `https://example.com/app` sees `/app` in front of every address the
- * browser hands it, and in none of the addresses Atlas builds: a policy addresses routes from the
+ * browser hands it, and in none of the addresses Equator builds: a policy addresses routes from the
  * application's own root. Two callers do this and they must do it the same way: the
  * `LocationStrategy`, which strips to delocalize and restores to write, and locale resolution,
  * which strips to read the prefix out of the address the document is at. The second was missing it,
@@ -500,7 +500,7 @@ describe('the sub-path an application is deployed under', () => {
     // `PathLocationStrategy` uses the document origin when nothing declares a base href, so this
     // value reaches the pair on any page with no `<base>` element. It never matches a path, which
     // is the right answer, there is no sub-path, and it must not become one by accident.
-    expect(withoutBasePath('/ar-eg/second', 'https://atlas.example')).toBe(
+    expect(withoutBasePath('/ar-eg/second', 'https://site.example')).toBe(
       '/ar-eg/second',
     );
   });

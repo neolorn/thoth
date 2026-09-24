@@ -1,5 +1,5 @@
 /**
- * One occurrence of one `atlas init` configuration flag, folded into the value `init` is handed.
+ * One occurrence of one `equator init` configuration flag, folded into the value `init` is handed.
  *
  * Beside `cli.ts` rather than inside it, and not published from the barrel. The refusals here are
  * the half of this that matters (a value the schema would reject several steps later, reported
@@ -8,26 +8,27 @@
  * different machinery from its success path has only been tested on the path that succeeds.
  *
  * The flags themselves are generated. `cli-options.generated.ts` is written from
- * `ATLAS_CONFIGURATION_SCHEMA` by `tools/generate-cli-options.mjs`, so what this file knows is the
+ * `CONFIGURATION_SCHEMA` by `tools/generate-cli-options.mjs`, so what this file knows is the
  * four *shapes* a value can have, and never which keys exist.
  */
 
 import {
-  ATLAS_INIT_OPTIONS,
-  type AtlasInitLeafType,
-  type AtlasInitOptionDescriptor,
+  INIT_OPTIONS,
+  type InitLeafType,
+  type InitOptionDescriptor,
 } from './cli-options.generated.js';
 
-/** An invocation Atlas will not act on. The CLI turns this into ATL1701 and exit 2. */
+/** An invocation Equator will not act on. The CLI turns this into EQ1701 and exit 2. */
 export class InvocationError extends Error {}
 
-const INIT_OPTIONS_BY_FLAG: ReadonlyMap<string, AtlasInitOptionDescriptor> =
-  new Map(ATLAS_INIT_OPTIONS.map((option) => [option.flag, option]));
+const INIT_OPTIONS_BY_FLAG: ReadonlyMap<string, InitOptionDescriptor> = new Map(
+  INIT_OPTIONS.map((option) => [option.flag, option]),
+);
 
 /** The configuration flag this argument is, or `undefined` when it is not one. */
 export function initOptionForFlag(
   flag: string,
-): AtlasInitOptionDescriptor | undefined {
+): InitOptionDescriptor | undefined {
   return INIT_OPTIONS_BY_FLAG.get(flag);
 }
 
@@ -46,7 +47,7 @@ export function initOptionForFlag(
  */
 function initLeafValue(
   label: string,
-  type: AtlasInitLeafType,
+  type: InitLeafType,
   text: string,
 ): string | number | boolean {
   if (type === 'string') return text;
@@ -90,7 +91,7 @@ function initEntries(
  */
 export function applyInitOption(
   target: Record<string, unknown>,
-  option: AtlasInitOptionDescriptor,
+  option: InitOptionDescriptor,
   text: string,
 ): void {
   if (option.shape === 'scalar') {

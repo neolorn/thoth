@@ -2,7 +2,7 @@
  * The license, copied into a built package so the package carries it.
  *
  * MIT requires the notice to travel with every copy of the software, and an installed package is a
- * copy. A license file that exists only in the repository is one nobody who installed Atlas can
+ * copy. A license file that exists only in the repository is one nobody who installed Equator can
  * read, and the repository is not what a consumer received.
  *
  * Copied rather than written twice. One file is the license; a second copy beside each package
@@ -34,5 +34,5 @@ await copyFile(
 );
 
 process.stdout.write(
-  `Atlas license staged into ${relative(workspaceRoot, outputRoot).replaceAll(sep, '/')}.\n`,
+  `Equator license staged into ${relative(workspaceRoot, outputRoot).replaceAll(sep, '/')}.\n`,
 );

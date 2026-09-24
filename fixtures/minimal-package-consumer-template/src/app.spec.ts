@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Localization } from '@neolorn/atlas';
+import { Localization } from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { messages } from '#i18n/shell';
@@ -7,7 +7,7 @@ import { messages } from '#i18n/shell';
 import { App } from './app';
 import { appConfig } from './app.config';
 
-describe('Atlas minimal built-package consumer', () => {
+describe('Equator minimal built-package consumer', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
@@ -28,13 +28,13 @@ describe('Atlas minimal built-package consumer', () => {
     const element = fixture.nativeElement as HTMLElement;
     expect(messages.title.identity).toContain(':shell:title');
     expect(element.querySelector('[data-title]')?.textContent).toContain(
-      'Atlas minimal consumer',
+      'Equator minimal consumer',
     );
     expect(element.querySelector('[data-welcome]')?.textContent).toContain(
-      'Welcome, Atlas!',
+      'Welcome, Equator!',
     );
     expect(element.querySelector('[data-pipe]')?.textContent).toContain(
-      'Atlas minimal consumer',
+      'Equator minimal consumer',
     );
     expect(element.querySelector('[data-rich]')?.textContent).toContain(
       'Read the guide.',
@@ -45,7 +45,7 @@ describe('Atlas minimal built-package consumer', () => {
     expect(element.querySelector('[data-inherited]')?.textContent).toContain(
       'This sentence is written in the source locale.',
     );
-    expect(element.querySelector('[data-minimal-atlas]')).toMatchObject({
+    expect(element.querySelector('[data-minimal]')).toMatchObject({
       lang: configuration.defaultLocale,
       dir: 'ltr',
     });
@@ -85,7 +85,7 @@ describe('Atlas minimal built-package consumer', () => {
     fixture.detectChanges();
 
     expect(element.querySelector('[data-title]')?.textContent).toContain(
-      'مستهلك Atlas المصغر',
+      'مستهلك Equator المصغر',
     );
     // The Latin name is wrapped in an isolate inside Arabic prose, so it cannot reorder the
     // sentence around it. A right-to-left isolate rather than a first-strong one: the value
@@ -94,15 +94,15 @@ describe('Atlas minimal built-package consumer', () => {
     // Written as escapes. The characters are invisible on screen, so a literal one here is
     // invisible to a reader sweeping the file for this expectation.
     expect(element.querySelector('[data-welcome]')?.textContent).toContain(
-      'مرحبًا، \u2067Atlas\u2069!',
+      'مرحبًا، \u2067Equator\u2069!',
     );
     expect(element.querySelector('[data-pipe]')?.textContent).toContain(
-      'مستهلك Atlas المصغر',
+      'مستهلك Equator المصغر',
     );
     expect(element.querySelector('[data-rich]')?.textContent).toContain(
       'اقرأ الدليل.',
     );
-    expect(element.querySelector('[data-minimal-atlas]')).toMatchObject({
+    expect(element.querySelector('[data-minimal]')).toMatchObject({
       lang: 'ar-EG',
       dir: 'rtl',
     });
@@ -127,7 +127,7 @@ describe('Atlas minimal built-package consumer', () => {
     fixture.detectChanges();
 
     expect(element.querySelector('[data-title]')?.textContent).toContain(
-      'مستهلك Atlas المصغر بالعربية',
+      'مستهلك Equator المصغر بالعربية',
     );
     expect(element.querySelector('[data-inherited]')?.textContent).toContain(
       'هذه الجملة مكتوبة بالعربية العامة.',

@@ -5,22 +5,22 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
-  createAtlasMigrationPlan,
-  diffAtlasCatalogSets,
-  parseAtlasCatalog,
-  parseAtlasConfiguration,
-  planAtlasMessageRefactor,
-  type AtlasAuthoredChangePlan,
-  type AtlasCatalog,
-  type AtlasCatalogParseOptions,
-  type AtlasProjectConfiguration,
+  createMigrationPlan,
+  diffCatalogSets,
+  parseCatalog,
+  parseConfiguration,
+  planMessageRefactor,
+  type AuthoredChangePlan,
+  type Catalog,
+  type CatalogParseOptions,
+  type ProjectConfiguration,
 } from '../src/index.js';
 import {
-  applyAtlasAuthoredChangePlan,
-  parseAtlasAuthoredChangePlan,
+  applyAuthoredChangePlan,
+  parseAuthoredChangePlan,
 } from '../src/authoring-transaction.js';
 
-const configurationResult = parseAtlasConfiguration(
+const configurationResult = parseConfiguration(
   JSON.stringify({
     schemaVersion: 1,
     sourceLocale: 'en-US',
@@ -29,13 +29,10 @@ const configurationResult = parseAtlasConfiguration(
   }),
 );
 if (!configurationResult.ok) throw new Error('configuration fixture failed');
-const configuration: AtlasProjectConfiguration = configurationResult.value;
+const configuration: ProjectConfiguration = configurationResult.value;
 
-function catalog(
-  source: string,
-  options: AtlasCatalogParseOptions,
-): AtlasCatalog {
-  const parsed = parseAtlasCatalog(source, options);
+function catalog(source: string, options: CatalogParseOptions): Catalog {
+  const parsed = parseCatalog(source, options);
   if (!parsed.ok) throw new Error('catalog fixture failed');
   return parsed.value;
 }
@@ -44,7 +41,7 @@ const options = (
   scopeId: string,
   locale: string,
   role: 'source' | 'target',
-): AtlasCatalogParseOptions => ({
+): CatalogParseOptions => ({
   role,
   providerId: '@example/app',
   scopeId,
@@ -70,7 +67,7 @@ describe('semantic catalog diff', () => {
       'messages:\n  heading: "مرحبًا"\n',
       options('shell', 'ar-EG', 'target'),
     );
-    const result = diffAtlasCatalogSets({
+    const result = diffCatalogSets({
       before: { configuration, catalogs: [beforeSource, beforeTarget] },
       after: { configuration, catalogs: [afterSource, afterTarget] },
       identityMoves: [
@@ -95,15 +92,15 @@ describe('semantic catalog diff', () => {
 });
 
 describe('semantic refactors and authored migrations', () => {
-  it('strictly reconstructs Atlas-authored plans and rejects duplicate, foreign, or tampered content', () => {
-    const created = createAtlasMigrationPlan({
+  it('strictly reconstructs Equator-authored plans and rejects duplicate, foreign, or tampered content', () => {
+    const created = createMigrationPlan({
       id: 'strict-plan',
       domain: 'configuration',
       fromVersion: '1',
       toVersion: '1.1',
       changes: [
         {
-          path: 'atlas.config.json',
+          path: 'equator.config.json',
           before: '{"schemaVersion":1}\n',
           after: '{"schemaVersion":1,"sourceLocale":"en-US"}\n',
         },
@@ -112,23 +109,23 @@ describe('semantic refactors and authored migrations', () => {
     expect(created.ok).toBe(true);
     if (!created.ok) return;
     const source = JSON.stringify(created.value);
-    expect(parseAtlasAuthoredChangePlan(source, { kind: 'migration' })).toEqual(
+    expect(parseAuthoredChangePlan(source, { kind: 'migration' })).toEqual(
       created,
     );
     expect(
-      parseAtlasAuthoredChangePlan(
+      parseAuthoredChangePlan(
         source.replace('"id":', '"id":"duplicate","id":'),
         { kind: 'migration' },
       ),
     ).toMatchObject({ ok: false });
     expect(
-      parseAtlasAuthoredChangePlan(
+      parseAuthoredChangePlan(
         JSON.stringify({ ...created.value, unexpected: true }),
         { kind: 'migration' },
       ),
     ).toMatchObject({ ok: false });
     expect(
-      parseAtlasAuthoredChangePlan(
+      parseAuthoredChangePlan(
         JSON.stringify({
           ...created.value,
           digest: 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
@@ -137,7 +134,7 @@ describe('semantic refactors and authored migrations', () => {
       ),
     ).toMatchObject({ ok: false });
     expect(
-      parseAtlasAuthoredChangePlan(
+      parseAuthoredChangePlan(
         JSON.stringify({ ...created.value, kind: 'refactor' }),
         { kind: 'migration' },
       ),
@@ -155,7 +152,7 @@ describe('semantic refactors and authored migrations', () => {
     );
     const code = 'const value = messages.account.title;\n';
     const start = code.indexOf('messages');
-    const result = planAtlasMessageRefactor({
+    const result = planMessageRefactor({
       from: {
         providerId: '@example/app',
         scopeId: 'shell',
@@ -196,18 +193,18 @@ describe('semantic refactors and authored migrations', () => {
   });
 
   it('applies a validated migration transaction idempotently and refuses stale input before mutation', async () => {
-    const root = await mkdtemp(resolve(tmpdir(), 'atlas-migration-'));
+    const root = await mkdtemp(resolve(tmpdir(), 'migration-'));
     try {
-      const path = resolve(root, 'atlas.config.json');
+      const path = resolve(root, 'equator.config.json');
       await writeFile(path, '{"schemaVersion":1}\n', 'utf8');
-      const plan = createAtlasMigrationPlan({
+      const plan = createMigrationPlan({
         id: 'canonical-profile',
         domain: 'configuration',
         fromVersion: '1',
         toVersion: '1.1',
         changes: [
           {
-            path: 'atlas.config.json',
+            path: 'equator.config.json',
             before: '{"schemaVersion":1}\n',
             after: '{"schemaVersion":1,"sourceLocale":"en-US"}\n',
           },
@@ -218,40 +215,40 @@ describe('semantic refactors and authored migrations', () => {
       const tampered = {
         ...plan.value,
         digest: 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-      } as AtlasAuthoredChangePlan;
+      } as AuthoredChangePlan;
       expect(
-        await applyAtlasAuthoredChangePlan({
+        await applyAuthoredChangePlan({
           ownerRoot: root,
           plan: tampered,
         }),
       ).toMatchObject({ ok: false });
       expect(await readFile(path, 'utf8')).toBe('{"schemaVersion":1}\n');
-      const preview = await applyAtlasAuthoredChangePlan({
+      const preview = await applyAuthoredChangePlan({
         ownerRoot: root,
         plan: plan.value,
         dryRun: true,
       });
       expect(preview).toMatchObject({ ok: true, value: { changed: true } });
-      const applied = await applyAtlasAuthoredChangePlan({
+      const applied = await applyAuthoredChangePlan({
         ownerRoot: root,
         plan: plan.value,
       });
       expect(applied).toMatchObject({ ok: true, value: { changed: true } });
       expect(await readFile(path, 'utf8')).toContain('"sourceLocale":"en-US"');
-      const repeated = await applyAtlasAuthoredChangePlan({
+      const repeated = await applyAuthoredChangePlan({
         ownerRoot: root,
         plan: plan.value,
       });
       expect(repeated).toMatchObject({ ok: true, value: { changed: false } });
 
-      const stale = createAtlasMigrationPlan({
+      const stale = createMigrationPlan({
         id: 'stale',
         domain: 'configuration',
         fromVersion: '1.1',
         toVersion: '2',
         changes: [
           {
-            path: 'atlas.config.json',
+            path: 'equator.config.json',
             before: 'unexpected',
             after: 'unsafe',
           },
@@ -259,7 +256,7 @@ describe('semantic refactors and authored migrations', () => {
       });
       if (!stale.ok) throw new Error('stale plan fixture failed');
       expect(
-        await applyAtlasAuthoredChangePlan({
+        await applyAuthoredChangePlan({
           ownerRoot: root,
           plan: stale.value,
         }),

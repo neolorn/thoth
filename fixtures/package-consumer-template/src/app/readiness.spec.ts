@@ -2,15 +2,15 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Localization, withRouting } from '@neolorn/atlas';
-import { provideLocalizationTesting } from '@neolorn/atlas/testing';
+import { Localization, withRouting } from '@neolorn/equator';
+import { provideLocalizationTesting } from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 import { FeatureLabReadiness } from './readiness';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
@@ -37,7 +37,7 @@ describe('the readiness panel exercises what the published surface kept', () => 
             catalogSet,
             catalogLoaders,
             recoveryPayload,
-            extensions: atlasRuntimeExtensions,
+            extensions: runtimeExtensions,
             maximumCachedCatalogs: 1,
             routeProjection,
           },
@@ -62,7 +62,7 @@ describe('the readiness panel exercises what the published surface kept', () => 
     const alternates = [...element.querySelectorAll('[data-alternate]')];
 
     // What the panel offers is the policy's locales intersected with the ones this build
-    // generated, minus the one on screen. This suite runs after `atlas generate --pseudo`, so the
+    // generated, minus the one on screen. This suite runs after `equator generate --pseudo`, so the
     // contracted pseudo-locale is among them and a developer can switch to it from the page; a
     // production build generates no catalog for it and the same code offers `ar-EG` alone.
     //

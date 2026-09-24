@@ -12,7 +12,7 @@ import {
   type MessageHandle,
   type MessageInputArguments,
   type MessageInputs,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 import { Localization } from './localization';
 
 /**

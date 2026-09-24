@@ -5,8 +5,8 @@ import { resolve } from 'node:path';
 import ts from 'typescript';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { analyzeAtlasApplication } from '../src/static-analysis.js';
-import type { AtlasDiagnostic } from '../src/index.js';
+import { analyzeApplication } from '../src/static-analysis.js';
+import type { ToolkitDiagnostic } from '../src/index.js';
 
 /**
  * Which messages the first render actually needs.
@@ -18,7 +18,7 @@ import type { AtlasDiagnostic } from '../src/index.js';
  *
  * The alternative designs are both wrong. Making every application hand-write a list of startup
  * scopes is wiring that has to be maintained forever and will drift. Loading every scope at
- * startup is the same defect with nobody to blame for it. Atlas already analyses the route tree,
+ * startup is the same defect with nobody to blame for it. Equator already analyses the route tree,
  * so it can see the boundaries and derive the answer, which is what it does now.
  *
  * A file behind a boundary that something eager also imports is eager: the first render already
@@ -41,12 +41,12 @@ async function write(
 async function analyse(
   files: Readonly<Record<string, string>>,
 ): Promise<readonly string[]> {
-  const root = await mkdtemp(resolve(tmpdir(), 'atlas-lazy-'));
+  const root = await mkdtemp(resolve(tmpdir(), 'lazy-'));
   temporaryRoots.push(root);
   for (const [path, contents] of Object.entries(files)) {
     await write(root, path, contents);
   }
-  const analysis = analyzeAtlasApplication({
+  const analysis = analyzeApplication({
     projectRoot: root,
     rootNames: Object.keys(files).map((path) => resolve(root, path)),
     compilerOptions: {
@@ -69,13 +69,13 @@ async function analyse(
 
 async function diagnose(
   files: Readonly<Record<string, string>>,
-): Promise<readonly AtlasDiagnostic[]> {
-  const root = await mkdtemp(resolve(tmpdir(), 'atlas-lazy-'));
+): Promise<readonly ToolkitDiagnostic[]> {
+  const root = await mkdtemp(resolve(tmpdir(), 'lazy-'));
   temporaryRoots.push(root);
   for (const [path, contents] of Object.entries(files)) {
     await write(root, path, contents);
   }
-  const analysis = analyzeAtlasApplication({
+  const analysis = analyzeApplication({
     projectRoot: root,
     rootNames: Object.keys(files).map((path) => resolve(root, path)),
     compilerOptions: {
@@ -242,7 +242,7 @@ describe('routes that split the bundle', () => {
     // names its own loaders.
     const diagnostics = await diagnose(sharedComponentApplication(true));
 
-    const eager = diagnostics.filter(({ code }) => code === 'ATL1407');
+    const eager = diagnostics.filter(({ code }) => code === 'EQ1407');
     expect(eager).toHaveLength(1);
     expect(eager[0]?.severity).toBe('warning');
     expect(eager[0]?.summary).toContain('/lazy');
@@ -255,7 +255,7 @@ describe('routes that split the bundle', () => {
     // route file through the dynamic import the closure does not follow.
     const diagnostics = await diagnose(sharedComponentApplication(false));
 
-    expect(diagnostics.filter(({ code }) => code === 'ATL1407')).toEqual([]);
+    expect(diagnostics.filter(({ code }) => code === 'EQ1407')).toEqual([]);
     expect(await analyse(sharedComponentApplication(false))).toContain(
       'src/second.ts',
     );

@@ -11,7 +11,7 @@ import {
   type GeneratedConfiguration,
   type RouteParameterCodec,
   type RouteParameterContext,
-} from '@neolorn/atlas/core';
+} from '@neolorn/equator/core';
 
 /**
  * The route parameter codecs, the x-default rule, and the values a server route is prerendered with.
@@ -162,7 +162,7 @@ describe('an x-default address on a locale-neutral policy', () => {
     );
     expect(codeOf(() => withDefault(''))).toBe('invalid-configuration');
     // A backslash is a slash to some parsers and not to others, which is exactly why it cannot be
-    // carried into a value Atlas writes into a document head.
+    // carried into a value Equator writes into a document head.
     expect(codeOf(() => withDefault('/\\elsewhere.example'))).toBe(
       'invalid-configuration',
     );
@@ -182,22 +182,22 @@ describe('the parameter values a localized server route is prerendered with', ()
   const SLUG: RouteParameterCodec<string> = Object.freeze({
     parse: (slug: string) =>
       Object.freeze(
-        slug === 'atlas-handbook' || slug === 'دليل'
-          ? { ok: true, value: 'atlas-handbook' }
+        slug === 'handbook' || slug === 'دليل'
+          ? { ok: true, value: 'handbook' }
           : { ok: false },
       ),
     serialize: (entityId: string, context?: RouteParameterContext) =>
-      entityId !== 'atlas-handbook'
+      entityId !== 'handbook'
         ? undefined
         : context?.locale === 'ar-EG'
           ? 'دليل'
-          : 'atlas-handbook',
+          : 'handbook',
   });
 
   const PROJECTION = defineRouteProjection({
     generated: Object.freeze({
-      profile: 'atlas-route-projection/1',
-      identity: 'sha256-AtlasPrerenderParametersTestIdentity0123456',
+      profile: 'equator-route-projection/1',
+      identity: 'sha256-PrerenderParametersTestIdentity012345678901',
       routes: Object.freeze([
         Object.freeze({
           id: 'article',
@@ -210,7 +210,7 @@ describe('the parameter values a localized server route is prerendered with', ()
   });
 
   const CONFIGURATION: GeneratedConfiguration = {
-    generatedAbi: 'atlas-generated/1',
+    generatedAbi: 'equator-generated/1',
     sourceLocale: 'en-US',
     defaultLocale: 'en-US',
     locales: ['en-US', 'ar-EG'],
@@ -236,7 +236,7 @@ describe('the parameter values a localized server route is prerendered with', ()
 
   const paramsFor = async (
     path: string,
-    prerender: PrerenderParameterValues = [{ slug: 'atlas-handbook' }],
+    prerender: PrerenderParameterValues = [{ slug: 'handbook' }],
   ) => {
     const entry = schedule(prerender).find((route) => route.path === path);
     expect(entry, path).toBeDefined();
@@ -254,7 +254,7 @@ describe('the parameter values a localized server route is prerendered with', ()
     // would prerender the English slug under the Arabic prefix, and the two entries are the same
     // parameterised path under different prefixes, so nothing but these values distinguishes them.
     expect(await paramsFor('en-us/articles/:slug')).toEqual([
-      { slug: 'atlas-handbook' },
+      { slug: 'handbook' },
     ]);
     expect(await paramsFor('ar-eg/articles/:slug')).toEqual([{ slug: 'دليل' }]);
   });
@@ -264,13 +264,10 @@ describe('the parameter values a localized server route is prerendered with', ()
     // comparison cannot tell a preserved order from a reversed one. A prerender list is the set of
     // pages a build writes, so dropping one is a page that is silently absent.
     const params = await paramsFor('en-us/articles/:slug', [
-      { slug: 'atlas-handbook' },
-      { slug: 'atlas-handbook' },
+      { slug: 'handbook' },
+      { slug: 'handbook' },
     ]);
-    expect(params).toEqual([
-      { slug: 'atlas-handbook' },
-      { slug: 'atlas-handbook' },
-    ]);
+    expect(params).toEqual([{ slug: 'handbook' }, { slug: 'handbook' }]);
   });
 
   it('refuses a value with no spelling in the locale being built', async () => {
@@ -305,9 +302,7 @@ describe('the parameter values a localized server route is prerendered with', ()
     // the addresses it produces have to be the same ones a written set produces: the expansion is
     // per locale and only the release knows which locale each emitted address belongs to.
     expect(
-      await paramsFor('ar-eg/articles/:slug', () => [
-        { slug: 'atlas-handbook' },
-      ]),
+      await paramsFor('ar-eg/articles/:slug', () => [{ slug: 'handbook' }]),
     ).toEqual([{ slug: 'دليل' }]);
   });
 
@@ -315,9 +310,9 @@ describe('the parameter values a localized server route is prerendered with', ()
     expect(
       await paramsFor('en-us/articles/:slug', async () => {
         await Promise.resolve();
-        return [{ slug: 'atlas-handbook' }];
+        return [{ slug: 'handbook' }];
       }),
-    ).toEqual([{ slug: 'atlas-handbook' }]);
+    ).toEqual([{ slug: 'handbook' }]);
   });
 
   it('asks a function once, however many addresses the route expands into', async () => {
@@ -326,7 +321,7 @@ describe('the parameter values a localized server route is prerendered with', ()
     let asked = 0;
     const routes = schedule(() => {
       asked += 1;
-      return [{ slug: 'atlas-handbook' }];
+      return [{ slug: 'handbook' }];
     });
     const params = (path: string) =>
       (

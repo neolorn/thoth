@@ -44,7 +44,7 @@ Classify the route in its own `data`:
 ```text
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: Home },
-  { path: 'second', component: Second, data: { atlasIndexing: 'internal' } },
+  { path: 'second', component: Second, data: { equatorIndexing: 'internal' } },
 ];
 ```
 
@@ -61,9 +61,9 @@ withRouting({
 }),
 ```
 
-`DEFAULT_ROUTE_INDEXING_FIELD` is `atlasIndexing`. A project that already classifies its routes names
-the field it already has. Only the exceptions need naming: a route whose field is absent, or whose
-value the table does not list, is indexable.
+`DEFAULT_ROUTE_INDEXING_FIELD` is `equatorIndexing`. A project that already classifies its routes
+names the field it already has. Only the exceptions need naming: a route whose field is absent, or
+whose value the table does not list, is indexable.
 
 Both blocks are read from your source text at generate time, which is why this is a field name and a
 table of literals rather than a predicate.
@@ -91,7 +91,7 @@ export class ArticleRoute {
 ```
 
 Declaring after the page is on screen is the ordinary case, because the load finishes after
-activation. Atlas rebuilds the head when the declaration arrives.
+activation. Equator rebuilds the head when the declaration arrives.
 
 What it withdraws is what the address implied. A page declared absent or removed publishes no
 canonical link and no `hreflang` alternates, and carries `noindex`: an alternate link states that the
@@ -101,7 +101,7 @@ not produce the page, which is about one response rather than about the address.
 
 On a server the declaration also reaches the response, which is
 [How to negotiate a locale on your own server](negotiate-on-your-own-server.md). In the browser there
-is no response to reach and Atlas invents none.
+is no response to reach and Equator invents none.
 
 What the page is called while it is missing is yours. Read `context.pageOutcome` in the `document`
 callback and return the wording for it.
@@ -128,21 +128,24 @@ provideLocalizedRouter(routes, {
 Without them the head of a missing page is whatever the previous page left in it, title and
 description and canonical link together, which tells a reader and a crawler they are somewhere they
 are not. They are message handles like every other title, so a missing translation is reported by
-`atlas check --require-complete` rather than serving one language's wording under another's.
+`equator check --require-complete` rather than serving one language's wording under another's.
 
 ## Set cache headers per route
 
-`routeCacheHeaders` takes the classification Atlas derived for a resolved route and the freshness
+`routeCacheHeaders` takes the classification Equator derived for a resolved route and the freshness
 numbers this deployment chose, and returns the headers to write:
 
 ```ts src/app/caching.spec.ts
 import { describe, expect, it } from 'vitest';
 
-import { routeCacheHeaders } from '@neolorn/atlas';
-import type { RouteCacheFreshness, RouteHttpDescriptor } from '@neolorn/atlas';
+import { routeCacheHeaders } from '@neolorn/equator';
+import type {
+  RouteCacheFreshness,
+  RouteHttpDescriptor,
+} from '@neolorn/equator';
 
-// How long this deployment's shared caches hold a response Atlas has said may be shared, and where
-// this deployment reads a visitor's language preference.
+// How long this deployment's shared caches hold a response Equator has said may be shared, and
+// where this deployment reads a visitor's language preference.
 const freshness: RouteCacheFreshness = {
   successMaxAge: 300,
   permanentRedirectMaxAge: 86_400,
@@ -192,10 +195,10 @@ describe('the headers a route class implies', () => {
 ```
 
 `routeHttpDescriptor` produces the descriptor from a resolved route, and the handler in
-`@neolorn/atlas/http` calls both for you, which is
+`@neolorn/equator/http` calls both for you, which is
 [How to negotiate a locale on your own server](negotiate-on-your-own-server.md).
 
-`localePreference` is the one fact Atlas cannot derive, because it never sees the request. Reading
+`localePreference` is the one fact Equator cannot derive, because it never sees the request. Reading
 the preference from `Accept-Language` leaves a successful response shared-cacheable per language, and
 `Vary: Accept-Language` says so. Reading it from a cookie does not, and the answer is
 `private, no-store`.

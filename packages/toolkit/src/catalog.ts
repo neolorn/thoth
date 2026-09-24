@@ -28,53 +28,50 @@ import {
 } from 'yaml';
 
 import {
-  atlasDiagnostic,
-  atlasFailure,
-  atlasSourceSpan,
-  atlasSuccess,
-  type AtlasDiagnostic,
-  type AtlasDiagnosticCode,
-  type AtlasResult,
-  type AtlasSourceSpan,
+  toolkitDiagnostic,
+  toolkitFailure,
+  spanAt,
+  toolkitSuccess,
+  type ToolkitDiagnostic,
+  type ToolkitDiagnosticCode,
+  type ToolkitResult,
+  type SourceSpan,
 } from './diagnostics.js';
 import {
-  atlasMessageKeyInCatalog,
-  atlasMessageKeyInCode,
-  parseAtlasMessageId,
-  parseAtlasProviderId,
-  parseAtlasScopeId,
-  type AtlasProviderId,
-  type AtlasScopeId,
+  messageKeyInCatalog,
+  messageKeyInCode,
+  parseMessageId,
+  parseProviderId,
+  parseScopeId,
+  type ProviderId,
+  type ScopeId,
 } from './identities.js';
-import { canonicalizeAtlasLocale, type AtlasLocale } from './locales.js';
+import { canonicalizeLocale, type CanonicalLocale } from './locales.js';
 import {
-  parseAtlasMessage,
-  type AtlasMessageSemanticModel,
+  parseMessageSemanticModel,
+  type MessageSemanticModel,
 } from './message-format.js';
 import {
-  atlasSchemaErrorParameter,
-  atlasSchemaErrorPath,
-  atlasSchemaErrorSummary,
-  compileAtlasSchema,
-  sortedAtlasSchemaErrors,
+  schemaErrorParameter,
+  schemaErrorPath,
+  schemaErrorSummary,
+  compileSchema,
+  sortedSchemaErrors,
 } from './schema-validation.js';
-import {
-  ATLAS_SOURCE_CATALOG_SCHEMA,
-  ATLAS_TARGET_CATALOG_SCHEMA,
-} from './schemas.js';
-import { ATLAS_RESOURCE_LIMITS } from './resource-limits.js';
+import { SOURCE_CATALOG_SCHEMA, TARGET_CATALOG_SCHEMA } from './schemas.js';
+import { RESOURCE_LIMITS } from './resource-limits.js';
 import type { ErrorObject } from 'ajv';
 
-import { atlasUntrustedText } from './untrusted-text.js';
+import { untrustedText } from './untrusted-text.js';
 import {
-  inspectAtlasAuthoredBidi,
-  isAtlasSafeAuthoredText,
-  isAtlasSafeStructuralText,
-  type AtlasBidiViolation,
+  inspectAuthoredBidi,
+  isSafeAuthoredText,
+  isSafeStructuralText,
+  type BidiViolation,
 } from './unicode-safety.js';
 import {
-  atlasMessageCustomFunctions,
-  type AtlasExtensionRegistry,
+  messageCustomFunctions,
+  type ExtensionRegistry,
 } from './extensions.js';
 import { frozenRecord } from './sorted-records.js';
 
@@ -85,9 +82,9 @@ import { frozenRecord } from './sorted-records.js';
  * target is measured against the source it translates, which is where a missing plural category or
  * a dropped slot is caught.
  */
-export type AtlasCatalogRole = 'source' | 'target';
+export type CatalogRole = 'source' | 'target';
 /** What an enumerated input value may be: a string, a number, or a boolean. */
-export type AtlasInputLiteral = string | number | boolean;
+export type InputLiteral = string | number | boolean;
 
 /**
  * What a message says about one of the values it takes, beyond the fact that it takes it.
@@ -96,11 +93,11 @@ export type AtlasInputLiteral = string | number | boolean;
  * in the generated code, so a message that says it takes a date is a message a caller cannot hand a
  * string to.
  */
-export interface AtlasInputRefinement {
+export interface InputRefinement {
   /** The kind of value expected, as a name the generator maps to a type. */
   readonly type?: string;
   /** The exact values allowed, when the input is one of a closed set. */
-  readonly enum?: readonly AtlasInputLiteral[];
+  readonly enum?: readonly InputLiteral[];
   /** Whether a caller may leave it out entirely. */
   readonly optional: boolean;
   /** Whether it may be present and null, which is not the same as being left out. */
@@ -115,7 +112,7 @@ export interface AtlasInputRefinement {
  * A paired slot opens and closes around text, the way a link does. A standalone one marks a single
  * point, the way an icon does.
  */
-export type AtlasSlotShape = 'paired' | 'standalone';
+export type SlotShape = 'paired' | 'standalone';
 
 /**
  * What a message says about one of the named regions inside it.
@@ -123,11 +120,11 @@ export type AtlasSlotShape = 'paired' | 'standalone';
  * These become the slot contract the application binds against, so a message declaring a link slot
  * is one whose bindings must include a link.
  */
-export interface AtlasSlotRefinement {
+export interface SlotRefinement {
   /** What the slot renders as: a link, an emphasis, a projected template. */
   readonly kind?: string;
   /** Whether it wraps text or marks a point. */
-  readonly shape?: AtlasSlotShape;
+  readonly shape?: SlotShape;
   /** Whether a translation may leave it out. */
   readonly optional: boolean;
   /** Whether a translation may use it more than once. */
@@ -138,20 +135,20 @@ export interface AtlasSlotRefinement {
   readonly description?: string;
 }
 
-interface AtlasCatalogMessageMetadata {
+interface CatalogMessageMetadata {
   readonly description?: string;
   readonly context?: string;
-  readonly inputs: Readonly<Record<string, AtlasInputRefinement>>;
-  readonly slots: Readonly<Record<string, AtlasSlotRefinement>>;
+  readonly inputs: Readonly<Record<string, InputRefinement>>;
+  readonly slots: Readonly<Record<string, SlotRefinement>>;
 }
 
 /** A message with text in it, parsed and kept beside its source. */
-export interface AtlasTextCatalogMessage extends AtlasCatalogMessageMetadata {
+export interface TextCatalogMessage extends CatalogMessageMetadata {
   readonly kind: 'message';
   /** What the author wrote, exactly as written. */
   readonly message: string;
   /** The parsed form: what it needs, what it produces, and how it branches. */
-  readonly semantics: AtlasMessageSemanticModel;
+  readonly semantics: MessageSemanticModel;
 }
 
 /**
@@ -160,7 +157,7 @@ export interface AtlasTextCatalogMessage extends AtlasCatalogMessageMetadata {
  * It keeps its description, its context and its declared inputs and slots, so a translator is
  * handed the whole brief rather than an empty key.
  */
-export interface AtlasEmptyCatalogMessage extends AtlasCatalogMessageMetadata {
+export interface EmptyCatalogMessage extends CatalogMessageMetadata {
   readonly kind: 'empty';
 }
 
@@ -169,9 +166,7 @@ export interface AtlasEmptyCatalogMessage extends AtlasCatalogMessageMetadata {
  *
  * Check `kind` to tell them apart. Both carry the author's description, context, inputs and slots.
  */
-export type AtlasCatalogMessage =
-  | AtlasTextCatalogMessage
-  | AtlasEmptyCatalogMessage;
+export type CatalogMessage = TextCatalogMessage | EmptyCatalogMessage;
 
 /**
  * One catalog file, parsed: which package and scope and locale it belongs to, and what is in it.
@@ -179,21 +174,21 @@ export type AtlasCatalogMessage =
  * The unit everything downstream works in. A message is identified by the provider, the scope and
  * its own key, and those three together are what makes two packages able to ship a `title` each.
  */
-export interface AtlasCatalog {
+export interface Catalog {
   /** Whether this is an authored catalog or a translation. */
-  readonly role: AtlasCatalogRole;
+  readonly role: CatalogRole;
   /** Which package owns it, which is what keeps two packages' scopes from colliding. */
-  readonly providerId: AtlasProviderId;
+  readonly providerId: ProviderId;
   /** Which scope within that package, which is the unit catalogs are loaded in. */
-  readonly scopeId: AtlasScopeId;
+  readonly scopeId: ScopeId;
   /** The locale it holds, canonically spelled. */
-  readonly locale: AtlasLocale;
+  readonly locale: CanonicalLocale;
   /** Where it was read from, when it came from a file. Carried into diagnostics. */
   readonly sourcePath?: string;
   /** The messages, by key. */
-  readonly messages: Readonly<Record<string, AtlasCatalogMessage>>;
+  readonly messages: Readonly<Record<string, CatalogMessage>>;
   /** The message families, by name, for messages that vary over a set of segments. */
-  readonly families: Readonly<Record<string, AtlasCatalogFamily>>;
+  readonly families: Readonly<Record<string, CatalogFamily>>;
 }
 
 /**
@@ -203,7 +198,7 @@ export interface AtlasCatalog {
  * a label per field. The template is authored once, so adding a segment adds a message rather than
  * a copy of one.
  */
-export interface AtlasCatalogFamily {
+export interface CatalogFamily {
   /** The message key the segments are substituted into. */
   readonly template: string;
   /** The segments, by name, each with the value substituted for it. */
@@ -216,9 +211,9 @@ export interface AtlasCatalogFamily {
  * A catalog file holds messages and nothing about where it belongs, so the identity comes from
  * where the file was found rather than from something inside it that could disagree with that.
  */
-export interface AtlasCatalogParseOptions {
+export interface CatalogParseOptions {
   /** Whether to check it as an authored catalog or as a translation. */
-  readonly role: AtlasCatalogRole;
+  readonly role: CatalogRole;
   /** Which package it belongs to. Must be a valid provider identity. */
   readonly providerId: string;
   /** Which scope within that package. Must be a valid scope identity. */
@@ -233,46 +228,41 @@ export interface AtlasCatalogParseOptions {
    * Leaving it out is stricter rather than looser: a message calling an unregistered function is
    * refused, so a caller that has a registry and does not pass it rejects its own catalogs.
    */
-  readonly extensions?: AtlasExtensionRegistry;
+  readonly extensions?: ExtensionRegistry;
 }
 
 type JsonObject = Readonly<Record<string, unknown>>;
 
-const BIDI_VIOLATION_SUMMARY: Readonly<Record<AtlasBidiViolation, string>> =
+const BIDI_VIOLATION_SUMMARY: Readonly<Record<BidiViolation, string>> =
   Object.freeze({
     'directional-override':
-      'Atlas catalog text contains a directional override or embedding (U+202A-U+202E), which reorders the text around it and cannot be seen while reading the file.',
+      'Equator catalog text contains a directional override or embedding (U+202A-U+202E), which reorders the text around it and cannot be seen while reading the file.',
     'unbalanced-isolate':
-      'Atlas catalog text contains an unbalanced directional isolate (U+2066-U+2069); an isolate that is opened and never closed reorders the text that follows it.',
+      'Equator catalog text contains an unbalanced directional isolate (U+2066-U+2069); an isolate that is opened and never closed reorders the text that follows it.',
     'byte-order-mark':
-      'Atlas catalog text contains U+FEFF, a byte-order mark that has ended up inside the value rather than content anyone typed.',
+      'Equator catalog text contains U+FEFF, a byte-order mark that has ended up inside the value rather than content anyone typed.',
   });
 
-const validateSourceCatalog = compileAtlasSchema(ATLAS_SOURCE_CATALOG_SCHEMA);
-const validateTargetCatalog = compileAtlasSchema(ATLAS_TARGET_CATALOG_SCHEMA);
+const validateSourceCatalog = compileSchema(SOURCE_CATALOG_SCHEMA);
+const validateTargetCatalog = compileSchema(TARGET_CATALOG_SCHEMA);
 
 function yamlRangeSpan(
   source: string,
   range: readonly number[] | null | undefined,
   sourcePath: string | undefined,
-): AtlasSourceSpan | undefined {
+): SourceSpan | undefined {
   if (range == null || range[0] === undefined) {
     return undefined;
   }
   const end = range[2] ?? range[1] ?? range[0];
-  return atlasSourceSpan(
-    source,
-    range[0],
-    Math.max(0, end - range[0]),
-    sourcePath,
-  );
+  return spanAt(source, range[0], Math.max(0, end - range[0]), sourcePath);
 }
 
 function yamlNodeSpan(
   source: string,
   node: Node | null | undefined,
   sourcePath: string | undefined,
-): AtlasSourceSpan | undefined {
+): SourceSpan | undefined {
   if (node === null || node === undefined) {
     return undefined;
   }
@@ -282,24 +272,24 @@ function yamlNodeSpan(
   return undefined;
 }
 
-const catalogSourceText = new WeakMap<AtlasCatalog, string>();
+const catalogSourceText = new WeakMap<Catalog, string>();
 
 /**
  * Resolve an authored path such as `['messages', 'nav.products']` to the span it occupies in the
  * catalog source, so a semantic diagnostic can report a real line and column instead of 1:1.
  *
- * The source is held in a side table rather than on `AtlasCatalog` itself. Putting it on the type
+ * The source is held in a side table rather than on `Catalog` itself. Putting it on the type
  * was tried and reverted: the catalog feeds deep equality, canonical JSON and output-freshness
  * digests, so an extra field silently changed identity and broke unchanged-output detection.
  *
- * Returns undefined for a catalog that was not produced by `parseAtlasCatalog`, or for a path
+ * Returns undefined for a catalog that was not produced by `parseCatalog`, or for a path
  * with no authored node behind it.
  */
-export function atlasCatalogPathSpan(
-  catalog: AtlasCatalog,
+export function catalogPathSpan(
+  catalog: Catalog,
   path: readonly (string | number)[],
-): AtlasSourceSpan | undefined {
-  return atlasCatalogPathAnchor(catalog, path)?.span;
+): SourceSpan | undefined {
+  return catalogPathAnchor(catalog, path)?.span;
 }
 
 /**
@@ -316,10 +306,10 @@ export function atlasCatalogPathSpan(
  * caller must then report no location rather than inventing one. Every location this returns is a
  * position a reader can put a cursor on.
  */
-export function atlasCatalogPathAnchor(
-  catalog: AtlasCatalog,
+export function catalogPathAnchor(
+  catalog: Catalog,
   path: readonly (string | number)[],
-): { readonly span: AtlasSourceSpan; readonly resolved: number } | undefined {
+): { readonly span: SourceSpan; readonly resolved: number } | undefined {
   const source = catalogSourceText.get(catalog);
   if (source === undefined || path.length === 0) return undefined;
   let documents: Document.Parsed<ParsedNode>[];
@@ -393,16 +383,16 @@ function yamlPathNode(
 function yamlDiagnostic(
   source: string,
   sourcePath: string | undefined,
-  code: AtlasDiagnosticCode,
+  code: ToolkitDiagnosticCode,
   summary: string,
   options: {
     readonly node?: ParsedNode | null;
     readonly path?: readonly (string | number)[];
-    readonly span?: AtlasSourceSpan;
+    readonly span?: SourceSpan;
   } = {},
-): AtlasDiagnostic {
+): ToolkitDiagnostic {
   const span = options.span ?? yamlNodeSpan(source, options.node, sourcePath);
-  return atlasDiagnostic(code, summary, {
+  return toolkitDiagnostic(code, summary, {
     ...(options.path === undefined ? {} : { path: options.path }),
     ...(span === undefined ? {} : { span }),
   });
@@ -416,8 +406,8 @@ function yamlDiagnostic(
  * is usable alone (the inner one has the rule and no property, the wrapper has the property and
  * no rule) so a reader got
  *
- *     en-US.yaml:2:3:  Atlas catalog must match pattern "^[a-z][a-z0-9]*(?:-[a-z]...".
- *     en-US.yaml:2:17: Atlas catalog property name must be valid.
+ *     en-US.yaml:2:3:  Equator catalog must match pattern "^[a-z][a-z0-9]*(?:-[a-z]...".
+ *     en-US.yaml:2:17: Equator catalog property name must be valid.
  *
  * two lines about one key, at two positions, saying between them less than either would alone. The
  * wrapper is kept because it resolves to the offending entry rather than to the map containing it,
@@ -446,7 +436,7 @@ function reportableSchemaErrors(
 /**
  * A rejected catalog key, said the way a person would say it.
  *
- * *"Atlas catalog property name must be valid"* names no property and no rule, and the line above
+ * *"Equator catalog property name must be valid"* names no property and no rule, and the line above
  * it printed the raw regex, which states the rule in a language the reader is not writing in,
  * and never mentions that the file spells keys one way and code spells them another.
  * `sign-in-button` in the file is `messages.signInButton` in code, and that mapping was written
@@ -461,7 +451,7 @@ function rejectedKeySummary(
   errors: readonly ErrorObject[],
 ): string | undefined {
   if (error.keyword !== 'propertyNames') return undefined;
-  const key = atlasSchemaErrorParameter(error, 'propertyName');
+  const key = schemaErrorParameter(error, 'propertyName');
   if (key === undefined) return undefined;
   const inner = errors.find(
     (candidate) =>
@@ -470,9 +460,7 @@ function rejectedKeySummary(
       candidate.keyword === 'pattern',
   );
   const pattern =
-    inner === undefined
-      ? undefined
-      : atlasSchemaErrorParameter(inner, 'pattern');
+    inner === undefined ? undefined : schemaErrorParameter(inner, 'pattern');
   if (pattern === undefined) return undefined;
 
   // Only the two maps whose rule this function knows how to state. A third keyed map added to the
@@ -489,14 +477,14 @@ function rejectedKeySummary(
           'Message keys are lower-case words joined by hyphens, and a dot separates groups.',
         ];
 
-  const repaired = atlasMessageKeyInCatalog(key);
+  const repaired = messageKeyInCatalog(key);
   let advice = '';
   try {
     if (repaired !== key && new RegExp(pattern, 'u').test(repaired)) {
       advice =
         collection === 'families'
           ? ` Write it as ${JSON.stringify(repaired)}.`
-          : ` Write it as ${JSON.stringify(repaired)}, which code reaches as messages.${atlasMessageKeyInCode(repaired)}.`;
+          : ` Write it as ${JSON.stringify(repaired)}, which code reaches as messages.${messageKeyInCode(repaired)}.`;
     }
   } catch {
     // A pattern this build cannot compile is not a reason to lose the diagnostic; the rule above
@@ -512,7 +500,7 @@ function rejectedKeySummary(
  * offending source, then a caret. Interpolated into a one-line diagnostic those newlines survive as
  * the raw bytes they are (on a terminal the reader gets
  * `Missing closing "quote at line 3, column 1:<CR><LF>  greeting: "unterminated<CR><LF>^<CR>`) and
- * the frame is a worse copy of the source Atlas is already pointing at by file, line and column.
+ * the frame is a worse copy of the source Equator is already pointing at by file, line and column.
  *
  * So: the first line only, with the position stripped off the end of it for the same reason. What is
  * left is the part that says what is wrong.
@@ -539,41 +527,38 @@ function inspectYamlNode(
   node: ParsedNode | null,
   sourcePath: string | undefined,
   path: readonly (string | number)[],
-  diagnostics: AtlasDiagnostic[],
+  diagnostics: ToolkitDiagnostic[],
   depth = 0,
   state: { nodes: number; limited: boolean } = { nodes: 0, limited: false },
 ): void {
   if (node === null) {
     return;
   }
-  if (
-    state.limited ||
-    diagnostics.length >= ATLAS_RESOURCE_LIMITS.diagnostics
-  ) {
+  if (state.limited || diagnostics.length >= RESOURCE_LIMITS.diagnostics) {
     return;
   }
   state.nodes += 1;
-  if (state.nodes > ATLAS_RESOURCE_LIMITS.yamlNodes) {
+  if (state.nodes > RESOURCE_LIMITS.yamlNodes) {
     state.limited = true;
     diagnostics.push(
       yamlDiagnostic(
         source,
         sourcePath,
-        'ATL1101',
-        `Atlas catalog structure exceeds the node ceiling of ${ATLAS_RESOURCE_LIMITS.yamlNodes}.`,
+        'EQ1101',
+        `Equator catalog structure exceeds the node ceiling of ${RESOURCE_LIMITS.yamlNodes}.`,
         { node, path },
       ),
     );
     return;
   }
 
-  if (depth > ATLAS_RESOURCE_LIMITS.yamlDepth) {
+  if (depth > RESOURCE_LIMITS.yamlDepth) {
     diagnostics.push(
       yamlDiagnostic(
         source,
         sourcePath,
-        'ATL1101',
-        `Atlas catalog structure exceeds the depth ceiling of ${ATLAS_RESOURCE_LIMITS.yamlDepth}.`,
+        'EQ1101',
+        `Equator catalog structure exceeds the depth ceiling of ${RESOURCE_LIMITS.yamlDepth}.`,
         { node, path },
       ),
     );
@@ -585,8 +570,8 @@ function inspectYamlNode(
       yamlDiagnostic(
         source,
         sourcePath,
-        'ATL1101',
-        'Atlas catalogs cannot contain YAML aliases.',
+        'EQ1101',
+        'Equator catalogs cannot contain YAML aliases.',
         { node, path },
       ),
     );
@@ -598,8 +583,8 @@ function inspectYamlNode(
       yamlDiagnostic(
         source,
         sourcePath,
-        'ATL1101',
-        'Atlas catalogs cannot contain YAML anchors.',
+        'EQ1101',
+        'Equator catalogs cannot contain YAML anchors.',
         { node, path },
       ),
     );
@@ -609,14 +594,14 @@ function inspectYamlNode(
     const seen = new Set<string>();
     for (const pair of node.items) {
       state.nodes += 1;
-      if (state.nodes > ATLAS_RESOURCE_LIMITS.yamlNodes) {
+      if (state.nodes > RESOURCE_LIMITS.yamlNodes) {
         state.limited = true;
         diagnostics.push(
           yamlDiagnostic(
             source,
             sourcePath,
-            'ATL1101',
-            `Atlas catalog structure exceeds the node ceiling of ${ATLAS_RESOURCE_LIMITS.yamlNodes}.`,
+            'EQ1101',
+            `Equator catalog structure exceeds the node ceiling of ${RESOURCE_LIMITS.yamlNodes}.`,
             { node: pair.key, path },
           ),
         );
@@ -627,8 +612,8 @@ function inspectYamlNode(
           yamlDiagnostic(
             source,
             sourcePath,
-            'ATL1101',
-            'Atlas catalog mappings require scalar string keys.',
+            'EQ1101',
+            'Equator catalog mappings require scalar string keys.',
             { node: pair.key, path },
           ),
         );
@@ -646,13 +631,13 @@ function inspectYamlNode(
 
       const key = pair.key.value;
       const childPath = [...path, key];
-      if (!isAtlasSafeStructuralText(key)) {
+      if (!isSafeStructuralText(key)) {
         diagnostics.push(
           yamlDiagnostic(
             source,
             sourcePath,
-            'ATL1101',
-            'Atlas catalog keys contain malformed Unicode or unauthorized invisible or bidi controls.',
+            'EQ1101',
+            'Equator catalog keys contain malformed Unicode or unauthorized invisible or bidi controls.',
             { node: pair.key, path: childPath },
           ),
         );
@@ -662,8 +647,8 @@ function inspectYamlNode(
           yamlDiagnostic(
             source,
             sourcePath,
-            'ATL1101',
-            'Atlas catalogs cannot contain YAML merge keys.',
+            'EQ1101',
+            'Equator catalogs cannot contain YAML merge keys.',
             { node: pair.key, path: childPath },
           ),
         );
@@ -673,8 +658,8 @@ function inspectYamlNode(
           yamlDiagnostic(
             source,
             sourcePath,
-            'ATL1103',
-            `Atlas catalog contains the duplicate key ${JSON.stringify(key)}.`,
+            'EQ1103',
+            `Equator catalog contains the duplicate key ${JSON.stringify(key)}.`,
             { node: pair.key, path: childPath },
           ),
         );
@@ -693,7 +678,7 @@ function inspectYamlNode(
       );
       if (
         limitReached(state) ||
-        diagnostics.length >= ATLAS_RESOURCE_LIMITS.diagnostics
+        diagnostics.length >= RESOURCE_LIMITS.diagnostics
       ) {
         return;
       }
@@ -714,7 +699,7 @@ function inspectYamlNode(
       );
       if (
         limitReached(state) ||
-        diagnostics.length >= ATLAS_RESOURCE_LIMITS.diagnostics
+        diagnostics.length >= RESOURCE_LIMITS.diagnostics
       ) {
         return;
       }
@@ -734,29 +719,29 @@ function inspectYamlNode(
         yamlDiagnostic(
           source,
           sourcePath,
-          'ATL1101',
-          'Atlas catalogs permit only JSON-compatible Core-schema scalar values.',
+          'EQ1101',
+          'Equator catalogs permit only JSON-compatible Core-schema scalar values.',
           { node, path },
         ),
       );
-    } else if (typeof value === 'string' && !isAtlasSafeAuthoredText(value)) {
+    } else if (typeof value === 'string' && !isSafeAuthoredText(value)) {
       diagnostics.push(
         yamlDiagnostic(
           source,
           sourcePath,
-          'ATL1101',
-          'Atlas catalog text contains malformed Unicode or forbidden control characters.',
+          'EQ1101',
+          'Equator catalog text contains malformed Unicode or forbidden control characters.',
           { node, path },
         ),
       );
     } else if (typeof value === 'string') {
-      const violation = inspectAtlasAuthoredBidi(value);
+      const violation = inspectAuthoredBidi(value);
       if (violation !== undefined) {
         diagnostics.push(
           yamlDiagnostic(
             source,
             sourcePath,
-            'ATL1103',
+            'EQ1103',
             BIDI_VIOLATION_SUMMARY[violation],
             { node, path },
           ),
@@ -770,8 +755,8 @@ function inspectYamlNode(
     yamlDiagnostic(
       source,
       sourcePath,
-      'ATL1101',
-      'Atlas catalog contains an unsupported YAML node.',
+      'EQ1101',
+      'Equator catalog contains an unsupported YAML node.',
       { node, path },
     ),
   );
@@ -810,7 +795,7 @@ function emptyFrozenRecord<T>(): Readonly<Record<string, T>> {
 
 function normalizeInputs(
   value: unknown,
-): Readonly<Record<string, AtlasInputRefinement>> {
+): Readonly<Record<string, InputRefinement>> {
   if (typeof value !== 'object' || value === null) {
     return emptyFrozenRecord();
   }
@@ -832,7 +817,7 @@ function normalizeInputs(
             : {}),
           ...(Array.isArray(record['enum'])
             ? {
-                enum: Object.freeze([...record['enum']] as AtlasInputLiteral[]),
+                enum: Object.freeze([...record['enum']] as InputLiteral[]),
               }
             : {}),
           optional: record['optional'] === true,
@@ -843,14 +828,14 @@ function normalizeInputs(
         }),
       ] as const;
     });
-  return frozenRecord<AtlasInputRefinement>(
-    entries as readonly (readonly [string, AtlasInputRefinement])[],
+  return frozenRecord<InputRefinement>(
+    entries as readonly (readonly [string, InputRefinement])[],
   );
 }
 
 function normalizeSlots(
   value: unknown,
-): Readonly<Record<string, AtlasSlotRefinement>> {
+): Readonly<Record<string, SlotRefinement>> {
   if (typeof value !== 'object' || value === null) {
     return emptyFrozenRecord();
   }
@@ -888,17 +873,17 @@ function normalizeSlots(
         }),
       ] as const;
     });
-  return frozenRecord<AtlasSlotRefinement>(
-    entries as readonly (readonly [string, AtlasSlotRefinement])[],
+  return frozenRecord<SlotRefinement>(
+    entries as readonly (readonly [string, SlotRefinement])[],
   );
 }
 
 function normalizeMessages(
   value: JsonObject,
-  semantics: ReadonlyMap<string, AtlasMessageSemanticModel>,
-): Readonly<Record<string, AtlasCatalogMessage>> {
+  semantics: ReadonlyMap<string, MessageSemanticModel>,
+): Readonly<Record<string, CatalogMessage>> {
   const messages = value['messages'] as JsonObject;
-  return frozenRecord<AtlasCatalogMessage>(
+  return frozenRecord<CatalogMessage>(
     Object.entries(messages)
       .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
       .map(([messageId, authored]) => {
@@ -908,9 +893,9 @@ function normalizeMessages(
             Object.freeze({
               kind: 'message',
               message: authored,
-              semantics: semantics.get(messageId) as AtlasMessageSemanticModel,
-              inputs: emptyFrozenRecord<AtlasInputRefinement>(),
-              slots: emptyFrozenRecord<AtlasSlotRefinement>(),
+              semantics: semantics.get(messageId) as MessageSemanticModel,
+              inputs: emptyFrozenRecord<InputRefinement>(),
+              slots: emptyFrozenRecord<SlotRefinement>(),
             }),
           ] as const;
         }
@@ -937,7 +922,7 @@ function normalizeMessages(
           Object.freeze({
             kind: 'message',
             message: record['message'] as string,
-            semantics: semantics.get(messageId) as AtlasMessageSemanticModel,
+            semantics: semantics.get(messageId) as MessageSemanticModel,
             ...metadata,
           }),
         ] as const;
@@ -945,29 +930,29 @@ function normalizeMessages(
   );
 }
 
-function contextDiagnostics(options: AtlasCatalogParseOptions): {
-  readonly diagnostics: readonly AtlasDiagnostic[];
-  readonly providerId?: AtlasProviderId;
-  readonly scopeId?: AtlasScopeId;
-  readonly locale?: AtlasLocale;
+function contextDiagnostics(options: CatalogParseOptions): {
+  readonly diagnostics: readonly ToolkitDiagnostic[];
+  readonly providerId?: ProviderId;
+  readonly scopeId?: ScopeId;
+  readonly locale?: CanonicalLocale;
 } {
-  const providerId = parseAtlasProviderId(options.providerId);
-  const scopeId = parseAtlasScopeId(options.scopeId);
-  const locale = canonicalizeAtlasLocale(options.locale);
-  const diagnostics: AtlasDiagnostic[] = [];
+  const providerId = parseProviderId(options.providerId);
+  const scopeId = parseScopeId(options.scopeId);
+  const locale = canonicalizeLocale(options.locale);
+  const diagnostics: ToolkitDiagnostic[] = [];
   if (!providerId.ok) {
     diagnostics.push(
-      atlasDiagnostic('ATL1104', 'Catalog provider identity is malformed.'),
+      toolkitDiagnostic('EQ1104', 'Catalog provider identity is malformed.'),
     );
   }
   if (!scopeId.ok) {
     diagnostics.push(
-      atlasDiagnostic('ATL1104', 'Catalog scope identity is malformed.'),
+      toolkitDiagnostic('EQ1104', 'Catalog scope identity is malformed.'),
     );
   }
   if (!locale.ok) {
     diagnostics.push(
-      atlasDiagnostic('ATL1003', 'Catalog locale is malformed.'),
+      toolkitDiagnostic('EQ1003', 'Catalog locale is malformed.'),
     );
   }
   return {
@@ -991,32 +976,32 @@ function contextDiagnostics(options: AtlasCatalogParseOptions): {
  * Refuses a file past the size ceiling before parsing it, and returns a failure rather than
  * throwing for anything wrong with its content.
  */
-export function parseAtlasCatalog(
+export function parseCatalog(
   sourceValue: unknown,
-  options: AtlasCatalogParseOptions,
-): AtlasResult<AtlasCatalog> {
-  const sourceText = atlasUntrustedText(
+  options: CatalogParseOptions,
+): ToolkitResult<Catalog> {
+  const sourceText = untrustedText(
     sourceValue,
-    'ATL1101',
+    'EQ1101',
     'Catalog source',
-    ATLAS_RESOURCE_LIMITS.catalogBytes,
+    RESOURCE_LIMITS.catalogBytes,
   );
   if (!sourceText.ok) return sourceText;
   const source = sourceText.value;
-  if (Buffer.byteLength(source, 'utf8') > ATLAS_RESOURCE_LIMITS.catalogBytes) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1101',
-        `Atlas catalog exceeds the ${ATLAS_RESOURCE_LIMITS.catalogBytes}-byte implementation ceiling.`,
+  if (Buffer.byteLength(source, 'utf8') > RESOURCE_LIMITS.catalogBytes) {
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1101',
+        `Equator catalog exceeds the ${RESOURCE_LIMITS.catalogBytes}-byte implementation ceiling.`,
         {
-          span: atlasSourceSpan(source, 0, source.length, options.sourcePath),
+          span: spanAt(source, 0, source.length, options.sourcePath),
         },
       ),
     ]);
   }
   const context = contextDiagnostics(options);
   if (context.diagnostics.length > 0) {
-    return atlasFailure(context.diagnostics);
+    return toolkitFailure(context.diagnostics);
   }
 
   let documents: Document.Parsed<ParsedNode>[];
@@ -1030,25 +1015,20 @@ export function parseAtlasCatalog(
       uniqueKeys: false,
     });
   } catch {
-    return atlasFailure([
-      atlasDiagnostic('ATL1101', 'Atlas catalog is not valid YAML.', {
-        span: atlasSourceSpan(
-          source,
-          0,
-          Math.min(1, source.length),
-          options.sourcePath,
-        ),
+    return toolkitFailure([
+      toolkitDiagnostic('EQ1101', 'Equator catalog is not valid YAML.', {
+        span: spanAt(source, 0, Math.min(1, source.length), options.sourcePath),
       }),
     ]);
   }
 
   if (documents.length !== 1) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1101',
-        'Atlas catalogs must contain exactly one YAML document.',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1101',
+        'Equator catalogs must contain exactly one YAML document.',
         {
-          span: atlasSourceSpan(source, 0, source.length, options.sourcePath),
+          span: spanAt(source, 0, source.length, options.sourcePath),
         },
       ),
     ]);
@@ -1056,10 +1036,10 @@ export function parseAtlasCatalog(
 
   const document = documents[0];
   if (document === undefined) {
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1101',
-        'Atlas catalog must contain one YAML document.',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1101',
+        'Equator catalog must contain one YAML document.',
       ),
     ]);
   }
@@ -1067,15 +1047,15 @@ export function parseAtlasCatalog(
   const parserDiagnostics = [...document.errors, ...document.warnings].map(
     (error) => {
       const span = yamlRangeSpan(source, error.pos, options.sourcePath);
-      return atlasDiagnostic(
-        'ATL1101',
-        `Atlas catalog YAML is invalid: ${yamlErrorSentence(error.message)}`,
+      return toolkitDiagnostic(
+        'EQ1101',
+        `Equator catalog YAML is invalid: ${yamlErrorSentence(error.message)}`,
         span === undefined ? {} : { span },
       );
     },
   );
   if (parserDiagnostics.length > 0) {
-    return atlasFailure(parserDiagnostics);
+    return toolkitFailure(parserDiagnostics);
   }
 
   if (
@@ -1083,10 +1063,10 @@ export function parseAtlasCatalog(
     Object.keys(document.directives.tags).some((tag) => tag !== '!!')
   ) {
     const span = yamlRangeSpan(source, document.range, options.sourcePath);
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1101',
-        'Atlas catalogs cannot contain YAML directives.',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1101',
+        'Equator catalogs cannot contain YAML directives.',
         span === undefined ? {} : { span },
       ),
     ]);
@@ -1095,29 +1075,29 @@ export function parseAtlasCatalog(
   const root = document.contents;
   if (!isMap<ParsedNode, ParsedNode | null>(root)) {
     const span = yamlNodeSpan(source, root, options.sourcePath);
-    return atlasFailure([
-      atlasDiagnostic(
-        'ATL1101',
-        'Atlas catalog root must be a mapping.',
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1101',
+        'Equator catalog root must be a mapping.',
         span === undefined ? {} : { span },
       ),
     ]);
   }
 
-  const structuralDiagnostics: AtlasDiagnostic[] = [];
+  const structuralDiagnostics: ToolkitDiagnostic[] = [];
   inspectYamlNode(source, root, options.sourcePath, [], structuralDiagnostics);
   if (structuralDiagnostics.length > 0) {
-    return atlasFailure(structuralDiagnostics);
+    return toolkitFailure(structuralDiagnostics);
   }
 
   const value = constructYamlValue(root);
   const validator =
     options.role === 'source' ? validateSourceCatalog : validateTargetCatalog;
   if (!validator(value)) {
-    const errors = sortedAtlasSchemaErrors(validator.errors);
-    return atlasFailure(
+    const errors = sortedSchemaErrors(validator.errors);
+    return toolkitFailure(
       reportableSchemaErrors(errors).map((error) => {
-        const path = atlasSchemaErrorPath(error);
+        const path = schemaErrorPath(error);
         const node = yamlPathNode(root, path).node;
         const targetContract =
           options.role === 'target' &&
@@ -1125,11 +1105,11 @@ export function parseAtlasCatalog(
         return yamlDiagnostic(
           source,
           options.sourcePath,
-          targetContract ? 'ATL1105' : 'ATL1102',
+          targetContract ? 'EQ1105' : 'EQ1102',
           targetContract
             ? 'Target catalog entries inherit inputs and slots from the source catalog.'
             : (rejectedKeySummary(error, errors) ??
-                atlasSchemaErrorSummary('Atlas catalog', error)),
+                schemaErrorSummary('Equator catalog', error)),
           {
             path,
             ...(node === undefined ? {} : { node }),
@@ -1142,15 +1122,15 @@ export function parseAtlasCatalog(
   const objectValue = value as JsonObject;
   if (
     Object.keys(objectValue['messages'] as JsonObject).length >
-    ATLAS_RESOURCE_LIMITS.messagesPerCatalog
+    RESOURCE_LIMITS.messagesPerCatalog
   ) {
     const messagesNode = yamlPathNode(root, ['messages']).node;
-    return atlasFailure([
+    return toolkitFailure([
       yamlDiagnostic(
         source,
         options.sourcePath,
-        'ATL1101',
-        `Atlas catalog exceeds the ${ATLAS_RESOURCE_LIMITS.messagesPerCatalog}-message implementation ceiling.`,
+        'EQ1101',
+        `Equator catalog exceeds the ${RESOURCE_LIMITS.messagesPerCatalog}-message implementation ceiling.`,
         {
           path: ['messages'],
           ...(messagesNode === undefined ? {} : { node: messagesNode }),
@@ -1159,14 +1139,14 @@ export function parseAtlasCatalog(
     ]);
   }
   for (const messageId of Object.keys(objectValue['messages'] as JsonObject)) {
-    const parsedMessageId = parseAtlasMessageId(messageId);
+    const parsedMessageId = parseMessageId(messageId);
     const node = yamlPathNode(root, ['messages', messageId]).node;
     if (!parsedMessageId.ok) {
-      return atlasFailure([
+      return toolkitFailure([
         yamlDiagnostic(
           source,
           options.sourcePath,
-          'ATL1104',
+          'EQ1104',
           `Message identity ${JSON.stringify(messageId)} is malformed.`,
           {
             path: ['messages', messageId],
@@ -1177,8 +1157,8 @@ export function parseAtlasCatalog(
     }
   }
 
-  const customFunctions = atlasMessageCustomFunctions(options.extensions);
-  const messageSemantics = new Map<string, AtlasMessageSemanticModel>();
+  const customFunctions = messageCustomFunctions(options.extensions);
+  const messageSemantics = new Map<string, MessageSemanticModel>();
   for (const [messageId, authored] of Object.entries(
     objectValue['messages'] as JsonObject,
   )) {
@@ -1196,13 +1176,13 @@ export function parseAtlasCatalog(
       continue;
     }
 
-    const semantics = parseAtlasMessage(body, {
+    const semantics = parseMessageSemanticModel(body, {
       path: ['messages', messageId],
       customFunctions,
     });
     if (!semantics.ok) {
       const node = yamlPathNode(root, ['messages', messageId]).node;
-      return atlasFailure(
+      return toolkitFailure(
         semantics.diagnostics.map((diagnostic) =>
           yamlDiagnostic(
             source,
@@ -1220,26 +1200,26 @@ export function parseAtlasCatalog(
     messageSemantics.set(messageId, semantics.value);
   }
 
-  const catalog: AtlasCatalog = Object.freeze({
+  const catalog: Catalog = Object.freeze({
     role: options.role,
-    providerId: context.providerId as AtlasProviderId,
-    scopeId: context.scopeId as AtlasScopeId,
-    locale: context.locale as AtlasLocale,
+    providerId: context.providerId as ProviderId,
+    scopeId: context.scopeId as ScopeId,
+    locale: context.locale as CanonicalLocale,
     ...(options.sourcePath === undefined
       ? {}
       : { sourcePath: options.sourcePath }),
     messages: normalizeMessages(objectValue, messageSemantics),
     families: normalizeFamilies(objectValue),
   });
-  // Held alongside the catalog, never on it: see atlasCatalogPathSpan.
+  // Held alongside the catalog, never on it: see catalogPathSpan.
   catalogSourceText.set(catalog, source);
-  return atlasSuccess(catalog);
+  return toolkitSuccess(catalog);
 }
 
 function normalizeFamilies(
   value: JsonObject,
-): Readonly<Record<string, AtlasCatalogFamily>> {
-  const result = Object.create(null) as Record<string, AtlasCatalogFamily>;
+): Readonly<Record<string, CatalogFamily>> {
+  const result = Object.create(null) as Record<string, CatalogFamily>;
   const families = value['families'];
   if (
     typeof families !== 'object' ||
@@ -1275,7 +1255,7 @@ function normalizeFamilies(
   return Object.freeze(result);
 }
 
-function authoredInput(refinement: AtlasInputRefinement): unknown {
+function authoredInput(refinement: InputRefinement): unknown {
   const expanded = {
     ...(refinement.type === undefined ? {} : { type: refinement.type }),
     ...(refinement.enum === undefined ? {} : { enum: refinement.enum }),
@@ -1290,7 +1270,7 @@ function authoredInput(refinement: AtlasInputRefinement): unknown {
     : expanded;
 }
 
-function authoredSlot(refinement: AtlasSlotRefinement): unknown {
+function authoredSlot(refinement: SlotRefinement): unknown {
   const expanded = {
     ...(refinement.kind === undefined ? {} : { kind: refinement.kind }),
     ...(refinement.shape === undefined ? {} : { shape: refinement.shape }),
@@ -1312,7 +1292,7 @@ function authoredSlot(refinement: AtlasSlotRefinement): unknown {
     : expanded;
 }
 
-function authoredMessage(message: AtlasCatalogMessage): unknown {
+function authoredMessage(message: CatalogMessage): unknown {
   const hasMetadata =
     message.description !== undefined ||
     message.context !== undefined ||
@@ -1353,7 +1333,7 @@ function authoredMessage(message: AtlasCatalogMessage): unknown {
   };
 }
 
-function authoredFamily(family: AtlasCatalogFamily): unknown {
+function authoredFamily(family: CatalogFamily): unknown {
   return Object.keys(family.segments).length === 0
     ? family.template
     : {
@@ -1419,13 +1399,13 @@ function plainSafe(value: string): boolean {
  * Key order is authorial information and is never touched. Quoting is reduced to the least a
  * scalar needs, and left alone wherever plain would be ambiguous.
  */
-export function formatAtlasCatalogSource(
+export function formatCatalogSource(
   source: string,
-  options: AtlasCatalogParseOptions,
-): AtlasResult<string> {
-  // Presentation is normalised only on a catalog Atlas can read. Reformatting a file whose
+  options: CatalogParseOptions,
+): ToolkitResult<string> {
+  // Presentation is normalised only on a catalog Equator can read. Reformatting a file whose
   // meaning is unknown is how a formatter turns one problem into two.
-  const parsed = parseAtlasCatalog(source, options);
+  const parsed = parseCatalog(source, options);
   if (!parsed.ok) return parsed;
 
   let document: Document.Parsed<ParsedNode>;
@@ -1440,14 +1420,9 @@ export function formatAtlasCatalogSource(
       keepSourceTokens: false,
     });
   } catch {
-    return atlasFailure([
-      atlasDiagnostic('ATL1101', 'Atlas catalog is not valid YAML.', {
-        span: atlasSourceSpan(
-          source,
-          0,
-          Math.min(1, source.length),
-          options.sourcePath,
-        ),
+    return toolkitFailure([
+      toolkitDiagnostic('EQ1101', 'Equator catalog is not valid YAML.', {
+        span: spanAt(source, 0, Math.min(1, source.length), options.sourcePath),
       }),
     ]);
   }
@@ -1483,7 +1458,7 @@ export function formatAtlasCatalogSource(
   };
   restyle(document.contents);
 
-  return atlasSuccess(
+  return toolkitSuccess(
     document.toString({
       defaultKeyType: 'PLAIN',
       doubleQuotedAsJSON: true,
@@ -1499,9 +1474,9 @@ export function formatAtlasCatalogSource(
  *
  * Correct only where there is no authored file to preserve: an interchange import creating a
  * target catalog for the first time. Anything editing a file a person wrote goes through
- * `formatAtlasCatalogSource`.
+ * `formatCatalogSource`.
  */
-export function formatAtlasCatalog(catalog: AtlasCatalog): string {
+export function formatCatalog(catalog: Catalog): string {
   const value = {
     messages: Object.fromEntries(
       Object.entries(catalog.messages).map(([messageId, message]) => [

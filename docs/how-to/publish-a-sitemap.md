@@ -16,7 +16,7 @@ parameter values enumerated, and those values are already written there.
 ```ts src/app/sitemap.spec.ts
 import { describe, expect, it } from 'vitest';
 
-import { projectSitemap } from '@neolorn/atlas/core';
+import { projectSitemap } from '@neolorn/equator/core';
 import { configuration } from '#i18n';
 
 import { appRouteProjection, routePolicy } from './localization.routes';
@@ -59,7 +59,7 @@ Build the set once. What it lists is what this build generated, which is settled
 request arrives. Give it the origin your router is configured with rather than the request's host, so
 the addresses in the file and the addresses in every page's head are one set.
 
-Atlas returns the files rather than writing them. An address is composed from six values:
+Equator returns the files rather than writing them. An address is composed from six values:
 
 - the locale URL policy;
 - the route projection;
@@ -68,8 +68,8 @@ Atlas returns the files rather than writing them. An address is composed from si
 - the origin this build answers at;
 - the mount point it is served under.
 
-Every one of those is a value your application holds when it runs, and `atlas generate` reads source
-text.
+Every one of those is a value your application holds when it runs, and `equator generate` reads
+source text.
 
 ## Serve the files
 
@@ -102,14 +102,14 @@ withRouting({
 
 `field` names a field on the Angular route's own `data`, and `values` states what each of its values
 claims. It is a field name and a table of literals because this is read from your source text at
-generate time, and Atlas never runs your code to find out. A route whose class the table does not
+generate time, and Equator never runs your code to find out. A route whose class the table does not
 list claims nothing, and an entry with an address and its alternates is already complete.
 
-`lastmodField` names a second data field carrying a W3C date. Atlas emits it only from a value a
+`lastmodField` names a second data field carrying a W3C date. Equator emits it only from a value a
 route declares. A build time is a date the page did not change on, and a search engine reads that
 element only when it can verify it.
 
-A value the protocol would reject reports `ATL1412` at generate time rather than being dropped: a
+A value the protocol would reject reports `EQ1412` at generate time rather than being dropped: a
 `changefreq` outside the seven it lists, a `priority` that is not a number between 0 and 1, or a
 `lastmod` that is not a date.
 

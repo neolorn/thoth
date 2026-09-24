@@ -1,14 +1,14 @@
 /**
- * The options `atlas init` accepts, written from the schema that decides what the file accepts.
+ * The options `equator init` accepts, written from the schema that decides what the file accepts.
  *
- * `AtlasInitProjectOptions` offered four of the six settable configuration keys, and the
+ * `InitProjectOptions` offered four of the six settable configuration keys, and the
  * two it omitted, `personNameLocales` and `pseudoLocales`, were unreachable from the install
  * line in a way nothing could notice: the initialized project was valid, so the only symptom was a
- * consumer discovering the field by reading Atlas's source or by failing at runtime.
+ * consumer discovering the field by reading Equator's source or by failing at runtime.
  *
  * A hand-written option list would have closed those two and gone stale on the seventh key, which
  * is the failure the item names rather than the one it reports. So the option set is not a list
- * that agrees with `ATLAS_CONFIGURATION_SCHEMA`; it *is* that schema, read at build time and
+ * that agrees with `CONFIGURATION_SCHEMA`; it *is* that schema, read at build time and
  * written here. A key added to the parser produces a flag the day it lands, and a checked-in table
  * that no longer matches fails `--check` in the gate. Same mechanism as
  * `locale-profile.generated.ts` from `cldr-core`, for the same reason.
@@ -70,10 +70,10 @@ try {
   );
 }
 
-const schema = schemas.ATLAS_CONFIGURATION_SCHEMA;
+const schema = schemas.CONFIGURATION_SCHEMA;
 assert.equal(
   schema?.title,
-  'Atlas project configuration',
+  'Equator project configuration',
   'dist/toolkit/schemas.js does not export the configuration schema this generator is written against.',
 );
 
@@ -154,7 +154,7 @@ function shapeOf(key, property) {
         assert.equal(
           typeof member.description,
           'string',
-          `Configuration key ${key} has an entry option ${name} with no description in ATLAS_CONFIGURATION_SCHEMA. atlas init --help prints it, so a field with none is a field the install line cannot state.`,
+          `Configuration key ${key} has an entry option ${name} with no description in CONFIGURATION_SCHEMA. equator init --help prints it, so a field with none is a field the install line cannot state.`,
         );
         options[name] = { type, description: member.description };
       }
@@ -164,7 +164,7 @@ function shapeOf(key, property) {
     }
   }
   throw new Error(
-    `Configuration key ${key} has a shape no init flag convention covers: ${JSON.stringify(property?.type ?? property)}. The conventions are a scalar, an array of scalars, an object of scalars, and an object of objects of scalars. Add the convention here rather than leaving the key unreachable from atlas init.`,
+    `Configuration key ${key} has a shape no init flag convention covers: ${JSON.stringify(property?.type ?? property)}. The conventions are a scalar, an array of scalars, an object of scalars, and an object of objects of scalars. Add the convention here rather than leaving the key unreachable from equator init.`,
   );
 }
 
@@ -175,7 +175,7 @@ const settable = Object.entries(schema.properties).filter(
 );
 assert.ok(
   settable.length > 0,
-  'ATLAS_CONFIGURATION_SCHEMA has no settable properties, so this generator would write an empty option table and every check below would pass on nothing.',
+  'CONFIGURATION_SCHEMA has no settable properties, so this generator would write an empty option table and every check below would pass on nothing.',
 );
 
 const settableKeys = settable.map(([key]) => key).sort();
@@ -183,7 +183,7 @@ const spelledKeys = Object.keys(SPELLINGS).sort();
 assert.deepEqual(
   settableKeys,
   spelledKeys,
-  `The init flag spellings and the configuration schema disagree. Only in SPELLINGS: ${spelledKeys.filter((key) => !settableKeys.includes(key)).join(', ') || 'none'}. Only in the schema: ${settableKeys.filter((key) => !spelledKeys.includes(key)).join(', ') || 'none'}. A configuration key with no flag is a key atlas init cannot set, which is exactly what 10.5 exists to prevent.`,
+  `The init flag spellings and the configuration schema disagree. Only in SPELLINGS: ${spelledKeys.filter((key) => !settableKeys.includes(key)).join(', ') || 'none'}. Only in the schema: ${settableKeys.filter((key) => !spelledKeys.includes(key)).join(', ') || 'none'}. A configuration key with no flag is a key equator init cannot set, which is exactly what 10.5 exists to prevent.`,
 );
 
 const required = new Set(schema.required ?? []);
@@ -192,7 +192,7 @@ const descriptors = settable.map(([key, property]) => {
   assert.equal(
     typeof property.description,
     'string',
-    `Configuration key ${key} has no description in ATLAS_CONFIGURATION_SCHEMA. atlas init --help prints it, so a settable field with none is a field the install line cannot state.`,
+    `Configuration key ${key} has no description in CONFIGURATION_SCHEMA. equator init --help prints it, so a settable field with none is a field the install line cannot state.`,
   );
   const { shape, depth, leaf, options } = shapeOf(key, property);
   return {
@@ -232,24 +232,24 @@ helpLines.push(
   '',
   '  A repeatable flag may appear more than once. Where a value contains "=", the left side is a',
   '  path beneath the field: "eg=ar-EG" sets one entry, "en-XA.markers=true" sets one option of',
-  '  one entry. Every field atlas.config.json accepts is above; there is no other way to set one.',
+  '  one entry. Every field equator.config.json accepts is above; there is no other way to set one.',
 );
 
 for (const line of helpLines) {
   assert.ok(
     line.length <= HELP_WIDTH,
-    `This atlas init --help line is ${line.length} characters and the budget is ${HELP_WIDTH}: ${line}\nShorten the description in ATLAS_CONFIGURATION_SCHEMA rather than raising the budget; help nobody can read in a terminal states nothing.`,
+    `This equator init --help line is ${line.length} characters and the budget is ${HELP_WIDTH}: ${line}\nShorten the description in CONFIGURATION_SCHEMA rather than raising the budget; help nobody can read in a terminal states nothing.`,
   );
 }
 const help = helpLines.join('\n');
 
-// The line printed beside ATL1701, which the tooling specification requires to be the exact
+// The line printed beside EQ1701, which the tooling specification requires to be the exact
 // complete invocation. It was written out by hand beside the help block that was also written out
 // by hand, so the two could disagree with the parser and with each other, and did: the help block
 // named four flags and this line named the same four, both of them missing two fields the
 // configuration accepts. Generated from the same descriptors, it cannot say less than --help does.
 const invocation = [
-  'atlas init',
+  'equator init',
   ...ordered.map((descriptor) => {
     const one = `${descriptor.flag} ${descriptor.value}`;
     if (!descriptor.repeatable) return one;
@@ -295,37 +295,37 @@ const body = ordered
   .join('\n');
 
 const output = `${[
-  '// Generated by tools/generate-cli-options.mjs from ATLAS_CONFIGURATION_SCHEMA. Do not edit.',
+  '// Generated by tools/generate-cli-options.mjs from CONFIGURATION_SCHEMA. Do not edit.',
   '//',
-  '// The option set atlas init accepts is the configuration schema rather than a list that agrees',
+  '// The option set equator init accepts is the configuration schema rather than a list that agrees',
   '// with it, so a key added to the parser is settable on the day it lands. pnpm run',
   '// verify:cli-options fails when this file and the schema have drifted apart.',
   '',
   '/** What a flag does with the value beside it. */',
-  "export type AtlasInitOptionShape = 'scalar' | 'list' | 'map';",
+  "export type InitOptionShape = 'scalar' | 'list' | 'map';",
   '',
   '/** The scalar types the init flag conventions cover. A schema leaf outside these fails the build. */',
-  "export type AtlasInitLeafType = 'string' | 'number' | 'boolean';",
+  "export type InitLeafType = 'string' | 'number' | 'boolean';",
   '',
   '/** Every configuration key an invocation can set. */',
-  `export type AtlasInitOptionKey =\n  | ${keyUnion};`,
+  `export type InitOptionKey =\n  | ${keyUnion};`,
   '',
   '/** One flag, and everything the parser and the help text need to know about it. */',
-  'export interface AtlasInitOptionDescriptor {',
-  '  /** The configuration key this flag sets, spelled as atlas.config.json spells it. */',
-  '  readonly key: AtlasInitOptionKey;',
+  'export interface InitOptionDescriptor {',
+  '  /** The configuration key this flag sets, spelled as equator.config.json spells it. */',
+  '  readonly key: InitOptionKey;',
   '  readonly flag: string;',
   '  /** The value placeholder --help prints beside the flag. */',
   '  readonly value: string;',
   '  /** The schema description, printed by --help and shipped in the JSON Schema. */',
   '  readonly description: string;',
-  '  readonly shape: AtlasInitOptionShape;',
+  '  readonly shape: InitOptionShape;',
   '  /** Path segments beneath the key: 0 for a scalar or list, 1 for a map of scalars, 2 for a map of objects. */',
   '  readonly depth: number;',
   '  /** The value type at the end of the path. Not consulted at depth 2, where `options` carries each type. */',
-  '  readonly leaf: AtlasInitLeafType;',
+  '  readonly leaf: InitLeafType;',
   '  /** For a depth-2 map, the option names beneath an entry and their types. Empty otherwise. */',
-  '  readonly options: Readonly<Record<string, AtlasInitLeafType>>;',
+  '  readonly options: Readonly<Record<string, InitLeafType>>;',
   '  /** The configuration schema requires this key, so an invocation that omits it cannot be completed. */',
   '  readonly required: boolean;',
   '  /** The flag may appear more than once, each occurrence adding rather than replacing. */',
@@ -334,17 +334,17 @@ const output = `${[
   '',
   '/** Required first, then schema order. */',
   '// prettier-ignore',
-  'export const ATLAS_INIT_OPTIONS: readonly AtlasInitOptionDescriptor[] = Object.freeze([',
+  'export const INIT_OPTIONS: readonly InitOptionDescriptor[] = Object.freeze([',
   body,
   ']);',
   '',
-  '/** The "Init options:" block of atlas --help, wrapped to a width a terminal has. */',
+  '/** The "Init options:" block of equator --help, wrapped to a width a terminal has. */',
   '// prettier-ignore',
-  `export const ATLAS_INIT_HELP = ${JSON.stringify(help)};`,
+  `export const INIT_HELP = ${JSON.stringify(help)};`,
   '',
-  '/** The complete invocation printed beside ATL1701. Every settable field, required ones first. */',
+  '/** The complete invocation printed beside EQ1701. Every settable field, required ones first. */',
   '// prettier-ignore',
-  `export const ATLAS_INIT_INVOCATION = ${JSON.stringify(invocation)};`,
+  `export const INIT_INVOCATION = ${JSON.stringify(invocation)};`,
   '',
 ].join('\n')}`;
 
@@ -365,10 +365,10 @@ if (process.argv.includes('--check')) {
   assert.equal(
     current,
     output,
-    'The checked-in atlas init option table is stale; run pnpm run build && pnpm run generate:cli-options.',
+    'The checked-in equator init option table is stale; run pnpm run build && pnpm run generate:cli-options.',
   );
   console.log(
-    `Verified ${ordered.length} atlas init options against ATLAS_CONFIGURATION_SCHEMA: ${ordered.map(({ flag }) => flag).join(' ')}. Every settable configuration key is reachable from the install line, and none of them is spelled by hand twice.`,
+    `Verified ${ordered.length} equator init options against CONFIGURATION_SCHEMA: ${ordered.map(({ flag }) => flag).join(' ')}. Every settable configuration key is reachable from the install line, and none of them is spelled by hand twice.`,
   );
 } else {
   let current;

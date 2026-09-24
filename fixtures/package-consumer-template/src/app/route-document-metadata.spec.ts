@@ -2,14 +2,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TestBed } from '@angular/core/testing';
 import { Router, TitleStrategy } from '@angular/router';
-import { Localization, withRouting } from '@neolorn/atlas';
+import { Localization, withRouting } from '@neolorn/equator';
 import {
   LocalizedTitleStrategy,
   documentMessage,
   provideLocalizedRouter,
   type LocalizedRouterOptions,
-} from '@neolorn/atlas/router';
-import { provideLocalizationTesting } from '@neolorn/atlas/testing';
+} from '@neolorn/equator/router';
+import { provideLocalizationTesting } from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -18,7 +18,7 @@ import { routeProjection } from '#i18n/routes';
 import { messages } from '#i18n/shell';
 
 import { routes } from './app.routes';
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
 /**
@@ -45,7 +45,7 @@ async function configure(
   await TestBed.configureTestingModule({
     providers: [
       provideLocalizedRouter(routes, {
-        origin: 'https://atlas.example',
+        origin: 'https://site.example',
         ...(documentMetadata === undefined
           ? {}
           : { documentMetadata: documentMetadata as never }),
@@ -57,7 +57,7 @@ async function configure(
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
           routeProjection,
         },
         withRouting({ policy: routePolicy, projection: appRouteProjection }),
@@ -99,8 +99,8 @@ describe('a route document declared by route id', () => {
     await localization.changeLocale(ARABIC);
 
     await router.navigateByUrl('/');
-    expect(document.title).toBe('مختبر ميزات Atlas');
-    expect(description()).toBe('مختبر وقت تشغيل الترجمة في Atlas.');
+    expect(document.title).toBe('مختبر ميزات Equator');
+    expect(description()).toBe('مختبر وقت تشغيل الترجمة في Equator.');
 
     await router.navigateByUrl('/second');
     // Distinct from the home title, and distinct from `route.second`: the label this route
@@ -177,12 +177,12 @@ describe('a route document declared by route id', () => {
   it('accepts the same message with its value bound', async () => {
     const router = await configure({
       'route:second': {
-        title: documentMessage(messages.welcome, { name: 'Atlas' }),
+        title: documentMessage(messages.welcome, { name: 'Equator' }),
       },
     });
     await router.navigateByUrl('/second');
 
-    expect(document.title).toBe('Welcome, Atlas!');
+    expect(document.title).toBe('Welcome, Equator!');
   });
 
   it('refuses an unbound message in an outcome document too', () => {
@@ -244,7 +244,7 @@ describe('the Open Graph block and the image that decides it', () => {
           siteName: messages.document.title,
         },
       },
-      () => ({ social: { image: 'https://atlas.example/social/preview.png' } }),
+      () => ({ social: { image: 'https://site.example/social/preview.png' } }),
     );
     await router.navigateByUrl('/second');
 

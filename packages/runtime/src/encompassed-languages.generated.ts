@@ -1,19 +1,19 @@
 /** Generated from cldr-core 48.2.0 and the IANA registry of 2026-06-14 by tools/generate-locale-profile.mjs. */
-export const ATLAS_ENCOMPASSED_LANGUAGE_PROFILE =
-  'cldr-48.2+iana-2026-06-14/atlas-encompassed-1' as const;
+export const ENCOMPASSED_LANGUAGE_PROFILE =
+  'cldr-48.2+iana-2026-06-14/equator-encompassed-1' as const;
 
 /**
  * How far apart two language subtags are, for subtags that are the same language written twice.
  *
  * Keyed by the requested language subtag, then by the supported one, in CLDR distances where a
  * smaller number is a closer match. A pair is present only when the IANA registry says one subtag
- * encompasses the other or that both are encompassed by one macrolanguage, BCP 47 3.1.10, and
- * CLDR ranks the pair at the language dimension. Absent means Atlas has nothing to say about the
- * pair, not that the two are unrelated.
+ * encompasses the other or that both are encompassed by one macrolanguage, BCP 47 3.1.10, and CLDR
+ * ranks the pair at the language dimension. Absent means Equator has nothing to say about the pair,
+ * not that the two are unrelated.
  *
  * This is not the whole of CLDR language matching and is not meant to become it. The dimensions it
- * leaves out are the ones Atlas already decides categorically, and the language-dimension pairs it
- * leaves out are CLDR's judgments about what a reader will accept instead of their own language,
+ * leaves out are the ones Equator already decides categorically, and the language-dimension pairs
+ * it leaves out are CLDR's judgments about what a reader will accept instead of their own language,
  * which is a policy rather than an identity.
  */
 // prettier-ignore

@@ -16,12 +16,12 @@ import tseslint from 'typescript-eslint';
  * Type-aware, which is the reason the tool is `typescript-eslint` rather than a faster linter that
  * cannot see types. `oxlint` would be first on cost (40 packages against 219, and its multi-file
  * analysis is in the core engine rather than rebuilt per rule) but its type-aware rules come from
- * `oxlint-tsgolint`, which requires TypeScript 7.0+; Atlas is on 6.0.3, so it cannot see a floating
- * promise here at all. It is worth revisiting, and would be the better tool, the day Atlas moves to
- * TypeScript 7. Biome is smaller still and its `noFloatingPromises` is in `lint/nursery` on Biome's
- * own inference engine, with no `typescript` dependency of any kind: an incubating rule on an
- * independent inference is the wrong place for a check whose whole value is being right about a
- * type.
+ * `oxlint-tsgolint`, which requires TypeScript 7.0+; Equator is on 6.0.3, so it cannot see a
+ * floating promise here at all. It is worth revisiting, and would be the better tool, the day
+ * Equator moves to TypeScript 7. Biome is smaller still and its `noFloatingPromises` is in
+ * `lint/nursery` on Biome's own inference engine, with no `typescript` dependency of any kind: an
+ * incubating rule on an independent inference is the wrong place for a check whose whole value is
+ * being right about a type.
  *
  * The program is `tsconfig.typecheck.json`, which is the one configuration in this repository that
  * is *checked* to load every file under `packages/`: `tools/verify-typecheck.mjs` derives the source
@@ -35,7 +35,7 @@ export default tseslint.config(
     // output.
     ignores: [
       '**/node_modules/',
-      '.atlas/',
+      '.equator/',
       '.runtimes/',
       'tmp/',
       'dist/',

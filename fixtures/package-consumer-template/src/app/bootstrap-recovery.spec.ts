@@ -9,14 +9,14 @@ import {
   withLocaleSources,
   withPersistence,
   withRecoveryMessage,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { messages, providerId, scopeId } from '#i18n/shell';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
  * When a catalog failed to load at startup, the user saw nothing at all.
@@ -103,7 +103,7 @@ describe('bootstrap when a catalog cannot load', () => {
             catalogSet,
             catalogLoaders: failingLoaders(),
             recoveryPayload,
-            extensions: atlasRuntimeExtensions,
+            extensions: runtimeExtensions,
           },
           withRecoveryMessage({
             message: messages.recovery.unavailable,
@@ -142,7 +142,7 @@ describe('bootstrap when a catalog cannot load', () => {
             catalogSet,
             catalogLoaders: failingLoaders(),
             recoveryPayload,
-            extensions: atlasRuntimeExtensions,
+            extensions: runtimeExtensions,
           },
           withRecoveryMessage({
             message: messages.recovery.unavailable,
@@ -174,7 +174,7 @@ describe('bootstrap when a catalog cannot load', () => {
             catalogSet,
             catalogLoaders: failingLoaders(),
             recoveryPayload,
-            extensions: atlasRuntimeExtensions,
+            extensions: runtimeExtensions,
           },
           withRecoveryMessage({
             message: messages.recovery.unavailable,
@@ -203,7 +203,7 @@ describe('bootstrap when a catalog cannot load', () => {
             catalogSet,
             catalogLoaders: failingLoaders(),
             recoveryPayload,
-            extensions: atlasRuntimeExtensions,
+            extensions: runtimeExtensions,
           },
           withPersistence(remembering('ar-EG')),
           withLocaleSources('stored', 'default'),
@@ -243,7 +243,7 @@ describe('bootstrap when a catalog cannot load', () => {
             configuration,
             catalogSet,
             catalogLoaders: failingLoaders(),
-            extensions: atlasRuntimeExtensions,
+            extensions: runtimeExtensions,
           }),
         ],
       }),

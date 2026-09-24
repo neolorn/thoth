@@ -5,14 +5,16 @@ import {
   languagePresentation,
   localeMetadata,
   resolveTypography,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 
 describe('pinned locale-direction profile', () => {
   it('binds runtime direction metadata to CLDR and Unicode script semantics', () => {
     // The profile names both sources because the direction data now comes from both: locale
     // direction from CLDR's script metadata, and the strong right-to-left character class from the
     // Unicode character database's Bidi_Class rather than from a script membership test.
-    expect(LOCALE_DATA_PROFILE).toBe('cldr-48.2+unicode-17.0/atlas-rtl-bidi-1');
+    expect(LOCALE_DATA_PROFILE).toBe(
+      'cldr-48.2+unicode-17.0/equator-rtl-bidi-1',
+    );
 
     for (const [locale, direction] of [
       ['ar-EG', 'rtl'],

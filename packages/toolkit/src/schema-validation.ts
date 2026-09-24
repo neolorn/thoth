@@ -7,9 +7,7 @@ const ajv = new Ajv2020({
   validateFormats: false,
 });
 
-export function compileAtlasSchema(
-  schema: AnySchema,
-): ValidateFunction<unknown> {
+export function compileSchema(schema: AnySchema): ValidateFunction<unknown> {
   return ajv.compile(schema);
 }
 
@@ -18,7 +16,7 @@ function decodeJsonPointerPart(value: string): string {
 }
 
 /** One string parameter off an Ajv error, or nothing when it is absent or not a string. */
-export function atlasSchemaErrorParameter(
+export function schemaErrorParameter(
   error: ErrorObject,
   key: string,
 ): string | undefined {
@@ -26,7 +24,7 @@ export function atlasSchemaErrorParameter(
   return typeof value === 'string' ? value : undefined;
 }
 
-export function atlasSchemaErrorPath(
+export function schemaErrorPath(
   error: ErrorObject,
 ): readonly (string | number)[] {
   const path: (string | number)[] = error.instancePath
@@ -36,9 +34,9 @@ export function atlasSchemaErrorPath(
     .map((part) => (/^(?:0|[1-9][0-9]*)$/u.test(part) ? Number(part) : part));
 
   const child =
-    atlasSchemaErrorParameter(error, 'additionalProperty') ??
-    atlasSchemaErrorParameter(error, 'missingProperty') ??
-    atlasSchemaErrorParameter(error, 'propertyName');
+    schemaErrorParameter(error, 'additionalProperty') ??
+    schemaErrorParameter(error, 'missingProperty') ??
+    schemaErrorParameter(error, 'propertyName');
   if (child !== undefined) {
     path.push(child);
   }
@@ -46,7 +44,7 @@ export function atlasSchemaErrorPath(
   return Object.freeze(path);
 }
 
-export function atlasSchemaErrorSummary(
+export function schemaErrorSummary(
   subject: string,
   error: ErrorObject,
 ): string {
@@ -54,7 +52,7 @@ export function atlasSchemaErrorSummary(
   return `${subject} ${detail}.`;
 }
 
-export function sortedAtlasSchemaErrors(
+export function sortedSchemaErrors(
   errors: readonly ErrorObject[] | null | undefined,
 ): readonly ErrorObject[] {
   return Object.freeze(

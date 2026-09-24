@@ -19,16 +19,16 @@ import {
   applicationBaseHref,
   withRouting,
   type LocaleSelectorChoice,
-} from '@neolorn/atlas';
-import { provideLocalizedRouter } from '@neolorn/atlas/router';
-import { provideLocalizationTesting } from '@neolorn/atlas/testing';
+} from '@neolorn/equator';
+import { provideLocalizedRouter } from '@neolorn/equator/router';
+import { provideLocalizationTesting } from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 import { routes } from './app.routes';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
@@ -37,7 +37,7 @@ import { routePolicy, appRouteProjection } from './localization.routes';
  * `https://example.com`.
  *
  * The browser puts that sub-path in front of every address it hands the application, and it is in
- * none of the addresses Atlas builds: a locale URL policy addresses routes from the application's
+ * none of the addresses Equator builds: a locale URL policy addresses routes from the application's
  * own root, and knows nothing about where that root is mounted. So every surface that reads an
  * address has to take the base off first, and every surface that writes one has to put it back.
  *
@@ -85,7 +85,7 @@ interface Deployment {
  * A browser-supplied arrival at an application mounted under `base`.
  *
  * Both halves of the address are set, and the pair is load-bearing: `MockPlatformLocation` is what
- * the `LocationStrategy` reads, and jsdom's `history` is what Atlas's `url` locale source reads.
+ * the `LocationStrategy` reads, and jsdom's `history` is what Equator's `url` locale source reads.
  * Setting one and not the other leaves the Router and the committed locale disagreeing for a reason
  * that has nothing to do with what is under test.
  */
@@ -108,14 +108,14 @@ async function arriveAt(
       ...(base.token === undefined
         ? []
         : [{ provide: APP_BASE_HREF, useValue: base.token }]),
-      provideLocalizedRouter(routes, { origin: 'https://atlas.example' }),
+      provideLocalizedRouter(routes, { origin: 'https://site.example' }),
       provideLocalizationTesting(
         {
           configuration,
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
           routeProjection,
         },
         withRouting({ policy: routePolicy, projection: appRouteProjection }),
@@ -157,7 +157,7 @@ async function arriveAt(
   });
 }
 
-const ARABIC_UNDER_APP = 'https://atlas.example/app/ar-eg/second';
+const ARABIC_UNDER_APP = 'https://site.example/app/ar-eg/second';
 
 /** Read out of the document, because that is where a crawler reads it. */
 const canonical = (): string | null =>
@@ -251,7 +251,7 @@ describe('an application deployed under a sub-path', () => {
   it('reads the same address at the root, which is how every other spec here runs', async () => {
     // The control. One thing differs from the two above, where the application is mounted, so
     // an implementation that ignored the base entirely would pass this and fail those.
-    const arrival = await arriveAt('https://atlas.example/ar-eg/second', {});
+    const arrival = await arriveAt('https://site.example/ar-eg/second', {});
 
     expect(arrival.locale).toBe('ar-EG');
     expect(arrival.routerUrl).toBe('/second');
@@ -276,7 +276,7 @@ describe('an application deployed under a sub-path', () => {
   it('writes the same option without a sub-path when there is none', async () => {
     // The control. One thing differs from the test above, and the snapshot value is identical in
     // both, which is the point of reading it here as well.
-    const arrival = await arriveAt('https://atlas.example/ar-eg/second', {});
+    const arrival = await arriveAt('https://site.example/ar-eg/second', {});
     const written = hrefs(arrival.localization, 'en-US');
 
     expect(written.snapshot).toBe('/en-us/second');
@@ -307,25 +307,25 @@ describe('an application deployed under a sub-path', () => {
 
     // A canonical URL is made of three things: the site, the mount point, and the address the
     // policy spells from the application's own root. Without the middle one this page tells every
-    // crawler it lives at `https://atlas.example/ar-eg/second`: a path this deployment does not
+    // crawler it lives at `https://site.example/ar-eg/second`: a path this deployment does not
     // serve, and one whatever else is on that site may.
-    expect(canonical()).toBe('https://atlas.example/app/ar-eg/second');
-    expect(alternate('ar-EG')).toBe('https://atlas.example/app/ar-eg/second');
-    expect(alternate('en-US')).toBe('https://atlas.example/app/en-us/second');
+    expect(canonical()).toBe('https://site.example/app/ar-eg/second');
+    expect(alternate('ar-EG')).toBe('https://site.example/app/ar-eg/second');
+    expect(alternate('en-US')).toBe('https://site.example/app/en-us/second');
     // The fallback, which is an address in this application like any other.
-    expect(alternate('x-default')).toBe('https://atlas.example/app/');
+    expect(alternate('x-default')).toBe('https://site.example/app/');
   });
 
   it('advertises the same page without a sub-path when there is none', async () => {
     // The control, and the only claim being made about a root-mounted deployment: it publishes
     // what it always published. One thing differs from the test above, where the application is
     // mounted, so a head that ignored the base would pass this and fail that.
-    await arriveAt('https://atlas.example/ar-eg/second', {});
+    await arriveAt('https://site.example/ar-eg/second', {});
 
-    expect(canonical()).toBe('https://atlas.example/ar-eg/second');
-    expect(alternate('ar-EG')).toBe('https://atlas.example/ar-eg/second');
-    expect(alternate('en-US')).toBe('https://atlas.example/en-us/second');
-    expect(alternate('x-default')).toBe('https://atlas.example/');
+    expect(canonical()).toBe('https://site.example/ar-eg/second');
+    expect(alternate('ar-EG')).toBe('https://site.example/ar-eg/second');
+    expect(alternate('en-US')).toBe('https://site.example/en-us/second');
+    expect(alternate('x-default')).toBe('https://site.example/');
   });
 
   it('reads the base href from the one resolution both halves use', async () => {
@@ -338,7 +338,7 @@ describe('an application deployed under a sub-path', () => {
       '/app/',
     );
     expect(arrival.locale).toBe('ar-EG');
-    expect(canonical()).toBe('https://atlas.example/app/ar-eg/second');
+    expect(canonical()).toBe('https://site.example/app/ar-eg/second');
   });
 
   it('writes the base back on an ordinary in-app navigation', async () => {

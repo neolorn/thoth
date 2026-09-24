@@ -16,8 +16,8 @@ import {
   type RuntimeMessageFunctionBinding,
   type RuntimeParsingAdapterBinding,
   type RuntimeRichSlotKindBinding,
-} from '@neolorn/atlas/core';
-import { atlasIsMessageName } from './message-format-syntax';
+} from '@neolorn/equator/core';
+import { isMessageName } from './message-format-syntax';
 import {
   RUNTIME_LIMITS,
   codePointLengthAtMost,
@@ -72,11 +72,9 @@ function validOptions(value: unknown, rich: boolean): boolean {
   const entries = Object.entries(value);
   if (entries.length > RUNTIME_LIMITS.extensionOptions) return false;
   for (const [name, option] of entries) {
-    // A rich-slot option name is Atlas's own vocabulary; a message-function option name is
+    // A rich-slot option name is Equator's own vocabulary; a message-function option name is
     // MessageFormat's, and the two productions are different on purpose.
-    if (
-      rich ? !/^[a-z][a-z0-9-]{0,63}$/u.test(name) : !atlasIsMessageName(name)
-    ) {
+    if (rich ? !/^[a-z][a-z0-9-]{0,63}$/u.test(name) : !isMessageName(name)) {
       return false;
     }
     if (rich) {

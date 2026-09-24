@@ -5,7 +5,7 @@ the application's locale when a visitor picks one.
 
 ## Before you begin
 
-You need at least two locales in `atlas.config.json`, which is
+You need at least two locales in `equator.config.json`, which is
 [How to add a locale](add-a-locale.md).
 
 ## Render the options
@@ -33,7 +33,7 @@ copied, and seen in the status bar.
 
 ## Announce the change
 
-A screen reader is told the page changed language whether or not you ask. Atlas announces the
+A screen reader is told the page changed language whether or not you ask. Equator announces the
 arriving locale's own name, in that locale, into a live region it owns.
 
 `withLocaleAnnouncement` replaces that wording and nothing else. Take it when the language's name is
@@ -41,10 +41,11 @@ not what you want said. It takes a function from the snapshot that has just comm
 sentence to announce, so the wording is yours and can be in the language just arrived at.
 
 If your application already announces the change through a live region of its own, return nothing.
-The change is then announced once, by you, and Atlas's region stays in the document saying nothing.
+The change is then announced once, by you, and Equator's region stays in the document saying
+nothing.
 
-Nothing removes the region. `withoutDocumentLocale()` removes it, along with everything else Atlas
-writes to the document, and is the statement that the document is not Atlas's to touch.
+Nothing removes the region. `withoutDocumentLocale()` removes it, along with everything else Equator
+writes to the document, and is the statement that the document is not Equator's to touch.
 
 ## Remember the choice
 
@@ -82,13 +83,17 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { MOCK_PLATFORM_LOCATION_CONFIG } from '@angular/common/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Localization, withRecoveryMessage, withRouting } from '@neolorn/atlas';
-import { provideLocalizedRouter } from '@neolorn/atlas/router';
+import {
+  Localization,
+  withRecoveryMessage,
+  withRouting,
+} from '@neolorn/equator';
+import { provideLocalizedRouter } from '@neolorn/equator/router';
 import {
   LocalizationTestingController,
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
-} from '@neolorn/atlas/testing';
+} from '@neolorn/equator/testing';
 import { localizationSetup } from '#i18n';
 import { messages, providerId, scopeId } from '#i18n/shell';
 
@@ -97,7 +102,7 @@ import { appRouteProjection, routePolicy } from './localization.routes';
 
 const shell = { providerId, scopeId } as const;
 
-// Atlas reads the address bar for the locale, so a test that navigates and does not put it back
+// Equator reads the address bar for the locale, so a test that navigates and does not put it back
 // decides what the next test is looking at.
 afterEach(resetLocalizationTestEnvironment);
 
@@ -153,5 +158,5 @@ the address if your URLs carry the locale, and anything registered as a particip
 ## Related
 
 - [About how a locale switch is a transaction](../explanation/about-locale-switching.md)
-- [How to extend Atlas](extend-atlas.md), for bringing your own work into the switch
+- [How to extend Equator](add-an-extension.md), for bringing your own work into the switch
 - [How to test localized output](test-localized-output.md)

@@ -13,22 +13,23 @@ import {
   withPersistence,
   type LocalizationObservabilityEvent,
   type LocalizationPersistenceStoreFactory,
-} from '@neolorn/atlas';
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 
-import { atlasRuntimeExtensions } from './runtime-extensions';
+import { runtimeExtensions } from './runtime-extensions';
 
 /**
  * Remembering a locale choice between visits.
  *
- * `specs/03-locale-identity-and-resolution.spec.md` section 8 says Atlas "exposes typed opt-in memory, browser, SSR-cookie, and
- * authenticated-profile ports". None of the four existed. What shipped was a description of how to
- * write one, which a four-application workspace would have written four times. The shared wrapper
- * that normally prevents that duplication is not always available either: a workspace whose
- * architecture forbids one application reaching another's code has nowhere to put it.
+ * `specs/03-locale-identity-and-resolution.spec.md` section 8 says Equator "exposes typed opt-in
+ * memory, browser, SSR-cookie, and authenticated-profile ports". None of the four existed. What
+ * shipped was a description of how to write one, which a four-application workspace would have
+ * written four times. The shared wrapper that normally prevents that duplication is not always
+ * available either: a workspace whose architecture forbids one application reaching another's code
+ * has nowhere to put it.
  *
  * The interesting part is not the four stores; a cookie is a cookie. It is the four rules that had
  * to be identical across all of them and would not have been if each application wrote its own:
@@ -50,7 +51,7 @@ function setup(
           catalogSet,
           catalogLoaders,
           recoveryPayload,
-          extensions: atlasRuntimeExtensions,
+          extensions: runtimeExtensions,
         },
         withPersistence(...stores),
         ...(events === undefined
@@ -277,7 +278,7 @@ describe('a stored value that cannot be believed', () => {
 
   it('reads stores in the order the consumer declared them', async () => {
     // The consumer owns the authority order, so an authenticated profile ahead of a cookie
-    // outranks it, and Atlas takes the first believable answer without reordering or merging.
+    // outranks it, and Equator takes the first believable answer without reordering or merging.
     const localization = setup([
       () => ({ id: 'first', read: () => 'ar-EG', write: () => undefined }),
       () => ({ id: 'second', read: () => 'en-US', write: () => undefined }),
@@ -368,7 +369,7 @@ describe('a store that misbehaves', () => {
 
 describe('the shipped stores', () => {
   beforeEach(() => {
-    document.cookie = 'atlas-locale=; Path=/; Max-Age=0';
+    document.cookie = 'equator-locale=; Path=/; Max-Age=0';
     localStorage.clear();
   });
 
@@ -378,7 +379,7 @@ describe('the shipped stores', () => {
     await localization.changeLocale('ar-EG');
     await settled();
 
-    expect(document.cookie).toContain('atlas-locale=ar-EG');
+    expect(document.cookie).toContain('equator-locale=ar-EG');
     expect((await setup([cookieStore()]).initialize()).primaryLocale).toBe(
       'ar-EG',
     );
@@ -392,12 +393,12 @@ describe('the shipped stores', () => {
     await localization.initialize();
     await localization.changeLocale('ar-EG');
     await settled();
-    expect(document.cookie).toContain('atlas-locale=ar-EG');
+    expect(document.cookie).toContain('equator-locale=ar-EG');
 
     const report = await localization.forgetRememberedLocale();
 
     expect(report.complete).toBe(true);
-    expect(document.cookie).not.toContain('atlas-locale=ar-EG');
+    expect(document.cookie).not.toContain('equator-locale=ar-EG');
     expect((await setup([cookieStore()]).initialize()).primaryLocale).toBe(
       'en-US',
     );
@@ -451,7 +452,7 @@ describe('the shipped stores', () => {
     await settled();
 
     // A device that later goes offline should still remember what the signed-in profile knew.
-    expect(document.cookie).toContain('atlas-locale=ar-EG');
+    expect(document.cookie).toContain('equator-locale=ar-EG');
     expect(localStorage.getItem('lang')).toBe('ar-EG');
   });
 });
@@ -486,7 +487,7 @@ describe('what a server render can see', () => {
     // preference that can reach the first response. Without it the server renders the default
     // language and the browser corrects it after hydration, which is a visible flash of the wrong
     // language on every single visit.
-    const store = underServerRender('theme=dark; atlas-locale=ar-EG', () =>
+    const store = underServerRender('theme=dark; equator-locale=ar-EG', () =>
       cookieStore()(),
     );
 
@@ -494,7 +495,7 @@ describe('what a server render can see', () => {
   });
 
   it('sees nothing in local storage, which is the whole distinction', async () => {
-    const store = underServerRender('atlas-locale=ar-EG', () =>
+    const store = underServerRender('equator-locale=ar-EG', () =>
       localStorageStore()(),
     );
 
@@ -504,18 +505,18 @@ describe('what a server render can see', () => {
   it('does not try to write a cookie it has no response to write it to', async () => {
     // Setting a cookie on the server means setting a response header, and the response belongs to
     // the consumer's server. Nothing is lost: the browser writes the same cookie on hydration.
-    document.cookie = 'atlas-locale=; Path=/; Max-Age=0';
+    document.cookie = 'equator-locale=; Path=/; Max-Age=0';
     const store = underServerRender(undefined, () => cookieStore()());
 
     store.write('ar-EG');
 
-    expect(document.cookie).not.toContain('atlas-locale=ar-EG');
+    expect(document.cookie).not.toContain('equator-locale=ar-EG');
   });
 
   it('ignores a cookie whose value is not a locale', async () => {
     // The value arrived from the client. It is rejected rather than repaired: a value that needed
-    // repairing was not the value Atlas wrote.
-    const store = underServerRender('atlas-locale=%2e%2e%2fetc', () =>
+    // repairing was not the value Equator wrote.
+    const store = underServerRender('equator-locale=%2e%2e%2fetc', () =>
       cookieStore()(),
     );
 

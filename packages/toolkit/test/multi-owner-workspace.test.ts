@@ -11,14 +11,14 @@ import { resolve } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { generateAtlasProject } from '../src/index.js';
-import { initializeAtlasProject } from '../src/project-host.js';
+import { generateProject } from '../src/index.js';
+import { initializeProject } from '../src/project-host.js';
 
 /**
  * A multi-application workspace: four `projectType: application` entries and two libraries in one
  * `angular.json`.
  *
- * A multi-application workspace can run Atlas.
+ * A multi-application workspace can run Equator.
  * The accurate statement is narrower and worse: it works only under a layout `ng generate
  * application` does not produce, and an application sitting at the workspace root beside a second
  * application can never be selected.
@@ -53,7 +53,7 @@ interface WorkspaceOptions {
 async function multiApplicationWorkspace(
   options: WorkspaceOptions,
 ): Promise<string> {
-  const root = await mkdtemp(resolve(tmpdir(), 'atlas-multi-owner-'));
+  const root = await mkdtemp(resolve(tmpdir(), 'multi-owner-'));
   temporaryRoots.push(root);
 
   const projects: Record<string, unknown> = {};
@@ -103,7 +103,7 @@ async function multiApplicationWorkspace(
 
     await write(
       root,
-      `${base}atlas.config.json`,
+      `${base}equator.config.json`,
       `${JSON.stringify(
         {
           schemaVersion: 1,
@@ -189,17 +189,17 @@ describe('a multi-application workspace with one manifest', () => {
       ownersWithManifest: ['home'],
     });
 
-    const home = await generateAtlasProject({
+    const home = await generateProject({
       project: resolve(root, 'apps', 'home'),
     });
     expect(home.ok).toBe(true);
 
     for (const application of ['identity', 'management', 'account'] as const) {
-      const generated = await generateAtlasProject({
+      const generated = await generateProject({
         project: resolve(root, 'apps', application),
       });
       expect(generated.ok).toBe(false);
-      expect(generated.diagnostics.map((d) => d.code)).toContain('ATL1702');
+      expect(generated.diagnostics.map((d) => d.code)).toContain('EQ1702');
     }
   });
 
@@ -211,7 +211,7 @@ describe('a multi-application workspace with one manifest', () => {
     });
 
     for (const application of APPLICATIONS) {
-      const generated = await generateAtlasProject({
+      const generated = await generateProject({
         project: resolve(root, 'apps', application),
       });
       expect(generated.ok, `${application} should generate`).toBe(true);
@@ -225,7 +225,7 @@ describe('a multi-application workspace with one manifest', () => {
     });
 
     for (const application of APPLICATIONS) {
-      await generateAtlasProject({
+      await generateProject({
         project: resolve(root, 'apps', application),
       });
     }
@@ -251,7 +251,7 @@ describe('a multi-application workspace with one manifest', () => {
       homeAtRoot: true,
     });
 
-    const generated = await generateAtlasProject({ project: root });
+    const generated = await generateProject({ project: root });
 
     expect(generated.ok).toBe(false);
     const summaries = generated.diagnostics.map((d) => d.summary);
@@ -264,7 +264,7 @@ describe('a multi-application workspace with one manifest', () => {
 });
 
 describe('onboarding an application that has no manifest', () => {
-  it('creates the manifest from atlas init and then generates', async () => {
+  it('creates the manifest from equator init and then generates', async () => {
     // The whole of what the three blocked applications need. Authoring files belongs to init and
     // nowhere else, so the command a developer runs deliberately is the one that writes them.
     const root = await multiApplicationWorkspace({
@@ -272,7 +272,7 @@ describe('onboarding an application that has no manifest', () => {
     });
     const identity = resolve(root, 'apps', 'identity');
 
-    const initialized = await initializeAtlasProject({ project: identity });
+    const initialized = await initializeProject({ project: identity });
     expect(initialized.ok).toBe(true);
 
     const manifest = JSON.parse(
@@ -284,7 +284,7 @@ describe('onboarding an application that has no manifest', () => {
       '#i18n': './src/generated/i18n/index.ts',
     });
 
-    expect((await generateAtlasProject({ project: identity })).ok).toBe(true);
+    expect((await generateProject({ project: identity })).ok).toBe(true);
   });
 
   it('reports nothing but the remedy when a build command meets a missing manifest', async () => {
@@ -292,7 +292,7 @@ describe('onboarding an application that has no manifest', () => {
       ownersWithManifest: ['home'],
     });
 
-    const generated = await generateAtlasProject({
+    const generated = await generateProject({
       project: resolve(root, 'apps', 'account'),
     });
 
@@ -301,7 +301,7 @@ describe('onboarding an application that has no manifest', () => {
     // Naming the command is the entire remedy. A diagnostic that says the owner "requires an
     // ordinary package.json" and stops there leaves the reader to guess it.
     expect(
-      summaries.some((summary) => summary.includes('Run atlas init')),
+      summaries.some((summary) => summary.includes('Run equator init')),
     ).toBe(true);
     expect(
       summaries.some((summary) => summary.includes('never author files')),
@@ -316,7 +316,7 @@ describe('onboarding an application that has no manifest', () => {
     });
     const account = resolve(root, 'apps', 'account');
 
-    await generateAtlasProject({ project: account });
+    await generateProject({ project: account });
 
     await expect(
       readFile(resolve(account, 'package.json'), 'utf8'),
@@ -324,15 +324,15 @@ describe('onboarding an application that has no manifest', () => {
   });
 
   it('refuses to name a package after a directory that is not a package name', async () => {
-    // The provider identity is durable and reaches every compiled artifact, so a name Atlas had to
-    // repair would be the wrong identity forever.
+    // The provider identity is durable and reaches every compiled artifact, so a name Equator had
+    // to repair would be the wrong identity forever.
     const root = await multiApplicationWorkspace({
       ownersWithManifest: ['home'],
     });
     const awkward = resolve(root, 'apps', 'Identity Portal');
     await mkdir(resolve(awkward, 'src'), { recursive: true });
     await writeFile(
-      resolve(awkward, 'atlas.config.json'),
+      resolve(awkward, 'equator.config.json'),
       `${JSON.stringify(
         {
           schemaVersion: 1,
@@ -346,7 +346,7 @@ describe('onboarding an application that has no manifest', () => {
       'utf8',
     );
 
-    const initialized = await initializeAtlasProject({ project: awkward });
+    const initialized = await initializeProject({ project: awkward });
 
     expect(initialized.ok).toBe(false);
     expect(
@@ -359,10 +359,10 @@ describe('onboarding an application that has no manifest', () => {
 
 describe('an owner with no TypeScript graph', () => {
   it('says so instead of succeeding with nothing analyzed', async () => {
-    // Silence was the worst available answer: with no graph Atlas sees no template and no call
+    // Silence was the worst available answer: with no graph Equator sees no template and no call
     // site, so every message looks unused, reachability is empty, and it all reports success
     // at all. Every new owner meets first-time configuration exactly once, so this is
-    // where a workspace adopting Atlas is most likely to hit it.
+    // where a workspace adopting Equator is most likely to hit it.
     const root = await multiApplicationWorkspace({
       ownersWithManifest: ['home'],
     });
@@ -379,7 +379,7 @@ describe('an owner with no TypeScript graph', () => {
       'utf8',
     );
 
-    const generated = await generateAtlasProject({ project: home });
+    const generated = await generateProject({ project: home });
 
     expect(generated.ok).toBe(false);
     expect(
@@ -392,7 +392,7 @@ describe('an owner with no TypeScript graph', () => {
 
 describe('an owner at the workspace root whose application is nested', () => {
   async function nestedApplicationWorkspace(): Promise<string> {
-    const root = await mkdtemp(resolve(tmpdir(), 'atlas-nested-app-'));
+    const root = await mkdtemp(resolve(tmpdir(), 'nested-app-'));
     temporaryRoots.push(root);
     await write(
       root,
@@ -416,7 +416,7 @@ describe('an owner at the workspace root whose application is nested', () => {
     );
     await write(
       root,
-      'atlas.config.json',
+      'equator.config.json',
       `${JSON.stringify(
         {
           schemaVersion: 1,
@@ -487,7 +487,7 @@ describe('an owner at the workspace root whose application is nested', () => {
       )}\n`,
     );
 
-    const generated = await generateAtlasProject({ project: root });
+    const generated = await generateProject({ project: root });
     expect(generated.ok, JSON.stringify(generated.diagnostics)).toBe(true);
 
     expect(
@@ -507,7 +507,7 @@ describe('an owner at the workspace root whose application is nested', () => {
 `,
     );
 
-    const initialized = await initializeAtlasProject({ project: root });
+    const initialized = await initializeProject({ project: root });
     expect(initialized.ok, JSON.stringify(initialized.diagnostics)).toBe(true);
 
     const manifest = JSON.parse(

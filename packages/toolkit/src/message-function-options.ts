@@ -48,12 +48,12 @@
  * lower limits on the resolved value of a digit size option consistent with that implementation's
  * practical limits."*
  *
- * Atlas's practical limits are `Intl.NumberFormat`'s, because that is what receives the value.
+ * Equator's practical limits are `Intl.NumberFormat`'s, because that is what receives the value.
  * They are declared here rather than discovered at each call site so a diagnostic can name the
  * range, and `packages/runtime/test/message-function-options.test.ts` probes `Intl` to confirm each
  * bound is where this table says it is. A limit nothing measures is a guess with a comment on it.
  */
-export interface AtlasDigitSizeRule {
+export interface DigitSizeRule {
   readonly kind: 'digit-size';
   readonly minimum: number;
   readonly maximum: number;
@@ -63,12 +63,12 @@ export interface AtlasDigitSizeRule {
   readonly writes?: readonly string[];
 }
 
-export interface AtlasEnumeratedRule {
+export interface EnumeratedRule {
   readonly kind: 'enumerated';
   readonly values: readonly string[];
   /**
-   * Values the specification requires and Atlas has no way to produce. Refused by name rather than
-   * ignored: `currencyDisplay=never` asks for the amount without its currency, and silently
+   * Values the specification requires and Equator has no way to produce. Refused by name rather
+   * than ignored: `currencyDisplay=never` asks for the amount without its currency, and silently
    * printing the currency anyway is a money bug with no diagnostic attached to it.
    */
   readonly unsupported?: readonly string[];
@@ -77,7 +77,7 @@ export interface AtlasEnumeratedRule {
 }
 
 /** A code or identifier whose vocabulary is CLDR data rather than a closed list. */
-export interface AtlasIdentifierRule {
+export interface IdentifierRule {
   readonly kind: 'identifier';
   readonly pattern: RegExp;
   readonly describes: string;
@@ -90,7 +90,7 @@ export interface AtlasIdentifierRule {
  * reaches `Intl` is a boolean and the string `"false"` is truthy: passing it through unconverted
  * gives a twelve-hour clock to an author who wrote `hour12=false`, with nothing to say so.
  */
-export interface AtlasBooleanRule {
+export interface BooleanRule {
   readonly kind: 'boolean';
 }
 
@@ -106,7 +106,7 @@ export interface AtlasBooleanRule {
  * the values the platform never sees because the specification gives them a meaning of their
  * own.
  */
-export interface AtlasConstructedRule {
+export interface ConstructedRule {
   readonly kind: 'constructed';
   readonly describes: string;
   readonly alternatives?: readonly string[];
@@ -128,34 +128,34 @@ export interface AtlasConstructedRule {
  * numeric side already records: a message refused here that a newer runtime would have accepted
  * costs an author a rewrite, and the reverse is caught again at render.
  */
-export interface AtlasPlatformValuesRule {
+export interface PlatformValuesRule {
   readonly kind: 'platform';
   readonly key: 'calendar' | 'collation' | 'numberingSystem' | 'timeZone';
   readonly describes: string;
 }
 
-/** An option the specification defines and Atlas cannot implement at all. */
-export interface AtlasUnsupportedRule {
+/** An option the specification defines and Equator cannot implement at all. */
+export interface UnsupportedRule {
   readonly kind: 'unsupported';
   readonly reason: string;
 }
 
-export type AtlasMessageOptionRule =
-  | AtlasBooleanRule
-  | AtlasConstructedRule
-  | AtlasDigitSizeRule
-  | AtlasEnumeratedRule
-  | AtlasIdentifierRule
-  | AtlasPlatformValuesRule
-  | AtlasUnsupportedRule;
+export type MessageOptionRule =
+  | BooleanRule
+  | ConstructedRule
+  | DigitSizeRule
+  | EnumeratedRule
+  | IdentifierRule
+  | PlatformValuesRule
+  | UnsupportedRule;
 
 /**
  * `Intl.supportedValuesOf` walks ICU's tables to answer, so each list is read once. The evaluator
  * already does this for numbering systems and for the same reason.
  */
 const platformValues = new Map<string, ReadonlySet<string>>();
-export function atlasPlatformValues(
-  key: AtlasPlatformValuesRule['key'],
+export function supportedPlatformValues(
+  key: PlatformValuesRule['key'],
 ): ReadonlySet<string> {
   const cached = platformValues.get(key);
   if (cached !== undefined) return cached;
@@ -166,13 +166,13 @@ export function atlasPlatformValues(
   return values;
 }
 
-const digits = (minimum: number, maximum: number): AtlasDigitSizeRule =>
+const digits = (minimum: number, maximum: number): DigitSizeRule =>
   Object.freeze({ kind: 'digit-size', minimum, maximum });
 
 const oneOf = (
   values: readonly string[],
-  extra: Omit<AtlasEnumeratedRule, 'kind' | 'values'> = {},
-): AtlasEnumeratedRule =>
+  extra: Omit<EnumeratedRule, 'kind' | 'values'> = {},
+): EnumeratedRule =>
   Object.freeze({
     kind: 'enumerated',
     values: Object.freeze([...values]),
@@ -183,7 +183,7 @@ const oneOf = (
  * Every option the specification defines for a built-in function, and what a valid value of it is.
  *
  * Keyed by name rather than by function because an option means the same thing wherever it is
- * accepted. Which function accepts which name is `ATLAS_MESSAGE_FUNCTION_OPTIONS` below. The date
+ * accepted. Which function accepts which name is `MESSAGE_FUNCTION_OPTIONS` below. The date
  * family spells four of its options twice (`:date` writes `fields` and `length` where
  * `:datetime` writes `dateFields` and `dateLength`, and `:time` writes `precision` where
  * `:datetime` writes `timePrecision`) so the value sets are named once and referenced by both
@@ -208,162 +208,165 @@ const TIME_PRECISION_VALUES: readonly string[] = Object.freeze([
   'second',
 ]);
 
-export const ATLAS_MESSAGE_OPTION_RULES: Readonly<
-  Record<string, AtlasMessageOptionRule>
-> = Object.freeze({
-  /**
-   * *"If the implementation does not recognize the value of the `select` option, or if the value is
-   * not a literal, a Bad Option error is emitted."* The default when absent is `plural`.
-   *
-   * Atlas rejects rather than ignores, and at compile time rather than at format time, because the
-   * value decides which CLDR table a target catalog's plural coverage is checked against. An
-   * unrecognized value falling through to the cardinal table would let an ordinal message missing
-   * `two` and `few` pass a completeness gate while shipping "2th" and "3th".
-   *
-   * `cardinal` is deliberately not here. It is what `Intl.PluralRules` calls this value and what
-   * `messageformat@4.0.0` declares in its types, but the specification spells it `plural`; taking
-   * both would put two spellings of one thing into catalogs that are meant to be portable.
-   */
-  select: oneOf(['plural', 'ordinal', 'exact']),
-  signDisplay: oneOf(['auto', 'always', 'exceptZero', 'negative', 'never']),
-  useGrouping: oneOf(['auto', 'always', 'never', 'min2'], {
-    asFalse: 'never',
-  }),
-  // The ABNF's ceiling is 99 and `Intl.NumberFormat` accepts 0..100 for fraction digits and 1..21
-  // for integer and significant digits. The narrower of the two is what a value has to satisfy to
-  // be both a MessageFormat digit size option and a number this runtime can format.
-  minimumIntegerDigits: digits(1, 21),
-  minimumFractionDigits: digits(0, 99),
-  maximumFractionDigits: digits(0, 99),
-  minimumSignificantDigits: digits(1, 21),
-  maximumSignificantDigits: digits(1, 21),
-  trailingZeroDisplay: oneOf(['auto', 'stripIfInteger']),
-  roundingPriority: oneOf(['auto', 'morePrecision', 'lessPrecision']),
-  /**
-   * Spelled out rather than computed, because the specification spells it out and the set is not a
-   * rule: it is the increments CLDR data supports. `Intl.NumberFormat` accepts exactly these
-   * fifteen and no others, which `message-function-options.test.ts` checks rather than assumes.
-   */
-  roundingIncrement: oneOf([
-    '1',
-    '2',
-    '5',
-    '10',
-    '20',
-    '25',
-    '50',
-    '100',
-    '200',
-    '250',
-    '500',
-    '1000',
-    '2000',
-    '2500',
-    '5000',
-  ]),
-  roundingMode: oneOf([
-    'ceil',
-    'floor',
-    'expand',
-    'trunc',
-    'halfCeil',
-    'halfFloor',
-    'halfExpand',
-    'halfTrunc',
-    'halfEven',
-  ]),
-  add: digits(0, 99),
-  subtract: digits(0, 99),
-  /**
-   * A Unicode Currency Identifier is three ASCII letters (UTS #35). Case is not folded: the
-   * identifier is defined in upper case and `Intl` refuses anything else, so accepting `eur` would
-   * mean a message that compiles and throws.
-   */
-  currency: Object.freeze({
-    kind: 'identifier',
-    pattern: /^[A-Z]{3}$/u,
-    describes: 'a three-letter Unicode Currency Identifier such as EUR',
-  } as const),
-  currencySign: oneOf(['accounting', 'standard']),
-  currencyDisplay: oneOf(['narrowSymbol', 'symbol', 'name', 'code', 'never'], {
-    unsupported: Object.freeze(['never']),
-  }),
-  /**
-   * *"unlike number/integer formats, the fraction digits for currency formatting are fixed"*: one
-   * option, not a minimum and a maximum, and `auto` means the digits the currency itself uses.
-   * Atlas passed `minimumFractionDigits` and `maximumFractionDigits` to `:currency` and ignored
-   * `fractionDigits`, so it accepted the two names the specification does not give this function
-   * and dropped the one it does.
-   */
-  fractionDigits: Object.freeze({
-    kind: 'digit-size',
-    minimum: 0,
-    maximum: 99,
-    auto: true,
-    writes: Object.freeze(['minimumFractionDigits', 'maximumFractionDigits']),
-  } as const),
-  /**
-   * A CLDR unit identifier, in the "core" form `Intl` takes: lower-case segments joined by `-`,
-   * with an optional `per-` compound. The `measure-unit/` prefixed long form is not accepted, for
-   * the same reason `eur` is not: `Intl` refuses it.
-   */
-  unit: Object.freeze({
-    kind: 'identifier',
-    pattern: /^[a-z]+(?:-[a-z0-9]+)*(?:-per-[a-z]+(?:-[a-z0-9]+)*)?$/u,
-    describes: 'a CLDR unit identifier such as meter or mile-per-hour',
-  } as const),
-  unitDisplay: oneOf(['short', 'narrow', 'long']),
-  /**
-   * `usage` asks for conversion into the locale's preferred unit: kilometres to miles, and the
-   * rounding that goes with it. `Intl.NumberFormat` does not convert; it accepts the option and
-   * silently ignores it, which is the worst of the three possible outcomes, because a message
-   * asking for road distances would print metres to an American reader with nothing to say so.
-   *
-   * The specification anticipates exactly this: implementing `usage` is optional, and
-   * *"Implementations SHOULD emit an Unsupported Operation error if the requested conversion is not
-   * supported."* Atlas supports none of them, so it says so at compile time instead.
-   */
-  usage: Object.freeze({
-    kind: 'unsupported',
-    reason:
-      'unit conversion is not implemented; this runtime formats the value it is given, in the unit it is given',
-  } as const),
-  /**
-   * The date family, from "Date and Time Value Formatting".
-   *
-   * `fields` names the parts of a date to show and `length` how much of each to spell out; the two
-   * decide the `Intl.DateTimeFormat` component options together rather than one at a time, which is
-   * why `atlasDateTimeFormatOptions` reads them as a pair.
-   */
-  fields: oneOf(DATE_FIELDS_VALUES),
-  dateFields: oneOf(DATE_FIELDS_VALUES),
-  length: oneOf(DATE_LENGTH_VALUES),
-  dateLength: oneOf(DATE_LENGTH_VALUES),
-  precision: oneOf(TIME_PRECISION_VALUES),
-  timePrecision: oneOf(TIME_PRECISION_VALUES),
-  /** `Intl` spells this `timeZoneName`, and omits the indicator entirely when it is absent. */
-  timeZoneStyle: oneOf(['long', 'short']),
-  /**
-   * *"The default value for `timeZone` is the default time zone provided by the formatting
-   * context"*, and `input` is *"the time zone of the operand"*.
-   *
-   * `input` never reaches `Intl`. It is resolved against the operand's own resolved options, and a
-   * chain that supplies none is refused where it is written rather than reported while rendering:
-   * the specification's Bad Operand for this case is a render-time error beside a rendered
-   * fallback, which `specs/04-message-authoring-and-catalogs.spec.md` section 6 declines by name.
-   */
-  timeZone: Object.freeze({
-    kind: 'constructed',
-    describes: 'a time zone identifier such as UTC or Europe/Paris',
-    alternatives: Object.freeze(['input']),
-  } as const),
-  calendar: Object.freeze({
-    kind: 'platform',
-    key: 'calendar',
-    describes: 'a calendar this runtime has data for',
-  } as const),
-  hour12: Object.freeze({ kind: 'boolean' } as const),
-});
+export const MESSAGE_OPTION_RULES: Readonly<Record<string, MessageOptionRule>> =
+  Object.freeze({
+    /**
+     * *"If the implementation does not recognize the value of the `select` option, or if the value
+     * is not a literal, a Bad Option error is emitted."* The default when absent is `plural`.
+     *
+     * Equator rejects rather than ignores, and at compile time rather than at format time, because
+     * the value decides which CLDR table a target catalog's plural coverage is checked against. An
+     * unrecognized value falling through to the cardinal table would let an ordinal message missing
+     * `two` and `few` pass a completeness gate while shipping "2th" and "3th".
+     *
+     * `cardinal` is deliberately not here. It is what `Intl.PluralRules` calls this value and what
+     * `messageformat@4.0.0` declares in its types, but the specification spells it `plural`; taking
+     * both would put two spellings of one thing into catalogs that are meant to be portable.
+     */
+    select: oneOf(['plural', 'ordinal', 'exact']),
+    signDisplay: oneOf(['auto', 'always', 'exceptZero', 'negative', 'never']),
+    useGrouping: oneOf(['auto', 'always', 'never', 'min2'], {
+      asFalse: 'never',
+    }),
+    // The ABNF's ceiling is 99 and `Intl.NumberFormat` accepts 0..100 for fraction digits and 1..21
+    // for integer and significant digits. The narrower of the two is what a value has to satisfy to
+    // be both a MessageFormat digit size option and a number this runtime can format.
+    minimumIntegerDigits: digits(1, 21),
+    minimumFractionDigits: digits(0, 99),
+    maximumFractionDigits: digits(0, 99),
+    minimumSignificantDigits: digits(1, 21),
+    maximumSignificantDigits: digits(1, 21),
+    trailingZeroDisplay: oneOf(['auto', 'stripIfInteger']),
+    roundingPriority: oneOf(['auto', 'morePrecision', 'lessPrecision']),
+    /**
+     * Spelled out rather than computed, because the specification spells it out and the set is not
+     * a rule: it is the increments CLDR data supports. `Intl.NumberFormat` accepts exactly these
+     * fifteen and no others, which `message-function-options.test.ts` checks rather than assumes.
+     */
+    roundingIncrement: oneOf([
+      '1',
+      '2',
+      '5',
+      '10',
+      '20',
+      '25',
+      '50',
+      '100',
+      '200',
+      '250',
+      '500',
+      '1000',
+      '2000',
+      '2500',
+      '5000',
+    ]),
+    roundingMode: oneOf([
+      'ceil',
+      'floor',
+      'expand',
+      'trunc',
+      'halfCeil',
+      'halfFloor',
+      'halfExpand',
+      'halfTrunc',
+      'halfEven',
+    ]),
+    add: digits(0, 99),
+    subtract: digits(0, 99),
+    /**
+     * A Unicode Currency Identifier is three ASCII letters (UTS #35). Case is not folded: the
+     * identifier is defined in upper case and `Intl` refuses anything else, so accepting `eur`
+     * would mean a message that compiles and throws.
+     */
+    currency: Object.freeze({
+      kind: 'identifier',
+      pattern: /^[A-Z]{3}$/u,
+      describes: 'a three-letter Unicode Currency Identifier such as EUR',
+    } as const),
+    currencySign: oneOf(['accounting', 'standard']),
+    currencyDisplay: oneOf(
+      ['narrowSymbol', 'symbol', 'name', 'code', 'never'],
+      {
+        unsupported: Object.freeze(['never']),
+      },
+    ),
+    /**
+     * *"unlike number/integer formats, the fraction digits for currency formatting are fixed"*: one
+     * option, not a minimum and a maximum, and `auto` means the digits the currency itself uses.
+     * Equator passed `minimumFractionDigits` and `maximumFractionDigits` to `:currency` and ignored
+     * `fractionDigits`, so it accepted the two names the specification does not give this function
+     * and dropped the one it does.
+     */
+    fractionDigits: Object.freeze({
+      kind: 'digit-size',
+      minimum: 0,
+      maximum: 99,
+      auto: true,
+      writes: Object.freeze(['minimumFractionDigits', 'maximumFractionDigits']),
+    } as const),
+    /**
+     * A CLDR unit identifier, in the "core" form `Intl` takes: lower-case segments joined by `-`,
+     * with an optional `per-` compound. The `measure-unit/` prefixed long form is not accepted, for
+     * the same reason `eur` is not: `Intl` refuses it.
+     */
+    unit: Object.freeze({
+      kind: 'identifier',
+      pattern: /^[a-z]+(?:-[a-z0-9]+)*(?:-per-[a-z]+(?:-[a-z0-9]+)*)?$/u,
+      describes: 'a CLDR unit identifier such as meter or mile-per-hour',
+    } as const),
+    unitDisplay: oneOf(['short', 'narrow', 'long']),
+    /**
+     * `usage` asks for conversion into the locale's preferred unit: kilometres to miles, and the
+     * rounding that goes with it. `Intl.NumberFormat` does not convert; it accepts the option and
+     * silently ignores it, which is the worst of the three possible outcomes, because a message
+     * asking for road distances would print metres to an American reader with nothing to say so.
+     *
+     * The specification anticipates exactly this: implementing `usage` is optional, and
+     * *"Implementations SHOULD emit an Unsupported Operation error if the requested conversion is
+     * not supported."* Equator supports none of them, so it says so at compile time instead.
+     */
+    usage: Object.freeze({
+      kind: 'unsupported',
+      reason:
+        'unit conversion is not implemented; this runtime formats the value it is given, in the unit it is given',
+    } as const),
+    /**
+     * The date family, from "Date and Time Value Formatting".
+     *
+     * `fields` names the parts of a date to show and `length` how much of each to spell out; the
+     * two decide the `Intl.DateTimeFormat` component options together rather than one at a time,
+     * which is why `dateTimeFormatOptions` reads them as a pair.
+     */
+    fields: oneOf(DATE_FIELDS_VALUES),
+    dateFields: oneOf(DATE_FIELDS_VALUES),
+    length: oneOf(DATE_LENGTH_VALUES),
+    dateLength: oneOf(DATE_LENGTH_VALUES),
+    precision: oneOf(TIME_PRECISION_VALUES),
+    timePrecision: oneOf(TIME_PRECISION_VALUES),
+    /** `Intl` spells this `timeZoneName`, and omits the indicator entirely when it is absent. */
+    timeZoneStyle: oneOf(['long', 'short']),
+    /**
+     * *"The default value for `timeZone` is the default time zone provided by the formatting
+     * context"*, and `input` is *"the time zone of the operand"*.
+     *
+     * `input` never reaches `Intl`. It is resolved against the operand's own resolved options, and
+     * a chain that supplies none is refused where it is written rather than reported while
+     * rendering: the specification's Bad Operand for this case is a render-time error beside a
+     * rendered fallback, which `specs/04-message-authoring-and-catalogs.spec.md` section 6 declines
+     * by name.
+     */
+    timeZone: Object.freeze({
+      kind: 'constructed',
+      describes: 'a time zone identifier such as UTC or Europe/Paris',
+      alternatives: Object.freeze(['input']),
+    } as const),
+    calendar: Object.freeze({
+      kind: 'platform',
+      key: 'calendar',
+      describes: 'a calendar this runtime has data for',
+    } as const),
+    hour12: Object.freeze({ kind: 'boolean' } as const),
+  });
 
 /**
  * Options a numeric function consumes itself. They belong to a resolved value and never reach
@@ -383,15 +386,15 @@ const NOT_FORMATTING: readonly string[] = Object.freeze([
  * its descriptor's operand type is drawn from the same portable set an input contract is. The union
  * is the wider one so that one profile shape describes a built-in and an extension alike.
  */
-export type AtlasMessageOperandKind =
+export type MessageOperandKind =
   | 'boolean'
   | 'date-time'
   | 'integer'
   | 'number'
   | 'string';
 
-export interface AtlasMessageFunctionOptionProfile {
-  readonly operand: AtlasMessageOperandKind;
+export interface MessageFunctionOptionProfile {
+  readonly operand: MessageOperandKind;
   /** Every option the specification requires this function to accept, and nothing else. */
   readonly accepts: readonly string[];
   /**
@@ -416,7 +419,7 @@ export interface AtlasMessageFunctionOptionProfile {
    *
    * *"The `fields` and `length` option values MUST each be set by a literal"*, and the same
    * sentence appears for `:datetime` and `:time`: everything except the date/time override
-   * options. The numeric family names one, `select`, and for the reason Atlas cares about it: a
+   * options. The numeric family names one, `select`, and for the reason Equator cares about it: a
    * value that arrives at render time cannot be measured against a plural table at build time.
    */
   readonly literalOnly: readonly string[];
@@ -452,10 +455,10 @@ const SELECT_ONLY: readonly string[] = Object.freeze(['select']);
  * function is *called* with. So the profile discards nothing and excludes nothing, and `accepts`
  * is the descriptor's own option list.
  */
-export function atlasExtensionOptionProfile(
-  operand: AtlasMessageOperandKind,
+export function extensionOptionProfile(
+  operand: MessageOperandKind,
   accepts: readonly string[],
-): AtlasMessageFunctionOptionProfile {
+): MessageFunctionOptionProfile {
   return Object.freeze({
     operand,
     accepts: Object.freeze([...accepts]),
@@ -469,7 +472,7 @@ const profileOf = (
   accepts: readonly string[],
   discardedFromOperand: readonly string[] = NONE,
   excludedFromResolved: readonly string[] = NONE,
-): AtlasMessageFunctionOptionProfile =>
+): MessageFunctionOptionProfile =>
   Object.freeze({
     operand: 'number',
     accepts: Object.freeze([...accepts]),
@@ -496,7 +499,7 @@ const DATE_TIME_OVERRIDES: readonly string[] = Object.freeze([
 const dateProfileOf = (
   accepts: readonly string[],
   inheritsOnly: readonly string[],
-): AtlasMessageFunctionOptionProfile =>
+): MessageFunctionOptionProfile =>
   Object.freeze({
     operand: 'date-time',
     accepts: Object.freeze([...accepts]),
@@ -523,8 +526,8 @@ const DIGIT_OPTIONS = [
  * options nothing reads. The table covers all ten, and `:string` is present with an empty list
  * rather than left out: *"The function `:string` has no options."*
  */
-export const ATLAS_MESSAGE_FUNCTION_OPTIONS: Readonly<
-  Record<string, AtlasMessageFunctionOptionProfile>
+export const MESSAGE_FUNCTION_OPTIONS: Readonly<
+  Record<string, MessageFunctionOptionProfile>
 > = Object.freeze({
   number: profileOf([
     'select',
@@ -597,7 +600,7 @@ export const ATLAS_MESSAGE_FUNCTION_OPTIONS: Readonly<
      * `:percent` has no `select`, no `minimumIntegerDigits` and no `roundingIncrement` of its own,
      * and the specification says all three are discarded when they arrive from an operand. So
      * `.local $n = {1 :number select=exact}` followed by `{$n :percent}` is a valid message: the
-     * option is dropped, not reported. Atlas refused it, which is a message rejected for
+     * option is dropped, not reported. Equator refused it, which is a message rejected for
      * conforming.
      */
     Object.freeze(['minimumIntegerDigits', 'roundingIncrement', 'select']),
@@ -649,8 +652,8 @@ export const ATLAS_MESSAGE_FUNCTION_OPTIONS: Readonly<
  * Derived from the table rather than kept beside it, for the reason the plural selector set is:
  * a hand-kept second list is the drift a single table exists to remove.
  */
-export const ATLAS_NUMERIC_FUNCTIONS: readonly string[] = Object.freeze(
-  Object.entries(ATLAS_MESSAGE_FUNCTION_OPTIONS)
+export const NUMERIC_FUNCTIONS: readonly string[] = Object.freeze(
+  Object.entries(MESSAGE_FUNCTION_OPTIONS)
     .filter(([, profile]) => profile.operand === 'number')
     .map(([name]) => name)
     .sort(),
@@ -662,10 +665,10 @@ export const ATLAS_NUMERIC_FUNCTIONS: readonly string[] = Object.freeze(
  * One implementation, called by the compiler and by the evaluator, because the compiler's job is to
  * refuse what the evaluator could not honour and two merges that had to agree eventually would not.
  */
-export function atlasInheritedOptions<T>(
+export function inheritedOptions<T>(
   carried: Readonly<Record<string, T>> | undefined,
   written: Readonly<Record<string, T>>,
-  profile: AtlasMessageFunctionOptionProfile | undefined,
+  profile: MessageFunctionOptionProfile | undefined,
 ): Readonly<Record<string, T>> {
   if (carried === undefined || profile === undefined) return written;
   const kept = Object.entries(carried).filter(([name]) =>
@@ -682,7 +685,7 @@ const DIGIT_SIZE_OPTION = /^(?:0|[1-9][0-9]?)$/u;
 /** Every option name some numeric function accepts, derived so it cannot fall behind the table. */
 const NUMERIC_OPTION_NAMES: ReadonlySet<string> = Object.freeze(
   new Set(
-    Object.values(ATLAS_MESSAGE_FUNCTION_OPTIONS)
+    Object.values(MESSAGE_FUNCTION_OPTIONS)
       .filter((profile) => profile.operand === 'number')
       .flatMap((profile) => [...profile.accepts]),
   ),
@@ -698,12 +701,12 @@ const NUMERIC_OPTION_NAMES: ReadonlySet<string> = Object.freeze(
  * than a rule, so the answer comes from building the formatter that will receive it: the same
  * authority `roundingIncrement` is put to, one layer up in the compiler.
  */
-export function atlasMessageOptionProblem(
+export function messageOptionProblem(
   functionName: string,
   optionName: string,
   value: string,
 ): string | undefined {
-  const profile = ATLAS_MESSAGE_FUNCTION_OPTIONS[functionName];
+  const profile = MESSAGE_FUNCTION_OPTIONS[functionName];
   if (profile === undefined) return undefined;
   if (!profile.accepts.includes(optionName)) {
     return profile.accepts.length === 0
@@ -711,13 +714,13 @@ export function atlasMessageOptionProblem(
       : `is not an option of :${functionName}; it takes ` +
           `${[...profile.accepts].sort().join(', ')}`;
   }
-  const rule = ATLAS_MESSAGE_OPTION_RULES[optionName];
+  const rule = MESSAGE_OPTION_RULES[optionName];
   if (rule === undefined) return undefined;
   switch (rule.kind) {
     case 'constructed':
       return undefined;
     case 'platform': {
-      const values = atlasPlatformValues(rule.key);
+      const values = supportedPlatformValues(rule.key);
       return values.has(value)
         ? undefined
         : `is not ${rule.describes}; it has ${[...values].sort().join(', ')}`;
@@ -727,7 +730,7 @@ export function atlasMessageOptionProblem(
         ? undefined
         : 'is not true or false';
     case 'unsupported':
-      return `is outside the Atlas 1 profile: ${rule.reason}`;
+      return `is outside the Equator 1 profile: ${rule.reason}`;
     case 'identifier':
       return rule.pattern.test(value) ? undefined : `is not ${rule.describes}`;
     case 'enumerated':
@@ -735,7 +738,7 @@ export function atlasMessageOptionProblem(
         return `is not one of ${rule.values.join(', ')}`;
       }
       return rule.unsupported?.includes(value) === true
-        ? 'is in the specification but not in the Atlas 1 profile: this runtime has no way to produce it'
+        ? 'is in the specification but not in the Equator 1 profile: this runtime has no way to produce it'
         : undefined;
     case 'digit-size': {
       if (rule.auto === true && value === 'auto') return undefined;
@@ -777,13 +780,13 @@ export function atlasMessageOptionProblem(
  * transcribing it would put a second copy of ECMA-402 in a file nothing keeps current. Constructing
  * the formatter asks the only authority that decides.
  *
- * Every value is expected to have been through `atlasNumberOptionProblem` already, which is why
+ * Every value is expected to have been through `numberOptionProblem` already, which is why
  * there is no second check here. One authority on what a valid option is, called before this.
  */
 /**
  * A date expression's resolved options, with `timeZone=input` answered.
  *
- * *"The value `input` corresponds to the time zone of the operand."* An Atlas date input is a
+ * *"The value `input` corresponds to the time zone of the operand."* An Equator date input is a
  * `Date`, which carries no zone, so the only operand that can answer is one whose own declaration
  * wrote a zone: `.local $t = {$when :datetime timeZone=|Europe/Paris|}` and then
  * `{$t :time timeZone=input}`. When nothing in the chain wrote one, `input` is left in place and
@@ -794,12 +797,12 @@ export function atlasMessageOptionProblem(
  * One implementation for the compiler and the evaluator, because the compiler decides whether a
  * message may ship on exactly the question the evaluator will ask.
  */
-export function atlasDateOperandOptions(
+export function resolvedDateOptions(
   carried: Readonly<Record<string, string>> | undefined,
   written: Readonly<Record<string, string>>,
-  profile: AtlasMessageFunctionOptionProfile | undefined,
+  profile: MessageFunctionOptionProfile | undefined,
 ): Readonly<Record<string, string>> {
-  const merged = atlasInheritedOptions(carried, written, profile);
+  const merged = inheritedOptions(carried, written, profile);
   if (merged['timeZone'] !== 'input') return merged;
   const operandZone = carried?.['timeZone'];
   return operandZone === undefined || operandZone === 'input'
@@ -819,13 +822,13 @@ export function atlasDateOperandOptions(
  * `fields` and `length` are read as a pair because they decide one thing together: the fields say
  * which components appear and the length says how much of each is spelled out, so `month` is
  * `long`, `numeric` or `short` depending on both. Absent, the fields default to `year-month-day`,
- * which the specification names as the default and which is what Atlas rendered unconditionally
+ * which the specification names as the default and which is what Equator rendered unconditionally
  * before this table existed.
  *
  * `timeZone=input` never arrives here. It names the operand's own zone rather than a zone, and is
  * resolved against the operand before any formatter is built.
  */
-export function atlasDateTimeFormatOptions(
+export function dateTimeFormatOptions(
   functionName: string,
   resolved: Readonly<Record<string, string>>,
 ): Intl.DateTimeFormatOptions {
@@ -876,7 +879,7 @@ export function atlasDateTimeFormatOptions(
   return options as Intl.DateTimeFormatOptions;
 }
 
-export function atlasNumberFormatOptions(
+export function numberFormatOptions(
   functionName: string,
   resolved: Readonly<Record<string, string>>,
 ): Intl.NumberFormatOptions {
@@ -888,7 +891,7 @@ export function atlasNumberFormatOptions(
     // that, the compiler refuses a date-annotated operand under a numeric function, but this
     // function is also reached from a compiled artifact this runtime did not compile.
     if (!NUMERIC_OPTION_NAMES.has(name)) continue;
-    const rule = ATLAS_MESSAGE_OPTION_RULES[name];
+    const rule = MESSAGE_OPTION_RULES[name];
     if (rule === undefined) continue;
     if (rule.kind === 'digit-size') {
       if (rule.auto === true && value === 'auto') continue;
