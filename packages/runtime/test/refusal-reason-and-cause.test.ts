@@ -7,6 +7,8 @@ import {
 
 import { externalDestination } from '../src/destinations.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * A refusal says why it refused, and keeps what it was refusing.
  *
@@ -38,6 +40,7 @@ describe('a refused value carries its reason and its cause', () => {
     expect(failure.diagnostic.code).toBe('invalid-configuration');
     expect(failure.diagnostic.reason).toBe('malformed-input');
     expect(failure.cause).toBeInstanceOf(RangeError);
+    claimCapability('policy:path-prefix');
   });
 
   it('carries what URL refused about a rich-message destination', () => {

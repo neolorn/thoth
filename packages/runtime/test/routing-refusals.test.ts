@@ -13,6 +13,8 @@ import {
   type RouteRuntimeProjection,
 } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Every condition `validateRouteProjection` and `parseTarget` refuse input on, one case each.
  *
@@ -264,6 +266,7 @@ describe('what a generated route projection is refused for', () => {
 
   it('refuses a dynamic route with no codec for a parameter it declares', () => {
     expect(validating({ parameters: {} })).toContain('requires a codec');
+    claimCapability('declaration:route-parameter-codec');
   });
 
   it('refuses a localized path that changes what a route takes, or names no route', () => {
@@ -288,6 +291,7 @@ describe('what a generated route projection is refused for', () => {
     expect(
       validating({ localizedPaths: { article: { 'ar-EG': 'مقالات/:slug' } } }),
     ).toBeUndefined();
+    claimCapability('declaration:localized-paths');
   });
 });
 

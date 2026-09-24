@@ -23,6 +23,8 @@ import {
   type PlainMessageHandle,
 } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /** A generated handle, as a catalog compilation produces one. */
 const handle = (
   messageId: string,
@@ -56,6 +58,7 @@ describe('a document field whose message takes a value', () => {
     expect(isBoundDocumentMessage(bound)).toBe(true);
     expect(bound.message).toBe(takesAName);
     expect(bound.inputs).toEqual({ name: 'Equator' });
+    claimCapability('declaration:document-metadata');
   });
 
   it('is refused when it is declared bare', () => {
@@ -86,6 +89,7 @@ describe('a document field whose message takes a value', () => {
     expect(reported).toContain('document.greeting');
     expect(reported).toContain('name');
     expect(reported).toContain('documentMessage()');
+    claimCapability('declaration:document-metadata');
   });
 
   it('refuses at the call that binds it, rather than at the page that reads it', () => {
@@ -94,5 +98,6 @@ describe('a document field whose message takes a value', () => {
     expect(() => documentMessage(takesAName as PlainMessageHandle)).toThrow(
       LocalizationError,
     );
+    claimCapability('declaration:document-metadata');
   });
 });

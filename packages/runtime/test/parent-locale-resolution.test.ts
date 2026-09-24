@@ -8,6 +8,8 @@ import {
 } from '../src/evaluator.js';
 import { LocalizationError, type MessageHandle } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * The runtime half of the parent-locale chain: which catalog answers, and in what order.
  *
@@ -196,6 +198,7 @@ describe('a locale whose parent changes the language', () => {
     expect(
       redirected('hi-Latn').resolve('nav.help').catalog.key.catalogLocale,
     ).toBe('fr-FR');
+    claimCapability('capability:fallback-chain');
   });
 });
 

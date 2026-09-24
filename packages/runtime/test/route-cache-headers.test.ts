@@ -12,6 +12,8 @@ import {
   type RouteRuntimeProjection,
 } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Two questions live in a response's cache headers and only one of them is the consumer's.
  *
@@ -430,6 +432,7 @@ describe('what a host declares about every page', () => {
     expect(at('public', 'not-stored')).toBe('private, no-store');
     expect(at('private-no-cache', 'not-stored')).toBe('private, no-store');
     expect(at('private-no-store', 'per-visitor')).toBe('private, no-store');
+    claimCapability('declaration:host-page-floor');
   });
 
   it('keeps Accept-Language on a negotiated page it raised', () => {
@@ -443,6 +446,7 @@ describe('what a host declares about every page', () => {
       'cache-control': 'private, no-cache',
       vary: 'Accept-Language',
     });
+    claimCapability('declaration:host-page-floor');
   });
 
   it('leaves a redirect as routing classified it', () => {
@@ -458,6 +462,7 @@ describe('what a host declares about every page', () => {
         { ...FRESHNESS, pageCaching: 'not-stored' },
       ),
     ).toStrictEqual({ 'cache-control': 'private, no-cache' });
+    claimCapability('declaration:host-page-floor');
   });
 
   it('refuses a value that names no class', () => {
@@ -467,6 +472,7 @@ describe('what a host declares about every page', () => {
         pageCaching: 'public' as 'per-visitor',
       }),
     ).toThrow(/`pageCaching` is `per-visitor` or `not-stored`/u);
+    claimCapability('declaration:host-page-floor');
   });
 });
 
@@ -607,6 +613,7 @@ describe('what a locale-neutral policy does to cacheability', () => {
       'varies-by-locale-preference',
       'varies-by-locale-preference',
     ]);
+    claimCapability('policy:locale-neutral', { policy: POLICY });
   });
 
   it('is private under a cookie and a shared variant under Accept-Language', () => {
@@ -617,6 +624,7 @@ describe('what a locale-neutral policy does to cacheability', () => {
       'cache-control': 'public, max-age=600, must-revalidate',
       vary: 'Accept-Language',
     });
+    claimCapability('policy:locale-neutral', { policy: POLICY });
   });
 
   it('keeps Accept-Language on a private page it negotiated', () => {
@@ -655,6 +663,7 @@ describe('what a locale-neutral policy does to cacheability', () => {
       'cache-control': 'private, no-store',
       vary: 'Accept-Language',
     });
+    claimCapability('policy:locale-neutral', { policy: POLICY });
   });
 
   it('leaves an address that states its own locale publicly cacheable', () => {

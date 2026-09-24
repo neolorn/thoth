@@ -13,6 +13,8 @@ import {
 } from '../src/formatting.js';
 import { type FormattingContext } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * The formatting path, checked against the platform's own idea of each locale.
  *
@@ -158,6 +160,9 @@ describe('the numeric formatters render in the numbering system they were given'
           '1234',
         );
       }
+      claimCapability('format:formatNumber');
+      claimCapability('format:formatMoney');
+      claimCapability('format:formatMeasurement');
     });
   }
 
@@ -184,6 +189,7 @@ describe('the numeric formatters render in the numbering system they were given'
     // above in the one row whose digits are ASCII, and be caught only by the others, which is a
     // weaker claim than saying the rows must actually differ.
     expect(new Set(rendered).size).toBeGreaterThan(1);
+    claimCapability('format:formatNumber');
   });
 
   it('reports an unsupported profile rather than throwing', () => {
@@ -194,6 +200,7 @@ describe('the numeric formatters render in the numbering system they were given'
     // Totality matters more than the particular diagnostic: a formatter that throws takes down the
     // render, and a locale's data is not something the caller can check in advance.
     expect(result.ok).toBe(false);
+    claimCapability('format:formatMeasurement');
   });
 });
 

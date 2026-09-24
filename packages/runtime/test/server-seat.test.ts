@@ -28,6 +28,8 @@ import {
   type RouteRuntimeProjection,
 } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 const POLICY: LocaleUrlPolicy = {
   kind: 'path-prefix',
   defaultLocale: 'en-US',
@@ -142,6 +144,8 @@ describe('a page outcome declared behind the seat', () => {
     expect(answered.pageOutcome?.declared.outcome).toBe('absent');
     expect(answered.pageOutcome?.carried).toBe(true);
     expect(answered.headers.get('cache-control')).toBe('private, no-store');
+    claimCapability('outcome:declarePageOutcome', { policy: POLICY });
+    claimCapability('outcome:pageAbsent', { policy: POLICY });
   });
 
   it('is observable when the page declared it rather than the renderer', async () => {
@@ -161,6 +165,7 @@ describe('a page outcome declared behind the seat', () => {
       status: 503,
     });
     expect(answered.pageOutcome?.carried).toBe(true);
+    claimCapability('outcome:pageOperationalFailure', { policy: POLICY });
   });
 
   it('is reported as not carried at an address the handler refused', async () => {
@@ -173,6 +178,7 @@ describe('a page outcome declared behind the seat', () => {
     expect(answered.status).toBe(404);
     expect(answered.pageOutcome?.declared.outcome).toBe('gone');
     expect(answered.pageOutcome?.carried).toBe(false);
+    claimCapability('outcome:declarePageOutcome', { policy: POLICY });
   });
 });
 
@@ -206,6 +212,7 @@ describe('the head of an answered document', () => {
     );
 
     expect(head.links.map((link) => link.href)).toEqual(['/real']);
+    claimCapability('testing:answeredHead');
   });
 
   it('decodes the character references a serializer writes', () => {
@@ -216,6 +223,7 @@ describe('the head of an answered document', () => {
 
     expect(head.title).toBe('5 < 6 & A B');
     expect(head.description).toBe('"quoted"');
+    claimCapability('testing:answeredHead');
   });
 
   it('answers with nothing rather than guessing where a head has none of it', () => {
@@ -224,5 +232,6 @@ describe('the head of an answered document', () => {
     expect(head.title).toBeUndefined();
     expect(head.canonical).toBeUndefined();
     expect(head.alternates).toEqual([]);
+    claimCapability('testing:answeredHead');
   });
 });

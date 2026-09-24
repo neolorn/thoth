@@ -15,6 +15,8 @@ import {
   type RouteRuntimeProjection,
 } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * An address is built without asking whether it can be resolved.
  *
@@ -217,6 +219,10 @@ describe('every address Equator emits, Equator resolves', () => {
       refused.filter((entry) => ORDINARY.some((id) => entry.endsWith(id))),
     ).toEqual([]);
     expect(refused.length).toBeGreaterThan(0);
+    claimCapability('policy:path-prefix', { policy: PREFIXED });
+    claimCapability('policy:default-locale-prefix', { policy: OMITTING });
+    claimCapability('policy:locale-neutral', { policy: NEUTRAL });
+    claimCapability('policy:locale-host', { policy: HOST });
   });
 
   it('names the route, the segment and what claimed it', () => {
@@ -226,6 +232,7 @@ describe('every address Equator emits, Equator resolves', () => {
     expect(message).toContain('root-trap');
     expect(message).toContain('"ar-eg"');
     expect(message).toContain('locale prefix');
+    claimCapability('policy:default-locale-prefix', { policy: OMITTING });
   });
 
   it('distinguishes an alias and a locale-neutral root from a prefix', () => {
@@ -237,6 +244,7 @@ describe('every address Equator emits, Equator resolves', () => {
       (build(OMITTING, 'neutral-trap', 'en-US') as { readonly refused: string })
         .refused,
     ).toContain('locale-neutral root');
+    claimCapability('policy:default-locale-prefix', { policy: OMITTING });
   });
 
   /**
@@ -254,6 +262,7 @@ describe('every address Equator emits, Equator resolves', () => {
     expect(build(OMITTING, 'page', 'en-US', { slug: 'ar-eg' })).toHaveProperty(
       'refused',
     );
+    claimCapability('policy:default-locale-prefix', { policy: OMITTING });
   });
 
   /**
@@ -280,6 +289,7 @@ describe('every address Equator emits, Equator resolves', () => {
     // And the exact spelling of that same root is refused, which is what says the pair of
     // assertions above is about case rather than about the segment being unknown.
     expect(attempt('assets')).toContain('locale-neutral root');
+    claimCapability('policy:default-locale-prefix', { policy: OMITTING });
   });
 
   /**
@@ -319,6 +329,8 @@ describe('every address Equator emits, Equator resolves', () => {
     expect(schedule(PREFIXED, [...ORDINARY, 'prefix-trap'])).toContain(
       'prefix-trap',
     );
+    claimCapability('policy:default-locale-prefix', { policy: OMITTING });
+    claimCapability('policy:path-prefix', { policy: PREFIXED });
   });
 
   /**
@@ -355,5 +367,7 @@ describe('every address Equator emits, Equator resolves', () => {
     }
     // A round trip that ran over nothing is green for the wrong reason, so the count is asserted.
     expect(checked).toBeGreaterThanOrEqual(ORDINARY.length * 2 * 2);
+    claimCapability('policy:path-prefix', { policy: PREFIXED });
+    claimCapability('policy:default-locale-prefix', { policy: OMITTING });
   });
 });

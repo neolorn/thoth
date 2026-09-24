@@ -14,6 +14,8 @@ import {
   type RouteRuntimeProjection,
 } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * The half of the location strategy a unit test can reach.
  *
@@ -182,16 +184,19 @@ describe('a parameter codec that cannot read its own spelling', () => {
 describe('inbound: localized external to canonical internal', () => {
   it('delocalizes a translated address to the authored one', () => {
     expect(toInternalPath(`/ar-eg/${SECOND_ENC}`, CONTEXT)).toBe('/second');
+    claimCapability('policy:path-prefix', { policy: CONTEXT.policy });
   });
 
   it('delocalizes the default locale prefix too', () => {
     expect(toInternalPath('/en-us/second', CONTEXT)).toBe('/second');
+    claimCapability('policy:path-prefix', { policy: CONTEXT.policy });
   });
 
   it('carries a parameter through a translated segment', () => {
     expect(toInternalPath(`/ar-eg/${ARTICLES_ENC}/handbook`, CONTEXT)).toBe(
       '/articles/handbook',
     );
+    claimCapability('policy:path-prefix', { policy: CONTEXT.policy });
   });
 
   it('corrects a decoded spelling rather than declining it', () => {
@@ -210,10 +215,12 @@ describe('inbound: localized external to canonical internal', () => {
       location: `/ar-eg/${SECOND_ENC}`,
     });
     expect(toInternalPath('/ar-eg/الثاني', CONTEXT)).toBe('/second');
+    claimCapability('policy:path-prefix', { policy: CONTEXT.policy });
   });
 
   it('resolves the index address to the root', () => {
     expect(toInternalPath('/ar-eg', CONTEXT)).toBe('/');
+    claimCapability('policy:path-prefix', { policy: CONTEXT.policy });
   });
 
   it('hands back an address it cannot place, so the app can answer', () => {
@@ -224,12 +231,14 @@ describe('inbound: localized external to canonical internal', () => {
     expect(toInternalPath('/not-localized-at-all', CONTEXT)).toBe(
       '/not-localized-at-all',
     );
+    claimCapability('policy:path-prefix', { policy: CONTEXT.policy });
   });
 
   it('preserves query and fragment', () => {
     expect(toInternalPath(`/ar-eg/${SECOND_ENC}?page=2#top`, CONTEXT)).toBe(
       '/second?page=2#top',
     );
+    claimCapability('policy:path-prefix', { policy: CONTEXT.policy });
   });
 });
 
@@ -239,26 +248,31 @@ describe('outbound: canonical internal to localized external', () => {
       `/ar-eg/${SECOND_ENC}`,
     );
     expect(toExternalPath('/second', 'en-US', CONTEXT)).toBe('/en-us/second');
+    claimCapability('policy:path-prefix', { policy: CONTEXT.policy });
   });
 
   it('localizes a parameterised address without touching the parameter', () => {
     expect(toExternalPath('/articles/handbook', 'ar-EG', CONTEXT)).toBe(
       `/ar-eg/${ARTICLES_ENC}/handbook`,
     );
+    claimCapability('policy:path-prefix', { policy: CONTEXT.policy });
   });
 
   it('localizes the root', () => {
     expect(toExternalPath('/', 'ar-EG', CONTEXT)).toBe('/ar-eg');
+    claimCapability('policy:path-prefix', { policy: CONTEXT.policy });
   });
 
   it('hands back an address it cannot place', () => {
     expect(toExternalPath('/nope', 'ar-EG', CONTEXT)).toBe('/nope');
+    claimCapability('policy:path-prefix', { policy: CONTEXT.policy });
   });
 
   it('preserves query and fragment', () => {
     expect(toExternalPath('/second?page=2#top', 'ar-EG', CONTEXT)).toBe(
       `/ar-eg/${SECOND_ENC}?page=2#top`,
     );
+    claimCapability('policy:path-prefix', { policy: CONTEXT.policy });
   });
 });
 
@@ -270,6 +284,7 @@ describe('the two directions are mirror images', () => {
         expect(toInternalPath(external, CONTEXT)).toBe(internal);
       }
     }
+    claimCapability('policy:path-prefix', { policy: CONTEXT.policy });
   });
 });
 
@@ -277,6 +292,9 @@ describe('a policy that omits the default prefix', () => {
   it('leaves the default locale unprefixed in both directions', () => {
     expect(toExternalPath('/second', 'en-US', OMITTED)).toBe('/second');
     expect(toInternalPath('/second', OMITTED)).toBe('/second');
+    claimCapability('policy:default-locale-prefix', {
+      policy: OMITTED.policy,
+    });
   });
 
   it('still prefixes every other locale', () => {
@@ -284,6 +302,9 @@ describe('a policy that omits the default prefix', () => {
       `/ar-eg/${SECOND_ENC}`,
     );
     expect(toInternalPath(`/ar-eg/${SECOND_ENC}`, OMITTED)).toBe('/second');
+    claimCapability('policy:default-locale-prefix', {
+      policy: OMITTED.policy,
+    });
   });
 
   it('round-trips', () => {
@@ -293,6 +314,9 @@ describe('a policy that omits the default prefix', () => {
         expect(toInternalPath(external, OMITTED)).toBe(internal);
       }
     }
+    claimCapability('policy:default-locale-prefix', {
+      policy: OMITTED.policy,
+    });
   });
 });
 
@@ -328,6 +352,9 @@ describe('an address the resolver answers with a redirect', () => {
   it('follows a canonical correction, so the retired prefix reaches the page', () => {
     expect(toInternalPath('/en-us/second', OMITTED)).toBe('/second');
     expect(toInternalPath('/en-us', OMITTED)).toBe('/');
+    claimCapability('policy:default-locale-prefix', {
+      policy: OMITTED.policy,
+    });
   });
 
   it('follows a replacement, so a retired path spelling reaches the page', () => {
@@ -339,6 +366,9 @@ describe('an address the resolver answers with a redirect', () => {
     expect(toInternalPath('/en-us/second?page=2#notes', OMITTED)).toBe(
       '/second?page=2#notes',
     );
+    claimCapability('policy:default-locale-prefix', {
+      policy: OMITTED.policy,
+    });
   });
 
   it('leaves a 410 where it was, because the application answers for it', () => {
@@ -358,6 +388,7 @@ describe('an address the resolver answers with a redirect', () => {
       httpStatus: 307,
     });
     expect(toInternalPath('/', CONTEXT)).toBe('/');
+    claimCapability('policy:path-prefix', { policy: CONTEXT.policy });
   });
 });
 
@@ -374,6 +405,7 @@ describe('policies that do not distinguish locales in the path', () => {
     };
     expect(toInternalPath('/second', context)).toBe('/second');
     expect(toExternalPath('/second', 'ar-EG', context)).toBe('/second');
+    claimCapability('policy:locale-neutral', { policy: context.policy });
   });
 
   it('passes a host-keyed address through untouched', () => {
@@ -396,6 +428,7 @@ describe('policies that do not distinguish locales in the path', () => {
       projection: PROJECTION,
     };
     expect(toExternalPath('/second', 'ar-EG', context)).toBe('/second');
+    claimCapability('policy:locale-host', { policy: context.policy });
   });
 });
 

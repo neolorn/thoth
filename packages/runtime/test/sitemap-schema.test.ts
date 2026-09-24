@@ -13,6 +13,8 @@ import {
   type SitemapDocument,
 } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Every file Equator writes, against the schemas the publishers ship for the format it claims.
  *
@@ -160,6 +162,7 @@ describe('the documents Equator writes', () => {
     expect(file.contents).toContain('hreflang="x-default"');
     expect(file.contents).toContain('%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A');
     await expect(schemaErrors(file.contents, SHIM)).resolves.toEqual([]);
+    claimCapability('declaration:route-sitemap-entry', { policy: POLICY });
   });
 
   it('validates an index and its parts against the sitemap index schema', async () => {

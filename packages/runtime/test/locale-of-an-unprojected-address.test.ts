@@ -10,6 +10,8 @@ import {
   type RouteRuntimeProjection,
 } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * An address the projection has no route for still states its locale.
  *
@@ -82,16 +84,19 @@ describe('an address with no projected route, under a prefix policy', () => {
     if (resolution.status !== 'not-found') return;
     expect(resolution.presentationLocale).toBe('ar-EG');
     expect(resolution.requestedLocale).toBe('ar-EG');
+    claimCapability('policy:path-prefix', { policy: PREFIXED });
   });
 
   it('is the locale the runtime initializes in', () => {
     expect(resolveInitialRouteLocale(LAZY_CHILD, PREFIXED, PROJECTION)).toBe(
       'ar-EG',
     );
+    claimCapability('policy:path-prefix', { policy: PREFIXED });
   });
 
   it('is a locale the address states, so the chain does not step past it', () => {
     expect(localeFromRoute(LAZY_CHILD, PREFIXED, PROJECTION)).toBe('ar-EG');
+    claimCapability('policy:path-prefix', { policy: PREFIXED });
   });
 
   /**
@@ -105,6 +110,7 @@ describe('an address with no projected route, under a prefix policy', () => {
     expect(
       localeFromRoute('/قسم/detail', PREFIXED, PROJECTION),
     ).toBeUndefined();
+    claimCapability('policy:path-prefix', { policy: PREFIXED });
   });
 
   it('still declines an address whose prefix names a locale the build lacks', () => {
@@ -117,6 +123,7 @@ describe('an address with no projected route, under a prefix policy', () => {
     expect(resolveInitialRouteLocale('/de/tools', PREFIXED, PROJECTION)).toBe(
       'en-US',
     );
+    claimCapability('policy:path-prefix', { policy: PREFIXED });
   });
 });
 
@@ -129,10 +136,12 @@ describe('an address with no projected route, under a locale-host policy', () =>
     if (resolution.status !== 'not-found') return;
     expect(resolution.presentationLocale).toBe('ar-EG');
     expect(resolution.requestedLocale).toBe('ar-EG');
+    claimCapability('policy:locale-host', { policy: HOSTED });
   });
 
   it('is the locale the runtime initializes in', () => {
     expect(resolveInitialRouteLocale(target, HOSTED, PROJECTION)).toBe('ar-EG');
+    claimCapability('policy:locale-host', { policy: HOSTED });
   });
 });
 
@@ -143,6 +152,7 @@ describe('an address with no projected route, under a locale-neutral policy', ()
    */
   it('says nothing, because the address never stated a locale', () => {
     expect(localeFromRoute('/قسم/detail', NEUTRAL, PROJECTION)).toBeUndefined();
+    claimCapability('policy:locale-neutral', { policy: NEUTRAL });
   });
 
   it('presents the preference it was given, not the address', () => {
@@ -158,5 +168,6 @@ describe('an address with no projected route, under a locale-neutral policy', ()
     if (resolution.status !== 'not-found') return;
     expect(resolution.presentationLocale).toBe('ar-EG');
     expect(resolution.requestedLocale).toBeUndefined();
+    claimCapability('policy:locale-neutral', { policy: NEUTRAL });
   });
 });

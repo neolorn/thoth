@@ -13,6 +13,8 @@ import {
   type RouteParameterContext,
 } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * The route parameter codecs, the x-default rule, and the values a server route is prerendered with.
  *
@@ -144,6 +146,7 @@ describe('an x-default address on a locale-neutral policy', () => {
       locales: ['en-US'],
     });
     expect('xDefaultPath' in none).toBe(false);
+    claimCapability('declaration:x-default');
   });
 
   it('refuses anything that could send a crawler somewhere else', () => {
@@ -175,6 +178,7 @@ describe('an x-default address on a locale-neutral policy', () => {
     // And a printable that is not a control character passes, so the assertions above are about
     // the characters rather than about the surrounding path.
     expect(withDefault('/a b').xDefaultPath).toBe('/a b');
+    claimCapability('declaration:x-default');
   });
 });
 

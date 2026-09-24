@@ -20,6 +20,8 @@ import { memoryStore, profileStore } from '../src/persistence.js';
 import type { LocalizationPersistenceStore } from '../src/persistence.js';
 import type { LocalizationSnapshot } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 const resolutionOver = (stores: readonly LocalizationPersistenceStore[]) =>
   new LocaleResolution({
     persistence: stores,
@@ -50,6 +52,7 @@ describe('forgetting what the stores remember', () => {
     expect(await store.read()).toBeUndefined();
     expect(report.complete).toBe(true);
     expect(report.unreached).toEqual([]);
+    claimCapability('store:memoryStore');
   });
 
   it('counts a store that implements no removal as one it did not reach', async () => {
@@ -80,6 +83,8 @@ describe('forgetting what the stores remember', () => {
     // others being asked.
     expect(await withRemoval.read()).toBeUndefined();
     expect(remembered).toBe('ar-EG');
+    claimCapability('extension:persistence-store');
+    claimCapability('store:memoryStore');
   });
 
   it('counts a removal that threw as one that did not reach', async () => {
@@ -98,6 +103,7 @@ describe('forgetting what the stores remember', () => {
     expect(report.unreached).toEqual([
       { storeId: 'profile', reason: 'failed' },
     ]);
+    claimCapability('extension:persistence-store');
   });
 
   it('runs after a write that was already queued, rather than beside it', async () => {
@@ -128,6 +134,7 @@ describe('forgetting what the stores remember', () => {
 
     expect(report.complete).toBe(true);
     expect(remembered).toBeUndefined();
+    claimCapability('extension:persistence-store');
   });
 });
 
@@ -139,6 +146,7 @@ describe('a profile store over the application’s own transport', () => {
     })();
 
     expect(store.forget).toBeUndefined();
+    claimCapability('store:profileStore');
   });
 
   it('calls the transport’s own removal where it has one', async () => {
@@ -154,5 +162,6 @@ describe('a profile store over the application’s own transport', () => {
     await store.forget?.();
 
     expect(cleared).toBe(true);
+    claimCapability('store:profileStore');
   });
 });

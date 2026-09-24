@@ -10,6 +10,8 @@ import {
   type RouteRuntimeProjection,
 } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 const CACHE = { successMaxAge: 600, permanentRedirectMaxAge: 86_400 } as const;
 
 const POLICY: LocaleUrlPolicy = {
@@ -167,6 +169,7 @@ describe('what the handler declines to localize', () => {
       { ...POLICY, localeNeutralRoots: ['assets', 'media'] },
     );
     expect(after.status).toBe(404);
+    claimCapability('declaration:locale-neutral-roots', { policy: POLICY });
   });
 
   it('leaves a dotted asset path alone', async () => {
@@ -371,6 +374,7 @@ describe('the fact the handler derives and the descriptor is told', () => {
     expect(correction.headers.get('cache-control')).toBe(
       'public, max-age=86400',
     );
+    claimCapability('declaration:host-page-floor', { policy: POLICY });
   });
 
   it('names Accept-Language on the entry redirect it negotiated', async () => {

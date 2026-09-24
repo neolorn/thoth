@@ -4,6 +4,8 @@ import { type FormattingContext } from '@neolorn/equator/core';
 
 import { RUNTIME_LIMITS } from '../src/runtime-safety.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * The standalone formatting functions cache their `Intl` objects, and the cache is the module's.
  *
@@ -125,6 +127,7 @@ describe('the store the standalone formatting functions share', () => {
       // Latin request, the count would read 1, and every other test in this repository would pass.
       expect(first.ok && first.value.text).toBe('١٬٢٣٤٫٥');
       expect(second.ok && second.value.text).toBe('1,234.5');
+      claimCapability('format:formatNumber');
     } finally {
       counter.restore();
     }

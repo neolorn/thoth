@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { type PersonNameProfileSet } from '@neolorn/equator/core';
 import { formatPersonName, personName } from '../src/formatting.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * The pattern machinery, against profiles written here rather than generated ones.
  *
@@ -126,6 +128,7 @@ describe('the cell the formatter reads is the cell that was asked for', () => {
         ),
       ),
     ).toBe('Mary[en/surnameFirst/short/addressing/informal]Hamish');
+    claimCapability('format:formatPersonName');
   });
 
   it('reads sorting as its own order rather than surname-first', () => {
@@ -139,6 +142,7 @@ describe('the cell the formatter reads is the cell that was asked for', () => {
         ),
       ),
     ).toBe('Mary[en/sorting/long/referring/formal]Hamish');
+    claimCapability('format:formatPersonName');
   });
 
   it('falls back to the row default length and formality', () => {
@@ -155,6 +159,7 @@ describe('the cell the formatter reads is the cell that was asked for', () => {
         ),
       ),
     ).toBe('Mary[en/givenFirst/short/referring/informal]Hamish');
+    claimCapability('format:formatPersonName');
   });
 
   it('falls back to referring when the requested usage has no pattern', () => {
@@ -177,6 +182,7 @@ describe('the cell the formatter reads is the cell that was asked for', () => {
         ),
       ),
     ).toBe('Mary[en/sorting/long/referring/formal]Hamish');
+    claimCapability('format:formatPersonName');
   });
 });
 
@@ -209,6 +215,7 @@ describe('order resolution', () => {
     expect(text(formatPersonName(ferenc, { locale: 'hu' }, {}, set))).toBe(
       'Ferenc[hu/surnameFirst/medium/referring/formal]Molnar',
     );
+    claimCapability('format:formatPersonName');
   });
 
   it('walks the name tag up to its base language', () => {
@@ -222,6 +229,7 @@ describe('order resolution', () => {
         ),
       ),
     ).toBe('Ichiro[en/surnameFirst/medium/referring/formal]Suzuki');
+    claimCapability('format:formatPersonName');
   });
 
   it('defaults to given-first for a name locale neither list names', () => {
@@ -235,6 +243,7 @@ describe('order resolution', () => {
         ),
       ),
     ).toBe('Max[en/givenFirst/medium/referring/formal]Meyer');
+    claimCapability('format:formatPersonName');
   });
 
   it('lets an explicit order override the lists', () => {
@@ -248,6 +257,7 @@ describe('order resolution', () => {
         ),
       ),
     ).toBe('Ferenc[en/givenFirst/medium/referring/formal]Molnar');
+    claimCapability('format:formatPersonName');
   });
 });
 
@@ -262,18 +272,21 @@ describe('row lookup', () => {
     expect(text(formatPersonName(mary, { locale: 'ar-EG' }, {}, set))).toBe(
       'Mary[ar/givenFirst/long/referring/formal]Hamish',
     );
+    claimCapability('format:formatPersonName');
   });
 
   it('prefers the more specific row when one exists', () => {
     expect(text(formatPersonName(mary, { locale: 'ar-SA' }, {}, set))).toBe(
       'Mary[ar-SA/givenFirst/short/referring/formal]Hamish',
     );
+    claimCapability('format:formatPersonName');
   });
 
   it('matches a row regardless of tag casing', () => {
     expect(text(formatPersonName(mary, { locale: 'AR-eg' }, {}, set))).toBe(
       'Mary[ar/givenFirst/long/referring/formal]Hamish',
     );
+    claimCapability('format:formatPersonName');
   });
 });
 
@@ -289,6 +302,7 @@ describe('the script switch', () => {
     expect(text(formatPersonName(suzuki, { locale: 'en' }, {}, set))).toBe(
       '一郎[ja/givenFirst/medium/referring/formal]鈴木',
     );
+    claimCapability('format:formatPersonName');
   });
 
   it('stays with the interface profile when the name locale has no row', () => {
@@ -296,6 +310,7 @@ describe('the script switch', () => {
     expect(text(formatPersonName(park, { locale: 'ja' }, {}, set))).toBe(
       '지훈[ja/givenFirst/medium/referring/formal]박',
     );
+    claimCapability('format:formatPersonName');
   });
 
   it('does not switch when the scripts already agree', () => {
@@ -307,6 +322,7 @@ describe('the script switch', () => {
     expect(text(formatPersonName(max, { locale: 'en' }, {}, withDe))).toBe(
       'Max[en/givenFirst/medium/referring/formal]Meyer',
     );
+    claimCapability('format:formatPersonName');
   });
 });
 
@@ -330,6 +346,7 @@ describe('space replacement', () => {
         ),
       ),
     ).toBe('鈴木一郎');
+    claimCapability('format:formatPersonName');
   });
 
   it('uses the foreign replacement when they do not', () => {
@@ -343,6 +360,7 @@ describe('space replacement', () => {
         ),
       ),
     ).toBe('박・지훈');
+    claimCapability('format:formatPersonName');
   });
 
   it('replaces the pattern spaces and not the ones inside a field', () => {
@@ -356,6 +374,7 @@ describe('space replacement', () => {
         ),
       ),
     ).toBe('Van HornヾMary Beth'.replace('ヾ', '・'));
+    claimCapability('format:formatPersonName');
   });
 });
 
@@ -375,6 +394,7 @@ describe('fields the name does not carry', () => {
         ),
       ),
     ).toBe('Mary) Hamish');
+    claimCapability('format:formatPersonName');
   });
 
   it('drops the literals after the last populated field', () => {
@@ -388,6 +408,7 @@ describe('fields the name does not carry', () => {
         ),
       ),
     ).toBe('Mary [Hamish');
+    claimCapability('format:formatPersonName');
   });
 
   it('removes a run of empty fields together with the literals between them', () => {
@@ -404,6 +425,7 @@ describe('fields the name does not carry', () => {
         ),
       ),
     ).toBe('Mary <> Hamish');
+    claimCapability('format:formatPersonName');
   });
 
   it('leaves one separator when a single field between two literals is empty', () => {
@@ -417,6 +439,7 @@ describe('fields the name does not carry', () => {
         ),
       ),
     ).toBe('Mary Hamish');
+    claimCapability('format:formatPersonName');
   });
 
   it('joins two literals rather than tidying them, when neither ends the other', () => {
@@ -433,6 +456,7 @@ describe('fields the name does not carry', () => {
         ),
       ),
     ).toBe('Mary , Hamish');
+    claimCapability('format:formatPersonName');
   });
 
   it('coalesces two literals when the second matches the end of the first', () => {
@@ -446,6 +470,7 @@ describe('fields the name does not carry', () => {
         ),
       ),
     ).toBe('Mary, Hamish');
+    claimCapability('format:formatPersonName');
   });
 });
 
@@ -480,6 +505,7 @@ describe('field modifiers', () => {
         ),
       ),
     ).toBe('Thomas Meyer');
+    claimCapability('format:formatPersonName');
   });
 
   it('falls back from core to the plain field but never from prefix', () => {
@@ -494,6 +520,7 @@ describe('field modifiers', () => {
         ),
       ),
     ).toBe('Rein Poel');
+    claimCapability('format:formatPersonName');
   });
 
   it('derives a plain surname from a prefix and core the name carries separately', () => {
@@ -522,6 +549,7 @@ describe('field modifiers', () => {
         ),
       ),
     ).toBe('Poel, Rein van der');
+    claimCapability('format:formatPersonName');
   });
 
   it('forms one initial per word and recombines them with initialSequence', () => {
@@ -557,6 +585,7 @@ describe('field modifiers', () => {
         ),
       ),
     ).toBe('A·M· Bergqvist');
+    claimCapability('format:formatPersonName');
   });
 
   it('keeps the name own separator under retain', () => {
@@ -584,6 +613,7 @@ describe('field modifiers', () => {
         ),
       ),
     ).toBe('A.-M. Bergqvist');
+    claimCapability('format:formatPersonName');
   });
 
   it('takes one grapheme for a monogram, not one per word', () => {
@@ -601,6 +631,7 @@ describe('field modifiers', () => {
         ),
       ),
     ).toBe('AB');
+    claimCapability('format:formatPersonName');
   });
 
   it('applies allCaps and initialCap to the modified value', () => {
@@ -625,6 +656,7 @@ describe('field modifiers', () => {
         ),
       ),
     ).toBe('Mario De luca');
+    claimCapability('format:formatPersonName');
   });
 
   it('leaves an unrecognised placeholder as literal text rather than dropping it', () => {
@@ -638,6 +670,7 @@ describe('field modifiers', () => {
         ),
       ),
     ).toBe('Mary {nickname} Hamish');
+    claimCapability('format:formatPersonName');
   });
 });
 
@@ -651,6 +684,7 @@ describe('data the runtime cannot read', () => {
     const result = formatPersonName(mary, { locale: 'en' }, {}, foreign);
     expect(result.ok).toBe(false);
     expect(!result.ok && result.diagnostic.reason).toBe('integrity-mismatch');
+    claimCapability('format:formatPersonName');
   });
 
   it('falls back to the compiled root profile when no set is supplied', () => {
@@ -665,6 +699,7 @@ describe('data the runtime cannot read', () => {
     expect(text(formatPersonName(full, { locale: 'en' }))).toBe(
       'Dr. Mary Sue Hamish',
     );
+    claimCapability('format:formatPersonName');
   });
 
   it('falls back to root for a locale the supplied set does not carry', () => {
@@ -672,6 +707,7 @@ describe('data the runtime cannot read', () => {
     expect(text(formatPersonName(mary, { locale: 'en' }, {}, onlyJa))).toBe(
       'Mary Hamish',
     );
+    claimCapability('format:formatPersonName');
   });
 });
 
@@ -686,5 +722,6 @@ describe('the parts a formatted name is made of', () => {
       { kind: 'literal', value: ', ', language: 'en', direction: 'ltr' },
       { kind: 'given', value: 'Mary', language: 'en', direction: 'ltr' },
     ]);
+    claimCapability('format:formatPersonName');
   });
 });

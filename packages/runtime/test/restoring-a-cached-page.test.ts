@@ -23,6 +23,8 @@ import {
   type LocalizationLocaleSource,
 } from '../src/locale-resolution.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 const PROJECTION: RouteRuntimeProjection = {
   generated: {
     profile: 'equator-route-projection/1',
@@ -126,5 +128,6 @@ describe('the language a restored page should be in', () => {
     // The browser's language comes first here, so the stored choice would not have been used on a
     // fresh load either.
     expect(await at.restored('en-US', '/second')).toBeUndefined();
+    claimCapability('source:browser');
   });
 });

@@ -10,6 +10,8 @@ import {
   type LocalizedInputProfile,
 } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Equator's numeric rendering, checked against the platform's own idea of each locale.
  *
@@ -310,6 +312,7 @@ describe('Equator renders numbers the way the platform says the locale does', ()
           `${source} -> ${formatted.value.text}`,
         ).toBe(canonicalNumeric(source));
       }
+      claimCapability('format:formatLocalizedInput');
     });
 
     it(`parses back what it formatted, in ${row.name}`, () => {
@@ -340,6 +343,8 @@ describe('Equator renders numbers the way the platform says the locale does', ()
           source,
         ).toBe(canonicalNumeric(source));
       }
+      claimCapability('format:formatLocalizedInput');
+      claimCapability('format:parseLocalizedInput');
     });
 
     it(`renders the same value the same way every time, in ${row.name}`, () => {
@@ -362,6 +367,7 @@ describe('Equator renders numbers the way the platform says the locale does', ()
         // answer on the second call is a defect that only shows up under load.
         expect(twice.value.text, source).toBe(once.value.text);
       }
+      claimCapability('format:formatLocalizedInput');
     });
   }
 
@@ -429,6 +435,8 @@ describe('Equator renders numbers the way the platform says the locale does', ()
         ).toBe(canonicalNumeric(source));
       }
     }
+    claimCapability('format:formatLocalizedInput');
+    claimCapability('format:parseLocalizedInput');
   });
 
   it('does not render every locale the same way, so the differential is not a no-op', () => {
@@ -442,5 +450,6 @@ describe('Equator renders numbers the way the platform says the locale does', ()
     // Without this, a renderer that ignored the locale entirely would satisfy every property above:
     // it would decode correctly, parse back, and be stable.
     expect(new Set(rendered).size).toBeGreaterThan(1);
+    claimCapability('format:formatLocalizedInput');
   });
 });

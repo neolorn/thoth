@@ -35,6 +35,8 @@ import {
   type RouteRuntimeProjection,
 } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * The policy declares intent; the build decides what exists.
  *
@@ -319,6 +321,7 @@ describe('the hostnames a policy admits', () => {
       'example.eg',
       'example.de',
     ]);
+    claimCapability('policy:locale-host', { policy: HOST_POLICY });
   });
 
   it('narrows with the build, so an unbuilt domain is not admitted', () => {
@@ -328,6 +331,7 @@ describe('the hostnames a policy admits', () => {
     expect(allowedLocaleHosts(builtLocalePolicy(HOST_POLICY, SHIPPED))).toEqual(
       ['example.com', 'example.eg'],
     );
+    claimCapability('policy:locale-host', { policy: HOST_POLICY });
   });
 
   it('is empty for a policy that serves one origin', () => {

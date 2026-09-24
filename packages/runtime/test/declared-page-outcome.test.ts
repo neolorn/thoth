@@ -34,6 +34,8 @@ import {
   type RouteRuntimeProjection,
 } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 const CACHE = { successMaxAge: 600, permanentRedirectMaxAge: 86_400 } as const;
 
 const POLICY: LocaleUrlPolicy = {
@@ -129,6 +131,7 @@ describe('the channel a declaration travels over', () => {
       outcome: 'operational-failure',
       status: 503,
     });
+    claimCapability('outcome:pageOperationalFailure');
   });
 });
 
@@ -141,6 +144,7 @@ describe('the response a declared outcome produces', () => {
 
     expect(response.status).toBe(404);
     expect(await response.text()).toContain('page');
+    claimCapability('outcome:pageAbsent', { policy: POLICY });
   });
 
   it('answers a removal with the status the table gives a permanent removal', async () => {
@@ -150,6 +154,7 @@ describe('the response a declared outcome produces', () => {
     );
 
     expect(response.status).toBe(410);
+    claimCapability('outcome:pageGone', { policy: POLICY });
   });
 
   it('answers an operational failure with the status the application named', async () => {
@@ -159,6 +164,7 @@ describe('the response a declared outcome produces', () => {
     );
 
     expect(response.status).toBe(503);
+    claimCapability('outcome:pageOperationalFailure', { policy: POLICY });
   });
 
   it('leaves a render that declared nothing exactly as it was', async () => {
@@ -179,6 +185,7 @@ describe('the response a declared outcome produces', () => {
 
     // The page is missing, not the language. A reader who asked in Arabic is told in Arabic.
     expect(response.headers.get('content-language')).toBe('ar-EG');
+    claimCapability('outcome:pageAbsent', { policy: POLICY });
   });
 
   it('withdraws a missing page from indexing and from shared caches', async () => {
@@ -193,6 +200,7 @@ describe('the response a declared outcome produces', () => {
     );
     expect(declared.headers.get('cache-control')).toBe('private, no-store');
     expect(declared.headers.get('x-robots-tag')).toBe('noindex');
+    claimCapability('outcome:pageAbsent', { policy: POLICY });
   });
 
   it('does not reach the next request to the same address', async () => {
@@ -214,6 +222,7 @@ describe('the response a declared outcome produces', () => {
     expect((await get(handler, '/en-us/second')).status).toBe(404);
     // A new request is a new key, and the entry the first one used was taken when it was read.
     expect((await get(handler, '/en-us/second')).status).toBe(200);
+    claimCapability('outcome:pageAbsent', { policy: POLICY });
   });
 });
 
@@ -236,6 +245,7 @@ describe('a declaration at an address Equator did not serve', () => {
     expect(second.status).toBe(404);
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn.mock.calls[0]?.[0]).toContain('operational failure');
+    claimCapability('outcome:pageOperationalFailure', { policy: POLICY });
   });
 });
 
@@ -255,6 +265,8 @@ describe('a renderer that states the outcome instead of the page', () => {
 
     expect(response.status).toBe(404);
     expect(await response.text()).toContain('gone missing');
+    claimCapability('outcome:declarePageOutcome', { policy: POLICY });
+    claimCapability('outcome:pageAbsent', { policy: POLICY });
   });
 
   it('declares an outcome with nothing to draw', async () => {
@@ -265,6 +277,8 @@ describe('a renderer that states the outcome instead of the page', () => {
 
     expect(response.status).toBe(410);
     expect(await response.text()).toBe('');
+    claimCapability('outcome:declarePageOutcome', { policy: POLICY });
+    claimCapability('outcome:pageGone', { policy: POLICY });
   });
 
   it('replaces what the page declared from inside the render', async () => {
@@ -278,6 +292,8 @@ describe('a renderer that states the outcome instead of the page', () => {
 
     // The renderer saw the render finish; the component in the middle of it did not.
     expect(response.status).toBe(503);
+    claimCapability('outcome:declarePageOutcome', { policy: POLICY });
+    claimCapability('outcome:pageOperationalFailure', { policy: POLICY });
   });
 
   it('keeps the shape a renderer written before this existed already returns', () => {
@@ -290,6 +306,7 @@ describe('a renderer that states the outcome instead of the page', () => {
       outcome: 'operational-failure',
       status: 503,
     });
+    claimCapability('outcome:declareOperationalFailure');
   });
 });
 
@@ -319,6 +336,8 @@ describe('the descriptor a declaration produces', () => {
     expect(declared.cache).toBe(resolvedMissing.cache);
     expect(declared.robots).toBe(resolvedMissing.robots);
     expect(declared.contentLanguage).toBe('ar-EG');
+    claimCapability('outcome:pageOutcomeHttpDescriptor');
+    claimCapability('outcome:pageAbsent');
   });
 
   it('leaves the indexing of the address alone for an operational failure', () => {
@@ -333,6 +352,8 @@ describe('the descriptor a declaration produces', () => {
     expect(declared.status).toBe(503);
     expect(declared.cache).toBe('private-no-store');
     expect(declared.robots).toBeUndefined();
+    claimCapability('outcome:pageOutcomeHttpDescriptor');
+    claimCapability('outcome:pageOperationalFailure');
   });
 
   it('keeps how the language was chosen, which the status does not change', () => {
@@ -359,5 +380,6 @@ describe('the descriptor a declaration produces', () => {
         undefined,
       );
     }
+    claimCapability('outcome:pageOutcomeHttpDescriptor');
   });
 });

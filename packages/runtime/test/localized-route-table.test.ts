@@ -9,6 +9,8 @@ import {
   type RouteRuntimeProjection,
 } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * No Angular here, and that is the point of the suite rather than a convenience.
  *
@@ -189,6 +191,7 @@ describe('localizedRouteTable', () => {
       path: 'متجر/item/:id',
       loadComponent: DETAIL,
     });
+    claimCapability('declaration:localized-paths', { policy: POLICY });
   });
 
   it('drops the default locale branch when the policy omits its prefix', () => {
@@ -328,6 +331,7 @@ describe('localizedRouteTable', () => {
       expect(
         branchFor(table, 'ar-eg').children?.map((child) => child.path),
       ).not.toContain('مقالات/:identifier');
+      claimCapability('declaration:localized-paths', { policy: POLICY });
     });
 
     it('reports a localized spelling that adds a parameter', () => {
@@ -350,6 +354,7 @@ describe('localizedRouteTable', () => {
       );
       expect(reported).toHaveLength(1);
       expect(reported[0]?.message).toContain('version');
+      claimCapability('declaration:localized-paths', { policy: POLICY });
     });
 
     it('reports a localized spelling that drops a parameter', () => {
@@ -364,6 +369,7 @@ describe('localizedRouteTable', () => {
         },
       });
       expect(kinds(table.problems)).toEqual(['parameter-mismatch']);
+      claimCapability('declaration:localized-paths', { policy: POLICY });
     });
   });
 

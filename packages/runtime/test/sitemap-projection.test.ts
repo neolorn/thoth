@@ -27,6 +27,8 @@ import {
   type SitemapRouteDeclaration,
 } from '@neolorn/equator/core';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * What a build publishes to a crawler as a file, from the projection it publishes in a head.
  *
@@ -158,6 +160,7 @@ describe('the sitemap and the head are one projection', () => {
     ];
     // Two entries, one per locale, each carrying the whole reciprocal cluster.
     expect(emitted).toEqual([...expected, ...expected]);
+    claimCapability('capability:sitemap', { policy: POLICY });
   });
 
   it('publishes one entry per locale, and each entry names itself', () => {
@@ -176,6 +179,7 @@ describe('the sitemap and the head are one projection', () => {
       'ar-EG',
       'x-default',
     ]);
+    claimCapability('capability:sitemap', { policy: POLICY });
   });
 
   it('leaves out a locale the policy addresses and the build did not generate', () => {
@@ -183,12 +187,14 @@ describe('the sitemap and the head are one projection', () => {
     // build filter reaching the sitemap because the sitemap does not apply its own.
     const [file] = sitemap([{ routeId: 'route:second' }]);
     expect(file?.contents).not.toContain('/de/');
+    claimCapability('capability:sitemap', { policy: POLICY });
   });
 
   it('publishes nothing for a route a crawler may not see', () => {
     const [file] = sitemap([{ routeId: 'route:account' }]);
     expect(file?.urls).toBe(0);
     expect(locations(file?.contents ?? '')).toEqual([]);
+    claimCapability('capability:sitemap', { policy: POLICY });
   });
 });
 
@@ -216,6 +222,8 @@ describe('what a route claims about itself', () => {
         '    <priority>0.8</priority>',
       ].join('\n'),
     );
+    claimCapability('capability:sitemap', { policy: POLICY });
+    claimCapability('declaration:route-sitemap-entry', { policy: POLICY });
   });
 
   it('writes a plain decimal, because a schema refuses an exponent', () => {
@@ -230,6 +238,8 @@ describe('what a route claims about itself', () => {
     // `String(0.0000001)` is `1e-7`, which is a number and not an `xsd:decimal`.
     const [file] = sitemap([{ routeId: 'route:second' }], { projection: tiny });
     expect(file?.contents).toContain('<priority>0.0</priority>');
+    claimCapability('capability:sitemap', { policy: POLICY });
+    claimCapability('declaration:route-sitemap-entry', { policy: POLICY });
   });
 
   it('refuses a priority outside the range rather than writing it', () => {
@@ -244,6 +254,8 @@ describe('what a route claims about itself', () => {
     expect(() =>
       sitemap([{ routeId: 'route:second' }], { projection: wrong }),
     ).toThrow(/between 0 and 1/u);
+    claimCapability('capability:sitemap', { policy: POLICY });
+    claimCapability('declaration:route-sitemap-entry', { policy: POLICY });
   });
 
   it('refuses a lastmod that is not a W3C date rather than writing it', () => {
@@ -258,6 +270,8 @@ describe('what a route claims about itself', () => {
     expect(() =>
       sitemap([{ routeId: 'route:second' }], { projection: wrong }),
     ).toThrow(/W3C date/u);
+    claimCapability('capability:sitemap', { policy: POLICY });
+    claimCapability('declaration:route-sitemap-entry', { policy: POLICY });
   });
 
   it('publishes a route that claims nothing, with its address and its alternates', () => {
@@ -265,6 +279,7 @@ describe('what a route claims about itself', () => {
     expect(file?.contents).not.toContain('<changefreq>');
     expect(file?.contents).not.toContain('<priority>');
     expect(file?.urls).toBe(2);
+    claimCapability('capability:sitemap', { policy: POLICY });
   });
 });
 
@@ -292,6 +307,7 @@ describe('one file, one host', () => {
     expect(file?.contents).toContain(
       'href="https://ar.site.example/%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A"',
     );
+    claimCapability('capability:sitemap', { policy: hosts });
   });
 
   it('publishes one URL where one address serves every locale', () => {
@@ -303,6 +319,7 @@ describe('one file, one host', () => {
     // one address. Listing it per locale would claim one page twice.
     const [file] = sitemap([{ routeId: 'route:_index' }], { policy: neutral });
     expect(locations(file?.contents ?? '')).toEqual(['https://site.example/']);
+    claimCapability('capability:sitemap', { policy: neutral });
   });
 
   it('publishes both where the same policy gives each locale its own path', () => {
@@ -319,6 +336,7 @@ describe('one file, one host', () => {
       'https://site.example/second',
       'https://site.example/%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A',
     ]);
+    claimCapability('capability:sitemap', { policy: neutral });
   });
 
   it('mounts every URL under the sub-path the application is served from', () => {
@@ -326,6 +344,7 @@ describe('one file, one host', () => {
     expect(locations(file?.contents ?? '')[0]).toBe(
       'https://site.example/app/en-us/second',
     );
+    claimCapability('capability:sitemap', { policy: POLICY });
   });
 });
 
@@ -410,6 +429,7 @@ describe('splitting', () => {
     expect(files.map(({ name, kind }) => `${name} ${kind}`)).toEqual([
       'sitemap.xml urlset',
     ]);
+    claimCapability('capability:sitemap', { policy: POLICY });
   });
 
   it('splits on the URL count, and indexes the parts', () => {
@@ -456,5 +476,6 @@ describe('splitting', () => {
       '<loc>https://site.example/sitemap-1.xml</loc>',
     );
     expect(index?.urls).toBe(2);
+    claimCapability('capability:sitemap');
   });
 });
