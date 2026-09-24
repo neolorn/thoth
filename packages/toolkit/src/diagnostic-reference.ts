@@ -183,8 +183,3 @@ export const DIAGNOSTIC_SECTIONS: Readonly<Record<string, string>> =
     '17': 'The command',
     '18': 'Interchange, authoring, and the host',
   });
-
-/** Which section a code belongs to: the first two digits of its number. */
-export function diagnosticSection(code: ToolkitDiagnosticCode): string {
-  return code.slice(-4, -2);
-}

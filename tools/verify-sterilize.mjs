@@ -1,12 +1,13 @@
 /**
  * What the public repository may not contain.
  *
- * Four kinds of residue are refused here. Dashes used as punctuation, because the writing
+ * Three kinds of residue are refused here. Dashes used as punctuation, because the writing
  * convention is commas, colons, parentheses, or a new sentence. Names of authoring tools and
  * co-author trailers, because the repository says what the code does and never how it was
  * written. References to internal working documents, because a reader of the public repository
  * cannot follow them and a comment is supposed to cite a specification section or state a
- * reason. Names of private projects, because they belong to their owners.
+ * reason. Beyond those, the words of a list kept outside the repository are refused when one is
+ * configured, as `LISTED_WORDS_VARIABLE` below describes.
  *
  * The stage exists so the sweep that removed this residue is measured rather than asserted, and
  * it stays afterwards so the residue cannot come back one comment at a time.
@@ -15,12 +16,13 @@
  *
  * Every tracked file, and every commit message from the commit named below onwards. That is the
  * whole of what becomes public. Where the repository this runs in does not carry that commit, the
- * scan widens to every message it has: the two constants below exempt a stretch of one history,
+ * scan widens to every message it has: the constants below exempt a stretch of one history,
  * and a history that does not contain them has nothing to exempt.
  *
- * One rule starts later than the others. The words a working list writes its criteria in are held
- * against messages from `FIRST_COMMIT_WITHOUT_CRITERIA_VOCABULARY` onwards, and against every file
- * without exception, because no file spells them that way and none should start.
+ * Two rules start later than the others. The words a working list writes its criteria in are held
+ * against messages from `FIRST_COMMIT_WITHOUT_CRITERIA_VOCABULARY` onwards, and the listed words
+ * against messages from `FIRST_COMMIT_HELD_TO_THE_LIST` onwards. Both are held against every file
+ * without exception, because no file may carry either.
  *
  * ## What is not scanned, and why each one is out
  *
@@ -29,8 +31,8 @@
  *   publisher's content. Editing one would break the digest, which is the point of vendoring.
  * - `pnpm-lock.yaml`. A generated record of resolved dependencies. Its words are package names.
  * - `*.generated.ts`, for dashes and for dates only. A generated table carries the data it was
- *   generated from, and CLDR spells a range with an en dash. Names of tools and of private
- *   projects are still refused there, because no source of generated data supplies either.
+ *   generated from, and CLDR spells a range with an en dash. Names of tools and the listed words
+ *   are still refused there, because a generated table is published like any other file.
  * - This file. A scanner has to name what it looks for.
  *
  * ## Where a genuine exception goes
@@ -46,7 +48,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -66,6 +68,14 @@ const FIRST_CONVENTIONAL_COMMIT = '059116c';
  * are: the public repository starts from a fresh history, and this one keeps its own.
  */
 const FIRST_COMMIT_WITHOUT_CRITERIA_VOCABULARY = '03a1a14';
+
+/**
+ * The first commit whose message is held to the listed words.
+ *
+ * Messages before it are left as they were written, because rewriting them would change every
+ * commit identity after them.
+ */
+const FIRST_COMMIT_HELD_TO_THE_LIST = 'a927656';
 
 const SKIPPED_PATHS = ['tools/verify-sterilize.mjs'];
 const SKIPPED_PREFIXES = ['standards/data/'];
@@ -301,16 +311,147 @@ const CHANGELOG_RELEASE_HEADING =
   /^##\s+\[\d+\.\d+\.\d+[^\]]*\]\s+-\s+(?:19|20)\d{2}-\d{2}-\d{2}\s*$/u;
 
 /**
- * Private projects. They are not this repository's to name.
+ * The variable naming a file of further words to refuse, one to a line.
  *
- * The boundary is a letter or a digit in any script rather than `\b`, which counts only ASCII
- * word characters and so ends a word at the cedilla in Curaçao, a region name in the generated
- * endonym table.
+ * A line is refused wherever its letters occur, in any mix of capitals and small letters, including
+ * inside a longer word. A line written `\<word\>`, the way grep writes a word's boundaries, is
+ * refused only where it stands as a whole word, as `listedWordsPattern` reads one.
+ *
+ * The words are kept outside the repository because refusing a word here would mean writing it
+ * here. Without the variable nothing more is refused, and the report says so, so that a run that
+ * held no list cannot be read as one that did. For the same reason a variable naming a file that
+ * cannot be read, one with no words in it, or one with a line that opens a whole word without
+ * closing it, fails the stage rather than holding less than was written. The path is absolute,
+ * because the gate runs this stage from a tree of its own.
  */
-const PRIVATE_PROJECTS =
-  /(?<![\p{L}\p{N}])(?:cura|nomad|egary|storefront)(?![\p{L}\p{N}])/giu;
+const LISTED_WORDS_VARIABLE = 'EQUATOR_RESIDUE_FILE';
 
-const CATEGORIES = ['dash', 'tool', 'plan', 'private', 'path'];
+function readListedWords() {
+  const path = process.env[LISTED_WORDS_VARIABLE];
+  if (path === undefined || path === '') return [];
+  if (!isAbsolute(path)) {
+    throw new Error(
+      `${LISTED_WORDS_VARIABLE} must be an absolute path, and it is ${JSON.stringify(path)}.`,
+    );
+  }
+  let text;
+  try {
+    text = readFileSync(path, 'utf8');
+  } catch (error) {
+    throw new Error(
+      `${LISTED_WORDS_VARIABLE} names ${path}, which cannot be read: ${error.message}`,
+    );
+  }
+  // A byte order mark is how some editors begin a UTF-8 file, and it is not part of the first word.
+  const lines = (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text)
+    .split(/\r?\n/u)
+    .map((line) => line.trim());
+  const words = [];
+  for (const [index, line] of lines.entries()) {
+    if (line === '') continue;
+    const opens = line.startsWith('\\<');
+    const closes = line.endsWith('\\>');
+    if (opens !== closes || (opens && line.length <= 4)) {
+      throw new Error(
+        `${LISTED_WORDS_VARIABLE} names ${path}, whose line ${index + 1} opens a whole word without closing it, or closes one it did not open.`,
+      );
+    }
+    words.push(
+      opens
+        ? { word: line.slice(2, -2), whole: true }
+        : { word: line, whole: false },
+    );
+  }
+  if (words.length === 0) {
+    throw new Error(
+      `${LISTED_WORDS_VARIABLE} names ${path}, which holds no words.`,
+    );
+  }
+  return words;
+}
+
+/** One character in either of its cases, as regular expression source. */
+function eitherCase(character) {
+  const variants = [
+    ...new Set([character, character.toLowerCase(), character.toUpperCase()]),
+  ].map((variant) => variant.replace(/[\\^$.*+?()[\]{}|/]/gu, '\\$&'));
+  return variants.length === 1 ? variants[0] : `(?:${variants.join('|')})`;
+}
+
+/**
+ * The listed words as one pattern, in any mix of capitals and small letters.
+ *
+ * A whole word includes a word of an identifier: on its own, in a camel-case or Pascal-case name,
+ * and between underscores, hyphens, dots or slashes, because a plain word boundary misses a word
+ * written inside an identifier. A longer word that contains one is a different word and is left
+ * alone. The cases are spelled out character by character rather than left to the `i` flag, which
+ * would fold the whole-word boundaries as well, and the boundary inside a camel-case name is a
+ * change of case.
+ */
+function listedWordsPattern(words) {
+  const spelled = (whole) =>
+    words
+      .filter((entry) => entry.whole === whole)
+      .map((entry) => entry.word)
+      .sort((left, right) => right.length - left.length)
+      .map((word) => [...word].map(eitherCase).join(''));
+  const start = String.raw`(?:(?<![\p{L}\p{M}])|(?<=[\p{Ll}\p{N}])(?=\p{Lu}))`;
+  const end = String.raw`(?![\p{Ll}\p{Lm}\p{Lo}\p{M}])`;
+  const whole = spelled(true);
+  const anywhere = spelled(false);
+  const alternatives = [
+    ...(whole.length > 0 ? [`${start}(?:${whole.join('|')})${end}`] : []),
+    ...(anywhere.length > 0 ? [`(?:${anywhere.join('|')})`] : []),
+  ];
+  return new RegExp(alternatives.join('|'), 'gu');
+}
+
+const PERCENT_DECODER = new TextDecoder('utf-8');
+
+/**
+ * A line with every escape a source file can spell a character in replaced by that character.
+ *
+ * `\u` in both its forms, `\x`, an HTML character reference, and percent-encoding. A listed word
+ * written in escapes is still the word, and a line is read in both spellings at once because the
+ * decoded line keeps everything that was not an escape.
+ */
+function decodeEscapes(line) {
+  const character = (whole, code) =>
+    code <= 0x10ffff ? String.fromCodePoint(code) : whole;
+  return line
+    .replace(/\\u\{([0-9A-Fa-f]{1,6})\}/gu, (whole, hex) =>
+      character(whole, parseInt(hex, 16)),
+    )
+    .replace(/\\u([0-9A-Fa-f]{4})/gu, (whole, hex) =>
+      character(whole, parseInt(hex, 16)),
+    )
+    .replace(/\\x([0-9A-Fa-f]{2})/gu, (whole, hex) =>
+      character(whole, parseInt(hex, 16)),
+    )
+    .replace(/&#[xX]([0-9A-Fa-f]{1,6});?/gu, (whole, hex) =>
+      character(whole, parseInt(hex, 16)),
+    )
+    .replace(/&#([0-9]{1,7});?/gu, (whole, decimal) =>
+      character(whole, Number(decimal)),
+    )
+    .replace(/(?:%[0-9A-Fa-f]{2})+/gu, (run) =>
+      PERCENT_DECODER.decode(
+        Uint8Array.from(run.slice(1).split('%'), (byte) => parseInt(byte, 16)),
+      ),
+    );
+}
+
+let listedWords;
+try {
+  listedWords = readListedWords();
+} catch (error) {
+  process.stderr.write(`${error.message}\n`);
+  process.exit(1);
+}
+const LISTED_WORDS =
+  listedWords.length > 0 ? listedWordsPattern(listedWords) : undefined;
+
+const CATEGORIES = ['dash', 'tool', 'plan', 'path', 'listed'];
 
 function trackedFiles() {
   return execFileSync('git', ['ls-files'], {
@@ -354,15 +495,18 @@ function commitMessages() {
     ['log', '--format=%H%x00%B%x01', rangeFrom(FIRST_CONVENTIONAL_COMMIT, '')],
     { cwd: workspaceRoot, encoding: 'utf8', maxBuffer: 1 << 28 },
   );
-  const held = new Set(
-    execFileSync(
-      'git',
-      ['rev-list', rangeFrom(FIRST_COMMIT_WITHOUT_CRITERIA_VOCABULARY, '~1')],
-      { cwd: workspaceRoot, encoding: 'utf8', maxBuffer: 1 << 28 },
-    )
-      .split('\n')
-      .filter(Boolean),
-  );
+  const heldFrom = (commit) =>
+    new Set(
+      execFileSync('git', ['rev-list', rangeFrom(commit, '~1')], {
+        cwd: workspaceRoot,
+        encoding: 'utf8',
+        maxBuffer: 1 << 28,
+      })
+        .split('\n')
+        .filter(Boolean),
+    );
+  const held = heldFrom(FIRST_COMMIT_WITHOUT_CRITERIA_VOCABULARY);
+  const heldToList = heldFrom(FIRST_COMMIT_HELD_TO_THE_LIST);
   return log
     .split('\x01')
     .map((entry) => entry.trim())
@@ -373,6 +517,7 @@ function commitMessages() {
         hash: hash.slice(0, 7),
         body: body ?? '',
         criteria: held.has(hash),
+        listed: heldToList.has(hash),
       };
     });
 }
@@ -525,9 +670,27 @@ function scanCommentPaths(text, where, tracked, directories) {
   }
 }
 
-function scanText(text, where, { generated = false, criteria = true } = {}) {
+/** Every listed word on a line, read after its escapes are decoded. */
+function scanListed(text, where) {
+  for (const [index, line] of text.split('\n').entries()) {
+    const decoded = decodeEscapes(line);
+    LISTED_WORDS.lastIndex = 0;
+    for (const match of decoded.matchAll(LISTED_WORDS)) {
+      record('listed', where, index + 1, match[0], decoded);
+    }
+  }
+}
+
+function scanText(
+  text,
+  where,
+  { generated = false, criteria = true, listed = true } = {},
+) {
   if (criteria) {
     scan('plan', text, CRITERIA_VOCABULARY, where);
+  }
+  if (listed && LISTED_WORDS !== undefined) {
+    scanListed(text, where);
   }
   if (!generated) {
     scan('dash', text, DASHES, where);
@@ -550,7 +713,6 @@ function scanText(text, where, { generated = false, criteria = true } = {}) {
     );
   }
   scan('tool', text, TOOLS, where);
-  scan('private', text, PRIVATE_PROJECTS, where);
   for (const { pattern, accept } of PLAN) {
     scan('plan', text, pattern, where, accept);
     scanAcrossWrap('plan', text, pattern, where);
@@ -601,8 +763,8 @@ for (const path of files) {
 }
 
 const messages = commitMessages();
-for (const { hash, body, criteria } of messages) {
-  scanText(body, `commit ${hash}`, { criteria });
+for (const { hash, body, criteria, listed } of messages) {
+  scanText(body, `commit ${hash}`, { criteria, listed });
 }
 
 const unusedExemptions = EXEMPTIONS.filter(
@@ -613,6 +775,11 @@ const unusedExemptions = EXEMPTIONS.filter(
     ),
 );
 
+const listNote =
+  LISTED_WORDS === undefined
+    ? `${LISTED_WORDS_VARIABLE} is not set, so no listed words were held.`
+    : `${listedWords.length} listed word(s) were held.`;
+
 const counts = Object.fromEntries(
   CATEGORIES.map((category) => [
     category,
@@ -622,7 +789,7 @@ const counts = Object.fromEntries(
 
 if (findings.length > 0 || unusedExemptions.length > 0) {
   const lines = [
-    `Equator sterilization: ${findings.length} hit(s) across ${files.length} files and ${messages.length} commit messages.`,
+    `Equator sterilization: ${findings.length} hit(s) across ${files.length} files and ${messages.length} commit messages. ${listNote}`,
     '',
     ...CATEGORIES.map(
       (category) => `  ${category.padEnd(10)} ${counts[category]}`,
@@ -647,6 +814,6 @@ if (findings.length > 0 || unusedExemptions.length > 0) {
   process.exitCode = 1;
 } else {
   process.stdout.write(
-    `Equator sterilization verified: ${files.length} files and ${messages.length} commit messages carry no dash used as punctuation, no authoring tool name or co-author trailer, no reference to an internal document, no private project name, and no path into this repository that does not resolve. ${EXEMPTIONS.length} exemption(s), all still matching.\n`,
+    `Equator sterilization verified: ${files.length} files and ${messages.length} commit messages carry no dash used as punctuation, no authoring tool name or co-author trailer, no reference to an internal document, no listed word, and no path into this repository that does not resolve. ${EXEMPTIONS.length} exemption(s), all still matching. ${listNote}\n`,
   );
 }
