@@ -1699,6 +1699,20 @@ function resolveRouteIdentities(
   return projections;
 }
 
+/** What decides a route's address, as far as its source says. */
+type RouteAddress =
+  | { readonly kind: 'literal'; readonly path: ts.StringLiteralLike }
+  | {
+      readonly kind: 'hidden';
+      readonly reason: 'computed' | 'matcher' | 'unreadable';
+    }
+  | { readonly kind: 'refused'; readonly reason: 'neither' }
+  | {
+      readonly kind: 'refused';
+      readonly reason: 'both';
+      readonly path: ts.StringLiteralLike;
+    };
+
 function analyzeRoutes(
   projectRoot: string,
   checker: ts.TypeChecker,
@@ -1730,6 +1744,85 @@ function analyzeRoutes(
         ((ts.isIdentifier(item.name) && item.name.text === name) ||
           (ts.isStringLiteralLike(item.name) && item.name.text === name)),
     );
+  // A spread or a computed key can set any key its type allows, so a route that has one may set a
+  // key without spelling it. Reading such a key as absent is how a route ends up at an address it
+  // does not serve.
+  const canHold = (type: ts.Type, name: string): boolean =>
+    (type.isUnion() ? type.types : [type]).some((member) => {
+      if ((member.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) !== 0) {
+        return true;
+      }
+      const apparent = checker.getApparentType(member);
+      return (
+        checker.getPropertyOfType(apparent, name) !== undefined ||
+        checker.getIndexInfoOfType(apparent, ts.IndexKind.String) !== undefined
+      );
+    });
+  const canBeKey = (type: ts.Type, name: string): boolean =>
+    (type.isUnion() ? type.types : [type]).some((member) =>
+      member.isStringLiteral()
+        ? member.value === name
+        : !member.isNumberLiteral() &&
+          (member.flags & ts.TypeFlags.ESSymbolLike) === 0,
+    );
+  // The last element that can set a key is the one that does, which is JavaScript's own order.
+  const setter = (
+    object: ts.ObjectLiteralExpression,
+    name: string,
+  ): ts.ObjectLiteralElementLike | 'absent' | 'unreadable' => {
+    let found: ts.ObjectLiteralElementLike | 'absent' | 'unreadable' = 'absent';
+    for (const item of object.properties) {
+      if (ts.isSpreadAssignment(item)) {
+        if (canHold(checker.getTypeAtLocation(item.expression), name)) {
+          found = 'unreadable';
+        }
+      } else if (
+        ts.isComputedPropertyName(item.name) &&
+        !ts.isStringLiteralLike(item.name.expression)
+      ) {
+        if (canBeKey(checker.getTypeAtLocation(item.name.expression), name)) {
+          found = 'unreadable';
+        }
+      } else {
+        const key = ts.isComputedPropertyName(item.name)
+          ? (item.name.expression as ts.StringLiteralLike).text
+          : ts.isIdentifier(item.name) || ts.isStringLiteralLike(item.name)
+            ? item.name.text
+            : undefined;
+        if (key === name) found = item;
+      }
+    }
+    return found;
+  };
+  // Angular's rule for what decides a route's address. `match`
+  // (`@angular/router/fesm2022/_router-chunk.mjs:2864-2879`) matches an empty `path` without
+  // consuming a segment whatever else the route carries, and any other route by its `matcher` when
+  // it has one and by its `path` otherwise. `validateNode` refuses a route with neither, and one
+  // with a `matcher` beside a non-empty `path` (`:2785-2792`), in a development build only.
+  const routeAddress = (object: ts.ObjectLiteralExpression): RouteAddress => {
+    const path = setter(object, 'path');
+    const matcher = setter(object, 'matcher');
+    const value =
+      typeof path !== 'string' && ts.isPropertyAssignment(path)
+        ? unwrap(path.initializer)
+        : undefined;
+    const literalPath =
+      value !== undefined && ts.isStringLiteralLike(value) ? value : undefined;
+    if (literalPath?.text === '') return { kind: 'literal', path: literalPath };
+    if (matcher === 'unreadable') {
+      return { kind: 'hidden', reason: 'unreadable' };
+    }
+    if (matcher !== 'absent') {
+      return literalPath === undefined
+        ? { kind: 'hidden', reason: 'matcher' }
+        : { kind: 'refused', reason: 'both', path: literalPath };
+    }
+    if (path === 'absent') return { kind: 'refused', reason: 'neither' };
+    if (path === 'unreadable') return { kind: 'hidden', reason: 'unreadable' };
+    return literalPath === undefined
+      ? { kind: 'hidden', reason: 'computed' }
+      : { kind: 'literal', path: literalPath };
+  };
   const literal = (
     object: ts.ObjectLiteralExpression,
     name: string,
@@ -1821,21 +1914,14 @@ function analyzeRoutes(
     for (const element of array.elements) {
       const unwrapped = unwrap(element as ts.Expression);
       if (!ts.isObjectLiteralExpression(unwrapped)) continue;
-      const pathProperty = property(unwrapped, 'path');
-      const pathInitializer = pathProperty?.initializer;
-      const pathExpression =
-        pathInitializer === undefined ? undefined : unwrap(pathInitializer);
-      // A route with no `path` is pathless: it renders without contributing a URL segment, so it
-      // has its parent's address rather than none. A computed `path` is an address Equator cannot
-      // know, which leaves the subtree below it unnameable rather than invisible. Ending the visit
-      // at either hides every route beneath a pathless layout, and with them every lazy boundary
-      // beneath it: those messages then load eagerly, forever, with nothing to say so.
+      const declared = routeAddress(unwrapped);
+      // An empty `path` renders without contributing a URL segment, so the route has its parent's
+      // address rather than none. An address Equator cannot read leaves the subtree below it
+      // unnameable rather than invisible. Ending the visit at either hides every route beneath
+      // it, and with them every lazy boundary beneath it: those messages then load eagerly,
+      // forever, with nothing to say so.
       const ownPath =
-        pathExpression === undefined
-          ? ''
-          : ts.isStringLiteralLike(pathExpression)
-            ? pathExpression.text
-            : undefined;
+        declared.kind === 'literal' ? declared.path.text : undefined;
       const fullPath =
         parentPath === undefined || ownPath === undefined
           ? undefined
@@ -1876,12 +1962,19 @@ function analyzeRoutes(
       const redirect = property(unwrapped, 'redirectTo');
       const children = property(unwrapped, 'children')?.initializer;
       const portableSourcePath = portablePath(projectRoot, sourceFile.fileName);
+      const spelled = 'path' in declared ? declared.path.text : undefined;
       const address =
         fullPath !== undefined
           ? JSON.stringify(`/${fullPath}`)
-          : ownPath !== undefined
-            ? JSON.stringify(`\u2026/${ownPath}`)
-            : 'A route with a computed address';
+          : spelled !== undefined
+            ? JSON.stringify(
+                parentPath === undefined
+                  ? `\u2026/${spelled}`
+                  : `/${join(parentPath, spelled)}`,
+              )
+            : parentPath !== undefined
+              ? `A route under ${JSON.stringify(`/${parentPath}`)}`
+              : 'A route below an address Equator cannot read';
 
       // Angular's own rule, restated where it runs.
       //
@@ -1892,12 +1985,16 @@ function analyzeRoutes(
       // development build. Equator reads the same table at generate time, before either build, and
       // is the only thing standing between such a route and the projection, which would otherwise
       // give it an identity, a localized spelling per locale, and a place in the catalog.
+      //
+      // Read through `setter`, because a key a spread supplies is still a key Angular sees.
       if (
-        redirect === undefined &&
-        children === undefined &&
-        !defersChildRoutes &&
-        property(unwrapped, 'component') === undefined &&
-        property(unwrapped, 'loadComponent') === undefined
+        [
+          'component',
+          'loadComponent',
+          'redirectTo',
+          'children',
+          'loadChildren',
+        ].every((name) => setter(unwrapped, name) === 'absent')
       ) {
         diagnostics.push(
           toolkitDiagnostic(
@@ -1907,15 +2004,31 @@ function analyzeRoutes(
           ),
         );
       }
+      // The same reasoning for what matches the route: a production build would otherwise ship a
+      // route no address reaches, or one the projection places where the application does not
+      // serve it.
+      if (declared.kind === 'refused') {
+        diagnostics.push(
+          toolkitDiagnostic(
+            'EQ1415',
+            declared.reason === 'neither'
+              ? `${address} has neither a \`path\` nor a \`matcher\`, so no address matches it. Angular refuses this route too, but only in a development build.`
+              : `${address} has both a non-empty \`path\` and a \`matcher\`. Angular refuses that in a development build, and a production build matches the route with the \`matcher\`, so the \`path\` names an address the route does not serve.`,
+            { path: ['routes', portableSourcePath] },
+          ),
+        );
+      }
 
       // What the projection cannot reach, said out loud.
       //
       // Equator localizes the routes its analysis can name, and a route it was never shown is not
-      // one of them. Two constructs hide addresses and neither is exotic: a `path` that is not a
-      // string literal makes the route and everything beneath it unnameable, and `loadChildren`
-      // puts the child table in a file this one only references. The consequence is not a missing
-      // page, the Router serves it either way, but a prerendered file at a localized address
-      // rendered in the default locale, which is worse than no file, because it looks right.
+      // one of them. Two kinds of construct hide addresses and neither is exotic. A route whose
+      // source does not spell its address, through a `path` that is not a string literal, a
+      // `matcher`, or a spread or computed key that may set either, makes the route and everything
+      // beneath it unnameable. `loadChildren` puts the child table in a file this one only
+      // references. The consequence is not a missing page, the Router serves it either way, but a
+      // prerendered file at a localized address rendered in the default locale, which is worse than
+      // no file, because it looks right.
       //
       // Diagnosed rather than covered, deliberately. Following the `loadChildren` target would
       // close this instance and none of the class: a table assembled at runtime, spread in from a
@@ -1947,11 +2060,25 @@ function analyzeRoutes(
       // only remedy. That is a wall rather than a limit, and Equator is meant to sit in
       // applications it did not design. What the item actually requires is that this not be silent,
       // and a named warning carrying the route, the consequence and the remedy is not silence.
-      if (parentPath !== undefined && ownPath === undefined) {
+      if (parentPath !== undefined && declared.kind === 'hidden') {
+        const [cause, remedy] = {
+          computed: [
+            'computes its `path`',
+            'Give the route a string-literal `path`',
+          ],
+          matcher: [
+            'matches its addresses with a `matcher`',
+            'Give the route a string-literal `path` where one can express its addresses',
+          ],
+          unreadable: [
+            'may take its `path` or `matcher` from a spread or a computed key',
+            'Write the route its own string-literal `path`',
+          ],
+        }[declared.reason];
         diagnostics.push(
           toolkitDiagnostic(
             'EQ1406',
-            `A route under ${JSON.stringify(`/${parentPath}`)} computes its \`path\`, so Equator can name neither it nor anything below it. Those addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. Give the route a string-literal \`path\`, or keep the subtree out of the localized table on purpose.`,
+            `${address} ${cause}, so Equator can name neither it nor anything below it. Those addresses stay outside the localized route table and are served at their canonical spelling, in the default locale. ${remedy}, or keep the subtree out of the localized table on purpose.`,
             { path: ['routes', portableSourcePath], severity: 'warning' },
           ),
         );
@@ -1969,7 +2096,7 @@ function analyzeRoutes(
       if (
         redirect === undefined &&
         fullPath !== undefined &&
-        pathExpression !== undefined &&
+        declared.kind === 'literal' &&
         // A wildcard matches every address, at any depth, so it names none of them.
         !routeSegments(fullPath).includes('**')
       ) {
@@ -1988,8 +2115,8 @@ function analyzeRoutes(
             opaqueData: opaqueRouteData(unwrapped),
             lazyEntries,
             sourcePath: portableSourcePath,
-            start: pathExpression.getStart(sourceFile),
-            end: pathExpression.getEnd(),
+            start: declared.path.getStart(sourceFile),
+            end: declared.path.getEnd(),
           }),
         );
       }

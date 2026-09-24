@@ -40,6 +40,7 @@ async function write(
 const ROUTER_STUB = [
   'export declare interface Route {',
   '  path?: string;',
+  '  matcher?: (...args: never[]) => unknown;',
   '  data?: Record<string, unknown>;',
   '  redirectTo?: string;',
   '  component?: unknown;',
@@ -360,16 +361,16 @@ describe('route identity', () => {
   });
 
   it('descends through a pathless layout route', async () => {
-    // A route with no `path` renders without contributing a URL segment, so a visit that ends at
-    // one sees nothing underneath it, lazy boundaries included.
+    // An empty `path` renders without contributing a URL segment, so a visit that ends at one sees
+    // nothing underneath it, lazy boundaries included.
     const analysed = await analyse({
       'src/admin.ts': "export const panel = 'admin';\n",
       ...routeFile(
-        "[{ component: null, children: [{ path: 'admin', loadComponent: () => import('./admin') }] }]",
+        "[{ path: '', component: Page, children: [{ path: 'admin', loadComponent: () => import('./admin') }] }]",
       ),
     });
 
-    expect(identities(analysed)).toEqual(['route:admin']);
+    expect(identities(analysed)).toContain('route:admin');
     expect(analysed.deferredSourcePaths).toContain('src/admin.ts');
   });
 
@@ -400,6 +401,148 @@ describe('route identity', () => {
     expect(
       analysed.diagnostics.filter(({ code }) => code === 'EQ1405'),
     ).toEqual([]);
+  });
+
+  it('refuses a route with neither a path nor a matcher', async () => {
+    // Read as pathless, it would give every route below it its parent's address, and Angular
+    // matches no address to it at all.
+    const failure = await analyseFailure(
+      routeFile(
+        "[{ component: Page, children: [{ path: 'orders', component: Page }] }]",
+      ),
+    );
+
+    const refused = failure.filter(({ code }) => code === 'EQ1415');
+    expect(refused).toHaveLength(1);
+    expect(refused[0]?.severity).toBe('error');
+    expect(refused[0]?.summary).toContain('neither');
+  });
+
+  it('refuses a matcher beside a non-empty path', async () => {
+    // Angular matches this route with the `matcher`, so the `path` is an address it does not serve.
+    const failure = await analyseFailure(
+      routeFile("[{ path: 'orders', matcher: () => null, component: Page }]"),
+    );
+
+    const refused = failure.filter(({ code }) => code === 'EQ1415');
+    expect(refused).toHaveLength(1);
+    expect(refused[0]?.summary).toContain('/orders');
+  });
+
+  it('reads a matcher beside an empty path as pathless, as Angular does', async () => {
+    const analysed = await analyse(
+      routeFile(
+        "[{ path: '', matcher: () => null, component: Page, children: [{ path: 'orders', component: Page }] }]",
+      ),
+    );
+
+    expect(identities(analysed)).toContain('route:orders');
+    expect(analysed.diagnostics).toEqual([]);
+  });
+
+  it('names a matcher route instead of giving it an address', async () => {
+    // Only the `matcher` knows which addresses the route serves, so neither it nor anything below
+    // it has an address the projection can name.
+    const analysed = await analyse(
+      routeFile(
+        "[{ path: 'shop', component: Page, children: [{ matcher: () => null, component: Page, children: [{ path: 'item', component: Page }] }] }]",
+      ),
+    );
+
+    expect(identities(analysed)).toEqual(['route:shop']);
+    const hidden = analysed.diagnostics.filter(({ code }) => code === 'EQ1406');
+    expect(hidden).toHaveLength(1);
+    expect(hidden[0]?.severity).toBe('warning');
+    expect(hidden[0]?.summary).toContain('/shop');
+    expect(hidden[0]?.summary).toContain('`matcher`');
+  });
+
+  it('names a route whose path a spread may set', async () => {
+    const analysed = await analyse({
+      'src/app.routes.ts': [
+        "import type { Route, Routes } from '@angular/router';",
+        '',
+        'export class Page {}',
+        "const base: Route = { path: 'admin' };",
+        'export const routes: Routes = [',
+        "  { ...base, component: Page, children: [{ path: 'users', component: Page }] },",
+        '];',
+        '',
+      ].join('\n'),
+    });
+
+    expect(identities(analysed)).toEqual([]);
+    const hidden = analysed.diagnostics.filter(({ code }) => code === 'EQ1406');
+    expect(hidden).toHaveLength(1);
+    expect(hidden[0]?.summary).toContain('spread');
+  });
+
+  it('names a route whose path a computed key may set', async () => {
+    const analysed = await analyse({
+      'src/app.routes.ts': [
+        "import type { Routes } from '@angular/router';",
+        '',
+        'export class Page {}',
+        "const key: string = 'path';",
+        "export const routes: Routes = [{ [key]: 'admin', component: Page }];",
+        '',
+      ].join('\n'),
+    });
+
+    expect(identities(analysed)).toEqual([]);
+    expect(codes(analysed)).toEqual(['EQ1406']);
+  });
+
+  it('keeps a path that no later spread can set', async () => {
+    // The control for the two above: a spread whose type has no `path` or `matcher` cannot move
+    // the address, and reading it as though it could would hide an ordinary route.
+    const analysed = await analyse({
+      'src/app.routes.ts': [
+        "import type { Routes } from '@angular/router';",
+        '',
+        'export class Page {}',
+        "const extras = { data: { area: 'admin' } };",
+        "export const routes: Routes = [{ path: 'admin', component: Page, ...extras }];",
+        '',
+      ].join('\n'),
+    });
+
+    expect(identities(analysed)).toEqual(['route:admin']);
+    expect(analysed.diagnostics).toEqual([]);
+  });
+
+  it('names a shorthand path as computed', async () => {
+    const analysed = await analyse({
+      'src/app.routes.ts': [
+        "import type { Routes } from '@angular/router';",
+        '',
+        'export class Page {}',
+        "const path = 'admin';",
+        'export const routes: Routes = [{ path, component: Page }];',
+        '',
+      ].join('\n'),
+    });
+
+    expect(identities(analysed)).toEqual([]);
+    const hidden = analysed.diagnostics.filter(({ code }) => code === 'EQ1406');
+    expect(hidden).toHaveLength(1);
+    expect(hidden[0]?.summary).toContain('computes its `path`');
+  });
+
+  it('counts a component a spread supplies as one Angular renders', async () => {
+    const analysed = await analyse({
+      'src/app.routes.ts': [
+        "import type { Routes } from '@angular/router';",
+        '',
+        'export class Page {}',
+        'const shell = { component: Page };',
+        "export const routes: Routes = [{ ...shell, path: 'admin' }];",
+        '',
+      ].join('\n'),
+    });
+
+    expect(identities(analysed)).toEqual(['route:admin']);
+    expect(analysed.diagnostics).toEqual([]);
   });
 
   it('names an address it cannot know, and keeps reading below it', async () => {

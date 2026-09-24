@@ -110,7 +110,7 @@ const REFERENCE = {
   EQ1405:
     'A route renders nothing: it carries none of `component`, `loadComponent`, `redirectTo`, `children` or `loadChildren`.',
   EQ1406:
-    'A route hides addresses from the projection, by computing its own `path` or by loading its children from a file it only references. Those addresses stay outside the localized route table and are served at their canonical form in every locale.',
+    'A route hides addresses from the projection: its address comes from a computed `path`, a `matcher`, or a spread or computed key that may set either, or its children load from a file it only references. Those addresses stay outside the localized route table and are served at their canonical form in every locale.',
   EQ1407:
     'A route loads a file through a lazy boundary that something in the initial bundle also imports statically, so the split does not happen.',
   EQ1408:
@@ -125,6 +125,8 @@ const REFERENCE = {
     'A sitemap declaration cannot be used as written: a changefreq outside the seven the protocol lists, a priority that is not a number literal between 0 and 1, a lastmod that is not a W3C date, or the owner declaring two route sitemap fields.',
   EQ1413:
     'A caching declaration cannot be used as written: a value that names neither `per-visitor` nor `not-stored`, a table or a route value the build cannot read as a string literal, or the owner declaring two route caching fields. A route whose value cannot be used is answered as not stored until it is corrected.',
+  EQ1415:
+    'A route names its addresses in a way Angular refuses: neither a `path` nor a `matcher`, or a `matcher` beside a non-empty `path`.',
   EQ1501:
     'A compiled artifact cannot be produced from the accepted graph: a recovery identity that resolves to no single plain message, or a catalog absent from the graph.',
   EQ1502: 'A compiled catalog exceeds the IR node or depth ceiling.',
