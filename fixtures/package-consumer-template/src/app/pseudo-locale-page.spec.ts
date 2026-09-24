@@ -24,6 +24,8 @@ import { messages } from '#i18n/shell';
 import { runtimeExtensions } from './runtime-extensions';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * A page under a pseudo-locale, and the string that did not go through Equator.
  *
@@ -143,6 +145,7 @@ describe('a page rendered under a pseudo-locale', () => {
     // than merely detectable in an assertion.
     expect(textOf(element, 'data-hardcoded')).toBe(hardcodedBefore);
     expect(textOf(element, 'data-hardcoded')).toBe(HARDCODED);
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('resolves right-to-left from the tag, with no pseudo-locale branch to read', async () => {
@@ -164,5 +167,6 @@ describe('a page rendered under a pseudo-locale', () => {
     // And the language stays English, which is what makes the mirrored page readable to the
     // developer looking at it. A pseudo-locale in another language tests something else.
     expect(document.documentElement.lang).toBe('en-Arab-XB');
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 });

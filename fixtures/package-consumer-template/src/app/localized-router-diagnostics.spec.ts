@@ -47,6 +47,8 @@ const withRouterResources = (
 import { routes } from './app.routes';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * What `provideLocalizedRouter` says when something of its own has been replaced.
  *
@@ -394,6 +396,7 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
       'LocalizedUrlHandlingStrategy',
     );
     expect(warnings(warn)).toEqual([]);
+    claimCapability('policy:locale-neutral', { policy: NEUTRAL });
   });
 
   it('serves a locale-host policy, and says nothing about it', async () => {
@@ -403,6 +406,7 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
       'LocalizedLocationStrategy',
     );
     expect(warnings(warn)).toEqual([]);
+    claimCapability('policy:locale-host', { policy: HOST });
   });
 
   /**
@@ -421,6 +425,7 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
     expect(TestBed.inject(LocationStrategy).constructor.name).toBe(
       'LocalizedLocationStrategy',
     );
+    claimCapability('policy:locale-host', { policy: HOST });
   });
 
   it('refuses a host policy whose origins do not name the configured origin', async () => {
@@ -430,6 +435,7 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
         options: { origin: 'https://elsewhere.example' },
       }),
     ).rejects.toThrow(/does not name/u);
+    claimCapability('policy:locale-host', { policy: HOST });
   });
 
   /**
@@ -443,12 +449,14 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
         options: { origin: 'http://site.example' },
       }),
     ).rejects.toThrow(/scheme is part of an origin/u);
+    claimCapability('policy:locale-host', { policy: HOST });
   });
 
   it('refuses a host policy configured with no origin at all', async () => {
     await expect(
       bootstrap([], [], 'installed', { policy: HOST }),
     ).rejects.toThrow(/needs to be told which origin this build answers at/u);
+    claimCapability('policy:locale-host', { policy: HOST });
   });
 
   /**
@@ -463,6 +471,7 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
     expect(TestBed.inject(LocationStrategy).constructor.name).toBe(
       'LocalizedLocationStrategy',
     );
+    claimCapability('policy:locale-host', { policy: HOST });
   });
 
   /** The check is the host policy's, and no other kind acquires it. */

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { contentPresentation, languagePresentation } from '@neolorn/equator';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Consumer content whose language may not be known.
  *
@@ -32,6 +34,7 @@ describe('content whose language is known', () => {
       direction: 'ltr',
       classification: 'known',
     });
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('keeps a direction that comes from the script when the language is undetermined', () => {
@@ -41,6 +44,7 @@ describe('content whose language is known', () => {
       direction: 'rtl',
       classification: 'known',
     });
+    claimCapability('entry:@neolorn/equator');
   });
 });
 
@@ -50,6 +54,7 @@ describe('content whose language is not known', () => {
       direction: 'auto',
       classification: 'unknown',
     });
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('defers for an explicitly undetermined tag', () => {
@@ -60,6 +65,7 @@ describe('content whose language is not known', () => {
       classification: 'unknown',
     });
     expect(languagePresentation('und').direction).toBe('ltr');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('does not infer a direction from region alone', () => {
@@ -69,6 +75,7 @@ describe('content whose language is not known', () => {
       direction: 'auto',
       classification: 'unknown',
     });
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('treats language-independent content as its own case', () => {
@@ -78,6 +85,7 @@ describe('content whose language is not known', () => {
       direction: 'auto',
       classification: 'language-independent',
     });
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('still rejects a malformed tag', () => {
@@ -85,5 +93,6 @@ describe('content whose language is not known', () => {
     // consumer bug behind a legitimate-looking answer.
     expect(() => contentPresentation('!!bad')).toThrow();
     expect(() => contentPresentation('')).toThrow();
+    claimCapability('entry:@neolorn/equator');
   });
 });

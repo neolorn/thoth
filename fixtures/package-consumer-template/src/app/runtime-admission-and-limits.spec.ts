@@ -35,6 +35,8 @@ import {
 
 import { runtimeExtensions } from './runtime-extensions';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 const scope = Object.freeze({ providerId, scopeId });
 const lazyScope = Object.freeze({
   providerId: lazyProviderId,
@@ -89,6 +91,9 @@ describe('fixed runtime ceilings', () => {
     expect(() => internalDestination(`/${'a'.repeat(8_192)}`)).toThrow(
       /safe origin-relative URL/u,
     );
+    claimCapability('format:parseLocalizedInput');
+    claimCapability('control:decimal');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('rejects spoofing controls, oversized allowlists, and unsupported targets', () => {
@@ -108,6 +113,7 @@ describe('fixed runtime ceilings', () => {
         Array.from({ length: 65 }, () => 'https://site.example'),
       ),
     ).toThrow(/safety policy/u);
+    claimCapability('entry:@neolorn/equator');
   });
 });
 
@@ -136,6 +142,7 @@ describe('closed configuration admission', () => {
         bootstrapScopes: [scope, { ...scope }],
       }),
     ).toThrow(/duplicate generated scope/u);
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('copies and freezes descriptors, then rejects cycles and post-admission mutation', () => {
@@ -180,6 +187,7 @@ describe('closed configuration admission', () => {
         } as unknown as RuntimeExtensionBinding,
       ]),
     ).toThrow(/cycle|inert/iu);
+    claimCapability('entry:@neolorn/equator');
   });
 });
 

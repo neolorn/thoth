@@ -14,6 +14,8 @@ import { messages } from '#i18n/shell';
 
 import { routePolicy, appRouteProjection } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Contracts that are proven by compiling, not by running.
  *
@@ -91,6 +93,7 @@ describe('type contracts', () => {
     );
 
     expect(rebuilt).toBe(resolved.canonicalPath);
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('the identity is a literal union rather than string', () => {
@@ -111,6 +114,7 @@ describe('type contracts', () => {
     // is what rules it out.
     const declared: typeof resolved.routeId = 'item';
     expect(typeof declared).toBe('string');
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it("The server table is Angular's own ServerRoute[], with no cast", () => {
@@ -135,5 +139,6 @@ describe('type contracts', () => {
     // And the array itself is the caller's to hand on, which `withRoutes` requires.
     expect(Object.isFrozen(table)).toBe(false);
     expect(table.at(-1)).toEqual({ path: '**', renderMode: RenderMode.Server });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 });

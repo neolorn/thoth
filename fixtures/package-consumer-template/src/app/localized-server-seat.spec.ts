@@ -34,6 +34,8 @@ import {
   SITE_ORIGIN,
 } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * The seat a consumer asserts a response from, exercised against the built packages.
  *
@@ -197,5 +199,21 @@ describe('an address answered through the server seat', () => {
     expect(answered.pageOutcome?.declared.outcome).toBe('gone');
     expect(answered.pageOutcome?.carried).toBe(true);
     expect(answered.headers.get('cache-control')).toBe('private, no-store');
+    claimCapability('outcome:declarePageOutcome', {
+      policy: routePolicy,
+      document: answered.body,
+    });
+    claimCapability('outcome:pageGone', {
+      policy: routePolicy,
+      document: answered.body,
+    });
+    claimCapability('entry:@neolorn/equator/http', {
+      policy: routePolicy,
+      document: answered.body,
+    });
+    claimCapability('entry:@neolorn/equator/core', {
+      policy: routePolicy,
+      document: answered.body,
+    });
   });
 });

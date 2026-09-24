@@ -16,6 +16,8 @@ import { messages, providerId, scopeId } from '#i18n/shell';
 
 import { runtimeExtensions } from './runtime-extensions';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * The `@neolorn/equator/testing` entry point, used the way a consumer would.
  *
@@ -78,6 +80,9 @@ describe('createInMemoryCatalogLoaders', () => {
     await localization.initialize();
     expect(localization.text(messages.appTitle)).toBe('Equator feature lab');
     localization.dispose();
+    claimCapability('testing:createInMemoryCatalogLoaders');
+    claimCapability('entry:@neolorn/equator/testing');
+    claimCapability('entry:@neolorn/equator');
   });
 });
 
@@ -106,6 +111,9 @@ describe('provideLocalizationTesting', () => {
     expect(localization.text(messages.appTitle)).toBe('Equator feature lab');
     await localization.changeLocale('ar-EG');
     expect(localization.text(messages.appTitle)).toBe('مختبر ميزات Equator');
+    claimCapability('testing:provideLocalizationTesting');
+    claimCapability('entry:@neolorn/equator/testing');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('is a different entry point from the application provider, not a different runtime', () => {

@@ -4,6 +4,8 @@ import { resolveLocalizedRoute, routeHttpDescriptor } from '@neolorn/equator';
 
 import { routePolicy, appRouteProjection } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * The one place a path-prefix policy has to decide a locale for itself.
  *
@@ -37,6 +39,8 @@ describe('a URL that states no locale', () => {
       routeId: 'route:_index',
       location: '/ar-eg',
     });
+    claimCapability('policy:path-prefix', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('builds the destination in that locale, not merely under its prefix', () => {
@@ -61,6 +65,8 @@ describe('a URL that states no locale', () => {
     expect(resolution.location).toBe(
       `/ar-eg/articles/${encodeURIComponent('دليل')}`,
     );
+    claimCapability('policy:path-prefix', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('keeps query and fragment across the redirect', () => {
@@ -74,6 +80,8 @@ describe('a URL that states no locale', () => {
     if (resolution.status !== 'redirect')
       throw new Error('expected a redirect');
     expect(resolution.location).toBe('/ar-eg/second?tab=one#details');
+    claimCapability('policy:path-prefix', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('falls back to the default locale when the preference is not supported', () => {
@@ -94,6 +102,8 @@ describe('a URL that states no locale', () => {
       locale: 'en-US',
       location: '/en-us',
     });
+    claimCapability('policy:path-prefix', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 });
 
@@ -110,6 +120,8 @@ describe('a URL that states its locale', () => {
       locale: 'en-US',
       routeId: 'route:second',
     });
+    claimCapability('policy:path-prefix', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 });
 
@@ -147,6 +159,8 @@ describe('what the redirect may be cached as', () => {
         locale: 'en-US',
       }),
     ).toMatchObject({ cache: 'private-no-cache', locale: 'en-US' });
+    claimCapability('policy:path-prefix', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('carries the directive through to the HTTP descriptor', () => {
@@ -182,6 +196,8 @@ describe('what the redirect may be cached as', () => {
         resolveLocalizedRoute('/EN-US/second', routePolicy, appRouteProjection),
       ),
     ).toMatchObject({ status: 308, cache: 'consumer-defined-permanent' });
+    claimCapability('policy:path-prefix', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   /**
@@ -226,6 +242,8 @@ describe('what the redirect may be cached as', () => {
       cache: 'private-no-cache',
       location: '/ar-eg/nothing-is-mounted-here',
     });
+    claimCapability('policy:path-prefix', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('leaves a prefixed address that has no page to answer as a not-found', () => {
@@ -242,5 +260,7 @@ describe('what the redirect may be cached as', () => {
       httpStatus: 404,
       presentationLocale: 'ar-EG',
     });
+    claimCapability('policy:path-prefix', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 });

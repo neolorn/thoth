@@ -6,6 +6,8 @@ import {
 import { cacheLogField, redirectLogField } from './cache-classes';
 import { appRouteProjection, routePolicy } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * What proves the union from this seat is the source above compiling under this row's options.
  * These keep the two readings tied to classes resolution actually produces.
@@ -21,6 +23,7 @@ describe('the cache class read by a host', () => {
     expect(cacheLogField(routeHttpDescriptor(entry).cache)).toBe(
       'browser-revalidated',
     );
+    claimCapability('entry:@neolorn/equator/core', { policy: routePolicy });
   });
 
   it('reads an address that states its locale as shared', () => {
@@ -31,5 +34,6 @@ describe('the cache class read by a host', () => {
         ).cache,
       ),
     ).toBe('shared');
+    claimCapability('entry:@neolorn/equator/core', { policy: routePolicy });
   });
 });

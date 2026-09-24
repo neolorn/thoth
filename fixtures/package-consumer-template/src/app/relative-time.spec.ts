@@ -19,6 +19,8 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 
 import { runtimeExtensions } from './runtime-extensions';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * When a timestamp is phrased relatively, and in what unit.
  *
@@ -83,6 +85,7 @@ describe('unit selection', () => {
       unit: 'week',
       value: -3,
     });
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('truncates rather than rounds', () => {
@@ -93,6 +96,7 @@ describe('unit selection', () => {
       unit: 'hour',
       value: -1,
     });
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('keeps the sign, so the future reads as the future', () => {
@@ -100,6 +104,7 @@ describe('unit selection', () => {
       unit: 'minute',
       value: 5,
     });
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('names the smallest permitted unit rather than inventing wording', () => {
@@ -111,6 +116,7 @@ describe('unit selection', () => {
       unit: 'minute',
       value: 0,
     });
+    claimCapability('entry:@neolorn/equator');
   });
 });
 
@@ -121,6 +127,7 @@ describe('thresholds the consumer declares', () => {
     });
     expect(decision.unit).toBeUndefined();
     expect(decision).toMatchObject({ elapsedMilliseconds: -425 * DAY });
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('stops being relative past an explicit ceiling', () => {
@@ -133,6 +140,7 @@ describe('thresholds the consumer declares', () => {
     expect(
       selectRelativeTime(at(-8 * DAY), at(0), policy).unit,
     ).toBeUndefined();
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('leaves the absolute rendering to the consumer', () => {
@@ -142,6 +150,7 @@ describe('thresholds the consumer declares', () => {
       absoluteAfterMilliseconds: 7 * DAY,
     });
     expect(Object.keys(decision)).toEqual(['elapsedMilliseconds']);
+    claimCapability('entry:@neolorn/equator');
   });
 });
 
@@ -220,5 +229,6 @@ describe('the service call', () => {
       unit: 'hour',
       value: -3,
     });
+    claimCapability('entry:@neolorn/equator');
   });
 });

@@ -24,6 +24,8 @@ import {
 import { routePolicy, appRouteProjection } from './localization.routes';
 import { runtimeExtensions } from './runtime-extensions';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 @Component({
   standalone: true,
   template: `route`,
@@ -199,6 +201,9 @@ describe('Equator Router transaction integration', () => {
     expect(document.documentElement.lang).toBe('ar-EG');
     expect(document.documentElement.dir).toBe('rtl');
     expect(document.title).toBe('مختبر ميزات Equator');
+    claimCapability('feature:provideLocalizedRouter', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator/router', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   /**
@@ -222,6 +227,7 @@ describe('Equator Router transaction integration', () => {
     await router.navigateByUrl('/en-us/lazy');
 
     expect(localization.scopeReadiness(lazyScope)().status).toBe('ready');
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   /**
@@ -243,6 +249,7 @@ describe('Equator Router transaction integration', () => {
     // language is not. What the adapter keeps in `context()` afterwards is a separate question and
     // is deliberately not asserted here.
     expect(localization.snapshot()).toMatchObject({ primaryLocale: 'ar-EG' });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   /**
@@ -274,6 +281,7 @@ describe('Equator Router transaction integration', () => {
     expect(document.title).toBe('مختبر ميزات Equator');
     expect(document.documentElement.lang).toBe('ar-EG');
     expect(document.documentElement.dir).toBe('rtl');
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   /**
@@ -312,6 +320,7 @@ describe('Equator Router transaction integration', () => {
       );
 
       expect(scrollTo).toHaveBeenCalled();
+      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
     } finally {
       scrollTo.mockRestore();
     }

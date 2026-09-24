@@ -32,6 +32,8 @@ import { runtimeExtensions } from './runtime-extensions';
 import { routes } from './app.routes';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * An application deployed under a sub-path, which is `https://example.com/app` rather than
  * `https://example.com`.
@@ -339,6 +341,7 @@ describe('an application deployed under a sub-path', () => {
     );
     expect(arrival.locale).toBe('ar-EG');
     expect(canonical()).toBe('https://site.example/app/ar-eg/second');
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('writes the base back on an ordinary in-app navigation', async () => {

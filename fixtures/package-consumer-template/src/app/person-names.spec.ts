@@ -8,6 +8,8 @@ import {
 } from '@neolorn/equator';
 import { describe, expect, it } from 'vitest';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Person-name formatting, through the built package and the generated artifact.
  *
@@ -171,6 +173,8 @@ describe('formatting without the generated artifact', () => {
     // `{title} {given} {given2} {surname} {surname2} {credentials}`.
     const result = formatPersonName(mary, english);
     expect(result.ok && result.value.text).toBe('Dr. Mary Sue Hamish');
+    claimCapability('format:formatPersonName');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('refuses data from a derivation it does not read', () => {
@@ -186,5 +190,7 @@ describe('formatting without the generated artifact', () => {
     );
     expect(result.ok).toBe(false);
     expect(!result.ok && result.diagnostic.reason).toBe('integrity-mismatch');
+    claimCapability('format:formatPersonName');
+    claimCapability('entry:@neolorn/equator');
   });
 });

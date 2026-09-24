@@ -30,6 +30,8 @@ import { runtimeExtensions } from './runtime-extensions';
 import { routes } from './app.routes';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * One address, one answer, whichever door the reader came through.
  *
@@ -196,6 +198,7 @@ describe('a client-side arrival follows the answer the server would have given',
     expect(arrival.routerUrl).toBe('/second');
     expect(arrival.address).toBe('/second');
     expect(arrival.historyPushes).toBe(0);
+    claimCapability('policy:default-locale-prefix', { policy: OMITTING });
   });
 
   it('follows a replacement: a retired path spelling', async () => {
@@ -213,6 +216,7 @@ describe('a client-side arrival follows the answer the server would have given',
     expect(arrival.view).toBe('second');
     expect(arrival.routerUrl).toBe('/second?page=2#notes');
     expect(arrival.address).toBe('/second?page=2#notes');
+    claimCapability('policy:default-locale-prefix', { policy: OMITTING });
   });
 
   it('leaves a 410 alone, so the application answers for a page with no replacement', async () => {
@@ -235,5 +239,6 @@ describe('a client-side arrival follows the answer the server would have given',
     expect(arrival.routerUrl).toBe('/second');
     expect(arrival.address).toBe('/ar-eg/second');
     expect(arrival.locale).toBe('ar-EG');
+    claimCapability('policy:default-locale-prefix', { policy: OMITTING });
   });
 });

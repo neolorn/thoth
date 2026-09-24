@@ -27,6 +27,8 @@ import { routeProjection } from '#i18n/routes';
 import { runtimeExtensions } from './runtime-extensions';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Who decides the locale of a first request.
  *
@@ -133,6 +135,7 @@ describe('reading what the client asked for', () => {
       'en',
       'fr',
     ]);
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('drops a range that expresses no preference', () => {
@@ -140,12 +143,14 @@ describe('reading what the client asked for', () => {
     // it as a match would let a header that asked for nothing outrank the source placed after it.
     expect(parseAcceptLanguage('*')).toEqual([]);
     expect(parseAcceptLanguage('ar,*;q=0.1')).toEqual(['ar']);
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('drops a range that is refused outright or malformed', () => {
     expect(parseAcceptLanguage('en;q=0')).toEqual([]);
     expect(parseAcceptLanguage('../etc/passwd')).toEqual([]);
     expect(parseAcceptLanguage('')).toEqual([]);
+    claimCapability('entry:@neolorn/equator');
   });
 });
 
@@ -164,6 +169,7 @@ describe('matching a request against what exists', () => {
     // because the region differs is the wrong answer by a wide margin.
     expect(negotiateLocale(['ar-SA'], supported, canonicalize)).toBe('ar-EG');
     expect(negotiateLocale(['en-GB'], supported, canonicalize)).toBe('en-US');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('resolves each range fully before considering the next', () => {
@@ -172,17 +178,20 @@ describe('matching a request against what exists', () => {
     expect(negotiateLocale(['ar-SA', 'en-US'], supported, canonicalize)).toBe(
       'ar-EG',
     );
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('drops trailing subtags one at a time', () => {
     expect(negotiateLocale(['ar-EG-u-nu-arab'], supported, canonicalize)).toBe(
       'ar-EG',
     );
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('answers nothing when no range is related to anything supported', () => {
     expect(negotiateLocale(['ja-JP'], supported, canonicalize)).toBeUndefined();
     expect(negotiateLocale([], supported, canonicalize)).toBeUndefined();
+    claimCapability('entry:@neolorn/equator');
   });
 });
 
@@ -195,6 +204,7 @@ describe('the declared order', () => {
     });
 
     expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
+    claimCapability('source:url', { policy: routePolicy });
   });
 
   it('steps past the URL when the URL states none', async () => {
@@ -207,6 +217,8 @@ describe('the declared order', () => {
     });
 
     expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
+    claimCapability('source:url', { policy: routePolicy });
+    claimCapability('source:stored', { policy: routePolicy });
   });
 
   it('falls through to what the client asked for', async () => {
@@ -218,6 +230,7 @@ describe('the declared order', () => {
     });
 
     expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
+    claimCapability('source:browser', { policy: routePolicy });
   });
 
   it('reaches the default when every earlier source declines', async () => {
@@ -228,6 +241,7 @@ describe('the declared order', () => {
     });
 
     expect((await localization.initialize()).primaryLocale).toBe('en-US');
+    claimCapability('source:default', { policy: routePolicy });
   });
 
   it('honours the order, not Equator s opinion of it', async () => {
@@ -240,6 +254,7 @@ describe('the declared order', () => {
     });
 
     expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
+    claimCapability('source:stored', { policy: routePolicy });
   });
 
   it('disables a source by leaving it out', async () => {
@@ -330,11 +345,15 @@ describe('the order an application gets without declaring one', () => {
 describe('a configuration that cannot mean anything', () => {
   it('refuses an empty source list', () => {
     expect(() => withLocaleSources()).toThrow();
+    claimCapability('feature:withLocaleSources');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('refuses a source declared twice', () => {
     // Two positions for one source is two different answers to "when is this consulted", and the
     // second is unreachable. Silently keeping the first would hide the contradiction.
     expect(() => withLocaleSources('url', 'stored', 'url')).toThrow();
+    claimCapability('feature:withLocaleSources');
+    claimCapability('entry:@neolorn/equator');
   });
 });

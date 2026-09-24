@@ -7,6 +7,8 @@ import {
   resolveTypography,
 } from '@neolorn/equator';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 describe('pinned locale-direction profile', () => {
   it('binds runtime direction metadata to CLDR and Unicode script semantics', () => {
     // The profile names both sources because the direction data now comes from both: locale
@@ -33,6 +35,7 @@ describe('pinned locale-direction profile', () => {
         value: { direction },
       });
     }
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('uses the same maximized script for typography and exposed metadata', () => {
@@ -52,5 +55,6 @@ describe('pinned locale-direction profile', () => {
       ok: true,
       value: { language: 'ff', script: 'Adlm', direction: 'rtl' },
     });
+    claimCapability('entry:@neolorn/equator');
   });
 });

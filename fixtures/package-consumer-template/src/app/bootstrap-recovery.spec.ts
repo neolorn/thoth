@@ -18,6 +18,8 @@ import { messages, providerId, scopeId } from '#i18n/shell';
 
 import { runtimeExtensions } from './runtime-extensions';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * When a catalog failed to load at startup, the user saw nothing at all.
  *
@@ -129,6 +131,9 @@ describe('bootstrap when a catalog cannot load', () => {
     expect(alert?.getAttribute('aria-live')).toBe('assertive');
 
     application.destroy();
+    claimCapability('feature:provideLocalizationSetup');
+    claimCapability('feature:withRecoveryMessage');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('publishes no partial runtime behind the recovery surface', async () => {
@@ -161,6 +166,7 @@ describe('bootstrap when a catalog cannot load', () => {
     expect(() => localization.text(messages.appTitle)).toThrow();
 
     application.destroy();
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('prefers the selected retry label over a string on the element', async () => {
@@ -190,6 +196,8 @@ describe('bootstrap when a catalog cannot load', () => {
     expect(button?.textContent ?? '').not.toContain('String override');
 
     application.destroy();
+    claimCapability('feature:withRecoveryMessage');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('renders the retry label in the locale the reader asked for', async () => {
@@ -229,6 +237,8 @@ describe('bootstrap when a catalog cannot load', () => {
     expect(button?.getAttribute('dir')).toBe('rtl');
 
     application.destroy();
+    claimCapability('feature:withRecoveryMessage');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('rejects bootstrap when no recovery presentation is configured', async () => {
@@ -250,5 +260,7 @@ describe('bootstrap when a catalog cannot load', () => {
     ).rejects.toBeDefined();
 
     expect(host.querySelector('[data-application-shell]')).toBeNull();
+    claimCapability('feature:provideLocalizationSetup');
+    claimCapability('entry:@neolorn/equator');
   });
 });

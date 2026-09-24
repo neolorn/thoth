@@ -48,6 +48,8 @@ import { configuration } from '#i18n';
 
 import { routePolicy, appRouteProjection } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 const english: FormattingContext = Object.freeze({
   locale: 'en-US',
   timeZone: 'UTC',
@@ -156,6 +158,7 @@ describe('route and SEO contracts, called directly', () => {
         resolveLocalizedRoute('/en-us/lazy', routePolicy, appRouteProjection),
       ).cache,
     ).toBe('private-no-cache');
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   /**
@@ -240,6 +243,10 @@ describe('route and SEO contracts, called directly', () => {
     expect(() => createIdentifierParameterCodec(/^[a-z]+$/gu)).toThrow(
       /global or sticky/u,
     );
+    claimCapability('declaration:route-parameter-codec', {
+      policy: routePolicy,
+    });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('classifies locale entry, aliases, canonical corrections, and failures without guessing', () => {
@@ -349,6 +356,9 @@ describe('route and SEO contracts, called directly', () => {
     expect(() => createIntegerParameterCodec(10, 1)).toThrow(
       /ordered safe range/u,
     );
+    claimCapability('policy:path-prefix', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('declaration:route-parameter-codec');
   });
 
   it('preserves typed route state and emits one coherent SEO/HTTP projection', () => {
@@ -448,6 +458,7 @@ describe('route and SEO contracts, called directly', () => {
       alternates: [],
       robots: 'noindex',
     });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 });
 
@@ -549,6 +560,14 @@ describe('native formatting and localized input contracts', () => {
       ok: true,
       value: { locale: 'ar-EG', language: 'ar', direction: 'rtl' },
     });
+    claimCapability('format:formatPlainDate');
+    claimCapability('format:formatPlainTime');
+    claimCapability('format:formatRelativeTime');
+    claimCapability('format:formatPersonName');
+    claimCapability('format:selectPlural');
+    claimCapability('format:compareLocalized');
+    claimCapability('format:segmentText');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('round-trips declared input profiles and rejects ambiguous or hidden repair', () => {
@@ -898,6 +917,20 @@ describe('native formatting and localized input contracts', () => {
     expect(
       parseLocalizedInput('1970-01-01T00:00:00-00:00', instantProfile, english),
     ).toMatchObject({ status: 'policy-rejected' });
+    claimCapability('format:parseLocalizedInput');
+    claimCapability('format:formatLocalizedInput');
+    claimCapability('control:decimal');
+    claimCapability('control:percent');
+    claimCapability('control:money');
+    claimCapability('control:measurement');
+    claimCapability('control:percentage-points');
+    claimCapability('control:plain-date');
+    claimCapability('control:plain-time');
+    claimCapability('control:plain-date-time');
+    claimCapability('control:time-zone');
+    claimCapability('control:duration');
+    claimCapability('control:instant');
+    claimCapability('entry:@neolorn/equator');
   });
 });
 
@@ -935,5 +968,6 @@ describe('rich-content, bidi, typography, and icon policy', () => {
         scripts: { Arab: { id: 'arabic', lineHeight: 1.7 } },
       }),
     ).toEqual({ id: 'arabic', lineHeight: 1.7 });
+    claimCapability('entry:@neolorn/equator');
   });
 });

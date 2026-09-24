@@ -14,6 +14,8 @@ import { messages, providerId, scopeId } from '#i18n/shell';
 
 import { runtimeExtensions } from './runtime-extensions';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Localized text with no Angular application.
  *
@@ -69,6 +71,7 @@ describe('a localization context built without Angular', () => {
     expect(languagePresentation('ar-EG').direction).toBe('rtl');
 
     localization.dispose();
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('formats the values an error page carries', async () => {
@@ -83,6 +86,8 @@ describe('a localization context built without Angular', () => {
     if (!formatted.ok) return;
     expect(formatted.value.direction).toBe('rtl');
     expect(formatted.value.text).toMatch(/[؀-ۿ]/u);
+    claimCapability('format:formatInstant');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('recovers a message when the catalogs cannot be reached at all', async () => {
@@ -117,5 +122,6 @@ describe('a localization context built without Angular', () => {
     expect(localization.recovery()?.value.length ?? 0).toBeGreaterThan(0);
 
     localization.dispose();
+    claimCapability('entry:@neolorn/equator');
   });
 });

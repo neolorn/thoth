@@ -26,6 +26,8 @@ import { runtimeExtensions } from './runtime-extensions';
 import { provideDynamicContent } from './dynamic-content';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * A slug the codec cannot translate, supplied by the page that loaded it.
  *
@@ -135,6 +137,7 @@ describe('a route parameter whose spelling only the page knows', () => {
     );
     expect(alternate('en-US')).toBe(`${ORIGIN}/en-us/dossiers/dossier`);
     expect(canonical()).toBe(`${ORIGIN}/en-us/dossiers/dossier`);
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('does not carry one page’s declaration onto the next', async () => {
@@ -179,6 +182,7 @@ describe('a route parameter whose spelling only the page knows', () => {
     expect(
       TestBed.inject(LocationStrategy).prepareExternalUrl(router.url),
     ).toBe('/ar-eg/dossiers/unlisted-dossier');
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('moves the locale switch to the declared address', async () => {
@@ -206,5 +210,7 @@ describe('a route parameter whose spelling only the page knows', () => {
     expect(
       TestBed.inject(RouteLocalization).context()?.resolution.parameters,
     ).toEqual({ slug: 'ملف' });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator/router', { policy: routePolicy });
   });
 });

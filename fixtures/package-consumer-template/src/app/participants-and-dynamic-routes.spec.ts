@@ -32,6 +32,8 @@ import {
   appRouteProjection,
 } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 const scope = Object.freeze({ providerId, scopeId });
 
 function localization(): Localization {
@@ -250,6 +252,8 @@ describe('participant contracts and transactions', () => {
       report: { status: 'ready' },
     });
     runtime.dispose();
+    claimCapability('testing:ControllableLocalizationParticipant');
+    claimCapability('entry:@neolorn/equator/testing');
   });
 
   it('commits primary UI first in progressive mode and completes the region independently', async () => {
@@ -349,6 +353,8 @@ describe('participant contracts and transactions', () => {
       'article-en',
     );
     runtime.dispose();
+    claimCapability('testing:ControllableLocalizationParticipant');
+    claimCapability('entry:@neolorn/equator/testing');
   });
 
   it('enforces participant deadlines without changing the committed snapshot', async () => {
@@ -414,6 +420,8 @@ describe('participant contracts and transactions', () => {
     expect(firstRegistration.state().attempt.status).toBe('cancelled');
     expect(secondRegistration.state().attempt.status).toBe('failed');
     runtime.dispose();
+    claimCapability('testing:ControllableLocalizationParticipant');
+    claimCapability('entry:@neolorn/equator/testing');
   });
 
   it('does not commit a participant unregistered by an earlier cohort member', async () => {
@@ -445,6 +453,8 @@ describe('participant contracts and transactions', () => {
     expect(second.disposeCount).toBe(1);
     expect(first.rolledBack.length).toBeGreaterThan(0);
     runtime.dispose();
+    claimCapability('testing:ControllableLocalizationParticipant');
+    claimCapability('entry:@neolorn/equator/testing');
   });
 });
 
@@ -638,6 +648,10 @@ describe('dynamic route equivalence and truthful SEO', () => {
       locale: 'ar-EG',
       parameters: { slug: FEATURE_ARTICLE_ID },
     });
+    claimCapability('declaration:route-parameter-codec', {
+      policy: routePolicy,
+    });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   /** As `direct-api-contracts.spec.ts`: the locales a production build of this fixture generates. */
@@ -703,5 +717,9 @@ describe('dynamic route equivalence and truthful SEO', () => {
         url: 'https://site.example/en-us/articles/handbook',
       },
     ]);
+    claimCapability('declaration:route-parameter-codec', {
+      policy: routePolicy,
+    });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 });

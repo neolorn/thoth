@@ -21,6 +21,8 @@ import { runtimeExtensions } from './runtime-extensions';
 import { provideDynamicContent } from './dynamic-content';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * A page that resolved and turned out not to be there, and the head that follows from it.
  *
@@ -236,6 +238,7 @@ describe('a response that reached no route at all', () => {
     await TestBed.inject(Localization).changeLocale(ARABIC);
     await settle();
     expect(document.title).toBe('الصفحة غير موجودة');
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('writes the head of an address declared permanently removed', async () => {

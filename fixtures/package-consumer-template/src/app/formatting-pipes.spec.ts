@@ -40,6 +40,8 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 
 import { runtimeExtensions } from './runtime-extensions';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * One pipe per canonical value kind, in both locales, and what a failure puts on the page.
  *
@@ -254,5 +256,6 @@ describe('a value the formatter will not write', () => {
     );
     expect(reported.length).toBeGreaterThan(0);
     expect(reported[0]?.reason).toBe('unsupported-formatting-capability');
+    claimCapability('entry:@neolorn/equator');
   });
 });

@@ -20,6 +20,8 @@ import { messages, providerId, scopeId } from '#i18n/shell';
 
 import { runtimeExtensions } from './runtime-extensions';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 const scope = Object.freeze({ providerId, scopeId });
 
 function setup() {
@@ -110,6 +112,7 @@ describe('runtime observability contract', () => {
     });
     expect(JSON.stringify(failure)).not.toContain('secret-catalog-body');
     localization.dispose();
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('contains sink exceptions without changing localization semantics', async () => {
@@ -232,6 +235,8 @@ describe('Angular observability boundaries', () => {
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     localization.dispose();
     TestBed.resetTestingModule();
+    claimCapability('feature:withObservability');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('reports integration failure after rollback at the commit boundary', async () => {
@@ -277,5 +282,8 @@ describe('Angular observability boundaries', () => {
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     localization.dispose();
     TestBed.resetTestingModule();
+    claimCapability('feature:withObservability');
+    claimCapability('feature:withOverlayLocale');
+    claimCapability('entry:@neolorn/equator');
   });
 });

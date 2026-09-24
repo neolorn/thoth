@@ -31,6 +31,8 @@ import { routes as applicationRoutes } from './app.routes';
 import { runtimeExtensions } from './runtime-extensions';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * When the locale commit happens relative to the view that shows it.
  *
@@ -305,6 +307,8 @@ describe('a Router configuration the adapter cannot make coherent', () => {
     await TestBed.inject(Localization).initialize();
 
     expect(() => TestBed.inject(RouteLocalization)).toThrow(/deferred/u);
+    claimCapability('feature:provideLocalizedRouter', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator/router', { policy: routePolicy });
   });
 });
 
@@ -432,5 +436,8 @@ describe('the order of the things one locale commit does', () => {
     });
     expect(canonical()).toBe('https://site.example/en-us/second');
     expect(announced()).toBe('American English');
+    claimCapability('feature:provideLocalizedRouter', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator/router', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 });

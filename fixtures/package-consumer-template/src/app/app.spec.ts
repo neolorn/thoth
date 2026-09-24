@@ -43,6 +43,8 @@ import { runtimeExtensions } from './runtime-extensions';
 import { provideDynamicContent } from './dynamic-content';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * An attribute the directive is built not to touch, reached the only way it can be: by casting
  * past the template's type checking.
@@ -189,6 +191,7 @@ describe('Equator feature-lab package consumer', () => {
         .querySelector('[data-locale-choice="ar-EG"]')
         ?.hasAttribute('aria-current'),
     ).toBe(false);
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('reacts zonelessly to a coherent local-catalog locale commit', async () => {
@@ -240,6 +243,7 @@ describe('Equator feature-lab package consumer', () => {
     expect(fallback.targetLocale).toBe('ar-EG');
     expect(fallback.supplyingLocale).toBe('en-US');
     expect(fallback.fallback).toBe(true);
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('keeps the committed view while the latest locale intent supersedes pending work', async () => {
@@ -287,6 +291,7 @@ describe('Equator feature-lab package consumer', () => {
 
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     expect(localization.targetLocale()).toBeUndefined();
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('deduplicates equivalent work and evicts unpinned catalogs within the configured bound', async () => {
@@ -305,6 +310,11 @@ describe('Equator feature-lab package consumer', () => {
     await localization.changeLocale('en-US');
     await localization.changeLocale('ar-EG');
     expect(controller.loadCount({ providerId, scopeId }, 'ar-EG')).toBe(2);
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('testing:LocalizationTestingController', {
+      policy: routePolicy,
+    });
+    claimCapability('entry:@neolorn/equator/testing', { policy: routePolicy });
   });
 
   it('keeps canonical values exact and percentage scales explicit', () => {
@@ -352,6 +362,11 @@ describe('Equator feature-lab package consumer', () => {
       ok: false,
       diagnostic: { code: 'unsupported-formatting-capability' },
     });
+    claimCapability('format:formatPercent', { policy: routePolicy });
+    claimCapability('format:formatPercentagePoints', { policy: routePolicy });
+    claimCapability('format:formatNumber', { policy: routePolicy });
+    claimCapability('format:formatInstant', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('keeps localized Forms models invariant while preserving validation, focus, selection, and composition', async () => {
@@ -454,6 +469,8 @@ describe('Equator feature-lab package consumer', () => {
     expect(
       element.querySelector('[data-percent-model]')?.textContent,
     ).toContain('0.5');
+    claimCapability('directive:LocalizedInput', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('refuses to write a localized label into an attribute that is not text', () => {
@@ -472,6 +489,7 @@ describe('Equator feature-lab package consumer', () => {
 
     expect(anchor?.getAttribute('href')).toBe('/safe');
     expect(anchor?.hasAttribute('aria-label')).toBe(false);
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('localizes stable issue, external-value, and notification codes without exposing unknown raw values', () => {
@@ -541,6 +559,7 @@ describe('Equator feature-lab package consumer', () => {
       tone: 'success',
       content: { value: 'Changes saved.' },
     });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('rolls back a coherence-critical adapter that mutates and then fails', async () => {
@@ -582,6 +601,8 @@ describe('Equator feature-lab package consumer', () => {
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     expect(document.documentElement.lang).toBe('en-US');
     expect(document.documentElement.dir).toBe('ltr');
+    claimCapability('feature:withOverlayLocale');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('isolates an explicitly owned child localization context', async () => {
@@ -596,6 +617,7 @@ describe('Equator feature-lab package consumer', () => {
     child.dispose();
     expect(() => child.text(messages.appTitle)).toThrow(/disposed/u);
     expect(parent.text(messages.appTitle)).toBe('Equator feature lab');
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('keeps lazy-scope evaluation behind explicit readiness without hidden loading', async () => {
@@ -612,6 +634,7 @@ describe('Equator feature-lab package consumer', () => {
     await localization.ensureScope(lazyScope);
     expect(localization.text(lazyMessages.status)).toBe('Lazy scope ready.');
     expect(localization.scopeReadiness(lazyScope)().status).toBe('ready');
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('holds a coordinated commit until every required local scope is ready', async () => {
@@ -631,6 +654,7 @@ describe('Equator feature-lab package consumer', () => {
 
     expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
     expect(localization.text(lazyMessages.status)).toContain('جاهز');
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('honors a new same-locale coordinated scope contract before committing', async () => {
@@ -661,6 +685,7 @@ describe('Equator feature-lab package consumer', () => {
             owner === lazyProviderId && id === lazyScopeId,
         ),
     ).toBe(true);
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('starts newly requested same-locale progressive scope work', async () => {
@@ -682,6 +707,7 @@ describe('Equator feature-lab package consumer', () => {
       expect(localization.scopeReadiness(lazyScope)().status).toBe('ready');
     });
     expect(localization.text(lazyMessages.status)).toBe('Lazy scope ready.');
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('commits the primary progressive state while a governed lazy scope remains truthful and pending', async () => {
@@ -713,6 +739,7 @@ describe('Equator feature-lab package consumer', () => {
       expect(localization.scopeReadiness(lazyScope)().status).toBe('ready');
     });
     expect(localization.text(lazyMessages.status)).toContain('جاهز');
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('folds a required scope still in flight into the transaction that starts beside it', async () => {
@@ -741,6 +768,7 @@ describe('Equator feature-lab package consumer', () => {
     await expect(transition).resolves.toMatchObject({ status: 'committed' });
     expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
     expect(localization.text(lazyMessages.status)).toContain('جاهز');
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('lands a progressive scope after its own transaction has committed, as a transaction', async () => {
@@ -766,6 +794,7 @@ describe('Equator feature-lab package consumer', () => {
     expect(localization.snapshot()?.id).toBe(committed + 1);
     expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
     expect(localization.text(lazyMessages.status)).toContain('جاهز');
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('discards a load whose snapshot was superseded, and answers the request that outlived it', async () => {
@@ -800,6 +829,7 @@ describe('Equator feature-lab package consumer', () => {
     expect(localization.snapshot()?.id).toBe(committed);
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     expect(localization.text(lazyMessages.status)).toBe('Lazy scope ready.');
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('resolves the built toolkit and its installed parser dependencies', () => {
@@ -815,5 +845,6 @@ describe('Equator feature-lab package consumer', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.sourceLocale).toBe('en-US');
+    claimCapability('entry:@neolorn/equator-toolkit');
   });
 });

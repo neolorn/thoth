@@ -27,6 +27,8 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 
 import { runtimeExtensions } from './runtime-extensions';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Every `LocalizedInputProfile` kind, driven through the published `/forms` directive.
  *
@@ -280,6 +282,7 @@ describe('every LocalizedInputProfile kind round-trips through the published dir
       // The fixed point: rendering the value parsed out of Arabic text returns the original English
       // text character for character. Any information lost anywhere in the loop shows up here.
       expect(input.value).toBe(englishText);
+      claimCapability('directive:LocalizedInput');
     });
   }
 
@@ -296,6 +299,7 @@ describe('every LocalizedInputProfile kind round-trips through the published dir
 
     expect(input.value).toBe(englishText);
     expect(input.value).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/u);
+    claimCapability('directive:LocalizedInput');
   });
 
   it('localizes the digits of a decimal field, so the round trip above is not a no-op', async () => {
@@ -313,5 +317,6 @@ describe('every LocalizedInputProfile kind round-trips through the published dir
     fixture.detectChanges();
 
     expect(input.value).not.toBe(englishText);
+    claimCapability('directive:LocalizedInput');
   });
 });

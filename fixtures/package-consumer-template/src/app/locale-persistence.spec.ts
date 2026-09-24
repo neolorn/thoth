@@ -21,6 +21,8 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 
 import { runtimeExtensions } from './runtime-extensions';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Remembering a locale choice between visits.
  *
@@ -91,6 +93,8 @@ describe('a remembered choice', () => {
     const snapshot = await second.initialize();
 
     expect(snapshot.primaryLocale).toBe('ar-EG');
+    claimCapability('store:memoryStore');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('is not written by initialization, only by a deliberate change', async () => {
@@ -171,6 +175,8 @@ describe('a reader who asks to be forgotten', () => {
     expect(report.complete).toBe(true);
     expect(await store.read()).toBeUndefined();
     expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
+    claimCapability('store:memoryStore');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('puts the next visit back where resolution would have placed it', async () => {
@@ -383,6 +389,8 @@ describe('the shipped stores', () => {
     expect((await setup([cookieStore()]).initialize()).primaryLocale).toBe(
       'ar-EG',
     );
+    claimCapability('store:cookieStore');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('expires the cookie it wrote, rather than writing a second one beside it', async () => {
@@ -402,6 +410,8 @@ describe('the shipped stores', () => {
     expect((await setup([cookieStore()]).initialize()).primaryLocale).toBe(
       'en-US',
     );
+    claimCapability('store:cookieStore');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('removes what it kept in local storage', async () => {
@@ -414,6 +424,8 @@ describe('the shipped stores', () => {
     await localization.forgetRememberedLocale();
 
     expect(localStorage.getItem('lang')).toBeNull();
+    claimCapability('store:localStorageStore');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('round-trips through local storage', async () => {
@@ -427,6 +439,8 @@ describe('the shipped stores', () => {
       (await setup([localStorageStore({ key: 'lang' })]).initialize())
         .primaryLocale,
     ).toBe('ar-EG');
+    claimCapability('store:localStorageStore');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('carries the choice to a consumer-owned profile transport', async () => {
@@ -439,6 +453,8 @@ describe('the shipped stores', () => {
     await settled();
 
     expect(write).toHaveBeenCalledWith('ar-EG');
+    claimCapability('store:profileStore');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('writes to every configured store, and reads from the first that answers', async () => {
@@ -454,6 +470,9 @@ describe('the shipped stores', () => {
     // A device that later goes offline should still remember what the signed-in profile knew.
     expect(document.cookie).toContain('equator-locale=ar-EG');
     expect(localStorage.getItem('lang')).toBe('ar-EG');
+    claimCapability('store:cookieStore');
+    claimCapability('store:localStorageStore');
+    claimCapability('entry:@neolorn/equator');
   });
 });
 
@@ -492,6 +511,8 @@ describe('what a server render can see', () => {
     );
 
     expect(await store.read()).toBe('ar-EG');
+    claimCapability('store:cookieStore');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('sees nothing in local storage, which is the whole distinction', async () => {
@@ -500,6 +521,8 @@ describe('what a server render can see', () => {
     );
 
     expect(await store.read()).toBeUndefined();
+    claimCapability('store:localStorageStore');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('does not try to write a cookie it has no response to write it to', async () => {
@@ -511,6 +534,8 @@ describe('what a server render can see', () => {
     store.write('ar-EG');
 
     expect(document.cookie).not.toContain('equator-locale=ar-EG');
+    claimCapability('store:cookieStore');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('ignores a cookie whose value is not a locale', async () => {
@@ -521,6 +546,8 @@ describe('what a server render can see', () => {
     );
 
     expect(await store.read()).toBeUndefined();
+    claimCapability('store:cookieStore');
+    claimCapability('entry:@neolorn/equator');
   });
 });
 
@@ -541,6 +568,8 @@ describe('a cookie configuration the browser would discard', () => {
     expect(() => cookieStore({ sameSite: 'None', secure: false })).toThrow(
       /SameSite=None/u,
     );
+    claimCapability('store:cookieStore');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('refuses a __Secure- name without Secure', () => {
@@ -549,6 +578,8 @@ describe('a cookie configuration the browser would discard', () => {
     expect(() =>
       cookieStore({ name: '__Secure-locale', secure: false }),
     ).toThrow(/__Secure-/u);
+    claimCapability('store:cookieStore');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('refuses a __Host- name that is not secure, or scoped, or rooted', () => {
@@ -562,6 +593,8 @@ describe('a cookie configuration the browser would discard', () => {
     expect(() => cookieStore({ name: '__Host-locale', path: '/app' })).toThrow(
       /Path/u,
     );
+    claimCapability('store:cookieStore');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('reads the prefix case-insensitively, which is how the rule is written', () => {
@@ -573,6 +606,8 @@ describe('a cookie configuration the browser would discard', () => {
     expect(() => cookieStore({ name: '__host-locale', path: '/app' })).toThrow(
       /Path/u,
     );
+    claimCapability('store:cookieStore');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('accepts every configuration the browser keeps', () => {
@@ -590,6 +625,8 @@ describe('a cookie configuration the browser would discard', () => {
     expect(() =>
       cookieStore({ name: '__Host-locale', path: '/', secure: true }),
     ).not.toThrow();
+    claimCapability('store:cookieStore');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('refuses before the first render rather than on the first write', () => {
@@ -599,5 +636,7 @@ describe('a cookie configuration the browser would discard', () => {
     expect(() => cookieStore({ sameSite: 'None', secure: false })).toThrow();
     const factory = cookieStore({ sameSite: 'None', secure: true });
     expect(typeof factory).toBe('function');
+    claimCapability('store:cookieStore');
+    claimCapability('entry:@neolorn/equator');
   });
 });

@@ -18,6 +18,8 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 
 import { runtimeExtensions } from './runtime-extensions';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * What a localized field may be written with, and when a write to one may arrive.
  *
@@ -115,6 +117,7 @@ describe('a localized field written as a textarea', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     expect(area.value).toBe(englishText);
+    claimCapability('directive:LocalizedInput');
   });
 });
 
@@ -146,5 +149,7 @@ describe('a write that arrives before the profile binding does', () => {
     // form wrote is the value on screen.
     expect(input.value).not.toBe('');
     expect(input.value.replace(/[^0-9.]/gu, '')).toBe('1234.5');
+    claimCapability('directive:LocalizedInput');
+    claimCapability('entry:@neolorn/equator/forms');
   });
 });

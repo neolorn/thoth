@@ -14,6 +14,8 @@ import { runtimeExtensions } from './runtime-extensions';
 import { FeatureLabReadiness } from './readiness';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * The other half of the argument for keeping six exports published.
  *
@@ -79,6 +81,7 @@ describe('the readiness panel exercises what the published surface kept', () => 
     // rather than a concatenation.
     expect(alternates[0]?.getAttribute('href')).toBe('/ar-eg');
     expect(alternates[1]?.getAttribute('href')).toBe('/en-arab-xb');
+    claimCapability('policy:path-prefix', { policy: routePolicy });
   });
 
   it('phrases a one-hour span through the policy: resolveRelativeTime, systemClock', () => {

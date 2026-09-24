@@ -21,6 +21,8 @@ import { routes } from './app.routes';
 import { runtimeExtensions } from './runtime-extensions';
 import { routePolicy, appRouteProjection } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Does a route's document metadata come from the catalog for the locale that is active?
  *
@@ -126,6 +128,7 @@ describe('a route document declared by route id', () => {
     // to be told, and without this the assertion reads the title from before the switch.
     TestBed.tick();
     expect(document.title).toBe('العنوان الثاني');
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('lets the dynamic callback override one field and keep the rest', async () => {
@@ -172,6 +175,8 @@ describe('a route document declared by route id', () => {
         },
       }),
     ).toThrow(/takes "name"/u);
+    claimCapability('feature:provideLocalizedRouter');
+    claimCapability('entry:@neolorn/equator/router');
   });
 
   it('accepts the same message with its value bound', async () => {
@@ -183,6 +188,8 @@ describe('a route document declared by route id', () => {
     await router.navigateByUrl('/second');
 
     expect(document.title).toBe('Welcome, Equator!');
+    claimCapability('declaration:document-metadata', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator/router', { policy: routePolicy });
   });
 
   it('refuses an unbound message in an outcome document too', () => {
@@ -191,6 +198,9 @@ describe('a route document declared by route id', () => {
         outcomeDocuments: { 'not-found': { title: messages.welcome as never } },
       }),
     ).toThrow(/takes "name"/u);
+    claimCapability('feature:provideLocalizedRouter');
+    claimCapability('declaration:outcome-documents');
+    claimCapability('entry:@neolorn/equator/router');
   });
 
   it('reports a declaration naming a route that does not exist', async () => {

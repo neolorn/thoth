@@ -23,6 +23,8 @@ import { routeProjection } from '#i18n/routes';
 import { routePolicy, appRouteProjection } from './localization.routes';
 import { runtimeExtensions } from './runtime-extensions';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * A locale that is an origin, and the switch that cannot happen in place.
  *
@@ -186,6 +188,7 @@ describe('switching locale under a policy whose locales are origins', () => {
     expect(new URL(here ?? '').origin).toBe('https://site.example');
     expect(new URL(there ?? '').origin).toBe('https://ar.site.example');
     expect(new URL(there ?? '').pathname).toBe(new URL(here ?? '').pathname);
+    claimCapability('policy:locale-host', { policy: HOST });
   });
 
   it('writes that address as the switcher href', async () => {
@@ -216,6 +219,8 @@ describe('switching locale under a policy whose locales are origins', () => {
     // And nothing was committed here. A transition that ran would leave this application claiming
     // Arabic at the English origin, which is the state the reader was left in before this.
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
+    claimCapability('policy:locale-host', { policy: HOST });
+    claimCapability('entry:@neolorn/equator', { policy: HOST });
   });
 
   it('leaves the locale this origin already serves to the ordinary transition', async () => {
@@ -229,6 +234,8 @@ describe('switching locale under a policy whose locales are origins', () => {
 
     expect(result.status).not.toBe('redirected');
     expect(assigned).toEqual([]);
+    claimCapability('policy:locale-host', { policy: HOST });
+    claimCapability('entry:@neolorn/equator', { policy: HOST });
   });
 
   it('does not claim a switch under a policy that keeps its locales in one origin', async () => {
@@ -243,5 +250,7 @@ describe('switching locale under a policy whose locales are origins', () => {
     expect(result.status).toBe('committed');
     expect(assigned).toEqual([]);
     expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
+    claimCapability('policy:path-prefix', { policy: routePolicy });
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 });

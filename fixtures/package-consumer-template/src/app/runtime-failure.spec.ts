@@ -13,6 +13,8 @@ import { messages, providerId, scopeId } from '#i18n/shell';
 
 import { runtimeExtensions } from './runtime-extensions';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 const scope = { providerId, scopeId } as const;
 
 describe('Equator runtime failure and recovery contracts', () => {
@@ -79,6 +81,8 @@ describe('Equator runtime failure and recovery contracts', () => {
     fixture.destroy();
     TestBed.resetTestingModule();
     localization.dispose();
+    claimCapability('directive:LocalizationRecovery');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('keeps strict fallback failure distinct from a valid committed locale', async () => {
@@ -103,6 +107,7 @@ describe('Equator runtime failure and recovery contracts', () => {
     );
     expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
     localization.dispose();
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('cancels a pending transition without changing the committed snapshot', async () => {
@@ -128,5 +133,6 @@ describe('Equator runtime failure and recovery contracts', () => {
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     expect(localization.lifecycle()).toBe('ready');
     localization.dispose();
+    claimCapability('entry:@neolorn/equator');
   });
 });

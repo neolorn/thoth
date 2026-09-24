@@ -18,6 +18,8 @@ import { routeProjection } from '#i18n/routes';
 import { routePolicy, appRouteProjection } from './localization.routes';
 import { runtimeExtensions } from './runtime-extensions';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Where this page lives in every other locale, and who is allowed to know.
  *
@@ -154,6 +156,7 @@ describe('the address a locale switch moves to', () => {
         new URL(address, 'https://site.example').pathname,
       ]),
     );
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('is published by an application that configures no origin, which publishes no alternates', async () => {
@@ -183,6 +186,7 @@ describe('the address a locale switch moves to', () => {
     // The same set, from the other side. A switcher rendered after the switch has to offer the way
     // back, and the record is rebuilt for the locale that is now current.
     expect(addresses()).toEqual(before);
+    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 });
 
@@ -220,6 +224,7 @@ describe('a link the switcher can keep', () => {
     //   ar-EG       would be `/articles/دليل`, which answers 308 back to this one.
     //   en-Arab-XB  has no slug of its own, so its address *is* this one, which is English.
     expect(addresses()).toEqual({ 'en-US': '/articles/handbook' });
+    claimCapability('policy:locale-neutral', { policy: NEUTRAL });
   });
 
   it('tells a crawler the same thing it tells a reader', async () => {
@@ -231,6 +236,7 @@ describe('a link the switcher can keep', () => {
     expect(alternates()).toEqual([
       ['en-US', 'https://site.example/articles/handbook'],
     ]);
+    claimCapability('policy:locale-neutral', { policy: NEUTRAL });
   });
 
   it('keeps all three where the prefix carries the locale', async () => {
@@ -249,5 +255,6 @@ describe('a link the switcher can keep', () => {
       'ar-EG',
       'en-Arab-XB',
     ]);
+    claimCapability('policy:path-prefix', { policy: routePolicy });
   });
 });

@@ -14,6 +14,8 @@ import { messages } from '#i18n/shell';
 
 import { runtimeExtensions } from './runtime-extensions';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Is a locale written the way that locale declares?
  *
@@ -102,6 +104,7 @@ describe('a locale is written the way that locale declares', () => {
     // And the locale itself did not move with the digits: a runtime that answered in English would
     // satisfy the assertion above and be wrong.
     expect(arabic).toMatch(/\p{Script=Arabic}/u);
+    claimCapability('declaration:locale-formatting');
   });
 
   it("overrides the application's default for the locale that declared it", async () => {
@@ -113,6 +116,7 @@ describe('a locale is written the way that locale declares', () => {
     // application-wide context, and `arab` is not what `en-US` would take from CLDR.
     expect(await rendered('ar-EG', declaration)).toMatch(ARABIC_INDIC);
     expect(await rendered('en-US', declaration)).not.toMatch(ARABIC_INDIC);
+    claimCapability('declaration:locale-formatting');
   });
 
   it('leaves a locale that declares nothing on the application default', async () => {

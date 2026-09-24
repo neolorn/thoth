@@ -8,6 +8,8 @@ import {
   type FormattingContext,
 } from '@neolorn/equator';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Instants finer than a millisecond.
  *
@@ -57,12 +59,16 @@ describe('an instant carrying .NET tick precision', () => {
 
     expect(text(formatInstant(ticks, english, CLOCK))).toBe('08:00:00.123');
     expect(formatInstant(ticks, arabic, { dateStyle: 'long' }).ok).toBe(true);
+    claimCapability('format:formatInstant');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('formats at nanosecond precision too', () => {
     expect(
       text(formatInstant(instant('1800000000123456789'), english, CLOCK)),
     ).toBe('08:00:00.123');
+    claimCapability('format:formatInstant');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('shows the caller the precision they asked for and no more', () => {
@@ -80,6 +86,8 @@ describe('an instant carrying .NET tick precision', () => {
         formatInstant(ticks, english, { hour: '2-digit', minute: '2-digit' }),
       ),
     ).toBe('08:00');
+    claimCapability('format:formatInstant');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('formats a range whose endpoints both carry ticks', () => {
@@ -91,6 +99,8 @@ describe('an instant carrying .NET tick precision', () => {
         { dateStyle: 'short', timeStyle: 'short' },
       ).ok,
     ).toBe(true);
+    claimCapability('format:formatInstantRange');
+    claimCapability('entry:@neolorn/equator');
   });
 });
 
@@ -105,6 +115,8 @@ describe('the millisecond an instant falls in', () => {
     expect(
       text(formatInstant(instant('-1'), english, { dateStyle: 'short' })),
     ).toBe('12/31/69');
+    claimCapability('format:formatInstant');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('keeps the epoch itself on the right side', () => {
@@ -117,6 +129,8 @@ describe('the millisecond an instant falls in', () => {
     expect(
       text(formatInstant(instant('1'), english, { dateStyle: 'short' })),
     ).toBe('1/1/70');
+    claimCapability('format:formatInstant');
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('still refuses an instant outside the native date range', () => {
@@ -128,6 +142,8 @@ describe('the millisecond an instant falls in', () => {
     );
 
     expect(result.ok).toBe(false);
+    claimCapability('format:formatInstant');
+    claimCapability('entry:@neolorn/equator');
   });
 });
 
@@ -145,5 +161,6 @@ describe('decimal normalization cost', () => {
     expect(decimal(`1.5${zeros}`).value).toBe('1.5');
     expect(decimal(`0.${zeros}`).value).toBe('0');
     expect(decimal(`-1.${zeros}`).value).toBe('-1');
+    claimCapability('entry:@neolorn/equator');
   });
 });

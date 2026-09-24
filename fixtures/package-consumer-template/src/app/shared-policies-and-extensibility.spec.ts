@@ -42,6 +42,8 @@ import {
 } from './runtime-extensions';
 import { appRouteProjection } from './localization.routes';
 
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+
 const localizedProjection: RouteRuntimeProjection = Object.freeze({
   ...appRouteProjection,
   localizedPaths: Object.freeze({
@@ -82,6 +84,8 @@ describe('shared URL policies', () => {
     expect(
       buildLocalizedRoute(policy, localizedProjection, 'route:second', 'ar-EG'),
     ).toBe('/ar-eg/%D8%A7%D9%84%D8%AB%D8%A7%D9%86%D9%8A');
+    claimCapability('policy:default-locale-prefix', { policy });
+    claimCapability('entry:@neolorn/equator', { policy });
   });
 
   it('uses locale-neutral presentation paths with explicit locale context and truthful SEO', () => {
@@ -117,6 +121,9 @@ describe('shared URL policies', () => {
     );
     expect(seo.alternates).toHaveLength(2);
     expect(seo.xDefault).toBe('https://site.example/');
+    claimCapability('policy:locale-neutral', { policy });
+    claimCapability('declaration:x-default', { policy });
+    claimCapability('entry:@neolorn/equator', { policy });
   });
 
   it('maps locale-specific trusted origins without accepting request-controlled hosts', () => {
@@ -168,6 +175,9 @@ describe('shared URL policies', () => {
       arabicUrl,
     ]);
     expect(seo.xDefault).toBe('https://site.example');
+    claimCapability('policy:locale-host', { policy });
+    claimCapability('declaration:x-default', { policy });
+    claimCapability('entry:@neolorn/equator', { policy });
   });
 });
 
@@ -220,6 +230,7 @@ describe('application-local extensibility', () => {
       value: { value: 'ITEM-42' },
     });
     localization.dispose();
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('fails runtime admission before evaluation when required bindings are absent', () => {
@@ -233,6 +244,7 @@ describe('application-local extensibility', () => {
         bootstrapScopes: [{ providerId, scopeId }],
       }),
     ).toThrow(/Required runtime extension/u);
+    claimCapability('entry:@neolorn/equator');
   });
 });
 
@@ -314,6 +326,7 @@ describe('localized assets', () => {
       metadata: { description: { supplyingLocale: 'ar-EG' } },
     });
     localization.dispose();
+    claimCapability('entry:@neolorn/equator');
   });
 
   it('exposes only safe dynamic participant metadata, never payload or URL state', () => {
@@ -349,6 +362,7 @@ describe('localized assets', () => {
     expect(report).not.toHaveProperty('url');
     expect(report).not.toHaveProperty('payload');
     expect(JSON.stringify(report)).not.toContain('private.invalid');
+    claimCapability('entry:@neolorn/equator');
   });
 });
 
@@ -419,6 +433,9 @@ describe('built-toolkit lifecycle', () => {
     expect(
       (pseudo.value.messages['greeting'] as { message?: string }).message,
     ).toContain('⟦');
+    claimCapability('capability:xliff');
+    claimCapability('capability:pseudo-locale');
+    claimCapability('entry:@neolorn/equator-toolkit');
   });
 
   it('classifies semantic changes and previews checked refactor/migration transactions', () => {
@@ -517,5 +534,6 @@ describe('built-toolkit lifecycle', () => {
       id: 'configuration/1-to-1.1/phase-five-profile',
     });
     expect(migration.value.digest).toMatch(/^sha256-[A-Za-z0-9_-]{43}$/u);
+    claimCapability('entry:@neolorn/equator-toolkit');
   });
 });
