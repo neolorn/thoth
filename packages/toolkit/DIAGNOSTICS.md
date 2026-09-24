@@ -196,6 +196,10 @@ A caching declaration cannot be used as written: a value that names neither `per
 
 A route names its addresses in a way Angular refuses: neither a `path` nor a `matcher`, or a `matcher` beside a non-empty `path`.
 
+### EQ1416
+
+The router's inheritance strategy cannot be read: a `paramsInheritanceStrategy` the build cannot read as a string literal, or more than one router configuration where one sets it. Every child route is read as inheriting its parent's data, which is Angular's default.
+
 ## The compiled artifacts
 
 ### EQ1501

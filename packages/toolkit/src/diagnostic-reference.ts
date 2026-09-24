@@ -127,6 +127,8 @@ const REFERENCE = {
     'A caching declaration cannot be used as written: a value that names neither `per-visitor` nor `not-stored`, a table or a route value the build cannot read as a string literal, or the owner declaring two route caching fields. A route whose value cannot be used is answered as not stored until it is corrected.',
   EQ1415:
     'A route names its addresses in a way Angular refuses: neither a `path` nor a `matcher`, or a `matcher` beside a non-empty `path`.',
+  EQ1416:
+    "The router's inheritance strategy cannot be read: a `paramsInheritanceStrategy` the build cannot read as a string literal, or more than one router configuration where one sets it. Every child route is read as inheriting its parent's data, which is Angular's default.",
   EQ1501:
     'A compiled artifact cannot be produced from the accepted graph: a recovery identity that resolves to no single plain message, or a catalog absent from the graph.',
   EQ1502: 'A compiled catalog exceeds the IR node or depth ceiling.',

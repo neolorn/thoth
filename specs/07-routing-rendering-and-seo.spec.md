@@ -585,6 +585,18 @@ A release MUST read that declaration from the provider file's source text when t
 compiled, and MUST NOT execute consumer code to obtain it, which is why the declaration is a field
 name and a table of literals rather than a predicate.
 
+The data a route has when the application runs is its own over what it inherits from its parents,
+and a release MUST read declarations the same way, so a class declared on a parent reaches every
+child the framework gives it to. A release MUST apply the framework's rule: a child inherits when
+the router inherits always, when the child's own path is empty, or when its parent renders no
+component, and a key of the child's own wins. A release MUST read the router's inheritance
+strategy from the application's router configuration and use the framework's default, which is to
+inherit always, where none is declared. Where the strategy cannot be read, or is declared more than
+once, a release MUST report it and inherit always, because for the indexing and caching classes
+inheriting can only give a child that states nothing its parent's class, which never makes a page
+more shareable or more indexable than its routes say. A route's identity is not inherited, because
+it names the route rather than describing the page.
+
 Sitemap claims are declared the same way and read at the same moment: a named field whose values map
 to what the class claims, with a second named field carrying the last-modified date. A release MUST
 refuse a value the protocol would reject when the owner is compiled rather than drop it, because a
@@ -649,14 +661,15 @@ could publish a page that its route or its host said must not be shared.
 
 A consumer application declares a route's level in its route data: a named field and a table of
 literals, read from the provider file's source text when the owner is compiled, as section 14 reads
-indexing, with a documented default field. The declaration is on the route rather than made by a
-page while it renders, because a cache reuses a stored response for any request to its address,
-including a request where the page decided nothing. A release MUST answer a value it reads and
-cannot use as not stored, and MUST report it when the owner is compiled, because every value the
-declaration can name keeps the page out of a shared cache, and reading an unusable one as absent is
-the one reading that cannot be what was meant. Under the default field every value is meant for the
-release; under a consumer's own field an unlisted value declares nothing, as it does for indexing.
-A private indexing class is not stored whatever the route declares about caching.
+indexing, including what a route inherits, with a documented default field. The declaration is on
+the route rather than made by a page while it renders, because a cache reuses a stored response for
+any request to its address, including a request where the page decided nothing. A release MUST
+answer a value it reads and cannot use as not stored, and MUST report it when the owner is compiled,
+because every value the declaration can name keeps the page out of a shared cache, and reading an
+unusable one as absent is the one reading that cannot be what was meant. Under the default field
+every value is meant for the release; under a consumer's own field an unlisted value declares
+nothing, as it does for indexing. A private indexing class is not stored whatever the route declares
+about caching.
 
 A host declares the least level of every page it serves, for a fact that holds on every page, such
 as a cookie every page reads or a nonce every response carries, so a route added later cannot

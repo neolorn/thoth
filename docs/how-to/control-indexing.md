@@ -65,6 +65,12 @@ withRouting({
 names the field it already has. Only the exceptions need naming: a route whose field is absent, or
 whose value the table does not list, is indexable.
 
+A class on a parent route reaches its children the way Angular passes route data down: every child
+under the router's default, and under `paramsInheritanceStrategy: 'emptyOnly'` only a child with an
+empty path or one whose parent renders no component. A class the child states itself wins.
+`generate` reads the strategy from your router configuration, and where it cannot, reports `EQ1416`
+and passes the class to every child.
+
 Both blocks are read from your source text at generate time, which is why this is a field name and a
 table of literals rather than a predicate.
 

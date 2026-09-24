@@ -1071,6 +1071,160 @@ function objectProperty(
   return undefined;
 }
 
+// A spread or a computed key can set any key its type allows, so an object literal that has one may
+// set a key without spelling it. Reading such a key as absent is how a route ends up at an address
+// it does not serve.
+function canHoldKey(
+  checker: ts.TypeChecker,
+  type: ts.Type,
+  name: string,
+): boolean {
+  return (type.isUnion() ? type.types : [type]).some((member) => {
+    if ((member.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) !== 0) {
+      return true;
+    }
+    const apparent = checker.getApparentType(member);
+    return (
+      checker.getPropertyOfType(apparent, name) !== undefined ||
+      checker.getIndexInfoOfType(apparent, ts.IndexKind.String) !== undefined
+    );
+  });
+}
+
+function canBeKey(type: ts.Type, name: string): boolean {
+  return (type.isUnion() ? type.types : [type]).some((member) =>
+    member.isStringLiteral()
+      ? member.value === name
+      : !member.isNumberLiteral() &&
+        (member.flags & ts.TypeFlags.ESSymbolLike) === 0,
+  );
+}
+
+// The last element that can set a key is the one that does, which is JavaScript's own order.
+function keySetter(
+  checker: ts.TypeChecker,
+  object: ts.ObjectLiteralExpression,
+  name: string,
+): ts.ObjectLiteralElementLike | 'absent' | 'unreadable' {
+  let found: ts.ObjectLiteralElementLike | 'absent' | 'unreadable' = 'absent';
+  for (const item of object.properties) {
+    if (ts.isSpreadAssignment(item)) {
+      if (
+        canHoldKey(checker, checker.getTypeAtLocation(item.expression), name)
+      ) {
+        found = 'unreadable';
+      }
+    } else if (
+      ts.isComputedPropertyName(item.name) &&
+      !ts.isStringLiteralLike(item.name.expression)
+    ) {
+      if (canBeKey(checker.getTypeAtLocation(item.name.expression), name)) {
+        found = 'unreadable';
+      }
+    } else {
+      const key = ts.isComputedPropertyName(item.name)
+        ? (item.name.expression as ts.StringLiteralLike).text
+        : ts.isIdentifier(item.name) || ts.isStringLiteralLike(item.name)
+          ? item.name.text
+          : undefined;
+      if (key === name) found = item;
+    }
+  }
+  return found;
+}
+
+/**
+ * The inheritance strategy one router configuration sets, as far as its source says.
+ *
+ * `absent` is a configuration that does not set it. It still counts, because Angular provides the
+ * token non-multi, so a second configuration replaces the first whole, strategy included.
+ */
+type RouterStrategyReading = 'always' | 'emptyOnly' | 'absent' | 'unreadable';
+
+/**
+ * What `node` sets the router's inheritance strategy to, or nothing where it configures no router.
+ *
+ * Angular's router reads the strategy from `ROUTER_CONFIGURATION`
+ * (`@angular/router/fesm2022/_router-chunk.mjs:3719-3722`), and three public calls provide that
+ * token: `withRouterConfig`, `RouterModule.forRoot`, and a provider of the token itself
+ * (`_router_module-chunk.mjs:1707-1713`, `:1782-1797`). Each is recognized by what its symbol
+ * resolves to, so a consumer's own function of the same name configures nothing.
+ */
+function routerInheritanceStrategy(
+  checker: ts.TypeChecker,
+  node: ts.Node,
+): RouterStrategyReading | undefined {
+  const unwrapped = (expression: ts.Expression): ts.Expression => {
+    let current = expression;
+    while (
+      ts.isParenthesizedExpression(current) ||
+      ts.isAsExpression(current) ||
+      ts.isSatisfiesExpression(current)
+    ) {
+      current = current.expression;
+    }
+    return current;
+  };
+  const fromRouter = (expression: ts.Expression): ts.Symbol | undefined => {
+    const symbol = resolvedSymbol(checker, unwrapped(expression));
+    return symbol !== undefined && declaredIn(symbol, '/@angular/router/')
+      ? symbol
+      : undefined;
+  };
+  const read = (options: ts.Expression | undefined): RouterStrategyReading => {
+    const object = options === undefined ? undefined : unwrapped(options);
+    if (object === undefined || !ts.isObjectLiteralExpression(object)) {
+      return 'unreadable';
+    }
+    const item = keySetter(checker, object, 'paramsInheritanceStrategy');
+    if (item === 'absent' || item === 'unreadable') return item;
+    const value = ts.isPropertyAssignment(item)
+      ? unwrapped(item.initializer)
+      : undefined;
+    return value !== undefined &&
+      ts.isStringLiteralLike(value) &&
+      (value.text === 'always' || value.text === 'emptyOnly')
+      ? value.text
+      : 'unreadable';
+  };
+  if (ts.isCallExpression(node)) {
+    const symbol = fromRouter(node.expression);
+    if (symbol?.name === 'withRouterConfig') return read(node.arguments[0]);
+    if (
+      symbol?.name === 'forRoot' &&
+      symbol
+        .getDeclarations()
+        ?.some(
+          (declaration) =>
+            ts.isClassDeclaration(declaration.parent) &&
+            declaration.parent.name?.text === 'RouterModule',
+        )
+    ) {
+      // `forRoot` provides the token even without a configuration, as an empty one.
+      return node.arguments[1] === undefined
+        ? 'absent'
+        : read(node.arguments[1]);
+    }
+    return undefined;
+  }
+  if (ts.isObjectLiteralExpression(node)) {
+    const provide = keySetter(checker, node, 'provide');
+    if (
+      typeof provide === 'string' ||
+      !ts.isPropertyAssignment(provide) ||
+      fromRouter(provide.initializer)?.name !== 'ROUTER_CONFIGURATION'
+    ) {
+      return undefined;
+    }
+    // A factory, a class or an alias produces its value when the application runs.
+    const value = keySetter(checker, node, 'useValue');
+    return typeof value !== 'string' && ts.isPropertyAssignment(value)
+      ? read(value.initializer)
+      : 'unreadable';
+  }
+  return undefined;
+}
+
 /**
  * The module specifier of a dynamic import inside a route loader.
  *
@@ -1457,15 +1611,17 @@ function routeIdentity(fullPath: string): string | undefined {
 }
 
 /**
- * A route as read, before its name is settled.
+ * One route object as written, linked to the route it is nested in.
  *
- * Naming cannot happen while reading: a collision is a fact about two routes, and the second one
- * may be declared in another file.
+ * Kept because a page receives more than its own route writes: Angular gives a child its parent's
+ * data under a rule that depends on the router's configuration, which is read in another file and
+ * possibly after this one.
  */
-interface RouteDraft {
+interface RouteNode {
+  readonly parent: RouteNode | undefined;
+  /** The full path, or `undefined` where the address cannot be read. */
+  readonly path: string | undefined;
   readonly declaredId?: string;
-  readonly path: string;
-  readonly parameterNames: readonly string[];
   /**
    * The route's own string-valued `data`, as written.
    *
@@ -1481,6 +1637,30 @@ interface RouteDraft {
    * caching would be the more shareable answer.
    */
   readonly opaqueData: readonly string[];
+  /**
+   * Whether Angular gives the route its parent's data under either strategy: its own path is
+   * empty, or its parent renders no component (`getInherited`,
+   * `@angular/router/fesm2022/_router-chunk.mjs:1511-1547`).
+   */
+  readonly inheritsUnderEitherStrategy: boolean;
+  /**
+   * Whether the route certainly renders a component. Where that cannot be read it counts as not,
+   * so its children inherit, because inheriting only ever gives a route that states no class its
+   * parent's.
+   */
+  readonly rendersComponent: boolean;
+}
+
+/**
+ * A route as read, before its name is settled.
+ *
+ * Naming cannot happen while reading: a collision is a fact about two routes, and the second one
+ * may be declared in another file.
+ */
+interface RouteDraft {
+  readonly node: RouteNode;
+  readonly path: string;
+  readonly parameterNames: readonly string[];
   /** The lazy entry modules on this route's path from the root, innermost last. */
   readonly lazyEntries: readonly string[];
   readonly sourcePath: string;
@@ -1491,20 +1671,12 @@ interface RouteDraft {
 const ROUTE_DATA_ENTRIES = 32;
 const ROUTE_DATA_VALUE_CHARACTERS = 128;
 
-function declaresRouteData(draft: RouteDraft): boolean {
-  return (
-    draft.declaredId !== undefined ||
-    draft.data.length > 0 ||
-    draft.opaqueData.length > 0
-  );
-}
-
 /**
  * Settle every route's name, and say so when one cannot be settled.
  *
  * Two routes sharing an address are one route: a parent and its `{ path: '' }` child describe the
- * same URL, and the deeper declaration is the one that renders the page, so its explicit route
- * data wins. Two *different* addresses sharing a name is the opposite, a defect, and neither
+ * same URL, and the deeper declaration is the one that renders the page, so what it receives is
+ * what the page is. Two *different* addresses sharing a name is the opposite, a defect, and neither
  * is indexed until the consumer separates them, because indexing one of them under a name that
  * also describes the other silently attaches a page's copy to the wrong page.
  *
@@ -1516,12 +1688,50 @@ function resolveRouteIdentities(
   policy: RouteIndexingPolicy | undefined,
   sitemapPolicy: RouteSitemapPolicy | undefined,
   cachingPolicy: RouteCachingPolicy | undefined,
+  strategy: 'always' | 'emptyOnly',
   deferredFor: (draft: RouteDraft) => readonly string[],
   diagnostics: ToolkitDiagnostic[],
 ): RouteProjection[] {
   const field = policy?.field ?? DEFAULT_ROUTE_INDEXING_FIELD;
   const values = policy?.values ?? DEFAULT_ROUTE_INDEXING_VALUES;
   const cachingField = cachingPolicy?.field ?? DEFAULT_ROUTE_CACHING_FIELD;
+  /**
+   * The route that decides what a page receives under one key, and the value it writes there.
+   *
+   * Angular spreads a parent's data under the route's own (`getInherited`), so the nearest route
+   * that writes the key decides it, and a route that does not inherit ends the search. `value` is
+   * `undefined` where that route writes something the build cannot read.
+   */
+  const writer = (
+    draft: RouteDraft,
+    key: string,
+  ):
+    | { readonly node: RouteNode; readonly value: string | undefined }
+    | undefined => {
+    let node: RouteNode | undefined = draft.node;
+    while (node !== undefined) {
+      if (node.opaqueData.includes(key)) return { node, value: undefined };
+      const value = node.data.find(([name]) => name === key)?.[1];
+      if (value !== undefined) return { node, value };
+      node =
+        strategy === 'always' || node.inheritsUnderEitherStrategy
+          ? node.parent
+          : undefined;
+    }
+    return undefined;
+  };
+  // Reported once where the value is written, because every route that inherits it would otherwise
+  // repeat the same finding.
+  const reported = new Map<RouteNode, Set<string>>();
+  const firstReport = (node: RouteNode, code: string): boolean => {
+    const codes = reported.get(node) ?? new Set<string>();
+    reported.set(node, codes);
+    if (codes.has(code)) return false;
+    codes.add(code);
+    return true;
+  };
+  const address = (node: RouteNode, draft: RouteDraft): string =>
+    JSON.stringify(`/${node.path ?? draft.path}`);
   /**
    * A route's caching class, or nothing, which leaves routing's own.
    *
@@ -1530,32 +1740,34 @@ function resolveRouteIdentities(
    * indexing field gives. A value the build cannot read is refused under either.
    */
   const cachingOf = (draft: RouteDraft): RouteCachingClass | undefined => {
+    const found = writer(draft, cachingField);
+    if (found === undefined) return undefined;
     const refuse = (reason: string): RouteCachingClass => {
-      diagnostics.push(
-        toolkitDiagnostic(
-          'EQ1413',
-          `Route ${JSON.stringify(`/${draft.path}`)} ${reason}. It is answered as not-stored until the value is corrected.`,
-          { path: ['routes', draft.sourcePath], severity: 'warning' },
-        ),
-      );
+      if (firstReport(found.node, 'EQ1413')) {
+        diagnostics.push(
+          toolkitDiagnostic(
+            'EQ1413',
+            `Route ${address(found.node, draft)} ${reason}. It and every route that inherits its data are answered as not-stored until the value is corrected.`,
+            { path: ['routes', draft.sourcePath], severity: 'warning' },
+          ),
+        );
+      }
       return 'not-stored';
     };
-    if (draft.opaqueData.includes(cachingField)) {
+    if (found.value === undefined) {
       return refuse(
         `sets ${JSON.stringify(cachingField)} to something other than a string literal, so the build cannot read which class it names`,
       );
     }
-    const written = draft.data.find(([key]) => key === cachingField)?.[1];
-    if (written === undefined) return undefined;
     if (cachingPolicy !== undefined && !cachingPolicy.readable) {
       return 'not-stored';
     }
     const declared = (
       cachingPolicy?.values ?? DEFAULT_ROUTE_CACHING_VALUES
-    ).get(written);
+    ).get(found.value);
     if (declared !== undefined || cachingPolicy !== undefined) return declared;
     return refuse(
-      `sets ${JSON.stringify(cachingField)} to ${JSON.stringify(written)}, which is neither per-visitor nor not-stored`,
+      `sets ${JSON.stringify(cachingField)} to ${JSON.stringify(found.value)}, which is neither per-visitor nor not-stored`,
     );
   };
   /**
@@ -1568,21 +1780,23 @@ function resolveRouteIdentities(
    */
   const claimOf = (draft: RouteDraft): RouteProjection['sitemap'] => {
     if (sitemapPolicy === undefined) return undefined;
-    const written = draft.data.find(
-      ([key]) => key === sitemapPolicy.field,
-    )?.[1];
+    const written = writer(draft, sitemapPolicy.field)?.value;
     const declared =
       written === undefined ? undefined : sitemapPolicy.values.get(written);
     const lastmodField = sitemapPolicy.lastmodField;
-    const lastmod =
-      lastmodField === undefined
-        ? undefined
-        : draft.data.find(([key]) => key === lastmodField)?.[1];
-    if (lastmod !== undefined && !SITEMAP_W3C_DATE.test(lastmod)) {
+    const dated =
+      lastmodField === undefined ? undefined : writer(draft, lastmodField);
+    const lastmod = dated?.value;
+    if (
+      dated !== undefined &&
+      lastmod !== undefined &&
+      !SITEMAP_W3C_DATE.test(lastmod) &&
+      firstReport(dated.node, 'EQ1412')
+    ) {
       diagnostics.push(
         toolkitDiagnostic(
           'EQ1412',
-          `Route ${JSON.stringify(`/${draft.path}`)} declares ${JSON.stringify(lastmodField)} as ${JSON.stringify(lastmod)}, which is not a W3C date such as 2026-09-08 or 2026-09-08T17:33:30+03:00. It is left out of the sitemap rather than written into a document a validator refuses.`,
+          `Route ${address(dated.node, draft)} declares ${JSON.stringify(lastmodField)} as ${JSON.stringify(lastmod)}, which is not a W3C date such as 2026-09-08 or 2026-09-08T17:33:30+03:00. It is left out of the sitemap, for this route and every route that inherits its data, rather than written into a document a validator refuses.`,
           { path: ['routes', draft.sourcePath], severity: 'warning' },
         ),
       );
@@ -1606,36 +1820,61 @@ function resolveRouteIdentities(
   const classify = (
     draft: RouteDraft,
   ): 'indexable' | 'non-indexable' | 'private' => {
-    const written = draft.data.find(([key]) => key === field)?.[1];
+    const written = writer(draft, field)?.value;
     return written === undefined
       ? 'indexable'
       : (values.get(written) ?? 'indexable');
   };
-  const byPath = new Map<string, RouteDraft>();
+  // Angular tries routes in the order they are declared and then descends through `path: ''`
+  // children, so the page at a shared address is the deepest route below the first one declared
+  // there. Every route between two at one address is at that address too, so each step down is a
+  // direct child. The first draft at an address is that route or one on its way down, even where
+  // a path is written after its children, because a route's children are written inside it.
+  const atAddress = new Map<string, RouteDraft[]>();
   for (const draft of drafts) {
-    const existing = byPath.get(draft.path);
-    if (
-      existing === undefined ||
-      (!declaresRouteData(existing) && declaresRouteData(draft))
-    ) {
-      byPath.set(draft.path, draft);
-    }
+    const group = atAddress.get(draft.path);
+    if (group === undefined) atAddress.set(draft.path, [draft]);
+    else group.push(draft);
   }
+  const pages: RouteDraft[] = [];
+  for (const group of atAddress.values()) {
+    let page = group[0] as RouteDraft;
+    for (;;) {
+      const current = page;
+      const deeper = group.find(({ node }) => node.parent === current.node);
+      if (deeper === undefined) break;
+      page = deeper;
+    }
+    pages.push(page);
+  }
+  // An identity names an address, so the deepest route at the page's address that declares one
+  // names it, and no route's identity reaches a child at another address.
+  const declaredIdOf = (draft: RouteDraft): string | undefined => {
+    for (
+      let node: RouteNode | undefined = draft.node;
+      node !== undefined && node.path === draft.path;
+      node = node.parent
+    ) {
+      if (node.declaredId !== undefined) return node.declaredId;
+    }
+    return undefined;
+  };
 
   const named: { readonly id: string; readonly draft: RouteDraft }[] = [];
-  for (const draft of byPath.values()) {
-    if (draft.declaredId !== undefined) {
-      if (!ROUTE_IDENTITY_PATTERN.test(draft.declaredId)) {
+  for (const draft of pages) {
+    const declaredId = declaredIdOf(draft);
+    if (declaredId !== undefined) {
+      if (!ROUTE_IDENTITY_PATTERN.test(declaredId)) {
         diagnostics.push(
           toolkitDiagnostic(
             'EQ1404',
-            `Route ${JSON.stringify(`/${draft.path}`)} declares the identity ${JSON.stringify(draft.declaredId)}, which the localization runtime will refuse. An identity begins with a letter or digit and continues with letters, digits, and ".", "_", ":", or "-", up to 128 characters.`,
+            `Route ${JSON.stringify(`/${draft.path}`)} declares the identity ${JSON.stringify(declaredId)}, which the localization runtime will refuse. An identity begins with a letter or digit and continues with letters, digits, and ".", "_", ":", or "-", up to 128 characters.`,
             { path: ['routes', draft.sourcePath], severity: 'warning' },
           ),
         );
         continue;
       }
-      named.push({ id: draft.declaredId, draft });
+      named.push({ id: declaredId, draft });
       continue;
     }
     const identity = routeIdentity(draft.path);
@@ -1675,12 +1914,10 @@ function resolveRouteIdentities(
       continue;
     }
     const {
-      declaredId: _declaredId,
-      data: _data,
-      opaqueData: _opaqueData,
-      ...rest
+      node: _node,
+      lazyEntries: _lazyEntries,
+      ...projected
     } = entry.draft;
-    const { lazyEntries: _lazyEntries, ...projected } = rest;
     // Asked once. It reports a malformed date, so a second call would report it twice.
     const claim = claimOf(entry.draft);
     // Asked once for the same reason: it reports a value it cannot use.
@@ -1744,56 +1981,43 @@ function analyzeRoutes(
         ((ts.isIdentifier(item.name) && item.name.text === name) ||
           (ts.isStringLiteralLike(item.name) && item.name.text === name)),
     );
-  // A spread or a computed key can set any key its type allows, so a route that has one may set a
-  // key without spelling it. Reading such a key as absent is how a route ends up at an address it
-  // does not serve.
-  const canHold = (type: ts.Type, name: string): boolean =>
-    (type.isUnion() ? type.types : [type]).some((member) => {
-      if ((member.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) !== 0) {
-        return true;
-      }
-      const apparent = checker.getApparentType(member);
-      return (
-        checker.getPropertyOfType(apparent, name) !== undefined ||
-        checker.getIndexInfoOfType(apparent, ts.IndexKind.String) !== undefined
-      );
-    });
-  const canBeKey = (type: ts.Type, name: string): boolean =>
-    (type.isUnion() ? type.types : [type]).some((member) =>
-      member.isStringLiteral()
-        ? member.value === name
-        : !member.isNumberLiteral() &&
-          (member.flags & ts.TypeFlags.ESSymbolLike) === 0,
-    );
-  // The last element that can set a key is the one that does, which is JavaScript's own order.
   const setter = (
     object: ts.ObjectLiteralExpression,
     name: string,
-  ): ts.ObjectLiteralElementLike | 'absent' | 'unreadable' => {
-    let found: ts.ObjectLiteralElementLike | 'absent' | 'unreadable' = 'absent';
-    for (const item of object.properties) {
-      if (ts.isSpreadAssignment(item)) {
-        if (canHold(checker.getTypeAtLocation(item.expression), name)) {
-          found = 'unreadable';
-        }
-      } else if (
-        ts.isComputedPropertyName(item.name) &&
-        !ts.isStringLiteralLike(item.name.expression)
-      ) {
-        if (canBeKey(checker.getTypeAtLocation(item.name.expression), name)) {
-          found = 'unreadable';
-        }
-      } else {
-        const key = ts.isComputedPropertyName(item.name)
-          ? (item.name.expression as ts.StringLiteralLike).text
-          : ts.isIdentifier(item.name) || ts.isStringLiteralLike(item.name)
-            ? item.name.text
-            : undefined;
-        if (key === name) found = item;
-      }
-    }
-    return found;
-  };
+  ): ts.ObjectLiteralElementLike | 'absent' | 'unreadable' =>
+    keySetter(checker, object, name);
+  // Angular asks whether `component` or `loadComponent` holds something (`getInherited`), so a
+  // value whose type allows `undefined` or `null` is not certain, and neither is one a spread or a
+  // computed key may set.
+  const rendersComponent = (object: ts.ObjectLiteralExpression): boolean =>
+    ['component', 'loadComponent'].some((name) => {
+      const item = setter(object, name);
+      if (typeof item === 'string') return false;
+      if (ts.isMethodDeclaration(item)) return true;
+      const symbol = ts.isPropertyAssignment(item)
+        ? undefined
+        : ts.isShorthandPropertyAssignment(item)
+          ? checker.getShorthandAssignmentValueSymbol(item)
+          : undefined;
+      const type = ts.isPropertyAssignment(item)
+        ? checker.getTypeAtLocation(item.initializer)
+        : symbol === undefined
+          ? undefined
+          : checker.getTypeOfSymbolAtLocation(symbol, item);
+      return (
+        type !== undefined &&
+        !(type.isUnion() ? type.types : [type]).some(
+          (member) =>
+            (member.flags &
+              (ts.TypeFlags.Undefined |
+                ts.TypeFlags.Null |
+                ts.TypeFlags.Void |
+                ts.TypeFlags.Any |
+                ts.TypeFlags.Unknown)) !==
+            0,
+        )
+      );
+    });
   // Angular's rule for what decides a route's address. `match`
   // (`@angular/router/fesm2022/_router-chunk.mjs:2864-2879`) matches an empty `path` without
   // consuming a segment whatever else the route carries, and any other route by its `matcher` when
@@ -1908,6 +2132,7 @@ function analyzeRoutes(
     expression: ts.Expression,
     parentPath: string | undefined,
     parentLazyEntries: readonly string[],
+    parent: RouteNode | undefined,
   ): void => {
     const array = unwrap(expression);
     if (!ts.isArrayLiteralExpression(array)) return;
@@ -1962,6 +2187,17 @@ function analyzeRoutes(
       const redirect = property(unwrapped, 'redirectTo');
       const children = property(unwrapped, 'children')?.initializer;
       const portableSourcePath = portablePath(projectRoot, sourceFile.fileName);
+      const declaredId = dataLiteral(unwrapped, 'equatorRouteId');
+      const node: RouteNode = Object.freeze({
+        parent,
+        path: fullPath,
+        ...(declaredId === undefined ? {} : { declaredId }),
+        data: routeData(unwrapped),
+        opaqueData: opaqueRouteData(unwrapped),
+        inheritsUnderEitherStrategy:
+          ownPath === '' || parent?.rendersComponent === false,
+        rendersComponent: rendersComponent(unwrapped),
+      });
       const spelled = 'path' in declared ? declared.path.text : undefined;
       const address =
         fullPath !== undefined
@@ -2100,10 +2336,9 @@ function analyzeRoutes(
         // A wildcard matches every address, at any depth, so it names none of them.
         !routeSegments(fullPath).includes('**')
       ) {
-        const declaredId = dataLiteral(unwrapped, 'equatorRouteId');
         routes.push(
           Object.freeze({
-            ...(declaredId === undefined ? {} : { declaredId }),
+            node,
             path: fullPath,
             parameterNames: Object.freeze(
               fullPath
@@ -2111,8 +2346,6 @@ function analyzeRoutes(
                 .filter((segment) => segment.startsWith(':'))
                 .map((segment) => segment.slice(1)),
             ),
-            data: routeData(unwrapped),
-            opaqueData: opaqueRouteData(unwrapped),
             lazyEntries,
             sourcePath: portableSourcePath,
             start: declared.path.getStart(sourceFile),
@@ -2120,7 +2353,9 @@ function analyzeRoutes(
           }),
         );
       }
-      if (children !== undefined) visitArray(children, fullPath, lazyEntries);
+      if (children !== undefined) {
+        visitArray(children, fullPath, lazyEntries, node);
+      }
     }
   };
   for (const statement of sourceFile.statements) {
@@ -2128,7 +2363,7 @@ function analyzeRoutes(
     for (const declaration of statement.declarationList.declarations) {
       const expression = isRoutesContract(checker, declaration);
       if (expression === undefined) continue;
-      visitArray(expression, '', []);
+      visitArray(expression, '', [], undefined);
     }
   }
 }
@@ -2306,6 +2541,10 @@ export function analyzeApplication(
   let declaredRouteSitemap: RouteSitemapPolicy | undefined;
   let declaredRouteCaching: RouteCachingPolicy | undefined;
   let declaredRoutePolicy: RoutePolicyDeclaration | undefined;
+  const routerConfigurations: {
+    readonly strategy: RouterStrategyReading;
+    readonly sourcePath: string;
+  }[] = [];
   const routes: RouteDraft[] = [];
   const lazyEntryFiles = new Set<ts.SourceFile>();
   const childRouteFiles = new Set<string>();
@@ -2515,6 +2754,10 @@ export function analyzeApplication(
             );
           }
         }
+      }
+      const strategy = routerInheritanceStrategy(checker, node);
+      if (strategy !== undefined) {
+        routerConfigurations.push({ strategy, sourcePath: portableSourcePath });
       }
       ts.forEachChild(node, visit);
     };
@@ -2833,6 +3076,42 @@ export function analyzeApplication(
     );
   };
 
+  // The strategy the application's router runs with, or Angular's default where that cannot be
+  // told. Inheriting only ever gives a route that states no class its parent's, so the default is
+  // the reading that cannot make a page more shareable or more indexable than its routes say.
+  const [firstConfiguration] = routerConfigurations;
+  const strategyDeclared = routerConfigurations.some(
+    ({ strategy }) => strategy !== 'absent',
+  );
+  let strategy: 'always' | 'emptyOnly' = 'always';
+  if (firstConfiguration !== undefined && routerConfigurations.length > 1) {
+    if (strategyDeclared) {
+      diagnostics.push(
+        toolkitDiagnostic(
+          'EQ1416',
+          `This owner configures the router in ${routerConfigurations.length} places, in ${[...new Set(routerConfigurations.map(({ sourcePath }) => JSON.stringify(sourcePath)))].join(', ')}, and at least one sets \`paramsInheritanceStrategy\`. Angular uses one configuration whole, so Equator cannot tell which strategy the application runs with. It reads every child route as inheriting its parent's data, which is Angular's default. Configure the router once.`,
+          {
+            path: ['routes', firstConfiguration.sourcePath],
+            severity: 'warning',
+          },
+        ),
+      );
+    }
+  } else if (firstConfiguration?.strategy === 'unreadable') {
+    diagnostics.push(
+      toolkitDiagnostic(
+        'EQ1416',
+        `The router configuration in ${JSON.stringify(firstConfiguration.sourcePath)} sets \`paramsInheritanceStrategy\` in a way the build cannot read, so Equator cannot tell which child routes inherit their parent's data. It reads every child route as inheriting, which is Angular's default. Write the strategy as the string literal 'always' or 'emptyOnly' in the object passed to the call.`,
+        {
+          path: ['routes', firstConfiguration.sourcePath],
+          severity: 'warning',
+        },
+      ),
+    );
+  } else if (firstConfiguration?.strategy === 'emptyOnly') {
+    strategy = 'emptyOnly';
+  }
+
   const deferredSourcePaths = [...lazyClosure]
     .filter((path) => !eagerClosure.has(path))
     .map((path) => portablePath(projectRoot, path))
@@ -2856,6 +3135,7 @@ export function analyzeApplication(
           declaredRouteIndexing,
           declaredRouteSitemap,
           declaredRouteCaching,
+          strategy,
           deferredFor,
           diagnostics,
         ),

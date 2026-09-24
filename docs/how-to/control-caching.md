@@ -40,6 +40,12 @@ export const routes: Routes = [
 or a theme. `not-stored` is for one that does. A route that declares nothing keeps what routing
 concluded, and there is no value for shared, because a declaration only raises.
 
+A class on a parent route reaches its children the way Angular passes route data down: every child
+under the router's default, and under `paramsInheritanceStrategy: 'emptyOnly'` only a child with an
+empty path or one whose parent renders no component. A class the child states itself wins.
+`generate` reads the strategy from your router configuration, and where it cannot, reports `EQ1416`
+and passes the class to every child.
+
 A project that already classifies its routes names the field it has and maps its values:
 
 ```text
