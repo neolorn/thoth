@@ -193,6 +193,7 @@ export type {
   ClaimedRouteSegment,
   ComponentTemplateAnalysis,
   MessageUsage,
+  RouteCachingClass,
   RoutePolicyDeclaration,
   RouteProjection,
 } from './static-analysis.js';

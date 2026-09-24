@@ -557,7 +557,15 @@ const DEFAULT_ROUTE_INDEXING_VALUES = new Map<
   ['private', 'private'],
 ]);
 
-type RouteCachingClass = 'per-visitor' | 'not-stored';
+/**
+ * Who may keep a route's pages, as `RouteProjection.caching` reports it.
+ *
+ * `per-visitor` is a page that depends on something the request carries, such as a cookie: a
+ * browser may keep it and asks the server again before reusing it, and no shared cache may keep it.
+ * `not-stored` is a page nothing may keep, such as one behind a sign-in. There is no value for
+ * shared, because a declaration can only raise what routing concluded.
+ */
+export type RouteCachingClass = 'per-visitor' | 'not-stored';
 
 /**
  * How this owner's route data says which routes a shared cache may not keep.
