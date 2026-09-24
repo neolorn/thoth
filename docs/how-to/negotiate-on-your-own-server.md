@@ -73,8 +73,8 @@ describe('the request handler', () => {
       'public, max-age=300, must-revalidate',
     );
     // The address a visitor was sent to was chosen for that visitor, so it is not one a shared
-    // cache may hand to the next.
-    expect(entry.headers.get('cache-control')).toBe('private, no-store');
+    // cache may hand to the next, and a browser asks again before reusing it.
+    expect(entry.headers.get('cache-control')).toBe('private, no-cache');
   });
 });
 ```

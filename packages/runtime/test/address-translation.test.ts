@@ -350,7 +350,7 @@ describe('an address the resolver answers with a redirect', () => {
 
   it('leaves the 307 where it was, because the address states no locale', () => {
     // The one redirect whose answer depends on a preference rather than on the address, which is
-    // why it is marked `private-no-store` and why following it here would be a locale change
+    // why it is marked `private-no-cache` and why following it here would be a locale change
     // disguised as an address translation.
     expect(resolveLocalizedRoute('/', PREFIXED, PROJECTION)).toMatchObject({
       status: 'redirect',

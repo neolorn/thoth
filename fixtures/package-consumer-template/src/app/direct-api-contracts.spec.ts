@@ -239,7 +239,7 @@ describe('route and SEO contracts, called directly', () => {
         status: 'redirect',
         reason: 'locale-entry',
         httpStatus: 307,
-        cache: 'private-no-store',
+        cache: 'private-no-cache',
         locale: 'en-US',
         routeId: 'route:_index',
         location: '/en-us',

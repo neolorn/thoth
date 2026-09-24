@@ -17,10 +17,9 @@ import { routePolicy, appRouteProjection } from './localization.routes';
  * to `/en-us` as a request that resolved to nothing at all. Every visitor landed in English and
  * then had to switch by hand.
  *
- * The second half is cacheability, which follows from the first. The redirect was marked
- * `private, no-store` while carrying an answer that was the same for everybody, a wasted round
- * trip per visitor. Now the directive states what actually happened: constant answers are public,
- * and an answer that consulted this request's preference is this request's alone.
+ * The second half is cacheability, which follows from the first. One address carries every
+ * locale's answer under one cache key, so every answer is this visitor's alone, and a browser that
+ * keeps one asks again before reusing it, so a preference that has changed is followed.
  */
 
 describe('a URL that states no locale', () => {
@@ -33,7 +32,7 @@ describe('a URL that states no locale', () => {
       status: 'redirect',
       reason: 'locale-entry',
       httpStatus: 307,
-      cache: 'private-no-store',
+      cache: 'private-no-cache',
       locale: 'ar-EG',
       routeId: 'route:_index',
       location: '/ar-eg',
@@ -129,6 +128,9 @@ describe('what the redirect may be cached as', () => {
    * and passes a locale in, so Equator cannot name the header that varied. For a cookie-borne
    * preference `private` is the right answer regardless.
    *
+   * `no-cache` rather than `no-store`: nothing in a locale redirect is sensitive, and a browser
+   * that must revalidate before every reuse already follows a changed preference.
+   *
    * These pinned the opposite until 6.1, on the argument that a redirect that consulted nothing is
    * the same answer for every visitor. It is. That was never the question: it shares an address
    * with the redirects that are not.
@@ -136,7 +138,7 @@ describe('what the redirect may be cached as', () => {
   it('is never publicly cacheable, with or without a preference', () => {
     expect(
       resolveLocalizedRoute('/', routePolicy, appRouteProjection),
-    ).toMatchObject({ cache: 'private-no-store', locale: 'en-US' });
+    ).toMatchObject({ cache: 'private-no-cache', locale: 'en-US' });
 
     // Including the case that looks safest: `en-US` in, `en-US` out, an answer byte-identical to
     // the one above, and still not one a shared cache may hand to somebody else.
@@ -144,7 +146,7 @@ describe('what the redirect may be cached as', () => {
       resolveLocalizedRoute('/', routePolicy, appRouteProjection, {
         locale: 'en-US',
       }),
-    ).toMatchObject({ cache: 'private-no-store', locale: 'en-US' });
+    ).toMatchObject({ cache: 'private-no-cache', locale: 'en-US' });
   });
 
   it('carries the directive through to the HTTP descriptor', () => {
@@ -163,12 +165,12 @@ describe('what the redirect may be cached as', () => {
     expect(routeHttpDescriptor(constant)).toMatchObject({
       status: 307,
       location: '/en-us',
-      cache: 'private-no-store',
+      cache: 'private-no-cache',
     });
     expect(routeHttpDescriptor(negotiated)).toMatchObject({
       status: 307,
       location: '/ar-eg',
-      cache: 'private-no-store',
+      cache: 'private-no-cache',
     });
 
     // The control, so this pins locale entry rather than the descriptor being private about
@@ -205,7 +207,7 @@ describe('what the redirect may be cached as', () => {
       status: 'redirect',
       reason: 'locale-entry',
       httpStatus: 307,
-      cache: 'private-no-store',
+      cache: 'private-no-cache',
       locale: 'en-US',
       location: '/en-us/nothing-is-mounted-here',
     });
@@ -221,7 +223,7 @@ describe('what the redirect may be cached as', () => {
     ).toMatchObject({
       status: 'redirect',
       locale: 'ar-EG',
-      cache: 'private-no-store',
+      cache: 'private-no-cache',
       location: '/ar-eg/nothing-is-mounted-here',
     });
   });

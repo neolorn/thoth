@@ -54,6 +54,9 @@ describe('the cache headers Equator determines', () => {
       routeCacheHeaders(descriptorFor('consumer-defined-permanent'), FRESHNESS),
     ).toStrictEqual({ 'cache-control': 'public, max-age=86400' });
     expect(
+      routeCacheHeaders(descriptorFor('private-no-cache'), FRESHNESS),
+    ).toStrictEqual({ 'cache-control': 'private, no-cache' });
+    expect(
       routeCacheHeaders(descriptorFor('private-no-store'), FRESHNESS),
     ).toStrictEqual({ 'cache-control': 'private, no-store' });
   });
@@ -93,8 +96,8 @@ describe('the cache headers Equator determines', () => {
   /**
    * The whole input space, not a sample of it.
    *
-   * `LocalePreferenceSource` is a closed union of three and `cache` a closed union of four, so
-   * twelve pairs is every call that can be written. Nothing in that space produces `Vary: Cookie`,
+   * `LocalePreferenceSource` is a closed union of three and `cache` a closed union of five, so
+   * fifteen pairs is every call that can be written. Nothing in that space produces `Vary: Cookie`,
    * and nothing can be made to: there is no input anywhere on this surface that names a header, so
    * the mistake is unrepresentable rather than rejected. This asserts the consequence; the type is
    * what enforces it.
@@ -107,6 +110,7 @@ describe('the cache headers Equator determines', () => {
     ];
     const classifications: readonly RouteHttpDescriptor['cache'][] = [
       'public',
+      'private-no-cache',
       'private-no-store',
       'consumer-defined-permanent',
       'varies-by-locale-preference',
@@ -130,9 +134,9 @@ describe('the cache headers Equator determines', () => {
     expect(emitted).toStrictEqual(['Accept-Language']);
   });
 
-  it('gives a response that is never stored no way to become shared', () => {
+  it('gives a private response no way to become shared', () => {
     // The half the consumer owns must not reach into the half they do not. Three freshness
-    // settings that visibly move the `public` answer leave `private-no-store` untouched.
+    // settings that visibly move the `public` answer leave both private classes untouched.
     const settings = [
       { successMaxAge: 0, permanentRedirectMaxAge: 0 },
       { successMaxAge: 31_536_000, permanentRedirectMaxAge: 31_536_000 },
@@ -151,6 +155,12 @@ describe('the cache headers Equator determines', () => {
           localePreference: 'none',
         }),
       ).toStrictEqual({ 'cache-control': 'private, no-store' });
+      expect(
+        routeCacheHeaders(descriptorFor('private-no-cache'), {
+          ...setting,
+          localePreference: 'none',
+        }),
+      ).toStrictEqual({ 'cache-control': 'private, no-cache' });
       control.add(
         routeCacheHeaders(descriptorFor('public'), {
           ...setting,
@@ -178,6 +188,68 @@ describe('the cache headers Equator determines', () => {
         successMaxAge: 0,
       }),
     ).not.toThrow();
+  });
+});
+
+/**
+ * Locale entry is answered for one visitor and asked again on every reuse.
+ *
+ * `/` carries every locale's redirect under one cache key, so no shared cache may keep any of them,
+ * and a browser that kept the one it was given must ask again before using it: a visitor who
+ * changes preference is then sent where the new one points. Nothing about the answer is sensitive,
+ * so it is `no-cache` rather than `no-store`.
+ */
+describe('what locale entry may be cached as', () => {
+  const POLICY: LocaleUrlPolicy = {
+    kind: 'path-prefix',
+    defaultLocale: 'en-US',
+    locales: { 'en-US': 'en-us', 'ar-EG': 'ar-eg' },
+    prefixes: { 'en-us': 'en-US', 'ar-eg': 'ar-EG' },
+    aliases: {},
+    localeNeutralRoots: [],
+    omitDefaultPrefix: false,
+  };
+
+  const PROJECTION: RouteRuntimeProjection = {
+    generated: {
+      profile: 'equator-route-projection/1',
+      identity: 'sha256-BuiltLocaleAddressesTestIdentity01234567890',
+      routes: [{ id: 'route:about', path: 'about', parameterNames: [] }],
+    },
+  };
+
+  it('is private and revalidated, with a preference and without one', () => {
+    for (const context of [undefined, { locale: 'ar-EG' }]) {
+      const resolution = resolveLocalizedRoute(
+        '/about',
+        POLICY,
+        PROJECTION,
+        context,
+      );
+      expect(resolution).toMatchObject({
+        status: 'redirect',
+        reason: 'locale-entry',
+        cache: 'private-no-cache',
+      });
+      expect(
+        routeCacheHeaders(routeHttpDescriptor(resolution), {
+          ...FRESHNESS,
+          localePreference: 'cookie',
+        }),
+      ).toStrictEqual({ 'cache-control': 'private, no-cache' });
+    }
+  });
+
+  it('is the same for an address that names no route', () => {
+    // Entry answers before the question of whether the page exists, so the address that has no
+    // page is classified the same way as the one that does.
+    expect(resolveLocalizedRoute('/nowhere', POLICY, PROJECTION)).toMatchObject(
+      {
+        status: 'redirect',
+        reason: 'locale-entry',
+        cache: 'private-no-cache',
+      },
+    );
   });
 });
 

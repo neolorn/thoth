@@ -253,10 +253,13 @@ authoritative, and a release MUST NOT let a resolved preference override it.
 
 Entry-redirect cacheability is a property of the address. A cache key is the target URI unless a
 stored response names a varying header, and an entry address states no locale, so both of its
-answers share one key. A release MUST classify an entry redirect as private and not stored
-whether or not a preference was consulted, because marking either answer publicly cacheable lets a
-shared cache hand one visitor's language to the next, and marking the other private prevents
-nothing once the first is held under the same key.
+answers share one key. A release MUST classify an entry redirect as private and revalidated before
+every reuse whether or not a preference was consulted, because marking either answer publicly
+cacheable lets a shared cache hand one visitor's language to the next, and marking the other
+private prevents nothing once the first is held under the same key. It is revalidated rather than
+not stored because its answer depends on request state and is not sensitive: a browser may keep
+it, and asks the server again before using it, so a visitor whose preference has changed is sent
+where the new one points.
 
 Under a locale-neutral policy no address states a locale, so a release MUST classify a
 successful response as varying by locale preference, including a response that consulted nothing,

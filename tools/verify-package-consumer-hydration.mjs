@@ -2005,7 +2005,7 @@ async function exerciseLocaleContinuity(page) {
   });
   assert.equal(rememberedEntry.status(), 307);
   assert.equal(rememberedEntry.headers()['location'], '/ar-eg');
-  assert.equal(rememberedEntry.headers()['cache-control'], 'private, no-store');
+  assert.equal(rememberedEntry.headers()['cache-control'], 'private, no-cache');
   assert.equal(
     (await page.locator('[data-percent-model]').textContent())?.trim(),
     '0.5',
@@ -2814,7 +2814,7 @@ try {
   });
   assert.equal(localeEntry.status, 307);
   assert.equal(localeEntry.headers.get('location'), '/en-us');
-  assert.equal(localeEntry.headers.get('cache-control'), 'private, no-store');
+  assert.equal(localeEntry.headers.get('cache-control'), 'private, no-cache');
   // The same URL with a remembered preference. The visitor lands in Arabic instead of landing in
   // English and switching by hand, and this is the response that proves the one above cannot be
   // public. Different body, different `Location`, same cache key.
@@ -2827,7 +2827,7 @@ try {
   assert.equal(negotiatedEntry.headers.get('location'), '/ar-eg');
   assert.equal(
     negotiatedEntry.headers.get('cache-control'),
-    'private, no-store',
+    'private, no-cache',
   );
   assert.notEqual(
     localeEntry.headers.get('location'),

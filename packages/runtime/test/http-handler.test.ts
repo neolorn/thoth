@@ -260,6 +260,7 @@ describe('where the handler gets its answers', () => {
 
     expect([...seen].sort()).toStrictEqual([
       'consumer-defined-permanent',
+      'private-no-cache',
       'private-no-store',
       'public',
     ]);

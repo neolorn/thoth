@@ -575,14 +575,15 @@ export type RouteResolution =
       readonly reason: 'locale-entry' | 'canonical-correction' | 'replacement';
       readonly httpStatus: 307 | 308;
       readonly location: string;
-      // 'public' is reachable only for a redirect whose answer is the same for every request,
-      // which is a property of the address rather than of the request that arrived at it. A
-      // canonical correction qualifies: every request to a misspelled address gets the same
-      // correction. Locale entry never does: one address carries every locale's answer.
-      readonly cache:
-        | 'public'
-        | 'private-no-store'
-        | 'consumer-defined-permanent';
+      /**
+       * Who may keep this redirect, which is a property of the address rather than of the request.
+       *
+       * A permanent correction or replacement is the same answer for every request, so a shared
+       * cache may hold it for as long as the deployment says. Locale entry is `private-no-cache`:
+       * one address carries every locale's answer, so a browser may keep the one it was given and
+       * must ask again before reusing it, and no shared cache may keep any of them.
+       */
+      readonly cache: 'private-no-cache' | 'consumer-defined-permanent';
       readonly locale: string;
       /**
        * Absent when the redirect names no route, which locale entry does not require: an address
@@ -656,12 +657,23 @@ export interface RouteHttpDescriptor {
   readonly contentLanguage?: string;
   /** The `robots` value, present only where the page should not be indexed. */
   readonly robots?: 'noindex' | 'noindex, nofollow';
-  /** How it may be cached, which is a conclusion about the address rather than a setting. */
+  /**
+   * How it may be cached, which is a conclusion about the address rather than a setting.
+   *
+   * - `public`: the same document for every request, which a shared cache may hold.
+   * - `varies-by-locale-preference`: a document chosen by a preference the address does not
+   *   state, which a shared cache may hold per language only where the preference is negotiated.
+   * - `private-no-cache`: a document for one visitor, which a browser may keep and must revalidate
+   *   before every reuse.
+   * - `private-no-store`: a document nothing may keep.
+   * - `consumer-defined-permanent`: a permanent redirect, held as long as the deployment says.
+   */
   readonly cache:
     | 'public'
+    | 'varies-by-locale-preference'
+    | 'private-no-cache'
     | 'private-no-store'
-    | 'consumer-defined-permanent'
-    | 'varies-by-locale-preference';
+    | 'consumer-defined-permanent';
 }
 
 /**
@@ -669,7 +681,8 @@ export interface RouteHttpDescriptor {
  *
  * Only the two shared classifications take a number, and neither number is one Equator could pick:
  * how long a CDN should hold a page, or a permanent correction, is a fact about a deployment.
- * `private-no-store` takes none, because a response that is never stored has no freshness.
+ * Neither private classification takes one: a response nothing may keep has no freshness, and one a
+ * browser must revalidate before every reuse is never reused on freshness alone.
  *
  * The durations alone, without the one fact only the caller knows, because a caller that reads
  * the request derives that fact rather than being told it, and the handler in
@@ -775,6 +788,8 @@ export function routeCacheHeaders(
       return Object.freeze({
         'cache-control': `public, max-age=${wholeSeconds(freshness.permanentRedirectMaxAge, 'permanentRedirectMaxAge')}`,
       });
+    case 'private-no-cache':
+      return Object.freeze({ 'cache-control': 'private, no-cache' });
     case 'private-no-store':
       return Object.freeze({ 'cache-control': 'private, no-store' });
     case 'varies-by-locale-preference':
@@ -2154,7 +2169,7 @@ function resolvePathPrefixRoute(
             status: 'redirect',
             reason: 'locale-entry',
             httpStatus: 307,
-            cache: 'private-no-store',
+            cache: 'private-no-cache',
             locale: entryLocale,
             location: `/${policy.locales[entryLocale] as string}${parsed.segments.length === 0 ? '' : `/${encodedSegments(parsed.segments)}`}${parsed.canonicalSuffix}`,
           });
@@ -2218,7 +2233,13 @@ function resolvePathPrefixRoute(
       // `Vary` is not available as the alternative. Equator never sees the request, the host reads
       // the preference and passes a locale in, so Equator cannot name the header that varied, and
       // for a cookie-borne preference `private` is the right answer regardless.
-      const cache = 'private-no-store' as const;
+      //
+      // `no-cache` rather than `no-store`, because the answer depends on request state and is not
+      // sensitive. RFC 9111 section 5.2.2.4 lets a browser keep it and requires a request to the
+      // server before any reuse, and with no validator on a redirect that request is a full one, so
+      // a visitor who changes preference is sent where the new one points. Section 5.2.2.5 is for a
+      // response that must not be retained at all, which a locale redirect is not.
+      const cache = 'private-no-cache' as const;
       if (preferred !== undefined && preferred !== policy.defaultLocale) {
         const localized = localizedRouteSegments(
           projection,
@@ -4187,7 +4208,7 @@ function translates(policy: LocaleUrlPolicy): boolean {
  * `httpStatus` is the whole of the rule, and it comes from the resolution rather than from a list
  * of reasons kept in step by hand. The two `308`s, `canonical-correction` and `replacement`,
  * correct the address itself and answer the same for every request, which is what makes them safe
- * to apply without one. `locale-entry` is a `307` marked `private-no-store`: its answer depends on
+ * to apply without one. `locale-entry` is a `307` marked `private-no-cache`: its answer depends on
  * a preference the address does not state, so following it here would move a reader between locales
  * during what is meant to be an address translation. `gone` is not a redirect at all and keeps
  * falling through to the application's own not-found, which is where a retired page with no
