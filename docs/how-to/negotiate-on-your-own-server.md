@@ -85,7 +85,7 @@ to one you do.
 
 It also writes what a shared cache may do with each answer, from the same classification
 `routeCacheHeaders` publishes, which is
-[How to tell crawlers your pages are translations](control-indexing.md).
+[How to control how your pages are cached](control-caching.md).
 
 `toNodeListener`, `toWebRequest` and `writeNodeResponse` adapt between Node's request and response
 objects and the web ones, for a server that speaks the former.
@@ -265,4 +265,5 @@ you ship. That step is
 
 - [How to render on the server](render-on-the-server.md)
 - [How to tell crawlers your pages are translations](control-indexing.md)
+- [How to control how your pages are cached](control-caching.md)
 - [About how a locale is resolved](../explanation/about-locale-resolution.md)

@@ -29,6 +29,7 @@ Addresses and servers:
 - [How to negotiate a locale on your own server](how-to/negotiate-on-your-own-server.md)
 - [How to publish a sitemap](how-to/publish-a-sitemap.md)
 - [How to tell crawlers your pages are translations](how-to/control-indexing.md)
+- [How to control how your pages are cached](how-to/control-caching.md)
 
 Values and content:
 
