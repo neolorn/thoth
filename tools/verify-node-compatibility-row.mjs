@@ -514,38 +514,60 @@ async function main() {
   const angularCompilerEntry = harnessRequire.resolve('@angular/compiler');
   await import(pathToFileURL(angularCompilerEntry).href);
 
-  const runtime = await importPublicEntry(runtimeRoot, runtimeManifest, '.');
-  const forms = await importPublicEntry(
-    runtimeRoot,
-    runtimeManifest,
-    './forms',
-  );
-  const router = await importPublicEntry(
-    runtimeRoot,
-    runtimeManifest,
-    './router',
-  );
-  const testing = await importPublicEntry(
-    runtimeRoot,
-    runtimeManifest,
-    './testing',
-  );
-  // The server entry point, and the one with the most to prove here: it is the only Equator code
-  // that runs under Node in production rather than in a test, and the only one whose peer is
-  // optional *and* server-only. An entry point that fails to load on a supported Node row fails
-  // at a consumer's prerender, which is the least recoverable place to find out.
-  const ssr = await importPublicEntry(runtimeRoot, runtimeManifest, './ssr');
+  // Every module entry point the manifest publishes, read from it rather than listed here, so an
+  // entry point the manifest gains is loaded on every Node row without a second list to update.
+  // `./package.json` is the manifest, not a module.
+  const runtimeEntries = new Map();
+  for (const subpath of Object.keys(runtimeManifest.exports ?? {})) {
+    if (subpath === './package.json') continue;
+    runtimeEntries.set(
+      subpath,
+      await importPublicEntry(runtimeRoot, runtimeManifest, subpath),
+    );
+  }
+  const runtimeEntry = (subpath) => {
+    const loaded = runtimeEntries.get(subpath);
+    assert.notEqual(
+      loaded,
+      undefined,
+      `@neolorn/equator does not publish ${subpath}`,
+    );
+    return loaded;
+  };
+  const runtime = runtimeEntry('.');
   assertFunction(runtime, 'createLocalizationContext', '@neolorn/equator');
   assertFunction(runtime, 'provideLocalizationSetup', '@neolorn/equator');
-  assertFunction(forms, 'LocalizedInput', '@neolorn/equator/forms');
-  assertFunction(router, 'provideLocalizedRouter', '@neolorn/equator/router');
   assertFunction(
-    ssr,
+    runtimeEntry('./core'),
+    'localeProfile',
+    '@neolorn/equator/core',
+  );
+  assertFunction(
+    runtimeEntry('./forms'),
+    'LocalizedInput',
+    '@neolorn/equator/forms',
+  );
+  // `./http` and `./ssr` have the most to prove here: they are the Equator code that runs under Node
+  // in production rather than in a test, and `./ssr` is the only entry point whose peer is optional
+  // *and* server-only. An entry point that fails to load on a supported Node row fails at a
+  // server's start or a consumer's prerender, the least recoverable places to find out.
+  assertFunction(
+    runtimeEntry('./http'),
+    'createLocaleRequestHandler',
+    '@neolorn/equator/http',
+  );
+  assertFunction(
+    runtimeEntry('./router'),
+    'provideLocalizedRouter',
+    '@neolorn/equator/router',
+  );
+  assertFunction(
+    runtimeEntry('./ssr'),
     'provideLocalizedServerRendering',
     '@neolorn/equator/ssr',
   );
   assertFunction(
-    testing,
+    runtimeEntry('./testing'),
     'provideLocalizationTesting',
     '@neolorn/equator/testing',
   );
