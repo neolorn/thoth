@@ -18,9 +18,11 @@ import {
   platformBrowserTesting,
 } from '@angular/platform-browser/testing';
 import {
+  PRIMARY_OUTLET,
   Router,
   provideRouter,
   withRouterConfig,
+  type ActivatedRouteSnapshot,
   type Routes,
 } from '@angular/router';
 import ts from 'typescript';
@@ -186,12 +188,8 @@ function evaluate(source: string): Routes {
   return module.exports.routes;
 }
 
-/** The data Angular's router gives the page at `address`. */
-async function dataAt(
-  routes: Routes,
-  strategy: Strategy,
-  address: string,
-): Promise<Readonly<Record<string, unknown>>> {
+/** Angular's router over `routes`, as the application configures it. */
+function routerFor(routes: Routes, strategy: Strategy): Router {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -204,11 +202,34 @@ async function dataAt(
       provideLocationMocks(),
     ],
   });
-  const router = TestBed.inject(Router);
+  return TestBed.inject(Router);
+}
+
+/** Every route Angular renders at `address`, the page and whatever renders beside it. */
+async function renderedAt(
+  routes: Routes,
+  strategy: Strategy,
+  address: string,
+): Promise<ActivatedRouteSnapshot> {
+  const router = routerFor(routes, strategy);
   expect(await router.navigateByUrl(address)).toBe(true);
-  let page = router.routerState.snapshot.root;
-  while (page.firstChild !== null) page = page.firstChild;
-  return page.data;
+  return router.routerState.snapshot.root;
+}
+
+/** The data Angular's router gives the page at `address`. */
+async function dataAt(
+  routes: Routes,
+  strategy: Strategy,
+  address: string,
+): Promise<Readonly<Record<string, unknown>>> {
+  // The page is the deepest route in the primary outlet. A route in a named outlet renders beside
+  // it.
+  let page = await renderedAt(routes, strategy, address);
+  for (;;) {
+    const next = page.children.find(({ outlet }) => outlet === PRIMARY_OUTLET);
+    if (next === undefined) return page.data;
+    page = next;
+  }
 }
 
 /** The row the generated table must hold for data Angular gave a page, under the policies above. */
@@ -552,5 +573,311 @@ describe('what a route inherits', () => {
       'route:console',
       'route:admin.users',
     ]);
+  });
+});
+
+// Every shape that decides which route renders at an address another route shares, each commented
+// where it is declared.
+const SHARED_ROUTES = routeFile(`[
+  // An empty-path route in a named outlet renders beside the page, which is its parent.
+  { path: 'aside', component: Page, data: { equatorIndexing: 'non-indexable' }, children: [
+    { path: '', outlet: 'aux', component: Page, data: { equatorIndexing: 'private' } },
+  ] },
+  // Written first, it still leaves the page to the empty-path route in the primary outlet.
+  { path: 'beside', component: Page, children: [
+    { path: '', outlet: 'aux', component: Page, data: { equatorIndexing: 'private' } },
+    { path: '', component: Page, data: { equatorIndexing: 'non-indexable' } },
+  ] },
+  // An outlet named through a const is read through it.
+  { path: 'side', component: Page, data: { equatorCaching: 'per-visitor' }, children: [
+    { path: '', outlet: SIDE, component: Page, data: { equatorCaching: 'not-stored' } },
+  ] },
+  // A wildcard Angular reaches first renders, and receives what a child with a path of its own
+  // does.
+  { path: 'caught', component: Page, data: { equatorCaching: 'per-visitor' }, children: [
+    { path: '**', component: Page, data: { equatorIndexing: 'non-indexable' } },
+    { path: '', component: Page, data: { equatorIndexing: 'private' } },
+  ] },
+  // A wildcard names no address, so its parent's identity names the page.
+  { path: 'fallback', component: Page, data: { equatorRouteId: 'route:lost-and-found', freshness: 'daily' }, children: [
+    { path: '**', component: Page, data: { equatorRouteId: 'route:anything', equatorIndexing: 'non-indexable' } },
+  ] },
+  // A child that needs a segment does not render at its parent's address, whether its path is
+  // written in place or through a const, and a guard list with nothing in it guards nothing.
+  { path: 'listing', component: Page, children: [
+    { path: ':id', component: Page, data: { equatorIndexing: 'private' } },
+    { path: LIST, component: Page, data: { equatorIndexing: 'private' } },
+    { path: '', canMatch: [], component: Page, data: { equatorIndexing: 'non-indexable' } },
+  ] },
+]`).replace(
+  'export class Page {}',
+  "export class Page {}\nconst SIDE = 'aux';\nconst LIST = 'list';",
+);
+
+// What Angular decides when the page is visited. `allow` is read then, so a test can show both
+// answers.
+const DECIDED_ROUTES = routeFile(`[
+  { path: 'matched', component: Page, data: { equatorCaching: 'per-visitor', freshness: 'daily' }, children: [
+    { matcher: () => (allow() ? { consumed: [] } : null), component: Page, data: { equatorIndexing: 'non-indexable' } },
+    { path: '', component: Page },
+  ] },
+  { path: 'guarded', component: Page, data: { equatorCaching: 'per-visitor', freshness: 'daily' }, children: [
+    { path: '', canMatch: [() => allow()], component: Page, data: { equatorIndexing: 'non-indexable' } },
+    { path: '', component: Page },
+  ] },
+  // Nothing below a redirect renders at the address.
+  { path: 'moved', component: Page, children: [
+    { path: '', redirectTo: 'here', pathMatch: 'full', data: { equatorIndexing: 'private' } },
+    { path: 'here', component: Page },
+  ] },
+]`).replace(
+  'export class Page {}',
+  'export class Page {}\nconst allow = (): boolean => (globalThis as { allow?: boolean }).allow === true;',
+);
+
+/** Every route Angular activates below `snapshot`, in every outlet, by the file its data names. */
+function renderedFiles(snapshot: ActivatedRouteSnapshot): readonly string[] {
+  const files: string[] = [];
+  const visit = (node: ActivatedRouteSnapshot): void => {
+    const file = node.data['file'];
+    if (typeof file === 'string') files.push(`src/${file}.ts`);
+    node.children.forEach(visit);
+  };
+  visit(snapshot);
+  return files.sort();
+}
+
+function diagnosticsNaming(
+  analysed: Analysed,
+  code: string,
+  address: string,
+): readonly ToolkitDiagnostic[] {
+  return analysed.diagnostics.filter(
+    (diagnostic) =>
+      diagnostic.code === code &&
+      diagnostic.summary.includes(JSON.stringify(address)),
+  );
+}
+
+describe('the page at a shared address', () => {
+  it.each<[string, Strategy]>([
+    ['as Angular does by default', undefined],
+    ["under 'always'", 'always'],
+    ["under 'emptyOnly'", 'emptyOnly'],
+  ])('is the route Angular renders there, %s', async (_label, strategy) => {
+    const analysed = await analyse({
+      'src/app.routes.ts': SHARED_ROUTES,
+      'src/app.config.ts': configFile(strategyLine(strategy)),
+    });
+    const routes = evaluate(SHARED_ROUTES);
+
+    expect(analysed.routes.map(({ id }) => id).sort()).toEqual(
+      [
+        'route:aside',
+        'route:beside',
+        'route:side',
+        'route:caught',
+        'route:lost-and-found',
+        'route:listing',
+        'route:listing._',
+      ].sort(),
+    );
+    const expected: Record<string, Row> = {};
+    for (const route of analysed.routes) {
+      const address = `/${route.path
+        .split('/')
+        .map((segment) => (segment.startsWith(':') ? 'x1' : segment))
+        .join('/')}`;
+      expected[route.id] = rowFor(await dataAt(routes, strategy, address));
+    }
+    expect(table(analysed)).toEqual(expected);
+    // The const path is reported for what it hides below it, and the empty-path child the
+    // wildcard hides for never rendering.
+    expect([...codes(analysed)].sort()).toEqual(['EQ1405', 'EQ1406']);
+    expect(diagnosticsNaming(analysed, 'EQ1405', '/caught')).toEqual([
+      expect.objectContaining({ severity: 'warning' }),
+    ]);
+  });
+
+  it('is answered as private and not-stored where Angular decides it when the page is visited', async () => {
+    const analysed = await analyse({
+      'src/app.routes.ts': DECIDED_ROUTES,
+      'src/app.config.ts': configFile(),
+    });
+    const routes = evaluate(DECIDED_ROUTES);
+    const page = async (allow: boolean, address: string): Promise<Row> => {
+      (globalThis as { allow?: boolean }).allow = allow;
+      try {
+        return rowFor(await dataAt(routes, undefined, address));
+      } finally {
+        delete (globalThis as { allow?: boolean }).allow;
+      }
+    };
+
+    for (const address of ['/matched', '/guarded']) {
+      expect(await page(true, address)).not.toEqual(await page(false, address));
+    }
+    const rows = table(analysed);
+    for (const id of ['route:matched', 'route:guarded']) {
+      expect(rows[id]).toEqual({
+        caching: 'not-stored',
+        indexing: 'private',
+        sitemap: undefined,
+      });
+    }
+    for (const [address, cause] of [
+      ['/matched', "a child's `matcher`"],
+      ['/guarded', "a child's `canMatch` guard"],
+    ] as const) {
+      for (const code of ['EQ1413', 'EQ1414']) {
+        expect(diagnosticsNaming(analysed, code, address)).toEqual([
+          expect.objectContaining({
+            severity: 'warning',
+            summary: expect.stringContaining(cause),
+          }),
+        ]);
+      }
+    }
+    expect(rows['route:moved']?.indexing).not.toBe('private');
+    expect(diagnosticsNaming(analysed, 'EQ1413', '/moved')).toEqual([]);
+    expect(diagnosticsNaming(analysed, 'EQ1414', '/moved')).toEqual([]);
+  });
+
+  it('is answered as private and not-stored where a value the build cannot read decides it', async () => {
+    const analysed = await analyse({
+      'src/app.routes.ts': routeFile(`[
+        { path: 'slot', component: Page, children: [{ path: '', outlet: SLOT, component: Page }] },
+        { path: 'where', component: Page, children: [{ path: WHERE, component: Page }, { path: '', component: Page }] },
+        { path: 'spread', component: Page, children: [{ path: '', ...extra, component: Page }] },
+        { path: 'sent', component: Page, children: [{ path: '', ...target }, { path: 'there', component: Page }] },
+      ]`).replace(
+        'export class Page {}',
+        [
+          'export class Page {}',
+          "let SLOT = 'aux';",
+          "let WHERE = 'list';",
+          'declare const extra: { canMatch?: (() => boolean)[] };',
+          'declare const target: { redirectTo?: string; component?: typeof Page };',
+        ].join('\n'),
+      ),
+      'src/app.config.ts': configFile(),
+    });
+
+    const rows = table(analysed);
+    for (const [address, cause] of [
+      ['/slot', 'a child whose `outlet` the build cannot read'],
+      ['/where', 'a child whose `path` is not a string literal'],
+      [
+        '/spread',
+        'a child whose `canMatch` a spread or a computed key may set',
+      ],
+      [
+        '/sent',
+        'a child whose `redirectTo` a spread or a computed key may set',
+      ],
+    ] as const) {
+      expect(rows[`route:${address.slice(1)}`]).toEqual({
+        caching: 'not-stored',
+        indexing: 'private',
+        sitemap: undefined,
+      });
+      for (const code of ['EQ1413', 'EQ1414']) {
+        expect(diagnosticsNaming(analysed, code, address)).toEqual([
+          expect.objectContaining({ summary: expect.stringContaining(cause) }),
+        ]);
+      }
+    }
+    // The outlet and the path are also reported where they are written, for the routes they hide.
+    expect(
+      analysed.diagnostics.filter(
+        ({ code, summary }) =>
+          code === 'EQ1406' &&
+          (summary.includes('`outlet`') || summary.includes('computes its')),
+      ),
+    ).toHaveLength(2);
+  });
+
+  it('is never a route in a named outlet, and a route there with an address of its own is left out and reported', async () => {
+    const source = routeFile(`[
+      { path: 'shop', component: Page, children: [
+        { path: 'chat', outlet: 'aux', component: Page, children: [{ path: 'thread', component: Page }] },
+        { path: '', outlet: 'aux', component: Page, children: [{ path: 'help', component: Page }] },
+        { path: 'cart', component: Page },
+      ] },
+    ]`);
+    const analysed = await analyse({
+      'src/app.routes.ts': source,
+      'src/app.config.ts': configFile(),
+    });
+    const router = routerFor(evaluate(source), undefined);
+
+    await expect(router.navigateByUrl('/shop/chat')).rejects.toThrow(/NG04002/);
+    expect(analysed.routes.map(({ id }) => id)).toEqual([
+      'route:shop',
+      'route:shop.cart',
+    ]);
+    const reported = analysed.diagnostics.filter(
+      ({ code }) => code === 'EQ1406',
+    );
+    expect(reported).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        summary: expect.stringMatching(
+          /^The route "chat" under "\/shop" renders in the named outlet "aux"/,
+        ),
+      }),
+      expect.objectContaining({
+        severity: 'warning',
+        summary: expect.stringMatching(
+          /^The route "help" under "\/shop" renders in the named outlet "aux"/,
+        ),
+      }),
+    ]);
+  });
+
+  it('brings the code of every route that renders beside a page with the page', async () => {
+    const source = routeFile(`[
+      { path: '', outlet: 'banner', loadComponent: () => import('./banner').then((m) => m.Banner) },
+      { path: 'shop', component: Page, children: [
+        { path: '', outlet: 'aux', loadComponent: () => import('./aside').then((m) => m.Aside) },
+        { path: '', outlet: 'aux', loadComponent: () => import('./spare').then((m) => m.Spare) },
+        { path: '', component: Page },
+        { path: 'cart', component: Page },
+      ] },
+      { path: 'about', component: Page },
+    ]`);
+    const analysed = await analyse({
+      'src/app.routes.ts': source,
+      'src/app.config.ts': configFile(),
+      'src/banner.ts': 'export class Banner {}\n',
+      'src/aside.ts': 'export class Aside {}\n',
+      'src/spare.ts': 'export class Spare {}\n',
+    });
+    // Angular's router over the same table, with each loaded component named in its data instead,
+    // because what is asked here is which routes render, not what loading them does.
+    const routes = evaluate(
+      source.replace(
+        /loadComponent: \(\) => import\('\.\/(\w+)'\)\.then\(\(m\) => m\.\w+\)/g,
+        "component: Page, data: { file: '$1' }",
+      ),
+    );
+
+    for (const route of analysed.routes) {
+      expect(route.deferredSourcePaths).toEqual(
+        renderedFiles(await renderedAt(routes, undefined, `/${route.path}`)),
+      );
+    }
+    expect(
+      Object.fromEntries(
+        analysed.routes.map(({ id, deferredSourcePaths }) => [
+          id,
+          deferredSourcePaths,
+        ]),
+      ),
+    ).toEqual({
+      'route:shop': ['src/aside.ts', 'src/banner.ts'],
+      'route:shop.cart': ['src/aside.ts', 'src/banner.ts'],
+      'route:about': ['src/banner.ts'],
+    });
   });
 });

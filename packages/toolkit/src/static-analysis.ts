@@ -1978,6 +1978,54 @@ interface RouteNode {
    * parent's.
    */
   readonly rendersComponent: boolean;
+  /** The outlet the route renders in, or `undefined` where the build cannot read it. */
+  readonly outlet: string | undefined;
+  /**
+   * Whether the route and every route above it render in the primary outlet. A route in a named
+   * outlet renders beside a page and is never one, and its addresses are the outlet's.
+   */
+  readonly inPrimaryOutlet: boolean;
+  /**
+   * The route's children in the order they are written, as Angular meets them at the route's own
+   * address. Filled while the children are visited, after the route itself.
+   */
+  readonly children: RouteChild[];
+}
+
+/** Angular's name for the outlet a route renders in when it names none (`getOutlet`). */
+const PRIMARY_OUTLET = 'primary';
+
+/**
+ * A child route as Angular meets it where its parent has consumed the last segment of an address:
+ * whether it can render there, and what decides that (`Recognizer.processSegment`,
+ * `@angular/router/fesm2022/_router-chunk.mjs:3066-3080`).
+ */
+interface RouteChild {
+  readonly node: RouteNode;
+  /**
+   * What matches an address with nothing left in it. An empty path does, and so does a wildcard
+   * (`defaultUrlMatcher`, `:58-98`). A `matcher` is a function the build cannot run, and a `path`
+   * that is not a string literal is one Equator does not name.
+   */
+  readonly matches:
+    | 'empty'
+    | 'wildcard'
+    | 'nothing'
+    | 'matcher'
+    | 'computed'
+    | 'unreadable';
+  /** `undefined` where a spread or a computed key may set `redirectTo`. */
+  readonly redirects: boolean | undefined;
+  /**
+   * Whether a `canMatch` guard may turn the route down when the page is visited, or `undefined`
+   * where a spread or a computed key may set one.
+   */
+  readonly guarded: boolean | undefined;
+  /** The lazy entry modules on the child's path from the root, innermost last. */
+  readonly lazyEntries: readonly string[];
+  readonly sourcePath: string;
+  readonly start: number;
+  readonly end: number;
 }
 
 /**
@@ -2024,6 +2072,7 @@ interface RouteDraft {
  */
 function resolveRouteIdentities(
   drafts: readonly RouteDraft[],
+  rootRoutes: readonly RouteChild[],
   policy: RouteIndexingPolicy | undefined,
   sitemapPolicy: RouteSitemapPolicy | undefined,
   cachingPolicy: RouteCachingPolicy | undefined,
@@ -2195,36 +2244,190 @@ function resolveRouteIdentities(
     if (policy !== undefined && !policy.readable) return 'private';
     return values.get(found.reading.value) ?? 'indexable';
   };
-  // Angular tries routes in the order they are declared and then descends through `path: ''`
-  // children, so the page at a shared address is the deepest route below the first one declared
-  // there. Every route between two at one address is at that address too, so each step down is a
-  // direct child. The first draft at an address is that route or one on its way down, even where
-  // a path is written after its children, because a route's children are written inside it.
+  // The first draft at an address is the route that consumed its last segment or one on its way
+  // down, even where a path is written after its children, because a route's children are written
+  // inside it. A route in a named outlet has no address of its own a page could be at.
   const atAddress = new Map<string, RouteDraft[]>();
   for (const draft of drafts) {
+    if (!draft.node.inPrimaryOutlet) continue;
     const group = atAddress.get(draft.path);
     if (group === undefined) atAddress.set(draft.path, [draft]);
     else group.push(draft);
   }
+  // The page is the route Angular renders at the address. Below the route that consumed the last
+  // segment, Angular tries the children in the order they are written, in the primary outlet only,
+  // and the first that matches nothing left renders: an empty path or a wildcard. A redirect sends
+  // the visitor elsewhere, so nothing below it is the page. Where a `matcher` or a `canMatch`
+  // guard decides when the page is visited, or a value the build cannot read decides, the build
+  // cannot know which route renders, and answers the address as it answers a value it cannot read.
+  const undecided = (child: RouteChild): string | undefined => {
+    if (child.matches === 'matcher') {
+      return "a child's `matcher`, which runs when the page is visited";
+    }
+    if (child.matches === 'computed') {
+      return 'a child whose `path` is not a string literal';
+    }
+    if (child.matches === 'unreadable') {
+      return 'a child whose `path` or `matcher` a spread or a computed key may set';
+    }
+    if (child.node.outlet === undefined) {
+      return 'a child whose `outlet` the build cannot read';
+    }
+    if (child.redirects === undefined) {
+      return 'a child whose `redirectTo` a spread or a computed key may set';
+    }
+    // Angular runs no `canMatch` guard on a redirect (`expandSegmentAgainstRouteUsingRedirect`).
+    if (child.redirects) return undefined;
+    if (child.guarded === undefined) {
+      return 'a child whose `canMatch` a spread or a computed key may set';
+    }
+    return child.guarded
+      ? "a child's `canMatch` guard, which runs when the page is visited"
+      : undefined;
+  };
+  // What renders with a page is more than the page. At every level on the way down, Angular gives
+  // each named outlet the first empty-path route written for it (`split`,
+  // `addEmptyPathsToChildrenIfNeeded`, `createChildrenForEmptyPaths`, `sortByMatchingOutlets`),
+  // and that route renders beside the page with whatever renders below it. Where the build cannot
+  // tell which route renders, every one that may is counted: a scope loaded and not used costs a
+  // download, and one used and not loaded renders text that never arrives.
+  const renders = (child: RouteChild, into: Set<string>): void => {
+    for (const entry of child.lazyEntries) into.add(entry);
+    if (child.redirects === true) return;
+    beside(child.node.children, into);
+    for (const next of child.node.children) {
+      const outlet = next.node.outlet;
+      if (outlet !== undefined && outlet !== PRIMARY_OUTLET) continue;
+      if (next.matches === 'nothing') continue;
+      renders(next, into);
+      if (undecided(next) === undefined) break;
+    }
+  };
+  const beside = (children: readonly RouteChild[], into: Set<string>): void => {
+    const settled = new Set<string>();
+    for (const child of children) {
+      const outlet = child.node.outlet;
+      if (outlet === PRIMARY_OUTLET) continue;
+      if (outlet !== undefined && settled.has(outlet)) continue;
+      if (
+        child.matches !== 'empty' &&
+        child.matches !== 'computed' &&
+        child.matches !== 'unreadable'
+      ) {
+        continue;
+      }
+      renders(child, into);
+      if (
+        outlet !== undefined &&
+        child.matches === 'empty' &&
+        undecided(child) === undefined
+      ) {
+        settled.add(outlet);
+      }
+    }
+  };
+  // The root routes of each table on their own, because the order of two tables spread into one
+  // is not read, and counting a route that another table's route displaces only costs a download.
+  const rootsByTable = new Map<ts.VariableDeclaration, RouteChild[]>();
+  for (const child of rootRoutes) {
+    const group = rootsByTable.get(child.node.table);
+    if (group === undefined) rootsByTable.set(child.node.table, [child]);
+    else group.push(child);
+  }
+  const besideEveryPage = new Set<string>();
+  for (const group of rootsByTable.values()) beside(group, besideEveryPage);
   const pages: RouteDraft[] = [];
+  const decided = new Set<RouteDraft>();
   for (const group of atAddress.values()) {
-    let page = group[0] as RouteDraft;
-    for (;;) {
-      const current = page;
-      const deeper = group.find(({ node }) => node.parent === current.node);
-      if (deeper === undefined) break;
-      page = deeper;
+    const top = group[0] as RouteDraft;
+    const address = JSON.stringify(`/${top.path}`);
+    let page = top;
+    let decidedBy: string | undefined;
+    descend: for (;;) {
+      let taken: RouteChild | undefined;
+      for (const child of page.node.children) {
+        const outlet = child.node.outlet;
+        if (outlet !== undefined && outlet !== PRIMARY_OUTLET) continue;
+        if (taken !== undefined) {
+          if (
+            taken.matches === 'wildcard' &&
+            outlet === PRIMARY_OUTLET &&
+            child.matches === 'empty'
+          ) {
+            diagnostics.push(
+              toolkitDiagnostic(
+                'EQ1405',
+                `Route ${address} has a wildcard child written before an empty-path one, and Angular tries them in that order, so the wildcard renders at every address the empty-path child could and the empty-path child never renders. Write the empty-path child before the wildcard.`,
+                { path: ['routes', child.sourcePath], severity: 'warning' },
+              ),
+            );
+          }
+          continue;
+        }
+        if (child.matches === 'nothing') continue;
+        decidedBy = undecided(child);
+        if (decidedBy !== undefined) break descend;
+        taken = child;
+      }
+      if (taken === undefined || taken.redirects === true) break;
+      page = Object.freeze({
+        node: taken.node,
+        path: top.path,
+        parameterNames: top.parameterNames,
+        lazyEntries: taken.lazyEntries,
+        sourcePath: taken.sourcePath,
+        start: taken.start,
+        end: taken.end,
+      });
+    }
+    const alongside = new Set([...page.lazyEntries, ...besideEveryPage]);
+    for (
+      let node: RouteNode | undefined = page.node;
+      node !== undefined;
+      node = node.parent
+    ) {
+      beside(node.children, alongside);
+    }
+    if (decidedBy !== undefined) {
+      for (const child of page.node.children) {
+        const outlet = child.node.outlet;
+        if (outlet !== undefined && outlet !== PRIMARY_OUTLET) continue;
+        if (child.matches === 'nothing') continue;
+        renders(child, alongside);
+        if (undecided(child) === undefined) break;
+      }
+    }
+    if (alongside.size > page.lazyEntries.length) {
+      page = Object.freeze({
+        ...page,
+        lazyEntries: Object.freeze([...alongside]),
+      });
+    }
+    if (decidedBy !== undefined) {
+      decided.add(page);
+      diagnostics.push(
+        toolkitDiagnostic(
+          'EQ1414',
+          `Which route renders ${address} depends on ${decidedBy}, so the build cannot read which indexing class the page has. The address is answered as private.`,
+          { path: ['routes', page.sourcePath], severity: 'warning' },
+        ),
+        toolkitDiagnostic(
+          'EQ1413',
+          `Which route renders ${address} depends on ${decidedBy}, so the build cannot read which caching class the page has. The address is answered as not-stored.`,
+          { path: ['routes', page.sourcePath], severity: 'warning' },
+        ),
+      );
     }
     pages.push(page);
   }
   // An identity names an address, so the deepest route at the page's address that declares one
-  // names it, and no route's identity reaches a child at another address.
+  // names it, and no route's identity reaches a child at another address. A wildcard renders at
+  // the address without being at it, and an identity it declares would name every address it
+  // takes, so it names none of them.
   const declaredIdOf = (draft: RouteDraft): RouteDataReading => {
-    for (
-      let node: RouteNode | undefined = draft.node;
-      node !== undefined && node.path === draft.path;
-      node = node.parent
-    ) {
+    let node: RouteNode | undefined = draft.node;
+    while (node !== undefined && node.path !== draft.path) node = node.parent;
+    for (; node !== undefined && node.path === draft.path; node = node.parent) {
       const reading = node.read('equatorRouteId');
       if (reading.kind !== 'absent') return reading;
     }
@@ -2304,13 +2507,20 @@ function resolveRouteIdentities(
     const claim = claimOf(entry.draft);
     // Asked once for the same reason: it reports a value it cannot use.
     const caching = cachingOf(entry.draft);
+    const indexing = classify(entry.draft);
+    // Still read above, so a value the route writes that cannot be used is reported either way.
+    const certain = !decided.has(entry.draft);
     projections.push(
       Object.freeze({
         id: entry.id,
         ...projected,
-        indexing: classify(entry.draft),
-        ...(caching === undefined ? {} : { caching }),
-        ...(claim === undefined ? {} : { sitemap: claim }),
+        indexing: certain ? indexing : 'private',
+        ...(!certain
+          ? { caching: 'not-stored' as const }
+          : caching === undefined
+            ? {}
+            : { caching }),
+        ...(claim === undefined || !certain ? {} : { sitemap: claim }),
         deferredSourcePaths: deferredFor(entry.draft),
       }),
     );
@@ -2337,6 +2547,7 @@ function analyzeRoutes(
   checker: ts.TypeChecker,
   sourceFile: ts.SourceFile,
   routes: RouteDraft[],
+  rootRoutes: RouteChild[],
   program: ts.Program,
   lazyEntryFiles: Set<ts.SourceFile>,
   diagnostics: ToolkitDiagnostic[],
@@ -2431,6 +2642,69 @@ function analyzeRoutes(
       ? { kind: 'hidden', reason: 'computed' }
       : { kind: 'literal', path: literalPath };
   };
+  // Only an empty path and a bare wildcard match an address with nothing left in it
+  // (`defaultUrlMatcher`, `@angular/router/fesm2022/_router-chunk.mjs:58-98`), so a `path` Equator
+  // does not name is still known to match nothing there when the `const` it names says so.
+  const matchesNothingLeft = (
+    object: ts.ObjectLiteralExpression,
+    declared: RouteAddress,
+  ): RouteChild['matches'] => {
+    if (declared.kind === 'literal') {
+      const path = declared.path.text;
+      return path === '' ? 'empty' : path === '**' ? 'wildcard' : 'nothing';
+    }
+    if (declared.kind === 'refused') {
+      return declared.reason === 'both' ? 'matcher' : 'nothing';
+    }
+    if (declared.reason !== 'computed') return declared.reason;
+    const written = setter(object, 'path');
+    const path =
+      typeof written === 'string'
+        ? undefined
+        : ts.isPropertyAssignment(written)
+          ? stringThrough(checker, written.initializer)
+          : ts.isShorthandPropertyAssignment(written)
+            ? stringThrough(checker, written)
+            : undefined;
+    return path === undefined || path === '' || path === '**'
+      ? 'computed'
+      : 'nothing';
+  };
+  // Angular's own reading (`getOutlet`): a route that names no outlet, or names an empty one,
+  // renders in the primary outlet.
+  const outletOf = (object: ts.ObjectLiteralExpression): string | undefined => {
+    const written = setter(object, 'outlet');
+    if (written === 'absent') return PRIMARY_OUTLET;
+    const outlet =
+      typeof written === 'string'
+        ? undefined
+        : ts.isPropertyAssignment(written)
+          ? stringThrough(checker, written.initializer)
+          : ts.isShorthandPropertyAssignment(written)
+            ? stringThrough(checker, written)
+            : undefined;
+    return outlet === '' ? PRIMARY_OUTLET : outlet;
+  };
+  // An empty list guards nothing (`runCanMatchGuards`, `:2606-2608`).
+  const guardedOf = (
+    object: ts.ObjectLiteralExpression,
+  ): boolean | undefined => {
+    const written = setter(object, 'canMatch');
+    if (written === 'absent') return false;
+    if (written === 'unreadable') return undefined;
+    const guards = ts.isPropertyAssignment(written)
+      ? throughBindings(checker, written.initializer, new Set())
+      : ts.isShorthandPropertyAssignment(written)
+        ? throughBindings(checker, written, new Set())
+        : undefined;
+    return !(
+      guards !== undefined &&
+      ts.isArrayLiteralExpression(guards) &&
+      guards.elements.length === 0
+    );
+  };
+  // Reported once for the whole of a subtree Equator does not name because of its outlet.
+  const outletReported = new Set<RouteNode>();
   const join = (parent: string, child: string): string =>
     [parent, child].filter((segment) => segment.length > 0).join('/');
   const portableSourcePath = portablePath(projectRoot, sourceFile.fileName);
@@ -2570,6 +2844,7 @@ function analyzeRoutes(
 
       const redirect = property(unwrapped, 'redirectTo');
       const children = setter(unwrapped, 'children');
+      const outlet = outletOf(unwrapped);
       const node: RouteNode = Object.freeze({
         parent,
         path: fullPath,
@@ -2578,7 +2853,35 @@ function analyzeRoutes(
         inheritsUnderEitherStrategy:
           ownPath === '' || parent?.rendersComponent === false,
         rendersComponent: rendersComponent(unwrapped),
+        outlet,
+        inPrimaryOutlet:
+          (parent?.inPrimaryOutlet ?? true) && outlet === PRIMARY_OUTLET,
+        children: [],
       });
+      const redirects = setter(unwrapped, 'redirectTo');
+      (parent?.children ?? rootRoutes).push(
+        Object.freeze({
+          node,
+          matches: matchesNothingLeft(unwrapped, declared),
+          redirects:
+            redirects === 'absent'
+              ? false
+              : redirects === 'unreadable'
+                ? undefined
+                : true,
+          guarded: guardedOf(unwrapped),
+          lazyEntries,
+          sourcePath: portableSourcePath,
+          start:
+            declared.kind === 'literal'
+              ? declared.path.getStart(sourceFile)
+              : unwrapped.getStart(sourceFile),
+          end:
+            declared.kind === 'literal'
+              ? declared.path.getEnd()
+              : unwrapped.getEnd(),
+        }),
+      );
       const spelled = 'path' in declared ? declared.path.text : undefined;
       const address =
         fullPath !== undefined
@@ -2699,6 +3002,38 @@ function analyzeRoutes(
             { path: ['routes', portableSourcePath], severity: 'warning' },
           ),
         );
+      }
+      // A route in a named outlet renders beside a page rather than as one, and the part of a URL
+      // that addresses an outlet is not a page address, so none of it is in the localized route
+      // table. Said once, at the subtree's first route with an address of its own, because a
+      // named empty-path route with nothing below it is how a layout renders beside every page.
+      let covered = false;
+      for (
+        let above = parent;
+        above !== undefined && !above.inPrimaryOutlet;
+        above = above.parent
+      ) {
+        covered ||= outletReported.has(above);
+      }
+      if (parentPath !== undefined && declared.kind === 'literal' && !covered) {
+        if (outlet === undefined) {
+          outletReported.add(node);
+          outside(
+            `${address} may take its \`outlet\` from a spread, a computed key or a value the build cannot read, so Equator cannot tell whether it renders as a page or beside one, and names neither it nor anything below it. Write its \`outlet\` as a string literal, or leave it out for the primary outlet.`,
+          );
+        } else if (!node.inPrimaryOutlet && ownPath !== '') {
+          let named: RouteNode = node;
+          while (
+            named.outlet === PRIMARY_OUTLET &&
+            named.parent !== undefined
+          ) {
+            named = named.parent;
+          }
+          outletReported.add(node);
+          outside(
+            `The route ${JSON.stringify(ownPath)} under ${JSON.stringify(`/${parentPath}`)} renders in the named outlet ${JSON.stringify(named.outlet)}, beside a page rather than as one, so Equator names neither it nor anything below it, and the addresses it takes in that outlet stay outside the localized route table.`,
+          );
+        }
       }
       if (defersChildRoutes) {
         diagnostics.push(
@@ -2985,6 +3320,7 @@ export function analyzeApplication(
     readonly sourcePath: string;
   }[] = [];
   const routes: RouteDraft[] = [];
+  const rootRoutes: RouteChild[] = [];
   const lazyEntryFiles = new Set<ts.SourceFile>();
   const childRouteFiles = new Set<string>();
   const routeTables = new Set<ts.VariableDeclaration>();
@@ -3221,6 +3557,7 @@ export function analyzeApplication(
       checker,
       sourceFile,
       routes,
+      rootRoutes,
       program,
       lazyEntryFiles,
       diagnostics,
@@ -3610,6 +3947,7 @@ export function analyzeApplication(
       routes: Object.freeze(
         resolveRouteIdentities(
           routes,
+          rootRoutes.filter(({ node }) => placedTables.has(node.table)),
           declaredRouteIndexing,
           declaredRouteSitemap,
           declaredRouteCaching,

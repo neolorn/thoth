@@ -108,9 +108,9 @@ const REFERENCE = {
   EQ1404:
     "A route's identity cannot be used: declared in a form the localization runtime refuses, declared in a way the build cannot read, not derivable from what the route declares, colliding with another route's, or the owner declaring two route-indexing fields.",
   EQ1405:
-    'A route renders nothing: it carries none of `component`, `loadComponent`, `redirectTo`, `children` or `loadChildren`.',
+    'A route renders nothing: it carries none of `component`, `loadComponent`, `redirectTo`, `children` or `loadChildren`, or it has an empty path and a wildcard written before it takes its address.',
   EQ1406:
-    'A route hides addresses from the projection: its address comes from a computed `path`, a `matcher`, or a spread or computed key that may set either, or its children load from a file it only references, or a route table takes routes from a binding, a spread or an expression Equator does not follow. Those addresses stay outside the localized route table and are served at their canonical form in every locale.',
+    'A route hides addresses from the projection: its address comes from a computed `path`, a `matcher`, or a spread or computed key that may set either, or its children load from a file it only references, or a route table takes routes from a binding, a spread or an expression Equator does not follow. Those addresses stay outside the localized route table and are served at their canonical form in every locale. Also raised for a route that renders in a named outlet, or names its outlet in a way the build cannot read, which is never a page and is left out of the projection.',
   EQ1407:
     'A route loads a file through a lazy boundary that something in the initial bundle also imports statically, so the split does not happen.',
   EQ1408:
@@ -124,9 +124,9 @@ const REFERENCE = {
   EQ1412:
     'A sitemap declaration cannot be used as written: a changefreq outside the seven the protocol lists, a priority that is not a number literal between 0 and 1, a lastmod that is not a W3C date, a field, table or route value the build cannot read, or the owner declaring two route sitemap fields.',
   EQ1413:
-    'A caching declaration cannot be used as written: a value that names neither `per-visitor` nor `not-stored`, a table or a route value the build cannot read as a string literal or a `const` bound to one, or the owner declaring two route caching fields. A route whose value cannot be used is answered as not stored until it is corrected.',
+    'A caching declaration cannot be used as written: a value that names neither `per-visitor` nor `not-stored`, a table or a route value the build cannot read as a string literal or a `const` bound to one, or the owner declaring two route caching fields. A route whose value cannot be used is answered as not stored until it is corrected. Also raised where a `matcher`, a `canMatch` guard or a value the build cannot read decides which route renders an address, which is then answered as not stored.',
   EQ1414:
-    'An indexing declaration cannot be used as written: a route value the build cannot read, because it is computed, a parameter, supplied by a resolver or behind a binding it cannot follow, or a field or table it cannot read. A route whose value cannot be read is answered as private until it is corrected.',
+    'An indexing declaration cannot be used as written: a route value the build cannot read, because it is computed, a parameter, supplied by a resolver or behind a binding it cannot follow, or a field or table it cannot read. A route whose value cannot be read is answered as private until it is corrected. Also raised where a `matcher`, a `canMatch` guard or a value the build cannot read decides which route renders an address, which is then answered as private.',
   EQ1415:
     'A route names its addresses in a way Angular refuses: neither a `path` nor a `matcher`, or a `matcher` beside a non-empty `path`.',
   EQ1416:

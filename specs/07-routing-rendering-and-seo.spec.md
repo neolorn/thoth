@@ -617,6 +617,10 @@ inheriting can only give a child that states nothing its parent's class, which n
 more shareable or more indexable than its routes say. A route's identity is not inherited, because
 it names the route rather than describing the page.
 
+The page at an address is the route the framework renders there. Where the framework decides it at
+run time, through a matcher or a guard, a release MUST answer the address as private and not-stored
+and report it, as it does a value it cannot read.
+
 Sitemap claims are declared the same way and read at the same moment: a named field whose values map
 to what the class claims, with a second named field carrying the last-modified date. A release MUST
 refuse a value the protocol would reject when the owner is compiled rather than drop it, because a

@@ -46,6 +46,11 @@ empty path or one whose parent renders no component. A class the child states it
 `generate` reads the strategy from your router configuration, and where it cannot, reports `EQ1416`
 and passes the class to every child.
 
+Where a parent and its children share an address, the class that counts is the one on the route
+Angular renders there. Where a `matcher` or a `canMatch` guard picks that route when the page is
+visited, `generate` cannot tell which one it is, so it answers the address as `not-stored` and reports
+`EQ1413`.
+
 A project that already classifies its routes names the field it has and maps its values:
 
 ```text

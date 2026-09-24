@@ -71,6 +71,11 @@ empty path or one whose parent renders no component. A class the child states it
 `generate` reads the strategy from your router configuration, and where it cannot, reports `EQ1416`
 and passes the class to every child.
 
+Where a parent and its children share an address, the class that counts is the one on the route
+Angular renders there. Where a `matcher` or a `canMatch` guard picks that route when the page is
+visited, `generate` cannot tell which one it is, so it answers the address as `private` and reports
+`EQ1414`.
+
 Both blocks are read from your source text at generate time, which is why this is a field name and a
 table of literals rather than a predicate. A literal can be written in place or through a `const`,
 and route data can arrive through a `const` or a spread of one. A class `generate` cannot read,

@@ -157,11 +157,11 @@ A route's identity cannot be used: declared in a form the localization runtime r
 
 ### EQ1405
 
-A route renders nothing: it carries none of `component`, `loadComponent`, `redirectTo`, `children` or `loadChildren`.
+A route renders nothing: it carries none of `component`, `loadComponent`, `redirectTo`, `children` or `loadChildren`, or it has an empty path and a wildcard written before it takes its address.
 
 ### EQ1406
 
-A route hides addresses from the projection: its address comes from a computed `path`, a `matcher`, or a spread or computed key that may set either, or its children load from a file it only references, or a route table takes routes from a binding, a spread or an expression Equator does not follow. Those addresses stay outside the localized route table and are served at their canonical form in every locale.
+A route hides addresses from the projection: its address comes from a computed `path`, a `matcher`, or a spread or computed key that may set either, or its children load from a file it only references, or a route table takes routes from a binding, a spread or an expression Equator does not follow. Those addresses stay outside the localized route table and are served at their canonical form in every locale. Also raised for a route that renders in a named outlet, or names its outlet in a way the build cannot read, which is never a page and is left out of the projection.
 
 ### EQ1407
 
@@ -189,11 +189,11 @@ A sitemap declaration cannot be used as written: a changefreq outside the seven 
 
 ### EQ1413
 
-A caching declaration cannot be used as written: a value that names neither `per-visitor` nor `not-stored`, a table or a route value the build cannot read as a string literal or a `const` bound to one, or the owner declaring two route caching fields. A route whose value cannot be used is answered as not stored until it is corrected.
+A caching declaration cannot be used as written: a value that names neither `per-visitor` nor `not-stored`, a table or a route value the build cannot read as a string literal or a `const` bound to one, or the owner declaring two route caching fields. A route whose value cannot be used is answered as not stored until it is corrected. Also raised where a `matcher`, a `canMatch` guard or a value the build cannot read decides which route renders an address, which is then answered as not stored.
 
 ### EQ1414
 
-An indexing declaration cannot be used as written: a route value the build cannot read, because it is computed, a parameter, supplied by a resolver or behind a binding it cannot follow, or a field or table it cannot read. A route whose value cannot be read is answered as private until it is corrected.
+An indexing declaration cannot be used as written: a route value the build cannot read, because it is computed, a parameter, supplied by a resolver or behind a binding it cannot follow, or a field or table it cannot read. A route whose value cannot be read is answered as private until it is corrected. Also raised where a `matcher`, a `canMatch` guard or a value the build cannot read decides which route renders an address, which is then answered as private.
 
 ### EQ1415
 
