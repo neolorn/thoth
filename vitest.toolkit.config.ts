@@ -1,5 +1,6 @@
 import { mergeConfig } from 'vitest/config';
 
+import { capabilityClaimsReporters } from './tools/capability-evidence.mjs';
 import shared from './vitest.config';
 
 /**
@@ -18,4 +19,7 @@ import shared from './vitest.config';
  */
 export default mergeConfig(shared, {
   cacheDir: 'node_modules/.vite/toolkit',
+  // Here and not in the shared configuration, which the two injecting verifiers use: a run under an
+  // injected defect has no claims to record.
+  test: { reporters: capabilityClaimsReporters() },
 });

@@ -34,6 +34,25 @@ application holding every capability cannot demonstrate an absence.
 A release MUST name the checks it deliberately does not run. A coverage list that stays
 silent about them reads as a claim that they exist.
 
+A release MUST keep a matrix with every capability it ships as a row and every context it verifies
+in as a column, and MUST derive both from what it publishes and what its gate declares rather than
+from a list kept beside them, so a capability or a context added later has its row or its column on
+the day it lands. The matrix records where the evidence is; it is not evidence, and section 1 still
+requires the checks it points to.
+
+A cell is exercised only when a check that passed has stated that it asserted that capability, in a
+context measured while the check ran. A capability named in a file the check loads, or a context
+inferred from its text, is not evidence, because a file that mentions a capability while asserting
+something else would fill the cell, and the matrix would then describe the gate's files rather than
+what they prove. A release MUST refuse a claim for a capability its check never names, and MUST
+record nothing from a run under an injected defect.
+
+Every other cell MUST carry a reason, in a file the release keeps, stating why the capability
+cannot be exercised in that context, and the gate MUST fail on a cell with neither. A cell that is
+merely unfilled has no reason; it is the gap the gate reports. The gate MUST also fail on a reason
+that covers an exercised cell or covers none, because a reason that outlives its cause hides the
+next gap in the same place.
+
 A release MAY verify direction, document language, isolation, and its live region as attributes and
 computed styles rather than by comparing images, because those are the properties the runtime owns
 and an image comparison also fails on a consumer application's unrelated redesign.

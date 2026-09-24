@@ -1,0 +1,83 @@
+{
+  "reasons": [
+    {
+      "id": "cli-outside-pages",
+      "rows": ["cli:*"],
+      "columns": ["render:*", "engine:*"],
+      "reason": "A CLI command runs in a terminal against a project's files; no page renders it and no browser loads it."
+    },
+    {
+      "id": "cli-without-policy",
+      "rows": ["cli:format", "cli:clean", "cli:uninstall", "cli:migrate"],
+      "columns": ["policy:*"],
+      "reason": "These commands change catalogs, generated files and imports; they never reach the compiler, which is the only place a URL policy is read."
+    },
+    {
+      "id": "xliff-outside-pages",
+      "rows": ["capability:xliff"],
+      "columns": ["render:*", "engine:*", "policy:*"],
+      "reason": "XLIFF export and import read and write catalog files at build time; no page, browser or URL policy is involved."
+    },
+    {
+      "id": "toolkit-outside-pages",
+      "rows": ["entry:@neolorn/equator-toolkit"],
+      "columns": ["render:*", "engine:*"],
+      "reason": "The toolkit runs at build time in Node and is kept out of every browser graph; the focused consumer proves that absence."
+    },
+    {
+      "id": "one-policy-per-application",
+      "rows": ["policy:*"],
+      "columns": ["policy:*"],
+      "exceptOwnColumn": true,
+      "reason": "An application runs one URL policy, so each policy row is exercised in its own column."
+    },
+    {
+      "id": "http-server-only",
+      "rows": ["entry:@neolorn/equator/http"],
+      "columns": ["render:client-navigation", "render:hydration", "engine:*"],
+      "reason": "The request handler answers requests on the server; a client navigation sends it no document request, and no browser runs it."
+    },
+    {
+      "id": "ssr-server-only",
+      "rows": [
+        "entry:@neolorn/equator/ssr",
+        "feature:provideLocalizedServerRendering"
+      ],
+      "columns": ["render:client-navigation", "render:hydration", "engine:*"],
+      "reason": "Server rendering configuration is read only by the server bundle; the browser bundle never imports it."
+    },
+    {
+      "id": "server-seat-no-client",
+      "rows": ["testing:createLocalizedServerSeat", "testing:answeredHead"],
+      "columns": ["render:client-navigation", "render:hydration"],
+      "reason": "The server seat renders one response and reads it; nothing boots on a client after it."
+    },
+    {
+      "id": "testing-outside-builds",
+      "rows": ["testing:*", "entry:@neolorn/equator/testing"],
+      "columns": ["render:prerender"],
+      "reason": "Testing helpers run in a test runner; a build's prerender never loads them."
+    },
+    {
+      "id": "sitemap-for-crawlers",
+      "rows": ["capability:sitemap"],
+      "columns": ["render:client-navigation", "render:hydration", "engine:*"],
+      "reason": "The sitemap is a document the server answers for crawlers; no page boots from it."
+    },
+    {
+      "id": "caching-is-a-response-header",
+      "rows": [
+        "declaration:route-caching-class",
+        "declaration:host-page-floor"
+      ],
+      "columns": ["render:client-navigation", "render:hydration", "engine:*"],
+      "reason": "A caching declaration becomes a response header the server writes; no browser runs it, and a client navigation or hydration makes no document request."
+    },
+    {
+      "id": "aliases-are-path-prefixes",
+      "rows": ["declaration:locale-aliases"],
+      "columns": ["policy:locale-neutral", "policy:locale-host"],
+      "reason": "An alias is a second prefix a path-prefix policy accepts; the neutral and host policies have no prefix to alias."
+    }
+  ]
+}

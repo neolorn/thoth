@@ -119,6 +119,11 @@ function install(traceFile, workspaceRoot) {
   ].map(([prefix, name]) => [path.resolve(root, prefix), name]);
 
   const packagesPrefix = path.resolve(root, 'packages') + path.sep;
+  // One artefact per claiming stage, named for the file, rather than one for the folder. The folder
+  // as one artefact would give every claiming stage a write to the same thing, and the graph would
+  // run them one at a time to protect a file none of them shares.
+  const claimsPrefix =
+    path.resolve(root, 'tmp', 'capability-claims') + path.sep;
 
   const classify = (candidate) => {
     let resolved;
@@ -137,6 +142,11 @@ function install(traceFile, workspaceRoot) {
       resolved.startsWith(packagesPrefix)
     ) {
       return { name: 'cache:build', resolved };
+    }
+    if (resolved.startsWith(claimsPrefix)) {
+      const file = resolved.slice(claimsPrefix.length);
+      if (file.includes(path.sep) || !file.endsWith('.jsonl')) return undefined;
+      return { name: `claims:${file.slice(0, -'.jsonl'.length)}`, resolved };
     }
     for (const [prefix, name] of artefacts) {
       if (resolved !== prefix && !resolved.startsWith(prefix + path.sep))

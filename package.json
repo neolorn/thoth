@@ -68,6 +68,8 @@
     "verify:assurance:runtime": "node ./tools/verify-assurance-runtime.mjs",
     "verify:browser-assurance:self-test": "node ./tools/verify-browser-assurance-self-test.mjs",
     "verify:browser-assurance": "node ./tools/verify-package-consumer-hydration.mjs",
+    "verify:matrix:self-test": "node ./tools/verify-matrix-self-test.mjs",
+    "verify:matrix": "node ./tools/verify-matrix.mjs",
     "verify": "node ./tools/verify.mjs",
     "verify:browser-assurance:angular-22.0.4": "node ./tools/verify-package-consumer-hydration.mjs angular-22.0.4-consumer",
     "verify:browser-assurance:lower-bounds": "node ./tools/verify-package-consumer-hydration.mjs lower-bounds-consumer",
