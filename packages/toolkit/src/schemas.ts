@@ -1,3 +1,4 @@
+import { CLI_COMMANDS } from './cli-commands.js';
 import {
   MESSAGE_NAME_CHARACTERS,
   MESSAGE_NAME_PATTERN,
@@ -695,18 +696,8 @@ export const CLI_RESULT_SCHEMA = Object.freeze({
   required: ['profile', 'command', 'status', 'diagnostics', 'result'],
   properties: {
     profile: { const: 'equator-cli-result/1' },
-    command: {
-      enum: [
-        'init',
-        'generate',
-        'check',
-        'format',
-        'clean',
-        'watch',
-        'migrate',
-        'unknown',
-      ],
-    },
+    // Read from the list the executable accepts, so a command it gains is one this schema names.
+    command: { enum: [...CLI_COMMANDS, 'unknown'] },
     status: cliStatusSchema,
     diagnostics: {
       type: 'array',

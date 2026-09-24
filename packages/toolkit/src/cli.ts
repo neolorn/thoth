@@ -14,6 +14,7 @@ import { posix, resolve, win32 } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 
 import type { AuthoredChangePlan } from './authoring-transaction.js';
+import { CLI_COMMANDS, type CliCommand } from './cli-commands.js';
 import { INIT_HELP, INIT_INVOCATION } from './cli-options.generated.js';
 import {
   toolkitDiagnostic,
@@ -40,20 +41,10 @@ interface PackageManifest {
   readonly version: string;
 }
 
-type Command =
-  | 'init'
-  | 'generate'
-  | 'check'
-  | 'format'
-  | 'clean'
-  | 'uninstall'
-  | 'migrate'
-  | 'watch';
-
-type MachineCommand = Command | 'unknown';
+type MachineCommand = CliCommand | 'unknown';
 
 interface ParsedInvocation {
-  readonly command: Command;
+  readonly command: CliCommand;
   readonly project?: string;
   readonly plan?: string;
   readonly json: boolean;
@@ -79,20 +70,11 @@ const packageManifest = JSON.parse(
   await readFile(new URL('./package.json', import.meta.url), 'utf8'),
 ) as PackageManifest;
 
-const commands = new Set<Command>([
-  'init',
-  'generate',
-  'check',
-  'format',
-  'clean',
-  'uninstall',
-  'migrate',
-  'watch',
-]);
+const commands: ReadonlySet<string> = new Set(CLI_COMMANDS);
 
 function machineCommand(value: string | undefined): MachineCommand {
-  return value !== undefined && commands.has(value as Command)
-    ? (value as Command)
+  return value !== undefined && commands.has(value)
+    ? (value as CliCommand)
     : 'unknown';
 }
 
@@ -154,14 +136,14 @@ function requireValue(
 
 function parseInvocation(arguments_: readonly string[]): ParsedInvocation {
   const commandValue = arguments_[0];
-  if (commandValue === undefined || !commands.has(commandValue as Command)) {
+  if (commandValue === undefined || !commands.has(commandValue)) {
     throw new InvocationError(
       commandValue === undefined
         ? 'Equator requires a command.'
         : `Unknown Equator command: ${commandValue}`,
     );
   }
-  const command = commandValue as Command;
+  const command = commandValue as CliCommand;
   let project: string | undefined;
   let plan: string | undefined;
   let json = false;

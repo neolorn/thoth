@@ -1120,6 +1120,66 @@ try {
     /Write the first catalog at i18n\/<scope>\/en-US\.yaml/u,
     'The note has to say where the first message goes; that is the whole of what it is for.',
   );
+
+  // Every command's machine result, against the published schema. The cases are keyed by the list
+  // the executable reads its commands from, so a command added there without a case here fails
+  // before anything runs, and one the schema does not name fails on its own output. The watch is
+  // pointed at a project that does not exist so that it ends; its result is what this schema
+  // describes, and its events have a schema of their own.
+  const { CLI_COMMANDS } = await import(
+    pathToFileURL(resolve(toolkitHarnessPackageRoot, 'cli-commands.js')).href
+  );
+  const locales = [
+    '--source-locale',
+    'en-US',
+    '--default-locale',
+    'en-US',
+    '--locale',
+    'en-US',
+  ];
+  const commandCases = {
+    init: ['init', '--project', coldRoot, ...locales, '--dry-run'],
+    generate: ['generate', '--project', coldRoot, '--dry-run'],
+    check: ['check', '--project', coldRoot],
+    format: ['format', '--project', coldRoot, '--dry-run'],
+    clean: ['clean', '--project', coldRoot, '--dry-run'],
+    uninstall: ['uninstall', '--project', coldRoot, '--dry-run'],
+    migrate: [
+      'migrate',
+      '--project',
+      migrationRoot,
+      '--plan',
+      planPath,
+      '--dry-run',
+    ],
+    watch: ['watch', '--project', resolve(migrationRoot, 'absent')],
+  };
+  assert.deepEqual(
+    Object.keys(commandCases).sort(),
+    [...CLI_COMMANDS].sort(),
+    'Every command the executable accepts needs a case here, and every case a command.',
+  );
+  for (const [command, arguments_] of Object.entries(commandCases)) {
+    // Bounded because a watch that found its project would never end.
+    const result = spawnSync(
+      process.execPath,
+      [cliPath, ...arguments_, '--json'],
+      { cwd: workspaceRoot, encoding: 'utf8', timeout: 60_000 },
+    );
+    assert.equal(
+      result.error,
+      undefined,
+      `equator ${command} --json did not finish: ${String(result.error)}`,
+    );
+    assert.equal(result.stderr, '', `equator ${command} --json wrote stderr`);
+    const printed = JSON.parse(result.stdout);
+    assert.equal(
+      validateCliResult(printed),
+      true,
+      `equator ${command} --json printed a result the published schema refuses: ${JSON.stringify(validateCliResult.errors)}`,
+    );
+    assert.equal(printed.command, command);
+  }
 } finally {
   await Promise.all([
     rm(migrationRoot, { recursive: true, force: true }),
