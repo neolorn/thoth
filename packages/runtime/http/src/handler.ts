@@ -27,6 +27,7 @@ import {
   type PageOutcomeDeclaration,
   type PageOutcomeOperationalFailure,
   type RouteCacheDurations,
+  type RouteCacheHeaders,
   type RouteResolution,
   type RouteRuntimeProjection,
 } from '@neolorn/equator/core';
@@ -387,12 +388,14 @@ export function createLocaleRequestHandler(
     // and which of those apply is known only after the renderer has answered.
     const responseHeaders = (
       effective: DeclaredPageOutcomeDescriptor,
+      page?: Headers,
     ): Headers => {
       const headers = new Headers();
       for (const [name, value] of Object.entries(
         routeCacheHeaders(
           { ...descriptor, cache: effective.cache },
           { ...options.cache, localePreference },
+          page === undefined ? undefined : pageCacheHeaders(page),
         ),
       )) {
         headers.set(name, value);
@@ -490,7 +493,11 @@ export function createLocaleRequestHandler(
     });
 
     const merged = new Headers(rendered.headers);
-    for (const [name, value] of responseHeaders(effective)) {
+    // The combined values already carry what the page set, so the page's own copies go, including
+    // a `Vary` the combination dropped.
+    merged.delete('cache-control');
+    merged.delete('vary');
+    for (const [name, value] of responseHeaders(effective, rendered.headers)) {
       if (name === 'set-cookie') merged.append(name, value);
       else merged.set(name, value);
     }
@@ -498,6 +505,15 @@ export function createLocaleRequestHandler(
       status: effective.status,
       headers: merged,
     });
+  };
+}
+
+function pageCacheHeaders(page: Headers): Partial<RouteCacheHeaders> {
+  const cacheControl = page.get('cache-control');
+  const vary = page.get('vary');
+  return {
+    ...(cacheControl === null ? {} : { 'cache-control': cacheControl }),
+    ...(vary === null ? {} : { vary }),
   };
 }
 

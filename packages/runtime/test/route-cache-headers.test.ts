@@ -296,6 +296,120 @@ describe('what a route declares about caching', () => {
 });
 
 /**
+ * What a page says about its own caching, combined with Equator's rather than replaced by it.
+ *
+ * Narrowing only. A page knows what it put in itself, a nonce or a signed-in name, and can say so;
+ * it cannot know which other responses share its address, so nothing it says can widen who keeps
+ * the response or lengthen how long.
+ */
+describe('what a page says about its own caching', () => {
+  const pageSaid = (
+    cacheControl: string,
+    cache: RouteHttpDescriptor['cache'] = 'public',
+  ) =>
+    routeCacheHeaders(descriptorFor(cache), FRESHNESS, {
+      'cache-control': cacheControl,
+    })['cache-control'];
+
+  it('raises who may keep it', () => {
+    expect(pageSaid('no-store')).toBe('private, no-store');
+    expect(pageSaid('private')).toBe('private, no-cache');
+    expect(pageSaid('no-cache')).toBe('private, no-cache');
+    // A field list lets a cache keep the rest of the response; the whole is the stricter reading.
+    expect(pageSaid('no-cache="set-cookie"')).toBe('private, no-cache');
+    expect(pageSaid('private, no-store')).toBe('private, no-store');
+    expect(pageSaid('No-Store')).toBe('private, no-store');
+  });
+
+  it('cannot lower it', () => {
+    expect(
+      pageSaid('public, max-age=31536000, immutable', 'private-no-store'),
+    ).toBe('private, no-store');
+    expect(pageSaid('public', 'private-no-cache')).toBe('private, no-cache');
+  });
+
+  it('shortens the shared lifetime and cannot lengthen it', () => {
+    expect(pageSaid('max-age=60')).toBe('public, max-age=60, must-revalidate');
+    expect(pageSaid('max-age="60"')).toBe(
+      'public, max-age=60, must-revalidate',
+    );
+    expect(
+      pageSaid('max-age=86400, stale-while-revalidate=600, immutable'),
+    ).toBe('public, max-age=600, must-revalidate');
+    expect(pageSaid('max-age=30', 'consumer-defined-permanent')).toBe(
+      'public, max-age=30',
+    );
+  });
+
+  it('reads a lifetime it cannot trust as stale', () => {
+    // RFC 9111 section 4.2.1: a repeated or malformed lifetime is read as stale.
+    expect(pageSaid('max-age=60, max-age=120')).toBe(
+      'public, max-age=0, must-revalidate',
+    );
+    expect(pageSaid('max-age=soon')).toBe('public, max-age=0, must-revalidate');
+    expect(pageSaid('max-age')).toBe('public, max-age=0, must-revalidate');
+  });
+
+  it('keeps a shared lifetime only where it is shorter', () => {
+    expect(pageSaid('s-maxage=30')).toBe(
+      'public, max-age=600, must-revalidate, s-maxage=30',
+    );
+    expect(pageSaid('s-maxage=3600')).toBe(
+      'public, max-age=600, must-revalidate',
+    );
+  });
+
+  it('keeps what makes a cache ask again, and no-transform at every level', () => {
+    expect(
+      routeCacheHeaders(
+        descriptorFor('public'),
+        { ...FRESHNESS, revalidateSuccess: false },
+        { 'cache-control': 'must-revalidate, proxy-revalidate' },
+      )['cache-control'],
+    ).toBe('public, max-age=600, must-revalidate, proxy-revalidate');
+    expect(pageSaid('no-transform')).toBe(
+      'public, max-age=600, must-revalidate, no-transform',
+    );
+    expect(pageSaid('no-transform, private')).toBe(
+      'private, no-cache, no-transform',
+    );
+    expect(pageSaid('no-transform', 'private-no-store')).toBe(
+      'private, no-store, no-transform',
+    );
+  });
+
+  it("adds the page's Vary fields to Equator's, each once", () => {
+    expect(
+      routeCacheHeaders(
+        descriptorFor('varies-by-locale-preference'),
+        { ...FRESHNESS, localePreference: 'accept-language' },
+        { vary: 'accept-language, Accept-Encoding' },
+      ),
+    ).toStrictEqual({
+      'cache-control': 'public, max-age=600, must-revalidate',
+      vary: 'Accept-Language, Accept-Encoding',
+    });
+    expect(
+      routeCacheHeaders(descriptorFor('public'), FRESHNESS, { vary: '*' }).vary,
+    ).toBe('*');
+  });
+
+  it('turns a page that varies by cookie into a private one, and never names the cookie', () => {
+    expect(
+      routeCacheHeaders(descriptorFor('public'), FRESHNESS, {
+        vary: 'Cookie, Accept-Encoding',
+      }),
+    ).toStrictEqual({
+      'cache-control': 'private, no-cache',
+      vary: 'Accept-Encoding',
+    });
+    expect(
+      routeCacheHeaders(descriptorFor('public'), FRESHNESS, { vary: 'cookie' }),
+    ).toStrictEqual({ 'cache-control': 'private, no-cache' });
+  });
+});
+
+/**
  * A deployment that says every page it serves depends on the request.
  *
  * A floor rather than a class, so it raises what routing and the route concluded and never lowers

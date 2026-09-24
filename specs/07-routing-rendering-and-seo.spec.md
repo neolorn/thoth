@@ -164,9 +164,10 @@ reinterpreting it, and MUST NOT turn a missing translation into a missing entity
 A release builds the response and a consumer application supplies the body. The request handler
 answers every outcome without a body of its own, and for an outcome with a body it calls the
 application's renderer and composes the two: the status is the one the runtime resolved for the
-address, a header the runtime derived replaces a header of the same name the renderer set, and a
-set-cookie header is appended rather than replaced, because both sides may have a reason to write
-one. A renderer is optional. A release MUST NOT let an address the locale policy declines reach that
+address, the cache directives and the varying fields are combined with the renderer's under
+section 16, any other header the runtime derived replaces a header of the same name the renderer
+set, and a set-cookie header is appended rather than replaced, because both sides may have a reason
+to write one. A renderer is optional. A release MUST NOT let an address the locale policy declines reach that
 composition, because it is not an outcome; it goes to the deployment's own handling. A refused
 target MUST NOT reach it either: a structurally unsafe target has no presentation, it carries a
 diagnostic rather than a route, and asking an application to draw a page for one asks it to draw an
@@ -652,6 +653,15 @@ A host declares the least level of every page it serves, for a fact that holds o
 as a cookie every page reads or a nonce every response carries, so a route added later cannot
 forget it. A release MUST apply it to every response that carries a page, and MUST NOT apply it to
 a redirect, which carries none.
+
+A page's own cache directives are the third declaration, and a release MUST combine them with its
+own rather than replace them, narrowing only: a page knows what it put in itself and cannot know
+which other responses share its address. Not stored raises the level to not stored, private or
+revalidation before reuse raises it to per visitor, a shorter lifetime shortens the shared one, and
+a directive forbidding transformation is kept. A release MUST NOT carry a directive that lengthens
+or widens reuse, and MUST read a lifetime given twice or not as a whole number as stale, as RFC 9111
+section 4.2.1 offers. A release MUST add the page's varying fields to its own, except a cookie, which
+raises the page to per visitor instead, and a wildcard, which stands alone.
 
 ## 17. Primary references
 

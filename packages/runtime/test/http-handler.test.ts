@@ -315,6 +315,37 @@ describe('the fact the handler derives and the descriptor is told', () => {
     expect(response.headers.get('set-cookie')).toBeNull();
   });
 
+  it("combines the renderer's own cache headers with its answer, narrowing only", async () => {
+    const renderingWith = (headers: Record<string, string>) =>
+      createLocaleRequestHandler({
+        policy: POLICY,
+        projection: PROJECTION,
+        cache: CACHE,
+        render: () => new Response('<!doctype html>', { headers }),
+      })(new Request('https://site.example/en-us/second'));
+
+    const notStored = await renderingWith({ 'cache-control': 'no-store' });
+    const shorter = await renderingWith({
+      'cache-control': 'public, max-age=60, immutable',
+    });
+    const longer = await renderingWith({
+      'cache-control': 'public, max-age=31536000, immutable',
+    });
+    const byCookie = await renderingWith({
+      vary: 'Cookie, Accept-Encoding',
+    });
+
+    expect(notStored.headers.get('cache-control')).toBe('private, no-store');
+    expect(shorter.headers.get('cache-control')).toBe(
+      'public, max-age=60, must-revalidate',
+    );
+    expect(longer.headers.get('cache-control')).toBe(
+      'public, max-age=600, must-revalidate',
+    );
+    expect(byCookie.headers.get('cache-control')).toBe('private, no-cache');
+    expect(byCookie.headers.get('vary')).toBe('Accept-Encoding');
+  });
+
   it('raises every page by the floor in its cache options', async () => {
     const floored = createLocaleRequestHandler({
       policy: POLICY,

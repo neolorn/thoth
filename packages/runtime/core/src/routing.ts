@@ -831,10 +831,17 @@ export interface RouteCacheHeaders {
  * `specs/07-routing-rendering-and-seo.spec.md` section 16 draws that line and requires the result
  * to be a set of headers by name rather than one header's text, so a consumer writes the set with
  * one loop and gains a header a later release adds without changing a line.
+ *
+ * `page` is the page's own `Cache-Control` and `Vary`, where it set them, and the result combines
+ * them rather than replacing them, narrowing only. The page can raise who may keep it and shorten
+ * how long, and keeps `no-transform`; anything that would let a cache keep it longer or share it
+ * wider is left out. Its `Vary` fields are added to Equator's, except `Cookie`, which raises the
+ * page to per visitor instead.
  */
 export function routeCacheHeaders(
   descriptor: RouteHttpDescriptor,
   freshness: RouteCacheFreshness,
+  page?: Partial<RouteCacheHeaders>,
 ): RouteCacheHeaders {
   // Only a negotiated preference is named. A cookie is never named, because a cache keyed on one
   // stores a variant per visitor, and a response chosen by a cookie is private, which RFC 9110
@@ -856,21 +863,212 @@ export function routeCacheHeaders(
     );
   }
   const redirect = descriptor.status === 307 || descriptor.status === 308;
-  const level = raised(
-    cacheLevel(descriptor.cache, freshness.localePreference),
-    redirect ? undefined : freshness.pageCaching,
+  const stated = statedCaching(page?.['cache-control']);
+  const pageFields = fieldNames(page?.vary);
+  // `Vary: Cookie` is a page saying it depends on a cookie. Equator never names one, so the page is
+  // kept out of every shared cache instead, which is what naming it would have been for.
+  const cookieVaried = pageFields.some(
+    (name) => name.toLowerCase() === 'cookie',
   );
+  const level = raised(
+    raised(
+      raised(
+        cacheLevel(descriptor.cache, freshness.localePreference),
+        redirect ? undefined : freshness.pageCaching,
+      ),
+      stated.level,
+    ),
+    cookieVaried ? 'per-visitor' : undefined,
+  );
+  const transform = stated.noTransform ? ', no-transform' : '';
+  const vary = varyValue(negotiated, pageFields);
   return Object.freeze({
     'cache-control':
       level === 'not-stored'
-        ? 'private, no-store'
+        ? `private, no-store${transform}`
         : level === 'per-visitor'
-          ? 'private, no-cache'
-          : descriptor.cache === 'consumer-defined-permanent'
-            ? `public, max-age=${wholeSeconds(freshness.permanentRedirectMaxAge, 'permanentRedirectMaxAge')}`
-            : successDirective(freshness),
-    ...(negotiated ? { vary: 'Accept-Language' } : {}),
+          ? `private, no-cache${transform}`
+          : sharedDirective(descriptor, freshness, stated),
+    ...(vary === undefined ? {} : { vary }),
   });
+}
+
+/** What a page's own `Cache-Control` says that can only narrow Equator's. */
+interface StatedCaching {
+  readonly level?: RouteCachingClass;
+  readonly maxAge?: number;
+  readonly sharedMaxAge?: number;
+  readonly mustRevalidate: boolean;
+  readonly proxyRevalidate: boolean;
+  readonly noTransform: boolean;
+}
+
+/**
+ * Reads a `Cache-Control` value for the directives that narrow, and ignores the rest.
+ *
+ * `private` and `no-cache` count with or without a field list: the list lets a cache keep the rest
+ * of the response, and reading it as the whole is the stricter answer. A lifetime given more than
+ * once, or not as a whole number, is read as zero, which RFC 9111 section 4.2.1 offers as reading
+ * the response as stale. `public`, `immutable`, `stale-while-revalidate`, `stale-if-error` and any
+ * directive this does not know are left out, because each can only lengthen or widen reuse, and
+ * section 5.2.3 has a cache ignore a directive it does not recognize.
+ */
+function statedCaching(value: string | undefined): StatedCaching {
+  let level: RouteCachingClass | undefined;
+  const maxAges: (string | undefined)[] = [];
+  const sharedMaxAges: (string | undefined)[] = [];
+  const flags = new Set<string>();
+  for (const [name, argument] of cacheDirectives(value ?? '')) {
+    switch (name) {
+      case 'no-store':
+        level = 'not-stored';
+        break;
+      case 'private':
+      case 'no-cache':
+        level ??= 'per-visitor';
+        break;
+      case 'max-age':
+        maxAges.push(argument);
+        break;
+      case 's-maxage':
+        sharedMaxAges.push(argument);
+        break;
+      case 'must-revalidate':
+      case 'proxy-revalidate':
+      case 'no-transform':
+        flags.add(name);
+        break;
+    }
+  }
+  const lifetime = (values: readonly (string | undefined)[]) =>
+    values.length === 0
+      ? undefined
+      : values.length === 1 && /^\d+$/u.test(values[0] ?? '')
+        ? Number(values[0])
+        : 0;
+  const maxAge = lifetime(maxAges);
+  const sharedMaxAge = lifetime(sharedMaxAges);
+  return {
+    ...(level === undefined ? {} : { level }),
+    ...(maxAge === undefined ? {} : { maxAge }),
+    ...(sharedMaxAge === undefined ? {} : { sharedMaxAge }),
+    mustRevalidate: flags.has('must-revalidate'),
+    proxyRevalidate: flags.has('proxy-revalidate'),
+    noTransform: flags.has('no-transform'),
+  };
+}
+
+/**
+ * The directives of a `Cache-Control` value, each as its lowercase name and its argument.
+ *
+ * RFC 9111 section 5.2 compares names case-insensitively and lets an argument be a token or a
+ * quoted string, and a quoted string can hold a comma, so this reads the value rather than
+ * splitting it.
+ */
+function cacheDirectives(
+  value: string,
+): readonly (readonly [string, string | undefined])[] {
+  const found: (readonly [string, string | undefined])[] = [];
+  let at = 0;
+  const skip = (pattern: RegExp) => {
+    while (at < value.length && pattern.test(value.charAt(at))) at += 1;
+  };
+  skip(/[\s,]/u);
+  while (at < value.length) {
+    const start = at;
+    while (at < value.length && !/[\s,=]/u.test(value.charAt(at))) at += 1;
+    const name = value.slice(start, at).toLowerCase();
+    skip(/[ \t]/u);
+    let argument: string | undefined;
+    if (value.charAt(at) === '=') {
+      at += 1;
+      skip(/[ \t]/u);
+      argument = '';
+      if (value.charAt(at) === '"') {
+        at += 1;
+        while (at < value.length && value.charAt(at) !== '"') {
+          if (value.charAt(at) === '\\') at += 1;
+          argument += value.charAt(at);
+          at += 1;
+        }
+        at += 1;
+      } else {
+        while (at < value.length && !/[\s,]/u.test(value.charAt(at))) {
+          argument += value.charAt(at);
+          at += 1;
+        }
+      }
+    }
+    // Whatever follows a directive before the next comma is not part of the grammar.
+    while (at < value.length && value.charAt(at) !== ',') at += 1;
+    if (name.length > 0) found.push([name, argument]);
+    skip(/[\s,]/u);
+  }
+  return found;
+}
+
+function fieldNames(value: string | undefined): readonly string[] {
+  return (value ?? '')
+    .split(',')
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0);
+}
+
+/**
+ * Equator's field first, then the page's, each named once whatever its case.
+ *
+ * `*` stands alone, because RFC 9110 section 12.5.5 has it mean that nothing about the request can
+ * show the response fits, which no list of fields beside it narrows.
+ */
+function varyValue(
+  negotiated: boolean,
+  pageFields: readonly string[],
+): string | undefined {
+  if (pageFields.includes('*')) return '*';
+  const names: string[] = negotiated ? ['Accept-Language'] : [];
+  for (const name of pageFields) {
+    const lower = name.toLowerCase();
+    if (
+      lower !== 'cookie' &&
+      !names.some((named) => named.toLowerCase() === lower)
+    ) {
+      names.push(name);
+    }
+  }
+  return names.length === 0 ? undefined : names.join(', ');
+}
+
+/**
+ * The shared directive, with the page's narrowing applied.
+ *
+ * A shorter `max-age` from the page shortens the lifetime and a longer one is left out. `s-maxage`
+ * is kept only where it is shorter still, because RFC 9111 section 4.2.1 has a shared cache prefer it
+ * to `max-age`, so a longer one would lengthen what a shared cache keeps.
+ */
+function sharedDirective(
+  descriptor: RouteHttpDescriptor,
+  freshness: RouteCacheFreshness,
+  stated: StatedCaching,
+): string {
+  const permanent = descriptor.cache === 'consumer-defined-permanent';
+  const lifetime = permanent
+    ? wholeSeconds(freshness.permanentRedirectMaxAge, 'permanentRedirectMaxAge')
+    : wholeSeconds(freshness.successMaxAge, 'successMaxAge');
+  const maxAge =
+    stated.maxAge === undefined ? lifetime : Math.min(lifetime, stated.maxAge);
+  return [
+    'public',
+    `max-age=${maxAge}`,
+    ...((!permanent && freshness.revalidateSuccess !== false) ||
+    stated.mustRevalidate
+      ? ['must-revalidate']
+      : []),
+    ...(stated.proxyRevalidate ? ['proxy-revalidate'] : []),
+    ...(stated.sharedMaxAge !== undefined && stated.sharedMaxAge < maxAge
+      ? [`s-maxage=${stated.sharedMaxAge}`]
+      : []),
+    ...(stated.noTransform ? ['no-transform'] : []),
+  ].join(', ');
 }
 
 /** Who may keep a response, from weakest to strongest, which is the order a declaration raises. */
@@ -913,12 +1111,6 @@ function cacheLevel(
           );
       }
   }
-}
-
-function successDirective(freshness: RouteCacheFreshness): string {
-  return `public, max-age=${wholeSeconds(freshness.successMaxAge, 'successMaxAge')}${
-    freshness.revalidateSuccess === false ? '' : ', must-revalidate'
-  }`;
 }
 
 function wholeSeconds(value: number, field: string): number {
