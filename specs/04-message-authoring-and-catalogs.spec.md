@@ -1,16 +1,17 @@
 # Message authoring and catalogs
 
-How a message is written, what identifies it, what its inputs and its rich structure are, and how a
-catalog is composed. This document owns the authored source format and everything derived from it up
-to the point of compilation, which `05-compiled-artifacts-and-trust.spec.md` takes over.
+How a message is written for Equator, what identifies it, what its inputs and its rich structure
+are, and how a catalog is composed. This document owns the authored source format and everything
+derived from it up to the point of compilation, which `05-compiled-artifacts-and-trust.spec.md`
+takes over.
 
 The MessageFormat edition a body is written in is pinned by `01-standards-profile.spec.md` section 7.
 What a rich result becomes when it is rendered is `09-safe-content-and-ux.spec.md`.
 
 ## 1. Ownership
 
-Atlas owns the format, the identity, the typing, the validation, and the generated contracts. A
-consumer owns the words, which messages exist, and how its catalogs are organized.
+The toolkit owns the format, the identity, the typing, the validation, and the generated contracts.
+A consumer owns the words, which messages exist, and how its catalogs are organized.
 
 Authoring is catalog first. The source-locale catalog is authoritative for message identity, the
 MessageFormat body, the effective typed inputs, and the effective rich-slot contract. A target
@@ -28,20 +29,21 @@ authority.
 A catalog is UTF-8 `.yaml` in a restricted YAML 1.2.2 profile that constructs a non-executable,
 JSON-compatible tree and nothing else.
 
-An Atlas catalog:
+A catalog:
 
 - contains exactly one document, whose root is a mapping with string keys;
 - refuses directives, custom tags, constructors, anchors, aliases, merge keys, complex keys, more
   than one document, and non-finite numbers;
 - detects a duplicate key before the mapping is constructed;
 - permits plain, quoted, literal, and folded string scalars;
-- is validated against Atlas's own JSON Schema Draft 2020-12 contracts and then semantically, with
-  no network schema resolution;
-- treats comments as carrying no meaning, because durable translator guidance has fields of its own;
+- is validated against the toolkit's own JSON Schema Draft 2020-12 contracts and then semantically,
+  with no network schema resolution;
+- treats comments as carrying no meaning, because durable translator guidance has fields of its
+  own;
 - is formatted deterministically, without changing the MessageFormat value it constructs or any
   meaningful Unicode in it.
 
-An Atlas release MUST refuse a catalog that constructs anything executable, and MUST NOT resolve a
+A release MUST refuse a catalog that constructs anything executable, and MUST NOT resolve a
 schema, a tag, or an entity over the network while reading one.
 
 ## 3. Catalog composition
@@ -58,16 +60,16 @@ configuration.
 
 A scope is a provider-local catalog and typing namespace, and it is the default compilation and
 loading boundary. It may line up with a feature, an owner, a completeness boundary, or a release
-boundary. An Atlas release MUST NOT require those concerns to coincide, and MUST NOT refuse a scope
+boundary. A release MUST NOT require those concerns to coincide, and MUST NOT refuse a scope
 for its name or its breadth.
 
 Messages that belong to a consumer's own interface form the build-known catalog input set. A
-consumer's domain records are runtime data from Atlas's point of view, wherever they are stored, and
-an Atlas release MUST NOT turn one into a message identity, compiled data, a generated contract, a
-cache entry, or part of a localization snapshot. What Atlas coordinates for that content is bounded
-readiness, an outcome, a safe identity, and the locale that actually supplied it.
+consumer's domain records are runtime data from a release's point of view, wherever they are stored,
+and a release MUST NOT turn one into a message identity, compiled data, a generated contract, a
+cache entry, or part of a localization snapshot. What the runtime coordinates for that content is
+bounded readiness, an outcome, a safe identity, and the locale that actually supplied it.
 
-An Atlas release generates a registry only for a catalog that has content. An empty provider, scope,
+A release generates a registry only for a catalog that has content. An empty provider, scope,
 or typed registry MUST NOT be generated as scaffolding for something that does not exist yet.
 
 ## 4. Message identity
@@ -95,8 +97,9 @@ A catalog carries one flat `messages` mapping from complete dotted identities to
 identity map and a repeated `id` field are not supported. A complete identity may also be the prefix
 of another, and both stay distinct.
 
-Message identities are ordinary keys in a consumer's own source. Renaming, moving, or deleting one is
-an ordinary edit, and Atlas keeps no alias table, tombstone, retirement registry, or ledger for it.
+Message identities are ordinary keys in a consumer's own source. Renaming, moving, or deleting one
+is an ordinary edit, and a release keeps no alias table, tombstone, retirement registry, or ledger
+for it.
 
 ## 5. Message entries
 
@@ -105,8 +108,8 @@ one of `message` or `empty: true`, so a deliberately empty result is distinguish
 entry and from an accidental blank. The canonical writer uses the scalar whenever no other field is
 authored.
 
-Beyond those, a source entry may contain only `description`, `context`, `inputs`, and `slots`. An
-Atlas release MUST refuse identity, locale, ownership, revision, approval, ticket, vendor, or other
+Beyond those, a source entry may contain only `description`, `context`, `inputs`, and `slots`. A
+release MUST refuse identity, locale, ownership, revision, approval, ticket, vendor, or other
 workflow fields inside an entry.
 
 `description` and `context` are the durable translator-guidance fields this model provides in place
@@ -126,8 +129,8 @@ declare `inputs` or `slots`: it inherits the effective source contract.
 ## 6. Message bodies
 
 A body is written in the pinned MessageFormat profile, and the source body is authoritative for the
-external input set. Atlas derives the variables, selectors, functions, operand types, and uses from
-it before any refinement:
+external input set. The toolkit derives the variables, selectors, functions, operand types, and uses
+from it before any refinement:
 
 - an unannotated external variable is a required, non-nullable string;
 - a variable annotated by a function takes that function's operand type;
@@ -135,12 +138,12 @@ it before any refinement:
 - a target may omit an input its own grammar does not need, and MUST NOT add one or change its type,
   its optionality, or its nullability.
 
-Where the standard leaves a behavior implementation-defined, an Atlas release MUST resolve it as a
-refusal at compile time, and MUST NOT resolve it as a fallback value or a thrown error at render
-time. The standard permits an implementation to report an error and continue with a fallback, and
-Atlas does not take that permission, because a localization defect would otherwise surface in front
-of a reader, in a language the people who shipped it usually cannot read. A behavior the standard
-fixes is implemented as the standard fixes it; this governs only what the standard leaves open.
+Where the standard leaves a behavior implementation-defined, a release MUST resolve it as a refusal
+at compile time, and MUST NOT resolve it as a fallback value or a thrown error at render time. The
+standard permits an implementation to report an error and continue with a fallback, and a release
+does not take that permission, because a localization defect would otherwise surface in front of a
+reader, in a language the people who shipped it usually cannot read. A behavior the standard fixes
+is implemented as the standard fixes it; this governs only what the standard leaves open.
 
 Five refusals follow from that rather than standing as separate rules:
 
@@ -160,12 +163,13 @@ Five refusals follow from that rather than standing as separate rules:
   answer is one whose declaration wrote one. The alternative is a rendered fallback in whatever zone
   the consumer's context happens to hold, which near midnight is a different day on the screen.
 
-A registered function speaks MessageFormat's vocabulary rather than Atlas's. Its option names follow
-MessageFormat's `name` production, bounded in length and without that production's optional
-surrounding bidirectional controls, which are removed before a name reaches Atlas and would otherwise
-give one option two spellings. An option value written as a literal is read as the type its
-descriptor declares, and a closed value set is compared against the value rather than against its
-spelling. Atlas's own lower-kebab convention continues to govern what Atlas itself names.
+A registered function speaks MessageFormat's vocabulary rather than a release's. Its option names
+follow MessageFormat's `name` production, bounded in length and without that production's optional
+surrounding bidirectional controls, which are removed before a name reaches the toolkit and would
+otherwise give one option two spellings. An option value written as a literal is read as the type
+its descriptor declares, and a closed value set is compared against the value rather than against
+its spelling. A release's own lower-kebab convention continues to govern what the release itself
+names.
 
 A registered function states the variant keys it matches as one ordered list, best first. The
 standard defines both selection operations on a resolved value, whether a key matches and which of
@@ -183,19 +187,19 @@ descriptor.
 
 ## 7. Typed inputs
 
-A source-only `inputs` mapping is permitted where Atlas cannot infer the complete contract safely.
-Each key is the exact inferred external variable name without `$`, and an Atlas release MUST refuse a
-key that introduces a new, misspelled, or unused input.
+A source-only `inputs` mapping is permitted where the toolkit cannot infer the complete contract
+safely. Each key is the exact inferred external variable name without `$`, and a release MUST refuse
+a key that introduces a new, misspelled, or unused input.
 
 A refinement is either a portable type identifier, meaning `{ type: <type-id> }`, or a record
 containing only `type`, `enum`, `optional`, `nullable`, and `description`:
 
-- `type` resolves through Atlas's portable operand-type registry, and MUST NOT be a TypeScript
+- `type` resolves through a release's portable operand-type registry, and MUST NOT be a TypeScript
   symbol, an import, a type expression, or a source path;
 - `enum` is a nonempty sequence of unique literal values compatible with the effective type, and
   `null` is governed only by `nullable`;
-- `optional` and `nullable` are independent booleans defaulting to false: `optional` permits omission
-  or `undefined`, `nullable` permits an explicit `null`;
+- `optional` and `nullable` are independent booleans defaulting to false: `optional` permits
+  omission or `undefined`, `nullable` permits an explicit `null`;
 - neither creates a default value.
 
 A refinement may narrow, brand, close, or clarify what was inferred. It MUST NOT contradict
@@ -207,9 +211,9 @@ Generated TypeScript and Angular contracts reject a statically known missing, ex
 input. A dynamic or adapter-backed call validates the same contract at the earliest safe runtime
 boundary.
 
-A runtime value outside a closed literal set is a contract violation. Atlas reports a bounded
+A runtime value outside a closed literal set is a contract violation. The runtime reports a bounded
 diagnostic and, where the value is otherwise valid for the applicable selector, renders the authored
-catch-all variant; where no safe pattern remains, recovery renders at the selected boundary. An Atlas
+catch-all variant; where no safe pattern remains, recovery renders at the selected boundary. A
 release MUST NOT coerce the value, substitute a permitted member, or interpolate the invalid value.
 
 The canonical formatter orders input keys by code point and their fields as `type`, `enum`,
@@ -217,18 +221,18 @@ The canonical formatter orders input keys by code point and their fields as `typ
 
 ## 8. Rich slots
 
-Plain text is the default. A MessageFormat markup name is a semantic slot identifier, and an Atlas
-release MUST NOT read it as an HTML element, a component, a template, an import, a style, a
-destination, a callback, or executable configuration.
+Plain text is the default. A MessageFormat markup name is a semantic slot identifier, and a release
+MUST NOT read it as an HTML element, a component, a template, an import, a style, a destination, a
+callback, or executable configuration.
 
 A rich message evaluates to immutable renderer-neutral parts: text, formatted values, paired
 container slots with children, and standalone slots. Parts keep the language and direction that
 supplied them.
 
-Atlas derives slot identity, paired or standalone shape, child relationships, reachable-variant
-cardinality, nesting, and registered kind wherever it can prove them. A source-only `slots` mapping
-refines only what cannot be inferred safely. A target catalog MUST NOT contain `slots` and inherits
-the effective source contract.
+The toolkit derives slot identity, paired or standalone shape, child relationships,
+reachable-variant cardinality, nesting, and registered kind wherever it can prove them. A
+source-only `slots` mapping refines only what cannot be inferred safely. A target catalog MUST NOT
+contain `slots` and inherits the effective source contract.
 
 A slot key is an exact lowercase-kebab identifier matching `[a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*`,
 written without MessageFormat's `#` and `/` sigils. A scalar refinement is a portable kind identifier
@@ -287,15 +291,15 @@ Where an exact message exists at a node, that node is an opaque immutable handle
 carry descendants. A node that is only a branch is not a handle, and no universal terminal property
 is introduced.
 
-A handle preserves the provider, the scope, the identity, the input contract, the rich-slot contract,
-the result kind, and the generated compatibility identity. Application code passes handles to Atlas
-APIs and MUST NOT construct a qualified string to stand in for one.
+A handle preserves the provider, the scope, the identity, the input contract, the rich-slot
+contract, the result kind, and the generated compatibility identity. Application code passes handles
+to the runtime's APIs and MUST NOT construct a qualified string to stand in for one.
 
 ## 10. Collections and families
 
 An ordinary runtime choice between messages uses handles, readonly collections, prefix views, or
-discriminated unions. Atlas keeps each selected handle's relationship to its own contracts and MUST
-NOT widen a heterogeneous choice into an untyped parameter map.
+discriminated unions. The toolkit keeps each selected handle's relationship to its own contracts and
+MUST NOT widen a heterogeneous choice into an untyped parameter map.
 
 A genuinely open bounded set uses a source-locale root `families` mapping beside `messages`. It is
 scope-local, MUST NOT appear in a target catalog, and is omitted where a scope has none.
@@ -310,17 +314,17 @@ follow the part grammar, and a template contains at least one literal part and a
 placeholder. A template MUST NOT use a glob, a regular expression, an optional or repeated part,
 alternation, recursion, an executable predicate, or runtime concatenation.
 
-An undeclared placeholder takes Atlas's bounded message-part contract. A `segments` key MUST match a
-placeholder exactly, and its value is a portable registered identifier-segment type with
+An undeclared placeholder takes a release's bounded message-part contract. A `segments` key MUST
+match a placeholder exactly, and its value is a portable registered identifier-segment type with
 deterministic validation and a canonical one-part serialization.
 
-At least one current source message MUST match the template. Atlas derives the common effective
-input and rich-slot contract from the current matches, and every current and future member MUST
-satisfy it. Members that differ stay a finite discriminated collection rather than being widened into
-one open family.
+At least one current source message MUST match the template. The toolkit derives the common
+effective input and rich-slot contract from the current matches, and every current and future member
+MUST satisfy it. Members that differ stay a finite discriminated collection rather than being
+widened into one open family.
 
 Every normalized source message satisfying the template, the segments, and the contract becomes a
-member automatically, and targets inherit membership. An Atlas release MUST NOT require a per-message
+member automatically, and targets inherit membership. A release MUST NOT require a per-message
 family field, an enrollment list, an include or exclude list, an alias table, or a duplicate ledger.
 
 A duplicate family name or template, a segment that does not round-trip, a generated-name collision,
@@ -330,7 +334,7 @@ current trusted membership, and contract compatibility. Matching a template MUST
 invent or authorize a message.
 
 An external identifier becomes a handle only through a generated family-bound or allowlist-bound
-resolver. An Atlas release MUST NOT expose an unrestricted lookup by arbitrary string, and MUST NOT
+resolver. A release MUST NOT expose an unrestricted lookup by arbitrary string, and MUST NOT
 perform a fuzzy match, a hidden alias lookup, or a guessed prefix.
 
 The canonical formatter orders family names by code point, uses the scalar form where `segments` is
@@ -338,11 +342,12 @@ absent, otherwise orders `template` then `segments`, and omits an empty mapping.
 
 ## 11. Source revisions
 
-Atlas computes a source fingerprint from the normalized body and the effective input and rich-slot
-contracts, so a wording change that keeps the contract is distinguishable from one that does not.
+The toolkit computes a source fingerprint from the normalized body and the effective input and
+rich-slot contracts, so a wording change that keeps the contract is distinguishable from one that
+does not.
 
 The default policy keeps a contract-compatible target after a source-only wording change and reports
-its freshness as an advisory. An Atlas release MUST NOT fail a build on that advisory by default; a
+its freshness as an advisory. A release MUST NOT fail a build on that advisory by default; a
 stricter freshness or completeness policy is opt-in.
 
 The fingerprint is derived from what the catalog says, so no revision field, translation ledger, or

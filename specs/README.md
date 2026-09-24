@@ -1,11 +1,11 @@
-# Atlas specifications
+# Equator specifications
 
-The normative description of what Atlas accepts, produces, refuses, and guarantees. Twelve
+The normative description of what Equator accepts, produces, refuses, and guarantees. Twelve
 documents, each owning one subject, plus this index.
 
 ## 1. Introduction
 
-Atlas is a localization framework for Angular applications, covering the rendering environments
+Equator is a localization framework for Angular applications, covering the rendering environments
 Angular itself supports: browser, server rendering, prerendering, and hydration. It is delivered as
 two packages, `@neolorn/atlas` for the runtime and `@neolorn/atlas-toolkit` for the compiler and its
 command line.
@@ -14,8 +14,8 @@ An application declares which locales it serves and writes what its messages say
 and public URLs, its domain values and business rules, its content and the services that supply it,
 its infrastructure, and its translation workflow.
 
-Atlas owns the mechanisms that coordinate those and the contracts needed to use them safely: locale
-identity and resolution, message authoring and compilation, generated type contracts, catalog
+Equator owns the mechanisms that coordinate those and the contracts needed to use them safely:
+locale identity and resolution, message authoring and compilation, generated type contracts, catalog
 loading and caching, runtime state and transitions, Angular integration, routing and rendering
 coherence, formatting and localized input, safe rich content, interchange, verification, and
 diagnostics.
@@ -26,15 +26,15 @@ Configuration appears only for a capability an application has selected. An appl
 localizes an ordinary set of messages declares its locales and nothing else. A capability nobody
 selects costs no package, no bundle, no configuration field, no initialization, and no maintenance.
 
-Atlas derives what it can determine. Locale tables, message and artifact identity, compatibility
+A release derives what it can determine. Locale tables, message and artifact identity, compatibility
 fingerprints, resource measures, translation freshness, and the generated type contracts all come
-from the declaration and the catalogs an application already writes. An Atlas release MUST NOT
-require a second record of anything it derives: no locale registry beside the declaration, no alias
-for a relation the locked data already states, no digest, version, or revision field in an authored
-file, and no ledger of what changed. After one setup per application, adding, renaming, or removing
-a route, a scope, or a message requires no further Atlas-related change. What stays an application's
-to write is what Atlas cannot infer: the content, the binding of an interactive slot to a component,
-and the registration of a dynamic content source.
+from the declaration and the catalogs an application already writes. A release MUST NOT require a
+second record of anything it derives: no locale registry beside the declaration, no alias for a
+relation the locked data already states, no digest, version, or revision field in an authored file,
+and no ledger of what changed. After one setup per application, adding, renaming, or removing a
+route, a scope, or a message requires no further change to that setup. What stays an application's
+to write is what a release cannot infer: the content, the binding of an interactive slot to a
+component, and the registration of a dynamic content source.
 
 ## 2. Conformance language
 
@@ -43,7 +43,7 @@ RECOMMENDED, MAY, and OPTIONAL in these documents are to be interpreted as descr
 ([RFC 2119], [RFC 8174]) when, and only when, they appear in all capitals, as shown here.
 
 A sentence is normative if and only if it carries one of those keywords in capitals. Everything else
-is description: it explains what Atlas does and why, and it binds nothing.
+is description: it explains what a release does and why, and it binds nothing.
 
 These documents use MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY. REQUIRED, RECOMMENDED, NOT
 RECOMMENDED, and OPTIONAL appear only as adjectives, where a sentence reads better that way. SHALL
@@ -56,16 +56,16 @@ implemented, shipped, or enabled. It does not become general by being stated.
 
 Every normative sentence names what it binds.
 
-| Target                 | Is                                                                     |
-| ---------------------- | ---------------------------------------------------------------------- |
-| An Atlas release       | The published packages and everything in them.                         |
-| A consumer application | An application that installs Atlas, for the capabilities it enables.   |
-| A catalog              | An authored source or target catalog offered to the toolkit.           |
-| An artifact            | Compiled output, a descriptor, or an interchange document Atlas reads. |
-| An extension           | Consumer-authored code using a declared Atlas extension contract.      |
+| Target                 | Is                                                                         |
+| ---------------------- | -------------------------------------------------------------------------- |
+| An Equator release     | The published packages and everything in them.                             |
+| A consumer application | An application that installs a release, for the capabilities it enables.   |
+| A catalog              | An authored source or target catalog offered to the toolkit.               |
+| An artifact            | Compiled output, a descriptor, or an interchange document a release reads. |
+| An extension           | Consumer-authored code using a declared extension contract.                |
 
-Most requirements bind an Atlas release. The ones that bind a consumer application state the
-conditions under which Atlas's own guarantees hold.
+Most requirements bind a release. The ones that bind a consumer application state the
+conditions under which a release's own guarantees hold.
 
 ## 4. Documents
 

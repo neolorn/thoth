@@ -1,16 +1,16 @@
 # Packages and platform
 
-What Atlas ships, how it is divided, what a consumer installs, and where it runs. This document owns
-package topology, entry points and the conditions under which one exists, the distribution format,
-dependency direction, behavior at install and import time, the host ranges, the boundary against a
-compiler host, and what a distributable has to prove before it counts as verified.
+What Equator ships, how it is divided, what a consumer installs, and where it runs. This document
+owns package topology, entry points and the conditions under which one exists, the distribution
+format, dependency direction, behavior at install and import time, the host ranges, the boundary
+against a compiler host, and what a distributable has to prove before it counts as verified.
 
 The standards editions behind any of this are in `01-standards-profile.spec.md`. What the exported
 surface does is owned by the documents that own those subjects.
 
 ## 1. Package topology
 
-Atlas ships two packages of one release line, versioned together and with separate exports and
+A release ships two packages of one release line, versioned together and with separate exports and
 separate dependency graphs.
 
 | Package                  | Environment                          | Holds                                                                                                               |
@@ -20,7 +20,7 @@ separate dependency graphs.
 
 Node-only code, Node-only dependencies, Node globals, and compiler APIs MUST NOT enter
 `@neolorn/atlas` or a consumer's browser bundle. Angular server rendering is a runtime concern, and
-an Atlas release MUST NOT require the toolkit to be installed for it.
+a release MUST NOT require the toolkit to be installed for it.
 
 A package exposes implemented behavior. A capability that is being considered creates no package, no
 entry point, no dependency, and no compatibility obligation until it exists.
@@ -32,7 +32,7 @@ entry point, no dependency, and no compatibility obligation until it exists.
 | Entry point              | Carries                                                                                  | Exists because                           |
 | ------------------------ | ---------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `@neolorn/atlas`         | The runtime and its Angular integration.                                                 | It is the package.                       |
-| `@neolorn/atlas/core`    | Atlas's vocabulary, locale profiles, and route classification.                           | It loads without Angular.                |
+| `@neolorn/atlas/core`    | The runtime's vocabulary, locale profiles, and route classification.                     | It loads without Angular.                |
 | `@neolorn/atlas/http`    | The locale request handler and its Node adapter.                                         | It loads without Angular.                |
 | `@neolorn/atlas/router`  | Localized routing and `provideLocalizedRouter(...)`.                                     | It carries an optional peer.             |
 | `@neolorn/atlas/forms`   | The localized input control.                                                             | It carries an optional peer.             |
@@ -41,16 +41,16 @@ entry point, no dependency, and no compatibility obligation until it exists.
 
 A secondary entry point exists for one of three reasons, and for no other: it carries an optional
 peer dependency the primary must not require; it loads in an environment the primary cannot; or it
-holds code a production bundle must not contain. An Atlas release MUST NOT subdivide the primary
+holds code a production bundle must not contain. A release MUST NOT subdivide the primary
 entry point on any other ground. That a surface is large, or that some consumer might want less of
 it, is not one of the three.
 
 `core` and `http` are the environment case. Every other entry point of this package fails to load
 outside a browser or an Angular server, because importing the primary in plain Node throws on the
 Angular platform it carries. These two import no Angular at all, so a worker, a serverless function,
-or a server that is not the Angular one can hold Atlas's classification without holding Angular. The
-primary re-exports the core surface, so a consumer using the primary need not know the entry point
-exists.
+or a server that is not the Angular one can hold the runtime's classification without holding
+Angular. The primary re-exports the core surface, so a consumer using the primary need not know the
+entry point exists.
 
 `testing` is the bundling case. It ships the runtime composition a test needs, deterministic control
 over deferred catalog loads and participants, in-memory catalog loaders, a rendered-text helper, an
@@ -86,8 +86,8 @@ Importing the toolkit API MUST NOT execute a command, mutate the process, instal
 project, write a file, start a watcher, or perform network access. Command execution begins only
 through the declared executable.
 
-The schemas are exports rather than files inside the package, so that a consumer validating an Atlas
-file against the schema Atlas actually used can resolve it by name rather than by a path into the
+The schemas are exports rather than files inside the package, so that a consumer validating a file
+against the schema the toolkit actually used can resolve it by name rather than by a path into the
 installed directory.
 
 ## 5. Distribution format
@@ -102,10 +102,10 @@ distributable MUST carry:
 - accurate side-effect metadata;
 - whatever the consuming Angular compiler needs to complete compilation.
 
-Full-Ivy distribution and consumption of Atlas TypeScript source are prohibited. An Atlas release
-uses Angular's supported library packaging pipeline; a replacement for it MUST prove the same format,
-export integrity, partial compilation, declaration quality, and consumer compatibility before it is
-used.
+Full-Ivy distribution and consumption of the runtime's TypeScript source are prohibited. A release
+uses Angular's supported library packaging pipeline; a replacement for it MUST prove the same
+format, export integrity, partial compilation, declaration quality, and consumer compatibility
+before it is used.
 
 `@neolorn/atlas-toolkit` is an ordinary built Node package with explicit exports, declarations,
 executable metadata, and accurate side-effect metadata. It is never packaged as browser runtime code.
@@ -122,7 +122,7 @@ entry point that integrates with it.
 An optional integration MUST NOT put its peer, or its implementation dependency, on the primary entry
 point. A browser-only consumer installs neither the peer nor the code.
 
-An Atlas release MUST NOT bundle or privately own a second Angular or RxJS instance. A consumer's
+A release MUST NOT bundle or privately own a second Angular or RxJS instance. A consumer's
 installed framework is the one that runs.
 
 Only a package the runtime actually requires may appear in its dependency graph. What that graph
@@ -135,14 +135,14 @@ sensitive host APIs, which are TypeScript and the applicable Angular compiler pa
 dependencies supplied by the consumer. Node compatibility is declared as an engines range rather than
 as a dependency.
 
-A consumer installs the toolkit as one development package. It MUST NOT have to assemble Atlas's
-compiler machinery from parts.
+A consumer installs the toolkit as one development package. It MUST NOT have to assemble the
+toolkit's compiler machinery from parts.
 
 ## 8. Install and import behavior
 
-Installing an Atlas package MUST NOT run a migration, a generation step, or any other work of its
-own. A runtime module MUST be free of side effects on import, and importing `@neolorn/atlas` MUST
-NOT:
+Installing a package of a release MUST NOT run a migration, a generation step, or any other work of
+its own. A runtime module MUST be free of side effects on import, and importing `@neolorn/atlas`
+MUST NOT:
 
 - load locale data or a catalog;
 - start a timer, watcher, worker, or network request;
@@ -158,28 +158,28 @@ stay unreachable from a production graph that does not select them.
 
 ## 9. Host compatibility envelope
 
-An Atlas release declares the ranges it is installable within and the rows it has been verified on,
+A release declares the ranges it is installable within and the rows it has been verified on,
 and MUST NOT present the first as the second.
 
-The declared ranges are the `peerDependencies` and `engines` fields of `packages/runtime/package.json`
-and `packages/toolkit/package.json`. Those fields are what a consumer's package manager reads when it
-decides whether an install is allowed, so they are the ranges themselves rather than a record of
-them. Every other statement of a supported range, in a gate, a verification row, a generated page or
-a sentence, MUST be read from those manifests, and changing what Atlas supports MUST be done by
-changing a manifest.
+The declared ranges are the `peerDependencies` and `engines` fields of
+`packages/runtime/package.json` and `packages/toolkit/package.json`. Those fields are what a
+consumer's package manager reads when it decides whether an install is allowed, so they are the
+ranges themselves rather than a record of them. Every other statement of a supported range, in a
+gate, a verification row, a generated page or a sentence, MUST be read from those manifests, and
+changing what a release supports MUST be done by changing a manifest.
 
 One copy is written rather than read, and it is the exception this rule needs. The host admission
-profile the toolkit ships decides inside a consumer's install, where no Atlas manifest is present to
-read, so it carries the Angular and TypeScript ranges as values. It MUST be pinned against the
-manifests by package verification, so a manifest that moves without it fails rather than ships.
+profile the toolkit ships decides inside a consumer's install, where no manifest is present to read,
+so it carries the Angular and TypeScript ranges as values. It MUST be pinned against the manifests
+by package verification, so a manifest that moves without it fails rather than ships.
 
 Verification runs a built-package consumer on the development row, on an Angular patch row, and on
 the row that sits at the declared lower bound of Angular, TypeScript, and RxJS at once, in the
 Chromium, Firefox, and WebKit engines, and it runs the suites on each Node version the engines range
 admits. A combination inside a declared range that nothing has executed is installable and not
-verified, and an Atlas release MUST NOT describe it as supported.
+verified, and a release MUST NOT describe it as supported.
 
-An Atlas release MUST NOT claim a host outside these ranges, and MUST NOT imply that verifying one
+A release MUST NOT claim a host outside these ranges, and MUST NOT imply that verifying one
 combination verifies every combination a range admits.
 
 The toolkit MUST detect an unsupported Angular or TypeScript host before it does compiler work and
@@ -188,7 +188,7 @@ fail with an actionable diagnostic, rather than attempt a best-effort private co
 ## 10. Compiler-host boundary
 
 Toolkit integration with Angular and TypeScript MUST use documented, supported APIs behind
-Atlas-owned adapters.
+toolkit-owned adapters.
 
 Use of an undocumented or private compiler API requires an explicit decision that names the exact
 compatible host pin, the adapter that isolates it, the regression evidence for it, its effect on the
@@ -197,7 +197,7 @@ can reach.
 
 ## 11. Built-package verification
 
-An Atlas release is verified through its built distributables and their declared exports. A source
+A release is verified through its built distributables and their declared exports. A source
 import or a deep path proves nothing about a distributable, because neither is what a consumer
 resolves.
 
@@ -214,6 +214,6 @@ Verification MUST establish, for each package:
 - that no consumer path, machine-absolute path, temporary location, or generated consumer path
   appears in published metadata, maps, or declarations.
 
-Atlas's own source-map paths and embedded source text are allowed to appear, because they describe
-Atlas. A consumer's do not, and a map, a declaration, or any other published file MUST NOT carry an
-absolute local path.
+A release's own source-map paths and embedded source text are allowed to appear, because they
+describe the release. A consumer's do not, and a map, a declaration, or any other published file
+MUST NOT carry an absolute local path.

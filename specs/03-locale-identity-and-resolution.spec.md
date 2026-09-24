@@ -1,7 +1,7 @@
 # Locale identity and resolution
 
-What a locale is in Atlas, how one is declared, how Atlas decides which one a visitor gets, where
-that decision is remembered, and what happens when a translation for it is missing.
+What a locale is in Equator, how one is declared, how the runtime decides which one a visitor gets,
+where that decision is remembered, and what happens when a translation for it is missing.
 
 The standards editions behind identity and matching are in `01-standards-profile.spec.md` section 3.
 What a running application does with a resolved locale, and the snapshot that carries it, are in
@@ -9,7 +9,7 @@ What a running application does with a resolved locale, and the snapshot that ca
 
 ## 1. Ownership
 
-Atlas owns the mechanism: identity, canonicalization, inheritance, matching, resolution order,
+A release owns the mechanism: identity, canonicalization, inheritance, matching, resolution order,
 persistence contracts, fallback, and recovery. A consumer owns which locales exist, what they are
 called in its product, which sources it consults and in what order, where a preference is stored,
 and how complete a release has to be.
@@ -20,7 +20,7 @@ A consumer declares its source locale, its default locale, its supported locales
 once. The toolkit derives the typed locale table, the canonical alias map, the availability lookup,
 and the runtime defaults from that declaration.
 
-An Atlas release MUST derive every locale-dependent table from the one declaration.
+A release MUST derive every locale-dependent table from the one declaration.
 
 ## 3. Canonical identity
 
@@ -41,22 +41,22 @@ A `-u-` extension is a formatting preference, validated separately, and is not p
 identity. A transform, private-use, or other extension receives no meaning without an explicit
 profile.
 
-A catalog locale identity carries no extension and no private-use subtag at all. An Atlas release
-MUST reject one where a catalog takes its identity, and therefore where a catalog key, a cache key, a
-URL value, or a persisted preference does.
+A catalog locale identity carries no extension and no private-use subtag at all. A release MUST
+reject one where a catalog takes its identity, and therefore where a catalog key, a cache key, a URL
+value, or a persisted preference does.
 
-Untrusted locale text is bounded in length and complexity, and an Atlas release MUST NOT use it
+Untrusted locale text is bounded in length and complexity, and a release MUST NOT use it
 directly as an identity, a path, a cache key, a protocol field, a stored value, or the payload of a
 diagnostic.
 
 ## 4. Inheritance
 
-Which locale a locale inherits from is pinned data, not a consumer's statement. Atlas takes each
+Which locale a locale inherits from is pinned data, not a consumer's statement. Equator takes each
 parent from the pinned CLDR release under the inheritance rules of UTS #35 section 4.1.3: a locale
 takes the parent that release declares for it; a locale it declares no parent for takes the tag with
-its last subtag removed; and a locale it gives no parent below root inherits from nothing. A declared
-parent may change the language, and an Atlas release MUST follow that rather than narrow the pinned
-data.
+its last subtag removed; and a locale it gives no parent below root inherits from nothing. A
+declared parent may change the language, and a release MUST follow that rather than narrow the
+pinned data.
 
 A consumer that disagrees declares a parent for one locale. The declaration replaces one step of the
 chain and leaves the rest pinned, and naming root says the locale inherits from nothing. It is read
@@ -68,11 +68,11 @@ whose chain returns to a locale already in it.
 
 ## 5. Aliases
 
-An alias is a consumer's own spelling of a locale: a name its product uses, or one its storage held
-before Atlas. A relation the pinned data already states is derived rather than declared.
+An alias is a consumer's own spelling of a locale: a name its product uses, or one its storage
+already held. A relation the pinned data already states is derived rather than declared.
 
 An alias that collides with a supported locale, shadows one, forms a cycle, or names a locale the
-consumer does not support is an error, and an Atlas release MUST refuse the configuration rather
+consumer does not support is an error, and a release MUST refuse the configuration rather
 than pick a reading of it.
 
 ## 6. Encompassed languages
@@ -82,12 +82,13 @@ locale spelled with the other is a match, and it is decided from the locked stan
 than from configuration: membership from the pinned IANA Language Subtag Registry snapshot, ordering
 from the pinned CLDR release's language matching data, read at the language dimension only.
 
-An Atlas release MUST NOT read the script or region dimensions of that data as distances. Those
+A release MUST NOT read the script or region dimensions of that data as distances. Those
 distinctions are decided categorically by the matching steps in section 7.
 
 ## 7. Resolution sources
 
-Atlas provides one resolver over four sources. A consumer declares which are live and in what order.
+The runtime provides one resolver over four sources. A consumer declares which are live and in what
+order.
 
 | Source    | Answers from                                                 |
 | --------- | ------------------------------------------------------------ |
@@ -137,21 +138,21 @@ Resolution is sensitive to which source answered:
 
 ## 8. Persistence
 
-Locale state works with no persistence at all. An Atlas release provides typed opt-in stores for
+Locale state works with no persistence at all. A release provides typed opt-in stores for
 memory, a cookie, browser storage, and an authenticated profile. A consumer owns their order, their
 names, their attributes, their lifetimes, their domain scope, their endpoints, their credentials,
 their antiforgery, and any synchronization between applications.
 
-Stores are read in the consumer's declared order and the first believable value wins. An Atlas
-release MUST NOT reorder or merge them. A value is believed only while it still canonicalizes to a
-currently supported locale.
+Stores are read in the consumer's declared order and the first believable value wins. A release MUST
+NOT reorder or merge them. A value is believed only while it still canonicalizes to a currently
+supported locale.
 
 Only a deliberate locale change is written. A locale that initialization resolved MUST NOT be written
 back: persisting it would turn the first negotiated answer into a permanent one, and a later change
 to the visitor's own preferences would stop having any effect. A write reaches every configured
 store.
 
-A remembered choice can be removed, and removing it is not a locale change. An Atlas release MUST
+A remembered choice can be removed, and removing it is not a locale change. A release MUST
 supply the two separately: one operation that forgets what is stored and leaves the page where it
 is, and one locale change that moves the page without recording a choice. Neither alone is enough.
 Forgetting alone leaves the page in the language that was stored. The only operation that moves the
@@ -159,11 +160,11 @@ page records a choice, so honouring the request with that operation stores a new
 the two put a visitor back where resolution would have placed them with nothing stored.
 
 A removal reaches every configured store, for the reason a write does: a choice removed from one
-store and still held by another is read back at the next visit. An Atlas release MUST report a
+store and still held by another is read back at the next visit. A release MUST report a
 removal that could not reach every store, because a removal reported as complete while a store still
 holds the value leaves the choice in force.
 
-Removal is not required of a store. An Atlas release MUST keep the persistence port implementable
+Removal is not required of a store. A release MUST keep the persistence port implementable
 without it and MUST treat a store that offers none as a store the removal did not reach, because the
 port is what a consumer application writes against and a release that added a required method to it
 would stop every store written against the previous one from compiling.
@@ -181,7 +182,7 @@ shared application configuration cannot carry one server-rendered request's pref
 
 ## 9. Fallback and strictness
 
-When a translation is unavailable in the target locale, Atlas consults the locales that target
+When a translation is unavailable in the target locale, the runtime consults the locales that target
 inherits from, nearest first, before it consults the source locale. The chain is walked to its end
 rather than one step, because a locale inheriting through a locale nobody serves would otherwise
 reach the source with its own language still unread. A member the consumer does not ship is not
@@ -202,7 +203,7 @@ incompatible artifact, and MUST NOT emit a raw key, a parser detail, or an unexp
 
 ## 10. Content that is not a fallback
 
-Consumer-owned content is not a message, and an Atlas release MUST NOT apply message fallback to it.
+Consumer-owned content is not a message, and a release MUST NOT apply message fallback to it.
 A representation supplied in another locale is accepted only under an explicit consumer policy, and
 it reports both the target locale and the locale that supplied it. Otherwise, unavailability in the
 target locale stays an explicit outcome the consumer handles.
@@ -211,19 +212,19 @@ Content that is language-independent, user-authored, or deliberately multilingua
 representation and stays valid across interface locales. It keeps its own language and direction,
 per-segment metadata where it has any, or an explicit unknown state.
 
-The unknown state is stated rather than left absent, and an Atlas release MUST classify these cases
+The unknown state is stated rather than left absent, and a release MUST classify these cases
 so a consumer can tell them apart. Content carrying a resolvable script keeps its direction, even
 where the language is undetermined. Content that is undetermined with no script to resolve, content
 supplied with no tag, and content declared language-independent all resolve to a deferred direction
 rather than an assumed one. A malformed tag remains an error.
 
 A deferred direction instructs the renderer to apply the first-strong rule of UAX #9 to the content
-in front of it. An Atlas release MUST NOT inspect that content or record a conclusion about it,
-because assigning a direction to content whose direction is unknown states as fact something Atlas
-has no basis for.
+in front of it. A release MUST NOT inspect that content or record a conclusion about it, because
+assigning a direction to content whose direction is unknown states as fact something a release has
+no basis for.
 
-Atlas preserves a declared language and direction safely. It MUST NOT detect, translate, rewrite,
-moderate, store, or decide the authoritative language of a consumer's content.
+The runtime preserves a declared language and direction safely. It MUST NOT detect, translate,
+rewrite, moderate, store, or decide the authoritative language of a consumer's content.
 
 ## 11. Recovery
 
@@ -233,7 +234,7 @@ usable state.
 The toolkit derives a minimal, independently loadable recovery payload from the ordinary configured
 messages a consumer already writes, so no duplicate emergency catalog is authored.
 
-An Atlas release MUST supply an accessible renderer for that payload, announced to assistive
+A release MUST supply an accessible renderer for that payload, announced to assistive
 technology, carrying the language and direction of the message it renders, and offering a retry. A
 consumer owns the wording, the presentation, and where a retry leads.
 
