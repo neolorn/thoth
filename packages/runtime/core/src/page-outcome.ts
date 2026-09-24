@@ -189,10 +189,14 @@ export function pageOutcomeHttpDescriptor(
   declaration: PageOutcomeDeclaration,
   resolved: RouteHttpDescriptor,
 ): DeclaredPageOutcomeDescriptor {
-  const language =
-    resolved.contentLanguage === undefined
+  // The body is still in the language the address resolved to, chosen the same way whatever
+  // status is sent, so how it was chosen travels with it.
+  const language = {
+    ...(resolved.contentLanguage === undefined
       ? {}
-      : { contentLanguage: resolved.contentLanguage };
+      : { contentLanguage: resolved.contentLanguage }),
+    ...(resolved.variesBy === undefined ? {} : { variesBy: resolved.variesBy }),
+  };
   if (declaration.outcome === 'operational-failure') {
     return Object.freeze({
       status: declaration.status,

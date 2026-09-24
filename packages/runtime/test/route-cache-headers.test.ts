@@ -96,11 +96,11 @@ describe('the cache headers Equator determines', () => {
   /**
    * The whole input space, not a sample of it.
    *
-   * `LocalePreferenceSource` is a closed union of three and `cache` a closed union of five, so
-   * fifteen pairs is every call that can be written. Nothing in that space produces `Vary: Cookie`,
-   * and nothing can be made to: there is no input anywhere on this surface that names a header, so
-   * the mistake is unrepresentable rather than rejected. This asserts the consequence; the type is
-   * what enforces it.
+   * `LocalePreferenceSource` is a closed union of three, `cache` a closed union of five, and
+   * `variesBy` is present or absent, so thirty calls is every call that can be written. Nothing in
+   * that space produces `Vary: Cookie`, and nothing can be made to: there is no input anywhere on
+   * this surface that names a header, so the mistake is unrepresentable rather than rejected. This
+   * asserts the consequence; the type is what enforces it.
    */
   it('cannot be asked to vary a shared cache on a cookie', () => {
     const sources: readonly LocalePreferenceSource[] = [
@@ -116,22 +116,56 @@ describe('the cache headers Equator determines', () => {
       'varies-by-locale-preference',
     ];
 
-    const emitted: string[] = [];
+    const emitted = new Set<string>();
     for (const cache of classifications) {
       for (const localePreference of sources) {
-        try {
-          const headers = routeCacheHeaders(descriptorFor(cache), {
-            ...FRESHNESS,
-            localePreference,
-          });
-          if (headers.vary !== undefined) emitted.push(headers.vary);
-        } catch {
-          // The one refused pair, asserted by name in the test above.
+        for (const variesBy of [undefined, 'locale-preference'] as const) {
+          try {
+            const headers = routeCacheHeaders(
+              {
+                ...descriptorFor(cache),
+                ...(variesBy === undefined ? {} : { variesBy }),
+              },
+              { ...FRESHNESS, localePreference },
+            );
+            if (headers.vary !== undefined) emitted.add(headers.vary);
+          } catch {
+            // The one refused class, asserted by name in the test above.
+          }
         }
       }
     }
 
-    expect(emitted).toStrictEqual(['Accept-Language']);
+    expect([...emitted]).toStrictEqual(['Accept-Language']);
+  });
+
+  it('keeps a negotiated answer negotiated whoever may keep it', () => {
+    // `Vary` also tells the browser the answer was chosen by its language, so raising who may keep
+    // a response leaves it. Under a cookie there is nothing to name, and nothing is.
+    for (const cache of ['private-no-cache', 'private-no-store'] as const) {
+      const descriptor: RouteHttpDescriptor = {
+        ...descriptorFor(cache),
+        variesBy: 'locale-preference',
+      };
+      expect(
+        routeCacheHeaders(descriptor, {
+          ...FRESHNESS,
+          localePreference: 'accept-language',
+        }).vary,
+      ).toBe('Accept-Language');
+      expect(
+        routeCacheHeaders(descriptor, {
+          ...FRESHNESS,
+          localePreference: 'cookie',
+        }).vary,
+      ).toBeUndefined();
+      expect(
+        routeCacheHeaders(descriptorFor(cache), {
+          ...FRESHNESS,
+          localePreference: 'accept-language',
+        }).vary,
+      ).toBeUndefined();
+    }
   });
 
   it('gives a private response no way to become shared', () => {
@@ -240,6 +274,21 @@ describe('what locale entry may be cached as', () => {
     }
   });
 
+  it('names Accept-Language where the deployment negotiates by it', () => {
+    const resolution = resolveLocalizedRoute('/about', POLICY, PROJECTION, {
+      locale: 'ar-EG',
+    });
+    expect(
+      routeCacheHeaders(routeHttpDescriptor(resolution), {
+        ...FRESHNESS,
+        localePreference: 'accept-language',
+      }),
+    ).toStrictEqual({
+      'cache-control': 'private, no-cache',
+      vary: 'Accept-Language',
+    });
+  });
+
   it('is the same for an address that names no route', () => {
     // Entry answers before the question of whether the page exists, so the address that has no
     // page is classified the same way as the one that does.
@@ -321,6 +370,44 @@ describe('what a locale-neutral policy does to cacheability', () => {
     });
     expect(headersFor('ar-EG', 'accept-language')).toStrictEqual({
       'cache-control': 'public, max-age=600, must-revalidate',
+      vary: 'Accept-Language',
+    });
+  });
+
+  it('keeps Accept-Language on a private page it negotiated', () => {
+    // Private keeps the page out of every shared cache; the language it was chosen in is still the
+    // one `Accept-Language` picked.
+    const privatePage: RouteRuntimeProjection = {
+      ...PROJECTION,
+      generated: {
+        ...PROJECTION.generated,
+        routes: [
+          {
+            id: 'route:about',
+            path: 'about',
+            parameterNames: [],
+            indexing: 'private',
+          },
+        ],
+      },
+    };
+    const descriptor = routeHttpDescriptor(
+      resolveLocalizedRoute('/about', POLICY, privatePage, {
+        locale: 'ar-EG',
+      }),
+    );
+
+    expect(descriptor).toMatchObject({
+      cache: 'private-no-store',
+      variesBy: 'locale-preference',
+    });
+    expect(
+      routeCacheHeaders(descriptor, {
+        ...FRESHNESS,
+        localePreference: 'accept-language',
+      }),
+    ).toStrictEqual({
+      'cache-control': 'private, no-store',
       vary: 'Accept-Language',
     });
   });

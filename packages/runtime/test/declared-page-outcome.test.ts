@@ -334,4 +334,30 @@ describe('the descriptor a declaration produces', () => {
     expect(declared.cache).toBe('private-no-store');
     expect(declared.robots).toBeUndefined();
   });
+
+  it('keeps how the language was chosen, which the status does not change', () => {
+    const negotiated = routeHttpDescriptor({
+      status: 'success',
+      locale: 'ar-EG',
+      direction: 'rtl',
+      routeId: 'route:second',
+      parameters: {},
+      canonicalPath: 'second',
+      query: [],
+      indexing: 'indexable',
+      variesBy: 'locale-preference',
+    });
+
+    for (const declaration of [pageAbsent(), pageOperationalFailure(503)]) {
+      const declared = pageOutcomeHttpDescriptor(declaration, negotiated);
+      expect(declared).toMatchObject({
+        cache: 'private-no-store',
+        contentLanguage: 'ar-EG',
+        variesBy: 'locale-preference',
+      });
+      expect(pageOutcomeHttpDescriptor(declaration, resolved).variesBy).toBe(
+        undefined,
+      );
+    }
+  });
 });

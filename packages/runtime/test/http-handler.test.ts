@@ -314,6 +314,26 @@ describe('the fact the handler derives and the descriptor is told', () => {
     expect(response.headers.get('content-language')).toBe('ar-EG');
     expect(response.headers.get('set-cookie')).toBeNull();
   });
+
+  it('names Accept-Language on the entry redirect it negotiated', async () => {
+    const negotiating = createLocaleRequestHandler({
+      policy: POLICY,
+      projection: PROJECTION,
+      cache: CACHE,
+      cookie: false,
+    });
+
+    const entry = await negotiating(
+      new Request('https://site.example/', {
+        headers: { 'accept-language': 'ar-EG,en;q=0.8' },
+      }),
+    );
+
+    expect(entry.status).toBe(307);
+    expect(entry.headers.get('location')).toBe('/ar-eg');
+    expect(entry.headers.get('cache-control')).toBe('private, no-cache');
+    expect(entry.headers.get('vary')).toBe('Accept-Language');
+  });
 });
 
 /**

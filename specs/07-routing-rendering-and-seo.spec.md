@@ -273,6 +273,12 @@ declare that source. A preference read from a request language header is content
 takes a varying header; a preference read from a cookie is not, and takes a private directive,
 because a cache keyed on a whole cookie stores a variant per visitor.
 
+Which request field chose an answer and who may keep it are separate facts, and raising the second
+leaves the first alone. A release MUST name the request language header in `Vary` on every response
+whose locale a preference read from that header chose, including a locale-entry redirect, a private
+response, and a declared outcome at such an address, because the field also tells a browser the
+answer was negotiated. A release MUST NOT name a cookie in `Vary`.
+
 A locale named in a programmatic navigation is an address rather than an instruction. A release MUST
 resolve it to the canonical route and render it in the committed locale, and MUST report the call in
 development, naming the address as written, the canonical address, and the operation that does

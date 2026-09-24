@@ -674,6 +674,16 @@ export interface RouteHttpDescriptor {
     | 'private-no-cache'
     | 'private-no-store'
     | 'consumer-defined-permanent';
+  /**
+   * Present when a preference the address does not state chose this answer: a locale-neutral page,
+   * and a locale-entry redirect.
+   *
+   * Beside `cache` rather than inside it, because it answers a different header. `cache` says who
+   * may keep the response, and a route or a host can raise that; this says what the answer was
+   * chosen by, which nothing raises or lowers, so a response kept by nobody still says it was
+   * negotiated.
+   */
+  readonly variesBy?: 'locale-preference';
 }
 
 /**
@@ -781,28 +791,42 @@ export function routeCacheHeaders(
   descriptor: RouteHttpDescriptor,
   freshness: RouteCacheFreshness,
 ): RouteCacheHeaders {
-  switch (descriptor.cache) {
+  // Only a negotiated preference is named. A cookie is never named, because a cache keyed on one
+  // stores a variant per visitor, and a response chosen by a cookie is private, which RFC 9110
+  // section 12.5.5 lets a `Vary` be left off. A private response chosen by `Accept-Language` keeps
+  // it, because the second purpose that section gives `Vary` is telling the browser the response
+  // was negotiated, and that holds whoever may keep it.
+  const negotiated =
+    freshness.localePreference === 'accept-language' &&
+    (descriptor.variesBy === 'locale-preference' ||
+      descriptor.cache === 'varies-by-locale-preference');
+  return Object.freeze({
+    'cache-control': cacheControl(descriptor.cache, freshness),
+    ...(negotiated ? { vary: 'Accept-Language' } : {}),
+  });
+}
+
+function cacheControl(
+  cache: RouteHttpDescriptor['cache'],
+  freshness: RouteCacheFreshness,
+): string {
+  switch (cache) {
     case 'public':
-      return Object.freeze({ 'cache-control': successDirective(freshness) });
+      return successDirective(freshness);
     case 'consumer-defined-permanent':
-      return Object.freeze({
-        'cache-control': `public, max-age=${wholeSeconds(freshness.permanentRedirectMaxAge, 'permanentRedirectMaxAge')}`,
-      });
+      return `public, max-age=${wholeSeconds(freshness.permanentRedirectMaxAge, 'permanentRedirectMaxAge')}`;
     case 'private-no-cache':
-      return Object.freeze({ 'cache-control': 'private, no-cache' });
+      return 'private, no-cache';
     case 'private-no-store':
-      return Object.freeze({ 'cache-control': 'private, no-store' });
+      return 'private, no-store';
     case 'varies-by-locale-preference':
       switch (freshness.localePreference) {
         case 'accept-language':
-          return Object.freeze({
-            'cache-control': successDirective(freshness),
-            vary: 'Accept-Language',
-          });
+          return successDirective(freshness);
         case 'cookie':
-          return Object.freeze({ 'cache-control': 'private, no-store' });
+          return 'private, no-store';
         case 'none':
-          routeError(
+          return routeError(
             'This response varied by locale preference and `localePreference` is `none`, which are two statements that cannot both be true. Equator resolved a locale from a preference the host supplied, so the host reads one somewhere; name where, so the answer can say whether a shared cache may hold it.',
           );
       }
@@ -4111,6 +4135,9 @@ export function routeHttpDescriptor(
         status: resolution.httpStatus,
         location: resolution.location,
         cache: resolution.cache,
+        ...(resolution.reason === 'locale-entry'
+          ? { variesBy: 'locale-preference' as const }
+          : {}),
       });
     case 'success':
       return Object.freeze({
@@ -4130,6 +4157,9 @@ export function routeHttpDescriptor(
             : resolution.variesBy === 'locale-preference'
               ? 'varies-by-locale-preference'
               : 'public',
+        ...(resolution.variesBy === undefined
+          ? {}
+          : { variesBy: resolution.variesBy }),
       });
   }
 }
