@@ -188,6 +188,14 @@ const declared = Object.freeze([
     id: 'verify:docs-reference',
     reads: ['dist:runtime', 'dist:toolkit', 'source:docs', 'source:packages'],
   },
+  // The closed unions the strict row compiles a switch for, found in the built declarations, so it
+  // waits for `build`. What it compares against is the strict row's overlay under `fixtures/`, which
+  // is not an artefact any stage writes. `source:packages` is the two package manifests, which the
+  // rows' profiles, where the strict row's options come from, read their versions from.
+  {
+    id: 'verify:closed-unions',
+    reads: ['dist:runtime', 'dist:toolkit', 'source:packages'],
+  },
   // Reads the composable exports out of the built declarations and the guides out of `docs/`, so
   // it fails when a feature ships with no page telling a reader it exists.
   {
