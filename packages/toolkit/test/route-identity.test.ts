@@ -8,6 +8,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { analyzeApplication } from '../src/static-analysis.js';
 import type { ToolkitDiagnostic, RouteProjection } from '../src/index.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * What a route is called, and whether that name can be relied on.
  *
@@ -249,6 +251,7 @@ describe('route indexing', () => {
       'route:admin': 'private',
       'route:draft': 'non-indexable',
     });
+    claimCapability('declaration:route-indexing-class');
   });
 
   it("reads the consumer's own field when one is named", async () => {
@@ -285,6 +288,7 @@ describe('route indexing', () => {
     });
 
     expect(classes(analysed)).toEqual({ 'route:admin': 'indexable' });
+    claimCapability('declaration:route-indexing-class');
   });
 
   it('ignores a withRouting that is not the one Equator exports', async () => {
@@ -303,6 +307,7 @@ describe('route indexing', () => {
     });
 
     expect(classes(analysed)).toEqual({ 'route:account': 'indexable' });
+    claimCapability('declaration:route-indexing-class');
   });
 });
 
@@ -588,6 +593,7 @@ describe('route sitemap claims', () => {
       // about it, so the route claims nothing rather than being given a default.
       'route:terms': undefined,
     });
+    claimCapability('declaration:route-sitemap-entry');
   });
 
   it('claims nothing anywhere when the owner declares no sitemap policy', async () => {
@@ -613,6 +619,7 @@ describe('route sitemap claims', () => {
     expect(claims(analysed)).toEqual({
       'route:news': { lastmod: '2026-09-01' },
     });
+    claimCapability('declaration:route-sitemap-entry');
   });
 
   it('refuses a lastmod that is not a W3C date and says so', async () => {
@@ -626,6 +633,7 @@ describe('route sitemap claims', () => {
     });
     expect(codes(analysed)).toContain('EQ1412');
     expect(claims(analysed)).toEqual({ 'route:news': undefined });
+    claimCapability('declaration:route-sitemap-entry');
   });
 
   it('refuses a changefreq the protocol does not list', async () => {
@@ -639,6 +647,7 @@ describe('route sitemap claims', () => {
     });
     expect(codes(analysed)).toContain('EQ1412');
     expect(claims(analysed)).toEqual({ 'route:news': undefined });
+    claimCapability('declaration:route-sitemap-entry');
   });
 
   it('refuses a priority outside the range, and keeps the rest of the class', async () => {
@@ -654,6 +663,7 @@ describe('route sitemap claims', () => {
     // The bad half is refused and the good half stands. An entry with a changefreq and no priority
     // is a valid entry, so throwing the class away would lose something the consumer got right.
     expect(claims(analysed)).toEqual({ 'route:news': { changefreq: 'daily' } });
+    claimCapability('declaration:route-sitemap-entry');
   });
 
   it('reports an owner that declares two sitemap fields and uses the first', async () => {
@@ -671,6 +681,7 @@ describe('route sitemap claims', () => {
     });
     expect(codes(analysed)).toContain('EQ1412');
     expect(claims(analysed)).toEqual({ 'route:news': { priority: 0.9 } });
+    claimCapability('declaration:route-sitemap-entry');
   });
 });
 
@@ -704,6 +715,7 @@ describe('route caching', () => {
       'route:home': 'per-visitor',
       'route:account': 'not-stored',
     });
+    claimCapability('declaration:route-caching-class');
   });
 
   it("reads the consumer's own field, and an unlisted value there says nothing", async () => {
@@ -722,6 +734,7 @@ describe('route caching', () => {
       'route:news': 'absent',
     });
     expect(codes(analysed)).not.toContain('EQ1413');
+    claimCapability('declaration:route-caching-class');
   });
 
   it('refuses a value in its own field that names no class', async () => {
@@ -733,6 +746,7 @@ describe('route caching', () => {
 
     expect(codes(analysed)).toContain('EQ1413');
     expect(caching(analysed)).toEqual({ 'route:account': 'not-stored' });
+    claimCapability('declaration:route-caching-class');
   });
 
   it('refuses a route value it cannot read', async () => {
@@ -750,6 +764,7 @@ describe('route caching', () => {
 
     expect(codes(analysed)).toContain('EQ1413');
     expect(caching(analysed)).toEqual({ 'route:account': 'not-stored' });
+    claimCapability('declaration:route-caching-class');
   });
 
   it('refuses a table value it cannot read, and answers its routes as not-stored', async () => {
@@ -768,6 +783,7 @@ describe('route caching', () => {
 
     expect(codes(analysed)).toContain('EQ1413');
     expect(caching(analysed)).toEqual({ 'route:home': 'not-stored' });
+    claimCapability('declaration:route-caching-class');
   });
 
   it('refuses a table it cannot read, and answers every route that sets the field as not-stored', async () => {
@@ -789,6 +805,7 @@ describe('route caching', () => {
       'route:home': 'not-stored',
       'route:news': 'absent',
     });
+    claimCapability('declaration:route-caching-class');
   });
 
   it('reports an owner that declares two caching fields and uses the first', async () => {
@@ -807,5 +824,6 @@ describe('route caching', () => {
 
     expect(codes(analysed)).toContain('EQ1413');
     expect(caching(analysed)).toEqual({ 'route:home': 'per-visitor' });
+    claimCapability('declaration:route-caching-class');
   });
 });

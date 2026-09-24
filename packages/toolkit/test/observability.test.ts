@@ -21,6 +21,8 @@ import {
 } from '../src/index.js';
 import { applyAuthoredChangePlan } from '../src/authoring-transaction.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 const temporaryRoots: string[] = [];
 
 afterEach(async () => {
@@ -157,6 +159,7 @@ describe('Equator toolkit observability', () => {
     expect(serialized).not.toContain('PRIVATE PAYLOAD');
     expect(serialized).not.toContain('private-source.yaml');
     expect(serialized).not.toContain('private-target.yaml');
+    claimCapability('capability:xliff');
   });
 
   it('contains thrown sinks without changing the interchange result', () => {
@@ -171,6 +174,7 @@ describe('Equator toolkit observability', () => {
       },
     });
     expect(actual).toEqual(expected);
+    claimCapability('capability:xliff');
   });
 
   it('suppresses duplicate failures for the same sink and safe context', () => {
@@ -213,6 +217,7 @@ describe('Equator toolkit observability', () => {
       },
     ]);
     expect(JSON.stringify(events)).not.toContain(request.document);
+    claimCapability('capability:xliff');
   });
 
   it('reports migration completion and unchanged replay without plan content', async () => {

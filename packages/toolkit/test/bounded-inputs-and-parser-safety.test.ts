@@ -13,6 +13,8 @@ import {
 import { RESOURCE_LIMITS } from '../src/resource-limits.js';
 import { toolkitDiagnostic, toolkitFailure } from '../src/diagnostics.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 const sourceOptions: CatalogParseOptions = {
   role: 'source',
   providerId: '@example/app',
@@ -138,6 +140,7 @@ describe('XLIFF parser safety', () => {
     expect(imported.value.messages['title']).toMatchObject({
       message: 'روك & رول',
     });
+    claimCapability('capability:xliff');
   });
 
   it('rejects processing instructions, repeated declarations, and unsafe CDATA', () => {
@@ -170,5 +173,6 @@ describe('XLIFF parser safety', () => {
         source,
       }).ok,
     ).toBe(false);
+    claimCapability('capability:xliff');
   });
 });

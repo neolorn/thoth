@@ -38,6 +38,8 @@ import {
 } from '../src/index.js';
 import { initializeProject } from '../src/project-host.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 const temporaryRoots: string[] = [];
 
 afterEach(async () => {
@@ -274,6 +276,8 @@ describe('pseudo-locales are generated rather than authored', () => {
     expect(JSON.stringify(expanded.messages)).not.toBe(
       JSON.stringify(source.messages),
     );
+    claimCapability('cli:generate');
+    claimCapability('capability:pseudo-locale');
   });
 
   it('leaves no trace of them when the flag is absent', async () => {
@@ -293,6 +297,7 @@ describe('pseudo-locales are generated rather than authored', () => {
     // The control, without which the three absences above prove only that the file was read. An
     // authored locale from the same configuration must be present in the same text.
     expect(output).toContain('ar-EG');
+    claimCapability('cli:generate');
   });
 
   it('refuses a pseudo-locale that is also an authored locale', () => {
@@ -307,6 +312,7 @@ describe('pseudo-locales are generated rather than authored', () => {
     );
     expect(parsed.ok).toBe(false);
     expect(parsed.diagnostics.map(({ code }) => code)).toContain('EQ1004');
+    claimCapability('capability:pseudo-locale');
   });
 
   it('refuses a pseudo-locale tag that is not a catalog locale identity', () => {
@@ -335,6 +341,7 @@ describe('pseudo-locales are generated rather than authored', () => {
       }),
     );
     expect(accepted.ok).toBe(true);
+    claimCapability('capability:pseudo-locale');
   });
 
   it('round-trips the declaration through the configuration formatter', () => {
@@ -355,5 +362,6 @@ describe('pseudo-locales are generated rather than authored', () => {
       lengthFactor: 0.4,
       markers: true,
     });
+    claimCapability('capability:pseudo-locale');
   });
 });

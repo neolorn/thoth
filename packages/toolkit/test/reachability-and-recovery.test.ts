@@ -6,6 +6,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { checkProject, generateProject } from '../src/index.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Two promises the tooling rules make that nothing kept.
  *
@@ -220,6 +222,8 @@ describe('an owner that composes the application runtime', () => {
     // reports is an error the gate never sees.
     const checked = await checkProject({ project: root });
     expect(checked.diagnostics.map(({ code }) => code)).toContain('EQ1310');
+    claimCapability('cli:generate');
+    claimCapability('cli:check');
   });
 
   it('recognizes the direct provideLocalizationSetup spelling too', async () => {
@@ -233,6 +237,7 @@ describe('an owner that composes the application runtime', () => {
     const generated = await generateProject({ project: root });
 
     expect(generated.diagnostics.map(({ code }) => code)).toContain('EQ1310');
+    claimCapability('cli:generate');
   });
 
   it('is silent once it selects one', async () => {
@@ -247,6 +252,7 @@ describe('an owner that composes the application runtime', () => {
     expect(generated.diagnostics.map(({ code }) => code)).not.toContain(
       'EQ1310',
     );
+    claimCapability('cli:generate');
   });
 
   it('says nothing to an owner that composes no application runtime', async () => {
@@ -263,6 +269,7 @@ describe('an owner that composes the application runtime', () => {
     expect(generated.diagnostics.map(({ code }) => code)).not.toContain(
       'EQ1310',
     );
+    claimCapability('cli:generate');
   });
 });
 
@@ -285,6 +292,7 @@ describe('source messages nothing reaches', () => {
     expect(advisories[0]?.severity).toBe('info');
     expect(advisories[0]?.summary).toContain('4 source messages');
     expect(advisories[0]?.summary).toContain('"orphan-a"');
+    claimCapability('cli:generate');
   });
 
   it('never block a build', async () => {
@@ -299,6 +307,8 @@ describe('source messages nothing reaches', () => {
 
     expect((await generateProject({ project: root })).ok).toBe(true);
     expect((await checkProject({ project: root })).ok).toBe(true);
+    claimCapability('cli:generate');
+    claimCapability('cli:check');
   });
 
   it('say nothing when every message is reached', async () => {
@@ -313,5 +323,6 @@ describe('source messages nothing reaches', () => {
     expect(generated.diagnostics.map(({ code }) => code)).not.toContain(
       'EQ1311',
     );
+    claimCapability('cli:generate');
   });
 });

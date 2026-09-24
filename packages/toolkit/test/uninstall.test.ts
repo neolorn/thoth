@@ -7,6 +7,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { generateProject } from '../src/index.js';
 import { cleanProject, uninstallProject } from '../src/project-host.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Removing Equator from an application.
  *
@@ -162,6 +164,7 @@ describe('uninstalling Equator', () => {
     // The consumer's translations. Removing these as a side effect would be indefensible.
     expect(await exists(resolve(root, 'i18n/shell/en-US.yaml'))).toBe(true);
     expect(result.value.catalogs).toEqual([]);
+    claimCapability('cli:uninstall');
   });
 
   it('leaves a repointed specifier and an edited script exactly as they are', async () => {
@@ -184,6 +187,7 @@ describe('uninstalling Equator', () => {
       'imports.#i18n',
       'scripts.equator:generate',
     ]);
+    claimCapability('cli:uninstall');
   });
 
   it('removes authored catalogs only when asked by name', async () => {
@@ -198,6 +202,7 @@ describe('uninstalling Equator', () => {
 
     expect(result.value.catalogs).toEqual(['i18n/shell/en-US.yaml']);
     expect(await exists(resolve(root, 'i18n/shell/en-US.yaml'))).toBe(false);
+    claimCapability('cli:uninstall');
   });
 
   it('changes nothing under --dry-run', async () => {
@@ -217,6 +222,7 @@ describe('uninstalling Equator', () => {
     expect(await readFile(resolve(root, 'package.json'), 'utf8')).toBe(before);
     expect(await exists(resolve(root, 'equator.config.json'))).toBe(true);
     expect(await exists(resolve(root, 'i18n/shell/en-US.yaml'))).toBe(true);
+    claimCapability('cli:uninstall');
   });
 
   it('is not what clean does', async () => {
@@ -233,5 +239,6 @@ describe('uninstalling Equator', () => {
     expect(await exists(resolve(root, 'src/generated/i18n/index.ts'))).toBe(
       false,
     );
+    claimCapability('cli:clean');
   });
 });

@@ -13,6 +13,8 @@ import {
 } from '../src/index.js';
 import { pseudoLocalizeMessage } from '../src/pseudo-localization.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 const sourceOptions: CatalogParseOptions = {
   role: 'source',
   providerId: '@example/app',
@@ -91,6 +93,7 @@ describe('Equator XLIFF 2.2 interchange', () => {
     expect(imported.ok).toBe(true);
     if (!imported.ok) return;
     expect(formatCatalog(imported.value)).toBe(formatCatalog(target));
+    claimCapability('capability:xliff');
   });
 
   it('rejects external entities and does not silently accept stale source units', () => {
@@ -118,6 +121,7 @@ describe('Equator XLIFF 2.2 interchange', () => {
     ]);
     expect(stale.value.messages['greeting']).toBeUndefined();
     expect(stale.value.messages['count']).toBeDefined();
+    claimCapability('capability:xliff');
   });
 });
 
@@ -196,6 +200,7 @@ describe('Equator pseudo-locales', () => {
     expect(expanded.value.role).toBe('target');
     expect(expanded.value.messages['greeting']?.inputs).toEqual({});
     expect(expanded.value.messages['spacer']?.kind).toBe('empty');
+    claimCapability('capability:pseudo-locale');
   });
 
   it('parses a registered message function instead of rejecting it', () => {
@@ -251,6 +256,7 @@ describe('Equator pseudo-locales', () => {
       lengthFactor: -0.35,
     });
     expect(accepted.ok).toBe(true);
+    claimCapability('capability:pseudo-locale');
   });
 
   /**
@@ -391,6 +397,7 @@ describe('Equator XLIFF import of a document Equator did not write', () => {
     expect(imported.ok).toBe(true);
     if (!imported.ok) return;
     expect(formatCatalog(imported.value)).toBe(formatCatalog(foreignTarget));
+    claimCapability('capability:xliff');
   });
 
   it('names the catalog it could not find when no file belongs to it', () => {
@@ -403,6 +410,7 @@ describe('Equator XLIFF import of a document Equator did not write', () => {
     expect(imported.ok).toBe(false);
     if (imported.ok) return;
     expect(imported.diagnostics[0]?.summary).toContain('@example/app:shell');
+    claimCapability('capability:xliff');
   });
 
   it('refuses a document that carries the same catalog twice', () => {
@@ -414,6 +422,7 @@ describe('Equator XLIFF import of a document Equator did not write', () => {
     });
     const imported = importXliff22({ document, source: foreignSource });
     expect(imported.ok).toBe(false);
+    claimCapability('capability:xliff');
   });
 
   it('does not read Equator metadata out of a prefix bound to another namespace', () => {
@@ -435,5 +444,6 @@ describe('Equator XLIFF import of a document Equator did not write', () => {
       : [];
     expect(importedMessageIds).not.toContain('greeting');
     expect(imported.diagnostics.length).toBeGreaterThan(0);
+    claimCapability('capability:xliff');
   });
 });

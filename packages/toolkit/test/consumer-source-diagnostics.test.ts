@@ -6,6 +6,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { checkProject, generateProject } from '../src/index.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * A consumer mid-refactor must not have its Equator build fail because of its own TypeScript
  * errors.
@@ -211,6 +213,7 @@ describe("a consumer's own TypeScript errors", () => {
     expect(
       diagnostics.filter((d) => d.severity === 'warning').length,
     ).toBeGreaterThanOrEqual(99);
+    claimCapability('cli:generate');
   });
 
   it('reports them as warnings rather than errors', async () => {
@@ -221,6 +224,7 @@ describe("a consumer's own TypeScript errors", () => {
     for (const diagnostic of generated.diagnostics) {
       expect(diagnostic.severity).toBe('warning');
     }
+    claimCapability('cli:generate');
   });
 
   it('refuses to read a component template that escapes the owner', async () => {
@@ -245,6 +249,7 @@ describe("a consumer's own TypeScript errors", () => {
     for (const diagnostic of diagnostics) {
       expect(diagnostic.summary).not.toContain('MUST_NOT_READ_THIS');
     }
+    claimCapability('cli:generate');
   });
 
   it('analyses a consumer that configures compilerOptions.paths', async () => {
@@ -274,6 +279,8 @@ describe("a consumer's own TypeScript errors", () => {
         summary.includes('@app/toolbox'),
       ),
     ).toEqual([]);
+    claimCapability('cli:generate');
+    claimCapability('cli:check');
   });
 
   it('does not become fatal once the volume crosses the diagnostic cap', async () => {
@@ -298,6 +305,7 @@ describe("a consumer's own TypeScript errors", () => {
     expect(truncation).toHaveLength(1);
     expect(truncation[0]?.severity).toBe('warning');
     expect(truncation[0]?.summary).toContain('150');
+    claimCapability('cli:generate');
   });
 
   it('caps how many consumer findings it reports without capping the outcome', async () => {
@@ -311,5 +319,6 @@ describe("a consumer's own TypeScript errors", () => {
     // 100 findings plus the notice that there were more. Bounded output, unbounded tolerance.
     expect(warnings.length).toBeLessThanOrEqual(101);
     expect(warnings.length).toBeGreaterThanOrEqual(100);
+    claimCapability('cli:generate');
   });
 });

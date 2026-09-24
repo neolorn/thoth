@@ -11,6 +11,8 @@ import { localeFallbackChain } from '../src/locales.js';
 import { PARENT_LOCALES } from '../src/parent-locales.generated.js';
 import { testProjectConfiguration } from './fixtures.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * A locale falls back to its parent before it falls back to the source.
  *
@@ -139,6 +141,7 @@ describe('the declarations a configuration is refused for', () => {
     const parsed = configuration({ parentLocales: { 'en-001': 'und' } });
     if (!parsed.ok) throw new Error('the configuration was refused');
     expect(parsed.value.parentLocales).toEqual({ 'en-001': 'und' });
+    claimCapability('capability:fallback-chain');
   });
 
   it('refuses a locale that declares itself', () => {
@@ -147,6 +150,7 @@ describe('the declarations a configuration is refused for', () => {
     expect(
       codesOf(configuration({ parentLocales: { 'en-AU': 'en-AU' } })),
     ).toContain('EQ1007');
+    claimCapability('capability:fallback-chain');
   });
 
   it('refuses a chain that comes back on itself', () => {
@@ -165,6 +169,7 @@ describe('the declarations a configuration is refused for', () => {
     expect(cycles.map(({ summary }) => summary).join('\n')).toContain(
       'en-US to en-AU to en-US',
     );
+    claimCapability('capability:fallback-chain');
   });
 
   it('refuses a declaration nothing inherits through', () => {
@@ -173,6 +178,7 @@ describe('the declarations a configuration is refused for', () => {
     expect(
       codesOf(configuration({ parentLocales: { 'fr-CA': 'fr' } })),
     ).toContain('EQ1004');
+    claimCapability('capability:fallback-chain');
   });
 
   it('refuses a malformed locale on either side', () => {
@@ -182,6 +188,7 @@ describe('the declarations a configuration is refused for', () => {
     expect(
       codesOf(configuration({ parentLocales: { 'en-AU': 'not a locale' } })),
     ).toContain('EQ1003');
+    claimCapability('capability:fallback-chain');
   });
 });
 
@@ -253,12 +260,14 @@ describe('what the build hands the runtime', () => {
         ),
       ),
     ).toContain('localeFallbacks: Object.freeze({"en-AU":["en"]} as const)');
+    claimCapability('capability:fallback-chain');
   });
 
   it('carries nothing when no locale inherits from another it ships', () => {
     expect(
       indexModuleOf(graphOf(analyze(['fr-FR', 'en'], [french, english]))),
     ).not.toContain('localeFallbacks');
+    claimCapability('capability:fallback-chain');
   });
 
   it('sends a redirected locale where the declaration points', () => {
@@ -283,6 +292,7 @@ describe('what the build hands the runtime', () => {
         ),
       ),
     ).toContain('localeFallbacks: Object.freeze({"hi-Latn":["hi"]}');
+    claimCapability('capability:fallback-chain');
   });
 
   it('sends nothing for a locale whose script parts it from its language', () => {
@@ -303,6 +313,7 @@ describe('what the build hands the runtime', () => {
         graphOf(analyze(['fr-FR', 'az', 'az-Arab'], [french, latin, arabic])),
       ),
     ).not.toContain('localeFallbacks');
+    claimCapability('capability:fallback-chain');
   });
 });
 

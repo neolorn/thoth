@@ -8,6 +8,8 @@ import { checkProject, generateProject, parseCatalog } from '../src/index.js';
 import { analyzeCatalogSet } from '../src/semantic-model.js';
 import { testProjectConfiguration } from './fixtures.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Is the release gate about completeness, or about two of its findings?
  *
@@ -310,6 +312,7 @@ describe('a translation written against an older source', () => {
         .filter(({ code }) => code === 'EQ1309')
         .map(({ severity }) => severity),
     ).toEqual(['error']);
+    claimCapability('cli:check');
   });
 
   it('is an advisory when no release gate asked', async () => {
@@ -317,6 +320,7 @@ describe('a translation written against an older source', () => {
     expect(
       result.diagnostics.map(({ code, severity }) => `${code} ${severity}`),
     ).toContain('EQ1309 warning');
+    claimCapability('cli:check');
   });
 
   it('is exempted by the same declaration, with its reason carried in', async () => {
@@ -333,6 +337,7 @@ describe('a translation written against an older source', () => {
     const stale = result.diagnostics.filter(({ code }) => code === 'EQ1309');
     expect(stale.map(({ severity }) => severity)).toEqual(['warning']);
     expect(stale[0]?.summary).toContain('Q4 launch');
+    claimCapability('cli:check');
   });
 });
 
@@ -379,5 +384,6 @@ describe('a stricter run reports more', () => {
         }),
       ),
     ).toEqual(['EQ1307 error', 'EQ1309 error', 'EQ1704 error']);
+    claimCapability('cli:check');
   });
 });

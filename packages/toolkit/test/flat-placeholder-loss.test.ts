@@ -8,6 +8,8 @@ import {
   type CatalogParseOptions,
 } from '../src/index.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * A translation that stopped rendering a value the source renders.
  *
@@ -107,6 +109,7 @@ describe('a flat translation that drops a value', () => {
         ),
       }).ok,
     ).toBe(true);
+    claimCapability('capability:xliff');
   });
 
   it('accepts a locale whose variants do not line up with the source, and need not', () => {
@@ -130,6 +133,7 @@ describe('a flat translation that drops a value', () => {
     // And the whole MessageFormat source went across, which is what makes the flat representation
     // usable at all: the translator sees the variants even though XLIFF cannot key them.
     expect(exported.value).toContain('.match $count');
+    claimCapability('capability:xliff');
   });
 
   it('follows a renamed local to the input it was declared from', () => {
@@ -174,6 +178,7 @@ describe('a flat translation that drops a value', () => {
     const refused = exportXliff22({ source: renamed, target: gone });
     expect(refused.ok).toBe(false);
     expect(summaries(refused.diagnostics)).toContain('"$count"');
+    claimCapability('capability:xliff');
   });
 
   it('does not count an input the translation only selects on', () => {
@@ -197,6 +202,7 @@ describe('a flat translation that drops a value', () => {
       targetOptions,
     );
     expect(exportXliff22({ source: plain, target: gendered }).ok).toBe(true);
+    claimCapability('capability:xliff');
   });
 
   it('is refused on import, which is where it actually arrives', () => {
@@ -226,5 +232,6 @@ describe('a flat translation that drops a value', () => {
     expect(imported.ok).toBe(false);
     expect(summaries(imported.diagnostics)).toContain('"$count"');
     expect(imported.diagnostics.map(({ code }) => code)).toContain('EQ1803');
+    claimCapability('capability:xliff');
   });
 });

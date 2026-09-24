@@ -13,6 +13,8 @@ import {
   type CatalogParseOptions,
 } from '../src/index.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Every document this package writes, against the schema OASIS publishes for the version it claims.
  *
@@ -169,6 +171,7 @@ describe('Equator XLIFF 2.2 documents against the OASIS schema', () => {
     expect(exported.ok).toBe(true);
     if (!exported.ok) return;
     expect(await schemaErrors(exported.value)).toEqual([]);
+    claimCapability('capability:xliff');
   });
 
   it('validates a source-only export, which has no <target> at all', async () => {
@@ -176,6 +179,7 @@ describe('Equator XLIFF 2.2 documents against the OASIS schema', () => {
     expect(exported.ok).toBe(true);
     if (!exported.ok) return;
     expect(await schemaErrors(exported.value)).toEqual([]);
+    claimCapability('capability:xliff');
   });
 
   it('round-trips every shape back to the target catalog it came from', () => {
@@ -186,6 +190,7 @@ describe('Equator XLIFF 2.2 documents against the OASIS schema', () => {
     expect(imported.ok).toBe(true);
     if (!imported.ok) return;
     expect(formatCatalog(imported.value)).toBe(formatCatalog(target));
+    claimCapability('capability:xliff');
   });
 });
 
@@ -279,6 +284,7 @@ describe('Equator XLIFF inline codes', () => {
       source,
     });
     expect(imported.ok).toBe(false);
+    claimCapability('capability:xliff');
   });
 
   it('names the placeholder a translation is missing', () => {
@@ -293,6 +299,7 @@ describe('Equator XLIFF inline codes', () => {
     expect(
       imported.diagnostics.some((entry) => entry.summary.includes('{$name}')),
     ).toBe(true);
+    claimCapability('capability:xliff');
   });
 
   it('refuses a translation that invented a placeholder', () => {
@@ -315,6 +322,7 @@ describe('Equator XLIFF inline codes', () => {
     expect(
       imported.diagnostics.some((entry) => entry.summary.includes('{$name}')),
     ).toBe(true);
+    claimCapability('capability:xliff');
   });
 
   it('accepts a translation that reorders the placeholders it kept', () => {
@@ -336,6 +344,7 @@ describe('Equator XLIFF inline codes', () => {
     expect(
       (imported.value.messages['repeated'] as { message?: string }).message,
     ).toBe('{$name} avant {$name}');
+    claimCapability('capability:xliff');
   });
 
   it('reads a brace a translator typed as a brace, not as a placeholder', () => {
@@ -348,5 +357,6 @@ describe('Equator XLIFF inline codes', () => {
     expect(braces.message).toBe(
       'Utilisez des \\{accolades\\} et un antislash \\\\ ici.',
     );
+    claimCapability('capability:xliff');
   });
 });

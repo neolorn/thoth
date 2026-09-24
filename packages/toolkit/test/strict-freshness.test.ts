@@ -22,6 +22,8 @@ import { diagnosticsBlock } from '../src/diagnostics.js';
 import { checkProject, generateProject } from '../src/index.js';
 import { initializeProject } from '../src/project-host.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Whether the gate can fail at all.
  *
@@ -181,6 +183,7 @@ describe('strict freshness is an opt-in, and both halves are asserted', () => {
     const blocked = strict.diagnostics.find(({ code }) => code === 'EQ1704');
     expect(blocked?.severity).toBe('error');
     expect(diagnosticsBlock(strict.diagnostics)).toBe(true);
+    claimCapability('cli:check');
   });
 
   it('is separate from completeness, so neither switch implies the other', async () => {
@@ -224,5 +227,6 @@ describe('strict freshness is an opt-in, and both halves are asserted', () => {
     expect(
       completeOnly.diagnostics.find(({ code }) => code === 'EQ1704')?.severity,
     ).toBe('warning');
+    claimCapability('cli:check');
   });
 });

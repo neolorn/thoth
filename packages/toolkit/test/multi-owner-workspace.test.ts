@@ -14,6 +14,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { generateProject } from '../src/index.js';
 import { initializeProject } from '../src/project-host.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * A multi-application workspace: four `projectType: application` entries and two libraries in one
  * `angular.json`.
@@ -201,6 +203,7 @@ describe('a multi-application workspace with one manifest', () => {
       expect(generated.ok).toBe(false);
       expect(generated.diagnostics.map((d) => d.code)).toContain('EQ1702');
     }
+    claimCapability('cli:generate');
   });
 
   it('supports every owner once each carries a package.json', async () => {
@@ -216,6 +219,7 @@ describe('a multi-application workspace with one manifest', () => {
       });
       expect(generated.ok, `${application} should generate`).toBe(true);
     }
+    claimCapability('cli:generate');
   });
 
   it('keeps each owner generated output inside its own project', async () => {
@@ -241,6 +245,7 @@ describe('a multi-application workspace with one manifest', () => {
         expect(index).not.toContain(`@example/${other}`);
       }
     }
+    claimCapability('cli:generate');
   });
 
   it('cannot select an application that sits at the workspace root beside another', async () => {
@@ -260,6 +265,7 @@ describe('a multi-application workspace with one manifest', () => {
         summary.includes('multiple Angular application TypeScript graphs'),
       ),
     ).toBe(true);
+    claimCapability('cli:generate');
   });
 });
 
@@ -285,6 +291,8 @@ describe('onboarding an application that has no manifest', () => {
     });
 
     expect((await generateProject({ project: identity })).ok).toBe(true);
+    claimCapability('cli:init');
+    claimCapability('cli:generate');
   });
 
   it('reports nothing but the remedy when a build command meets a missing manifest', async () => {
@@ -306,6 +314,7 @@ describe('onboarding an application that has no manifest', () => {
     expect(
       summaries.some((summary) => summary.includes('never author files')),
     ).toBe(true);
+    claimCapability('cli:generate');
   });
 
   it('leaves the manifest alone when a build command runs, whatever the outcome', async () => {
@@ -321,6 +330,7 @@ describe('onboarding an application that has no manifest', () => {
     await expect(
       readFile(resolve(account, 'package.json'), 'utf8'),
     ).rejects.toThrow();
+    claimCapability('cli:generate');
   });
 
   it('refuses to name a package after a directory that is not a package name', async () => {
@@ -354,6 +364,7 @@ describe('onboarding an application that has no manifest', () => {
         summary.includes('not a valid package name'),
       ),
     ).toBe(true);
+    claimCapability('cli:init');
   });
 });
 
@@ -387,6 +398,7 @@ describe('an owner with no TypeScript graph', () => {
         summary.includes('no TypeScript graph'),
       ),
     ).toBe(true);
+    claimCapability('cli:generate');
   });
 });
 
@@ -494,6 +506,7 @@ describe('an owner at the workspace root whose application is nested', () => {
       await readdir(resolve(root, 'apps/home/src/generated/i18n')),
     ).toContain('shell.ts');
     await expect(readdir(resolve(root, 'src'))).rejects.toThrow();
+    claimCapability('cli:generate');
   });
 
   it('writes an imports map that reaches the application', async () => {
@@ -517,5 +530,6 @@ describe('an owner at the workspace root whose application is nested', () => {
       '#i18n': './apps/home/src/generated/i18n/index.ts',
       '#i18n/*': './apps/home/src/generated/i18n/*.ts',
     });
+    claimCapability('cli:init');
   });
 });

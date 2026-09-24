@@ -27,6 +27,8 @@ import {
   initializeProject,
 } from '../src/project-host.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 const temporaryRoots: string[] = [];
 
 async function temporaryProject(prefix: string): Promise<string> {
@@ -204,6 +206,7 @@ describe('Equator standalone project host', () => {
     const conflict = await initializeProject({ project: root });
     expect(conflict.ok).toBe(false);
     expect(conflict.diagnostics[0]?.code).toBe('EQ1705');
+    claimCapability('cli:init');
   });
 
   it('never selects a configuration above the package it is standing in', async () => {
@@ -260,6 +263,8 @@ describe('Equator standalone project host', () => {
     // The parent is untouched: its own `i18n` is the one its own init made, and nothing was added
     // to it.
     expect(await readdir(resolve(parent, 'i18n'))).toEqual([]);
+    claimCapability('cli:generate');
+    claimCapability('cli:init');
   });
 
   it('still finds a workspace-root owner from a directory inside it', async () => {
@@ -287,6 +292,7 @@ describe('Equator standalone project host', () => {
           summary.includes('discovery is ambiguous'),
       ),
     ).toBe(false);
+    claimCapability('cli:check');
   });
 
   it('preserves a pre-existing consumer file at the authoring-lock path', async () => {
@@ -304,6 +310,7 @@ describe('Equator standalone project host', () => {
     });
     expect(initialized.ok).toBe(false);
     expect(await readFile(lockPath, 'utf8')).toBe('consumer-owned\n');
+    claimCapability('cli:init');
   });
 
   it('generates, checks, caches, formats, and cleans without touching unchanged output', async () => {
@@ -368,6 +375,10 @@ describe('Equator standalone project host', () => {
     expect(again.ok).toBe(true);
     if (!again.ok) return;
     expect(again.value.changed).toBe(false);
+    claimCapability('cli:generate');
+    claimCapability('cli:check');
+    claimCapability('cli:format');
+    claimCapability('cli:clean');
   });
 
   it('propagates content-free observability through generation, host integration, and compilation', async () => {
@@ -432,6 +443,7 @@ describe('Equator standalone project host', () => {
     ]);
     expect(JSON.stringify(events)).not.toContain(root);
     expect(JSON.stringify(events)).not.toContain('Welcome');
+    claimCapability('cli:generate');
   });
 
   it('discovers, validates, formats, and compiles the conventional extension registry', async () => {
@@ -479,6 +491,9 @@ describe('Equator standalone project host', () => {
     expect(
       await readFile(resolve(root, 'equator.extensions.json'), 'utf8'),
     ).toContain('\n  "profile": "equator-extension-registry/1"');
+    claimCapability('cli:generate');
+    claimCapability('cli:format');
+    claimCapability('extension:message-function');
   });
 
   it('ignores corrupt disposable cache state and reconciles a foreground watch event', async () => {
@@ -530,6 +545,8 @@ describe('Equator standalone project host', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.cycles).toBeGreaterThanOrEqual(2);
+    claimCapability('cli:check');
+    claimCapability('cli:watch');
   });
 
   it('refuses clean when the generated root contains a consumer-owned file', async () => {
@@ -543,6 +560,7 @@ describe('Equator standalone project host', () => {
     expect(cleaned.ok).toBe(false);
     expect(cleaned.diagnostics[0]?.code).toBe('EQ1601');
     expect(await readFile(consumerFile, 'utf8')).toBe('keep me\n');
+    claimCapability('cli:clean');
   });
 });
 

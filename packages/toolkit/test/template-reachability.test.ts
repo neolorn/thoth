@@ -6,6 +6,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { generateProject } from '../src/index.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Which scopes the first render needs, when the messages are used in templates.
  *
@@ -225,6 +227,7 @@ describe('a route behind a lazy boundary', () => {
 
     expect(routes).toContain('scopeId: "page"');
     expect(routes).toContain('scopeId: "shell"');
+    claimCapability('cli:generate');
   });
 });
 
@@ -240,5 +243,6 @@ describe('a scope used only from a template', () => {
     );
 
     expect(startupOf(index)).toEqual({ page: false, shell: true });
+    claimCapability('cli:generate');
   });
 });

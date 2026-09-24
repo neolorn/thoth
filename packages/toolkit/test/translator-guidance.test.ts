@@ -9,6 +9,8 @@ import {
   type CatalogParseOptions,
 } from '../src/index.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Notes and target state across the XLIFF boundary.
  *
@@ -115,6 +117,7 @@ describe('guidance reaching the translator', () => {
     if (!result.ok) throw new Error('export failed');
 
     expect(result.value).not.toContain('<notes>');
+    claimCapability('capability:xliff');
   });
 
   it('keeps source and target guidance in separate notes', () => {
@@ -135,6 +138,7 @@ describe('guidance reaching the translator', () => {
       '<note id="equator-target-description" category="equator:description" appliesTo="target">صيغة رسمية</note>',
     );
     expect(result.value).toContain('appliesTo="source">Button that submits');
+    claimCapability('capability:xliff');
   });
 
   it('carries target guidance back on import', () => {
@@ -164,6 +168,7 @@ describe('guidance reaching the translator', () => {
     // And back out to YAML, which is where the round trip actually ends: guidance that survives
     // only in memory has not survived anything.
     expect(formatCatalog(imported.value)).toBe(formatCatalog(annotated));
+    claimCapability('capability:xliff');
   });
 });
 
@@ -184,6 +189,7 @@ describe('notes Equator did not write', () => {
       { code: 'EQ1803', severity: 'warning' },
     ]);
     expect(imported.diagnostics[0]?.summary).toContain('tms:comment');
+    claimCapability('capability:xliff');
   });
 
   it('names an uncategorized note rather than saying nothing', () => {
@@ -196,6 +202,7 @@ describe('notes Equator did not write', () => {
     if (!imported.ok) throw new Error('import failed');
 
     expect(imported.diagnostics[0]?.summary).toContain('(uncategorized)');
+    claimCapability('capability:xliff');
   });
 
   it('reports a note attached to the whole file', () => {
@@ -218,6 +225,7 @@ describe('notes Equator did not write', () => {
     expect(imported.diagnostics[0]?.summary).toContain(
       'XLIFF file carries notes',
     );
+    claimCapability('capability:xliff');
   });
 
   it('refuses a note that is not plain text', () => {
@@ -231,6 +239,7 @@ describe('notes Equator did not write', () => {
 
     const imported = importXliff22({ document, source });
     expect(imported.ok).toBe(false);
+    claimCapability('capability:xliff');
   });
 
   it('does not let an interchange document rewrite the source guidance', () => {
@@ -252,6 +261,7 @@ describe('notes Equator did not write', () => {
     expect(source.messages['checkout']).toMatchObject({
       description: 'Button that submits the cart',
     });
+    claimCapability('capability:xliff');
   });
 });
 
@@ -271,6 +281,7 @@ describe('target state', () => {
 
     expect(result.value).toContain('<segment>');
     expect(result.value).not.toContain('state=');
+    claimCapability('capability:xliff');
   });
 
   it('does not import a target still in its initial state', () => {
@@ -288,6 +299,7 @@ describe('target state', () => {
       { code: 'EQ1803' },
     ]);
     expect(imported.diagnostics[0]?.summary).toContain('initial state');
+    claimCapability('capability:xliff');
   });
 
   it('imports a reviewed or final segment', () => {
@@ -302,6 +314,7 @@ describe('target state', () => {
       if (!imported.ok) return;
       expect(imported.value.messages['checkout']).toBeDefined();
     }
+    claimCapability('capability:xliff');
   });
 
   it('refuses a state the standard does not define', () => {
@@ -313,5 +326,6 @@ describe('target state', () => {
     const imported = importXliff22({ document, source });
     expect(imported.ok).toBe(false);
     expect(imported.diagnostics[0]?.summary).toContain('approved');
+    claimCapability('capability:xliff');
   });
 });

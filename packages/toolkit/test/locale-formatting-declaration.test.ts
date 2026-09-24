@@ -6,6 +6,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { generateProject } from '../src/index.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * How a locale is written, declared where the locales are declared.
  *
@@ -151,6 +153,7 @@ describe('a locale declares how it is written', () => {
     expect(index).toContain('formatting: Object.freeze(');
     expect(index).toContain('"ar-EG":{"numberingSystem":"latn"}');
     expect(index).toContain('"en-US":{"hourCycle":"h23","calendar":"gregory"}');
+    claimCapability('declaration:locale-formatting');
   });
 
   it('emits no table when the application declares none', async () => {
@@ -175,6 +178,7 @@ describe('a locale declares how it is written', () => {
       }),
     );
     expect(codes).toContain('EQ1004');
+    claimCapability('declaration:locale-formatting');
   });
 
   it('refuses a key that is not a locale identity at all', async () => {
@@ -184,6 +188,7 @@ describe('a locale declares how it is written', () => {
       }),
     );
     expect(codes).toContain('EQ1003');
+    claimCapability('declaration:locale-formatting');
   });
 
   it('refuses an entry that states nothing', async () => {
@@ -192,6 +197,7 @@ describe('a locale declares how it is written', () => {
       await project({ formatting: { 'ar-EG': {} } }),
     );
     expect(codes.length).toBeGreaterThan(0);
+    claimCapability('declaration:locale-formatting');
   });
 
   it('refuses an option Equator does not carry per locale', async () => {
@@ -204,5 +210,6 @@ describe('a locale declares how it is written', () => {
       }),
     );
     expect(codes.length).toBeGreaterThan(0);
+    claimCapability('declaration:locale-formatting');
   });
 });

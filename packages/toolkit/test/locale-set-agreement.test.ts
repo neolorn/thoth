@@ -7,6 +7,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { diagnosticsBlock } from '../src/diagnostics.js';
 import { checkProject, generateProject } from '../src/index.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * An application states its locales twice, and the two statements have to agree.
  *
@@ -357,6 +359,7 @@ describe('the locale set an application states twice', () => {
 
     expect(reported.map(({ severity }) => severity)).toEqual(['error']);
     expect(diagnosticsBlock(generated.diagnostics)).toBe(true);
+    claimCapability('cli:generate');
   });
 
   it('is reported by bare check too, because that is what a gate runs', async () => {
@@ -368,6 +371,7 @@ describe('the locale set an application states twice', () => {
     const checked = await checkProject({ project: root });
 
     expect(checked.diagnostics.map(({ code }) => code)).toContain('EQ1408');
+    claimCapability('cli:check');
   });
 
   it('reads the host policy, which states the same set under another key', async () => {

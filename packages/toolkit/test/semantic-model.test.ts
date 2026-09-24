@@ -13,6 +13,8 @@ import { generateContracts } from '../src/generated-contracts.js';
 import { analyzeCatalogSet } from '../src/semantic-model.js';
 import { analyzeApplication } from '../src/static-analysis.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 function configuration(): ProjectConfiguration {
   const result = parseConfiguration(
     JSON.stringify({
@@ -299,6 +301,7 @@ describe('Equator generated contracts and bounded application analysis', () => {
     expect(
       analysis.value.components.map(({ componentName }) => componentName),
     ).toEqual(['AboutComponent', 'AppComponent']);
+    claimCapability('declaration:route-indexing-class');
   });
 });
 

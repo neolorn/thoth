@@ -19,6 +19,8 @@ import {
   InvocationError,
 } from '../src/init-options.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 /**
  * Can `equator init` state everything `equator.config.json` accepts?
  *
@@ -119,6 +121,7 @@ describe('the option set is the configuration schema', () => {
       'en-XA': { lengthFactor: 0.3, markers: true },
     });
     expect(reparsed.value.aliases).toEqual({ eg: 'ar-EG' });
+    claimCapability('cli:init');
   });
 
   it('says what to type when a required field is missing', async () => {
@@ -139,6 +142,7 @@ describe('the option set is the configuration schema', () => {
     expect(refusal?.summary).toContain('--locale <locale> (repeat for each)');
     // The one that was supplied is not asked for again.
     expect(refusal?.summary).not.toContain('--source-locale');
+    claimCapability('cli:init');
   });
 });
 

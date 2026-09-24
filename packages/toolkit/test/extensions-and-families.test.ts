@@ -17,6 +17,8 @@ import { generateContracts } from '../src/generated-contracts.js';
 import { parseMessageSemanticModel } from '../src/message-format.js';
 import { analyzeCatalogSet } from '../src/semantic-model.js';
 
+import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+
 function configuration(): ProjectConfiguration {
   const parsed = parseConfiguration(
     JSON.stringify({
@@ -218,6 +220,9 @@ describe('Equator application-local extension registry', () => {
       compiled.value.artifacts.descriptor.providers[0]?.artifacts[0]?.address
         .requiredExtensions,
     ).toEqual(scope?.requiredExtensions);
+    claimCapability('extension:message-function');
+    claimCapability('extension:identifier-segment');
+    claimCapability('extension:rich-slot-kind');
   });
 });
 
