@@ -3274,7 +3274,16 @@ async function verifyBrowserRow(row) {
     attachBrowserDiagnostics(probe, diagnostics);
     probe.setDefaultTimeout(15_000);
     if (addresses.switchInDocument) {
-      await probe.goto(browserOrigin, { waitUntil: 'networkidle' });
+      // The English page's own address, because the site's root answers in the locale an earlier
+      // stage left in the cookie, and a page that opens in Arabic makes the click below a no-op.
+      await visitFor(context, 'home', 'en-US', (url) =>
+        probe.goto(url, { waitUntil: 'networkidle' }),
+      );
+      assert.equal(
+        await probe.evaluate(() => document.documentElement.lang),
+        'en-US',
+        'The page opened in Arabic, so no locale would commit before the deferred block hydrates',
+      );
       await probe.locator('[data-locale-choice="ar-EG"]').click();
     } else {
       // No locale commits in a document here, so the Arabic block is hydrated from the Arabic
