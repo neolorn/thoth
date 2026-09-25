@@ -330,17 +330,45 @@ describe('what an address is refused for before any route sees it', () => {
     expect(statusOf('javascript:alert(1)')).toBe('malformed');
     expect(statusOf('data:text/html,x')).toBe('malformed');
     expect(statusOf('ftp://site.example/en-us/second')).toBe('malformed');
-    // A traversal inside an absolute address never reaches the refusals below, because `URL` has
-    // already resolved it: `/en-us/..` arrives as `/` and `/en-us/../../etc` arrives as `/etc`.
-    // Measured rather than assumed: this was written expecting `malformed` and the run said
-    // otherwise, which is the more useful fact. The traversal is neutralized by normalization here
-    // and refused by the guard on the relative path, and both have to keep working.
-    expect(statusOf('https://site.example/en-us/..')).toBe('redirect');
-    // `/etc` is a leading segment this policy reads as a locale and does not have, which is the
-    // answer an address above the application's root should get.
-    expect(statusOf('https://site.example/en-us/../../etc')).toBe(
-      'unsupported-locale',
-    );
+  });
+
+  it('refuses an unsafe path inside an absolute address, as it arrived', () => {
+    // Parsed through `URL`, each of these would arrive repaired: `/en-us/..` as `/`, `%2e%2e` as a
+    // traversal already walked, and a backslash as a slash. The path is read as written instead, so
+    // the refusals below reach it.
+    for (const address of [
+      'https://site.example/en-us/..',
+      'https://site.example/en-us/../../etc',
+      'https://site.example/en-us/%2e%2e',
+      'https://site.example/en-us\\second',
+      'https://site.example\\en-us/second',
+    ]) {
+      expect(statusOf(address), address).toBe('malformed');
+    }
+    // An empty path is the root, as it is to a browser.
+    expect(statusOf('https://site.example')).toBe('redirect');
+    expect(statusOf('https://site.example?q=1')).toBe('redirect');
+  });
+
+  it('refuses the same under a policy that reads the origin', () => {
+    const host = createHostLocalePolicy({
+      defaultLocale: 'en-US',
+      origins: {
+        'en-US': 'https://en.site.example',
+        'ar-EG': 'https://ar.site.example',
+      },
+    });
+    const hostStatus = (address: string) =>
+      resolveLocalizedRoute(address, host, PROJECTION).status;
+
+    expect(hostStatus('https://ar.site.example/second')).toBe('success');
+    for (const address of [
+      'https://ar.site.example/second/..',
+      'https://ar.site.example/second/%2e%2e',
+      'https://ar.site.example\\second',
+    ]) {
+      expect(hostStatus(address), address).toBe('malformed');
+    }
   });
 
   it('refuses control characters and backslashes anywhere in it', () => {

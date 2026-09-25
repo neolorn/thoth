@@ -2656,13 +2656,38 @@ function resolvePathPrefixRoute(
 
 function pathOnlyTarget(target: string): string | undefined {
   if (target.startsWith('/')) return target;
+  return splitAbsoluteTarget(target)?.target;
+}
+
+/**
+ * An absolute `http:` or `https:` address split into its origin and its target as written.
+ *
+ * Split by hand rather than through `URL`, because parsing resolves dot segments, decodes `%2e`
+ * and rewrites a backslash, and section 4 of `specs/07-routing-rendering-and-seo.spec.md` has the
+ * target classified as it arrived. Only the origin is parsed, and nothing in it is a path. The
+ * authority ends where a special-scheme URL ends it, at `/`, `\`, `?` or `#`, so a backslash stays
+ * in the target for the classifier to refuse.
+ */
+function splitAbsoluteTarget(
+  address: string,
+): { readonly origin: string; readonly target: string } | undefined {
+  const scheme = /^https?:\/\//iu.exec(address);
+  if (scheme === null) return undefined;
+  const authorityLength = address.slice(scheme[0].length).search(/[/\\?#]/u);
+  const end =
+    authorityLength < 0 ? address.length : scheme[0].length + authorityLength;
+  let origin: string;
   try {
-    const parsed = new URL(target);
-    if (!['http:', 'https:'].includes(parsed.protocol)) return undefined;
-    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    origin = new URL(address.slice(0, end)).origin;
   } catch {
     return undefined;
   }
+  const rest = address.slice(end);
+  // An empty path is the root in a special-scheme URL, so `https://host?q` asks for `/?q`.
+  return Object.freeze({
+    origin,
+    target: /^[?#]|^$/u.test(rest) ? `/${rest}` : rest,
+  });
 }
 
 function unsupportedLocaleResolution(
@@ -2812,13 +2837,8 @@ function resolveHostRoute(
   let originValue = context.origin;
   let requestTarget = target;
   if (!target.startsWith('/')) {
-    try {
-      const absolute = new URL(target);
-      if (!['http:', 'https:'].includes(absolute.protocol))
-        throw new TypeError();
-      originValue = absolute.origin;
-      requestTarget = `${absolute.pathname}${absolute.search}${absolute.hash}`;
-    } catch {
+    const absolute = splitAbsoluteTarget(target);
+    if (absolute === undefined) {
       return Object.freeze({
         status: 'malformed',
         httpStatus: 400,
@@ -2830,6 +2850,8 @@ function resolveHostRoute(
         }),
       });
     }
+    originValue = absolute.origin;
+    requestTarget = absolute.target;
   }
   const origin =
     originValue === undefined
@@ -3008,14 +3030,8 @@ function requestTarget(context: unknown): string | undefined {
         : undefined;
   if (candidate === undefined) return undefined;
   if (candidate.startsWith('/')) return candidate;
-  try {
-    const parsed = new URL(candidate);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')
-      return undefined;
-    return parsed.href;
-  } catch {
-    return undefined;
-  }
+  // As written, for the resolver to classify.
+  return splitAbsoluteTarget(candidate) === undefined ? undefined : candidate;
 }
 
 /**
