@@ -1,0 +1,47 @@
+{
+  "policy": "locale-neutral",
+  "origins": {
+    "en-US": "https://site.example",
+    "ar-EG": "https://site.example",
+    "en-Arab-XB": "https://site.example"
+  },
+  "pages": {
+    "home": {
+      "en-US": "/"
+    },
+    "second": {
+      "en-US": "/second"
+    },
+    "lazy": {
+      "en-US": "/lazy"
+    },
+    "item": {
+      "en-US": "/items/42"
+    },
+    "article": {
+      "en-US": "/articles/handbook"
+    },
+    "article under the English slug": {},
+    "topic": {
+      "en-US": "/topics/handbook"
+    },
+    "dossier": {
+      "en-US": "/dossiers/dossier"
+    },
+    "declared dossier": {
+      "en-US": "/dossiers/dossier"
+    },
+    "unlisted dossier": {
+      "en-US": "/dossiers/unlisted-dossier"
+    },
+    "legacy": {
+      "en-US": "/legacy"
+    },
+    "removed": {
+      "en-US": "/removed"
+    },
+    "missing": {
+      "en-US": "/nothing-is-mounted-here"
+    }
+  }
+}

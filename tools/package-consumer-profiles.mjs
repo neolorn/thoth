@@ -85,13 +85,49 @@ export const consumerProfiles = new Map([
   ],
 ]);
 
+// The development row under each URL policy it does not declare. A policy is application source, so
+// each of these is that row's consumer with the policy and its address table replaced, installed
+// from that row's lock. They vary no version, so they are not rows of their own: a claim names the
+// row whose versions are installed, and the policy it ran under is read from the policy object it
+// observes.
+export const policyConsumerProfiles = new Map([
+  [
+    'default-locale-prefix-consumer',
+    {
+      row: 'package-consumer',
+      label: 'Default locale without a prefix',
+      overlay: 'fixtures/default-locale-prefix-overlay',
+    },
+  ],
+  [
+    'locale-neutral-consumer',
+    {
+      row: 'package-consumer',
+      label: 'Locale-neutral addresses',
+      overlay: 'fixtures/locale-neutral-overlay',
+    },
+  ],
+  [
+    'locale-host-consumer',
+    {
+      row: 'package-consumer',
+      label: 'A locale on each origin',
+      overlay: 'fixtures/locale-host-overlay',
+    },
+  ],
+]);
+
+/** A consumer's profile, with `row` naming the row whose versions and lock it installs. */
 export const resolveConsumerProfile = (consumerName) => {
   const consumerProfile = consumerProfiles.get(consumerName);
-  if (consumerProfile === undefined) {
-    throw new Error(`Unknown package-consumer profile: ${consumerName}`);
+  if (consumerProfile !== undefined) {
+    return { ...consumerProfile, row: consumerName };
   }
-
-  return consumerProfile;
+  const policyProfile = policyConsumerProfiles.get(consumerName);
+  if (policyProfile !== undefined) {
+    return { ...resolveConsumerProfile(policyProfile.row), ...policyProfile };
+  }
+  throw new Error(`Unknown package-consumer profile: ${consumerName}`);
 };
 
 export const resolveAngularVersion = (consumerProfile, packageName) =>

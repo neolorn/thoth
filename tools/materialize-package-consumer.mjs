@@ -77,7 +77,8 @@ for (const name of claimModules) {
   );
 }
 
-const lockPath = resolve(lockRoot, consumerName, 'pnpm-lock.yaml');
+// A consumer that varies no version installs from its row's lock, so the two cannot drift.
+const lockPath = resolve(lockRoot, consumerProfile.row, 'pnpm-lock.yaml');
 const lockExists = await lstat(lockPath).then(
   (entry) => entry.isFile(),
   () => false,
@@ -129,7 +130,7 @@ await writeFile(
   resolve(consumerRoot, 'tools/consumer-row.json'),
   `${JSON.stringify(
     {
-      row: consumerName,
+      row: consumerProfile.row,
       versions: Object.fromEntries(
         rowPackages.map((name) => [name, allDependencies[name]]),
       ),

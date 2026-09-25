@@ -26,6 +26,17 @@ export async function readConsumerAddresses(consumerRoot) {
     return new URL(written, table.origins[locale]);
   };
   const policy = table.policy;
+  const shownPath = (page, locale) => {
+    const addressed = Object.keys(table.pages[page] ?? {});
+    if (
+      policy !== 'locale-neutral' ||
+      addressed.includes(locale) ||
+      addressed.length !== 1
+    ) {
+      return parsed(page, locale).pathname;
+    }
+    return parsed(page, addressed[0]).pathname;
+  };
   return Object.freeze({
     policy,
     /** The origin a locale is served from. */
@@ -53,17 +64,10 @@ export async function readConsumerAddresses(consumerRoot) {
      * no address names a locale, so a page the table gives no address in that locale keeps the one
      * address it has.
      */
-    shownPath: (page, locale) => {
-      const addressed = Object.keys(table.pages[page] ?? {});
-      if (
-        policy !== 'locale-neutral' ||
-        addressed.includes(locale) ||
-        addressed.length !== 1
-      ) {
-        return parsed(page, locale).pathname;
-      }
-      return parsed(page, addressed[0]).pathname;
-    },
+    shownPath,
+    /** The absolute URL of that path, which the head of the page shown in the locale states. */
+    shownUrl: (page, locale) =>
+      new URL(shownPath(page, locale), table.origins[locale]).href,
     /** The file prerendering writes the page to, decoded as a file name spells it. */
     file: (page, locale) => {
       const path = decodeURIComponent(parsed(page, locale).pathname);
@@ -78,5 +82,39 @@ export async function readConsumerAddresses(consumerRoot) {
     localeInAddress: policy !== 'locale-neutral',
     /** Whether a locale switch stays in the document. */
     switchInDocument: policy !== 'locale-host',
+    /** Whether the origin names the locale, so a build answers at one origin and serves its locale. */
+    localeInOrigin: policy === 'locale-host',
+  });
+}
+
+/** The line in `src/app/route-policy.ts` that says which origin the consumer's build answers at. */
+export const SITE_ORIGIN_DECLARATION =
+  /^export const SITE_ORIGIN = '([^'\n]*)';$/mu;
+
+/**
+ * The builds a consumer is deployed as: one for each origin its locales are served at.
+ *
+ * The consumer's own build answers at the origin `route-policy.ts` declares and is written to
+ * `dist/feature-lab`. Under a policy that puts each locale on an origin of its own, a deployment
+ * builds once more for every other origin, with that line changed, which is what the consumer stage
+ * does; each of those is written beside it, named for the origin's host.
+ */
+export async function readConsumerBuilds(consumerRoot) {
+  const policyPath = resolve(consumerRoot, 'src/app/route-policy.ts');
+  const declared = SITE_ORIGIN_DECLARATION.exec(
+    await readFile(policyPath, 'utf8'),
+  );
+  if (declared === null) {
+    throw new Error(
+      `${policyPath} declares no SITE_ORIGIN in the form the gate reads, so no build can be told where it answers.`,
+    );
+  }
+  const siteOrigin = declared[1];
+  return Object.freeze({
+    policyPath,
+    siteOrigin,
+    /** Where the build of `base` that answers at `origin` is written, relative to the consumer. */
+    output: (origin, base = 'dist/feature-lab') =>
+      origin === siteOrigin ? base : `${base}-${new URL(origin).hostname}`,
   });
 }

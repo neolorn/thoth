@@ -84,7 +84,7 @@ function install(traceFile, workspaceRoot) {
 
   /**
    * The named artefacts the gate's stages hand to each other, longest prefix first so a consumer
-   * tree is not swallowed by the directory that holds all three of them.
+   * tree is not swallowed by the directory that holds them all.
    *
    * Anything outside this list is deliberately not recorded. The graph is about what one stage
    * produces for another, and a stage reading its own source or a system temp file produces no edge.
@@ -100,8 +100,20 @@ function install(traceFile, workspaceRoot) {
       'consumer:lower-bounds',
     ],
     ['tmp/package-consumer-verification/strict-consumer', 'consumer:strict'],
+    [
+      'tmp/package-consumer-verification/default-locale-prefix-consumer',
+      'consumer:default-locale-prefix',
+    ],
+    [
+      'tmp/package-consumer-verification/locale-neutral-consumer',
+      'consumer:locale-neutral',
+    ],
+    [
+      'tmp/package-consumer-verification/locale-host-consumer',
+      'consumer:locale-host',
+    ],
     ['tmp/focused-package-consumer-verification', 'consumer:focused'],
-    // `tmp/package-consumer-verification`, the directory that holds the first four,
+    // `tmp/package-consumer-verification`, the directory that holds the consumers above,
     // is deliberately not one. The only thing any stage does to it is `mkdir` it before installing
     // its own subtree, and counting that made every install write one artefact, which is the
     // exact concurrency this graph exists to allow. A container is not what is in it.

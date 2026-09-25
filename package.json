@@ -60,6 +60,12 @@
     "verify:strict-consumer": "pnpm run materialize:strict-consumer && node ./tools/verify-package-consumer.mjs strict-consumer",
     "materialize:lower-bounds": "node ./tools/materialize-package-consumer.mjs lower-bounds-consumer",
     "verify:lower-bounds": "pnpm run materialize:lower-bounds && node ./tools/verify-package-consumer.mjs lower-bounds-consumer",
+    "materialize:default-locale-prefix-consumer": "node ./tools/materialize-package-consumer.mjs default-locale-prefix-consumer",
+    "verify:default-locale-prefix-consumer": "pnpm run materialize:default-locale-prefix-consumer && node ./tools/verify-package-consumer.mjs default-locale-prefix-consumer",
+    "materialize:locale-neutral-consumer": "node ./tools/materialize-package-consumer.mjs locale-neutral-consumer",
+    "verify:locale-neutral-consumer": "pnpm run materialize:locale-neutral-consumer && node ./tools/verify-package-consumer.mjs locale-neutral-consumer",
+    "materialize:locale-host-consumer": "node ./tools/materialize-package-consumer.mjs locale-host-consumer",
+    "verify:locale-host-consumer": "pnpm run materialize:locale-host-consumer && node ./tools/verify-package-consumer.mjs locale-host-consumer",
     "verify:consumer-refresh": "node ./tools/verify-consumer-refresh.mjs",
     "verify:cost-budget": "node --expose-gc ./tools/verify-cost-budget.mjs",
     "verify:cold-start": "node ./tools/verify-cold-start.mjs",
@@ -75,6 +81,9 @@
     "verify": "node ./tools/verify.mjs",
     "verify:browser-assurance:angular-22.0.4": "node ./tools/verify-package-consumer-hydration.mjs angular-22.0.4-consumer",
     "verify:browser-assurance:lower-bounds": "node ./tools/verify-package-consumer-hydration.mjs lower-bounds-consumer",
+    "verify:browser-assurance:default-locale-prefix": "node ./tools/verify-package-consumer-hydration.mjs default-locale-prefix-consumer",
+    "verify:browser-assurance:locale-neutral": "node ./tools/verify-package-consumer-hydration.mjs locale-neutral-consumer",
+    "verify:browser-assurance:locale-host": "node ./tools/verify-package-consumer-hydration.mjs locale-host-consumer",
     "verify:edit-cost": "node ./tools/verify-consumer-edit-cost.mjs"
   },
   "devDependencies": {

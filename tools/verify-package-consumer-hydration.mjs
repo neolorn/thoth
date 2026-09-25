@@ -7,7 +7,10 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 
 import { JSDOM } from 'jsdom';
 
-import { readConsumerAddresses } from './consumer-addresses.mjs';
+import {
+  readConsumerAddresses,
+  readConsumerBuilds,
+} from './consumer-addresses.mjs';
 import { resolveConsumerProfile } from './package-consumer-profiles.mjs';
 import { chromium, firefox, webkit } from 'playwright';
 
@@ -23,47 +26,71 @@ const consumerRoot = resolve(
   'tmp/package-consumer-verification',
   consumerName,
 );
-const serverEntry = resolve(consumerRoot, 'dist/feature-lab/server/server.mjs');
-const browserRoot = resolve(consumerRoot, 'dist/feature-lab/browser');
-const prerenderManifestPath = resolve(
-  consumerRoot,
-  'dist/feature-lab/prerendered-routes.json',
-);
 // Where each page lives, read from the address table the consumer's own specs read.
 const addresses = await readConsumerAddresses(consumerRoot);
 // The locales this build generated, which are the ones it prerenders.
 const builtLocales = JSON.parse(
   await readFile(resolve(consumerRoot, 'equator.config.json'), 'utf8'),
 ).locales;
+// What is deployed: one build, or under a policy that puts each locale on an origin of its own, one
+// build for each of those origins, which is how the consumer stage built them. A request reaches
+// the build its Host names, as it would behind a real deployment's routing.
+const builds = await readConsumerBuilds(consumerRoot);
+const deployments = await Promise.all(
+  (addresses.localeInOrigin
+    ? [...new Set(builtLocales.map((locale) => addresses.origin(locale)))]
+    : [builds.siteOrigin]
+  ).map(async (deploymentOrigin) => {
+    const root = resolve(consumerRoot, builds.output(deploymentOrigin));
+    return Object.freeze({
+      origin: deploymentOrigin,
+      host: new URL(deploymentOrigin).host,
+      locales: builtLocales.filter(
+        (locale) =>
+          !addresses.localeInOrigin ||
+          addresses.origin(locale) === deploymentOrigin,
+      ),
+      browserRoot: resolve(root, 'browser'),
+      prerenderManifestPath: resolve(root, 'prerendered-routes.json'),
+      reqHandler: (
+        await import(pathToFileURL(resolve(root, 'server/server.mjs')).href)
+      ).reqHandler,
+    });
+  }),
+);
+function deploymentFor(host) {
+  return addresses.localeInOrigin
+    ? deployments.find((deployment) => deployment.host === host)
+    : deployments[0];
+}
+function deploymentOf(locale) {
+  return addresses.localeInOrigin
+    ? deployments.find((deployment) => deployment.locales.includes(locale))
+    : deployments[0];
+}
 // The pages `app.routes.server.ts` prerenders, by the route view each one renders.
 const prerenderedViews = Object.freeze({
   second: 'second',
   article: 'article',
 });
-// Every locale's copy of every prerendered route, and none that Equator did not derive. The
-// article's slug is spelled differently per locale, so its addresses share no path segment after
-// `/articles/`, which is exactly the expansion a hand-written list gets wrong silently. Keyed as
-// the manifest keys them, decoded.
-const prerenderedRouteViews = new Map(
-  builtLocales.flatMap((locale) =>
-    Object.entries(prerenderedViews)
-      .filter(([page]) => addresses.has(page, locale))
-      .map(([page, view]) => [
-        decodeURIComponent(addresses.path(page, locale)),
-        view,
-      ]),
-  ),
-);
-const expectedPrerenderRoutes = Object.freeze(
-  [...prerenderedRouteViews.keys()].sort(),
-);
-
-function prerenderedRouteView(route) {
-  return prerenderedRouteViews.get(route);
+// Every locale's copy of every prerendered route a deployment writes, and none that Equator did not
+// derive. The article's slug is spelled differently per locale, so its addresses share no path
+// segment after `/articles/`, which is exactly the expansion a hand-written list gets wrong
+// silently. Keyed as the manifest keys them, decoded.
+function prerenderedRouteViews(deployment) {
+  return new Map(
+    deployment.locales.flatMap((locale) =>
+      Object.entries(prerenderedViews)
+        .filter(([page]) => addresses.has(page, locale))
+        .map(([page, view]) => [
+          decodeURIComponent(addresses.path(page, locale)),
+          view,
+        ]),
+    ),
+  );
 }
-const { reqHandler } = await import(pathToFileURL(serverEntry).href);
 
-// That import just took this process's failure reporting away, and this is where the harness takes
+// Those imports just took this process's failure reporting away, and this is where the harness takes
 // it back.
 //
 // The consumer's server bundle calls Angular's `attachNodeGlobalErrorHandlers`, which registers
@@ -388,38 +415,43 @@ const enterStage = (name) => {
 };
 enterStage('startup');
 
-assert.equal(typeof reqHandler, 'function', 'SSR request handler is absent');
-
-const prerenderManifest = JSON.parse(
-  await readFile(prerenderManifestPath, 'utf8'),
-);
-assert.deepEqual(
-  Object.keys(prerenderManifest.routes ?? {}).sort(),
-  expectedPrerenderRoutes,
-  'The built prerender manifest does not contain the exact Equator prerender rows',
-);
-const prerenderArtifacts = new Map(
-  await Promise.all(
-    expectedPrerenderRoutes.map(async (route) => {
-      const html = await readFile(
-        resolve(browserRoot, route.slice(1), 'index.html'),
-        'utf8',
-      );
-      assert.match(html, /<app-root\b/iu, `${route} prerender root is absent`);
-      assert.match(
-        html,
-        new RegExp(`data-route-view="${prerenderedRouteView(route)}"`, 'u'),
-        `${route} prerender route is absent`,
-      );
-      return [
-        route,
-        Object.freeze({
-          digest: createHash('sha256').update(html, 'utf8').digest('hex'),
-        }),
-      ];
-    }),
-  ),
-);
+// Keyed by the deployment's origin and the route, because under a policy that puts each locale on
+// an origin of its own every deployment writes the same paths.
+const prerenderArtifacts = new Map();
+for (const deployment of deployments) {
+  assert.equal(
+    typeof deployment.reqHandler,
+    'function',
+    `The SSR request handler of the build at ${deployment.origin} is absent`,
+  );
+  const routeViews = prerenderedRouteViews(deployment);
+  const prerenderManifest = JSON.parse(
+    await readFile(deployment.prerenderManifestPath, 'utf8'),
+  );
+  assert.deepEqual(
+    Object.keys(prerenderManifest.routes ?? {}).sort(),
+    [...routeViews.keys()].sort(),
+    `The prerender manifest of the build at ${deployment.origin} does not contain the exact Equator prerender rows`,
+  );
+  for (const [route, view] of routeViews) {
+    const html = await readFile(
+      resolve(deployment.browserRoot, route.slice(1), 'index.html'),
+      'utf8',
+    );
+    assert.match(html, /<app-root\b/iu, `${route} prerender root is absent`);
+    assert.match(
+      html,
+      new RegExp(`data-route-view="${view}"`, 'u'),
+      `${route} prerender route is absent`,
+    );
+    prerenderArtifacts.set(
+      `${deployment.origin}${route}`,
+      Object.freeze({
+        digest: createHash('sha256').update(html, 'utf8').digest('hex'),
+      }),
+    );
+  }
+}
 
 const contentTypes = new Map([
   ['.css', 'text/css; charset=utf-8'],
@@ -433,7 +465,7 @@ const contentTypes = new Map([
   ['.woff2', 'font/woff2'],
 ]);
 
-async function serveBrowserAsset(request, response) {
+async function serveBrowserAsset(request, response, browserRoot) {
   let assetPath;
 
   try {
@@ -497,14 +529,27 @@ async function serveBrowserAsset(request, response) {
   }
 }
 
+// Declared before either server, because the application server records a request for a host no
+// deployment answers at in it as well.
+const edgeFailures = [];
+
 const server = createServer((request, response) => {
+  const deployment = deploymentFor(request.headers.host);
+  if (deployment === undefined) {
+    edgeFailures.push(
+      `${request.method} ${request.url}: no deployment answers at ${request.headers.host}`,
+    );
+    response.statusCode = 421;
+    response.end('No deployment answers at this host.');
+    return;
+  }
   const next = (error) => {
     if (response.writableEnded) {
       return;
     }
 
     if (error === undefined) {
-      void serveBrowserAsset(request, response);
+      void serveBrowserAsset(request, response, deployment.browserRoot);
       return;
     }
 
@@ -513,7 +558,7 @@ const server = createServer((request, response) => {
   };
 
   try {
-    const result = reqHandler(request, response, next);
+    const result = deployment.reqHandler(request, response, next);
     Promise.resolve(result).catch(next);
   } catch (error) {
     next(error);
@@ -540,7 +585,6 @@ const origin = `http://127.0.0.1:${address.port}`;
 //
 // The checks of what the application answers read `origin` directly, without the edge, because
 // the application's answer is what they are about. Pages load from `browserOrigin`.
-const edgeFailures = [];
 const hopByHopHeaders = new Set([
   'connection',
   'keep-alive',
@@ -570,9 +614,17 @@ const edge = createServer((request, response) => {
     }
     response.end('The browser assurance edge could not serve this response.');
   };
+  // Under a policy that puts each locale on an origin of its own the browsers reach this as their
+  // proxy, so the target is absolute and names the origin the page is at. That origin is the Host
+  // the application is asked with, taken from the target rather than the header, which an engine
+  // may drop from an intercepted request it continues.
+  const target = new URL(request.url ?? '/', browserOrigin);
   const upstream = httpRequest(
-    `${origin}${request.url}`,
-    { method: request.method, headers: withoutHopByHop(request.headers) },
+    `${origin}${target.pathname}${target.search}`,
+    {
+      method: request.method,
+      headers: { ...withoutHopByHop(request.headers), host: target.host },
+    },
     (answer) => {
       try {
         const status = answer.statusCode ?? 502;
@@ -605,7 +657,7 @@ const edge = createServer((request, response) => {
             const original = Buffer.concat(chunks).toString('utf8');
             const protectedDocument = applyStrictBrowserPolicy(
               original,
-              `${browserOrigin}${request.url}`,
+              target.href,
             );
             response.setHeader(
               'content-security-policy',
@@ -666,11 +718,149 @@ async function closeServer() {
   ]);
 }
 
-async function render(label, locale = 'en-US', page = 'home') {
-  const response = await fetch(
-    `${origin}${addresses.path(page, locale)}?label=${encodeURIComponent(label)}`,
-    { signal: AbortSignal.timeout(15_000) },
+// Where a browser loads a path the locale is served at: through the edge, which under a policy that
+// puts each locale on an origin of its own is the browser's proxy, so the page keeps its own origin.
+function siteUrl(path, locale = 'en-US') {
+  return addresses.localeInOrigin
+    ? new URL(path, addresses.origin(locale)).href
+    : `${browserOrigin}${path}`;
+}
+
+function isSiteUrl(url) {
+  return (
+    url.startsWith(`${browserOrigin}/`) ||
+    (addresses.localeInOrigin &&
+      builtLocales.some((locale) =>
+        url.startsWith(`${addresses.origin(locale)}/`),
+      ))
   );
+}
+
+// Whether the browser is at the page as shown in the locale, origin included where it names one.
+function isShown(url, page, locale) {
+  return (
+    url.pathname === addresses.shownPath(page, locale) &&
+    (!addresses.localeInOrigin || url.origin === addresses.origin(locale))
+  );
+}
+
+// What the application answers at a path, asked of the deployment that serves the locale.
+//
+// Under a policy that puts each locale on an origin of its own the origin is the Host a request
+// carries, which `fetch` may not set, so there the request goes through `node:http` and a redirect
+// to another of the site's origins is followed to the deployment that answers there. The answer is
+// a `Response` either way, so every check reads it one way.
+async function answer(path, { locale = 'en-US', headers = {}, redirect } = {}) {
+  if (!addresses.localeInOrigin) {
+    return fetch(`${origin}${path}`, {
+      headers,
+      redirect,
+      signal: AbortSignal.timeout(15_000),
+    });
+  }
+  // The path is sent as written rather than parsed, because some checks send a malformed one on
+  // purpose and parsing would read `//second` as a host.
+  let host = new URL(addresses.origin(locale)).host;
+  let requestPath = path;
+  for (let hops = 0; hops < 5; hops += 1) {
+    const response = await new Promise((resolveAnswer, rejectAnswer) => {
+      const outgoing = httpRequest(
+        `${origin}${requestPath}`,
+        { headers: { ...headers, host } },
+        (incoming) => {
+          const chunks = [];
+          incoming.on('data', (chunk) => chunks.push(chunk));
+          incoming.on('error', rejectAnswer);
+          incoming.on('end', () => {
+            const answered = new Headers();
+            for (
+              let index = 0;
+              index < incoming.rawHeaders.length;
+              index += 2
+            ) {
+              answered.append(
+                incoming.rawHeaders[index],
+                incoming.rawHeaders[index + 1],
+              );
+            }
+            const status = incoming.statusCode ?? 502;
+            resolveAnswer(
+              new Response(
+                [204, 205, 304].includes(status) ? null : Buffer.concat(chunks),
+                { status, headers: answered },
+              ),
+            );
+          });
+        },
+      );
+      outgoing.setTimeout(15_000, () =>
+        outgoing.destroy(
+          new Error(`${requestPath} at ${host} did not answer within 15s`),
+        ),
+      );
+      outgoing.on('error', rejectAnswer);
+      outgoing.end();
+    });
+    const location = response.headers.get('location');
+    if (
+      redirect === 'manual' ||
+      location === null ||
+      response.status < 300 ||
+      response.status >= 400
+    ) {
+      return response;
+    }
+    const target = new URL(location, `http://${host}/`);
+    assert.ok(
+      builtLocales.some((each) => addresses.origin(each) === target.origin),
+      `${path} redirected to ${target.href}, which no deployment of this site answers at`,
+    );
+    host = target.host;
+    requestPath = `${target.pathname}${target.search}`;
+  }
+  assert.fail(`${path} redirected more than four times`);
+}
+
+// A reader who chose a locale the page has no address in reaches the one address it has and states
+// the choice, which is the only way that locale is served there.
+function requestFor(page, locale) {
+  return addresses.has(page, locale)
+    ? { path: addresses.path(page, locale), headers: {} }
+    : {
+        path: addresses.shownPath(page, locale),
+        headers: { cookie: `equator-locale=${locale}` },
+      };
+}
+
+// The same for a browser, where the choice is the cookie it sends. Where no address names a locale
+// a choice an earlier stage made would answer instead of the address, so the cookie says exactly
+// what this visit states, and is put back afterwards because every stage shares the context.
+async function visitFor(browserContext, page, locale, visit) {
+  const { path, headers } = requestFor(page, locale);
+  if (addresses.localeInAddress) return visit(siteUrl(path, locale));
+  const before = await browserContext.cookies(browserOrigin);
+  await browserContext.clearCookies({ name: 'equator-locale' });
+  if (headers.cookie !== undefined) {
+    await browserContext.addCookies([
+      { name: 'equator-locale', value: locale, url: browserOrigin },
+    ]);
+  }
+  try {
+    return await visit(siteUrl(path, locale));
+  } finally {
+    await browserContext.clearCookies({ name: 'equator-locale' });
+    await browserContext.addCookies(
+      before.filter((cookie) => cookie.name === 'equator-locale'),
+    );
+  }
+}
+
+async function render(label, locale = 'en-US', page = 'home') {
+  const { path, headers } = requestFor(page, locale);
+  const response = await answer(`${path}?label=${encodeURIComponent(label)}`, {
+    headers,
+    locale,
+  });
   assert.equal(response.status, 200, `SSR failed for ${label}`);
   assert.equal(response.headers.get('content-language'), locale);
   return response.text();
@@ -868,7 +1058,7 @@ function attachBrowserDiagnostics(page, diagnostics) {
     rowActivity.inFlight.delete(request.url());
     noteActivity('requestfailed');
     if (
-      request.url().startsWith(browserOrigin) &&
+      isSiteUrl(request.url()) &&
       criticalBrowserResourceTypes.has(request.resourceType())
     ) {
       diagnostics.requestFailures.push(
@@ -939,7 +1129,15 @@ function assertBrowserDiagnostics(diagnostics, label) {
 async function launchBrowserRow(row) {
   try {
     return boundCalls(
-      await row.browserType.launch({ headless: true }),
+      await row.browserType.launch({
+        headless: true,
+        // The origins a host policy names resolve to nowhere this harness listens, so every request
+        // goes to the edge, which reads the origin from it. Measured on all three engines, the
+        // redirects to another origin included.
+        ...(addresses.localeInOrigin
+          ? { proxy: { server: browserOrigin } }
+          : {}),
+      }),
       'browser',
     );
   } catch (error) {
@@ -1038,6 +1236,10 @@ async function assertDirectAccessibility(page) {
 }
 
 async function assertKeyboardLocaleAccessibility(page) {
+  if (!addresses.switchInDocument) {
+    await assertKeyboardLocaleNavigation(page);
+    return;
+  }
   const announcer = page.locator('div[data-equator-announcer][role="status"]');
   // Two events, one ordered stream, both timed.
   //
@@ -1406,6 +1608,38 @@ const RECT_AGAINST_VIEWPORT_SOURCE = `globalThis.__equatorRectAgainstViewport = 
  * clock, so the click sits on the same timeline as every scroll, frame and mutation beside it. A
  * row with no recorder installed writes nothing and clicks the same way.
  */
+// Where each locale is an origin of its own, an option is a link to that origin, and the keyboard
+// reaches and follows it as it does any link. The announcement belongs to a switch made in the
+// document, which this policy has none of, so what is asserted is that the link is reachable and
+// lands where it says.
+async function assertKeyboardLocaleNavigation(page) {
+  const control = page.locator('[data-locale-choice="ar-EG"]');
+  const controlHandle = await control.elementHandle();
+  assert.notEqual(controlHandle, null, 'The Arabic option is absent');
+  const from = page.url();
+  await control.focus();
+  await page
+    .waitForFunction(
+      (element) => document.activeElement === element,
+      controlHandle,
+      {
+        timeout: 5_000,
+      },
+    )
+    .catch(() =>
+      assert.fail(
+        '[data-locale-choice="ar-EG"] could not receive keyboard focus',
+      ),
+    );
+  await control.press('Enter');
+  await page.waitForURL((url) => isShown(url, 'home', 'ar-EG'));
+  await page.waitForFunction(() => document.documentElement.lang === 'ar-EG');
+  await page.goto(from);
+  await page.waitForFunction(
+    () => document.documentElement.dataset['clientReady'] === 'true',
+  );
+}
+
 async function clickLocaleChoice(page, locale) {
   const selector = '[data-locale-choice="' + locale + '"]';
   await page.locator(selector).evaluate((element, name) => {
@@ -1824,6 +2058,9 @@ async function placeVisitorMidPage(page, target = null) {
 }
 
 async function exerciseLocaleContinuity(page) {
+  // Focus, selection, composition and scroll are kept across a switch made in the document. A switch
+  // that is a document navigation keeps none of them, by what it is rather than by a defect.
+  if (!addresses.switchInDocument) return;
   const input = page.locator('[data-percent-input]');
   await input.fill('50%');
   await input.focus();
@@ -2435,7 +2672,7 @@ async function navigateWithScriptGate(page, url, beforeScripts) {
 async function verifyRenderingModes(row, context, diagnostics) {
   const prerenderPath = addresses.path('second', 'en-US');
   const prerenderArtifact = prerenderArtifacts.get(
-    decodeURIComponent(prerenderPath),
+    `${deploymentOf('en-US').origin}${decodeURIComponent(prerenderPath)}`,
   );
   assert.notEqual(
     prerenderArtifact,
@@ -2448,10 +2685,8 @@ async function verifyRenderingModes(row, context, diagnostics) {
   prerenderPage.setDefaultNavigationTimeout(20_000);
   let prerenderRoot;
   let prerenderRoute;
-  const prerenderResponse = await navigateWithScriptGate(
-    prerenderPage,
-    `${browserOrigin}${prerenderPath}`,
-    async () => {
+  const prerenderResponse = await visitFor(context, 'second', 'en-US', (url) =>
+    navigateWithScriptGate(prerenderPage, url, async () => {
       await prerenderPage.waitForSelector('[data-route-view="second"]');
       prerenderRoot = await prerenderPage.$('app-root');
       prerenderRoute = await prerenderPage.$('[data-route-view="second"]');
@@ -2469,7 +2704,7 @@ async function verifyRenderingModes(row, context, diagnostics) {
         await prerenderPage.locator('html').getAttribute('data-client-ready'),
         null,
       );
-    },
+    }),
   );
   await assertTrustedTypesPolicy(prerenderPage, prerenderResponse, row);
   assert.equal(
@@ -2500,9 +2735,7 @@ async function verifyRenderingModes(row, context, diagnostics) {
     addresses.url('second', 'en-US'),
   );
   await prerenderPage.locator('[data-locale-choice="ar-EG"]').click();
-  await prerenderPage.waitForURL(
-    (url) => url.pathname === addresses.shownPath('second', 'ar-EG'),
-  );
+  await prerenderPage.waitForURL((url) => isShown(url, 'second', 'ar-EG'));
   await prerenderPage.waitForFunction(
     () =>
       document.documentElement.lang === 'ar-EG' &&
@@ -2511,7 +2744,7 @@ async function verifyRenderingModes(row, context, diagnostics) {
   if (row.id === 'chromium') {
     await collectPolicyDiagnostics(prerenderPage, diagnostics);
     await prerenderPage.goto(
-      `${browserOrigin}${addresses.shownPath('second', 'ar-EG')}`,
+      siteUrl(addresses.shownPath('second', 'ar-EG'), 'ar-EG'),
     );
     await prerenderPage.waitForFunction(
       () => document.documentElement.dataset['clientReady'] === 'true',
@@ -2526,17 +2759,15 @@ async function verifyRenderingModes(row, context, diagnostics) {
   attachBrowserDiagnostics(csrPage, diagnostics);
   csrPage.setDefaultTimeout(15_000);
   csrPage.setDefaultNavigationTimeout(20_000);
-  const csrResponse = await navigateWithScriptGate(
-    csrPage,
-    `${browserOrigin}${addresses.path('item', 'en-US')}`,
-    async () => {
+  const csrResponse = await visitFor(context, 'item', 'en-US', (url) =>
+    navigateWithScriptGate(csrPage, url, async () => {
       await csrPage.waitForSelector('app-root', { state: 'attached' });
       assert.equal(await csrPage.locator('[data-route-view]').count(), 0);
       assert.equal(
         await csrPage.locator('html').getAttribute('data-client-ready'),
         null,
       );
-    },
+    }),
   );
   await assertTrustedTypesPolicy(csrPage, csrResponse, row);
   await csrPage.waitForFunction(
@@ -2549,9 +2780,7 @@ async function verifyRenderingModes(row, context, diagnostics) {
   const beforeSwitch = await inlineSourceCensus(csrPage);
 
   await csrPage.locator('[data-locale-choice="ar-EG"]').click();
-  await csrPage.waitForURL(
-    (url) => url.pathname === addresses.shownPath('item', 'ar-EG'),
-  );
+  await csrPage.waitForURL((url) => isShown(url, 'item', 'ar-EG'));
   await csrPage.waitForFunction(
     () =>
       document.documentElement.lang === 'ar-EG' &&
@@ -2562,11 +2791,16 @@ async function verifyRenderingModes(row, context, diagnostics) {
   // script or style anywhere in that path, it would appear here, and it would be
   // invisible to the violation count, because this harness's policy carries hashes and a nonce
   // that a strict deployed policy does not.
-  assertNoInlineSourceAdded(
-    beforeSwitch,
-    await inlineSourceCensus(csrPage),
-    'A locale switch',
-  );
+  //
+  // Only a switch made in the document re-renders anything. One that is a document navigation
+  // arrives at a new document, which the policy violations collected below already cover.
+  if (addresses.switchInDocument) {
+    assertNoInlineSourceAdded(
+      beforeSwitch,
+      await inlineSourceCensus(csrPage),
+      'A locale switch',
+    );
+  }
 
   await collectPolicyDiagnostics(prerenderPage, diagnostics);
   await collectPolicyDiagnostics(csrPage, diagnostics);
@@ -2696,12 +2930,17 @@ async function commitEnduranceLocale(page, arabic, expectedSourceRequests) {
 }
 
 async function verifySwitchEndurance(page, row) {
+  // Endurance is of switches made in the document. Where each switch is a document navigation it
+  // starts a page afresh, so there is nothing for repeated switches to accumulate.
+  if (!addresses.switchInDocument) return;
   const requestIds = new Set();
   await page.emulateMedia({ reducedMotion: 'reduce' });
 
   for (let batch = 0; batch < 3; batch += 1) {
-    await page.goto(
-      `${browserOrigin}${addresses.path('home', 'en-US')}?label=${encodeURIComponent(`${row.id}-endurance-${batch}`)}`,
+    await visitFor(page.context(), 'home', 'en-US', (url) =>
+      page.goto(
+        `${url}?label=${encodeURIComponent(`${row.id}-endurance-${batch}`)}`,
+      ),
     );
     await page.waitForFunction(
       () => document.documentElement.dataset['clientReady'] === 'true',
@@ -2735,19 +2974,26 @@ async function verifySwitchEndurance(page, row) {
     );
     sourceRequests += 1;
     await commitEnduranceLocale(page, true, sourceRequests);
+    // Each locale is held to its own first state, because a page may carry a head element in one
+    // locale and not the other, as the social alternates do where only one locale has an address.
+    // A leak still shows, as either state growing.
+    const arabicBaseline = await readLifecycleResourceSnapshot(page);
     sourceRequests += 1;
     await commitEnduranceLocale(page, false, sourceRequests);
     const settledBaseline = await readLifecycleResourceSnapshot(page);
-    assert.equal(settledBaseline.activeAnimations, 0);
-    assert.equal(settledBaseline.busy, 0);
-    assert.equal(settledBaseline.participantReady, 1);
+    for (const baseline of [arabicBaseline, settledBaseline]) {
+      assert.equal(baseline.activeAnimations, 0);
+      assert.equal(baseline.busy, 0);
+      assert.equal(baseline.participantReady, 1);
+    }
 
     for (let index = 0; index < 8; index += 1) {
       sourceRequests += 1;
-      await commitEnduranceLocale(page, index % 2 === 0, sourceRequests);
+      const arabic = index % 2 === 0;
+      await commitEnduranceLocale(page, arabic, sourceRequests);
       assert.deepEqual(
         await readLifecycleResourceSnapshot(page),
-        settledBaseline,
+        arabic ? arabicBaseline : settledBaseline,
         `${row.label} lifecycle/resources did not settle in batch ${batch}, switch ${index}`,
       );
     }
@@ -2776,7 +3022,9 @@ async function verifySecondaryBrowserRow(row) {
     noteAwaiting(`${row.id} the hydration navigation`);
     const response = await navigateWithScriptGate(
       rowPage,
-      `${browserOrigin}${addresses.path('home', 'en-US')}?label=${encodeURIComponent(label)}`,
+      siteUrl(
+        `${addresses.path('home', 'en-US')}?label=${encodeURIComponent(label)}`,
+      ),
       async () => {
         await rowPage.waitForSelector(
           `[data-ssr-probe][data-label="${label}"]`,
@@ -2862,12 +3110,14 @@ async function verifySecondaryBrowserRow(row) {
       true,
     );
     await rowPage.locator('[data-locale-choice="ar-EG"]').click();
+    await rowPage.waitForURL((url) => isShown(url, 'home', 'ar-EG'));
     await rowPage.waitForFunction(
       () =>
         document.documentElement.lang === 'ar-EG' &&
         document.documentElement.dir === 'rtl',
     );
     await rowPage.locator('[data-locale-choice="en-US"]').click();
+    await rowPage.waitForURL((url) => isShown(url, 'home', 'en-US'));
     await rowPage.waitForFunction(
       () =>
         document.documentElement.lang === 'en-US' &&
@@ -2966,10 +3216,7 @@ try {
     // arrives without a cookie, which is true and is not the question. The two fetches below are the
     // question: they are the same URL, they get different answers, and a shared cache keys on the URL.
     // Whichever of them is stored public is the one every subsequent visitor receives.
-    const localeEntry = await fetch(`${origin}/`, {
-      redirect: 'manual',
-      signal: AbortSignal.timeout(15_000),
-    });
+    const localeEntry = await answer('/', { redirect: 'manual' });
     assert.equal(localeEntry.status, 307);
     assert.equal(
       localeEntry.headers.get('location'),
@@ -2979,10 +3226,9 @@ try {
     // The same URL with a remembered preference. The visitor lands in Arabic instead of landing in
     // English and switching by hand, and this is the response that proves the one above cannot be
     // public. Different body, different `Location`, same cache key.
-    const negotiatedEntry = await fetch(`${origin}/`, {
+    const negotiatedEntry = await answer('/', {
       redirect: 'manual',
       headers: { cookie: 'equator-locale=ar-EG' },
-      signal: AbortSignal.timeout(15_000),
     });
     assert.equal(negotiatedEntry.status, 307);
     assert.equal(
@@ -3000,10 +3246,9 @@ try {
     );
     // A preference for a language this application does not offer is ignored rather than turned
     // into an error about a URL that was perfectly valid.
-    const unusableEntry = await fetch(`${origin}/`, {
+    const unusableEntry = await answer('/', {
       redirect: 'manual',
       headers: { cookie: 'equator-locale=zz-ZZ' },
-      signal: AbortSignal.timeout(15_000),
     });
     assert.equal(unusableEntry.status, 307);
     assert.equal(
@@ -3016,10 +3261,9 @@ try {
     // `equator generate --pseudo`. Until the served policy was narrowed to the generated locale set
     // this answered `/en-arab-xb`, and the address behind it rendered as a success in markup
     // labelled `lang="en-Arab-XB"` with English text inside it (4.16).
-    const unbuiltEntry = await fetch(`${origin}/`, {
+    const unbuiltEntry = await answer('/', {
       redirect: 'manual',
       headers: { cookie: 'equator-locale=en-Arab-XB' },
-      signal: AbortSignal.timeout(15_000),
     });
     assert.equal(unbuiltEntry.status, 307);
     assert.equal(
@@ -3028,28 +3272,23 @@ try {
     );
   }
   // Where no address names a locale there is no address of an unbuilt one to ask for, and none
-  // that states its own locale to hold to a public answer.
-  if (addresses.localeInAddress) {
+  // that states its own locale to hold to a public answer. Where the origin names it, no deployment
+  // answers at an unbuilt locale's origin, so the question has no server to put it to.
+  if (addresses.localeInAddress && !addresses.localeInOrigin) {
     // The address directly, which is the half no preference check reaches: a link, a bookmark, or a
     // crawler that read the prefix somewhere and came back for it.
-    const unbuiltAddress = await fetch(
-      `${origin}${addresses.path('second', 'en-Arab-XB')}`,
-      {
-        redirect: 'manual',
-        signal: AbortSignal.timeout(15_000),
-      },
+    const unbuiltAddress = await answer(
+      addresses.path('second', 'en-Arab-XB'),
+      { redirect: 'manual', locale: 'en-Arab-XB' },
     );
     assert.equal(unbuiltAddress.status, 404);
     // The control for both, in the same shape and through the same policy: a locale this build does
     // have still answers at its own address, so neither assertion above is passing because the
     // application stopped resolving anything.
-    const builtAddress = await fetch(
-      `${origin}${addresses.path('second', 'ar-EG')}`,
-      {
-        redirect: 'manual',
-        signal: AbortSignal.timeout(15_000),
-      },
-    );
+    const builtAddress = await answer(addresses.path('second', 'ar-EG'), {
+      redirect: 'manual',
+      locale: 'ar-EG',
+    });
     assert.equal(builtAddress.status, 200);
     assert.equal(builtAddress.headers.get('content-language'), 'ar-EG');
     // The cache header on a 200, which nothing in this file had ever read.
@@ -3073,13 +3312,9 @@ try {
   }
   // A route that declares itself per visitor. The toolkit read the declaration out of the route
   // file, the generated table carries it, and the handler raised the page to it.
-  const perVisitorPage = await fetch(
-    `${origin}${addresses.path('lazy', 'en-US')}`,
-    {
-      redirect: 'manual',
-      signal: AbortSignal.timeout(15_000),
-    },
-  );
+  const perVisitorPage = await answer(addresses.path('lazy', 'en-US'), {
+    redirect: 'manual',
+  });
   assert.equal(perVisitorPage.status, 200);
   assert.equal(
     perVisitorPage.headers.get('cache-control'),
@@ -3087,10 +3322,7 @@ try {
   );
   // A miswritten locale segment is corrected only where the locale is a segment of every address.
   if (addresses.entryRedirects) {
-    const correction = await fetch(`${origin}/EN-US/Second/`, {
-      redirect: 'manual',
-      signal: AbortSignal.timeout(15_000),
-    });
+    const correction = await answer('/EN-US/Second/', { redirect: 'manual' });
     assert.equal(correction.status, 308);
     assert.equal(
       correction.headers.get('location'),
@@ -3101,28 +3333,22 @@ try {
       'public, max-age=86400',
     );
   }
-  const historicalReplacement = await fetch(
-    `${origin}${addresses.path('legacy', 'en-US')}?tab=one`,
-    {
-      redirect: 'manual',
-      signal: AbortSignal.timeout(15_000),
-    },
+  const historicalReplacement = await answer(
+    `${addresses.path('legacy', 'en-US')}?tab=one`,
+    { redirect: 'manual' },
   );
   assert.equal(historicalReplacement.status, 308);
   assert.equal(
     historicalReplacement.headers.get('location'),
-    `${addresses.path('second', 'en-US')}?tab=one`,
+    `${addresses.address('second', 'en-US')}?tab=one`,
   );
   // The locale a retired address answers in is the one it states, so only an address that states
   // one can show it is not the default.
   const goneLocale = addresses.localeInAddress ? 'ar-EG' : 'en-US';
-  const historicalGone = await fetch(
-    `${origin}${addresses.path('removed', goneLocale)}`,
-    {
-      redirect: 'manual',
-      signal: AbortSignal.timeout(15_000),
-    },
-  );
+  const historicalGone = await answer(addresses.path('removed', goneLocale), {
+    redirect: 'manual',
+    locale: goneLocale,
+  });
   assert.equal(historicalGone.status, 410);
   assert.equal(historicalGone.headers.get('content-language'), goneLocale);
   assert.equal(historicalGone.headers.get('x-robots-tag'), 'noindex');
@@ -3131,12 +3357,9 @@ try {
     'private, no-store',
   );
   // An empty segment written into an address that is otherwise one, which no policy repairs.
-  const malformed = await fetch(
-    `${origin}${addresses.path('second', 'en-US').replace(/\/(?=[^/]*$)/u, '//')}`,
-    {
-      redirect: 'manual',
-      signal: AbortSignal.timeout(15_000),
-    },
+  const malformed = await answer(
+    addresses.path('second', 'en-US').replace(/\/(?=[^/]*$)/u, '//'),
+    { redirect: 'manual' },
   );
   assert.equal(malformed.status, 400);
   assert.equal(malformed.headers.get('content-language'), 'en-US');
@@ -3144,29 +3367,16 @@ try {
   assert.equal(malformed.headers.get('cache-control'), 'private, no-store');
   // A locale-shaped first segment names a locale only where every locale is one.
   if (addresses.entryRedirects) {
-    const unsupported = await fetch(`${origin}/fr/second`, {
-      redirect: 'manual',
-      signal: AbortSignal.timeout(15_000),
-    });
+    const unsupported = await answer('/fr/second', { redirect: 'manual' });
     assert.equal(unsupported.status, 404);
     assert.equal(unsupported.headers.get('content-language'), 'en-US');
     assert.equal(unsupported.headers.get('x-robots-tag'), 'noindex');
   }
-  const nonIndexable = await fetch(
-    `${origin}${addresses.path('item', 'en-US')}`,
-    {
-      signal: AbortSignal.timeout(15_000),
-    },
-  );
+  const nonIndexable = await answer(addresses.path('item', 'en-US'));
   assert.equal(nonIndexable.status, 200);
   assert.equal(nonIndexable.headers.get('content-language'), 'en-US');
   assert.equal(nonIndexable.headers.get('x-robots-tag'), 'noindex');
-  const prerendered = await fetch(
-    `${origin}${addresses.path('second', 'en-US')}`,
-    {
-      signal: AbortSignal.timeout(15_000),
-    },
-  );
+  const prerendered = await answer(addresses.path('second', 'en-US'));
   assert.equal(prerendered.status, 200);
   assert.equal(prerendered.headers.get('content-language'), 'en-US');
   const prerenderedDocument = new JSDOM(await prerendered.text()).window
@@ -3179,17 +3389,14 @@ try {
   );
   // A page asked for under another locale's slug is sent to its own, which needs a slug per locale.
   if (addresses.has('article under the English slug', 'ar-EG')) {
-    const articleAlias = await fetch(
-      `${origin}${addresses.path('article under the English slug', 'ar-EG')}`,
-      {
-        redirect: 'manual',
-        signal: AbortSignal.timeout(15_000),
-      },
+    const articleAlias = await answer(
+      addresses.path('article under the English slug', 'ar-EG'),
+      { redirect: 'manual', locale: 'ar-EG' },
     );
     assert.equal(articleAlias.status, 308);
     assert.equal(
       articleAlias.headers.get('location'),
-      addresses.path('article', 'ar-EG'),
+      addresses.address('article', 'ar-EG'),
     );
   }
 
@@ -3213,10 +3420,9 @@ try {
   // Only a policy that writes the Arabic article at an address of its own has that address to ask
   // for.
   if (addresses.has('article', 'ar-EG')) {
-    const encodedArticle = await fetch(
-      `${origin}${addresses.path('article', 'ar-EG')}`,
-      { signal: AbortSignal.timeout(15_000) },
-    );
+    const encodedArticle = await answer(addresses.path('article', 'ar-EG'), {
+      locale: 'ar-EG',
+    });
     assert.equal(
       encodedArticle.status,
       200,
@@ -3236,12 +3442,7 @@ try {
       addresses.url('article', 'ar-EG'),
     );
   }
-  const articleResponse = await fetch(
-    `${origin}${addresses.path('article', 'en-US')}`,
-    {
-      signal: AbortSignal.timeout(15_000),
-    },
-  );
+  const articleResponse = await answer(addresses.path('article', 'en-US'));
   assert.equal(articleResponse.status, 200);
   const articleDocument = new JSDOM(await articleResponse.text()).window
     .document;
@@ -3277,9 +3478,7 @@ try {
   // validates as a document. And the alternates it carries for a page are the alternates that
   // page's own head carries, element for element, because both come from `projectRouteSeo` and
   // there is no second derivation to drift.
-  const sitemapResponse = await fetch(`${origin}/sitemap.xml`, {
-    signal: AbortSignal.timeout(15_000),
-  });
+  const sitemapResponse = await answer('/sitemap.xml');
   assert.equal(sitemapResponse.status, 200);
   assert.match(
     sitemapResponse.headers.get('content-type') ?? '',
@@ -3296,11 +3495,13 @@ try {
   );
   // The two parameterless indexable routes and the one article, at each address the table gives
   // them in a locale this build generated. `items` is non-indexable and `lazy` is not published,
-  // so neither is here: the indexing class does in a sitemap what it does in the head.
+  // so neither is here: the indexing class does in a sitemap what it does in the head. A sitemap
+  // agrees with the origin of the deployment serving it, so where each locale is an origin of its
+  // own the file lists that origin's locale alone.
   const sitemapLocales = new Map(
     ['second', 'article', 'home'].flatMap((page) =>
-      builtLocales
-        .filter((locale) => addresses.has(page, locale))
+      deploymentOf('en-US')
+        .locales.filter((locale) => addresses.has(page, locale))
         .map((locale) => [addresses.url(page, locale), locale]),
     ),
   );
@@ -3359,8 +3560,8 @@ try {
   // what the sitemap promises is a page: at this address, in this language, open to a crawler.
   for (const published of publishedUrls) {
     const path = new URL(published).pathname;
-    const served = await fetch(`${origin}${path}`, {
-      signal: AbortSignal.timeout(15_000),
+    const served = await answer(path, {
+      locale: sitemapLocales.get(published),
     });
     assert.equal(
       served.status,
@@ -3528,10 +3729,23 @@ try {
       (node) => node.getAttribute('content'),
     );
 
+  // The other languages a page is available in are the locales it has an address in, so under
+  // locale-neutral the English page lists none and the Arabic one lists English.
+  const socialLocale = { 'en-US': 'en_US', 'ar-EG': 'ar_EG' };
+  const socialAlternates = (page, own) =>
+    builtLocales
+      .filter((locale) => locale !== own && addresses.has(page, locale))
+      .map((locale) => socialLocale[locale]);
   assert.deepEqual(openGraph(bravo, 'og:locale'), ['ar_EG']);
-  assert.deepEqual(openGraph(bravo, 'og:locale:alternate'), ['en_US']);
+  assert.deepEqual(
+    openGraph(bravo, 'og:locale:alternate'),
+    socialAlternates('home', 'ar-EG'),
+  );
   assert.deepEqual(openGraph(alpha, 'og:locale'), ['en_US']);
-  assert.deepEqual(openGraph(alpha, 'og:locale:alternate'), ['ar_EG']);
+  assert.deepEqual(
+    openGraph(alpha, 'og:locale:alternate'),
+    socialAlternates('home', 'en-US'),
+  );
 
   // The page's own locale must not also be listed as an alternate: that would say the page is
   // available in the language it is written in.
@@ -3574,7 +3788,7 @@ try {
     'https://site.example/social/preview.png',
   ]);
   assert.deepEqual(openGraph(bravo, 'og:url'), [
-    addresses.url('home', 'ar-EG'),
+    addresses.shownUrl('home', 'ar-EG'),
   ]);
 
   assert.equal(alpha.label, 'alpha-request');
@@ -3616,7 +3830,7 @@ try {
   assert.deepEqual(bravo.transfer.route, {
     routeId: 'route:_index',
     projectionIdentity: alpha.transfer.route.projectionIdentity,
-    canonicalPath: addresses.path('home', 'ar-EG'),
+    canonicalPath: addresses.shownPath('home', 'ar-EG'),
     addresses: homeAddresses('bravo-request'),
   });
   assert.equal(alpha.transfer.formatting.locale, 'en-US');
@@ -3804,7 +4018,7 @@ try {
 
   enterStage('hydration-navigation');
   const navigation = page.goto(
-    `${browserOrigin}${addresses.path('home', 'en-US')}?label=hydration-request`,
+    siteUrl(`${addresses.path('home', 'en-US')}?label=hydration-request`),
     {
       waitUntil: 'load',
     },
@@ -3907,17 +4121,21 @@ try {
     const missing = boundCalls(await context.newPage(), 'page');
     attachBrowserDiagnostics(missing, chromiumDiagnostics);
     missing.setDefaultTimeout(15_000);
-    const missingUrl = `${browserOrigin}${addresses.path('missing', 'ar-EG')}`;
-    expectedErrorDocuments.add(missingUrl);
-    const missingResponse = await missing.goto(missingUrl, {
-      waitUntil: 'networkidle',
-    });
+    const missingResponse = await visitFor(
+      context,
+      'missing',
+      'ar-EG',
+      (missingUrl) => {
+        expectedErrorDocuments.add(missingUrl);
+        return missing.goto(missingUrl, { waitUntil: 'networkidle' });
+      },
+    );
     // The status is Equator's, and the page is the application's: a not-found page answered 200
     // tells a crawler the address exists.
     assert.equal(
       missingResponse?.status(),
       404,
-      'A not-found under a locale prefix did not answer 404',
+      'A not-found in Arabic did not answer 404',
     );
     await missing.waitForFunction(
       () => document.querySelector('[data-route-view="not-found"]') !== null,
@@ -3927,7 +4145,7 @@ try {
     assert.equal(
       await missing.evaluate(() => document.documentElement.lang),
       'ar-EG',
-      'A not-found under a locale prefix did not answer in that locale',
+      'A not-found in Arabic did not answer in Arabic',
     );
     await collectPolicyDiagnostics(missing, chromiumDiagnostics);
     await missing.close();
@@ -3994,12 +4212,12 @@ try {
       ['en-US', 'Lazy scope ready.'],
       ['ar-EG', 'النطاق الكسول جاهز.'],
     ]) {
-      const lazyPath = addresses.path('lazy', locale);
       const deferred = boundCalls(await context.newPage(), 'page');
       attachBrowserDiagnostics(deferred, chromiumDiagnostics);
       deferred.setDefaultTimeout(15_000);
-      await deferred.goto(`${browserOrigin}${lazyPath}`, {
-        waitUntil: 'networkidle',
+      const lazyUrl = await visitFor(context, 'lazy', locale, async (url) => {
+        await deferred.goto(url, { waitUntil: 'networkidle' });
+        return url;
       });
       await deferred.waitForFunction(
         () => document.querySelector('[data-route-view="lazy"]') !== null,
@@ -4011,7 +4229,7 @@ try {
           await deferred.locator('[data-route-view="lazy"]').textContent()
         )?.trim(),
         expected,
-        `The scope deferred behind ${lazyPath} did not load when that route activated`,
+        `The scope deferred behind ${lazyUrl} did not load in ${locale} when that route activated`,
       );
       await collectPolicyDiagnostics(deferred, chromiumDiagnostics);
       await deferred.close();
@@ -4034,8 +4252,16 @@ try {
     const probe = boundCalls(await context.newPage(), 'page');
     attachBrowserDiagnostics(probe, chromiumDiagnostics);
     probe.setDefaultTimeout(15_000);
-    await probe.goto(browserOrigin, { waitUntil: 'networkidle' });
-    await probe.locator('[data-locale-choice="ar-EG"]').click();
+    if (addresses.switchInDocument) {
+      await probe.goto(browserOrigin, { waitUntil: 'networkidle' });
+      await probe.locator('[data-locale-choice="ar-EG"]').click();
+    } else {
+      // No locale commits in a document here, so the Arabic block is hydrated from the Arabic
+      // origin's own server HTML, which is the same claim reached the only way this policy has.
+      await probe.goto(siteUrl(addresses.path('home', 'ar-EG'), 'ar-EG'), {
+        waitUntil: 'networkidle',
+      });
+    }
     await probe.waitForFunction(
       () => document.documentElement.lang === 'ar-EG',
     );
@@ -4125,12 +4351,12 @@ try {
   );
   await page.waitForURL(
     (url) =>
-      url.pathname === addresses.shownPath('home', 'ar-EG') &&
+      isShown(url, 'home', 'ar-EG') &&
       url.searchParams.get('label') === 'hydration-request',
   );
   assert.equal(
     await page.locator('link[rel="canonical"]').getAttribute('href'),
-    addresses.url('home', 'ar-EG'),
+    addresses.shownUrl('home', 'ar-EG'),
   );
   assert.match(
     await page.locator('[data-rich-message]').textContent(),
@@ -4141,11 +4367,13 @@ try {
     await page.locator('[data-source-fallback]').textContent(),
     /Source fallback remains truthful/,
   );
+  // A switch that is a document navigation arrives at a page its own origin rendered, and adopts
+  // that page's content rather than fetching it.
   assert.equal(
     await page
       .locator('[data-dynamic-content]')
       .getAttribute('data-source-requests'),
-    '1',
+    addresses.switchInDocument ? '1' : '0',
   );
   assert.equal(
     await page.locator('[data-comment-id="community-ar"]').getAttribute('lang'),
@@ -4177,14 +4405,14 @@ try {
   );
   await page.waitForURL(
     (url) =>
-      url.pathname === addresses.shownPath('home', 'en-US') &&
+      isShown(url, 'home', 'en-US') &&
       url.searchParams.get('label') === 'hydration-request',
   );
   assert.equal(
     await page
       .locator('[data-dynamic-content]')
       .getAttribute('data-source-requests'),
-    '2',
+    addresses.switchInDocument ? '2' : '0',
   );
 
   const initialUrl = page.url();
@@ -4194,9 +4422,7 @@ try {
   );
   enterStage('child-route-navigation');
   await page.locator('[data-route-link="second"]').click();
-  await page.waitForURL(
-    (url) => url.pathname === addresses.path('second', 'en-US'),
-  );
+  await page.waitForURL((url) => isShown(url, 'second', 'en-US'));
   await page.waitForFunction(
     (canonical) =>
       document
@@ -4228,13 +4454,9 @@ try {
 
   enterStage('dynamic-article-route');
   await page.locator('[data-route-link="home"]').click();
-  await page.waitForURL(
-    (url) => url.pathname === addresses.path('home', 'en-US'),
-  );
+  await page.waitForURL((url) => isShown(url, 'home', 'en-US'));
   await page.locator('[data-route-link="article"]').click();
-  await page.waitForURL(
-    (url) => url.pathname === addresses.path('article', 'en-US'),
-  );
+  await page.waitForURL((url) => isShown(url, 'article', 'en-US'));
   await page.waitForFunction(
     () =>
       document.title === 'The Equator localization handbook' &&
@@ -4246,12 +4468,18 @@ try {
     await page.locator('link[rel="canonical"]').getAttribute('href'),
     addresses.url('article', 'en-US'),
   );
-  assert.equal(
-    await page
-      .locator('link[rel="alternate"][hreflang="ar-EG"]')
-      .getAttribute('href'),
-    addresses.url('article', 'ar-EG'),
+  // Only a locale the article has an address in is an alternate of it.
+  const arabicAlternate = page.locator(
+    'link[rel="alternate"][hreflang="ar-EG"]',
   );
+  if (addresses.has('article', 'ar-EG')) {
+    assert.equal(
+      await arabicAlternate.getAttribute('href'),
+      addresses.url('article', 'ar-EG'),
+    );
+  } else {
+    assert.equal(await arabicAlternate.count(), 0);
+  }
   // The switcher's address and the alternate above are one derivation read twice, and each reader
   // forms its own string: the head states where the page lives, absolutely, on the origin this
   // application is deployed at; the option states where the reader is going, as a path on the host
@@ -4264,19 +4492,30 @@ try {
   const arabicAddress = await page
     .locator('[data-locale-choice="ar-EG"]')
     .getAttribute('href');
-  assert.equal(arabicAddress, addresses.address('article', 'ar-EG'));
+  //
+  // An option links only an address that serves its locale to a reader who states nothing, so
+  // where the article has no Arabic address the option switches and links nowhere.
+  assert.equal(
+    arabicAddress,
+    addresses.has('article', 'ar-EG')
+      ? addresses.address('article', 'ar-EG')
+      : null,
+  );
 
   enterStage('dynamic-article-locale-switch');
   await page.locator('[data-locale-choice="ar-EG"]').click();
   await page.waitForURL(
     (url) =>
       decodeURIComponent(url.pathname) ===
-      decodeURIComponent(addresses.path('article', 'ar-EG')),
+        decodeURIComponent(addresses.shownPath('article', 'ar-EG')) &&
+      (!addresses.localeInOrigin || url.origin === addresses.origin('ar-EG')),
   );
   // The link said where the click would go, and it went there. A switcher whose href is derived
   // separately from the switch can disagree with it (on the query the reader is carrying, or on
   // the slug the page declared) and the reader finds that out by opening it in a new tab.
-  assert.equal(new URL(page.url()).pathname, arabicAddress);
+  if (arabicAddress !== null) {
+    assert.equal(new URL(arabicAddress, page.url()).href, page.url());
+  }
   await page.waitForFunction(
     () =>
       document.title === 'دليل Equator للترجمة' &&
@@ -4287,14 +4526,14 @@ try {
   );
   assert.equal(
     await page.locator('link[rel="canonical"]').getAttribute('href'),
-    addresses.url('article', 'ar-EG'),
+    addresses.shownUrl('article', 'ar-EG'),
   );
 
   await collectPolicyDiagnostics(page, chromiumDiagnostics);
 
   enterStage('chromium-focus-selection-composition-scroll');
-  await page.goto(
-    `${browserOrigin}${addresses.path('home', 'en-US')}?label=chromium-continuity`,
+  await visitFor(context, 'home', 'en-US', (url) =>
+    page.goto(`${url}?label=chromium-continuity`),
   );
   await page.waitForFunction(
     () => document.documentElement.dataset['clientReady'] === 'true',

@@ -226,7 +226,7 @@ const declared = Object.freeze([
   // Empty on purpose: it reads no file at all. It probes the installed engines, Node's `Intl`
   // and the three Playwright browsers, which the lockfile binds rather than a stage.
   { id: 'verify:platform', reads: [] },
-  // The four consumer rows read `source:tools` because the materializer copies the claim and its
+  // The consumer rows read `source:tools` because the materializer copies the claim and its
   // recorder into each consumer, whose specs claim what they assert.
   {
     id: 'verify:consumer',
@@ -258,6 +258,27 @@ const declared = Object.freeze([
     id: 'verify:strict-consumer',
     reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
     writes: ['consumer:strict'],
+    claims: true,
+  },
+  // The development row under each URL policy it does not declare: the same application with the
+  // policy and its address table replaced, so where the locale sits in an address is all that
+  // differs from `verify:consumer`. The host row builds once for each origin.
+  {
+    id: 'verify:default-locale-prefix-consumer',
+    reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
+    writes: ['consumer:default-locale-prefix'],
+    claims: true,
+  },
+  {
+    id: 'verify:locale-neutral-consumer',
+    reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
+    writes: ['consumer:locale-neutral'],
+    claims: true,
+  },
+  {
+    id: 'verify:locale-host-consumer',
+    reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
+    writes: ['consumer:locale-host'],
     claims: true,
   },
   // Edits the materialized consumer in place and restores it, asserting the restore was exact. It
@@ -317,8 +338,8 @@ const declared = Object.freeze([
       },
     ],
   },
-  // Before the three browser rows rather than beside them, and a prerequisite of all three rather
-  // than a peer. It watches the assurance verifier die on a deliberate escape, which is the only way
+  // Before the browser rows rather than beside them, and a prerequisite of every one rather than a
+  // peer. It watches the assurance verifier die on a deliberate escape, which is the only way
   // to know that file reports anything at all: importing the consumer's server bundle installs
   // Angular's log-only global error handlers, and for as long as they were the last word every
   // assertion outside that file's own `try` printed and exited 0. The gate ran green over a consumer
@@ -327,7 +348,7 @@ const declared = Object.freeze([
     id: 'verify:browser-assurance:self-test',
     reads: ['consumer:package', 'source:packages'],
   },
-  // The three rows run alone: serial among themselves and not overlapped with anything else
+  // The browser rows run alone: serial among themselves and not overlapped with anything else
   // either. This is the one exclusion that is declared rather than derived: they share no artefact,
   // and what they contend for is the machine's browsers, which no read or write records.
   //
@@ -355,7 +376,7 @@ const declared = Object.freeze([
     needs: [
       {
         on: 'verify:browser-assurance:self-test',
-        why: 'All three rows share the listeners the self-test exercises, so one run covers them.',
+        why: 'Every row shares the listeners the self-test exercises, so one run covers them.',
       },
     ],
   },
@@ -366,10 +387,23 @@ const declared = Object.freeze([
     needs: [
       {
         on: 'verify:browser-assurance:self-test',
-        why: 'All three rows share the listeners the self-test exercises, so one run covers them.',
+        why: 'Every row shares the listeners the self-test exercises, so one run covers them.',
       },
     ],
   },
+  ...['default-locale-prefix', 'locale-neutral', 'locale-host'].map(
+    (policy) => ({
+      id: `verify:browser-assurance:${policy}`,
+      reads: [`consumer:${policy}`, 'source:packages'],
+      exclusive: true,
+      needs: [
+        {
+          on: 'verify:browser-assurance:self-test',
+          why: 'Every row shares the listeners the self-test exercises, so one run covers them.',
+        },
+      ],
+    }),
+  ),
   // Before `verify:matrix` for the reason `verify:browser-assurance:self-test` is before the browser
   // rows. It plants each thing the matrix must refuse (a claim taken away, a reason over an
   // exercised cell, a claim for a capability its check never names, a stage's evidence missing, a

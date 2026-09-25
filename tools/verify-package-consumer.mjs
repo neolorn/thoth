@@ -28,7 +28,11 @@ import {
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawn, spawnSync } from 'node:child_process';
 
-import { readConsumerAddresses } from './consumer-addresses.mjs';
+import {
+  readConsumerAddresses,
+  readConsumerBuilds,
+  SITE_ORIGIN_DECLARATION,
+} from './consumer-addresses.mjs';
 import { withOfflineStoreRemedy } from './offline-store.mjs';
 
 import {
@@ -1089,8 +1093,11 @@ const collectPrerendered = async (root, prefix = '') => {
   return paths;
 };
 
-// Where each page lives, read from the address table the consumer's own specs read.
+// Where each page lives, read from the address table the consumer's own specs read, and where each
+// build answers.
 const addresses = await readConsumerAddresses(consumerRoot);
+const builds = await readConsumerBuilds(consumerRoot);
+const policySource = await readFile(builds.policyPath, 'utf8');
 
 /** The file prerendering writes a page to, or nothing where the page has no address. */
 const prerenderedFile = (page, locale) =>
@@ -1107,67 +1114,127 @@ const prerenderedFiles = (locales) =>
       .filter((file) => file !== undefined),
   );
 
-const emittedPrerendered = (await collectPrerendered(browserRoot)).sort();
-const expectedPrerendered = prerenderedFiles(INIT_REQUEST.locales).sort();
-assert.deepEqual(
-  emittedPrerendered,
-  expectedPrerendered,
-  `The prerendered address set is wrong.\nEmitted:\n  ${emittedPrerendered.join('\n  ')}\nExpected:\n  ${expectedPrerendered.join('\n  ')}`,
-);
+/** The origins these locales are served at, each once. A locale with no address has none. */
+const originsOf = (locales) => [
+  ...new Set(
+    locales
+      .map((locale) => addresses.origin(locale))
+      .filter((origin) => origin !== undefined),
+  ),
+];
 
-for (const locale of INIT_REQUEST.locales) {
-  const file = prerenderedFile('second', locale);
-  // No address in that locale is no file, which the set above has already held the build to.
-  if (file === undefined) continue;
-  assert.match(
-    await readFile(resolve(browserRoot, file), 'utf8'),
-    /data-route-view="second"/u,
-    `${locale} prerendered route is absent`,
+/** The locales among these that the build answering at `origin` serves. */
+const servedAt = (origin, locales) =>
+  locales.filter((locale) => addresses.origin(locale) === origin);
+
+/**
+ * Builds the consumer as its deployment at `origin` is built, into `output`.
+ *
+ * At the declared origin that is the source as it stands. At any other it is the same source with
+ * `SITE_ORIGIN` changed, which is how a deployment that puts each locale on its own origin builds
+ * for the rest, put back even when the build fails, because every later step reads the declared
+ * build and its source.
+ */
+async function buildAt(origin, output) {
+  if (origin === builds.siteOrigin) {
+    run(['exec', 'ng', 'build', '--output-path', output]);
+    return;
+  }
+  await writeFile(
+    builds.policyPath,
+    policySource.replace(
+      SITE_ORIGIN_DECLARATION,
+      () => `export const SITE_ORIGIN = '${origin}';`,
+    ),
+    'utf8',
   );
+  try {
+    run(['exec', 'ng', 'build', '--output-path', output]);
+  } finally {
+    await writeFile(builds.policyPath, policySource, 'utf8');
+  }
 }
 
-// One declaration per route, expanded to every locale by the policy Equator already has. The
-// article route is the one that is hard by hand: its slug is spelled differently per locale, so
-// its two prerendered addresses share no path segment. A hand-written table that missed one would
-// not fail anywhere: it would ship a page that exists in English and 404s in Arabic.
-for (const language of INIT_REQUEST.locales) {
-  const file = prerenderedFile('article', language);
-  if (file === undefined) continue;
-  const prerendered = await readFile(resolve(browserRoot, file), 'utf8');
-  assert.match(
-    prerendered,
-    /data-route-view="article"/u,
-    `${language} prerendered article route is absent`,
+/**
+ * What the build at `root`, answering at `origin`, prerendered: exactly the files of the pages its
+ * own locales have addresses for, each rendering its page in its locale.
+ */
+async function verifyPrerendered(root, origin, locales) {
+  const served = servedAt(origin, locales);
+  const emitted = (await collectPrerendered(root)).sort();
+  const expected = prerenderedFiles(served).sort();
+  assert.deepEqual(
+    emitted,
+    expected,
+    `The prerendered address set at ${origin} is wrong.\nEmitted:\n  ${emitted.join('\n  ')}\nExpected:\n  ${expected.join('\n  ')}`,
   );
-  assert.match(
-    prerendered,
-    new RegExp(`lang="${language}"`, 'u'),
-    `${language} prerendered article was rendered in the wrong locale`,
-  );
-  // The measurement the server-side locale source rests on.
-  //
-  // Equator reads the address being rendered from `PlatformLocation`, because `@angular/ssr`
-  // provides `REQUEST` and `REQUEST_CONTEXT` only when the render mode is `Server`: a
-  // prerendered page has neither. Two things had to be true for that to work and only one of them
-  // was ever measured: that `PlatformLocation` is injectable from an application-config-level
-  // factory, and that under prerendering it carries the address being rendered rather than `/`.
-  // This is a prerendered page, so its own address here is that second fact, observed.
-  const probe = /"feature-lab-ssr-probe":(\{.*?\})/su.exec(prerendered);
-  assert.ok(
-    probe,
-    `${language} prerendered article carried no SSR probe state`,
-  );
-  const platformPath = JSON.parse(probe[1]).platformPath;
-  assert.notEqual(
-    platformPath,
-    'unavailable',
-    'PlatformLocation did not resolve during prerendering, so the server locale source has no address to read',
-  );
-  // Decoded on both sides, because which of the two spellings `pathname` holds is Angular's.
-  assert.equal(
-    decodeURIComponent(platformPath),
-    decodeURIComponent(addresses.path('article', language)),
-    `PlatformLocation reported ${JSON.stringify(platformPath)} while prerendering the ${language} article, so it does not carry the rendered address`,
+
+  for (const locale of served) {
+    const file = prerenderedFile('second', locale);
+    // No address in that locale is no file, which the set above has already held the build to.
+    if (file === undefined) continue;
+    assert.match(
+      await readFile(resolve(root, file), 'utf8'),
+      /data-route-view="second"/u,
+      `${locale} prerendered route is absent`,
+    );
+  }
+
+  // One declaration per route, expanded to every locale by the policy Equator already has. The
+  // article route is the one that is hard by hand: its slug is spelled differently per locale, so
+  // its two prerendered addresses share no path segment. A hand-written table that missed one
+  // would not fail anywhere: it would ship a page that exists in English and 404s in Arabic.
+  for (const language of served) {
+    const file = prerenderedFile('article', language);
+    if (file === undefined) continue;
+    const prerendered = await readFile(resolve(root, file), 'utf8');
+    assert.match(
+      prerendered,
+      /data-route-view="article"/u,
+      `${language} prerendered article route is absent`,
+    );
+    assert.match(
+      prerendered,
+      new RegExp(`lang="${language}"`, 'u'),
+      `${language} prerendered article was rendered in the wrong locale`,
+    );
+    // The measurement the server-side locale source rests on.
+    //
+    // Equator reads the address being rendered from `PlatformLocation`, because `@angular/ssr`
+    // provides `REQUEST` and `REQUEST_CONTEXT` only when the render mode is `Server`: a
+    // prerendered page has neither. Two things had to be true for that to work and only one of
+    // them was ever measured: that `PlatformLocation` is injectable from an application-config-level
+    // factory, and that under prerendering it carries the address being rendered rather than `/`.
+    // This is a prerendered page, so its own address here is that second fact, observed.
+    const probe = /"feature-lab-ssr-probe":(\{.*?\})/su.exec(prerendered);
+    assert.ok(
+      probe,
+      `${language} prerendered article carried no SSR probe state`,
+    );
+    const platformPath = JSON.parse(probe[1]).platformPath;
+    assert.notEqual(
+      platformPath,
+      'unavailable',
+      'PlatformLocation did not resolve during prerendering, so the server locale source has no address to read',
+    );
+    // Decoded on both sides, because which of the two spellings `pathname` holds is Angular's.
+    assert.equal(
+      decodeURIComponent(platformPath),
+      decodeURIComponent(addresses.path('article', language)),
+      `PlatformLocation reported ${JSON.stringify(platformPath)} while prerendering the ${language} article, so it does not carry the rendered address`,
+    );
+  }
+}
+
+// One build for each origin the locales are served at. Under a path policy that is the one build
+// above; under a host policy each origin prerenders its own locale's pages and no other's.
+for (const origin of originsOf(INIT_REQUEST.locales)) {
+  const output = builds.output(origin);
+  if (origin !== builds.siteOrigin) await buildAt(origin, output);
+  await verifyPrerendered(
+    resolve(consumerRoot, output, 'browser'),
+    origin,
+    INIT_REQUEST.locales,
   );
 }
 
@@ -1203,158 +1270,175 @@ for (const forbidden of [
  * `uncaughtException` handler stops Node exiting non-zero.
  */
 run(['exec', 'equator', 'generate', '--pseudo']);
-run(['exec', 'ng', 'build', '--output-path', 'dist/feature-lab-pseudo']);
-const pseudoBrowserRoot = resolve(
-  consumerRoot,
-  'dist/feature-lab-pseudo/browser',
-);
 
-// The address set, as an exact set for the same reason as above: a prerendered route whose
+// One pseudo build for each origin the two pages read below are served at, which is one under a
+// path policy. The address set is exact for the same reason as above: a prerendered route whose
 // component throws is dropped silently, and the pseudo-locale's pages appearing is only half the
 // claim. The other half is that there are no others: `en-Latn-XA` is declared and generated too,
 // and the policy gives it no address, so it must produce no file at all.
-const pseudoPrerendered = (await collectPrerendered(pseudoBrowserRoot)).sort();
-const expectedPseudoPrerendered = [
-  ...expectedPrerendered,
-  ...prerenderedFiles(['en-Arab-XB', 'en-Latn-XA']),
-].sort();
-assert.deepEqual(
-  pseudoPrerendered,
-  expectedPseudoPrerendered,
-  `The pseudo build's prerendered address set is wrong.\nEmitted:\n  ${pseudoPrerendered.join('\n  ')}\nExpected:\n  ${expectedPseudoPrerendered.join('\n  ')}`,
-);
-
-const routeViewText = (html, view) => {
-  const match = new RegExp(
-    `<p[^>]*data-route-view="${view}"[^>]*>(.*?)</p>`,
-    'su',
-  ).exec(html);
-  assert.ok(match, `No ${view} route view in the prerendered page`);
-  return match[1].replace(/<!--.*?-->/gsu, '').trim();
-};
-
-const pseudoPage = await readFile(
-  resolve(pseudoBrowserRoot, addresses.file('second', 'en-Arab-XB')),
-  'utf8',
-);
-const englishPage = await readFile(
-  resolve(pseudoBrowserRoot, addresses.file('second', 'en-US')),
-  'utf8',
-);
-
-// Direction and language, read off the rendered document rather than off configuration. The tag
-// carries the script and the script carries the direction, so a prerendered page that is not RTL
-// means the tag did not survive to the renderer, which is the failure this locale exists to make
-// impossible to bolt on afterwards.
-assert.match(
-  pseudoPage,
-  /<html[^>]*\slang="en-Arab-XB"/u,
-  'The prerendered pseudo-locale page did not carry its own language tag',
-);
-assert.match(
-  pseudoPage,
-  /<html[^>]*\sdir="rtl"/u,
-  'The prerendered pseudo-locale page was not rendered right to left',
-);
-
-const pseudoText = routeViewText(pseudoPage, 'second');
-const englishText = routeViewText(englishPage, 'second');
-assert.ok(
-  pseudoText.startsWith('⟦') && pseudoText.endsWith('⟧'),
-  `The prerendered pseudo-locale page carried untransformed text: ${JSON.stringify(pseudoText)}`,
-);
-assert.notEqual(
-  pseudoText,
-  englishText,
-  'The prerendered pseudo-locale page rendered the source locale',
-);
-// The control for the two assertions above. Both would pass on a build where the transform ran
-// over everything, which is the one thing a pseudo-locale must never do to the locales that ship.
-assert.ok(
-  !englishText.includes('⟦'),
-  `The same build transformed the English page: ${JSON.stringify(englishText)}`,
-);
-
-/*
- * The same text the client renders, and the reason that is checkable at all.
- *
- * The transform ran at build time, so what prerendering and the browser each received is one
- * compiled catalog. Asserting the rendered string appears in that catalog is what ties the two
- * ends together: `pseudo-locale-page.spec.ts` proved the browser renders this catalog's messages
- * with their markers, and this proves the page written without a browser carries the same
- * catalog's text, byte for byte.
- *
- * Escapes are decoded first. A generated module may write a non-ASCII character literally or as
- * `\uXXXX`, in either hex case: the bundle gate in `verify-package-structure.mjs` was green
- * against a real leak for exactly this reason.
- */
-const decodeEscapes = (value) =>
-  value.replace(/\\u([0-9a-fA-F]{4})/gu, (_match, hex) =>
-    String.fromCharCode(Number.parseInt(hex, 16)),
+const pseudoLocales = [...INIT_REQUEST.locales, ...Object.keys(PSEUDO_LOCALES)];
+const pseudoRoots = new Map();
+for (const origin of originsOf([INIT_REQUEST.sourceLocale, 'en-Arab-XB'])) {
+  const output = builds.output(origin, 'dist/feature-lab-pseudo');
+  await buildAt(origin, output);
+  const root = resolve(consumerRoot, output, 'browser');
+  const emitted = (await collectPrerendered(root)).sort();
+  const expected = prerenderedFiles(servedAt(origin, pseudoLocales)).sort();
+  assert.deepEqual(
+    emitted,
+    expected,
+    `The pseudo build's prerendered address set at ${origin} is wrong.\nEmitted:\n  ${emitted.join('\n  ')}\nExpected:\n  ${expected.join('\n  ')}`,
   );
-/*
- * Every compiled catalog this build wrote for one locale, joined.
- *
- * Located by name rather than by path, because compiled catalogs live under a set directory whose
- * name is a content-addressed identity: a literal path here would be a fingerprint to re-edit.
- * All of them rather than the first: an application has one catalog per scope per locale, and the
- * first found is whichever scope sorted first. That was this check's own first defect, and it read
- * as the transform having failed.
- */
-const readGeneratedCatalogs = async (name, root = generatedRoot) => {
-  const found = [];
-  for (const entry of await readdir(root, { withFileTypes: true })) {
-    const path = resolve(root, entry.name);
-    if (entry.isDirectory()) {
-      found.push(...(await readGeneratedCatalogs(name, path)));
-    } else if (entry.name === name) {
-      found.push(decodeEscapes(await readFile(path, 'utf8')));
-    }
-  }
-  return found;
-};
-const catalogsFor = async (name) => {
-  const found = await readGeneratedCatalogs(name);
-  assert.ok(found.length > 0, `No generated ${name} under ${generatedRoot}`);
-  return found.join('\n');
-};
-const pseudoCatalog = await catalogsFor('en-Arab-XB.ts');
-assert.ok(
-  pseudoCatalog.includes(pseudoText),
-  `The prerendered text is not in the compiled pseudo catalog: ${JSON.stringify(pseudoText)}`,
-);
-// The control. Without it the assertion above passes for a search that never worked, against the
-// wrong file, or against text no catalog could hold.
-const sourceCatalog = await catalogsFor('en-US.ts');
-assert.ok(
-  sourceCatalog.includes(englishText),
-  'The English page text is not in the compiled source catalog, so the search above proves nothing',
-);
+  pseudoRoots.set(origin, root);
+}
+/** The pseudo build that prerendered the locale's pages. */
+const pseudoRootOf = (locale) => pseudoRoots.get(addresses.origin(locale));
 
-/*
- * Criterion 2, on a page nobody rendered in a browser.
- *
- * The article's title is content this application owns. Equator never sees it, so nothing could
- * pseudo-localize it, and the source supplies the English representation for a locale it has no
- * article in, which is what makes this page the clearest case the criterion has: an
- * application-owned string sitting untransformed beside shell messages that all carry markers.
- * That is what a developer is meant to notice, and here it is in a file written with no browser
- * involved.
+/**
+ * The pseudo-locale's prerendered pages, where the policy gives it addresses of its own. Under a
+ * locale-neutral policy it has none, because no address names a locale, and the set above has
+ * already held its builds to writing no page for it.
  */
-const pseudoArticle = await readFile(
-  resolve(pseudoBrowserRoot, addresses.file('article', 'en-Arab-XB')),
-  'utf8',
-);
-assert.ok(
-  pseudoArticle.includes('The Equator localization handbook'),
-  'The application-owned article title is not on the prerendered pseudo-locale page',
-);
-// And the shell around it did go through Equator. Without this the assertion above passes for a
-// page where the transform never ran at all.
-assert.ok(
-  pseudoArticle.includes('⟦'),
-  'The prerendered pseudo-locale article page carries no transformed message',
-);
+async function verifyPseudoPages() {
+  const routeViewText = (html, view) => {
+    const match = new RegExp(
+      `<p[^>]*data-route-view="${view}"[^>]*>(.*?)</p>`,
+      'su',
+    ).exec(html);
+    assert.ok(match, `No ${view} route view in the prerendered page`);
+    return match[1].replace(/<!--.*?-->/gsu, '').trim();
+  };
+
+  const pseudoPage = await readFile(
+    resolve(pseudoRootOf('en-Arab-XB'), addresses.file('second', 'en-Arab-XB')),
+    'utf8',
+  );
+  const englishPage = await readFile(
+    resolve(
+      pseudoRootOf(INIT_REQUEST.sourceLocale),
+      addresses.file('second', INIT_REQUEST.sourceLocale),
+    ),
+    'utf8',
+  );
+
+  // Direction and language, read off the rendered document rather than off configuration. The tag
+  // carries the script and the script carries the direction, so a prerendered page that is not RTL
+  // means the tag did not survive to the renderer, which is the failure this locale exists to make
+  // impossible to bolt on afterwards.
+  assert.match(
+    pseudoPage,
+    /<html[^>]*\slang="en-Arab-XB"/u,
+    'The prerendered pseudo-locale page did not carry its own language tag',
+  );
+  assert.match(
+    pseudoPage,
+    /<html[^>]*\sdir="rtl"/u,
+    'The prerendered pseudo-locale page was not rendered right to left',
+  );
+
+  const pseudoText = routeViewText(pseudoPage, 'second');
+  const englishText = routeViewText(englishPage, 'second');
+  assert.ok(
+    pseudoText.startsWith('⟦') && pseudoText.endsWith('⟧'),
+    `The prerendered pseudo-locale page carried untransformed text: ${JSON.stringify(pseudoText)}`,
+  );
+  assert.notEqual(
+    pseudoText,
+    englishText,
+    'The prerendered pseudo-locale page rendered the source locale',
+  );
+  // The control for the two assertions above. Both would pass on a build where the transform ran
+  // over everything, which is the one thing a pseudo-locale must never do to the locales that ship.
+  assert.ok(
+    !englishText.includes('⟦'),
+    `A pseudo build transformed the English page: ${JSON.stringify(englishText)}`,
+  );
+
+  /*
+   * The same text the client renders, and the reason that is checkable at all.
+   *
+   * The transform ran at build time, so what prerendering and the browser each received is one
+   * compiled catalog. Asserting the rendered string appears in that catalog is what ties the two
+   * ends together: `pseudo-locale-page.spec.ts` proved the browser renders this catalog's messages
+   * with their markers, and this proves the page written without a browser carries the same
+   * catalog's text, byte for byte.
+   *
+   * Escapes are decoded first. A generated module may write a non-ASCII character literally or as
+   * `\uXXXX`, in either hex case: the bundle gate in `verify-package-structure.mjs` was green
+   * against a real leak for exactly this reason.
+   */
+  const decodeEscapes = (value) =>
+    value.replace(/\\u([0-9a-fA-F]{4})/gu, (_match, hex) =>
+      String.fromCharCode(Number.parseInt(hex, 16)),
+    );
+  /*
+   * Every compiled catalog this build wrote for one locale, joined.
+   *
+   * Located by name rather than by path, because compiled catalogs live under a set directory whose
+   * name is a content-addressed identity: a literal path here would be a fingerprint to re-edit.
+   * All of them rather than the first: an application has one catalog per scope per locale, and the
+   * first found is whichever scope sorted first. That was this check's own first defect, and it read
+   * as the transform having failed.
+   */
+  const readGeneratedCatalogs = async (name, root = generatedRoot) => {
+    const found = [];
+    for (const entry of await readdir(root, { withFileTypes: true })) {
+      const path = resolve(root, entry.name);
+      if (entry.isDirectory()) {
+        found.push(...(await readGeneratedCatalogs(name, path)));
+      } else if (entry.name === name) {
+        found.push(decodeEscapes(await readFile(path, 'utf8')));
+      }
+    }
+    return found;
+  };
+  const catalogsFor = async (name) => {
+    const found = await readGeneratedCatalogs(name);
+    assert.ok(found.length > 0, `No generated ${name} under ${generatedRoot}`);
+    return found.join('\n');
+  };
+  const pseudoCatalog = await catalogsFor('en-Arab-XB.ts');
+  assert.ok(
+    pseudoCatalog.includes(pseudoText),
+    `The prerendered text is not in the compiled pseudo catalog: ${JSON.stringify(pseudoText)}`,
+  );
+  // The control. Without it the assertion above passes for a search that never worked, against the
+  // wrong file, or against text no catalog could hold.
+  const sourceCatalog = await catalogsFor('en-US.ts');
+  assert.ok(
+    sourceCatalog.includes(englishText),
+    'The English page text is not in the compiled source catalog, so the search above proves nothing',
+  );
+
+  /*
+   * Criterion 2, on a page nobody rendered in a browser.
+   *
+   * The article's title is content this application owns. Equator never sees it, so nothing could
+   * pseudo-localize it, and the source supplies the English representation for a locale it has no
+   * article in, which is what makes this page the clearest case the criterion has: an
+   * application-owned string sitting untransformed beside shell messages that all carry markers.
+   * That is what a developer is meant to notice, and here it is in a file written with no browser
+   * involved.
+   */
+  const pseudoArticle = await readFile(
+    resolve(
+      pseudoRootOf('en-Arab-XB'),
+      addresses.file('article', 'en-Arab-XB'),
+    ),
+    'utf8',
+  );
+  assert.ok(
+    pseudoArticle.includes('The Equator localization handbook'),
+    'The application-owned article title is not on the prerendered pseudo-locale page',
+  );
+  // And the shell around it did go through Equator. Without this the assertion above passes for a
+  // page where the transform never ran at all.
+  assert.ok(
+    pseudoArticle.includes('⟦'),
+    'The prerendered pseudo-locale article page carries no transformed message',
+  );
+}
+if (addresses.has('second', 'en-Arab-XB')) await verifyPseudoPages();
 
 // And the generated source goes back to production shape, because the steps after this one rebuild
 // this consumer from it. The `dist/` they read was never touched; this is the other half of the
