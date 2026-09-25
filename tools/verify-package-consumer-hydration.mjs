@@ -535,8 +535,8 @@ const origin = `http://127.0.0.1:${address.port}`;
 // browser asked for that address or was redirected there. A route in the browser misses the second
 // kind, because Playwright calls a route handler only for the first address of a navigation that
 // redirects (`playwright-core/types/types.d.ts:4009`). The application's own server cannot add it,
-// because the policy hashes the document's inline scripts and Angular sends the headers before the
-// body (`writeResponseToNodeResponse`, `@angular/ssr/fesm2022/node.mjs:342-343`).
+// because the policy hashes the document's inline scripts and the headers are sent before the body
+// (`writeNodeResponse` in `@neolorn/equator/http` sets every header before it reads a chunk).
 //
 // The checks of what the application answers read `origin` directly, without the edge, because
 // the application's answer is what they are about. Pages load from `browserOrigin`.

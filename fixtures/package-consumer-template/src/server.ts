@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto';
 import {
   AngularNodeAppEngine,
   createNodeRequestHandler,
-  writeResponseToNodeResponse,
 } from '@angular/ssr/node';
 import {
   allowedLocaleHosts,
@@ -94,13 +93,22 @@ const localeRequests = createLocaleRequestHandler({
   cookie: localeCookie,
   passthrough: () =>
     new Response(null, { status: 204, headers: { [PASS_THROUGH]: '1' } }),
-  render: ({ resolution }) => {
+  render: async ({ request, resolution }) => {
     // A not-found under a supported locale is answered by the application's own routing, which is
     // what a real consumer does: the locale resolved, only the page is unknown, and the application
     // has a not-found page written in it. Anything else (a malformed address, an unsupported
     // locale) never reached Angular before and does not now.
+    //
+    // Rendered here rather than after the handler returns, so the handler composes the page with
+    // the status, language and caching it resolved, which is its job and not this file's. Composing
+    // by hand afterwards lost the status: Angular's writer sets its own, so a not-found answered
+    // 200. The request is the handler's own, which is also what lets a page's declared outcome
+    // reach it.
     if (resolution.status === 'success' || resolution.status === 'not-found') {
-      return new Response(null, { headers: { 'x-consumer-render': '1' } });
+      return (
+        (await engine.handle(request, createProbeContext(request))) ??
+        new Response(null, { status: 204, headers: { [PASS_THROUGH]: '1' } })
+      );
     }
     const locale = resolution.presentationLocale;
     const direction = locale === 'ar-EG' ? 'rtl' : 'ltr';
@@ -113,16 +121,12 @@ const localeRequests = createLocaleRequestHandler({
   },
 });
 
-function createProbeContext(request: {
-  headers: { host?: string | undefined };
-  url?: string | undefined;
-}) {
-  const host = request.headers.host ?? 'localhost';
-  const url = new URL(request.url ?? '/', `http://${host}`);
+function createProbeContext(request: Request) {
+  const url = new URL(request.url);
   const requestedLabel = url.searchParams.get('label')?.trim();
   return {
     requestId: randomUUID(),
-    url: request.url ?? '/',
+    url: `${url.pathname}${url.search}`,
     label:
       requestedLabel === undefined || requestedLabel.length === 0
         ? 'default'
@@ -186,28 +190,6 @@ export const reqHandler = createNodeRequestHandler(
 
       if (resolved.headers.has(PASS_THROUGH)) {
         next();
-        return;
-      }
-
-      // Equator decided the status, the language, the indexing and the cacheability. Angular
-      // renders the body. The two are joined here rather than in Equator because rendering is the
-      // one part that needs the Node request and the application's own engine.
-      if (resolved.headers.get('x-consumer-render') === '1') {
-        const rendered = await engine.handle(
-          request,
-          createProbeContext(request),
-        );
-        if (rendered === null) {
-          next();
-          return;
-        }
-        for (const [name, value] of resolved.headers) {
-          if (name === 'x-consumer-render') continue;
-          if (name === 'set-cookie') response.appendHeader(name, value);
-          else response.setHeader(name, value);
-        }
-        response.statusCode = resolved.status;
-        await writeResponseToNodeResponse(rendered, response);
         return;
       }
 
