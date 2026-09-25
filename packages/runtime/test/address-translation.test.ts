@@ -472,6 +472,22 @@ describe('policies that carry no locale in the path', () => {
     claimCapability('policy:locale-host', { policy: HOST_POLICY });
   });
 
+  it('writes a host-keyed path in the locale of its origin, whatever locale is committed', () => {
+    // A document at the Arabic origin holds only Arabic addresses. The committed locale can still be
+    // the default before the first navigation commits one, where the document's own origin names
+    // none.
+    expect(toExternalPath('/second', 'en-US', HOST)).toBe(`/${SECOND_ENC}`);
+    expect(toExternalPath('/second', 'ar-EG', HOST_DEFAULT)).toBe('/second');
+    // With no origin to read, the committed locale decides.
+    expect(
+      toExternalPath('/second', 'ar-EG', {
+        policy: HOST_POLICY,
+        projection: WITH_HISTORY,
+      }),
+    ).toBe(`/${SECOND_ENC}`);
+    claimCapability('policy:locale-host', { policy: HOST_POLICY });
+  });
+
   it('follows a host-keyed replacement, whose location is absolute, to its path', () => {
     expect(
       resolveLocalizedRoute('/legacy', HOST_POLICY, WITH_HISTORY, {

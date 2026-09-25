@@ -1,15 +1,20 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { LocationStrategy } from '@angular/common';
+import { LocationStrategy, PlatformLocation } from '@angular/common';
 import { MOCK_PLATFORM_LOCATION_CONFIG } from '@angular/common/testing';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
+  NavigationCancel,
+  NavigationEnd,
+  NavigationError,
   Router,
+  RouterOutlet,
   UrlHandlingStrategy,
   UrlSerializer,
   type Routes,
 } from '@angular/router';
+import { filter, firstValueFrom } from 'rxjs';
 import {
   createHostLocalePolicy,
   createLocaleNeutralPolicy,
@@ -27,6 +32,7 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
 
 import { runtimeExtensions } from './runtime-extensions';
+import { routes as appRoutes } from './app.routes';
 import { appRouteProjection } from './localization.routes';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
@@ -72,14 +78,23 @@ const NEUTRAL: LocaleUrlPolicy = createLocaleNeutralPolicy({
   locales: ['en-US', 'ar-EG', 'en-Arab-XB'],
 });
 
+const HOST_ORIGINS = {
+  'en-US': 'https://site.example',
+  'ar-EG': 'https://ar.site.example',
+  'en-Arab-XB': 'https://xb.site.example',
+};
+
 const HOST: LocaleUrlPolicy = createHostLocalePolicy({
   defaultLocale: 'en-US',
-  origins: {
-    'en-US': 'https://site.example',
-    'ar-EG': 'https://ar.site.example',
-    'en-Arab-XB': 'https://xb.site.example',
-  },
+  origins: HOST_ORIGINS,
 });
+
+@Component({
+  standalone: true,
+  imports: [RouterOutlet],
+  template: `<router-outlet />`,
+})
+class RootHost {}
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -171,6 +186,93 @@ describe('a localized path under a policy with no locale in the path', () => {
     const host = await entrances(HOST, 'https://ar.site.example', '/');
     expect(host.handed(ARABIC_SECOND)).toBe('/second');
     claimCapability('policy:locale-neutral', { policy: NEUTRAL });
+    claimCapability('policy:locale-host', { policy: HOST });
+  });
+});
+
+/**
+ * The fixture's application, arriving at `address` in a build that answers at `origin`.
+ *
+ * The document itself stays at jsdom's origin, which no policy here names, as a development server
+ * and a prerender are. The URL locale source then says nothing, and the locale is the one the
+ * route commits.
+ */
+async function arrive(
+  policy: LocaleUrlPolicy,
+  origin: string,
+  address: string,
+): Promise<{
+  readonly view: string | null;
+  /** The route Equator resolved, which the view alone does not show: see the case below. */
+  readonly routeId: string | undefined;
+  readonly locale: string | undefined;
+  readonly routerUrl: string;
+  readonly address: string;
+}> {
+  TestBed.resetTestingModule();
+  TestBed.configureTestingModule({
+    providers: [
+      {
+        provide: MOCK_PLATFORM_LOCATION_CONFIG,
+        useValue: { startUrl: `${origin}${address}` },
+      },
+      provideLocalizedRouter(appRoutes, { origin }),
+      provideLocalizationTesting(
+        {
+          configuration,
+          catalogSet,
+          catalogLoaders,
+          recoveryPayload,
+          extensions: runtimeExtensions,
+          routeProjection,
+        },
+        withRouting({ policy, projection }),
+      ),
+    ],
+  });
+  const localization = TestBed.inject(Localization);
+  await localization.initialize();
+  const router = TestBed.inject(Router);
+  const fixture = TestBed.createComponent(RootHost);
+  const settled = firstValueFrom(
+    router.events.pipe(
+      filter(
+        (event) =>
+          event instanceof NavigationEnd ||
+          event instanceof NavigationCancel ||
+          event instanceof NavigationError,
+      ),
+    ),
+  );
+  router.initialNavigation();
+  await settled;
+  TestBed.tick();
+  const rendered: HTMLElement | null =
+    fixture.nativeElement.querySelector('[data-route-view]');
+  const platform = TestBed.inject(PlatformLocation);
+  return {
+    view: rendered === null ? null : rendered.getAttribute('data-route-view'),
+    routeId: localization.snapshot()?.route?.routeId,
+    locale: localization.snapshot()?.primaryLocale,
+    routerUrl: router.url,
+    address: platform.pathname,
+  };
+}
+
+describe('an arrival under a host policy, in a document at an origin it does not name', () => {
+  it('reads the address in the locale of the origin the build answers at', async () => {
+    expect(Object.values(HOST_ORIGINS)).not.toContain(location.origin);
+
+    const arrival = await arrive(HOST, HOST_ORIGINS['ar-EG'], ARABIC_SECOND);
+
+    // Read beside the view, because the Router renders its canonical match whatever Equator
+    // resolved: an address Equator resolves to nothing still shows the page, with the head and the
+    // status of a missing one.
+    expect(arrival.routeId).toBe('route:second');
+    expect(arrival.view).toBe('second');
+    expect(arrival.locale).toBe('ar-EG');
+    expect(arrival.routerUrl).toBe('/second');
+    expect(arrival.address).toBe(ARABIC_SECOND);
     claimCapability('policy:locale-host', { policy: HOST });
   });
 });

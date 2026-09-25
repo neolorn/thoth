@@ -83,8 +83,8 @@ function declaredAddressContext(): LocalizedAddressContext {
 /**
  * The same, read at the origin this build answers at.
  *
- * Given to the two strategies, because they read the addresses a document holds, and under a host
- * policy a path names a locale only together with the origin it was requested at.
+ * Given to the two strategies and the resolver, because they read and write the addresses a
+ * document holds, and under a host policy a path names a locale only together with its origin.
  */
 function servedAddressContext(
   options: LocalizedRouterOptions,
@@ -116,18 +116,23 @@ const LOCALIZED_ROUTE_TABLE = new InjectionToken<LocalizedRouteTable>(
  * `prepare` unchanged redirects to the prefixed form, which the strategy delocalizes straight back,
  * which resolves again. Measured, not predicted: it is why the strategy and the old resolver
  * could not be split across two steps.
+ *
+ * Re-localized in the context the strategies read, the origin this build answers at included, so
+ * the address it resolves is one this document can hold.
  */
-const resolveCanonicalRouteLocalization: ResolveFn<
-  RouteLocalizationContext | RedirectCommand | undefined
-> = (_route, state) => {
-  const context = inject(LOCALE_URL_POLICY);
-  const active =
-    inject(Localization).snapshot()?.primaryLocale ??
-    context.policy.defaultLocale;
-  return inject(RouteLocalization).prepare(
-    toExternalPath(state.url, active, context),
-  );
-};
+function resolveCanonicalRouteLocalization(
+  options: LocalizedRouterOptions,
+): ResolveFn<RouteLocalizationContext | RedirectCommand | undefined> {
+  return (_route, state) => {
+    const context = servedAddressContext(options);
+    const active =
+      inject(Localization).snapshot()?.primaryLocale ??
+      context.policy.defaultLocale;
+    return inject(RouteLocalization).prepare(
+      toExternalPath(state.url, active, context),
+    );
+  };
+}
 
 /**
  * Equator's own router configuration, named once so the diagnostic can report what was replaced.
@@ -229,7 +234,7 @@ export function provideLocalizedRouter(
       useFactory: () =>
         new LocalizedUrlHandlingStrategy(servedAddressContext(options)),
     },
-    provideRouter(canonicalBranch(routes), configuration, ...features),
+    provideRouter(canonicalBranch(routes, options), configuration, ...features),
     // A second `ROUTES` entry rather than a second argument, because the branches need the
     // projection and the projection only exists in DI. `Router.config` is
     // `inject(ROUTES)?.flat()`, so multi entries compose in provider order.
@@ -372,11 +377,16 @@ export function provideLocalizedRouter(
  * `runGuardsAndResolvers: 'always'`, because the parent's own segments never change and the default
  * would run the resolver once and then never again.
  */
-function canonicalBranch(routes: Routes): Routes {
+function canonicalBranch(
+  routes: Routes,
+  options: LocalizedRouterOptions,
+): Routes {
   const parent: Route = {
     path: '',
     runGuardsAndResolvers: 'always',
-    resolve: { equatorLocalization: resolveCanonicalRouteLocalization },
+    resolve: {
+      equatorLocalization: resolveCanonicalRouteLocalization(options),
+    },
     children: routes,
   };
   return [parent];

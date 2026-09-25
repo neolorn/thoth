@@ -4554,6 +4554,24 @@ function readAt(context: LocalizedAddressContext): RouteResolutionContext {
 }
 
 /**
+ * The locale a host policy gives the origin an address is read at.
+ *
+ * A document is at one origin and holds only that origin's addresses, so under a host policy the
+ * address it is written in is spelled in that origin's locale. The locale committed can differ
+ * before the first navigation commits one, where the document's own origin names none, as on a
+ * development server or in a prerender.
+ */
+function originLocale(context: LocalizedAddressContext): string | undefined {
+  const { policy, origin } = context;
+  if (policy.kind !== 'locale-host' || origin === undefined) return undefined;
+  try {
+    return policy.origins[new URL(origin).origin];
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * The redirects a client-side arrival follows, and why it is only the permanent ones.
  *
  * A visitor who arrives from outside gets the server's answer, and for an address the resolver
@@ -4733,6 +4751,9 @@ export function toInternalPath(
 /**
  * A canonical internal address, spelled for the locale the reader is in.
  *
+ * Under a host policy that is the locale of the origin in the context, when there is one, rather
+ * than `activeLocale`: see `originLocale`.
+ *
  * `spellings` is here for the same reason it is on `projectRouteSeo`, and for a sharper one: this
  * is what writes the address bar. A locale switch is not a navigation, so the switch calls
  * `Location.replaceState` with the Router's canonical URL and this function localizes it. Without
@@ -4760,7 +4781,7 @@ export function toExternalPath(
     policy,
     projection,
     resolution.routeId,
-    activeLocale,
+    originLocale(context) ?? activeLocale,
     resolution.parameters,
     [],
     undefined,
