@@ -174,7 +174,7 @@ describe('shared URL policies', () => {
       'https://www.site.example/articles/handbook',
       arabicUrl,
     ]);
-    expect(seo.xDefault).toBe('https://site.example');
+    expect(seo.xDefault).toBe('https://site.example/');
     claimCapability('policy:locale-host', { policy });
     claimCapability('declaration:x-default', { policy });
     claimCapability('entry:@neolorn/equator', { policy });

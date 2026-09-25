@@ -563,6 +563,7 @@ describe('the head of a page served under a sub-path', () => {
       'en-US': 'https://site.example',
       'ar-EG': 'https://ar.site.example',
     },
+    xDefaultUrl: 'https://site.example',
   });
 
   /** The head for the Arabic address of one route, under whatever policy and mount point. */
@@ -646,5 +647,9 @@ describe('the head of a page served under a sub-path', () => {
       'https://site.example/app/second',
       'https://ar.site.example/app/second',
     ]);
+    // The fallback is the root of the origin it names, mounted like every other address, and at the
+    // root it is that origin's root rather than the bare origin.
+    expect(seo.xDefault).toBe('https://site.example/app/');
+    expect(head(HOSTS, '').xDefault).toBe('https://site.example/');
   });
 });

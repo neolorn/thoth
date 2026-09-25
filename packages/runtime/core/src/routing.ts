@@ -4009,7 +4009,14 @@ export function projectRouteSeo(
     ...(policy.kind === 'locale-host'
       ? policy.xDefaultUrl === undefined
         ? {}
-        : { xDefault: policy.xDefaultUrl }
+        : // The root of the origin it names, mounted as the locales' own origins are.
+          {
+            xDefault: mounted(
+              '/',
+              baseHref,
+              trustedOrigin(policy.xDefaultUrl, 'x-default URL'),
+            ),
+          }
       : policy.xDefaultPath === undefined
         ? {}
         : // Mounted like the rest of them: `xDefaultPath` is a path in this application, declared
