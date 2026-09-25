@@ -28,8 +28,11 @@ than the page's; `aria-current` for the one you are in; `aria-busy` for the one 
 `choice.selfName` is the language's name in its own language, so the option is readable to a visitor
 who cannot read the current page.
 
-A `<button>` works the same way and gets no `href`. Prefer the anchor: it can be opened in a new tab,
-copied, and seen in the status bar.
+A `<button>` works the same way and gets no `href`. Where the page has an address in the other
+locale, prefer the anchor: it can be opened in a new tab, copied, and seen in the status bar. Where it
+has none, as in an application without routing, prefer the button. An anchor still works there: the
+directive gives an `<a>` without an `href` the button role, a place in the tab order, and Enter and
+Space, and keeps a `role` or `tabindex` you wrote on it.
 
 ## Announce the change
 

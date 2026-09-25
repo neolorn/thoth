@@ -11,7 +11,14 @@
  * mechanism: no application state crosses an origin, so there is nothing to transition.
  */
 
-import { Directive, ElementRef, computed, inject, input } from '@angular/core';
+import {
+  Directive,
+  ElementRef,
+  HostAttributeToken,
+  computed,
+  inject,
+  input,
+} from '@angular/core';
 
 import { withBasePath, type LocaleSelectorChoice } from '@neolorn/equator/core';
 
@@ -60,9 +67,13 @@ export type LocaleChoiceCurrent = 'true' | 'page' | 'location' | 'step';
  *
  * **This is `routerLinkActive`'s shape, deliberately.** An attribute directive with no markup of its
  * own, applied to an element the application wrote, which reads state and writes attributes, and
- * like it, the activation is the element's own: a `button` and an `a[href]` both raise `click` from
- * the keyboard without help, so there is no key handler here and no `tabindex`. A `div` gets
- * neither, which is the correct outcome for a control that is not one.
+ * like it, the activation is the element's own where the element has one: a `button` and an
+ * `a[href]` both raise `click` from the keyboard without help. An anchor with no address has
+ * neither focus nor activation in HTML, and a reader who cannot reach an option cannot choose that
+ * language, so there the directive gives the anchor the button pattern of the WAI-ARIA Authoring
+ * Practices: `role="button"`, a place in the tab order, and activation by Enter and Space. A role
+ * or a `tabindex` the application wrote on the element is kept. A `div` gets nothing, which is the
+ * correct outcome for a control that is not one.
  */
 @Directive({
   selector: '[localeChoice]',
@@ -72,7 +83,11 @@ export type LocaleChoiceCurrent = 'true' | 'page' | 'location' | 'step';
     '[attr.aria-current]': 'choice().current ? currentAs() : null',
     '[attr.aria-busy]': 'choice().pending ? "true" : null',
     '[attr.href]': 'address()',
+    '[attr.role]': 'role()',
+    '[attr.tabindex]': 'tabindex()',
     '(click)': 'activate($event)',
+    '(keydown)': 'pressed($event)',
+    '(keyup)': 'released($event)',
   },
 })
 export class LocaleChoice {
@@ -140,6 +155,29 @@ export class LocaleChoice {
     return address === undefined ? null : withBasePath(address, this.baseHref);
   });
 
+  // Read from what the application wrote, because a binding of its own replaces the attribute, and
+  // an application that placed this option in a menu or a roving tab order has already decided both.
+  private readonly authoredRole = inject(new HostAttributeToken('role'), {
+    optional: true,
+  });
+  private readonly authoredTabindex = inject(
+    new HostAttributeToken('tabindex'),
+    { optional: true },
+  );
+
+  /** An anchor that has no address to carry, and so needs the button pattern to be operable. */
+  private readonly addressless = computed(
+    () => this.anchor && this.address() === null,
+  );
+
+  protected readonly role = computed(() =>
+    this.addressless() ? (this.authoredRole ?? 'button') : this.authoredRole,
+  );
+
+  protected readonly tabindex = computed(() =>
+    this.addressless() ? (this.authoredTabindex ?? '0') : this.authoredTabindex,
+  );
+
   /**
    * Switch, unless the visitor asked the browser for something else.
    *
@@ -157,12 +195,7 @@ export class LocaleChoice {
    * nothing reads.
    */
   protected activate(event: Event): void {
-    const choice = this.choice();
-    if (choice.current) {
-      event.preventDefault();
-      return;
-    }
-    if (event instanceof MouseEvent) {
+    if (!this.choice().current && event instanceof MouseEvent) {
       if (event.button !== 0) return;
       if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
         const target = event.currentTarget;
@@ -170,7 +203,27 @@ export class LocaleChoice {
           return;
       }
     }
+    this.select(event);
+  }
+
+  /**
+   * Enter selects as it is pressed, and Space as it is released, which is when a native button
+   * acts on each. Space is held back as it is pressed, because its default scrolls the page.
+   */
+  protected pressed(event: KeyboardEvent): void {
+    if (!this.addressless()) return;
+    if (event.key === 'Enter') this.select(event);
+    else if (event.key === ' ') event.preventDefault();
+  }
+
+  protected released(event: KeyboardEvent): void {
+    if (this.addressless() && event.key === ' ') this.select(event);
+  }
+
+  private select(event: Event): void {
     event.preventDefault();
+    const choice = this.choice();
+    if (choice.current) return;
     void this.localization.changeLocale(choice.locale);
   }
 }
