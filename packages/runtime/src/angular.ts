@@ -1625,6 +1625,7 @@ class ServerTransferStateCommitHook implements LocalizationCommitHook {
  */
 function sanitizeTransferSnapshot(
   value: unknown,
+  origins: Readonly<Record<string, string>> | undefined,
 ): TransferSnapshot | undefined {
   try {
     const admitted = snapshotInertJson(value, {
@@ -1683,7 +1684,7 @@ function sanitizeTransferSnapshot(
         typeof route['projectionIdentity'] !== 'string' ||
         !/^sha256-[A-Za-z0-9_-]{43}$/u.test(route['projectionIdentity']) ||
         !isTransferredPath(route['canonicalPath']) ||
-        !areTransferredAddresses(route['addresses']))
+        !areTransferredAddresses(route['addresses'], origins))
     ) {
       return undefined;
     }
@@ -1827,7 +1828,15 @@ export function provideLocalizationSetup(
           transferStateKey,
           null,
         );
-        const transferred = sanitizeTransferSnapshot(transferredValue);
+        const localeUrl = inject(LOCALE_URL_POLICY, { optional: true });
+        // A host build writes each locale's address at that locale's origin, and the build's own
+        // policy is the one list of those origins that the transfer cannot have edited.
+        const transferred = sanitizeTransferSnapshot(
+          transferredValue,
+          localeUrl?.policy.kind === 'locale-host'
+            ? localeUrl.policy.locales
+            : undefined,
+        );
         const transferredParticipants =
           transferred === undefined
             ? undefined
@@ -1867,7 +1876,6 @@ export function provideLocalizationSetup(
           : platformLocation === null
             ? undefined
             : locationAddress(platformLocation, baseHref);
-        const localeUrl = inject(LOCALE_URL_POLICY, { optional: true });
         // What this client asked for, read from whichever surface exists. In the browser that is
         // the ordered list the user configured in their operating system; on the server it is the
         // header carrying the same list. Both are read here rather than in the runtime, which has

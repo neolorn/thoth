@@ -116,3 +116,69 @@ describe('a transferred address table', () => {
     expect(areTransferredAddresses(table(limit + 1))).toBe(false);
   });
 });
+
+describe('a transferred address table under a host policy', () => {
+  // The build's own table, as `createHostLocalePolicy` normalizes it: origin by locale.
+  const origins = {
+    'en-US': 'https://site.example',
+    'ar-EG': 'https://ar.site.example:8443',
+  };
+
+  it('accepts each address at the origin of its own locale', () => {
+    expect(
+      areTransferredAddresses(
+        {
+          'en-US': 'https://site.example/?label=x',
+          'ar-EG':
+            'https://ar.site.example:8443/articles/%D8%AF%D9%84%D9%8A%D9%84',
+        },
+        origins,
+      ),
+    ).toBe(true);
+  });
+
+  it('refuses anything that policy would not have written', () => {
+    const refused: readonly [string, Record<string, unknown>][] = [
+      ['a bare path', { 'ar-EG': '/articles' }],
+      ["another locale's origin", { 'ar-EG': 'https://site.example/articles' }],
+      [
+        'an origin the policy does not name',
+        { 'ar-EG': 'https://evil.example/' },
+      ],
+      [
+        'a locale the policy does not name',
+        { 'fr-FR': 'https://site.example/' },
+      ],
+      [
+        'a key every object inherits',
+        // Parsed, as a transfer arrives, because that is what makes `__proto__` an own key.
+        JSON.parse('{"__proto__": "https://site.example/"}') as Record<
+          string,
+          unknown
+        >,
+      ],
+      ['the origin alone', { 'en-US': 'https://site.example' }],
+      [
+        'a longer host that starts with the origin',
+        { 'en-US': 'https://site.example.evil.example/' },
+      ],
+      [
+        'credentials after the origin',
+        { 'en-US': 'https://site.example@evil.example/' },
+      ],
+      ['another port', { 'ar-EG': 'https://ar.site.example:9443/' }],
+      [
+        'a second origin after the first',
+        { 'en-US': 'https://site.example//evil.example/' },
+      ],
+      [
+        'a backslash after the origin',
+        { 'en-US': 'https://site.example/\\evil' },
+      ],
+      ['a number', { 'en-US': 42 }],
+    ];
+    for (const [reason, table] of refused) {
+      expect(areTransferredAddresses(table, origins), reason).toBe(false);
+    }
+  });
+});

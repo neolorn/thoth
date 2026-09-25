@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   Localization,
+  createHostLocalePolicy,
   createLocalizationContext,
   decimal,
   defineRuntimeExtensions,
@@ -20,19 +21,23 @@ import {
   internalDestination,
   parseLocalizedInput,
   provideLocalizationSetup,
+  withRouting,
   type CatalogLoaders,
+  type LocalizationFeature,
   type RuntimeExtensionBinding,
   type RuntimeFormattingAdapterDescriptor,
 } from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
+import { routeProjection } from '#i18n/routes';
 import { messages, providerId, scopeId } from '#i18n/shell';
 import {
   providerId as lazyProviderId,
   scopeId as lazyScopeId,
 } from '#i18n/lazy';
 
+import { appRouteProjection } from './localization.routes';
 import { runtimeExtensions } from './runtime-extensions';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
@@ -318,6 +323,7 @@ describe('hostile transfer state', () => {
   /** Boot a runtime with this payload in the document, and report what it adopted. */
   const adopt = async (
     payload: unknown,
+    ...features: readonly LocalizationFeature[]
   ): Promise<{ locale: string | undefined; route: unknown }> => {
     TestBed.resetTestingModule();
     const script = document.createElement('script');
@@ -331,7 +337,12 @@ describe('hostile transfer state', () => {
       await TestBed.configureTestingModule({
         providers: [
           { provide: APP_ID, useValue: APP },
-          provideLocalizationSetup(setup()),
+          // With the route projection, as the generated setup carries it, so that a case that
+          // installs routing is given what routing reads.
+          provideLocalizationSetup(
+            { ...setup(), routeProjection },
+            ...features,
+          ),
         ],
       }).compileComponents();
       const localization = TestBed.inject(Localization);
@@ -355,7 +366,7 @@ describe('hostile transfer state', () => {
     expect(await adopt(valid())).toMatchObject({ locale: 'ar-EG' });
   });
 
-  it('carries the switch addresses through, and only as paths', async () => {
+  it('carries the switch addresses through as paths where no origin names a locale', async () => {
     const route = {
       routeId: 'route:_index',
       projectionIdentity: `sha256-${'A'.repeat(43)}`,
@@ -365,6 +376,60 @@ describe('hostile transfer state', () => {
     expect((await adopt(valid(route))).route).toMatchObject({
       canonicalPath: '/ar-eg',
       addresses: { 'en-US': '/en-us', 'ar-EG': '/ar-eg' },
+    });
+  });
+
+  /**
+   * Under a host policy the server writes each locale's address at that locale's origin, because
+   * that is where the page is. The origins are the build's own, so the transfer is held to them
+   * rather than trusted for them.
+   */
+  describe('under a host policy', () => {
+    const hostRouting = withRouting({
+      policy: createHostLocalePolicy({
+        defaultLocale: 'en-US',
+        origins: {
+          'en-US': 'https://site.example',
+          'ar-EG': 'https://ar.site.example',
+          'en-Arab-XB': 'https://xb.site.example',
+        },
+      }),
+      projection: appRouteProjection,
+    });
+    const hostRoute = (addresses: Record<string, string>) => ({
+      routeId: 'route:_index',
+      projectionIdentity: `sha256-${'A'.repeat(43)}`,
+      canonicalPath: '/',
+      addresses,
+    });
+    const written = {
+      'en-US': 'https://site.example/?label=x',
+      'ar-EG': 'https://ar.site.example/?label=x',
+    };
+
+    it('adopts the addresses the server wrote, at the origins it named', async () => {
+      expect(await adopt(valid(hostRoute(written)), hostRouting)).toMatchObject(
+        { locale: 'ar-EG', route: { addresses: written } },
+      );
+    });
+
+    it('drops the whole transfer for an address the policy would not write', async () => {
+      const refused: readonly [string, Record<string, string>][] = [
+        [
+          "an address at another locale's origin",
+          { ...written, 'ar-EG': 'https://site.example/?label=x' },
+        ],
+        [
+          'paths, as a path policy writes them',
+          { 'en-US': '/?label=x', 'ar-EG': '/?label=x' },
+        ],
+      ];
+      for (const [reason, addresses] of refused) {
+        expect(
+          (await adopt(valid(hostRoute(addresses)), hostRouting)).locale,
+          reason,
+        ).toBe('en-US');
+      }
     });
   });
 

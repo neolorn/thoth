@@ -170,16 +170,30 @@ export function isTransferredPath(value: unknown): value is string {
  * proportionate answer rather than a harsh one: a transfer with one edited address is not a
  * transfer with one bad address, it is a transfer someone has been inside, and the document can
  * render from its own generated defaults instead.
+ *
+ * Under a host policy each locale lives at an origin of its own, so the address written for it is
+ * that origin followed by a path. `origins` is the policy's origin by locale, read from the build
+ * rather than from the transfer, and an address is admitted only at the origin of the locale it is
+ * keyed by. A bare path is refused there, because it is not something that policy writes.
  */
-export function areTransferredAddresses(value: unknown): boolean {
+export function areTransferredAddresses(
+  value: unknown,
+  origins?: Readonly<Record<string, string>>,
+): boolean {
   if (value === undefined) return true;
   if (!isDataRecord(value)) return false;
   const entries = Object.entries(value);
   if (entries.length > RUNTIME_LIMITS.transferredAddresses) return false;
-  return entries.every(
-    ([locale, address]) =>
-      locale.length > 0 && locale.length <= 128 && isTransferredPath(address),
-  );
+  return entries.every(([locale, address]) => {
+    if (locale.length === 0 || locale.length > 128) return false;
+    if (origins === undefined) return isTransferredPath(address);
+    const origin = hasOwn(origins, locale) ? origins[locale] : undefined;
+    if (origin === undefined || typeof address !== 'string') return false;
+    return (
+      address.startsWith(origin) &&
+      isTransferredPath(address.slice(origin.length))
+    );
+  });
 }
 
 export function hasExactKeys(
