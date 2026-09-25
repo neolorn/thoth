@@ -155,21 +155,41 @@ function joinPath(parent: string, segment: string | undefined): string {
  * the walk.
  *
  * A wildcard is skipped. `**` names no address, and a projection never contains one.
+ *
+ * So is a route in a named outlet. It renders beside a page rather than as one, and its path is
+ * written in the outlet's part of a URL, so it names no page address. Angular reads an absent or
+ * empty outlet as the primary one (`getOutlet`).
+ *
+ * A route a `matcher` matches is recorded in `hidden` under its parent's address rather than
+ * flattened, because what the matcher consumes is decided when the page is visited, so no address
+ * at or below it can be spelled here. An empty path matches before a matcher is asked (`match`).
  */
 function flatten(
   routes: Routes,
   problems: LocalizedRouteTableProblem[],
+  hidden: string[],
   parent = '',
 ): FlattenedRoute[] {
   const flattened: FlattenedRoute[] = [];
   for (const route of routes) {
     if (route.path === '**') continue;
+    if (
+      route.outlet !== undefined &&
+      route.outlet !== '' &&
+      route.outlet !== 'primary'
+    ) {
+      continue;
+    }
+    if (route.matcher !== undefined && route.path !== '') {
+      hidden.push(parent);
+      continue;
+    }
     const path = joinPath(parent, route.path);
     if (route.children !== undefined && route.children.length > 0) {
       // A parent that also renders is still an address of its own: `{ path: 'a', component: A,
       // children: [{ path: '', component: B }] }` answers at `/a`. The empty-path child produces
       // that same address below, so recording it here as well would emit the branch twice.
-      flattened.push(...flatten(route.children, problems, path));
+      flattened.push(...flatten(route.children, problems, hidden, path));
       continue;
     }
     const target = routeTarget(route);
@@ -213,9 +233,12 @@ export function localizedRouteTable(
   projection: RouteRuntimeProjection,
 ): LocalizedRouteTable {
   const problems: LocalizedRouteTableProblem[] = [];
+  const hidden: string[] = [];
   const canonical: Routes = routes;
   const flattened = new Map(
-    flatten(routes, problems).map((entry) => [entry.path, entry] as const),
+    flatten(routes, problems, hidden).map(
+      (entry) => [entry.path, entry] as const,
+    ),
   );
 
   if (policy.kind !== 'path-prefix') {
@@ -261,6 +284,12 @@ export function localizedRouteTable(
     problems.push({
       kind: 'uncovered-authored-route',
       message: `The authored route at ${JSON.stringify(`/${path}`)} is not in the route projection, so it has no localized spelling and no locale branch names it.`,
+    });
+  }
+  for (const parent of hidden) {
+    problems.push({
+      kind: 'uncovered-authored-route',
+      message: `An authored route under ${JSON.stringify(`/${parent}`)} matches its addresses with a matcher, so they are not in the route projection, have no localized spelling, and no locale branch names them.`,
     });
   }
 

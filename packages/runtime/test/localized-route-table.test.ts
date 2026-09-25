@@ -299,6 +299,69 @@ describe('localizedRouteTable', () => {
       ).toBe(true);
     });
 
+    it('gives a route in a named outlet no address of its own', () => {
+      // It renders beside a page, at an address Angular writes in the outlet's part of a URL, so
+      // Angular serves no page at `/chat` and the projection names none. One naming the primary
+      // outlet is a page like any other.
+      const DEEP = () => Promise.resolve(StubComponent);
+      const table = localizedRouteTable(
+        [
+          ...CANONICAL,
+          { path: 'chat', outlet: 'aux', loadComponent: DEEP },
+          { path: 'reports/quarterly', outlet: 'primary', loadComponent: DEEP },
+        ],
+        POLICY,
+        PROJECTION,
+      );
+      expect(table.problems).toEqual([
+        expect.objectContaining({
+          kind: 'uncovered-authored-route',
+          message: expect.stringContaining('"/reports/quarterly"'),
+        }),
+      ]);
+    });
+
+    it('reports the routes a matcher matches without spelling an address for them', () => {
+      // What a matcher consumes is decided when the page is visited, so `/catalog/deep` is an
+      // address this table would be making up.
+      const DEEP = () => Promise.resolve(StubComponent);
+      const table = localizedRouteTable(
+        [
+          ...CANONICAL,
+          {
+            path: 'catalog',
+            children: [
+              { path: '', loadComponent: DEEP },
+              {
+                matcher: () => null,
+                loadComponent: DEEP,
+                children: [{ path: 'deep', loadComponent: DEEP }],
+              },
+            ],
+          },
+        ],
+        POLICY,
+        {
+          ...PROJECTION,
+          generated: {
+            ...PROJECTION.generated,
+            routes: [
+              ...PROJECTION.generated.routes,
+              { id: 'route:catalog', path: 'catalog', parameterNames: [] },
+            ],
+          },
+        },
+      );
+      expect(table.problems).toEqual([
+        expect.objectContaining({
+          kind: 'uncovered-authored-route',
+          message: expect.stringMatching(
+            /^An authored route under "\/catalog" matches its addresses with a matcher/,
+          ),
+        }),
+      ]);
+    });
+
     it('reports an authored route that renders nothing, rather than skipping it', () => {
       const table = localizedRouteTable(
         [...CANONICAL, { path: 'orphan' }],
