@@ -242,18 +242,9 @@ export function localizedRouteTable(
   );
 
   if (policy.kind !== 'path-prefix') {
-    // No branches, and that is the correct table rather than a reduced one. Under `locale-neutral`
-    // every locale shares one address space, so a second layer would be the same addresses twice.
-    // Under `locale-host` the locale is carried by the origin, and one client route config cannot
-    // hold two locales' spellings of the same address: that would need a build per origin, which
-    // Equator does not do.
-    //
-    // Pushing an `unlocalizable-policy` problem here when the projection carries per-locale
-    // spellings, for `provideLocalizedRouter` to print as a warning and carry on from, warns about
-    // a correct table. A policy kind is served or refused by name and never warned about, so that
-    // combination is refused at configuration by `refusePolicyAtConfiguration`, where a build sees
-    // it. A table with no branches under a one-address-space policy is not a problem and says
-    // nothing.
+    // No branches. A branch is one locale's prefix over that locale's spellings, and these kinds
+    // carry no locale in the path. Navigation needs no branch under any kind: the strategies
+    // translate every spelling to the canonical layer before the Router matches.
     return Object.freeze({
       canonical,
       branches: Object.freeze([]),

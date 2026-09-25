@@ -80,6 +80,21 @@ function declaredAddressContext(): LocalizedAddressContext {
   return declared;
 }
 
+/**
+ * The same, read at the origin this build answers at.
+ *
+ * Given to the two strategies, because they read the addresses a document holds, and under a host
+ * policy a path names a locale only together with the origin it was requested at.
+ */
+function servedAddressContext(
+  options: LocalizedRouterOptions,
+): LocalizedAddressContext {
+  const declared = declaredAddressContext();
+  return options.origin === undefined
+    ? declared
+    : { ...declared, origin: options.origin };
+}
+
 /** Computed once and read by both the route factory and the startup diagnostics. */
 const LOCALIZED_ROUTE_TABLE = new InjectionToken<LocalizedRouteTable>(
   'LOCALIZED_ROUTE_TABLE',
@@ -127,7 +142,7 @@ const ROUTER_CONFIGURATION = Object.freeze({
 });
 
 /**
- * The two problems that produce a wrong page, as against the three that produce a missing one.
+ * The two problems that produce a wrong page, as against the two that produce a missing one.
  *
  * `parameter-mismatch` is the worst shape Equator can emit: a localized spelling that renames or
  * drops a parameter builds an address the codec cannot round-trip, and the failure surfaces as a
@@ -135,11 +150,11 @@ const ROUTER_CONFIGURATION = Object.freeze({
  * an authored route with no target at all: Angular would throw on it, but only behind
  * `ngDevMode`, so it ships. Both are refused where a developer will see it.
  *
- * The other three describe an address that is *missing* from the localized layer and served at its
- * canonical spelling: an authored route the projection does not cover, a projection entry nothing
- * renders, a policy with one address space. Each is worth saying and none is worth refusing to
- * start over, because the application still serves every route it actually has, and a throw
- * would make a reduced route table, which is what a focused test provides, impossible to boot.
+ * The other two describe an address that is *missing* from the localized layer and served at its
+ * canonical spelling: an authored route the projection does not cover, and a projection entry
+ * nothing renders. Each is worth saying and neither is worth refusing to start over, because the
+ * application still serves every route it actually has, and a throw would make a reduced route
+ * table, which is what a focused test provides, impossible to boot.
  */
 const STRUCTURAL_PROBLEMS: ReadonlySet<LocalizedRouteTableProblem['kind']> =
   new Set(['unrenderable-branch-entry', 'parameter-mismatch']);
@@ -195,7 +210,8 @@ export function provideLocalizedRouter(
     // Before `provideRouter`, deliberately. See the escape hatch above.
     {
       provide: LocationStrategy,
-      useFactory: () => new LocalizedLocationStrategy(declaredAddressContext()),
+      useFactory: () =>
+        new LocalizedLocationStrategy(servedAddressContext(options)),
     },
     // The second door into the matcher, and the reason the branches are back to being unmatched.
     //
@@ -211,7 +227,7 @@ export function provideLocalizedRouter(
     {
       provide: UrlHandlingStrategy,
       useFactory: () =>
-        new LocalizedUrlHandlingStrategy(declaredAddressContext()),
+        new LocalizedUrlHandlingStrategy(servedAddressContext(options)),
     },
     provideRouter(canonicalBranch(routes), configuration, ...features),
     // A second `ROUTES` entry rather than a second argument, because the branches need the
@@ -466,10 +482,8 @@ function refusePolicyAtConfiguration(
   switch (policy.kind) {
     case 'path-prefix':
     case 'locale-neutral':
-      // Served. A one-address-space policy gets no locale branches and that is the correct table,
-      // not a reduced one; a route whose spelling varies by locale is served at its canonical
-      // spelling and advertised as nothing, which is what the head derivation decides rather than
-      // what this gate refuses.
+      // Served, with nothing further to require: the strategies translate every spelling a
+      // route has under either kind.
       return;
     case 'locale-host':
       refuseHostOriginMismatch(policy, options.origin);

@@ -4498,6 +4498,11 @@ export function routeHttpDescriptor(
  * locale the direction wants. Outbound wants the active locale. Inbound wants the default one,
  * because the internal address is by definition the one the authored route table matches.
  *
+ * Every policy translates, because every policy can spell a route differently per locale:
+ * `locale-neutral` gives a route with a localized path one address per locale, and `locale-host`
+ * one per origin. The Router matches the authored spelling only, so an address in any other
+ * spelling reaches its route only through this translation.
+ *
  * Pure and exported so the translation can be exercised directly. The class below is a shell that
  * supplies the arguments from DI, and a shell is the part a rendered-output check has to prove;
  * the arithmetic is the part a unit test can.
@@ -4509,6 +4514,14 @@ export interface LocalizedAddressContext {
   readonly policy: LocaleUrlPolicy;
   /** The route table addresses are resolved against. */
   readonly projection: RouteRuntimeProjection;
+  /**
+   * The origin this build answers at, which under a host policy is what names the locale.
+   *
+   * An address the browser supplies is a path, and under that policy a path is read in the locale
+   * of the origin it was requested at. Without it, as without one on a request, the path is read at
+   * the default locale's origin.
+   */
+  readonly origin?: string;
 }
 
 /**
@@ -4535,15 +4548,9 @@ function dropPrefix(path: string, prefix: string): string {
   return rest === '' ? '/' : rest;
 }
 
-/**
- * Whether this policy distinguishes locales in the path at all.
- *
- * `locale-neutral` puts every locale at one address, so there is nothing to translate.
- * `locale-host` distinguishes by origin, and `buildLocalizedRoute` returns an absolute URL for it,
- * which is not something a `LocationStrategy` path may be. Both are handed through untouched.
- */
-function translates(policy: LocaleUrlPolicy): boolean {
-  return policy.kind === 'path-prefix';
+/** The request a supplied address is read as. Only a host policy reads the origin. */
+function readAt(context: LocalizedAddressContext): RouteResolutionContext {
+  return context.origin === undefined ? {} : { origin: context.origin };
 }
 
 /**
@@ -4695,10 +4702,9 @@ export function toInternalPath(
   context: LocalizedAddressContext,
 ): string {
   const { policy, projection } = context;
-  if (!translates(policy)) return external;
   const [pathOnly, suffix] = splitSuffix(external);
   const resolution = followPermanentRedirect(
-    resolveLocalizedRoute(pathOnly, policy, projection),
+    resolveLocalizedRoute(pathOnly, policy, projection, readAt(context)),
     policy,
     projection,
   );
@@ -4717,7 +4723,11 @@ export function toInternalPath(
     resolution.parameters,
   );
   if (!canonical.ok) return external;
-  return `${dropPrefix(canonical.address, defaultPrefix(policy))}${suffix}`;
+  // Under a host policy the default locale's address is absolute, on that locale's origin, and the
+  // route table matches its path.
+  const path = pathOnlyTarget(canonical.address);
+  if (path === undefined) return external;
+  return `${dropPrefix(path, defaultPrefix(policy))}${suffix}`;
 }
 
 /**
@@ -4736,9 +4746,10 @@ export function toExternalPath(
   spellings?: LocalizedParameterSpellings,
 ): string {
   const { policy, projection } = context;
-  if (!translates(policy)) return internal;
   const [pathOnly, suffix] = splitSuffix(internal);
   const prefix = defaultPrefix(policy);
+  // Read with nothing said, because the internal address is the default locale's spelling, and
+  // with nothing said every policy reads an address in the default locale.
   const resolution = resolveLocalizedRoute(
     `${prefix}${pathOnly === '/' && prefix !== '' ? '' : pathOnly}`,
     policy,
@@ -4757,5 +4768,8 @@ export function toExternalPath(
   );
   // Declined for the same reason as above: this route has no address in the requested locale, so
   // there is nothing to rewrite the URL to.
-  return localized.ok ? `${localized.address}${suffix}` : internal;
+  if (!localized.ok) return internal;
+  // Under a host policy the address is absolute, and the document is already at its origin.
+  const path = pathOnlyTarget(localized.address);
+  return path === undefined ? internal : `${path}${suffix}`;
 }

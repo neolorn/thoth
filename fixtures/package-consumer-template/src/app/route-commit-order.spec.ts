@@ -263,7 +263,7 @@ describe('switching locale, and navigating after one', () => {
       // rewording the sentence is not a test failure and dropping any of the three is.
       const delocalized = warn.mock.calls
         .map((call) => (typeof call[0] === 'string' ? call[0] : ''))
-        .filter((message) => message.includes('names a locale in the address'));
+        .filter((message) => message.includes('is not the canonical address'));
       expect(delocalized).toHaveLength(1);
       expect(delocalized[0]).toContain(JSON.stringify(arabicHome));
       expect(delocalized[0]).toContain('"/"');
@@ -287,7 +287,7 @@ describe('switching locale, and navigating after one', () => {
     expect(
       warn.mock.calls
         .map((call) => (typeof call[0] === 'string' ? call[0] : ''))
-        .filter((message) => message.includes('names a locale in the address')),
+        .filter((message) => message.includes('is not the canonical address')),
     ).toEqual([]);
   });
 });

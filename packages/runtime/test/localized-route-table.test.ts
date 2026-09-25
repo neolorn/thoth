@@ -436,7 +436,7 @@ describe('localizedRouteTable', () => {
     });
   });
 
-  describe('policies that carry one address space', () => {
+  describe('policies that carry no locale in the path', () => {
     const NEUTRAL: LocaleUrlPolicy = {
       kind: 'locale-neutral',
       defaultLocale: 'en-US',
@@ -444,7 +444,7 @@ describe('localizedRouteTable', () => {
       localeNeutralRoots: [],
     };
 
-    it('emits no branches, because there is no second address space to put them in', () => {
+    it('emits no branches, because there is no locale prefix to put them under', () => {
       const table = localizedRouteTable(CANONICAL, NEUTRAL, {
         generated: PROJECTION.generated,
       });
@@ -453,11 +453,9 @@ describe('localizedRouteTable', () => {
       expect(table.problems).toEqual([]);
     });
 
-    it('says nothing when the projection carries spellings it cannot express, because that is refused at configuration', () => {
-      // Pushing `unlocalizable-policy` here for `provideLocalizedRouter` to print as a warning
-      // answers the wrong question. A policy kind is served or refused by name and never warned
-      // about, so the combination is refused before an application starts. What the table answers
-      // is a table, and this one is correct.
+    it('says nothing when the projection carries per-locale spellings, because the strategies translate them', () => {
+      // A spelling that varies by locale reaches the canonical layer through the strategies under
+      // these kinds as under a prefix, so it is not a problem in the table.
       const table = localizedRouteTable(CANONICAL, NEUTRAL, PROJECTION);
       expect(table.branches).toEqual([]);
       expect(table.routes).toBe(table.canonical);

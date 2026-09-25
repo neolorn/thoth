@@ -89,8 +89,11 @@ export class LocalizedUrlHandlingStrategy extends UrlHandlingStrategy {
    *
    * Reaching here at all is what identifies the call. A browser-supplied address was delocalized by
    * `path()` before the Router saw it, and a `RouterLink` click navigates the raw canonical tree,
-   * so an address that still carries a prefix when it arrives here came from application code. That
+   * so an address that is still not canonical when it arrives here came from application code. That
    * is a fact about the one path rather than a guess about intent.
+   *
+   * Worded for every address that is not canonical, because under a policy with no locale in the
+   * path a retired spelling arrives here as well, and it names no locale.
    *
    * Development only, and one line naming three things: the address as written, the canonical
    * address to write instead, and the operation that actually changes locale.
@@ -98,7 +101,7 @@ export class LocalizedUrlHandlingStrategy extends UrlHandlingStrategy {
   private report(supplied: string, internal: string): void {
     if (!isDevMode()) return;
     console.warn(
-      `[Equator] A navigation to ${JSON.stringify(supplied)} names a locale in the address. Equator resolves it as ${JSON.stringify(internal)} and renders it in the locale that is committed now, so the locale in the address was ignored rather than applied. Navigate to the canonical address ${JSON.stringify(internal)}, and change locale with Localization.changeLocale(): switching locale is its own operation, and it moves the address bar for you.`,
+      `[Equator] A navigation to ${JSON.stringify(supplied)} is not the canonical address of the route it reaches. Equator resolves it as ${JSON.stringify(internal)} and renders it in the locale that is committed now, so a locale the address names is ignored rather than applied. Navigate to the canonical address ${JSON.stringify(internal)}, and change locale with Localization.changeLocale(): switching locale is its own operation, and it moves the address bar for you.`,
     );
   }
 

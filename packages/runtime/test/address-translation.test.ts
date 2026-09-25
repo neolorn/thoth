@@ -392,43 +392,115 @@ describe('an address the resolver answers with a redirect', () => {
   });
 });
 
-describe('policies that do not distinguish locales in the path', () => {
-  it('passes a locale-neutral address through untouched', () => {
-    const context: LocalizedAddressContext = {
-      policy: {
-        kind: 'locale-neutral',
-        defaultLocale: 'en-US',
-        locales: { 'en-US': '', 'ar-EG': '' },
-        localeNeutralRoots: [],
-      },
-      projection: PROJECTION,
-    };
-    expect(toInternalPath('/second', context)).toBe('/second');
-    expect(toExternalPath('/second', 'ar-EG', context)).toBe('/second');
-    claimCapability('policy:locale-neutral', { policy: context.policy });
+/**
+ * The two policies that carry no locale in the path still spell a route per locale.
+ *
+ * Under `locale-neutral` a route with a localized path has one address per locale, and under
+ * `locale-host` one per origin, so both translate as a prefix policy does. The projection is the
+ * one with a history, so a retired spelling is corrected here as it is on the server.
+ */
+describe('policies that carry no locale in the path', () => {
+  const NEUTRAL: LocalizedAddressContext = {
+    policy: {
+      kind: 'locale-neutral',
+      defaultLocale: 'en-US',
+      locales: { 'en-US': '', 'ar-EG': '' },
+      localeNeutralRoots: [],
+    },
+    projection: WITH_HISTORY,
+  };
+  const HOST_POLICY: LocaleUrlPolicy = {
+    kind: 'locale-host',
+    defaultLocale: 'en-US',
+    locales: {
+      'en-US': 'https://example.com',
+      'ar-EG': 'https://example.eg',
+    },
+    origins: {
+      'https://example.com': 'en-US',
+      'https://example.eg': 'ar-EG',
+    },
+    localeNeutralRoots: [],
+  };
+  // The Arabic build. Under this policy a path names a locale only with the origin it is read at.
+  const HOST: LocalizedAddressContext = {
+    policy: HOST_POLICY,
+    projection: WITH_HISTORY,
+    origin: 'https://example.eg',
+  };
+  const HOST_DEFAULT: LocalizedAddressContext = {
+    ...HOST,
+    origin: 'https://example.com',
+  };
+
+  it('reads a locale-neutral localized path as the route it names', () => {
+    expect(toInternalPath(`/${SECOND_ENC}`, NEUTRAL)).toBe('/second');
+    expect(
+      toInternalPath(`/${ARTICLES_ENC}/handbook?page=2#top`, NEUTRAL),
+    ).toBe('/articles/handbook?page=2#top');
+    claimCapability('policy:locale-neutral', { policy: NEUTRAL.policy });
   });
 
-  it('passes a host-keyed address through untouched', () => {
-    // `buildLocalizedRoute` returns an absolute URL under a host policy, which is not something a
-    // `LocationStrategy` path may be. Translating here would put an origin in the address bar.
-    const context: LocalizedAddressContext = {
-      policy: {
-        kind: 'locale-host',
-        defaultLocale: 'en-US',
-        locales: {
-          'en-US': 'https://example.com',
-          'ar-EG': 'https://example.eg',
-        },
-        origins: {
-          'https://example.com': 'en-US',
-          'https://example.eg': 'ar-EG',
-        },
-        localeNeutralRoots: [],
-      },
-      projection: PROJECTION,
-    };
-    expect(toExternalPath('/second', 'ar-EG', context)).toBe('/second');
-    claimCapability('policy:locale-host', { policy: context.policy });
+  it('writes the locale-neutral path the locale spells', () => {
+    expect(toExternalPath('/second', 'ar-EG', NEUTRAL)).toBe(`/${SECOND_ENC}`);
+    expect(toExternalPath('/second', 'en-US', NEUTRAL)).toBe('/second');
+    claimCapability('policy:locale-neutral', { policy: NEUTRAL.policy });
+  });
+
+  it('follows a locale-neutral replacement, so a retired path spelling reaches the page', () => {
+    expect(
+      resolveLocalizedRoute('/legacy', NEUTRAL.policy, WITH_HISTORY),
+    ).toMatchObject({ status: 'redirect', httpStatus: 308 });
+    expect(toInternalPath('/legacy', NEUTRAL)).toBe('/second');
+    claimCapability('policy:locale-neutral', { policy: NEUTRAL.policy });
+  });
+
+  it('reads a host-keyed path at the origin the build answers at', () => {
+    expect(toInternalPath(`/${SECOND_ENC}`, HOST)).toBe('/second');
+    // The control: at the other origin the same path names no route, so it is handed back.
+    expect(toInternalPath(`/${SECOND_ENC}`, HOST_DEFAULT)).toBe(
+      `/${SECOND_ENC}`,
+    );
+    claimCapability('policy:locale-host', { policy: HOST_POLICY });
+  });
+
+  it('writes a host-keyed path rather than an address on an origin', () => {
+    expect(toExternalPath('/second', 'ar-EG', HOST)).toBe(`/${SECOND_ENC}`);
+    expect(toExternalPath('/second?page=2#top', 'ar-EG', HOST)).toBe(
+      `/${SECOND_ENC}?page=2#top`,
+    );
+    claimCapability('policy:locale-host', { policy: HOST_POLICY });
+  });
+
+  it('follows a host-keyed replacement, whose location is absolute, to its path', () => {
+    expect(
+      resolveLocalizedRoute('/legacy', HOST_POLICY, WITH_HISTORY, {
+        origin: 'https://example.eg',
+      }),
+    ).toMatchObject({
+      status: 'redirect',
+      httpStatus: 308,
+      location: `https://example.eg/${SECOND_ENC}`,
+    });
+    expect(toInternalPath('/legacy', HOST)).toBe('/second');
+    claimCapability('policy:locale-host', { policy: HOST_POLICY });
+  });
+
+  it('round-trips every projected address under both', () => {
+    const cases = [
+      [NEUTRAL, 'en-US'],
+      [NEUTRAL, 'ar-EG'],
+      [HOST_DEFAULT, 'en-US'],
+      [HOST, 'ar-EG'],
+    ] as const;
+    for (const [context, locale] of cases) {
+      for (const internal of ['/', '/second', '/articles/handbook']) {
+        const external = toExternalPath(internal, locale, context);
+        expect(toInternalPath(external, context)).toBe(internal);
+      }
+    }
+    claimCapability('policy:locale-neutral', { policy: NEUTRAL.policy });
+    claimCapability('policy:locale-host', { policy: HOST_POLICY });
   });
 });
 
