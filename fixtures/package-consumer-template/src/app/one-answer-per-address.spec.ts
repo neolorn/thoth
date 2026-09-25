@@ -29,6 +29,7 @@ import { routeProjection } from '#i18n/routes';
 import { runtimeExtensions } from './runtime-extensions';
 import { routes } from './app.routes';
 import { routePolicy, appRouteProjection } from './localization.routes';
+import { entryRedirects, pagePath, pageUrl } from './addresses';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
@@ -123,21 +124,25 @@ interface Arrival {
  * the `LocationStrategy` reads, and jsdom's `history` is what Equator's `url` locale source reads.
  * Setting one and not the other leaves the Router and the committed locale disagreeing, which the
  * three-path fixture measured and recorded.
+ *
+ * A path is asked on the origin the `OMITTING` policy is written for. An absolute address is asked
+ * on its own origin, which is the one a locale-host application answers at.
  */
 async function arriveAt(
   address: string,
   policy: LocaleUrlPolicy,
 ): Promise<Arrival> {
-  history.replaceState(null, '', address);
+  const url = new URL(address, 'https://site.example');
+  history.replaceState(null, '', url.pathname + url.search + url.hash);
 
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
       {
         provide: MOCK_PLATFORM_LOCATION_CONFIG,
-        useValue: { startUrl: `https://site.example${address}` },
+        useValue: { startUrl: url.href },
       },
-      provideLocalizedRouter(routes, { origin: 'https://site.example' }),
+      provideLocalizedRouter(routes, { origin: url.origin }),
       provideLocalizationTesting(
         {
           configuration,
@@ -202,11 +207,11 @@ describe('a client-side arrival follows the answer the server would have given',
   });
 
   it('follows a replacement: a retired path spelling', async () => {
-    const arrival = await arriveAt('/en-us/legacy', routePolicy);
+    const arrival = await arriveAt(pageUrl('legacy', 'en-US'), routePolicy);
 
     expect(arrival.view).toBe('second');
     expect(arrival.routerUrl).toBe('/second');
-    expect(arrival.address).toBe('/en-us/second');
+    expect(arrival.address).toBe(pagePath('second', 'en-US'));
     expect(arrival.historyPushes).toBe(0);
   });
 
@@ -220,17 +225,21 @@ describe('a client-side arrival follows the answer the server would have given',
   });
 
   it('leaves a 410 alone, so the application answers for a page with no replacement', async () => {
-    const arrival = await arriveAt('/en-us/removed', routePolicy);
+    const arrival = await arriveAt(pageUrl('removed', 'en-US'), routePolicy);
 
     expect(arrival.view).toBe('not-found');
   });
 
-  it('leaves the 307 alone, so an address states no preference it did not carry', async () => {
-    const arrival = await arriveAt('/', routePolicy);
+  // Only a policy that prefixes every locale answers an address with a 307.
+  it.runIf(entryRedirects)(
+    'leaves the 307 alone, so an address states no preference it did not carry',
+    async () => {
+      const arrival = await arriveAt('/', routePolicy);
 
-    expect(arrival.view).toBe('home');
-    expect(arrival.routerUrl).toBe('/');
-  });
+      expect(arrival.view).toBe('home');
+      expect(arrival.routerUrl).toBe('/');
+    },
+  );
 
   it('does not touch an address the policy still serves', async () => {
     const arrival = await arriveAt('/ar-eg/second', OMITTING);

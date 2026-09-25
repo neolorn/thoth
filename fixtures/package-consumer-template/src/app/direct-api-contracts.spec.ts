@@ -47,6 +47,16 @@ import {
 import { configuration } from '#i18n';
 
 import { routePolicy, appRouteProjection } from './localization.routes';
+import {
+  addressedLocales,
+  entryRedirects,
+  localeInAddress,
+  localeInPath,
+  localeOrigin,
+  pageAddress,
+  pagePath,
+  pageUrl,
+} from './addresses';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
@@ -155,7 +165,11 @@ describe('route and SEO contracts, called directly', () => {
     ).toEqual([{ id: 'route:lazy', caching: 'per-visitor' }]);
     expect(
       routeHttpDescriptor(
-        resolveLocalizedRoute('/en-us/lazy', routePolicy, appRouteProjection),
+        resolveLocalizedRoute(
+          pageAddress('lazy', 'en-US'),
+          routePolicy,
+          appRouteProjection,
+        ),
       ).cache,
     ).toBe('private-no-cache');
     claimCapability('entry:@neolorn/equator', { policy: routePolicy });
@@ -174,7 +188,11 @@ describe('route and SEO contracts, called directly', () => {
    * byte-identical in every locale, and refuses the segments a path parameter must refuse.
    */
   it('round-trips an opaque identifier parameter and refuses what a path segment must refuse', () => {
-    const address = '/en-us/topics/handbook';
+    const address = pageAddress('topic', 'en-US');
+    // The address a reader writes by hand under this policy: the English page's, with the
+    // identifier swapped for another.
+    const topicAddress = (identifier: string): string =>
+      address.replace(/handbook$/u, identifier);
 
     expect(
       buildLocalizedRoute(routePolicy, appRouteProjection, 'topic', 'en-US', {
@@ -185,11 +203,13 @@ describe('route and SEO contracts, called directly', () => {
     // The property that separates this codec from the article slug beside it in the same
     // projection: an identifier names a thing, so it does not translate. A codec that localized
     // this would produce two addresses for one resource and split its indexing in half.
-    expect(
-      buildLocalizedRoute(routePolicy, appRouteProjection, 'topic', 'ar-EG', {
-        topic: 'handbook',
-      }),
-    ).toBe('/ar-eg/topics/handbook');
+    for (const locale of addressedLocales('topic')) {
+      expect(
+        buildLocalizedRoute(routePolicy, appRouteProjection, 'topic', locale, {
+          topic: 'handbook',
+        }),
+      ).toBe(pageAddress('topic', locale));
+    }
 
     const resolved = resolveLocalizedRoute(
       address,
@@ -205,7 +225,7 @@ describe('route and SEO contracts, called directly', () => {
     // forgot any of them would send a working address to a not-found page.
     expect(
       resolveLocalizedRoute(
-        '/en-us/topics/a.b_c~d-e',
+        topicAddress('a.b_c~d-e'),
         routePolicy,
         appRouteProjection,
       ),
@@ -214,16 +234,16 @@ describe('route and SEO contracts, called directly', () => {
     // The refusing half, which is what a default pattern is for. Each of these is a real way a
     // path parameter is abused or malformed, and none of them may resolve to this route.
     for (const rejected of [
-      'topics/..',
-      'topics/%2e%2e',
-      'topics/-leading-hyphen',
-      'topics/has%20a%20space',
-      `topics/${'x'.repeat(129)}`,
-      'topics/',
+      '..',
+      '%2e%2e',
+      '-leading-hyphen',
+      'has%20a%20space',
+      'x'.repeat(129),
+      '',
     ]) {
       expect(
         resolveLocalizedRoute(
-          `/en-us/${rejected}`,
+          topicAddress(rejected),
           routePolicy,
           appRouteProjection,
         ).status,
@@ -249,15 +269,20 @@ describe('route and SEO contracts, called directly', () => {
     claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
-  it('classifies locale entry, aliases, canonical corrections, and failures without guessing', () => {
-    // No resolution context, so nothing about this request changed the answer, and the redirect
-    // is still not publicly cacheable, because "/" is also the address every other visitor's answer
-    // is served from. Reading this as a wasted round trip per visitor and making it public was
-    // wrong. The round trip is what keeps a shared cache from handing one visitor's language
-    // to the next, and cacheability is a property of the address rather than of the request
-    // that happened to arrive at it.
-    expect(resolveLocalizedRoute('/', routePolicy, appRouteProjection)).toEqual(
-      {
+  // Plain path-prefix behavior: locale entry, prefix aliases and prefix corrections exist only where
+  // every locale is written under a prefix.
+  it.runIf(entryRedirects)(
+    'classifies locale entry, aliases, canonical corrections, and failures without guessing',
+    () => {
+      // No resolution context, so nothing about this request changed the answer, and the redirect
+      // is still not publicly cacheable, because "/" is also the address every other visitor's answer
+      // is served from. Reading this as a wasted round trip per visitor and making it public was
+      // wrong. The round trip is what keeps a shared cache from handing one visitor's language
+      // to the next, and cacheability is a property of the address rather than of the request
+      // that happened to arrive at it.
+      expect(
+        resolveLocalizedRoute('/', routePolicy, appRouteProjection),
+      ).toEqual({
         status: 'redirect',
         reason: 'locale-entry',
         httpStatus: 307,
@@ -265,146 +290,147 @@ describe('route and SEO contracts, called directly', () => {
         locale: 'en-US',
         routeId: 'route:_index',
         location: '/en-us',
-      },
-    );
-    expect(
-      resolveLocalizedRoute(
-        '/EN-US/Second/?tab=one#details',
+      });
+      expect(
+        resolveLocalizedRoute(
+          '/EN-US/Second/?tab=one#details',
+          routePolicy,
+          appRouteProjection,
+        ),
+      ).toMatchObject({
+        status: 'redirect',
+        reason: 'canonical-correction',
+        httpStatus: 308,
+        location: '/en-us/second?tab=one#details',
+      });
+      expect(
+        resolveLocalizedRoute('/en/items/042', routePolicy, appRouteProjection),
+      ).toMatchObject({
+        status: 'redirect',
+        reason: 'canonical-correction',
+        location: '/en-us/items/42',
+      });
+      expect(
+        resolveLocalizedRoute('/second', routePolicy, appRouteProjection),
+      ).toMatchObject({
+        status: 'redirect',
+        reason: 'locale-entry',
+        location: '/en-us/second',
+      });
+      expect(
+        resolveLocalizedRoute('/fr/second', routePolicy, appRouteProjection),
+      ).toMatchObject({
+        status: 'unsupported-locale',
+        httpStatus: 404,
+        requestedLocale: 'fr',
+      });
+      expect(
+        resolveLocalizedRoute(
+          '/en-us/legacy?tab=one#details',
+          routePolicy,
+          appRouteProjection,
+        ),
+      ).toMatchObject({
+        status: 'redirect',
+        reason: 'replacement',
+        httpStatus: 308,
+        location: '/en-us/second?tab=one#details',
+      });
+      const gone = resolveLocalizedRoute(
+        '/ar-eg/removed',
         routePolicy,
         appRouteProjection,
-      ),
-    ).toMatchObject({
-      status: 'redirect',
-      reason: 'canonical-correction',
-      httpStatus: 308,
-      location: '/en-us/second?tab=one#details',
-    });
-    expect(
-      resolveLocalizedRoute('/en/items/042', routePolicy, appRouteProjection),
-    ).toMatchObject({
-      status: 'redirect',
-      reason: 'canonical-correction',
-      location: '/en-us/items/42',
-    });
-    expect(
-      resolveLocalizedRoute('/second', routePolicy, appRouteProjection),
-    ).toMatchObject({
-      status: 'redirect',
-      reason: 'locale-entry',
-      location: '/en-us/second',
-    });
-    expect(
-      resolveLocalizedRoute('/fr/second', routePolicy, appRouteProjection),
-    ).toMatchObject({
-      status: 'unsupported-locale',
-      httpStatus: 404,
-      requestedLocale: 'fr',
-    });
-    expect(
-      resolveLocalizedRoute(
-        '/en-us/legacy?tab=one#details',
+      );
+      expect(gone).toEqual({
+        status: 'gone',
+        httpStatus: 410,
+        presentationLocale: 'ar-EG',
+      });
+      expect(routeHttpDescriptor(gone)).toEqual({
+        status: 410,
+        contentLanguage: 'ar-EG',
+        robots: 'noindex',
+        cache: 'private-no-store',
+      });
+      const malformed = resolveLocalizedRoute(
+        '/en-us/%2F',
         routePolicy,
         appRouteProjection,
-      ),
-    ).toMatchObject({
-      status: 'redirect',
-      reason: 'replacement',
-      httpStatus: 308,
-      location: '/en-us/second?tab=one#details',
-    });
-    const gone = resolveLocalizedRoute(
-      '/ar-eg/removed',
-      routePolicy,
-      appRouteProjection,
-    );
-    expect(gone).toEqual({
-      status: 'gone',
-      httpStatus: 410,
-      presentationLocale: 'ar-EG',
-    });
-    expect(routeHttpDescriptor(gone)).toEqual({
-      status: 410,
-      contentLanguage: 'ar-EG',
-      robots: 'noindex',
-      cache: 'private-no-store',
-    });
-    const malformed = resolveLocalizedRoute(
-      '/en-us/%2F',
-      routePolicy,
-      appRouteProjection,
-    );
-    expect(malformed).toMatchObject({
-      status: 'malformed',
-      httpStatus: 400,
-      presentationLocale: 'en-US',
-    });
-    expect(routeHttpDescriptor(malformed)).toEqual({
-      status: 400,
-      contentLanguage: 'en-US',
-      robots: 'noindex',
-      cache: 'private-no-store',
-    });
-    expect(
-      resolveLocalizedRoute('/en-us//second', routePolicy, appRouteProjection),
-    ).toMatchObject({ status: 'malformed', httpStatus: 400 });
-    expect(() =>
-      createPathPrefixLocalePolicy({
-        defaultLocale: 'en-US',
-        locales: { 'en-US': 'en', 'en-us': 'english' },
-      }),
-    ).toThrow(/invalid or colliding/u);
-    expect(() => createIntegerParameterCodec(10, 1)).toThrow(
-      /ordered safe range/u,
-    );
-    claimCapability('policy:path-prefix', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
-    claimCapability('declaration:route-parameter-codec');
-  });
+      );
+      expect(malformed).toMatchObject({
+        status: 'malformed',
+        httpStatus: 400,
+        presentationLocale: 'en-US',
+      });
+      expect(routeHttpDescriptor(malformed)).toEqual({
+        status: 400,
+        contentLanguage: 'en-US',
+        robots: 'noindex',
+        cache: 'private-no-store',
+      });
+      expect(
+        resolveLocalizedRoute(
+          '/en-us//second',
+          routePolicy,
+          appRouteProjection,
+        ),
+      ).toMatchObject({ status: 'malformed', httpStatus: 400 });
+      expect(() =>
+        createPathPrefixLocalePolicy({
+          defaultLocale: 'en-US',
+          locales: { 'en-US': 'en', 'en-us': 'english' },
+        }),
+      ).toThrow(/invalid or colliding/u);
+      expect(() => createIntegerParameterCodec(10, 1)).toThrow(
+        /ordered safe range/u,
+      );
+      claimCapability('policy:path-prefix', { policy: routePolicy });
+      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+      claimCapability('declaration:route-parameter-codec');
+    },
+  );
 
   it('preserves typed route state and emits one coherent SEO/HTTP projection', () => {
     const resolution = resolveLocalizedRoute(
-      '/en-us/second?tab=one#details',
+      `${pageAddress('second', 'en-US')}?tab=one#details`,
       routePolicy,
       appRouteProjection,
     );
     expect(resolution.status).toBe('success');
     if (resolution.status !== 'success') return;
 
-    expect(
-      buildLocalizedRoute(
-        routePolicy,
-        appRouteProjection,
-        'item',
-        'ar-EG',
-        { id: 42 },
-        [{ name: 'tab', value: 'one' }],
-        'details',
-      ),
-    ).toBe('/ar-eg/items/42?tab=one#details');
+    for (const locale of addressedLocales('item')) {
+      expect(
+        buildLocalizedRoute(
+          routePolicy,
+          appRouteProjection,
+          'item',
+          locale,
+          { id: 42 },
+          [{ name: 'tab', value: 'one' }],
+          'details',
+        ),
+      ).toBe(`${pageAddress('item', locale)}?tab=one#details`);
+    }
     expect(
       projectRouteSeo(
         resolution,
         routePolicy,
         appRouteProjection,
         { ...configuration, locales: shippedLocales },
-        'https://site.example',
+        localeOrigin('en-US'),
       ),
     ).toEqual({
       indexing: 'indexable',
-      canonical: 'https://site.example/en-us/second',
-      alternates: [
-        {
-          locale: 'en-US',
-          hreflang: 'en-US',
-          url: 'https://site.example/en-us/second',
-        },
-        {
-          locale: 'ar-EG',
-          hreflang: 'ar-EG',
-          url: 'https://site.example/ar-eg/second',
-        },
-      ],
-      xDefault: 'https://site.example/',
+      canonical: pageUrl('second', 'en-US'),
+      alternates: addressedLocales('second')
+        .filter((locale) => shippedLocales.includes(locale))
+        .map((locale) => ({
+          locale,
+          hreflang: locale,
+          url: pageUrl('second', locale),
+        })),
+      xDefault: `${localeOrigin('en-US')}/`,
     });
 
     // The other direction of the same rule, and the reason the configuration is an argument at
@@ -417,29 +443,43 @@ describe('route and SEO contracts, called directly', () => {
         routePolicy,
         appRouteProjection,
         { ...configuration, locales: [...shippedLocales, 'en-Arab-XB'] },
-        'https://site.example',
+        localeOrigin('en-US'),
       ).alternates.map(({ url }) => url),
-    ).toEqual([
-      'https://site.example/en-us/second',
-      'https://site.example/ar-eg/second',
-      'https://site.example/en-arab-xb/second',
-    ]);
+    ).toEqual(
+      addressedLocales('second').map((locale) => pageUrl('second', locale)),
+    );
 
-    expect(routeHttpDescriptor(resolution)).toEqual({
-      status: 200,
-      contentLanguage: 'en-US',
-      cache: 'public',
-    });
-    expect(
-      resolveInitialRouteLocale(
-        { url: 'https://host.invalid/ar-eg/second?x=1' },
-        routePolicy,
-        appRouteProjection,
-      ),
-    ).toBe('ar-EG');
+    // Where no address states a locale, the response is chosen by a preference and varies by it
+    // (spec 07 section 4).
+    expect(routeHttpDescriptor(resolution)).toEqual(
+      localeInAddress
+        ? { status: 200, contentLanguage: 'en-US', cache: 'public' }
+        : {
+            status: 200,
+            contentLanguage: 'en-US',
+            cache: 'varies-by-locale-preference',
+            variesBy: 'locale-preference',
+          },
+    );
+    // The path alone names the locale, whatever origin the request came to, where the path is
+    // what carries it.
+    if (localeInPath) {
+      expect(
+        resolveInitialRouteLocale(
+          {
+            url: new URL(
+              `${pagePath('second', 'ar-EG')}?x=1`,
+              'https://host.invalid',
+            ).href,
+          },
+          routePolicy,
+          appRouteProjection,
+        ),
+      ).toBe('ar-EG');
+    }
 
     const privateResolution = resolveLocalizedRoute(
-      '/en-us/items/42',
+      pageAddress('item', 'en-US'),
       routePolicy,
       appRouteProjection,
     );
@@ -451,7 +491,7 @@ describe('route and SEO contracts, called directly', () => {
         routePolicy,
         appRouteProjection,
         configuration,
-        'https://site.example',
+        localeOrigin('en-US'),
       ),
     ).toEqual({
       indexing: 'non-indexable',

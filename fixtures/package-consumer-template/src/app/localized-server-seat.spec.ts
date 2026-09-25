@@ -33,6 +33,12 @@ import {
   appRouteProjection,
   SITE_ORIGIN,
 } from './localization.routes';
+import {
+  entryRedirects,
+  localeInAddress,
+  pageAddress,
+  pageUrl,
+} from './addresses';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
@@ -74,12 +80,12 @@ const OUTCOME_DOCUMENTS = {
 })
 class RootHost {}
 
-async function configure(): Promise<Router> {
+async function configure(origin: string): Promise<Router> {
   TestBed.resetTestingModule();
   await TestBed.configureTestingModule({
     providers: [
       provideLocalizedRouter(routes, {
-        origin: SITE_ORIGIN,
+        origin,
         outcomeDocuments: OUTCOME_DOCUMENTS,
         documentMetadata: {
           'route:second': {
@@ -122,7 +128,9 @@ async function renderThroughTestBed({
   request,
   locale,
 }: LocaleRequestOutcome): Promise<Response> {
-  const router = await configure();
+  // Rendered for the origin it was asked on, because under a locale-host policy each origin is a
+  // build of its own.
+  const router = await configure(new URL(request.url).origin);
   await TestBed.inject(Localization).changeLocale(locale);
   await router.navigateByUrl(new URL(request.url).pathname);
   await settle();
@@ -144,7 +152,7 @@ const seat = (render: LocaleRenderer = renderThroughTestBed) =>
 
 describe('an address answered through the server seat', () => {
   it('answers a localized address with its status, language and cacheability', async () => {
-    const answered = await seat().request('/en-us/second');
+    const answered = await seat().request(pageUrl('second', 'en-US'));
 
     expect(answered.status).toBe(200);
     expect(answered.headers.get('content-language')).toBe('en-US');
@@ -153,37 +161,50 @@ describe('an address answered through the server seat', () => {
     );
   });
 
-  it('hands back the head Equator wrote, rather than one the test wrote', async () => {
-    const answered = await seat().request('/ar-eg/second');
+  // Where an address states its locale, so one can be asked for in Arabic.
+  it.runIf(localeInAddress)(
+    'hands back the head Equator wrote, rather than one the test wrote',
+    async () => {
+      const answered = await seat().request(pageUrl('second', 'ar-EG'));
 
-    expect(answered.head.lang).toBe('ar-EG');
-    expect(answered.head.dir).toBe('rtl');
-    expect(answered.head.title).toBe('العنوان الثاني');
-    expect(answered.head.canonical).toBe(`${SITE_ORIGIN}/ar-eg/second`);
-    // One canonical, and a reciprocal cluster beside it. Both are what a consumer building its own
-    // harness was checking by parsing HTML off a socket.
-    expect(
-      answered.head.links.filter((link) => link.rel === 'canonical'),
-    ).toHaveLength(1);
-    expect(answered.head.alternates.map((link) => link.hreflang)).toContain(
-      'en-US',
-    );
-  });
+      // The handler's own reading of the address, before the renderer draws anything.
+      expect(answered.locale).toBe('ar-EG');
+      expect(answered.headers.get('content-language')).toBe('ar-EG');
+      expect(answered.head.lang).toBe('ar-EG');
+      expect(answered.head.dir).toBe('rtl');
+      expect(answered.head.title).toBe('العنوان الثاني');
+      expect(answered.head.canonical).toBe(pageUrl('second', 'ar-EG'));
+      // One canonical, and a reciprocal cluster beside it. Both are what a consumer building its own
+      // harness was checking by parsing HTML off a socket.
+      expect(
+        answered.head.links.filter((link) => link.rel === 'canonical'),
+      ).toHaveLength(1);
+      expect(answered.head.alternates.map((link) => link.hreflang)).toContain(
+        'en-US',
+      );
+    },
+  );
 
-  it('sends an entry address to the language that was asked for', async () => {
-    const answered = await seat().request('/second', {
-      headers: { 'accept-language': 'ar-EG,en;q=0.8' },
-    });
+  // Only a policy that prefixes every locale has an address that names none and is sent to one.
+  it.runIf(entryRedirects)(
+    'sends an entry address to the language that was asked for',
+    async () => {
+      const answered = await seat().request('/second', {
+        headers: { 'accept-language': 'ar-EG,en;q=0.8' },
+      });
 
-    expect(answered.status).toBe(307);
-    expect(answered.headers.get('location')).toBe('/ar-eg/second');
-    expect(answered.resolution.status).toBe('redirect');
-  });
+      expect(answered.status).toBe(307);
+      expect(answered.headers.get('location')).toBe(
+        pageAddress('second', 'ar-EG'),
+      );
+      expect(answered.resolution.status).toBe('redirect');
+    },
+  );
 
   it('writes a head for an address that reached no route', async () => {
     // The outcome document, read back off the response rather than off the test's own DOM. Without
     // one the head here is whatever the previous page left in it.
-    const answered = await seat().request('/en-us/no-such-page');
+    const answered = await seat().request(pageUrl('missing', 'en-US'));
 
     expect(answered.status).toBe(404);
     expect(answered.head.title).toBe('Page not found');
@@ -192,7 +213,7 @@ describe('an address answered through the server seat', () => {
 
   it('carries an outcome the renderer declared, and says that it carried', async () => {
     const answered = await seat(() => declarePageOutcome(pageGone())).request(
-      '/en-us/second',
+      pageUrl('second', 'en-US'),
     );
 
     expect(answered.status).toBe(410);

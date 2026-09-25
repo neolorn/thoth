@@ -20,6 +20,7 @@ import { messages } from '#i18n/shell';
 import { routes } from './app.routes';
 import { runtimeExtensions } from './runtime-extensions';
 import { routePolicy, appRouteProjection } from './localization.routes';
+import { localeOrigin, switchInDocument } from './addresses';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
@@ -39,15 +40,20 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
 const ARABIC = 'ar-EG';
 
+/**
+ * `origin` is the one this build answers at. Under a locale-host policy it decides which locale a
+ * change stays in the document for, so a case that switches to Arabic answers at Arabic's.
+ */
 async function configure(
   documentMetadata: Record<string, unknown> | undefined,
   document?: LocalizedRouterOptions['document'],
+  origin: string = localeOrigin('en-US'),
 ): Promise<Router> {
   TestBed.resetTestingModule();
   await TestBed.configureTestingModule({
     providers: [
       provideLocalizedRouter(routes, {
-        origin: 'https://site.example',
+        origin,
         ...(documentMetadata === undefined
           ? {}
           : { documentMetadata: documentMetadata as never }),
@@ -96,7 +102,7 @@ describe('a route document declared by route id', () => {
   });
 
   it('renders each route’s own title and description, in the active locale', async () => {
-    const router = await configure(DECLARED);
+    const router = await configure(DECLARED, undefined, localeOrigin(ARABIC));
     const localization = TestBed.inject(Localization);
     await localization.changeLocale(ARABIC);
 
@@ -114,22 +120,26 @@ describe('a route document declared by route id', () => {
     );
   });
 
-  it('follows the locale rather than the navigation', async () => {
-    // The catalog is chosen when the document is projected, not when the map is written. Asserted
-    // in both directions on one route, because a lookup hardcoded to the source locale answers
-    // English correctly and is the whole defect.
-    const router = await configure(DECLARED);
-    await router.navigateByUrl('/second');
-    expect(document.title).toBe('Second address');
+  // Where a switch stays in this document. Under locale-host it loads the other origin instead.
+  it.runIf(switchInDocument)(
+    'follows the locale rather than the navigation',
+    async () => {
+      // The catalog is chosen when the document is projected, not when the map is written. Asserted
+      // in both directions on one route, because a lookup hardcoded to the source locale answers
+      // English correctly and is the whole defect.
+      const router = await configure(DECLARED);
+      await router.navigateByUrl('/second');
+      expect(document.title).toBe('Second address');
 
-    await TestBed.inject(Localization).changeLocale(ARABIC);
-    // The re-projection runs in an effect, so it lands on the next change detection rather than
-    // inside `changeLocale`. A zoneless application schedules that itself; a zoneless TestBed has
-    // to be told, and without this the assertion reads the title from before the switch.
-    TestBed.tick();
-    expect(document.title).toBe('العنوان الثاني');
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
-  });
+      await TestBed.inject(Localization).changeLocale(ARABIC);
+      // The re-projection runs in an effect, so it lands on the next change detection rather than
+      // inside `changeLocale`. A zoneless application schedules that itself; a zoneless TestBed has
+      // to be told, and without this the assertion reads the title from before the switch.
+      TestBed.tick();
+      expect(document.title).toBe('العنوان الثاني');
+      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    },
+  );
 
   it('lets the dynamic callback override one field and keep the rest', async () => {
     // The two halves compose rather than replace. A route whose title is fetched keeps the

@@ -26,6 +26,12 @@ import { routeProjection } from '#i18n/routes';
 
 import { runtimeExtensions } from './runtime-extensions';
 import { routePolicy, appRouteProjection } from './localization.routes';
+import {
+  addressCanStateNone,
+  localeInAddress,
+  pageUrl,
+  unstatedAddress,
+} from './addresses';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
@@ -46,6 +52,7 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 interface Environment {
   readonly sources?: readonly LocalizationLocaleSource[];
   readonly stores?: readonly LocalizationPersistenceStoreFactory[];
+  /** An absolute URL, because under locale-host the origin is what states the locale. */
   readonly url?: string;
   readonly acceptLanguage?: string;
   readonly withPolicy?: boolean;
@@ -61,7 +68,7 @@ function setup(environment: Environment): Localization {
       { provide: PLATFORM_ID, useValue: 'server' },
       {
         provide: REQUEST,
-        useValue: new Request('https://site.example/', {
+        useValue: new Request(environment.url ?? unstatedAddress, {
           headers:
             environment.acceptLanguage === undefined
               ? {}
@@ -83,7 +90,7 @@ function setup(environment: Environment): Localization {
         : [
             {
               provide: MOCK_PLATFORM_LOCATION_CONFIG,
-              useValue: { startUrl: `https://site.example${environment.url}` },
+              useValue: { startUrl: environment.url },
             },
             { provide: PlatformLocation, useClass: MockPlatformLocation },
           ]),
@@ -196,53 +203,65 @@ describe('matching a request against what exists', () => {
 });
 
 describe('the declared order', () => {
-  it('takes the URL when the URL states a locale', async () => {
-    const localization = setup({
-      sources: ['url', 'stored', 'default'],
-      stores: [storeReturning('en-US')],
-      url: '/ar-eg/second',
-    });
+  it.runIf(localeInAddress)(
+    'takes the URL when the URL states a locale',
+    async () => {
+      const localization = setup({
+        sources: ['url', 'stored', 'default'],
+        stores: [storeReturning('en-US')],
+        url: pageUrl('second', 'ar-EG'),
+      });
 
-    expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
-    claimCapability('source:url', { policy: routePolicy });
-  });
+      expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
+      claimCapability('source:url', { policy: routePolicy });
+    },
+  );
 
-  it('steps past the URL when the URL states none', async () => {
-    // The rule the whole ordering rests on. `/` carries no prefix, so it has stated nothing, and
-    // the stored preference answers instead of being pre-empted by a default.
-    const localization = setup({
-      sources: ['url', 'stored', 'default'],
-      stores: [storeReturning('ar-EG')],
-      url: '/',
-    });
+  it.runIf(addressCanStateNone)(
+    'steps past the URL when the URL states none',
+    async () => {
+      // The rule the whole ordering rests on. `/` carries no prefix, so it has stated nothing, and
+      // the stored preference answers instead of being pre-empted by a default.
+      const localization = setup({
+        sources: ['url', 'stored', 'default'],
+        stores: [storeReturning('ar-EG')],
+        url: unstatedAddress,
+      });
 
-    expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
-    claimCapability('source:url', { policy: routePolicy });
-    claimCapability('source:stored', { policy: routePolicy });
-  });
+      expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
+      claimCapability('source:url', { policy: routePolicy });
+      claimCapability('source:stored', { policy: routePolicy });
+    },
+  );
 
-  it('falls through to what the client asked for', async () => {
-    const localization = setup({
-      sources: ['url', 'stored', 'browser', 'default'],
-      stores: [storeReturning(undefined)],
-      url: '/',
-      acceptLanguage: 'ar-SA,en;q=0.5',
-    });
+  it.runIf(addressCanStateNone)(
+    'falls through to what the client asked for',
+    async () => {
+      const localization = setup({
+        sources: ['url', 'stored', 'browser', 'default'],
+        stores: [storeReturning(undefined)],
+        url: unstatedAddress,
+        acceptLanguage: 'ar-SA,en;q=0.5',
+      });
 
-    expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
-    claimCapability('source:browser', { policy: routePolicy });
-  });
+      expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
+      claimCapability('source:browser', { policy: routePolicy });
+    },
+  );
 
-  it('reaches the default when every earlier source declines', async () => {
-    const localization = setup({
-      sources: ['url', 'stored', 'browser', 'default'],
-      url: '/',
-      acceptLanguage: 'ja-JP',
-    });
+  it.runIf(addressCanStateNone)(
+    'reaches the default when every earlier source declines',
+    async () => {
+      const localization = setup({
+        sources: ['url', 'stored', 'browser', 'default'],
+        url: unstatedAddress,
+        acceptLanguage: 'ja-JP',
+      });
 
-    expect((await localization.initialize()).primaryLocale).toBe('en-US');
-    claimCapability('source:default', { policy: routePolicy });
-  });
+      expect((await localization.initialize()).primaryLocale).toBe('en-US');
+      claimCapability('source:default', { policy: routePolicy });
+    },
+  );
 
   it('honours the order, not Equator s opinion of it', async () => {
     // Storage ahead of the URL is unusual and legitimate: an application that deliberately pins a
@@ -250,7 +269,7 @@ describe('the declared order', () => {
     const localization = setup({
       sources: ['stored', 'url', 'default'],
       stores: [storeReturning('ar-EG')],
-      url: '/en-us/second',
+      url: pageUrl('second', 'en-US'),
     });
 
     expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
@@ -261,7 +280,7 @@ describe('the declared order', () => {
     const localization = setup({
       sources: ['url', 'default'],
       stores: [storeReturning('ar-EG')],
-      url: '/',
+      url: unstatedAddress,
     });
 
     // The store is installed and holds a usable value. It is simply not consulted, which is what
@@ -269,16 +288,19 @@ describe('the declared order', () => {
     expect((await localization.initialize()).primaryLocale).toBe('en-US');
   });
 
-  it('declines the URL source when no policy was supplied', async () => {
-    const localization = setup({
-      sources: ['url', 'stored', 'default'],
-      stores: [storeReturning('ar-EG')],
-      url: '/ar-eg/second',
-      withPolicy: false,
-    });
+  it.runIf(localeInAddress)(
+    'declines the URL source when no policy was supplied',
+    async () => {
+      const localization = setup({
+        sources: ['url', 'stored', 'default'],
+        stores: [storeReturning('ar-EG')],
+        url: pageUrl('second', 'ar-EG'),
+        withPolicy: false,
+      });
 
-    expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
-  });
+      expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
+    },
+  );
 });
 
 /**
@@ -299,47 +321,59 @@ describe('the declared order', () => {
  * it answering.
  */
 describe('the order an application gets without declaring one', () => {
-  it('takes the URL over a stored preference', async () => {
-    const localization = setup({
-      stores: [storeReturning('en-US')],
-      url: '/ar-eg/second',
-    });
+  it.runIf(localeInAddress)(
+    'takes the URL over a stored preference',
+    async () => {
+      const localization = setup({
+        stores: [storeReturning('en-US')],
+        url: pageUrl('second', 'ar-EG'),
+      });
 
-    // Both sources have an answer and they disagree. Only the URL being ranked first explains
-    // Arabic here.
-    expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
-  });
+      // Both sources have an answer and they disagree. Only the URL being ranked first explains
+      // Arabic here.
+      expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
+    },
+  );
 
-  it('takes a stored preference over what the client asked for', async () => {
-    const localization = setup({
-      stores: [storeReturning('ar-EG')],
-      url: '/',
-      acceptLanguage: 'en-US',
-    });
+  it.runIf(addressCanStateNone)(
+    'takes a stored preference over what the client asked for',
+    async () => {
+      const localization = setup({
+        stores: [storeReturning('ar-EG')],
+        url: unstatedAddress,
+        acceptLanguage: 'en-US',
+      });
 
-    expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
-  });
+      expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
+    },
+  );
 
-  it('takes what the client asked for over the configured default', async () => {
-    const localization = setup({
-      stores: [storeReturning(undefined)],
-      url: '/',
-      acceptLanguage: 'ar-SA,en;q=0.5',
-    });
+  it.runIf(addressCanStateNone)(
+    'takes what the client asked for over the configured default',
+    async () => {
+      const localization = setup({
+        stores: [storeReturning(undefined)],
+        url: unstatedAddress,
+        acceptLanguage: 'ar-SA,en;q=0.5',
+      });
 
-    // `en-US` is the configured default, so anything other than `ar-EG` here means the browser
-    // source is either ranked below the default or absent from it.
-    expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
-  });
+      // `en-US` is the configured default, so anything other than `ar-EG` here means the browser
+      // source is either ranked below the default or absent from it.
+      expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
+    },
+  );
 
-  it('reaches the configured default when nothing earlier answers', async () => {
-    const localization = setup({
-      url: '/',
-      acceptLanguage: 'ja-JP',
-    });
+  it.runIf(addressCanStateNone)(
+    'reaches the configured default when nothing earlier answers',
+    async () => {
+      const localization = setup({
+        url: unstatedAddress,
+        acceptLanguage: 'ja-JP',
+      });
 
-    expect((await localization.initialize()).primaryLocale).toBe('en-US');
-  });
+      expect((await localization.initialize()).primaryLocale).toBe('en-US');
+    },
+  );
 });
 
 describe('a configuration that cannot mean anything', () => {

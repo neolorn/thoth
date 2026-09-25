@@ -31,6 +31,7 @@ import { routeProjection } from '#i18n/routes';
 import { runtimeExtensions } from './runtime-extensions';
 import { routes } from './app.routes';
 import { routePolicy, appRouteProjection } from './localization.routes';
+import { localeInPath, localeOrigin, pagePath, pageUrl } from './addresses';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
@@ -110,7 +111,7 @@ async function arriveAt(
       ...(base.token === undefined
         ? []
         : [{ provide: APP_BASE_HREF, useValue: base.token }]),
-      provideLocalizedRouter(routes, { origin: 'https://site.example' }),
+      provideLocalizedRouter(routes, { origin: localeOrigin('ar-EG') }),
       provideLocalizationTesting(
         {
           configuration,
@@ -159,7 +160,18 @@ async function arriveAt(
   });
 }
 
-const ARABIC_UNDER_APP = 'https://site.example/app/ar-eg/second';
+/** A page's address with the application mounted at `/app`. */
+const underApp = (page: 'home' | 'second', locale: string): string =>
+  `/app${pagePath(page, locale)}`;
+
+/** The same, absolute. */
+const urlUnderApp = (page: 'home' | 'second', locale: string): string =>
+  new URL(underApp(page, locale), localeOrigin(locale)).href;
+
+// Functions rather than constants, because a policy with no Arabic address skips this file and
+// reading the table at load would fail it instead.
+const arabicUnderApp = (): string => urlUnderApp('second', 'ar-EG');
+const arabic = (): string => pageUrl('second', 'ar-EG');
 
 /** Read out of the document, because that is where a crawler reads it. */
 const canonical = (): string | null =>
@@ -174,10 +186,14 @@ const alternate = (hreflang: string): string | null =>
  * The two ways an application turns a snapshot address into something clickable.
  *
  * `localeChoice` writes an `href` itself, and `routerLink` hands the address to the Router and
- * lets the `LocationStrategy` prepare it. Both are rendered from the *same* value so the pair is a
- * check on the contract rather than on one consumer of it: the snapshot's address is
- * application-rooted, each of these mounts it exactly once, and if the snapshot were mounted
- * instead the `routerLink` would come out with the sub-path twice.
+ * lets the `LocationStrategy` prepare it. Both are rendered from the same snapshot so the pair is a
+ * check on the contract rather than on one consumer of it: its addresses are application-rooted,
+ * each of these mounts one exactly once, and if the snapshot were mounted instead the `routerLink`
+ * would come out with the sub-path twice.
+ *
+ * The `routerLink` is given the address of the locale on screen, because the Router navigates in
+ * that locale. Where the default locale's address carries no prefix, the Router reads it as this
+ * page in the locale on screen, so a switcher address is not something to hand it.
  */
 @Component({
   standalone: true,
@@ -212,6 +228,9 @@ const hrefs = (
   readonly link: string | null;
 } => {
   const address = offered(localization, locale);
+  const onScreen = localization.snapshot()?.primaryLocale;
+  const linked =
+    onScreen === undefined ? undefined : offered(localization, onScreen);
   const host = TestBed.createComponent(ChoiceHost);
   host.componentInstance.choice.set({
     locale,
@@ -221,7 +240,7 @@ const hrefs = (
     current: false,
     pending: false,
   });
-  if (address !== undefined) host.componentInstance.address.set(address);
+  if (linked !== undefined) host.componentInstance.address.set(linked);
   TestBed.tick();
   const read = (role: string): string | null =>
     host.nativeElement
@@ -230,70 +249,72 @@ const hrefs = (
   return { snapshot: address, choice: read('choice'), link: read('link') };
 };
 
-describe('an application deployed under a sub-path', () => {
+// Where the path states the locale. Every arrival here is read through jsdom's own location, whose
+// origin cannot be moved, so a policy that states the locale in the origin has nothing to read.
+describe.runIf(localeInPath)('an application deployed under a sub-path', () => {
   it('reads the locale out of an address that carries the base, declared in the document', async () => {
-    const arrival = await arriveAt(ARABIC_UNDER_APP, { dom: '/app' });
+    const arrival = await arriveAt(arabicUnderApp(), { dom: '/app' });
 
     // The locale is the assertion. The three below it were already true while this one was false,
     // which is why the defect was invisible: the right page, at the right address, in English.
     expect(arrival.locale).toBe('ar-EG');
     expect(arrival.routerUrl).toBe('/second');
     expect(arrival.view).toBe('second');
-    expect(arrival.address).toBe('/app/ar-eg/second');
+    expect(arrival.address).toBe(underApp('second', 'ar-EG'));
   });
 
   it('reads it the same way when the base is declared as a token, with a trailing slash', async () => {
-    const arrival = await arriveAt(ARABIC_UNDER_APP, { token: '/app/' });
+    const arrival = await arriveAt(arabicUnderApp(), { token: '/app/' });
 
     expect(arrival.locale).toBe('ar-EG');
     expect(arrival.routerUrl).toBe('/second');
-    expect(arrival.address).toBe('/app/ar-eg/second');
+    expect(arrival.address).toBe(underApp('second', 'ar-EG'));
   });
 
   it('reads the same address at the root, which is how every other spec here runs', async () => {
     // The control. One thing differs from the two above, where the application is mounted, so
     // an implementation that ignored the base entirely would pass this and fail those.
-    const arrival = await arriveAt('https://site.example/ar-eg/second', {});
+    const arrival = await arriveAt(arabic(), {});
 
     expect(arrival.locale).toBe('ar-EG');
     expect(arrival.routerUrl).toBe('/second');
-    expect(arrival.address).toBe('/ar-eg/second');
+    expect(arrival.address).toBe(pagePath('second', 'ar-EG'));
   });
 
   it('writes a switcher option that points inside the deployment', async () => {
-    const arrival = await arriveAt(ARABIC_UNDER_APP, { dom: '/app' });
+    const arrival = await arriveAt(arabicUnderApp(), { dom: '/app' });
     const written = hrefs(arrival.localization, 'en-US');
 
     // The contract, unmoved. What the snapshot offers is application-rooted, because that is what
     // the Router speaks and what an application binds to `routerLink`.
-    expect(written.snapshot).toBe('/en-us/second');
+    expect(written.snapshot).toBe(pagePath('second', 'en-US'));
     // What each way of rendering it puts in the document. The directive composes the mount point
     // where it writes the attribute; `routerLink` gets there through the `LocationStrategy`. Both
     // arrive at one `/app`, and a snapshot that carried the mount point would give the second
     // of these two.
-    expect(written.choice).toBe('/app/en-us/second');
-    expect(written.link).toBe('/app/en-us/second');
+    expect(written.choice).toBe(underApp('second', 'en-US'));
+    expect(written.link).toBe(underApp('second', 'ar-EG'));
   });
 
   it('writes the same option without a sub-path when there is none', async () => {
     // The control. One thing differs from the test above, and the snapshot value is identical in
     // both, which is the point of reading it here as well.
-    const arrival = await arriveAt('https://site.example/ar-eg/second', {});
+    const arrival = await arriveAt(arabic(), {});
     const written = hrefs(arrival.localization, 'en-US');
 
-    expect(written.snapshot).toBe('/en-us/second');
-    expect(written.choice).toBe('/en-us/second');
-    expect(written.link).toBe('/en-us/second');
+    expect(written.snapshot).toBe(pagePath('second', 'en-US'));
+    expect(written.choice).toBe(pagePath('second', 'en-US'));
+    expect(written.link).toBe(pagePath('second', 'ar-EG'));
   });
 
   it('writes the base back when a locale switch rewrites the address', async () => {
-    const arrival = await arriveAt(ARABIC_UNDER_APP, { dom: '/app' });
+    const arrival = await arriveAt(arabicUnderApp(), { dom: '/app' });
     const before = arrival.platform.getState();
 
     await arrival.localization.changeLocale('en-US');
     TestBed.tick();
 
-    expect(arrival.platform.pathname).toBe('/app/en-us/second');
+    expect(arrival.platform.pathname).toBe(underApp('second', 'en-US'));
     // The history entry's own state, which the switch replaces rather than creates. Angular's
     // scroll restoration finds a stored position by the navigation id it keeps in here, so a
     // rewrite that dropped it would restore nothing, and would do it only under a sub-path,
@@ -305,47 +326,47 @@ describe('an application deployed under a sub-path', () => {
   });
 
   it('advertises itself at the sub-path it is served from', async () => {
-    await arriveAt(ARABIC_UNDER_APP, { dom: '/app' });
+    await arriveAt(arabicUnderApp(), { dom: '/app' });
 
     // A canonical URL is made of three things: the site, the mount point, and the address the
     // policy spells from the application's own root. Without the middle one this page tells every
     // crawler it lives at `https://site.example/ar-eg/second`: a path this deployment does not
     // serve, and one whatever else is on that site may.
-    expect(canonical()).toBe('https://site.example/app/ar-eg/second');
-    expect(alternate('ar-EG')).toBe('https://site.example/app/ar-eg/second');
-    expect(alternate('en-US')).toBe('https://site.example/app/en-us/second');
+    expect(canonical()).toBe(urlUnderApp('second', 'ar-EG'));
+    expect(alternate('ar-EG')).toBe(urlUnderApp('second', 'ar-EG'));
+    expect(alternate('en-US')).toBe(urlUnderApp('second', 'en-US'));
     // The fallback, which is an address in this application like any other.
-    expect(alternate('x-default')).toBe('https://site.example/app/');
+    expect(alternate('x-default')).toBe(`${localeOrigin('en-US')}/app/`);
   });
 
   it('advertises the same page without a sub-path when there is none', async () => {
     // The control, and the only claim being made about a root-mounted deployment: it publishes
     // what it always published. One thing differs from the test above, where the application is
     // mounted, so a head that ignored the base would pass this and fail that.
-    await arriveAt('https://site.example/ar-eg/second', {});
+    await arriveAt(arabic(), {});
 
-    expect(canonical()).toBe('https://site.example/ar-eg/second');
-    expect(alternate('ar-EG')).toBe('https://site.example/ar-eg/second');
-    expect(alternate('en-US')).toBe('https://site.example/en-us/second');
-    expect(alternate('x-default')).toBe('https://site.example/');
+    expect(canonical()).toBe(pageUrl('second', 'ar-EG'));
+    expect(alternate('ar-EG')).toBe(pageUrl('second', 'ar-EG'));
+    expect(alternate('en-US')).toBe(pageUrl('second', 'en-US'));
+    expect(alternate('x-default')).toBe(`${localeOrigin('en-US')}/`);
   });
 
   it('reads the base href from the one resolution both halves use', async () => {
     // The read side and the head are the same fact, so they are read through the same function
     // rather than through two copies of Angular's precedence. Asserted here because the value it
     // returns is the difference between the two tests above.
-    const arrival = await arriveAt(ARABIC_UNDER_APP, { token: '/app/' });
+    const arrival = await arriveAt(arabicUnderApp(), { token: '/app/' });
 
     expect(TestBed.runInInjectionContext(() => applicationBaseHref())).toBe(
       '/app/',
     );
     expect(arrival.locale).toBe('ar-EG');
-    expect(canonical()).toBe('https://site.example/app/ar-eg/second');
+    expect(canonical()).toBe(urlUnderApp('second', 'ar-EG'));
     claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('writes the base back on an ordinary in-app navigation', async () => {
-    const arrival = await arriveAt(ARABIC_UNDER_APP, { dom: '/app' });
+    const arrival = await arriveAt(arabicUnderApp(), { dom: '/app' });
 
     await arrival.router.navigateByUrl('/');
     TestBed.tick();
@@ -353,6 +374,6 @@ describe('an application deployed under a sub-path', () => {
     // The Router is given a base-free, locale-free address, exactly as an application writes it in
     // a `routerLink`, and what reaches the browser carries both.
     expect(arrival.router.url).toBe('/');
-    expect(arrival.platform.pathname).toBe('/app/ar-eg');
+    expect(arrival.platform.pathname).toBe(underApp('home', 'ar-EG'));
   });
 });

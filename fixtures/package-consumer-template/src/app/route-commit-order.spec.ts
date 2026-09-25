@@ -30,6 +30,14 @@ import { messages, providerId, scopeId } from '#i18n/shell';
 import { routes as applicationRoutes } from './app.routes';
 import { runtimeExtensions } from './runtime-extensions';
 import { routePolicy, appRouteProjection } from './localization.routes';
+import {
+  localeInPath,
+  localeOrigin,
+  pageAddress,
+  pagePath,
+  pageUrl,
+  switchInDocument,
+} from './addresses';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
@@ -115,6 +123,8 @@ async function setup(): Promise<{
     providers: [
       provideLocalizedRouter(routes, {
         requiredScopes: [{ providerId, scopeId }],
+        // Named because a host policy refuses to start without one.
+        origin: localeOrigin('en-US'),
       }),
       provideLocalizationTesting(
         {
@@ -142,109 +152,124 @@ describe('switching locale, and navigating after one', () => {
     vi.restoreAllMocks();
   });
 
-  it('builds a page navigated to after a switch against the switched locale', async () => {
-    const { router, localization } = await setup();
-    TestBed.createComponent(RootHost);
+  // Where the switch stays in this document. Under locale-host it loads the other origin instead.
+  it.runIf(switchInDocument)(
+    'builds a page navigated to after a switch against the switched locale',
+    async () => {
+      const { router, localization } = await setup();
+      TestBed.createComponent(RootHost);
 
-    await router.navigateByUrl('/');
-    TestBed.tick();
-    expect(constructedWith.at(-1)).toBe('en-US');
+      await router.navigateByUrl('/');
+      TestBed.tick();
+      expect(constructedWith.at(-1)).toBe('en-US');
 
-    await localization.changeLocale('ar-EG');
-    TestBed.tick();
+      await localization.changeLocale('ar-EG');
+      TestBed.tick();
 
-    // A switch constructs nothing: the route did not change, so the component that is on screen
-    // stays on screen and re-renders from the signal. The reading only becomes available again on
-    // the next navigation, and this is it.
-    await router.navigateByUrl('/second');
-    TestBed.tick();
+      // A switch constructs nothing: the route did not change, so the component that is on screen
+      // stays on screen and re-renders from the signal. The reading only becomes available again on
+      // the next navigation, and this is it.
+      await router.navigateByUrl('/second');
+      TestBed.tick();
 
-    // The whole point of committing in the resolver. Commit after activation instead and this is
-    // 'en-US': the destination page is constructed, and painted, from the outgoing snapshot.
-    expect(constructedWith.at(-1)).toBe('ar-EG');
-    expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
+      // The whole point of committing in the resolver. Commit after activation instead and this is
+      // 'en-US': the destination page is constructed, and painted, from the outgoing snapshot.
+      expect(constructedWith.at(-1)).toBe('ar-EG');
+      expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
 
-    // And nothing was built against the outgoing locale after the switch, which is the claim the
-    // reading above makes only for the last construction.
-    const afterSwitch = constructedWith.slice(1);
-    expect(afterSwitch).not.toContain('en-US');
-  });
+      // And nothing was built against the outgoing locale after the switch, which is the claim the
+      // reading above makes only for the last construction.
+      const afterSwitch = constructedWith.slice(1);
+      expect(afterSwitch).not.toContain('en-US');
+    },
+  );
 
-  it('has committed by the time the switch resolves', async () => {
-    const { router, localization } = await setup();
-    TestBed.createComponent(RootHost);
-    await router.navigateByUrl('/');
-    TestBed.tick();
+  it.runIf(switchInDocument)(
+    'has committed by the time the switch resolves',
+    async () => {
+      const { router, localization } = await setup();
+      TestBed.createComponent(RootHost);
+      await router.navigateByUrl('/');
+      TestBed.tick();
 
-    await localization.changeLocale('ar-EG');
+      await localization.changeLocale('ar-EG');
 
-    // No settled() in between. A caller that awaits the switch has every right to read the locale
-    // it switched to.
-    expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
-  });
+      // No settled() in between. A caller that awaits the switch has every right to read the locale
+      // it switched to.
+      expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
+    },
+  );
 
-  it('renders the switched language without a further navigation', async () => {
-    const { router, localization } = await setup();
-    const fixture = TestBed.createComponent(RootHost);
-    await router.navigateByUrl('/');
-    TestBed.tick();
-    expect(fixture.nativeElement.textContent).toBe('Home route|Home route');
+  it.runIf(switchInDocument)(
+    'renders the switched language without a further navigation',
+    async () => {
+      const { router, localization } = await setup();
+      const fixture = TestBed.createComponent(RootHost);
+      await router.navigateByUrl('/');
+      TestBed.tick();
+      expect(fixture.nativeElement.textContent).toBe('Home route|Home route');
 
-    await localization.changeLocale('ar-EG');
-    TestBed.tick();
+      await localization.changeLocale('ar-EG');
+      TestBed.tick();
 
-    // One change-detection pass after the switch resolves, no navigation and no reconstruction,
-    // and the live binding is already in the new language.
-    //
-    // Asserted as the whole string rather than as a `toContain`, because the half that did *not*
-    // move is the more useful half of this reading. `heading` is a `text()` call evaluated in the
-    // constructor: it is a snapshot, it is still English, and Equator cannot make it otherwise. An
-    // application whose visible strings are bound that way has F1's symptom back, the page
-    // showing the outgoing language after the commit landed, from its own code rather than from
-    // the adapter's ordering. Which binding an application reaches for is the part of this that
-    // is not Equator's to decide, so the test states the consequence instead of hiding it.
-    expect(fixture.nativeElement.textContent).toBe(
-      'Home route|الصفحة الرئيسية',
-    );
-  });
+      // One change-detection pass after the switch resolves, no navigation and no reconstruction,
+      // and the live binding is already in the new language.
+      //
+      // Asserted as the whole string rather than as a `toContain`, because the half that did *not*
+      // move is the more useful half of this reading. `heading` is a `text()` call evaluated in the
+      // constructor: it is a snapshot, it is still English, and Equator cannot make it otherwise. An
+      // application whose visible strings are bound that way has F1's symptom back, the page
+      // showing the outgoing language after the commit landed, from its own code rather than from
+      // the adapter's ordering. Which binding an application reaches for is the part of this that
+      // is not Equator's to decide, so the test states the consequence instead of hiding it.
+      expect(fixture.nativeElement.textContent).toBe(
+        'Home route|الصفحة الرئيسية',
+      );
+    },
+  );
 
-  it('ignores a locale named in a programmatic address, and says so', async () => {
-    // The contract the header describes, asserted rather than only described.
-    //
-    // `navigateByUrl('/ar-eg')` is a navigation to `/`, answered in the locale that is committed
-    // now. It is not a switch and it is not a no-op: the address is delocalized on the way into
-    // the matcher, so the canonical route runs with everything declared on it, which is 4.18's
-    // whole point. What it does not do is change the language.
-    //
-    // **And the second half of the name is asserted, because it was not.** This case was written
-    // as "and says so" while asserting only the ignoring. A test name is a claim like any other,
-    // and one that names a behaviour it does not read is the same defect as a comment that cites
-    // a check nobody wrote.
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const { router, localization } = await setup();
-    const fixture = TestBed.createComponent(RootHost);
-    await router.navigateByUrl('/');
-    TestBed.tick();
+  // Only a path can name a locale, and only where the path carries one.
+  it.runIf(localeInPath)(
+    'ignores a locale named in a programmatic address, and says so',
+    async () => {
+      // The contract the header describes, asserted rather than only described.
+      //
+      // `navigateByUrl('/ar-eg')` is a navigation to `/`, answered in the locale that is committed
+      // now. It is not a switch and it is not a no-op: the address is delocalized on the way into
+      // the matcher, so the canonical route runs with everything declared on it, which is 4.18's
+      // whole point. What it does not do is change the language.
+      //
+      // **And the second half of the name is asserted, because it was not.** This case was written
+      // as "and says so" while asserting only the ignoring. A test name is a claim like any other,
+      // and one that names a behaviour it does not read is the same defect as a comment that cites
+      // a check nobody wrote.
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { router, localization } = await setup();
+      const fixture = TestBed.createComponent(RootHost);
+      await router.navigateByUrl('/');
+      TestBed.tick();
 
-    await router.navigateByUrl('/ar-eg');
-    TestBed.tick();
+      const arabicHome = pageAddress('home', 'ar-EG');
+      await router.navigateByUrl(arabicHome);
+      TestBed.tick();
 
-    expect(localization.snapshot()?.primaryLocale).toBe('en-US');
-    expect(constructedWith.at(-1)).toBe('en-US');
-    expect(fixture.nativeElement.textContent).toContain('Home route');
+      expect(localization.snapshot()?.primaryLocale).toBe('en-US');
+      expect(constructedWith.at(-1)).toBe('en-US');
+      expect(fixture.nativeElement.textContent).toContain('Home route');
 
-    // Three things, because a caller who wrote a locale into an address and got a different one
-    // needs all three to act: what they wrote, what to write instead, and the operation that does
-    // what they were trying to do. Read as substrings rather than as the whole message, so that
-    // rewording the sentence is not a test failure and dropping any of the three is.
-    const delocalized = warn.mock.calls
-      .map((call) => (typeof call[0] === 'string' ? call[0] : ''))
-      .filter((message) => message.includes('names a locale in the address'));
-    expect(delocalized).toHaveLength(1);
-    expect(delocalized[0]).toContain('"/ar-eg"');
-    expect(delocalized[0]).toContain('"/"');
-    expect(delocalized[0]).toContain('Localization.changeLocale()');
-  });
+      // Three things, because a caller who wrote a locale into an address and got a different one
+      // needs all three to act: what they wrote, what to write instead, and the operation that does
+      // what they were trying to do. Read as substrings rather than as the whole message, so that
+      // rewording the sentence is not a test failure and dropping any of the three is.
+      const delocalized = warn.mock.calls
+        .map((call) => (typeof call[0] === 'string' ? call[0] : ''))
+        .filter((message) => message.includes('names a locale in the address'));
+      expect(delocalized).toHaveLength(1);
+      expect(delocalized[0]).toContain(JSON.stringify(arabicHome));
+      expect(delocalized[0]).toContain('"/"');
+      expect(delocalized[0]).toContain('Localization.changeLocale()');
+    },
+  );
 
   it('says nothing when the address it was given is already canonical', async () => {
     // The other direction, and the reason it is here: a diagnostic asserted only where it fires is
@@ -279,7 +304,10 @@ describe('a Router configuration the adapter cannot make coherent', () => {
       providers: [
         provideLocalizedRouter(
           routes,
-          { requiredScopes: [{ providerId, scopeId }] },
+          {
+            requiredScopes: [{ providerId, scopeId }],
+            origin: localeOrigin('en-US'),
+          },
           // Passed as a router feature, which is also the shape 5.1a warns about: Angular provides
           // ROUTER_CONFIGURATION non-multi, so this replaces Equator's own configuration entirely.
           // That is the mechanism the refusal below has to survive.
@@ -349,95 +377,104 @@ describe('a Router configuration the adapter cannot make coherent', () => {
  * that this vantage point cannot check, and the settled reading at the end is what checks that it
  * lands at all.
  */
-describe('the order of the things one locale commit does', () => {
-  it('moves the address bar after the document language and before the head', async () => {
-    history.replaceState(null, '', '/ar-eg/second');
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({
-      providers: [
-        {
-          provide: MOCK_PLATFORM_LOCATION_CONFIG,
-          useValue: { startUrl: 'https://site.example/ar-eg/second' },
-        },
-        // The application's own routes and a configured origin, because the head is half of what
-        // is being ordered and a canonical URL needs both.
-        provideLocalizedRouter(applicationRoutes, {
-          origin: 'https://site.example',
-        }),
-        provideLocalizationTesting(
+// Where a switch moves the address bar in this document, which needs the path to carry the locale.
+describe.runIf(localeInPath)(
+  'the order of the things one locale commit does',
+  () => {
+    it('moves the address bar after the document language and before the head', async () => {
+      history.replaceState(null, '', pagePath('second', 'ar-EG'));
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
           {
-            configuration,
-            catalogSet,
-            catalogLoaders,
-            recoveryPayload,
-            extensions: runtimeExtensions,
-            routeProjection,
+            provide: MOCK_PLATFORM_LOCATION_CONFIG,
+            useValue: { startUrl: pageUrl('second', 'ar-EG') },
           },
-          withRouting({ policy: routePolicy, projection: appRouteProjection }),
-        ),
-      ],
-    });
-
-    const localization = TestBed.inject(Localization);
-    await localization.initialize();
-    const router = TestBed.inject(Router);
-    TestBed.createComponent(RootHost);
-
-    const settled = firstValueFrom(
-      router.events.pipe(
-        filter(
-          (event) =>
-            event instanceof NavigationEnd ||
-            event instanceof NavigationCancel ||
-            event instanceof NavigationError,
-        ),
-      ),
-    );
-    router.initialNavigation();
-    await settled;
-    TestBed.tick();
-
-    const canonical = (): string | null =>
-      document.querySelector('link[rel="canonical"]')?.getAttribute('href') ??
-      null;
-    const announced = (): string | null =>
-      document.querySelector('[data-equator-announcer]')?.textContent ?? null;
-
-    const atTheAddressWrite: unknown[] = [];
-    const stopWatching = TestBed.inject(Location).onUrlChange((url) => {
-      atTheAddressWrite.push({
-        url,
-        lang: document.documentElement.lang,
-        canonical: canonical(),
-        announced: announced(),
+          // The application's own routes and a configured origin, because the head is half of what
+          // is being ordered and a canonical URL needs both.
+          provideLocalizedRouter(applicationRoutes, {
+            origin: localeOrigin('ar-EG'),
+          }),
+          provideLocalizationTesting(
+            {
+              configuration,
+              catalogSet,
+              catalogLoaders,
+              recoveryPayload,
+              extensions: runtimeExtensions,
+              routeProjection,
+            },
+            withRouting({
+              policy: routePolicy,
+              projection: appRouteProjection,
+            }),
+          ),
+        ],
       });
+
+      const localization = TestBed.inject(Localization);
+      await localization.initialize();
+      const router = TestBed.inject(Router);
+      TestBed.createComponent(RootHost);
+
+      const settled = firstValueFrom(
+        router.events.pipe(
+          filter(
+            (event) =>
+              event instanceof NavigationEnd ||
+              event instanceof NavigationCancel ||
+              event instanceof NavigationError,
+          ),
+        ),
+      );
+      router.initialNavigation();
+      await settled;
+      TestBed.tick();
+
+      const canonical = (): string | null =>
+        document.querySelector('link[rel="canonical"]')?.getAttribute('href') ??
+        null;
+      const announced = (): string | null =>
+        document.querySelector('[data-equator-announcer]')?.textContent ?? null;
+
+      const atTheAddressWrite: unknown[] = [];
+      const stopWatching = TestBed.inject(Location).onUrlChange((url) => {
+        atTheAddressWrite.push({
+          url,
+          lang: document.documentElement.lang,
+          canonical: canonical(),
+          announced: announced(),
+        });
+      });
+
+      await localization.changeLocale('en-US');
+      TestBed.tick();
+      stopWatching();
+
+      // One entry, and the whole state of the document at the instant it was written. Asserted as
+      // one object rather than four readings, because the claim is about a sequence and a sequence
+      // is only readable if the things before and the things after are next to each other.
+      expect(atTheAddressWrite).toEqual([
+        {
+          url: pagePath('second', 'en-US'),
+          lang: 'en-US',
+          canonical: pageUrl('second', 'ar-EG'),
+          announced: '',
+        },
+      ]);
+
+      // And the rest of the list, once it has run. Without this the two "not yet" readings above
+      // would be satisfied by a head that never projects and an announcement that is never made.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 30);
+      });
+      expect(canonical()).toBe(pageUrl('second', 'en-US'));
+      expect(announced()).toBe('American English');
+      claimCapability('feature:provideLocalizedRouter', {
+        policy: routePolicy,
+      });
+      claimCapability('entry:@neolorn/equator/router', { policy: routePolicy });
+      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
     });
-
-    await localization.changeLocale('en-US');
-    TestBed.tick();
-    stopWatching();
-
-    // One entry, and the whole state of the document at the instant it was written. Asserted as
-    // one object rather than four readings, because the claim is about a sequence and a sequence
-    // is only readable if the things before and the things after are next to each other.
-    expect(atTheAddressWrite).toEqual([
-      {
-        url: '/en-us/second',
-        lang: 'en-US',
-        canonical: 'https://site.example/ar-eg/second',
-        announced: '',
-      },
-    ]);
-
-    // And the rest of the list, once it has run. Without this the two "not yet" readings above
-    // would be satisfied by a head that never projects and an announcement that is never made.
-    await new Promise((resolve) => {
-      setTimeout(resolve, 30);
-    });
-    expect(canonical()).toBe('https://site.example/en-us/second');
-    expect(announced()).toBe('American English');
-    claimCapability('feature:provideLocalizedRouter', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator/router', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
-  });
-});
+  },
+);

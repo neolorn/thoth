@@ -31,6 +31,12 @@ import {
   routePolicy,
   appRouteProjection,
 } from './localization.routes';
+import {
+  addressedLocales,
+  localeOrigin,
+  pageAddress,
+  pageUrl,
+} from './addresses';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
@@ -616,38 +622,41 @@ describe('consumer custody and source neutrality', () => {
 
 describe('dynamic route equivalence and truthful SEO', () => {
   it('resolves localized slugs to one entity and canonicalizes cross-language aliases', () => {
-    expect(
-      buildLocalizedRoute(routePolicy, appRouteProjection, 'article', 'en-US', {
-        slug: FEATURE_ARTICLE_ID,
-      }),
-    ).toBe('/en-us/articles/handbook');
-    expect(
-      buildLocalizedRoute(routePolicy, appRouteProjection, 'article', 'ar-EG', {
-        slug: FEATURE_ARTICLE_ID,
-      }),
-    ).toBe('/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84');
+    for (const locale of addressedLocales('article')) {
+      const address = pageAddress('article', locale);
+      expect(
+        buildLocalizedRoute(
+          routePolicy,
+          appRouteProjection,
+          'article',
+          locale,
+          {
+            slug: FEATURE_ARTICLE_ID,
+          },
+        ),
+      ).toBe(address);
+      expect(
+        resolveLocalizedRoute(address, routePolicy, appRouteProjection),
+      ).toMatchObject({
+        status: 'success',
+        locale,
+        parameters: { slug: FEATURE_ARTICLE_ID },
+      });
+    }
 
-    expect(
-      resolveLocalizedRoute(
-        '/ar-eg/articles/handbook',
-        routePolicy,
-        appRouteProjection,
-      ),
-    ).toMatchObject({
-      status: 'redirect',
-      reason: 'canonical-correction',
-      location: '/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84',
-    });
-    const arabic = resolveLocalizedRoute(
-      '/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84',
-      routePolicy,
-      appRouteProjection,
-    );
-    expect(arabic).toMatchObject({
-      status: 'success',
-      locale: 'ar-EG',
-      parameters: { slug: FEATURE_ARTICLE_ID },
-    });
+    for (const locale of addressedLocales('article under the English slug')) {
+      expect(
+        resolveLocalizedRoute(
+          pageAddress('article under the English slug', locale),
+          routePolicy,
+          appRouteProjection,
+        ),
+      ).toMatchObject({
+        status: 'redirect',
+        reason: 'canonical-correction',
+        location: pageAddress('article', locale),
+      });
+    }
     claimCapability('declaration:route-parameter-codec', {
       policy: routePolicy,
     });
@@ -659,7 +668,7 @@ describe('dynamic route equivalence and truthful SEO', () => {
 
   it('projects locale-specific entity alternates and omits unavailable representations', () => {
     const english = resolveLocalizedRoute(
-      '/en-us/articles/handbook',
+      pageAddress('article', 'en-US'),
       routePolicy,
       appRouteProjection,
     );
@@ -671,20 +680,17 @@ describe('dynamic route equivalence and truthful SEO', () => {
         routePolicy,
         appRouteProjection,
         { ...configuration, locales: shippedLocales },
-        'https://site.example',
+        localeOrigin('en-US'),
       ).alternates,
-    ).toEqual([
-      {
-        locale: 'en-US',
-        hreflang: 'en-US',
-        url: 'https://site.example/en-us/articles/handbook',
-      },
-      {
-        locale: 'ar-EG',
-        hreflang: 'ar-EG',
-        url: 'https://site.example/ar-eg/articles/%D8%AF%D9%84%D9%8A%D9%84',
-      },
-    ]);
+    ).toEqual(
+      addressedLocales('article')
+        .filter((locale) => shippedLocales.includes(locale))
+        .map((locale) => ({
+          locale,
+          hreflang: locale,
+          url: pageUrl('article', locale),
+        })),
+    );
 
     const englishOnlySlugCodec: RouteParameterCodec<string> = Object.freeze({
       parse: articleSlugCodec.parse,
@@ -708,13 +714,13 @@ describe('dynamic route equivalence and truthful SEO', () => {
         routePolicy,
         englishOnly,
         { ...configuration, locales: shippedLocales },
-        'https://site.example',
+        localeOrigin('en-US'),
       ).alternates,
     ).toEqual([
       {
         locale: 'en-US',
         hreflang: 'en-US',
-        url: 'https://site.example/en-us/articles/handbook',
+        url: pageUrl('article', 'en-US'),
       },
     ]);
     claimCapability('declaration:route-parameter-codec', {

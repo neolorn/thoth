@@ -4,6 +4,7 @@ import { Router, type Routes } from '@angular/router';
 import {
   Localization,
   createLocaleNeutralPolicy,
+  createPathPrefixLocalePolicy,
   withRouting,
   type LocaleUrlPolicy,
 } from '@neolorn/equator';
@@ -16,6 +17,13 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
 
 import { routePolicy, appRouteProjection } from './localization.routes';
+import {
+  addressedLocales,
+  localeOrigin,
+  originRequired,
+  pageAddress,
+  switchInDocument,
+} from './addresses';
 import { runtimeExtensions } from './runtime-extensions';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
@@ -70,6 +78,13 @@ const NEUTRAL: LocaleUrlPolicy = createLocaleNeutralPolicy({
   xDefaultPath: '/',
 });
 
+/** The same three locales with a prefix each, so the control below does not depend on the row. */
+const PATH_PREFIX: LocaleUrlPolicy = createPathPrefixLocalePolicy({
+  defaultLocale: 'en-US',
+  locales: { 'en-US': 'en-us', 'ar-EG': 'ar-eg', 'en-Arab-XB': 'en-arab-xb' },
+  xDefaultPath: '/',
+});
+
 const configure = async (
   options: Record<string, unknown>,
   policy: LocaleUrlPolicy = routePolicy,
@@ -121,19 +136,17 @@ describe('the address a locale switch moves to', () => {
   });
 
   it('carries one address per configured locale, agreeing with the head', async () => {
-    const router = await configure({ origin: 'https://site.example' });
+    const router = await configure({ origin: localeOrigin('en-US') });
     await router.navigateByUrl('/second');
 
     const record = addresses();
-    // The addressed locales, which is not every configured locale. Written out rather than derived
-    // from the policy this application declares: a check that reads its subject's own source agrees
-    // with it however wrong both are.
-    expect(Object.keys(record).sort()).toEqual([
-      'ar-EG',
-      'en-Arab-XB',
-      'en-US',
-    ]);
-    expect(record['en-US']).toBe('/en-us/second');
+    // The addressed locales, which is not every configured locale. Read from the address table
+    // rather than derived from the policy this application declares: a check that reads its
+    // subject's own source agrees with it however wrong both are.
+    expect(Object.keys(record).sort()).toEqual(
+      [...addressedLocales('second')].sort(),
+    );
+    expect(record['en-US']).toBe(pageAddress('second', 'en-US'));
 
     // Offered without an address. `localeChoices` lists what this application was built with and
     // this record lists what the policy can spell, and the difference is a real option that a
@@ -143,51 +156,52 @@ describe('the address a locale switch moves to', () => {
     expect(record['en-Latn-XA']).toBeUndefined();
 
     // The tie between the two readers, asserted rather than assumed: the head's absolute URL is
-    // this same path on the configured origin. If the two ever derived separately, this is what
+    // this same address on the configured origin. If the two ever derived separately, this is what
     // would catch it.
-    expect(
-      alternates().map(([hreflang, href]) => [
-        hreflang,
-        new URL(href).pathname,
-      ]),
-    ).toEqual(
+    expect(alternates()).toEqual(
       Object.entries(record).map(([locale, address]) => [
         locale,
-        new URL(address, 'https://site.example').pathname,
+        new URL(address, localeOrigin('en-US')).href,
       ]),
     );
     claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
-  it('is published by an application that configures no origin, which publishes no alternates', async () => {
-    const router = await configure({});
-    await router.navigateByUrl('/second');
+  // A host policy refuses to start without an origin.
+  it.skipIf(originRequired)(
+    'is published by an application that configures no origin, which publishes no alternates',
+    async () => {
+      const router = await configure({});
+      await router.navigateByUrl('/second');
 
-    // No origin means no absolute address, so there is nothing a crawler can be told and Equator
-    // tells it nothing. The reader is not a crawler and still has both addresses.
-    expect(alternates()).toEqual([]);
-    const record = addresses();
-    expect(Object.keys(record).sort()).toEqual([
-      'ar-EG',
-      'en-Arab-XB',
-      'en-US',
-    ]);
-    expect(record['en-US']).toBe('/en-us/second');
-  });
+      // No origin means no absolute address, so there is nothing a crawler can be told and Equator
+      // tells it nothing. The reader is not a crawler and still has both addresses.
+      expect(alternates()).toEqual([]);
+      const record = addresses();
+      expect(Object.keys(record).sort()).toEqual(
+        [...addressedLocales('second')].sort(),
+      );
+      expect(record['en-US']).toBe(pageAddress('second', 'en-US'));
+    },
+  );
 
-  it('follows the locale, because the address it moves to is the one it came from', async () => {
-    const router = await configure({ origin: 'https://site.example' });
-    await router.navigateByUrl('/second');
-    const before = addresses();
+  // Where a switch stays in this document. Under locale-host it loads the other origin instead.
+  it.runIf(switchInDocument)(
+    'follows the locale, because the address it moves to is the one it came from',
+    async () => {
+      const router = await configure({ origin: localeOrigin('en-US') });
+      await router.navigateByUrl('/second');
+      const before = addresses();
 
-    await TestBed.inject(Localization).changeLocale('ar-EG');
-    TestBed.tick();
+      await TestBed.inject(Localization).changeLocale('ar-EG');
+      TestBed.tick();
 
-    // The same set, from the other side. A switcher rendered after the switch has to offer the way
-    // back, and the record is rebuilt for the locale that is now current.
-    expect(addresses()).toEqual(before);
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
-  });
+      // The same set, from the other side. A switcher rendered after the switch has to offer the way
+      // back, and the record is rebuilt for the locale that is now current.
+      expect(addresses()).toEqual(before);
+      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    },
+  );
 });
 
 /**
@@ -242,7 +256,10 @@ describe('a link the switcher can keep', () => {
   it('keeps all three where the prefix carries the locale', async () => {
     // The control, on the same route and the same fixture: one policy changed, and the two
     // absences above become presences. A rule that emptied every switcher would satisfy both.
-    const router = await configure({ origin: 'https://site.example' });
+    const router = await configure(
+      { origin: 'https://site.example' },
+      PATH_PREFIX,
+    );
     await router.navigateByUrl('/articles/handbook');
 
     expect(Object.keys(addresses()).sort()).toEqual([
@@ -255,6 +272,6 @@ describe('a link the switcher can keep', () => {
       'ar-EG',
       'en-Arab-XB',
     ]);
-    claimCapability('policy:path-prefix', { policy: routePolicy });
+    claimCapability('policy:path-prefix', { policy: PATH_PREFIX });
   });
 });

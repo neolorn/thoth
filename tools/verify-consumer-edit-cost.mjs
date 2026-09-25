@@ -150,7 +150,7 @@ const EDITS = [
         },
       );
       const undoPolicy = await edit(
-        resolve(appRoot, 'localization.routes.ts'),
+        resolve(appRoot, 'route-policy.ts'),
         (source) =>
           source.replace(
             "    'ar-EG': 'ar-eg',",

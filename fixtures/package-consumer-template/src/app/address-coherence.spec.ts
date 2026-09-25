@@ -25,6 +25,7 @@ import { routeProjection } from '#i18n/routes';
 import { runtimeExtensions } from './runtime-extensions';
 import { routes } from './app.routes';
 import { routePolicy, appRouteProjection } from './localization.routes';
+import { localeInPath, localeOrigin, pagePath, pageUrl } from './addresses';
 
 /**
  * The address bar spells the current route in the committed locale, at every point a reader can
@@ -73,7 +74,7 @@ async function arriveAt(startUrl: string): Promise<Application> {
   TestBed.configureTestingModule({
     providers: [
       { provide: MOCK_PLATFORM_LOCATION_CONFIG, useValue: { startUrl } },
-      provideLocalizedRouter(routes, { origin: 'https://site.example' }),
+      provideLocalizedRouter(routes, { origin: localeOrigin('ar-EG') }),
       provideLocalizationTesting(
         {
           configuration,
@@ -129,69 +130,80 @@ const showing = (application: Application): string =>
     application.localization.snapshot()?.primaryLocale,
   )}`;
 
-const ARABIC_SECOND = 'https://site.example/ar-eg/second';
+// A function rather than a constant, because a policy with no Arabic address skips this file and
+// reading the table at load would fail it instead.
+const arabicSecond = (): string => pageUrl('second', 'ar-EG');
 
-describe('the address bar through a reader’s own history', () => {
-  it('spells the route and the locale at every step of a switch and a walk back', async () => {
-    const application = await arriveAt(ARABIC_SECOND);
-    const trace: string[] = [showing(application)];
-    const step = async (act: () => unknown): Promise<void> => {
-      await act();
+/** An address bar entry as `showing` reads it. */
+const shown = (page: 'home' | 'second', locale: 'en-US' | 'ar-EG'): string =>
+  `${pagePath(page, locale)} ${page === 'home' ? '/' : '/second'} ${locale}`;
+
+// Only where the path carries the locale. Elsewhere the address bar has no language to spell, or
+// a switch leaves the document and takes its history with it.
+describe.runIf(localeInPath)(
+  'the address bar through a reader’s own history',
+  () => {
+    it('spells the route and the locale at every step of a switch and a walk back', async () => {
+      const application = await arriveAt(arabicSecond());
+      const trace: string[] = [showing(application)];
+      const step = async (act: () => unknown): Promise<void> => {
+        await act();
+        TestBed.tick();
+        await settle();
+        trace.push(showing(application));
+      };
+
+      await step(() => application.router.navigateByUrl('/'));
+      await step(() => application.router.navigateByUrl('/second'));
+      await step(() => application.localization.changeLocale('en-US'));
+      await step(() => application.location.back());
+      await step(() => application.location.back());
+      await step(() => application.location.forward());
+
+      // Asserted as one list rather than six times, because what is being pinned is the sequence.
+      // Every entry the walk returns to was written in Arabic and comes back re-spelled, which is
+      // the ordinary Back path doing its job: `setBrowserUrl` runs with `replaceUrl` on a popstate.
+      expect(trace).toEqual([
+        shown('second', 'ar-EG'),
+        shown('home', 'ar-EG'),
+        shown('second', 'ar-EG'),
+        shown('second', 'en-US'),
+        shown('home', 'en-US'),
+        shown('second', 'en-US'),
+        shown('home', 'en-US'),
+      ]);
+      // Nothing was skipped, which is why this sequence was always right. The Router cannot produce
+      // the skip on its own: a locale switch replaces its history entry rather than pushing one, so
+      // no two adjacent entries ever carry the same canonical route.
+      expect(application.skipped).toEqual([]);
+    });
+
+    it('re-spells an entry the application pushed itself, which the Router skips', async () => {
+      const application = await arriveAt(arabicSecond());
+
+      // The second entry on one canonical route: the shape the Router will not make and an
+      // application makes whenever it keeps a modal, a step or a filter in history.
+      application.location.go('/second');
+      await settle();
+      expect(showing(application)).toBe(shown('second', 'ar-EG'));
+
+      await application.localization.changeLocale('en-US');
       TestBed.tick();
       await settle();
-      trace.push(showing(application));
-    };
+      expect(showing(application)).toBe(shown('second', 'en-US'));
 
-    await step(() => application.router.navigateByUrl('/'));
-    await step(() => application.router.navigateByUrl('/second'));
-    await step(() => application.localization.changeLocale('en-US'));
-    await step(() => application.location.back());
-    await step(() => application.location.back());
-    await step(() => application.location.forward());
+      application.location.back();
+      await settle();
+      TestBed.tick();
+      await settle();
 
-    // Asserted as one list rather than six times, because what is being pinned is the sequence.
-    // Every entry the walk returns to was written in Arabic and comes back re-spelled, which is
-    // the ordinary Back path doing its job: `setBrowserUrl` runs with `replaceUrl` on a popstate.
-    expect(trace).toEqual([
-      '/ar-eg/second /second ar-EG',
-      '/ar-eg / ar-EG',
-      '/ar-eg/second /second ar-EG',
-      '/en-us/second /second en-US',
-      '/en-us / en-US',
-      '/en-us/second /second en-US',
-      '/en-us / en-US',
-    ]);
-    // Nothing was skipped, which is why this sequence was always right. The Router cannot produce
-    // the skip on its own: a locale switch replaces its history entry rather than pushing one, so
-    // no two adjacent entries ever carry the same canonical route.
-    expect(application.skipped).toEqual([]);
-  });
-
-  it('re-spells an entry the application pushed itself, which the Router skips', async () => {
-    const application = await arriveAt(ARABIC_SECOND);
-
-    // The second entry on one canonical route: the shape the Router will not make and an
-    // application makes whenever it keeps a modal, a step or a filter in history.
-    application.location.go('/second');
-    await settle();
-    expect(showing(application)).toBe('/ar-eg/second /second ar-EG');
-
-    await application.localization.changeLocale('en-US');
-    TestBed.tick();
-    await settle();
-    expect(showing(application)).toBe('/en-us/second /second en-US');
-
-    application.location.back();
-    await settle();
-    TestBed.tick();
-    await settle();
-
-    // The Router skipped this navigation, so nothing in Angular wrote the address: the entry that
-    // came back says `/ar-eg/second` and the page is English. Without the check on the skip, this
-    // is what the reader is left looking at.
-    expect(application.skipped).toEqual([
-      String(0), // NavigationSkippedCode.IgnoredSameUrlNavigation
-    ]);
-    expect(showing(application)).toBe('/en-us/second /second en-US');
-  });
-});
+      // The Router skipped this navigation, so nothing in Angular wrote the address: the entry that
+      // came back says `/ar-eg/second` and the page is English. Without the check on the skip, this
+      // is what the reader is left looking at.
+      expect(application.skipped).toEqual([
+        String(0), // NavigationSkippedCode.IgnoredSameUrlNavigation
+      ]);
+      expect(showing(application)).toBe(shown('second', 'en-US'));
+    });
+  },
+);

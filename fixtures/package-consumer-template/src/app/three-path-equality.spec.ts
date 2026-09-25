@@ -31,6 +31,14 @@ import { routeProjection } from '#i18n/routes';
 
 import { runtimeExtensions } from './runtime-extensions';
 import { routePolicy, appRouteProjection } from './localization.routes';
+import {
+  addressedLocales,
+  localeInPath,
+  localeOrigin,
+  pagePath,
+  pageUrl,
+  type Page,
+} from './addresses';
 
 /**
  * One route, three ways in, and the requirement that they cannot be told apart.
@@ -199,10 +207,10 @@ type Door = 'canonical' | 'browser-supplied' | 'programmatic-localized';
  * disagree: measured, `history` alone left the Router at `/` with the locale correct, and the mock
  * alone left the Router right with the locale en-US.
  */
-const START: Readonly<Record<Door, string>> = {
-  canonical: '/ar-eg',
-  'browser-supplied': '/ar-eg/second',
-  'programmatic-localized': '/ar-eg',
+const START: Readonly<Record<Door, Page>> = {
+  canonical: 'home',
+  'browser-supplied': 'second',
+  'programmatic-localized': 'home',
 };
 
 afterEach(() => {
@@ -277,7 +285,7 @@ async function arriveAtSecond(
   allowActivation = allow;
   document.title = '';
 
-  history.replaceState(null, '', START[door]);
+  history.replaceState(null, '', pagePath(START[door], 'ar-EG'));
 
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -285,7 +293,7 @@ async function arriveAtSecond(
       // The other half of the address. See START above.
       {
         provide: MOCK_PLATFORM_LOCATION_CONFIG,
-        useValue: { startUrl: `https://site.example${START[door]}` },
+        useValue: { startUrl: pageUrl(START[door], 'ar-EG') },
       },
       // The application-wide instance the route's own `providers` must shadow.
       {
@@ -294,7 +302,7 @@ async function arriveAtSecond(
       },
       // Before `provideLocalizedRouter`, which is what makes it the other ordering.
       ...(ordering === 'branches-first' ? [branchesFirst()] : []),
-      provideLocalizedRouter(routes, { origin: 'https://site.example' }),
+      provideLocalizedRouter(routes, { origin: localeOrigin('ar-EG') }),
       provideLocalizationTesting(
         {
           configuration,
@@ -317,7 +325,7 @@ async function arriveAtSecond(
   let activated = await settleInitialNavigation(router);
   if (door === 'canonical') activated = await router.navigateByUrl('/second');
   if (door === 'programmatic-localized')
-    activated = await router.navigateByUrl('/ar-eg/second');
+    activated = await router.navigateByUrl(pagePath('second', 'ar-EG'));
   TestBed.tick();
 
   configHead = router.config[0]?.path;
@@ -338,102 +346,110 @@ async function arriveAtSecond(
   });
 }
 
-describe('one route reached through each of the three doors', () => {
-  it('cannot be told apart by which door was used', async () => {
-    const canonical = await arriveAtSecond('canonical');
-    const browserSupplied = await arriveAtSecond('browser-supplied');
-    const programmatic = await arriveAtSecond('programmatic-localized');
+// The third door is an address whose path names its locale, and the other two start from one.
+describe.runIf(localeInPath)(
+  'one route reached through each of the three doors',
+  () => {
+    it('cannot be told apart by which door was used', async () => {
+      const canonical = await arriveAtSecond('canonical');
+      const browserSupplied = await arriveAtSecond('browser-supplied');
+      const programmatic = await arriveAtSecond('programmatic-localized');
 
-    // Read once, against one of the three, so that the equalities below cannot be satisfied by
-    // three identically empty arrivals. Every one of these was absent on door 3 before shape 3.
-    expect(canonical).toMatchObject({
-      // Canonical inside, localized outside: 4.2's invariant, now true whatever the door.
-      routerUrl: '/second',
-      externalUrl: '/ar-eg/second',
-      locale: 'ar-EG',
-      // The route's own declarations, all five of them.
-      title: DECLARED_TITLE,
-      activated: true,
-      section: 'features',
-      payload: 'payload:route',
-      componentScope: 'route',
-      resolverScope: 'route',
-      oneScopeInstance: true,
-    });
-
-    // The claim. No constants, so it holds nothing in place except the sameness itself.
-    expect(browserSupplied).toEqual(canonical);
-    expect(programmatic).toEqual(canonical);
-  });
-
-  /**
-   * The ordering claim, asserted rather than asserted-to-be-asserted.
-   *
-   * `provide.ts` and `route-table.ts` both say ordering is a result rather than a constraint, and
-   * a comment claiming the consumer suite proves it is worth nothing without the case: three
-   * comments can point at a proof that exists in neither suite. It is written here because the
-   * claim needs a Router
-   * to mean anything: the table alone can only say the two halves are separable, which it does.
-   */
-  it('is unchanged by putting the locale branches first', async () => {
-    const canonicalFirst = await arriveAtSecond('canonical');
-    const canonicalHead = configHead;
-    const branchesAhead = await arriveAtSecond(
-      'canonical',
-      true,
-      'branches-first',
-    );
-
-    // The flip took effect. Equator's own composition puts the pathless canonical parent first, so
-    // its head is `''`; with the branches ahead the head is a locale prefix. Asserted before the
-    // equality, because an equality between two identical configurations is not the claim.
-    expect(canonicalHead).toBe('');
-    expect(configHead).toBe('en-us');
-
-    expect(branchesAhead).toEqual(canonicalFirst);
-
-    // The door the ordering could plausibly matter for, since it is the one whose address names a
-    // locale. It reaches the matcher canonical either way, so the branch it would have matched is
-    // never consulted, and would decline if it were.
-    const programmaticAhead = await arriveAtSecond(
-      'programmatic-localized',
-      true,
-      'branches-first',
-    );
-    expect(programmaticAhead).toEqual(canonicalFirst);
-  });
-
-  it('refuses all three the same way when the route says no', async () => {
-    // The half that matters most, and the half a "the page rendered" test cannot see. A guard is
-    // only a boundary if it is on every way in.
-    const refusal = (arrival: Arrival) =>
-      Object.freeze({
-        activated: arrival.activated,
-        routerUrl: arrival.routerUrl,
-        constructed: arrival.componentScope !== undefined,
-        resolverRan: arrival.resolverScope !== undefined,
+      // Read once, against one of the three, so that the equalities below cannot be satisfied by
+      // three identically empty arrivals. Every one of these was absent on door 3 before shape 3.
+      expect(canonical).toMatchObject({
+        // Canonical inside, localized outside: 4.2's invariant, now true whatever the door.
+        routerUrl: '/second',
+        externalUrl: pagePath('second', 'ar-EG'),
+        locale: 'ar-EG',
+        // The route's own declarations, all five of them.
+        title: DECLARED_TITLE,
+        activated: true,
+        section: 'features',
+        payload: 'payload:route',
+        componentScope: 'route',
+        resolverScope: 'route',
+        oneScopeInstance: true,
       });
 
-    const canonical = refusal(await arriveAtSecond('canonical', false));
-    const browserSupplied = refusal(
-      await arriveAtSecond('browser-supplied', false),
-    );
-    const programmatic = refusal(
-      await arriveAtSecond('programmatic-localized', false),
-    );
-
-    // Not merely "did not activate": nothing was constructed and no resolver ran, which is what
-    // distinguishes a refused navigation from one that rendered and then hid itself. `title` is
-    // deliberately not compared: a refused navigation leaves the previous page's title, and the
-    // three doors have different previous pages, which is a fact about the fixture rather than
-    // about the refusal.
-    expect(canonical).toEqual({
-      activated: false,
-      routerUrl: '/',
-      constructed: false,
-      resolverRan: false,
+      // The claim. No constants, so it holds nothing in place except the sameness itself.
+      expect(browserSupplied).toEqual(canonical);
+      expect(programmatic).toEqual(canonical);
     });
-    expect(browserSupplied).toEqual(canonical);
-    expect(programmatic).toEqual(canonical);
-  });
-});
+
+    /**
+     * The ordering claim, asserted rather than asserted-to-be-asserted.
+     *
+     * `provide.ts` and `route-table.ts` both say ordering is a result rather than a constraint, and
+     * a comment claiming the consumer suite proves it is worth nothing without the case: three
+     * comments can point at a proof that exists in neither suite. It is written here because the
+     * claim needs a Router
+     * to mean anything: the table alone can only say the two halves are separable, which it does.
+     */
+    it('is unchanged by putting the locale branches first', async () => {
+      const canonicalFirst = await arriveAtSecond('canonical');
+      const canonicalHead = configHead;
+      const branchesAhead = await arriveAtSecond(
+        'canonical',
+        true,
+        'branches-first',
+      );
+
+      // The flip took effect. Equator's own composition puts the pathless canonical parent first, so
+      // its head is `''`; with the branches ahead the head is a locale prefix. Asserted before the
+      // equality, because an equality between two identical configurations is not the claim.
+      expect(canonicalHead).toBe('');
+      expect(configHead).toBe(
+        addressedLocales('home')
+          .map((locale) => pagePath('home', locale).split('/')[1])
+          .find((segment) => segment !== ''),
+      );
+
+      expect(branchesAhead).toEqual(canonicalFirst);
+
+      // The door the ordering could plausibly matter for, since it is the one whose address names a
+      // locale. It reaches the matcher canonical either way, so the branch it would have matched is
+      // never consulted, and would decline if it were.
+      const programmaticAhead = await arriveAtSecond(
+        'programmatic-localized',
+        true,
+        'branches-first',
+      );
+      expect(programmaticAhead).toEqual(canonicalFirst);
+    });
+
+    it('refuses all three the same way when the route says no', async () => {
+      // The half that matters most, and the half a "the page rendered" test cannot see. A guard is
+      // only a boundary if it is on every way in.
+      const refusal = (arrival: Arrival) =>
+        Object.freeze({
+          activated: arrival.activated,
+          routerUrl: arrival.routerUrl,
+          constructed: arrival.componentScope !== undefined,
+          resolverRan: arrival.resolverScope !== undefined,
+        });
+
+      const canonical = refusal(await arriveAtSecond('canonical', false));
+      const browserSupplied = refusal(
+        await arriveAtSecond('browser-supplied', false),
+      );
+      const programmatic = refusal(
+        await arriveAtSecond('programmatic-localized', false),
+      );
+
+      // Not merely "did not activate": nothing was constructed and no resolver ran, which is what
+      // distinguishes a refused navigation from one that rendered and then hid itself. `title` is
+      // deliberately not compared: a refused navigation leaves the previous page's title, and the
+      // three doors have different previous pages, which is a fact about the fixture rather than
+      // about the refusal.
+      expect(canonical).toEqual({
+        activated: false,
+        routerUrl: '/',
+        constructed: false,
+        resolverRan: false,
+      });
+      expect(browserSupplied).toEqual(canonical);
+      expect(programmatic).toEqual(canonical);
+    });
+  },
+);

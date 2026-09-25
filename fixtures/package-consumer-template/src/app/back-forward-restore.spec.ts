@@ -19,6 +19,7 @@ import { routeProjection } from '#i18n/routes';
 
 import { runtimeExtensions } from './runtime-extensions';
 import { routePolicy, appRouteProjection } from './localization.routes';
+import { localeInPath, pagePath } from './addresses';
 
 /**
  * A page the browser restores from its back-forward cache, after the visitor chose another language.
@@ -106,21 +107,28 @@ describe('a page restored from the back-forward cache', () => {
     expect(seat.written).toEqual([]);
   });
 
-  it('stays in the language its address states', async () => {
-    history.replaceState(null, '', '/en-us');
-    const seat = setup(routePolicy);
-    expect((await seat.localization.initialize()).primaryLocale).toBe('en-US');
+  // Where the path states the language. A document's origin cannot be moved from here, so a
+  // policy that states it in the origin has nothing this can arrive at.
+  it.runIf(localeInPath)(
+    'stays in the language its address states',
+    async () => {
+      history.replaceState(null, '', pagePath('home', 'en-US'));
+      const seat = setup(routePolicy);
+      expect((await seat.localization.initialize()).primaryLocale).toBe(
+        'en-US',
+      );
 
-    await seat.shared.write('ar-EG');
-    const before = seat.reads();
-    restore(true);
-    await new Promise((done) => setTimeout(done, 0));
+      await seat.shared.write('ar-EG');
+      const before = seat.reads();
+      restore(true);
+      await new Promise((done) => setTimeout(done, 0));
 
-    // The store was consulted, which is what makes staying put an answer rather than a miss.
-    expect(seat.reads()).toBeGreaterThan(before);
-    expect(seat.localization.targetLocale()).toBeUndefined();
-    expect(seat.localization.snapshot()?.primaryLocale).toBe('en-US');
-  });
+      // The store was consulted, which is what makes staying put an answer rather than a miss.
+      expect(seat.reads()).toBeGreaterThan(before);
+      expect(seat.localization.targetLocale()).toBeUndefined();
+      expect(seat.localization.snapshot()?.primaryLocale).toBe('en-US');
+    },
+  );
 
   it('does nothing on a first showing', async () => {
     const seat = setup(NEUTRAL);

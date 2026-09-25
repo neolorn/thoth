@@ -16,6 +16,7 @@ import {
   Localization,
   createHostLocalePolicy,
   createLocaleNeutralPolicy,
+  createPathPrefixLocalePolicy,
   withRouting,
   type LocaleUrlPolicy,
 } from '@neolorn/equator';
@@ -46,6 +47,7 @@ const withRouterResources = (
 )['ɵwithRouterResources'] as (() => RouterFeatures) | undefined;
 import { routes } from './app.routes';
 import { routePolicy, appRouteProjection } from './localization.routes';
+import { localeOrigin } from './addresses';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
@@ -126,7 +128,13 @@ async function bootstrap(
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
-      provideLocalizedRouter(routes, routing.options ?? {}, ...features),
+      // The origin is named because a host policy refuses to start without one, and the diagnostics
+      // under test are the same under every policy.
+      provideLocalizedRouter(
+        routes,
+        routing.options ?? { origin: localeOrigin('en-US') },
+        ...features,
+      ),
       ...(titleStrategy === 'installed'
         ? [{ provide: TitleStrategy, useClass: LocalizedTitleStrategy }]
         : []),
@@ -373,6 +381,13 @@ const HOST = createHostLocalePolicy({
   xDefaultUrl: 'https://site.example',
 });
 
+const PATH_PREFIX = createPathPrefixLocalePolicy({
+  defaultLocale: 'en-US',
+  locales: { 'en-US': 'en-us', 'ar-EG': 'ar-eg', 'en-Arab-XB': 'en-arab-xb' },
+  localeNeutralRoots: ['assets'],
+  xDefaultPath: '/',
+});
+
 /** Which of the host policy's origins this build answers at, which a host policy must be told. */
 const AT_EN = { origin: 'https://site.example' } as const;
 
@@ -454,7 +469,7 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
 
   it('refuses a host policy configured with no origin at all', async () => {
     await expect(
-      bootstrap([], [], 'installed', { policy: HOST }),
+      bootstrap([], [], 'installed', { policy: HOST, options: {} }),
     ).rejects.toThrow(/needs to be told which origin this build answers at/u);
     claimCapability('policy:locale-host', { policy: HOST });
   });
@@ -477,6 +492,7 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
   /** The check is the host policy's, and no other kind acquires it. */
   it('leaves a path-prefix policy alone whatever origin it was given', async () => {
     await bootstrap([], [], 'installed', {
+      policy: PATH_PREFIX,
       options: { origin: 'https://nothing-in-any-policy.example' },
     });
     expect(TestBed.inject(LocationStrategy).constructor.name).toBe(

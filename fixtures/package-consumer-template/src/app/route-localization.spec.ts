@@ -22,6 +22,12 @@ import {
 } from '#i18n/lazy';
 
 import { routePolicy, appRouteProjection } from './localization.routes';
+import {
+  localeInPath,
+  localeOrigin,
+  pagePath,
+  switchInDocument,
+} from './addresses';
 import { runtimeExtensions } from './runtime-extensions';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
@@ -35,7 +41,7 @@ class RouteProbe {}
 /**
  * The application's own routes, canonical, and every address this file navigates to.
  *
- * Every address this file reaches is declared, `/en-us/lazy` included. Equator appends no
+ * Every address this file reaches is declared, the lazy page included. Equator appends no
  * catch-all, so an application without a not-found page does not silently acquire one, and an
  * address this list omits renders nothing rather than falling into an appended `**` with the
  * resolver on it and leaving the assertions below about the adapter alone. The `**` here is this
@@ -56,7 +62,7 @@ const routes: Routes = [
  * while it was declared, this file passed whether or not the derivation worked at all.
  */
 const ROUTING_OPTIONS = {
-  origin: 'https://site.example',
+  origin: localeOrigin('en-US'),
   document: ({ resolution }: RouteLocalizationContext) => ({
     title:
       resolution.locale === 'ar-EG'
@@ -104,107 +110,119 @@ describe('Equator Router transaction integration', () => {
    * default locale rather than the outgoing snapshot passes the old test and fails this one, which
    * is why the assertion is `ar-EG` and not the policy's default.
    */
-  it('restores locale, route state, URL, and document state after a post-navigation effect failure', async () => {
-    let failDocument = false;
-    await TestBed.configureTestingModule({
-      providers: [
-        provideLocalizedRouter(routes, {
-          origin: 'https://site.example',
-          document: ({ resolution }) => {
-            // Keyed on the route rather than the locale, because the locale no longer changes
-            // across the navigation under test and keying on it would never fire.
-            if (failDocument && resolution.routeId === 'route:second') {
-              throw new Error('intentional document failure');
-            }
-            return {
-              title:
-                resolution.locale === 'ar-EG'
-                  ? 'مختبر ميزات Equator'
-                  : 'Equator feature lab',
-            };
-          },
-        }),
-        provideLocalizationTesting(
-          {
-            configuration,
-            catalogSet,
-            catalogLoaders,
-            recoveryPayload,
-            extensions: runtimeExtensions,
-            routeProjection,
-          },
-          withRouting({
-            policy: routePolicy,
-            projection: appRouteProjection,
+  // Where a switch moves the address bar in this document, which needs the path to carry the locale.
+  it.runIf(localeInPath)(
+    'restores locale, route state, URL, and document state after a post-navigation effect failure',
+    async () => {
+      let failDocument = false;
+      await TestBed.configureTestingModule({
+        providers: [
+          provideLocalizedRouter(routes, {
+            origin: localeOrigin('en-US'),
+            document: ({ resolution }) => {
+              // Keyed on the route rather than the locale, because the locale no longer changes
+              // across the navigation under test and keying on it would never fire.
+              if (failDocument && resolution.routeId === 'route:second') {
+                throw new Error('intentional document failure');
+              }
+              return {
+                title:
+                  resolution.locale === 'ar-EG'
+                    ? 'مختبر ميزات Equator'
+                    : 'Equator feature lab',
+              };
+            },
           }),
-        ),
-      ],
-    }).compileComponents();
+          provideLocalizationTesting(
+            {
+              configuration,
+              catalogSet,
+              catalogLoaders,
+              recoveryPayload,
+              extensions: runtimeExtensions,
+              routeProjection,
+            },
+            withRouting({
+              policy: routePolicy,
+              projection: appRouteProjection,
+            }),
+          ),
+        ],
+      }).compileComponents();
 
-    const localization = TestBed.inject(Localization);
-    const router = TestBed.inject(Router);
-    const routeLocalization = TestBed.inject(RouteLocalization);
-    await localization.initialize();
-    await router.navigateByUrl('/');
-    await expect(routeLocalization.settled()).resolves.toMatchObject({
-      status: 'committed',
-    });
-    expect(localization.snapshot()).toMatchObject({
-      primaryLocale: 'en-US',
-      route: { routeId: 'route:_index', canonicalPath: '/en-us' },
-    });
-    expect(document.title).toBe('Equator feature lab');
+      const localization = TestBed.inject(Localization);
+      const router = TestBed.inject(Router);
+      const routeLocalization = TestBed.inject(RouteLocalization);
+      await localization.initialize();
+      await router.navigateByUrl('/');
+      await expect(routeLocalization.settled()).resolves.toMatchObject({
+        status: 'committed',
+      });
+      expect(localization.snapshot()).toMatchObject({
+        primaryLocale: 'en-US',
+        route: {
+          routeId: 'route:_index',
+          canonicalPath: pagePath('home', 'en-US'),
+        },
+      });
+      expect(document.title).toBe('Equator feature lab');
 
-    // The switch, which is the operation that changes locale. The address bar follows it, so the
-    // state this navigation has to be restored to is an Arabic one throughout.
-    //
-    // The two addresses are read separately, and under shape 3 they differ. `router.url` is the
-    // Router's own tree, and it is canonical now in every case: `extract` delocalizes on the way
-    // in, so nothing prefixed ever reaches the matcher and nothing prefixed is ever what the
-    // Router holds. What the visitor sees is that tree put back through `prepareExternalUrl`,
-    // which is the call `Location.replaceState` funnels through and the one `LocalizedAddressSync`
-    // makes on a switch. That a single `expect(router.url).toBe('/en-us')` cannot state this is
-    // the invariant rather than a casualty of it.
-    await localization.changeLocale('ar-EG');
-    // The head is re-projected by an effect, which a running application flushes on its own and a
-    // zoneless test has to ask for. `lang` and `dir` do not need this, they are written by a
-    // commit hook inside the transaction, but the title, description and alternates do.
-    TestBed.tick();
-    const externalUrl = () =>
-      TestBed.inject(LocationStrategy).prepareExternalUrl(router.url);
-    expect(router.url).toBe('/');
-    expect(externalUrl()).toBe('/ar-eg');
-    expect(document.title).toBe('مختبر ميزات Equator');
+      // The switch, which is the operation that changes locale. The address bar follows it, so the
+      // state this navigation has to be restored to is an Arabic one throughout.
+      //
+      // The two addresses are read separately, and under shape 3 they differ. `router.url` is the
+      // Router's own tree, and it is canonical now in every case: `extract` delocalizes on the way
+      // in, so nothing prefixed ever reaches the matcher and nothing prefixed is ever what the
+      // Router holds. What the visitor sees is that tree put back through `prepareExternalUrl`,
+      // which is the call `Location.replaceState` funnels through and the one `LocalizedAddressSync`
+      // makes on a switch. That a single `expect(router.url).toBe('/en-us')` cannot state this is
+      // the invariant rather than a casualty of it.
+      await localization.changeLocale('ar-EG');
+      // The head is re-projected by an effect, which a running application flushes on its own and a
+      // zoneless test has to ask for. `lang` and `dir` do not need this, they are written by a
+      // commit hook inside the transaction, but the title, description and alternates do.
+      TestBed.tick();
+      const externalUrl = () =>
+        TestBed.inject(LocationStrategy).prepareExternalUrl(router.url);
+      expect(router.url).toBe('/');
+      expect(externalUrl()).toBe(pagePath('home', 'ar-EG'));
+      expect(document.title).toBe('مختبر ميزات Equator');
 
-    failDocument = true;
-    await router.navigateByUrl('/second');
-    await expect(routeLocalization.settled()).resolves.toMatchObject({
-      status: 'failed',
-      diagnostic: { code: 'effect-failed' },
-    });
-    // Back at the index, in both forms. Without the restore this is `/second`.
-    expect(router.url).toBe('/');
-    expect(externalUrl()).toBe('/ar-eg');
-    // `canonicalPath` is the whole point of the line. `changeLocale` carries the active route
-    // record forward when the caller names none, so a switch that does not restate it leaves the
-    // record saying `/en-us` while `primaryLocale` says `ar-EG`. The adapter derives the
-    // replacement where the spellings live and restates it through the same publisher, so a
-    // snapshot never carries a record from a locale it is not in.
-    expect(localization.snapshot()).toMatchObject({
-      primaryLocale: 'ar-EG',
-      route: { routeId: 'route:_index', canonicalPath: '/ar-eg' },
-    });
-    expect(routeLocalization.context()?.resolution).toMatchObject({
-      locale: 'ar-EG',
-      routeId: 'route:_index',
-    });
-    expect(document.documentElement.lang).toBe('ar-EG');
-    expect(document.documentElement.dir).toBe('rtl');
-    expect(document.title).toBe('مختبر ميزات Equator');
-    claimCapability('feature:provideLocalizedRouter', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator/router', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
-  });
+      failDocument = true;
+      await router.navigateByUrl('/second');
+      await expect(routeLocalization.settled()).resolves.toMatchObject({
+        status: 'failed',
+        diagnostic: { code: 'effect-failed' },
+      });
+      // Back at the index, in both forms. Without the restore this is `/second`.
+      expect(router.url).toBe('/');
+      expect(externalUrl()).toBe(pagePath('home', 'ar-EG'));
+      // `canonicalPath` is the whole point of the line. `changeLocale` carries the active route
+      // record forward when the caller names none, so a switch that does not restate it leaves the
+      // record saying the English address while `primaryLocale` says `ar-EG`. The adapter derives the
+      // replacement where the spellings live and restates it through the same publisher, so a
+      // snapshot never carries a record from a locale it is not in.
+      expect(localization.snapshot()).toMatchObject({
+        primaryLocale: 'ar-EG',
+        route: {
+          routeId: 'route:_index',
+          canonicalPath: pagePath('home', 'ar-EG'),
+        },
+      });
+      expect(routeLocalization.context()?.resolution).toMatchObject({
+        locale: 'ar-EG',
+        routeId: 'route:_index',
+      });
+      expect(document.documentElement.lang).toBe('ar-EG');
+      expect(document.documentElement.dir).toBe('rtl');
+      expect(document.title).toBe('مختبر ميزات Equator');
+      claimCapability('feature:provideLocalizedRouter', {
+        policy: routePolicy,
+      });
+      claimCapability('entry:@neolorn/equator/router', { policy: routePolicy });
+      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    },
+  );
 
   /**
    * Scope loading on activation, asserted against the thing that performs it.
@@ -224,7 +242,7 @@ describe('Equator Router transaction integration', () => {
     const lazyScope = { providerId: lazyProviderId, scopeId: lazyScopeId };
     expect(localization.scopeReadiness(lazyScope)().status).not.toBe('ready');
 
-    await router.navigateByUrl('/en-us/lazy');
+    await router.navigateByUrl(pagePath('lazy', 'en-US'));
 
     expect(localization.scopeReadiness(lazyScope)().status).toBe('ready');
     claimCapability('entry:@neolorn/equator', { policy: routePolicy });
@@ -235,22 +253,26 @@ describe('Equator Router transaction integration', () => {
    * locale resolved and only the page is unknown, so the navigation completes and the application
    * answers. Throwing here abandoned it, and no application's not-found page ever rendered.
    */
-  it('completes a navigation to an address it cannot name', async () => {
-    await configureRouterIntegration();
-    const localization = TestBed.inject(Localization);
-    const router = TestBed.inject(Router);
-    await localization.initialize();
-    await router.navigateByUrl('/en-us');
+  // Only a path can name the locale of an address with no page behind it.
+  it.runIf(localeInPath)(
+    'completes a navigation to an address it cannot name',
+    async () => {
+      await configureRouterIntegration();
+      const localization = TestBed.inject(Localization);
+      const router = TestBed.inject(Router);
+      await localization.initialize();
+      await router.navigateByUrl(pagePath('home', 'en-US'));
 
-    await expect(
-      router.navigateByUrl('/ar-eg/nothing-is-mounted-here'),
-    ).resolves.not.toThrow();
-    // The locale committed, which is the whole of the decision: the address is unknown, the
-    // language is not. What the adapter keeps in `context()` afterwards is a separate question and
-    // is deliberately not asserted here.
-    expect(localization.snapshot()).toMatchObject({ primaryLocale: 'ar-EG' });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
-  });
+      await expect(
+        router.navigateByUrl(pagePath('missing', 'ar-EG')),
+      ).resolves.not.toThrow();
+      // The locale committed, which is the whole of the decision: the address is unknown, the
+      // language is not. What the adapter keeps in `context()` afterwards is a separate question and
+      // is deliberately not asserted here.
+      expect(localization.snapshot()).toMatchObject({ primaryLocale: 'ar-EG' });
+      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    },
+  );
 
   /**
    * The regression that removing `RouteLocalization.navigate()` would otherwise have introduced.
@@ -264,25 +286,29 @@ describe('Equator Router transaction integration', () => {
    * `lang` and `dir` are asserted alongside it because they follow a different mechanism, a
    * commit hook inside the locale transaction, and this is what says the two agree.
    */
-  it('re-projects the document when the locale changes without a navigation', async () => {
-    await configureRouterIntegration();
-    const localization = TestBed.inject(Localization);
-    const router = TestBed.inject(Router);
-    await localization.initialize();
-    await router.navigateByUrl('/en-us');
-    expect(document.title).toBe('Equator feature lab');
+  // Where a switch stays in this document. Under locale-host it loads the other origin instead.
+  it.runIf(switchInDocument)(
+    're-projects the document when the locale changes without a navigation',
+    async () => {
+      await configureRouterIntegration();
+      const localization = TestBed.inject(Localization);
+      const router = TestBed.inject(Router);
+      await localization.initialize();
+      await router.navigateByUrl(pagePath('home', 'en-US'));
+      expect(document.title).toBe('Equator feature lab');
 
-    await localization.changeLocale('ar-EG');
-    // The re-projection runs in an effect, as the address sync's does, so it lands on the next
-    // change detection rather than inside `changeLocale`. A zoneless application schedules that
-    // itself; a zoneless TestBed has to be told.
-    TestBed.tick();
+      await localization.changeLocale('ar-EG');
+      // The re-projection runs in an effect, as the address sync's does, so it lands on the next
+      // change detection rather than inside `changeLocale`. A zoneless application schedules that
+      // itself; a zoneless TestBed has to be told.
+      TestBed.tick();
 
-    expect(document.title).toBe('مختبر ميزات Equator');
-    expect(document.documentElement.lang).toBe('ar-EG');
-    expect(document.documentElement.dir).toBe('rtl');
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
-  });
+      expect(document.title).toBe('مختبر ميزات Equator');
+      expect(document.documentElement.lang).toBe('ar-EG');
+      expect(document.documentElement.dir).toBe('rtl');
+      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    },
+  );
 
   /**
    * The same hazard as the title, in the other direction, and it was live.
@@ -296,33 +322,36 @@ describe('Equator Router transaction integration', () => {
    * Asserted on `scrollTo`, which is the last thing the restore does, because a restore that never
    * runs and a restore that runs onto an unmoved page look identical from the DOM afterwards.
    */
-  it('puts the reader back on a locale change no navigation follows', async () => {
-    const scrollTo = vi
-      .spyOn(window, 'scrollTo')
-      .mockImplementation(() => undefined);
-    try {
-      await configureRouterIntegration();
-      const localization = TestBed.inject(Localization);
-      const router = TestBed.inject(Router);
-      await localization.initialize();
-      await router.navigateByUrl('/en-us');
-      scrollTo.mockClear();
+  it.runIf(switchInDocument)(
+    'puts the reader back on a locale change no navigation follows',
+    async () => {
+      const scrollTo = vi
+        .spyOn(window, 'scrollTo')
+        .mockImplementation(() => undefined);
+      try {
+        await configureRouterIntegration();
+        const localization = TestBed.inject(Localization);
+        const router = TestBed.inject(Router);
+        await localization.initialize();
+        await router.navigateByUrl(pagePath('home', 'en-US'));
+        scrollTo.mockClear();
 
-      await localization.changeLocale('ar-EG');
-      TestBed.tick();
-      // The restore is scheduled through `requestAnimationFrame` behind a microtask, so it has not
-      // run at the end of the flush that released it.
-      await new Promise<void>((resolve) =>
-        window.requestAnimationFrame(() => resolve()),
-      );
-      await new Promise<void>((resolve) =>
-        window.requestAnimationFrame(() => resolve()),
-      );
+        await localization.changeLocale('ar-EG');
+        TestBed.tick();
+        // The restore is scheduled through `requestAnimationFrame` behind a microtask, so it has not
+        // run at the end of the flush that released it.
+        await new Promise<void>((resolve) =>
+          window.requestAnimationFrame(() => resolve()),
+        );
+        await new Promise<void>((resolve) =>
+          window.requestAnimationFrame(() => resolve()),
+        );
 
-      expect(scrollTo).toHaveBeenCalled();
-      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
-    } finally {
-      scrollTo.mockRestore();
-    }
-  });
+        expect(scrollTo).toHaveBeenCalled();
+        claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+      } finally {
+        scrollTo.mockRestore();
+      }
+    },
+  );
 });

@@ -25,6 +25,14 @@ import { routes } from './app.routes';
 import { runtimeExtensions } from './runtime-extensions';
 import { provideDynamicContent } from './dynamic-content';
 import { routePolicy, appRouteProjection } from './localization.routes';
+import {
+  localeInAddress,
+  localeOrigin,
+  pageAddress,
+  pagePath,
+  pageUrl,
+  switchInDocument,
+} from './addresses';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
@@ -44,9 +52,6 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
  */
 
 const ARABIC = 'ar-EG';
-const ORIGIN = 'https://site.example';
-const ARABIC_DOSSIER = encodeURIComponent('ملف');
-const ARABIC_ARTICLE = encodeURIComponent('دليل');
 
 /**
  * A host with an outlet, because this file needs the page's own code to run.
@@ -68,7 +73,7 @@ async function configure(): Promise<Router> {
   TestBed.resetTestingModule();
   await TestBed.configureTestingModule({
     providers: [
-      provideLocalizedRouter(routes, { origin: ORIGIN }),
+      provideLocalizedRouter(routes, { origin: localeOrigin('en-US') }),
       provideLocalizationTesting(
         {
           configuration,
@@ -118,99 +123,112 @@ const alternate = (hreflang: string): string | null =>
 const canonical = (): string | null =>
   document.querySelector('link[rel="canonical"]')?.getAttribute('href') ?? null;
 
-describe('a route parameter whose spelling only the page knows', () => {
-  it('advertises the declared spelling, which the codec could not have produced', async () => {
-    // The control, measured rather than argued. This is what Equator emits for the Arabic address
-    // of this route with nothing declared: the English slug, because identity is all the codec has.
-    expect(
-      buildLocalizedRoute(routePolicy, appRouteProjection, 'dossier', ARABIC, {
-        slug: 'dossier',
-      }),
-    ).toBe('/ar-eg/dossiers/dossier');
+// Where an address states its locale, so the Arabic spelling is an address of its own.
+describe.runIf(localeInAddress)(
+  'a route parameter whose spelling only the page knows',
+  () => {
+    it('advertises the declared spelling, which the codec could not have produced', async () => {
+      // The control, measured rather than argued. This is what Equator emits for the Arabic address
+      // of this route with nothing declared: the English slug, because identity is all the codec has.
+      expect(
+        buildLocalizedRoute(
+          routePolicy,
+          appRouteProjection,
+          'dossier',
+          ARABIC,
+          {
+            slug: 'dossier',
+          },
+        ),
+      ).toBe(pageAddress('dossier', ARABIC));
 
-    const router = await configure();
-    await router.navigateByUrl('/dossiers/dossier');
-    await settle();
+      const router = await configure();
+      await router.navigateByUrl('/dossiers/dossier');
+      await settle();
 
-    expect(alternate(ARABIC)).toBe(
-      `${ORIGIN}/ar-eg/dossiers/${ARABIC_DOSSIER}`,
+      expect(alternate(ARABIC)).toBe(pageUrl('declared dossier', ARABIC));
+      expect(alternate('en-US')).toBe(pageUrl('declared dossier', 'en-US'));
+      expect(canonical()).toBe(pageUrl('declared dossier', 'en-US'));
+      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    });
+
+    it('does not carry one page’s declaration onto the next', async () => {
+      // The trap this design prevents, in its exact documented shape: two routes with the same
+      // parameter name, visited in sequence. A declaration held in one mutable record keyed by
+      // parameter name would spell the article's Arabic address with the dossier's slug, and tell a
+      // crawler the two are translations of each other.
+      const router = await configure();
+      await router.navigateByUrl('/dossiers/dossier');
+      await settle();
+      expect(alternate(ARABIC)).toBe(pageUrl('declared dossier', ARABIC));
+
+      await router.navigateByUrl('/articles/handbook');
+      await settle();
+      expect(canonical()).toBe(pageUrl('article', 'en-US'));
+      expect(alternate(ARABIC)).toBe(pageUrl('article', ARABIC));
+    });
+
+    it('does not carry a declaration onto a page of the same route that has none', async () => {
+      // Sharper than the case above, because everything else is held constant: same route, same
+      // parameter, same codec. The only difference is that this record is not in the store, so
+      // nothing declares, and the answer has to fall back to the codec rather than to whatever was
+      // declared last.
+      const router = await configure();
+      await router.navigateByUrl('/dossiers/dossier');
+      await settle();
+
+      await router.navigateByUrl('/dossiers/unlisted-dossier');
+      await settle();
+      expect(canonical()).toBe(pageUrl('unlisted dossier', 'en-US'));
+      expect(alternate(ARABIC)).toBe(pageUrl('unlisted dossier', ARABIC));
+
+      // And the address bar, which has its own path to the declaration and so its own way to serve
+      // a stale one. `prepareExternalUrl` is what `Location.replaceState` funnels through when the
+      // locale switch moves the address, and this page has no declaration to move it to. Only where
+      // the switch stays in this document.
+      if (switchInDocument) {
+        await TestBed.inject(Localization).changeLocale(ARABIC);
+        await settle();
+        expect(
+          TestBed.inject(LocationStrategy).prepareExternalUrl(router.url),
+        ).toBe(pagePath('unlisted dossier', ARABIC));
+      }
+      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    });
+
+    // Where the switch stays in this document. Under locale-host it loads the other origin instead.
+    it.runIf(switchInDocument)(
+      'moves the locale switch to the declared address',
+      async () => {
+        // The reason a sitemap is not an answer. A crawler can be told about the Arabic address in a
+        // file; a reader pressing العربية has to arrive at it, and a locale switch is not a navigation:
+        // Equator rebuilds the address for the target locale, and that rebuild is where the
+        // declaration has to be read.
+        const router = await configure();
+        await router.navigateByUrl('/dossiers/dossier');
+        await settle();
+
+        await TestBed.inject(Localization).changeLocale(ARABIC);
+        await settle();
+        expect(canonical()).toBe(pageUrl('declared dossier', ARABIC));
+        expect(alternate('en-US')).toBe(pageUrl('declared dossier', 'en-US'));
+        // The address the reader is actually taken to, not only the one the head claims.
+        expect(
+          TestBed.inject(LocationStrategy).prepareExternalUrl(router.url),
+        ).toBe(pagePath('declared dossier', ARABIC));
+        // And the page is now holding the Arabic spelling, which is the same thing it would hold had
+        // the reader arrived at the Arabic address directly. A switched page that kept the previous
+        // language's parameter would be in a state no fresh visit can produce, and the next thing to
+        // read the parameter, a component looking the record up, would get an answer that depends
+        // on how the reader got here.
+        expect(
+          TestBed.inject(RouteLocalization).context()?.resolution.parameters,
+        ).toEqual({ slug: 'ملف' });
+        claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+        claimCapability('entry:@neolorn/equator/router', {
+          policy: routePolicy,
+        });
+      },
     );
-    expect(alternate('en-US')).toBe(`${ORIGIN}/en-us/dossiers/dossier`);
-    expect(canonical()).toBe(`${ORIGIN}/en-us/dossiers/dossier`);
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
-  });
-
-  it('does not carry one page’s declaration onto the next', async () => {
-    // The trap this design prevents, in its exact documented shape: two routes with the same
-    // parameter name, visited in sequence. A declaration held in one mutable record keyed by
-    // parameter name would spell the article's Arabic address with the dossier's slug, and tell a
-    // crawler the two are translations of each other.
-    const router = await configure();
-    await router.navigateByUrl('/dossiers/dossier');
-    await settle();
-    expect(alternate(ARABIC)).toBe(
-      `${ORIGIN}/ar-eg/dossiers/${ARABIC_DOSSIER}`,
-    );
-
-    await router.navigateByUrl('/articles/handbook');
-    await settle();
-    expect(canonical()).toBe(`${ORIGIN}/en-us/articles/handbook`);
-    expect(alternate(ARABIC)).toBe(
-      `${ORIGIN}/ar-eg/articles/${ARABIC_ARTICLE}`,
-    );
-  });
-
-  it('does not carry a declaration onto a page of the same route that has none', async () => {
-    // Sharper than the case above, because everything else is held constant: same route, same
-    // parameter, same codec. The only difference is that this record is not in the store, so
-    // nothing declares, and the answer has to fall back to the codec rather than to whatever was
-    // declared last.
-    const router = await configure();
-    await router.navigateByUrl('/dossiers/dossier');
-    await settle();
-
-    await router.navigateByUrl('/dossiers/unlisted-dossier');
-    await settle();
-    expect(canonical()).toBe(`${ORIGIN}/en-us/dossiers/unlisted-dossier`);
-    expect(alternate(ARABIC)).toBe(`${ORIGIN}/ar-eg/dossiers/unlisted-dossier`);
-
-    // And the address bar, which has its own path to the declaration and so its own way to serve
-    // a stale one. `prepareExternalUrl` is what `Location.replaceState` funnels through when the
-    // locale switch moves the address, and this page has no declaration to move it to.
-    await TestBed.inject(Localization).changeLocale(ARABIC);
-    await settle();
-    expect(
-      TestBed.inject(LocationStrategy).prepareExternalUrl(router.url),
-    ).toBe('/ar-eg/dossiers/unlisted-dossier');
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
-  });
-
-  it('moves the locale switch to the declared address', async () => {
-    // The reason a sitemap is not an answer. A crawler can be told about the Arabic address in a
-    // file; a reader pressing العربية has to arrive at it, and a locale switch is not a navigation:
-    // Equator rebuilds the address for the target locale, and that rebuild is where the
-    // declaration has to be read.
-    const router = await configure();
-    await router.navigateByUrl('/dossiers/dossier');
-    await settle();
-
-    await TestBed.inject(Localization).changeLocale(ARABIC);
-    await settle();
-    expect(canonical()).toBe(`${ORIGIN}/ar-eg/dossiers/${ARABIC_DOSSIER}`);
-    expect(alternate('en-US')).toBe(`${ORIGIN}/en-us/dossiers/dossier`);
-    // The address the reader is actually taken to, not only the one the head claims.
-    expect(
-      TestBed.inject(LocationStrategy).prepareExternalUrl(router.url),
-    ).toBe(`/ar-eg/dossiers/${ARABIC_DOSSIER}`);
-    // And the page is now holding the Arabic spelling, which is the same thing it would hold had
-    // the reader arrived at the Arabic address directly. A switched page that kept the previous
-    // language's parameter would be in a state no fresh visit can produce, and the next thing to
-    // read the parameter, a component looking the record up, would get an answer that depends
-    // on how the reader got here.
-    expect(
-      TestBed.inject(RouteLocalization).context()?.resolution.parameters,
-    ).toEqual({ slug: 'ملف' });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator/router', { policy: routePolicy });
-  });
-});
+  },
+);

@@ -1,0 +1,164 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  buildLocalizedRoute,
+  resolveLocalizedRoute,
+  type RouteResolution,
+} from '@neolorn/equator';
+
+import {
+  addressedLocales,
+  claimRunningPolicy,
+  pageAddress,
+  tablePolicy,
+} from './addresses';
+import { appRouteProjection, routePolicy } from './localization.routes';
+
+/**
+ * The address table against the application it describes.
+ *
+ * Every other spec that expects an address reads it from the table, so a wrong entry would be
+ * wrong in all of them at once and could be wrong in the same direction as Equator. This is the
+ * one place each entry is held to what the running policy does with it, in both directions: an
+ * address the table lists resolves to its page in its locale, and a locale the table leaves out
+ * has no address that selects it.
+ */
+
+const locales = ['en-US', 'ar-EG', 'en-Arab-XB'] as const;
+
+/** The route each page is. */
+const routed = {
+  home: 'route:_index',
+  second: 'route:second',
+  lazy: 'route:lazy',
+  item: 'item',
+  article: 'article',
+  topic: 'topic',
+  dossier: 'dossier',
+} as const;
+
+type RoutedPage = keyof typeof routed;
+
+/** Each page built through its own call, so every parameter is checked against its route. */
+const build = (page: RoutedPage, locale: string): string => {
+  switch (page) {
+    case 'home':
+      return buildLocalizedRoute(
+        routePolicy,
+        appRouteProjection,
+        'route:_index',
+        locale,
+      );
+    case 'second':
+      return buildLocalizedRoute(
+        routePolicy,
+        appRouteProjection,
+        'route:second',
+        locale,
+      );
+    case 'lazy':
+      return buildLocalizedRoute(
+        routePolicy,
+        appRouteProjection,
+        'route:lazy',
+        locale,
+      );
+    case 'item':
+      return buildLocalizedRoute(
+        routePolicy,
+        appRouteProjection,
+        'item',
+        locale,
+        { id: 42 },
+      );
+    case 'article':
+      return buildLocalizedRoute(
+        routePolicy,
+        appRouteProjection,
+        'article',
+        locale,
+        { slug: 'handbook' },
+      );
+    case 'topic':
+      return buildLocalizedRoute(
+        routePolicy,
+        appRouteProjection,
+        'topic',
+        locale,
+        { topic: 'handbook' },
+      );
+    case 'dossier':
+      return buildLocalizedRoute(
+        routePolicy,
+        appRouteProjection,
+        'dossier',
+        locale,
+        { slug: 'dossier' },
+      );
+  }
+};
+
+const resolve = (address: string): RouteResolution =>
+  resolveLocalizedRoute(address, routePolicy, appRouteProjection);
+
+describe('the address table', () => {
+  it('was written for the policy this application runs', () => {
+    const running =
+      routePolicy.kind === 'path-prefix' && routePolicy.omitDefaultPrefix
+        ? 'default-locale-prefix'
+        : routePolicy.kind;
+    expect(tablePolicy).toBe(running);
+  });
+
+  it.each(Object.keys(routed) as RoutedPage[])(
+    'spells %s as Equator writes it, in every locale it lists',
+    (page) => {
+      const listed = addressedLocales(page);
+      expect(listed.length).toBeGreaterThan(0);
+      for (const locale of listed) {
+        const address = pageAddress(page, locale);
+        expect(build(page, locale)).toBe(address);
+        expect(resolve(address)).toMatchObject({
+          status: 'success',
+          locale,
+          routeId: routed[page],
+        });
+      }
+      // The other direction. Equator writes an address for every locale, and where that address
+      // gives a stranger another locale it is not this locale's address, so the table must not
+      // list it and nothing may advertise it.
+      for (const locale of locales.filter((each) => !listed.includes(each))) {
+        const arrival = resolve(build(page, locale));
+        expect(
+          arrival.status === 'success' ? arrival.locale : arrival.status,
+        ).not.toBe(locale);
+      }
+      claimRunningPolicy();
+    },
+  );
+
+  it('sends a retired spelling to its replacement in the same locale', () => {
+    for (const locale of addressedLocales('legacy')) {
+      expect(resolve(pageAddress('legacy', locale))).toMatchObject({
+        status: 'redirect',
+        reason: 'replacement',
+        location: pageAddress('second', locale),
+      });
+    }
+  });
+
+  it('answers a removed page, and a page that never existed, in the locale of the address', () => {
+    for (const locale of addressedLocales('removed')) {
+      expect(resolve(pageAddress('removed', locale))).toMatchObject({
+        status: 'gone',
+        presentationLocale: locale,
+      });
+    }
+    for (const locale of addressedLocales('missing')) {
+      expect(resolve(pageAddress('missing', locale))).toMatchObject({
+        status: 'not-found',
+        presentationLocale: locale,
+      });
+    }
+  });
+});

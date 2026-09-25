@@ -1,0 +1,71 @@
+{
+  "policy": "path-prefix",
+  "origins": {
+    "en-US": "https://site.example",
+    "ar-EG": "https://site.example",
+    "en-Arab-XB": "https://site.example"
+  },
+  "pages": {
+    "home": {
+      "en-US": "/en-us",
+      "ar-EG": "/ar-eg",
+      "en-Arab-XB": "/en-arab-xb"
+    },
+    "second": {
+      "en-US": "/en-us/second",
+      "ar-EG": "/ar-eg/second",
+      "en-Arab-XB": "/en-arab-xb/second"
+    },
+    "lazy": {
+      "en-US": "/en-us/lazy",
+      "ar-EG": "/ar-eg/lazy",
+      "en-Arab-XB": "/en-arab-xb/lazy"
+    },
+    "item": {
+      "en-US": "/en-us/items/42",
+      "ar-EG": "/ar-eg/items/42",
+      "en-Arab-XB": "/en-arab-xb/items/42"
+    },
+    "article": {
+      "en-US": "/en-us/articles/handbook",
+      "ar-EG": "/ar-eg/articles/دليل",
+      "en-Arab-XB": "/en-arab-xb/articles/handbook"
+    },
+    "article under the English slug": {
+      "ar-EG": "/ar-eg/articles/handbook"
+    },
+    "topic": {
+      "en-US": "/en-us/topics/handbook",
+      "ar-EG": "/ar-eg/topics/handbook",
+      "en-Arab-XB": "/en-arab-xb/topics/handbook"
+    },
+    "dossier": {
+      "en-US": "/en-us/dossiers/dossier",
+      "ar-EG": "/ar-eg/dossiers/dossier",
+      "en-Arab-XB": "/en-arab-xb/dossiers/dossier"
+    },
+    "declared dossier": {
+      "en-US": "/en-us/dossiers/dossier",
+      "ar-EG": "/ar-eg/dossiers/ملف"
+    },
+    "unlisted dossier": {
+      "en-US": "/en-us/dossiers/unlisted-dossier",
+      "ar-EG": "/ar-eg/dossiers/unlisted-dossier"
+    },
+    "legacy": {
+      "en-US": "/en-us/legacy",
+      "ar-EG": "/ar-eg/legacy",
+      "en-Arab-XB": "/en-arab-xb/legacy"
+    },
+    "removed": {
+      "en-US": "/en-us/removed",
+      "ar-EG": "/ar-eg/removed",
+      "en-Arab-XB": "/en-arab-xb/removed"
+    },
+    "missing": {
+      "en-US": "/en-us/nothing-is-mounted-here",
+      "ar-EG": "/ar-eg/nothing-is-mounted-here",
+      "en-Arab-XB": "/en-arab-xb/nothing-is-mounted-here"
+    }
+  }
+}

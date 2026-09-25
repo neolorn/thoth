@@ -28,7 +28,7 @@ import {
 /**
  * The policy this build can serve, which is not always the policy the application declared.
  *
- * `localization.routes.ts` gives every locale this application means to have an address, including
+ * `route-policy.ts` gives every locale this application means to have an address, including
  * `en-Arab-XB`, which exists only in a build made with `--pseudo`. Resolving against the declared
  * policy in an ordinary build answers `/en-arab-xb/second` with a 200 in markup labelled
  * `lang="en-Arab-XB"`, and sends a visitor whose cookie remembers that locale to it. Narrowing once

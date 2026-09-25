@@ -20,6 +20,13 @@ import { routes } from './app.routes';
 import { runtimeExtensions } from './runtime-extensions';
 import { provideDynamicContent } from './dynamic-content';
 import { routePolicy, appRouteProjection } from './localization.routes';
+import {
+  localeInPath,
+  localeOrigin,
+  pagePath,
+  pageUrl,
+  switchInDocument,
+} from './addresses';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
@@ -38,7 +45,6 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
  */
 
 const ARABIC = 'ar-EG';
-const ORIGIN = 'https://site.example';
 
 /**
  * A host with an outlet, because the declaration comes from the route's own component.
@@ -73,7 +79,7 @@ async function configure(): Promise<Router> {
   await TestBed.configureTestingModule({
     providers: [
       provideLocalizedRouter(routes, {
-        origin: ORIGIN,
+        origin: localeOrigin('en-US'),
         outcomeDocuments: OUTCOME_DOCUMENTS,
         documentMetadata: {
           topic: {
@@ -143,7 +149,7 @@ describe('a route whose entity turned out to be absent', () => {
     await settle();
 
     expect(document.title).toBe('Topic');
-    expect(canonical()).toBe(`${ORIGIN}/en-us/topics/handbook`);
+    expect(canonical()).toBe(pageUrl('topic', 'en-US'));
     expect(alternates()).toBeGreaterThan(0);
     expect(robots()).toBeNull();
   });
@@ -181,7 +187,7 @@ describe('a route whose entity turned out to be absent', () => {
     // both.
     await router.navigateByUrl('/topics/handbook');
     await settle();
-    expect(canonical()).toBe(`${ORIGIN}/en-us/topics/handbook`);
+    expect(canonical()).toBe(pageUrl('topic', 'en-US'));
     expect(robots()).toBeNull();
     expect(document.title).toBe('Topic');
   });
@@ -218,28 +224,36 @@ describe('a response that reached no route at all', () => {
     expect(canonical()).toBeNull();
   });
 
-  it('writes it in the locale the address was asked for', async () => {
-    const router = await configure();
-    await router.navigateByUrl('/ar-eg/nowhere-at-all');
-    await settle();
+  // Where the path can name a locale for the Router to be handed.
+  it.runIf(localeInPath)(
+    'writes it in the locale the address was asked for',
+    async () => {
+      const router = await configure();
+      await router.navigateByUrl(pagePath('missing', ARABIC));
+      await settle();
 
-    expect(document.title).toBe('الصفحة غير موجودة');
-  });
+      expect(document.title).toBe('الصفحة غير موجودة');
+    },
+  );
 
-  it('moves it when the reader changes language', async () => {
-    const router = await configure();
-    await router.navigateByUrl('/nowhere-at-all');
-    await settle();
-    expect(document.title).toBe('Page not found');
+  // Where a switch stays in this document, which is the head being moved.
+  it.runIf(switchInDocument)(
+    'moves it when the reader changes language',
+    async () => {
+      const router = await configure();
+      await router.navigateByUrl('/nowhere-at-all');
+      await settle();
+      expect(document.title).toBe('Page not found');
 
-    // A locale change is not a navigation, and there is no route context to rebuild from here.
-    // Without the outcome class being held, the head of a missing page stays in the language the
-    // reader has just left.
-    await TestBed.inject(Localization).changeLocale(ARABIC);
-    await settle();
-    expect(document.title).toBe('الصفحة غير موجودة');
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
-  });
+      // A locale change is not a navigation, and there is no route context to rebuild from here.
+      // Without the outcome class being held, the head of a missing page stays in the language the
+      // reader has just left.
+      await TestBed.inject(Localization).changeLocale(ARABIC);
+      await settle();
+      expect(document.title).toBe('الصفحة غير موجودة');
+      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    },
+  );
 
   it('writes the head of an address declared permanently removed', async () => {
     const router = await configure();

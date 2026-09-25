@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { resolveLocalizedRoute, routeHttpDescriptor } from '@neolorn/equator';
 
 import { routePolicy, appRouteProjection } from './localization.routes';
+import { entryRedirects } from './addresses';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
@@ -24,7 +25,7 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
  * keeps one asks again before reusing it, so a preference that has changed is followed.
  */
 
-describe('a URL that states no locale', () => {
+describe.runIf(entryRedirects)('a URL that states no locale', () => {
   it('sends the visitor to the locale the request resolved to', () => {
     expect(
       resolveLocalizedRoute('/', routePolicy, appRouteProjection, {
@@ -107,7 +108,7 @@ describe('a URL that states no locale', () => {
   });
 });
 
-describe('a URL that states its locale', () => {
+describe.runIf(entryRedirects)('a URL that states its locale', () => {
   it('ignores the preference entirely', () => {
     // The prefix is the visitor's stated intent: a shared link, a bookmark, a search result. A
     // preference must never override it, or nobody can send anybody a link.
@@ -125,7 +126,7 @@ describe('a URL that states its locale', () => {
   });
 });
 
-describe('what the redirect may be cached as', () => {
+describe.runIf(entryRedirects)('what the redirect may be cached as', () => {
   /**
    * One address, two answers, one cache key.
    *

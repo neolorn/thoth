@@ -13,8 +13,12 @@ import { routeProjection } from '#i18n/routes';
 import { runtimeExtensions } from './runtime-extensions';
 import { FeatureLabReadiness } from './readiness';
 import { routePolicy, appRouteProjection } from './localization.routes';
-
-import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
+import {
+  addressedLocales,
+  claimRunningPolicy,
+  localeInPath,
+  pageAddress,
+} from './addresses';
 
 /**
  * The other half of the argument for keeping six exports published.
@@ -59,30 +63,38 @@ describe('the readiness panel exercises what the published surface kept', () => 
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('builds reciprocal links from the injected policy and projection: LOCALE_URL_POLICY', () => {
-    const element = render();
-    const alternates = [...element.querySelectorAll('[data-alternate]')];
+  // The panel offers links only where the path carries the locale, which is its own choice.
+  it.runIf(localeInPath)(
+    'builds reciprocal links from the injected policy and projection: LOCALE_URL_POLICY',
+    () => {
+      const element = render();
+      const alternates = [...element.querySelectorAll('[data-alternate]')];
 
-    // What the panel offers is the policy's locales intersected with the ones this build
-    // generated, minus the one on screen. This suite runs after `equator generate --pseudo`, so the
-    // contracted pseudo-locale is among them and a developer can switch to it from the page; a
-    // production build generates no catalog for it and the same code offers `ar-EG` alone.
-    //
-    // The expanded pseudo-locale is the control sitting inside this assertion. It is declared and
-    // generated exactly like the contracted one and the policy gives it no prefix, so it must not
-    // appear, which is the other direction of the same intersection, and the reason this is an
-    // exact list rather than a length. An empty list would mean the token resolved to something
-    // without a locale table, which is what reading the policy from anywhere other than its single
-    // supplier would produce.
-    expect(
-      alternates.map((link) => link.getAttribute('data-alternate')),
-    ).toEqual(['ar-EG', 'en-Arab-XB']);
-    // Built through the projection the same token carries, so the path is the real localized one
-    // rather than a concatenation.
-    expect(alternates[0]?.getAttribute('href')).toBe('/ar-eg');
-    expect(alternates[1]?.getAttribute('href')).toBe('/en-arab-xb');
-    claimCapability('policy:path-prefix', { policy: routePolicy });
-  });
+      // What the panel offers is the policy's locales intersected with the ones this build
+      // generated, minus the one on screen. This suite runs after `equator generate --pseudo`, so the
+      // contracted pseudo-locale is among them and a developer can switch to it from the page; a
+      // production build generates no catalog for it and the same code offers `ar-EG` alone.
+      //
+      // The expanded pseudo-locale is the control sitting inside this assertion. It is declared and
+      // generated exactly like the contracted one and the policy gives it no prefix, so it must not
+      // appear, which is the other direction of the same intersection, and the reason this is an
+      // exact list rather than a length. An empty list would mean the token resolved to something
+      // without a locale table, which is what reading the policy from anywhere other than its single
+      // supplier would produce.
+      const offered = addressedLocales('home').filter(
+        (locale) => locale !== 'en-US',
+      );
+      expect(
+        alternates.map((link) => link.getAttribute('data-alternate')),
+      ).toEqual(offered);
+      // Built through the projection the same token carries, so the path is the real localized one
+      // rather than a concatenation.
+      expect(alternates.map((link) => link.getAttribute('href'))).toEqual(
+        offered.map((locale) => pageAddress('home', locale)),
+      );
+      claimRunningPolicy();
+    },
+  );
 
   it('phrases a one-hour span through the policy: resolveRelativeTime, systemClock', () => {
     const text = render()

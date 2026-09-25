@@ -13,6 +13,7 @@ import { configuration } from '#i18n';
 import { messages } from '#i18n/shell';
 
 import { routePolicy, appRouteProjection } from './localization.routes';
+import { pageAddress } from './addresses';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
@@ -72,8 +73,9 @@ describe('type contracts', () => {
     // about itself was discarded on the way out. `buildLocalizedRoute` is generic and does keep the
     // literals, so the join between them needed a cast: at the one place a mistyped route
     // identity would otherwise be caught, which is what the builder is for.
+    const address = pageAddress('item', 'en-US');
     const resolved = resolveLocalizedRoute(
-      '/en-us/items/42',
+      address,
       routePolicy,
       appRouteProjection,
     );
@@ -92,13 +94,13 @@ describe('type contracts', () => {
       resolved.parameters,
     );
 
-    expect(rebuilt).toBe(resolved.canonicalPath);
+    expect(rebuilt).toBe(address);
     claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('the identity is a literal union rather than string', () => {
     const resolved = resolveLocalizedRoute(
-      '/en-us',
+      pageAddress('home', 'en-US'),
       routePolicy,
       appRouteProjection,
     );

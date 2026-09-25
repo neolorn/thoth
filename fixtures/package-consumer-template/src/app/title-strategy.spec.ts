@@ -17,6 +17,7 @@ import { routeProjection } from '#i18n/routes';
 import { routes } from './app.routes';
 import { runtimeExtensions } from './runtime-extensions';
 import { routePolicy, appRouteProjection } from './localization.routes';
+import { localeInPath, localeOrigin, pagePath } from './addresses';
 
 /**
  * Who writes `document.title` last, in both of the configurations an application can be in.
@@ -41,6 +42,8 @@ const TITLE_AR = 'مختبر ميزات Equator';
 const DECLARED_TITLE = 'Second route, declared in English';
 
 const OPTIONS = {
+  // Named because a host policy refuses to start without one.
+  origin: localeOrigin('en-US'),
   document: ({ resolution }: { resolution: { locale: string } }) => ({
     title: resolution.locale === 'ar-EG' ? TITLE_AR : TITLE_EN,
   }),
@@ -153,11 +156,15 @@ describe('who writes the document title after a navigation', () => {
    * exactly as they do above. The assertion is therefore the same one, and that sameness is the
    * point: the path a caller took is not a variable.
    */
-  it('is exercised by a prefixed address, which reaches the declared title', async () => {
-    const omitted = await bootstrap('omitted', '/ar-eg/second');
-    expect(omitted.afterNavigation).toBe(DECLARED_TITLE);
+  it.runIf(localeInPath)(
+    'is exercised by a prefixed address, which reaches the declared title',
+    async () => {
+      const prefixed = pagePath('second', 'ar-EG');
+      const omitted = await bootstrap('omitted', prefixed);
+      expect(omitted.afterNavigation).toBe(DECLARED_TITLE);
 
-    const installed = await bootstrap('installed', '/ar-eg/second');
-    expect(installed.afterNavigation).toBe(TITLE_EN);
-  });
+      const installed = await bootstrap('installed', prefixed);
+      expect(installed.afterNavigation).toBe(TITLE_EN);
+    },
+  );
 });

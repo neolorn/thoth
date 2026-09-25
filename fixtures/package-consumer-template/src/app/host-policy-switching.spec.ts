@@ -21,6 +21,7 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
 
 import { routePolicy, appRouteProjection } from './localization.routes';
+import { claimRunningPolicy, switchInDocument } from './addresses';
 import { runtimeExtensions } from './runtime-extensions';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
@@ -238,19 +239,24 @@ describe('switching locale under a policy whose locales are origins', () => {
     claimCapability('entry:@neolorn/equator', { policy: HOST });
   });
 
-  it('does not claim a switch under a policy that keeps its locales in one origin', async () => {
-    await configure(routePolicy);
-    const localization = TestBed.inject(Localization);
+  // The control needs a policy that keeps its locales in one origin, which the running one does
+  // everywhere but on the locale-host row.
+  it.runIf(switchInDocument)(
+    'does not claim a switch under a policy that keeps its locales in one origin',
+    async () => {
+      await configure(routePolicy);
+      const localization = TestBed.inject(Localization);
 
-    const result = await localization.changeLocale('ar-EG');
+      const result = await localization.changeLocale('ar-EG');
 
-    // The control, and the reason this file is not just the host case. A claim that fired for
-    // every policy would satisfy every assertion above and break every application that puts its
-    // locales in the path.
-    expect(result.status).toBe('committed');
-    expect(assigned).toEqual([]);
-    expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
-    claimCapability('policy:path-prefix', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
-  });
+      // The control, and the reason this file is not just the host case. A claim that fired for
+      // every policy would satisfy every assertion above and break every application that puts its
+      // locales in the path.
+      expect(result.status).toBe('committed');
+      expect(assigned).toEqual([]);
+      expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
+      claimRunningPolicy();
+      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    },
+  );
 });
