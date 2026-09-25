@@ -352,12 +352,12 @@ const declared = Object.freeze([
   // either. This is the one exclusion that is declared rather than derived: they share no artefact,
   // and what they contend for is the machine's browsers, which no read or write records.
   //
-  // Alone rather than merely serial, because that is what the evidence covers. The
-  // `firefox-browser-row` arming failure measures 3 in 40, [0.026, 0.199], on the row run by
-  // itself, and a rate measured under one load says nothing about the same row under another. A
-  // browser row that started failing because six consumer installs were running beside it would
-  // look exactly like the flake already being chased, and would be attributed to it. Letting these
-  // overlap non-browser work costs a re-measured 40-set, not a change to this line.
+  // Alone rather than merely serial, because that is what the evidence covers. The Firefox row's
+  // arming failure measures 3 in 40, [0.026, 0.199], on the row run by itself, and a rate measured
+  // under one load says nothing about the same row under another. A browser row that started
+  // failing because six consumer installs were running beside it would look exactly like the flake
+  // already being chased, and would be attributed to it. Letting these overlap non-browser work
+  // costs a re-measured 40-set, not a change to this line.
   {
     id: 'verify:browser-assurance',
     reads: ['consumer:package', 'source:packages'],
