@@ -386,7 +386,9 @@ describe('route and SEO contracts, called directly', () => {
       );
       claimCapability('policy:path-prefix', { policy: routePolicy });
       claimCapability('entry:@neolorn/equator', { policy: routePolicy });
-      claimCapability('declaration:route-parameter-codec');
+      claimCapability('declaration:route-parameter-codec', {
+        policy: routePolicy,
+      });
     },
   );
 
