@@ -464,15 +464,16 @@ export abstract class Localization {
   /**
    * Bring a page restored from the back-forward cache into the stored locale, where that has moved.
    *
-   * Called by the browser integration on `pageshow` with the address the page is at. Changes
-   * nothing, and resolves to `undefined`, unless the stored locale differs from the one on screen
-   * and the configured sources would choose it for that address. The change records nothing,
-   * because `specs/03-locale-identity-and-resolution.spec.md` section 8 writes only a deliberate
-   * change.
+   * Called by the browser integration on `pageshow` with the address the page is at, its origin
+   * included, because under a host policy the origin is what states the locale. Changes nothing,
+   * and resolves to `undefined`, unless the stored locale differs from the one on screen and the
+   * configured sources would choose it for that address. The change records nothing, because
+   * `specs/03-locale-identity-and-resolution.spec.md` section 8 writes only a deliberate change.
    */
-  abstract ɵrestoreLocale(
-    address: string,
-  ): Promise<LocaleChangeResult | undefined>;
+  abstract ɵrestoreLocale(address: {
+    readonly url: string;
+    readonly origin?: string;
+  }): Promise<LocaleChangeResult | undefined>;
   /**
    * Whether one scope is loaded in the committed locale, as a signal to bind.
    *
@@ -2579,9 +2580,10 @@ class LocalizationInternal {
     return this.localeResolution.forgetPersistedLocale();
   }
 
-  async restoreLocale(
-    address: string,
-  ): Promise<LocaleChangeResult | undefined> {
+  async restoreLocale(address: {
+    readonly url: string;
+    readonly origin?: string;
+  }): Promise<LocaleChangeResult | undefined> {
     // Nothing committed means nothing on screen to restore: not yet initialized, or disposed, which
     // clears what is current. Answered rather than refused, because a browser event is the caller.
     const committed = this.active?.publicSnapshot.primaryLocale;
@@ -3012,7 +3014,10 @@ class RuntimeLocalization implements Localization {
     this.internal().claimRoutingCommit(steps);
   }
 
-  ɵrestoreLocale(address: string): Promise<LocaleChangeResult | undefined> {
+  ɵrestoreLocale(address: {
+    readonly url: string;
+    readonly origin?: string;
+  }): Promise<LocaleChangeResult | undefined> {
     return this.internal().restoreLocale(address);
   }
 

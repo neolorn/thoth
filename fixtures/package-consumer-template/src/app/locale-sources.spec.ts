@@ -9,12 +9,14 @@ import {
 } from '@angular/common/testing';
 import {
   Localization,
+  createHostLocalePolicy,
   negotiateLocale,
   parseAcceptLanguage,
   withRouting,
   provideLocalizationSetup,
   withLocaleSources,
   withPersistence,
+  type LocaleUrlPolicy,
   type LocalizationLocaleSource,
   type LocalizationPersistenceStoreFactory,
 } from '@neolorn/equator';
@@ -56,6 +58,10 @@ interface Environment {
   readonly url?: string;
   readonly acceptLanguage?: string;
   readonly withPolicy?: boolean;
+  /** A policy of the test's own, where the row's cannot say what the test needs said. */
+  readonly policy?: LocaleUrlPolicy;
+  /** In the browser, where the address is the document's own and nothing supplies one. */
+  readonly browser?: boolean;
 }
 
 function setup(environment: Environment): Localization {
@@ -65,16 +71,20 @@ function setup(environment: Environment): Localization {
       // A server platform with a real request is the only place both the URL and the client's
       // language preferences can be supplied deterministically, and it is the render that matters
       // most: it is the one the visitor sees first.
-      { provide: PLATFORM_ID, useValue: 'server' },
-      {
-        provide: REQUEST,
-        useValue: new Request(environment.url ?? unstatedAddress, {
-          headers:
-            environment.acceptLanguage === undefined
-              ? {}
-              : { 'accept-language': environment.acceptLanguage },
-        }),
-      },
+      ...(environment.browser === true
+        ? []
+        : [
+            { provide: PLATFORM_ID, useValue: 'server' },
+            {
+              provide: REQUEST,
+              useValue: new Request(environment.url ?? unstatedAddress, {
+                headers:
+                  environment.acceptLanguage === undefined
+                    ? {}
+                    : { 'accept-language': environment.acceptLanguage },
+              }),
+            },
+          ]),
       // The address, supplied the way Equator now reads it on the server.
       //
       // Not `REQUEST_CONTEXT`. `@angular/ssr` provides that token only when the render mode is
@@ -108,7 +118,7 @@ function setup(environment: Environment): Localization {
           ? []
           : [
               withRouting({
-                policy: routePolicy,
+                policy: environment.policy ?? routePolicy,
                 projection: appRouteProjection,
               }),
             ]),
@@ -216,6 +226,24 @@ describe('the declared order', () => {
       claimCapability('source:url', { policy: routePolicy });
     },
   );
+
+  it('takes the origin the document is at, in the browser', async () => {
+    // This document's own origin, named as the Arabic one, so the origin is the only thing here
+    // that states Arabic: the path is the same in every locale.
+    const policy = createHostLocalePolicy({
+      defaultLocale: 'en-US',
+      origins: { 'en-US': 'http://en-us.localhost', 'ar-EG': location.origin },
+    });
+    const localization = setup({
+      sources: ['url', 'stored', 'default'],
+      stores: [storeReturning('en-US')],
+      policy,
+      browser: true,
+    });
+
+    expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
+    claimCapability('source:url', { policy });
+  });
 
   it.runIf(addressCanStateNone)(
     'steps past the URL when the URL states none',

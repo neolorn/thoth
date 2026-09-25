@@ -295,18 +295,17 @@ export class LocaleResolution {
    */
   async restoredLocale(
     committed: string,
-    address: string,
+    // The address the page is at now, which a client navigation may have moved since setup read it.
+    address: { readonly url: string; readonly origin?: string },
     signal: AbortSignal,
   ): Promise<string | undefined> {
     const stored = await this.readPersistedLocale(signal);
     if (stored === undefined || stored === committed) return undefined;
-    // The address the page is at now, which a client navigation may have moved since setup read it.
-    const requestContext = Object.freeze({ url: address });
     for (const source of this.sourceOrder) {
       const resolved =
         source === 'stored'
           ? stored
-          : await this.resolveLocaleSource(source, signal, requestContext);
+          : await this.resolveLocaleSource(source, signal, address);
       if (resolved !== undefined) {
         return resolved === stored ? stored : undefined;
       }

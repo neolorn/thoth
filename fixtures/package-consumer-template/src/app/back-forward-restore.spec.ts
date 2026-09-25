@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import {
   Localization,
+  createHostLocalePolicy,
   createLocaleNeutralPolicy,
   memoryStore,
   provideLocalizationSetup,
@@ -107,8 +108,8 @@ describe('a page restored from the back-forward cache', () => {
     expect(seat.written).toEqual([]);
   });
 
-  // Where the path states the language. A document's origin cannot be moved from here, so a
-  // policy that states it in the origin has nothing this can arrive at.
+  // Where the path states the language. A document's origin cannot be moved from here, so the
+  // origin's own case below names this document's origin instead.
   it.runIf(localeInPath)(
     'stays in the language its address states',
     async () => {
@@ -129,6 +130,30 @@ describe('a page restored from the back-forward cache', () => {
       expect(seat.localization.snapshot()?.primaryLocale).toBe('en-US');
     },
   );
+
+  it('stays in the language its origin states', async () => {
+    // This document's own origin, named as the Arabic one, so the origin is the only thing here
+    // that states Arabic: the path is the same in every locale.
+    const seat = setup(
+      createHostLocalePolicy({
+        defaultLocale: 'en-US',
+        origins: {
+          'en-US': 'http://en-us.localhost',
+          'ar-EG': location.origin,
+        },
+      }),
+    );
+    expect((await seat.localization.initialize()).primaryLocale).toBe('ar-EG');
+
+    await seat.shared.write('en-US');
+    const before = seat.reads();
+    restore(true);
+    await new Promise((done) => setTimeout(done, 0));
+
+    expect(seat.reads()).toBeGreaterThan(before);
+    expect(seat.localization.targetLocale()).toBeUndefined();
+    expect(seat.localization.snapshot()?.primaryLocale).toBe('ar-EG');
+  });
 
   it('does nothing on a first showing', async () => {
     const seat = setup(NEUTRAL);

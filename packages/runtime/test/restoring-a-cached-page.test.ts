@@ -13,6 +13,7 @@ import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
 
 import {
+  createHostLocalePolicy,
   createLocaleNeutralPolicy,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
@@ -46,6 +47,11 @@ const PATH_PREFIX: LocaleUrlPolicy = {
 const NEUTRAL: LocaleUrlPolicy = createLocaleNeutralPolicy({
   defaultLocale: 'en-US',
   locales: ['en-US', 'ar-EG'],
+});
+
+const HOST: LocaleUrlPolicy = createHostLocalePolicy({
+  defaultLocale: 'en-US',
+  origins: { 'en-US': 'https://en.example', 'ar-EG': 'https://ar.example' },
 });
 
 interface Environment {
@@ -84,10 +90,10 @@ function resolutionIn(environment: Environment) {
     observability: undefined,
   });
   return {
-    restored: (committed: string, address: string) =>
+    restored: (committed: string, address: string, origin?: string) =>
       resolution.restoredLocale(
         committed,
-        address,
+        { url: address, ...(origin === undefined ? {} : { origin }) },
         new AbortController().signal,
       ),
     reads: () => reads,
@@ -109,6 +115,18 @@ describe('the language a restored page should be in', () => {
     expect(await at.restored('en-US', '/en-us/second')).toBeUndefined();
     // The address the page is at now decides, not the one it was set up at.
     expect(await at.restored('en-US', '/ar-eg/second')).toBe('ar-EG');
+  });
+
+  it('is the one the origin states, where the origin carries the locale', async () => {
+    const at = resolutionIn({ stored: 'en-US', policy: HOST });
+
+    // The path is the same in every locale, so without its origin this page would read as English.
+    expect(
+      await at.restored('ar-EG', '/second', 'https://ar.example'),
+    ).toBeUndefined();
+    expect(await at.restored('ar-EG', '/second', 'https://en.example')).toBe(
+      'en-US',
+    );
   });
 
   it('is unchanged when nothing was chosen since, or nothing at all', async () => {

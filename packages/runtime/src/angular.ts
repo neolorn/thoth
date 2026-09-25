@@ -107,6 +107,35 @@ export function applicationBaseHref(): string {
 }
 
 /**
+ * The address a location is at, as the `url` locale source reads it: the path under the base, and
+ * the origin.
+ *
+ * The origin is part of it because under a host policy the origin is what states the locale, and the
+ * path is the same in every locale. Composed from the three parts `PlatformLocation` declares, since
+ * it declares no origin of its own, and only for `http:` and `https:`: the server platform leaves
+ * every part at `/` when it was given no absolute address, and no other scheme has an origin a
+ * policy could name.
+ */
+function locationAddress(
+  location: Pick<
+    PlatformLocation,
+    'protocol' | 'hostname' | 'port' | 'pathname' | 'search' | 'hash'
+  >,
+  baseHref: string,
+): { readonly url: string; readonly origin?: string } {
+  const url = withoutBasePath(
+    `${location.pathname}${location.search}${location.hash}`,
+    baseHref,
+  );
+  return location.protocol === 'http:' || location.protocol === 'https:'
+    ? Object.freeze({
+        url,
+        origin: `${location.protocol}//${location.hostname}${location.port === '' ? '' : `:${location.port}`}`,
+      })
+    : Object.freeze({ url });
+}
+
+/**
  * The locale URL policy this application uses, when it has one.
  *
  * A token rather than a value passed around because more than one thing reads it: the `url` locale
@@ -1834,20 +1863,10 @@ export function provideLocalizationSetup(
         // which is why the page and the route were right while the locale was wrong.
         const baseHref = applicationBaseHref();
         const requestContext = isPlatformBrowser(platformId)
-          ? Object.freeze({
-              url: withoutBasePath(
-                `${document.location.pathname}${document.location.search}${document.location.hash}`,
-                baseHref,
-              ),
-            })
+          ? locationAddress(document.location, baseHref)
           : platformLocation === null
             ? undefined
-            : Object.freeze({
-                url: withoutBasePath(
-                  `${platformLocation.pathname}${platformLocation.search}${platformLocation.hash}`,
-                  baseHref,
-                ),
-              });
+            : locationAddress(platformLocation, baseHref);
         const localeUrl = inject(LOCALE_URL_POLICY, { optional: true });
         // What this client asked for, read from whichever surface exists. In the browser that is
         // the ordered list the user configured in their operating system; on the server it is the
@@ -2049,10 +2068,7 @@ export function provideLocalizationSetup(
         const restore = (event: PageTransitionEvent): void => {
           if (!event.persisted) return;
           void localization.ɵrestoreLocale(
-            withoutBasePath(
-              `${document.location.pathname}${document.location.search}${document.location.hash}`,
-              baseHref,
-            ),
+            locationAddress(document.location, baseHref),
           );
         };
         view?.addEventListener('pageshow', restore);
