@@ -28,6 +28,7 @@ import {
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawn, spawnSync } from 'node:child_process';
 
+import { readConsumerAddresses } from './consumer-addresses.mjs';
 import { withOfflineStoreRemedy } from './offline-store.mjs';
 
 import {
@@ -724,8 +725,9 @@ ${negativeOutput}`,
 // The number to check against is counted from the consumer's sources rather than written down, so
 // adding a spec needs no edit here and deleting one is the same failure as failing to collect it.
 // Vitest colours its summary, so the counts are read off the plain text rather than off whatever
-// the terminal was told to draw, and the case line is matched loosely because a skipped case puts
-// `| n skipped` between the count and the total.
+// the terminal was told to draw. Both lines are matched loosely because a skipped file or case puts
+// `| n skipped` between the count and the total: a spec written for an address only some URL
+// policies have is skipped under the others, and is still collected.
 const tested = run(['test']);
 const testedOutput = `${tested.stdout}\n${tested.stderr}`.replaceAll(
   /\u001B\[[0-9;]*m/gu,
@@ -738,21 +740,22 @@ assert.ok(
   specFiles.length > 0,
   'The consumer carries no spec files, so the count below would assert nothing',
 );
-const collectedFiles = /Test Files\s+(\d+) passed\s+\((\d+)\)/u.exec(
-  testedOutput,
-);
+const collectedFiles =
+  /Test Files\s+(?:(\d+) failed\s+\|\s+)?(\d+) passed(?:\s+\|\s+(\d+) skipped)?\s+\((\d+)\)/u.exec(
+    testedOutput,
+  );
 assert.ok(
   collectedFiles !== null,
   `The consumer's test run reported no file count:\n${testedOutput}`,
 );
 assert.equal(
-  Number(collectedFiles[2]),
+  Number(collectedFiles[4]),
   specFiles.length,
-  `The consumer has ${specFiles.length} spec file(s) and the run collected ${collectedFiles[2]}:\n${testedOutput}`,
+  `The consumer has ${specFiles.length} spec file(s) and the run collected ${collectedFiles[4]}:\n${testedOutput}`,
 );
 assert.equal(
-  collectedFiles[1],
-  collectedFiles[2],
+  Number(collectedFiles[2]) + Number(collectedFiles[3] ?? 0),
+  Number(collectedFiles[4]),
   `The consumer's test run did not pass every spec file:\n${testedOutput}`,
 );
 const collectedCases = /Tests\s+(\d+) passed[^\n(]*\((\d+)\)/u.exec(
@@ -1086,27 +1089,40 @@ const collectPrerendered = async (root, prefix = '') => {
   return paths;
 };
 
+// Where each page lives, read from the address table the consumer's own specs read.
+const addresses = await readConsumerAddresses(consumerRoot);
+
+/** The file prerendering writes a page to, or nothing where the page has no address. */
+const prerenderedFile = (page, locale) =>
+  addresses.has(page, locale) ? addresses.file(page, locale) : undefined;
+
+// The routes `app.routes.server.ts` prerenders.
+const prerenderedPages = ['second', 'article'];
+
+/** Every file the prerender writes for these locales. */
+const prerenderedFiles = (locales) =>
+  locales.flatMap((locale) =>
+    prerenderedPages
+      .map((page) => prerenderedFile(page, locale))
+      .filter((file) => file !== undefined),
+  );
+
 const emittedPrerendered = (await collectPrerendered(browserRoot)).sort();
-const expectedPrerendered = [
-  'ar-eg/articles/دليل/index.html',
-  'ar-eg/second/index.html',
-  'en-us/articles/handbook/index.html',
-  'en-us/second/index.html',
-].sort();
+const expectedPrerendered = prerenderedFiles(INIT_REQUEST.locales).sort();
 assert.deepEqual(
   emittedPrerendered,
   expectedPrerendered,
   `The prerendered address set is wrong.\nEmitted:\n  ${emittedPrerendered.join('\n  ')}\nExpected:\n  ${expectedPrerendered.join('\n  ')}`,
 );
 
-for (const localePrefix of ['en-us', 'ar-eg']) {
+for (const locale of INIT_REQUEST.locales) {
+  const file = prerenderedFile('second', locale);
+  // No address in that locale is no file, which the set above has already held the build to.
+  if (file === undefined) continue;
   assert.match(
-    await readFile(
-      resolve(browserRoot, localePrefix, 'second', 'index.html'),
-      'utf8',
-    ),
+    await readFile(resolve(browserRoot, file), 'utf8'),
     /data-route-view="second"/u,
-    `${localePrefix} prerendered route is absent`,
+    `${locale} prerendered route is absent`,
   );
 }
 
@@ -1114,23 +1130,19 @@ for (const localePrefix of ['en-us', 'ar-eg']) {
 // article route is the one that is hard by hand: its slug is spelled differently per locale, so
 // its two prerendered addresses share no path segment. A hand-written table that missed one would
 // not fail anywhere: it would ship a page that exists in English and 404s in Arabic.
-for (const [localePrefix, slug, language] of [
-  ['en-us', 'handbook', 'en-US'],
-  ['ar-eg', 'دليل', 'ar-EG'],
-]) {
-  const prerendered = await readFile(
-    resolve(browserRoot, localePrefix, 'articles', slug, 'index.html'),
-    'utf8',
-  );
+for (const language of INIT_REQUEST.locales) {
+  const file = prerenderedFile('article', language);
+  if (file === undefined) continue;
+  const prerendered = await readFile(resolve(browserRoot, file), 'utf8');
   assert.match(
     prerendered,
     /data-route-view="article"/u,
-    `${localePrefix} prerendered article route is absent`,
+    `${language} prerendered article route is absent`,
   );
   assert.match(
     prerendered,
     new RegExp(`lang="${language}"`, 'u'),
-    `${localePrefix} prerendered article was rendered in the wrong locale`,
+    `${language} prerendered article was rendered in the wrong locale`,
   );
   // The measurement the server-side locale source rests on.
   //
@@ -1139,11 +1151,11 @@ for (const [localePrefix, slug, language] of [
   // prerendered page has neither. Two things had to be true for that to work and only one of them
   // was ever measured: that `PlatformLocation` is injectable from an application-config-level
   // factory, and that under prerendering it carries the address being rendered rather than `/`.
-  // This is a prerendered page, so a prefix here is that second fact, observed.
+  // This is a prerendered page, so its own address here is that second fact, observed.
   const probe = /"feature-lab-ssr-probe":(\{.*?\})/su.exec(prerendered);
   assert.ok(
     probe,
-    `${localePrefix} prerendered article carried no SSR probe state`,
+    `${language} prerendered article carried no SSR probe state`,
   );
   const platformPath = JSON.parse(probe[1]).platformPath;
   assert.notEqual(
@@ -1151,9 +1163,11 @@ for (const [localePrefix, slug, language] of [
     'unavailable',
     'PlatformLocation did not resolve during prerendering, so the server locale source has no address to read',
   );
-  assert.ok(
-    platformPath.startsWith(`/${localePrefix}/`),
-    `PlatformLocation reported ${JSON.stringify(platformPath)} while prerendering the ${localePrefix} article, so it does not carry the rendered address`,
+  // Decoded on both sides, because which of the two spellings `pathname` holds is Angular's.
+  assert.equal(
+    decodeURIComponent(platformPath),
+    decodeURIComponent(addresses.path('article', language)),
+    `PlatformLocation reported ${JSON.stringify(platformPath)} while prerendering the ${language} article, so it does not carry the rendered address`,
   );
 }
 
@@ -1196,14 +1210,13 @@ const pseudoBrowserRoot = resolve(
 );
 
 // The address set, as an exact set for the same reason as above: a prerendered route whose
-// component throws is dropped silently, and `en-arab-xb` appearing is only half the claim. The
-// other half is that the six are these six: `en-Latn-XA` is declared and generated too, and it
-// has no prefix in the policy, so it must produce no address at all.
+// component throws is dropped silently, and the pseudo-locale's pages appearing is only half the
+// claim. The other half is that there are no others: `en-Latn-XA` is declared and generated too,
+// and the policy gives it no address, so it must produce no file at all.
 const pseudoPrerendered = (await collectPrerendered(pseudoBrowserRoot)).sort();
 const expectedPseudoPrerendered = [
   ...expectedPrerendered,
-  'en-arab-xb/articles/handbook/index.html',
-  'en-arab-xb/second/index.html',
+  ...prerenderedFiles(['en-Arab-XB', 'en-Latn-XA']),
 ].sort();
 assert.deepEqual(
   pseudoPrerendered,
@@ -1221,11 +1234,11 @@ const routeViewText = (html, view) => {
 };
 
 const pseudoPage = await readFile(
-  resolve(pseudoBrowserRoot, 'en-arab-xb', 'second', 'index.html'),
+  resolve(pseudoBrowserRoot, addresses.file('second', 'en-Arab-XB')),
   'utf8',
 );
 const englishPage = await readFile(
-  resolve(pseudoBrowserRoot, 'en-us', 'second', 'index.html'),
+  resolve(pseudoBrowserRoot, addresses.file('second', 'en-US')),
   'utf8',
 );
 
@@ -1329,13 +1342,7 @@ assert.ok(
  * involved.
  */
 const pseudoArticle = await readFile(
-  resolve(
-    pseudoBrowserRoot,
-    'en-arab-xb',
-    'articles',
-    'handbook',
-    'index.html',
-  ),
+  resolve(pseudoBrowserRoot, addresses.file('article', 'en-Arab-XB')),
   'utf8',
 );
 assert.ok(
@@ -1415,16 +1422,24 @@ const refusedPages = (
     () => collectPrerendered(refusedRoot),
     () => [],
   )
-).filter((path) => path.endsWith('/lazy/index.html'));
+).filter((path) => /(?:^|\/)lazy\/index\.html$/u.test(path));
+// The refusal names the address it met, which is one of the lazy page's, as a path.
+const lazyAddresses = INIT_REQUEST.locales
+  .filter((locale) => addresses.has('lazy', locale))
+  .map((locale) => addresses.path('lazy', locale));
+const namesTheRefusal = new RegExp(
+  `Route route:lazy at "(?:${lazyAddresses
+    .map((address) => address.replaceAll(/[.*+?^${}()|[\]\\]/gu, '\\$&'))
+    .join('|')})" is per-visitor, and it is being rendered ahead of a request`,
+  'u',
+);
 assert.deepEqual(
   [
     ...refusedPages.map((path) => `it wrote ${path}`),
     ...(refusedBuild.status === 1
       ? []
       : [`it exited ${String(refusedBuild.status)}`]),
-    ...(/Route route:lazy at "\/[a-z-]+\/lazy" is per-visitor, and it is being rendered ahead of a request/u.test(
-      refusedOutput,
-    )
+    ...(namesTheRefusal.test(refusedOutput)
       ? []
       : ['its output does not name the route and the refusal']),
   ],
