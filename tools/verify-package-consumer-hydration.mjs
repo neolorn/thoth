@@ -601,6 +601,25 @@ const withoutHopByHop = (headers) =>
     ),
   );
 
+/**
+ * What a browser asked the edge for at a host outside loopback, where no deployment of this site
+ * can be. The full Chromium build the back-forward restore runs in calls a time service and
+ * sign-in and push services on its own, and it reaches every host through this edge so that none
+ * of those requests leaves the machine. They are refused and listed rather than counted as
+ * failures, because no page made them: a page's own request to another origin meets its Content
+ * Security Policy first.
+ */
+const offSiteRequests = [];
+
+function isLoopbackHost(hostname) {
+  return (
+    hostname === 'localhost' ||
+    hostname.endsWith('.localhost') ||
+    hostname === '127.0.0.1' ||
+    hostname === '[::1]'
+  );
+}
+
 const edge = createServer((request, response) => {
   // Recorded as well as answered, because a page that lands on the answer may assert nothing
   // about it, and `assertBrowserDiagnostics` reads this list.
@@ -619,6 +638,12 @@ const edge = createServer((request, response) => {
   // the application is asked with, taken from the target rather than the header, which an engine
   // may drop from an intercepted request it continues.
   const target = new URL(request.url ?? '/', browserOrigin);
+  if (!isLoopbackHost(target.hostname)) {
+    offSiteRequests.push(`${request.method} ${target.host}`);
+    response.statusCode = 502;
+    response.end();
+    return;
+  }
   const upstream = httpRequest(
     `${origin}${target.pathname}${target.search}`,
     {
@@ -683,6 +708,19 @@ const edge = createServer((request, response) => {
   );
   upstream.on('error', fail);
   request.pipe(upstream);
+});
+
+// A tunnel is how a browser reaches an https address through a proxy, and nothing this site serves
+// is https.
+edge.on('connect', (request, socket) => {
+  socket.on('error', () => {});
+  const tunnel = `CONNECT ${request.url}`;
+  if (isLoopbackHost(new URL(`http://${request.url}`).hostname)) {
+    edgeFailures.push(`${tunnel}: this site serves nothing over https`);
+  } else {
+    offSiteRequests.push(tunnel);
+  }
+  socket.end('HTTP/1.1 502 Bad Gateway\r\n\r\n');
 });
 
 await new Promise((resolveListen, rejectListen) => {
@@ -1024,12 +1062,22 @@ const criticalBrowserResourceTypes = new Set([
  */
 const expectedErrorDocuments = new Set();
 
+/**
+ * The icon a browser fetches on its own for a document that names none, which the HTML standard's
+ * `icon` link type allows. The consumer names none and serves none, so the full Chromium build the
+ * back-forward restore runs in reports a 404 the page never caused.
+ */
+function isFallbackIcon(url) {
+  return isSiteUrl(url) && new URL(url).pathname === '/favicon.ico';
+}
+
 function attachBrowserDiagnostics(page, diagnostics) {
   page.on('console', (message) => {
     noteActivity(`console ${message.type()}`);
     if (message.type() !== 'error') return;
     if (
-      expectedErrorDocuments.has(message.location().url) &&
+      (expectedErrorDocuments.has(message.location().url) ||
+        isFallbackIcon(message.location().url)) &&
       message.text().startsWith('Failed to load resource:')
     )
       return;
@@ -1126,10 +1174,11 @@ function assertBrowserDiagnostics(diagnostics, label) {
   );
 }
 
-async function launchBrowserRow(row) {
+async function launchBrowserRow(row, options = {}) {
   try {
     return boundCalls(
       await row.browserType.launch({
+        ...options,
         headless: true,
         // The origins a host policy names resolve to nowhere this harness listens, so every request
         // goes to the edge, which reads the origin from it. Measured on all three engines, the
@@ -3000,6 +3049,131 @@ async function verifySwitchEndurance(page, row) {
 }
 
 /**
+ * A page restored from the back-forward cache after the stored locale moved, which is the one reuse
+ * that does not ask the server (`specs/07-routing-rendering-and-seo.spec.md` section 5).
+ *
+ * Under Playwright only Chromium restores a page, and only in its new headless mode with
+ * Playwright's own `--disable-back-forward-cache` switch left off, so it gets a browser of its own
+ * here and the pass before it keeps Playwright's defaults. Playwright turns the cache off in its
+ * Firefox and WebKit builds, so there a `pageshow` is dispatched as a restore dispatches it: that
+ * runs the listener in the engine, and proves nothing about a restore, which the success line says.
+ */
+async function verifyBackForwardRestore(row, context, diagnostics) {
+  const restores = row.id === 'chromium';
+  const restoreBrowser = restores
+    ? await launchBrowserRow(row, {
+        channel: 'chromium',
+        ignoreDefaultArgs: ['--disable-back-forward-cache'],
+        // Through the edge under every policy, which keeps this build's own requests to other
+        // hosts on the machine.
+        proxy: { server: browserOrigin },
+      })
+    : undefined;
+  try {
+    const restoreContext =
+      restoreBrowser === undefined
+        ? context
+        : boundCalls(await restoreBrowser.newContext(), 'context');
+    if (restoreBrowser !== undefined) {
+      await recordPolicyViolations(restoreContext);
+    }
+    const restorePage = boundCalls(await restoreContext.newPage(), 'page');
+    attachBrowserDiagnostics(restorePage, diagnostics);
+    restorePage.setDefaultTimeout(15_000);
+    restorePage.setDefaultNavigationTimeout(20_000);
+    await visitFor(restoreContext, 'home', 'en-US', (url) =>
+      restorePage.goto(url),
+    );
+    await restorePage.waitForFunction(
+      () => document.documentElement.dataset['clientReady'] === 'true',
+    );
+    // Marks the document, so a reload cannot pass for the page coming back from memory.
+    await restorePage.evaluate(() => {
+      globalThis.__equatorLeft = true;
+      globalThis.addEventListener('pageshow', (event) => {
+        globalThis.__equatorShownPersisted = event.persisted;
+      });
+    });
+    if (restores) {
+      await visitFor(restoreContext, 'second', 'en-US', (url) =>
+        restorePage.goto(url),
+      );
+      await restorePage.waitForFunction(
+        () => document.documentElement.dataset['clientReady'] === 'true',
+      );
+    }
+    // The stored locale moves while the page is away, as another tab moves it. Stored for the
+    // session, because a write always states a lifetime, so a write cannot pass for the cookie left
+    // alone.
+    const storedAt = new URL(restorePage.url()).origin;
+    await restoreContext.clearCookies({ name: 'equator-locale' });
+    await restoreContext.addCookies([
+      { name: 'equator-locale', value: 'ar-EG', url: storedAt },
+    ]);
+    if (restores) {
+      // A restored page fires `pageshow` and no `load`, so the step back is waited for only as far
+      // as the commit, and then for either the restored page's `pageshow` or a new document.
+      await restorePage.goBack({ waitUntil: 'commit' });
+      await restorePage.waitForFunction(
+        () =>
+          globalThis.__equatorShownPersisted !== undefined ||
+          globalThis.__equatorLeft !== true,
+      );
+    } else {
+      await restorePage.evaluate(() =>
+        globalThis.dispatchEvent(
+          new PageTransitionEvent('pageshow', { persisted: true }),
+        ),
+      );
+    }
+    await restorePage.waitForFunction(
+      () => document.documentElement.dataset['clientReady'] === 'true',
+    );
+    assert.deepEqual(
+      await restorePage.evaluate(() => ({
+        left: globalThis.__equatorLeft === true,
+        persisted: globalThis.__equatorShownPersisted === true,
+      })),
+      { left: true, persisted: true },
+      `${row.label} did not bring the page back from its back-forward cache, so nothing here reached the listener`,
+    );
+    // Where the address states the locale the page stays in it; where it does not, the page moves
+    // to the one stored since it was left.
+    const expected = addresses.localeInAddress ? 'en-US' : 'ar-EG';
+    if (expected === 'en-US') {
+      await settleBrowserLifecycle(restorePage);
+    } else {
+      await restorePage
+        .waitForFunction(
+          () =>
+            document.documentElement.lang === 'ar-EG' &&
+            document.documentElement.dir === 'rtl',
+          undefined,
+          { timeout: 10_000 },
+        )
+        .catch(() => {});
+    }
+    assert.equal(
+      await restorePage.evaluate(() => document.documentElement.lang),
+      expected,
+      `${row.label} showed a restored page in the wrong locale after the stored one moved to ar-EG`,
+    );
+    assert.deepEqual(
+      (await restoreContext.cookies(storedAt))
+        .filter(({ name }) => name === 'equator-locale')
+        .map(({ value, expires }) => ({ value, expires })),
+      [{ value: 'ar-EG', expires: -1 }],
+      `${row.label} wrote the locale cookie on a restore, which resolves a locale rather than choosing one`,
+    );
+    await collectPolicyDiagnostics(restorePage, diagnostics);
+    await restorePage.close();
+    return restores ? 'restored' : 'dispatched';
+  } finally {
+    await restoreBrowser?.close();
+  }
+}
+
+/**
  * One engine's pass, the same on every engine. The browser, context and page are the module's, so
  * the failure block can read the page a failing row was on.
  */
@@ -3600,8 +3774,11 @@ async function verifyBrowserRow(row) {
   await verifySwitchEndurance(page, row);
   await collectPolicyDiagnostics(page, diagnostics);
 
+  enterStage(`${row.id}-back-forward-restore`);
+  const backForward = await verifyBackForwardRestore(row, context, diagnostics);
+
   assertBrowserDiagnostics(diagnostics, `${row.label} ${evidence.version}`);
-  Object.assign(evidence, { outcome: 'verified', trustedTypes });
+  Object.assign(evidence, { outcome: 'verified', trustedTypes, backForward });
 
   await context.close();
   context = undefined;
@@ -4470,9 +4647,14 @@ try {
   process.stdout.write(
     [
       `${consumerProfile.label} (Angular ${consumerProfile.angular}, TypeScript ${consumerProfile.typescript}, RxJS ${consumerProfile.rxjs}): SSR isolation, rendering modes, accessibility, strict CSP, and live hydration verified.`,
+      ...(offSiteRequests.length === 0
+        ? []
+        : [
+            `Refused at the edge, asked for by a browser rather than a page: ${[...new Set(offSiteRequests)].join(', ')}.`,
+          ]),
       ...browserEvidence.map(
         (evidence) =>
-          `${evidence.label} ${evidence.version}: Trusted Types ${evidence.trustedTypes ? 'enforced' : 'unsupported by engine; CSP directive retained'}.`,
+          `${evidence.label} ${evidence.version}: Trusted Types ${evidence.trustedTypes ? 'enforced' : 'unsupported by engine; CSP directive retained'}; back-forward restore ${evidence.backForward === 'restored' ? 'verified on a page the engine restored' : "not run, because Playwright turns off this engine's back-forward cache; its listener ran on a dispatched pageshow"}.`,
       ),
     ].join('\n') + '\n',
   );
@@ -4513,6 +4695,7 @@ try {
     browserEvidence,
     browserDiagnostics,
     edgeFailures,
+    offSiteRequests,
     pageState,
   };
 } finally {
