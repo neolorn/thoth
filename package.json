@@ -81,6 +81,7 @@
     "verify": "node ./tools/verify.mjs",
     "verify:browser-assurance:angular-22.0.4": "node ./tools/verify-package-consumer-hydration.mjs angular-22.0.4-consumer",
     "verify:browser-assurance:lower-bounds": "node ./tools/verify-package-consumer-hydration.mjs lower-bounds-consumer",
+    "verify:browser-assurance:strict": "node ./tools/verify-package-consumer-hydration.mjs strict-consumer",
     "verify:browser-assurance:default-locale-prefix": "node ./tools/verify-package-consumer-hydration.mjs default-locale-prefix-consumer",
     "verify:browser-assurance:locale-neutral": "node ./tools/verify-package-consumer-hydration.mjs locale-neutral-consumer",
     "verify:browser-assurance:locale-host": "node ./tools/verify-package-consumer-hydration.mjs locale-host-consumer",

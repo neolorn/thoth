@@ -391,6 +391,17 @@ const declared = Object.freeze([
       },
     ],
   },
+  {
+    id: 'verify:browser-assurance:strict',
+    reads: ['consumer:strict', 'source:packages'],
+    exclusive: true,
+    needs: [
+      {
+        on: 'verify:browser-assurance:self-test',
+        why: 'Every row shares the listeners the self-test exercises, so one run covers them.',
+      },
+    ],
+  },
   ...['default-locale-prefix', 'locale-neutral', 'locale-host'].map(
     (policy) => ({
       id: `verify:browser-assurance:${policy}`,
