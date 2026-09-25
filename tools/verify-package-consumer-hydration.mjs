@@ -827,11 +827,23 @@ const criticalBrowserResourceTypes = new Set([
   'stylesheet',
 ]);
 
+/**
+ * Documents a check asserts an error status for. A browser reports every such response on the
+ * console, and for these the report is the status the check asserts rather than a fault, so only
+ * that report, at exactly that address, is not counted.
+ */
+const expectedErrorDocuments = new Set();
+
 function attachBrowserDiagnostics(page, diagnostics) {
   page.on('console', (message) => {
     noteActivity(`console ${message.type()}`);
-    if (message.type() === 'error')
-      diagnostics.consoleErrors.push(message.text());
+    if (message.type() !== 'error') return;
+    if (
+      expectedErrorDocuments.has(message.location().url) &&
+      message.text().startsWith('Failed to load resource:')
+    )
+      return;
+    diagnostics.consoleErrors.push(message.text());
   });
   page.on('pageerror', (error) => {
     noteActivity('pageerror');
@@ -3895,11 +3907,17 @@ try {
     const missing = boundCalls(await context.newPage(), 'page');
     attachBrowserDiagnostics(missing, chromiumDiagnostics);
     missing.setDefaultTimeout(15_000);
-    await missing.goto(
-      `${browserOrigin}${addresses.path('missing', 'ar-EG')}`,
-      {
-        waitUntil: 'networkidle',
-      },
+    const missingUrl = `${browserOrigin}${addresses.path('missing', 'ar-EG')}`;
+    expectedErrorDocuments.add(missingUrl);
+    const missingResponse = await missing.goto(missingUrl, {
+      waitUntil: 'networkidle',
+    });
+    // The status is Equator's, and the page is the application's: a not-found page answered 200
+    // tells a crawler the address exists.
+    assert.equal(
+      missingResponse?.status(),
+      404,
+      'A not-found under a locale prefix did not answer 404',
     );
     await missing.waitForFunction(
       () => document.querySelector('[data-route-view="not-found"]') !== null,
@@ -3926,9 +3944,18 @@ try {
       const unprefixed = boundCalls(await context.newPage(), 'page');
       attachBrowserDiagnostics(unprefixed, chromiumDiagnostics);
       unprefixed.setDefaultTimeout(15_000);
-      await unprefixed.goto(`${browserOrigin}/nothing-is-mounted-here`, {
-        waitUntil: 'networkidle',
-      });
+      expectedErrorDocuments.add(
+        `${browserOrigin}${addresses.path('missing', 'en-US')}`,
+      );
+      const unprefixedResponse = await unprefixed.goto(
+        `${browserOrigin}/nothing-is-mounted-here`,
+        { waitUntil: 'networkidle' },
+      );
+      assert.equal(
+        unprefixedResponse?.status(),
+        404,
+        'The not-found page reached without a prefix did not answer 404',
+      );
       await unprefixed.waitForFunction(
         () => document.querySelector('[data-route-view="not-found"]') !== null,
         undefined,
