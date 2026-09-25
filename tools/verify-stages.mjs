@@ -362,6 +362,7 @@ const declared = Object.freeze([
     id: 'verify:browser-assurance',
     reads: ['consumer:package', 'source:packages'],
     exclusive: true,
+    claims: true,
     needs: [
       {
         on: 'verify:browser-assurance:self-test',
@@ -373,6 +374,7 @@ const declared = Object.freeze([
     id: 'verify:browser-assurance:angular-22.0.4',
     reads: ['consumer:angular-22.0.4', 'source:packages'],
     exclusive: true,
+    claims: true,
     needs: [
       {
         on: 'verify:browser-assurance:self-test',
@@ -384,6 +386,7 @@ const declared = Object.freeze([
     id: 'verify:browser-assurance:lower-bounds',
     reads: ['consumer:lower-bounds', 'source:packages'],
     exclusive: true,
+    claims: true,
     needs: [
       {
         on: 'verify:browser-assurance:self-test',
@@ -395,6 +398,7 @@ const declared = Object.freeze([
     id: 'verify:browser-assurance:strict',
     reads: ['consumer:strict', 'source:packages'],
     exclusive: true,
+    claims: true,
     needs: [
       {
         on: 'verify:browser-assurance:self-test',
@@ -407,6 +411,7 @@ const declared = Object.freeze([
       id: `verify:browser-assurance:${policy}`,
       reads: [`consumer:${policy}`, 'source:packages'],
       exclusive: true,
+      claims: true,
       needs: [
         {
           on: 'verify:browser-assurance:self-test',

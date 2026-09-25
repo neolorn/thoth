@@ -9,8 +9,10 @@ import {
   signal,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { RouterOutlet } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import {
+  LOCALE_URL_POLICY,
   LocaleChoice,
   LocalizedLabel,
   LocalizedMessage,
@@ -455,9 +457,31 @@ export class App {
     const adoptedSource = this.probeSnapshot.source;
     this.transferState.remove(SSR_PROBE_STATE_KEY);
 
+    // The browser gate names the policy this page runs in its claims, and a build can serve a
+    // policy other than the one its row was meant to have, so the page reports its own.
+    const { policy } = inject(LOCALE_URL_POLICY);
+    const root = document.documentElement;
+
+    // Router navigations completed without a document request. The first one is the document's
+    // own, unless the router finished it before this component existed.
+    const router = inject(Router);
+    let documentNavigationPending = !router.navigated;
+    let clientNavigations = 0;
+    root.dataset['clientNavigations'] = String(clientNavigations);
+    router.events.pipe(takeUntilDestroyed()).subscribe((event) => {
+      if (!(event instanceof NavigationEnd)) return;
+      if (documentNavigationPending) {
+        documentNavigationPending = false;
+        return;
+      }
+      clientNavigations += 1;
+      root.dataset['clientNavigations'] = String(clientNavigations);
+    });
+
     afterNextRender(() => {
-      document.documentElement.dataset['clientReady'] = 'true';
-      document.documentElement.dataset['transferSource'] = adoptedSource;
+      root.dataset['clientReady'] = 'true';
+      root.dataset['transferSource'] = adoptedSource;
+      root.dataset['urlPolicy'] = JSON.stringify(policy);
     });
   }
 

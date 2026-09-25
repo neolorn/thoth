@@ -8,6 +8,10 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 
 import {
+  openCapabilityEvidence,
+  recordCapabilityClaim,
+} from './capability-evidence.mjs';
+import {
   readConsumerAddresses,
   readConsumerBuilds,
 } from './consumer-addresses.mjs';
@@ -26,6 +30,8 @@ const consumerRoot = resolve(
   'tmp/package-consumer-verification',
   consumerName,
 );
+// The sections below claim what they assert, as the consumer row this stage drives.
+openCapabilityEvidence('browser-assurance', { consumer: consumerRoot });
 // Where each page lives, read from the address table the consumer's own specs read.
 const addresses = await readConsumerAddresses(consumerRoot);
 // The locales this build generated, which are the ones it prerenders.
@@ -782,6 +788,81 @@ function isShown(url, page, locale) {
   );
 }
 
+/** The option `LocaleChoice` renders for a locale, found by the attribute the application gives it. */
+function localeChoice(page, locale) {
+  return page.locator(`[data-locale-choice="${locale}"]`);
+}
+
+/**
+ * Holds every element the server rendered, from inside the page and before any script runs, so a
+ * claim made later can count how many of them the client kept. A page that loads another document
+ * loses the hold with the rest of its state, and so counts none.
+ */
+async function holdServerElements(page) {
+  await page.evaluate(() => {
+    const root = document.querySelector('[ng-server-context]');
+    globalThis.__equatorServerElements =
+      root === null ? [] : [root, ...root.querySelectorAll('*')];
+  });
+}
+
+/**
+ * Where a section's claims were asserted, read from the page once its client has booted: the
+ * engine running it, the policy the page reports, the document it shows, how many of the server's
+ * elements it still shows, and how often its router moved without a document request.
+ */
+async function measuredContext(page) {
+  await page.waitForFunction(
+    () => document.documentElement.dataset['clientReady'] === 'true',
+  );
+  const reported = await page.evaluate(() => ({
+    policy: document.documentElement.dataset['urlPolicy'],
+    clientNavigations: document.documentElement.dataset['clientNavigations'],
+    adoptedElements: (globalThis.__equatorServerElements ?? []).filter(
+      (element) => element.isConnected,
+    ).length,
+  }));
+  assert.notEqual(
+    reported.policy,
+    undefined,
+    'The page reports no policy, so its claims cannot say which one they ran under',
+  );
+  return {
+    engine: page.context().browser(),
+    policy: JSON.parse(reported.policy),
+    document: await page.content(),
+    adoptedElements: reported.adoptedElements,
+    clientNavigations: Number(reported.clientNavigations),
+  };
+}
+
+/** The name a section's claims are listed under. */
+function sectionCheck(row, section) {
+  return `${consumerName} ${row.id}: ${section}`;
+}
+
+/**
+ * Claims the row of the policy the page reports. A claim for another policy's row is refused as a
+ * mislabel, so only the matching one is made.
+ */
+function claimRunningPolicy(check, { policy, ...context }) {
+  if (policy.kind === 'locale-host') {
+    recordCapabilityClaim(check, 'policy:locale-host', { ...context, policy });
+  } else if (policy.kind === 'locale-neutral') {
+    recordCapabilityClaim(check, 'policy:locale-neutral', {
+      ...context,
+      policy,
+    });
+  } else if (policy.omitDefaultPrefix) {
+    recordCapabilityClaim(check, 'policy:default-locale-prefix', {
+      ...context,
+      policy,
+    });
+  } else {
+    recordCapabilityClaim(check, 'policy:path-prefix', { ...context, policy });
+  }
+}
+
 // What the application answers at a path, asked of the deployment that serves the locale.
 //
 // Under a policy that puts each locale on an origin of its own the origin is the Host a request
@@ -1215,7 +1296,7 @@ async function assertTrustedTypesPolicy(page, response, row) {
   return supported;
 }
 
-async function assertDirectAccessibility(page) {
+async function assertDirectAccessibility(page, row) {
   assert.equal(await page.getByRole('main').count(), 1);
   assert.equal(await page.getByRole('heading', { level: 1 }).count(), 1);
   // Equator builds this region itself. Nothing in the consumer's templates renders it, which is the
@@ -1255,25 +1336,25 @@ async function assertDirectAccessibility(page) {
     'Visible buttons and links must have accessible names',
   );
   assert.equal(
-    await page
-      .locator('[data-locale-choice="en-US"]')
-      .getAttribute('aria-current'),
+    await localeChoice(page, 'en-US').getAttribute('aria-current'),
     'true',
   );
   assert.equal(
-    await page
-      .locator('[data-locale-choice="ar-EG"]')
-      .getAttribute('aria-current'),
+    await localeChoice(page, 'ar-EG').getAttribute('aria-current'),
     null,
     'The option that is not current must carry no aria-current at all',
   );
-  assert.equal(await page.locator('[data-rich-link] a').count(), 1);
-  assert.equal(await page.locator('[data-rich-action] button').count(), 1);
+  assert.equal(
+    await page.locator('localized-message[data-rich-link] a').count(),
+    1,
+  );
+  const action = page.locator('localized-message[data-rich-action] button');
+  assert.equal(await action.count(), 1);
   const actionCount = Number(
     (await page.locator('[data-action-count]').textContent())?.trim(),
   );
-  await page.locator('[data-rich-action] button').focus();
-  await page.locator('[data-rich-action] button').press('Enter');
+  await action.focus();
+  await action.press('Enter');
   await page.waitForFunction(
     (expected) =>
       Number(
@@ -1281,6 +1362,10 @@ async function assertDirectAccessibility(page) {
       ) === expected,
     actionCount + 1,
   );
+  const check = sectionCheck(row, 'accessibility');
+  const context = await measuredContext(page);
+  recordCapabilityClaim(check, 'directive:LocaleChoice', context);
+  recordCapabilityClaim(check, 'directive:LocalizedMessage', context);
   await assertKeyboardLocaleAccessibility(page);
 }
 
@@ -2106,7 +2191,7 @@ async function placeVisitorMidPage(page, target = null) {
   }, target);
 }
 
-async function exerciseLocaleContinuity(page) {
+async function exerciseLocaleContinuity(page, row) {
   // Focus, selection, composition and scroll are kept across a switch made in the document. A switch
   // that is a document navigation keeps none of them, by what it is rather than by a defect.
   if (!addresses.switchInDocument) return;
@@ -2514,6 +2599,11 @@ async function exerciseLocaleContinuity(page) {
   );
 
   await assertUnrequestedMovementIsUndone(page);
+  recordCapabilityClaim(
+    sectionCheck(row, 'continuity'),
+    'directive:LocalizedInput',
+    await measuredContext(page),
+  );
 }
 
 /**
@@ -2753,6 +2843,7 @@ async function verifyRenderingModes(row, context, diagnostics) {
         await prerenderPage.locator('html').getAttribute('data-client-ready'),
         null,
       );
+      await holdServerElements(prerenderPage);
     }),
   );
   await assertTrustedTypesPolicy(prerenderPage, prerenderResponse, row);
@@ -2783,12 +2874,19 @@ async function verifyRenderingModes(row, context, diagnostics) {
     await prerenderPage.locator('link[rel="canonical"]').getAttribute('href'),
     addresses.url('second', 'en-US'),
   );
-  await prerenderPage.locator('[data-locale-choice="ar-EG"]').click();
+  const prerenderCheck = sectionCheck(row, 'prerender');
+  claimRunningPolicy(prerenderCheck, await measuredContext(prerenderPage));
+  await localeChoice(prerenderPage, 'ar-EG').click();
   await prerenderPage.waitForURL((url) => isShown(url, 'second', 'ar-EG'));
   await prerenderPage.waitForFunction(
     () =>
       document.documentElement.lang === 'ar-EG' &&
       document.documentElement.dir === 'rtl',
+  );
+  recordCapabilityClaim(
+    prerenderCheck,
+    'directive:LocaleChoice',
+    await measuredContext(prerenderPage),
   );
   await collectPolicyDiagnostics(prerenderPage, diagnostics);
   await prerenderPage.goto(
@@ -2826,12 +2924,17 @@ async function verifyRenderingModes(row, context, diagnostics) {
 
   const beforeSwitch = await inlineSourceCensus(csrPage);
 
-  await csrPage.locator('[data-locale-choice="ar-EG"]').click();
+  await localeChoice(csrPage, 'ar-EG').click();
   await csrPage.waitForURL((url) => isShown(url, 'item', 'ar-EG'));
   await csrPage.waitForFunction(
     () =>
       document.documentElement.lang === 'ar-EG' &&
       document.documentElement.dir === 'rtl',
+  );
+  recordCapabilityClaim(
+    sectionCheck(row, 'client render'),
+    'directive:LocaleChoice',
+    await measuredContext(csrPage),
   );
 
   // A locale switch re-renders every localized surface on the page. If Equator emitted inline
@@ -3174,38 +3277,10 @@ async function verifyBackForwardRestore(row, context, diagnostics) {
 }
 
 /**
- * One engine's pass, the same on every engine. The browser, context and page are the module's, so
- * the failure block can read the page a failing row was on.
+ * The first document, rendered by the server and adopted by the client. Scripts wait until the
+ * server's markup has been read, so what the client kept can be told from what it replaced.
  */
-async function verifyBrowserRow(row) {
-  enterStage(`${row.id}-browser-launch`);
-  const evidence = browserRowEvidence(row);
-  evidence.outcome = 'started';
-  browserDiagnostics = createBrowserDiagnostics(row);
-  const diagnostics = browserDiagnostics;
-  browser = await launchBrowserRow(row);
-  evidence.version = browser.version();
-  context = boundCalls(await browser.newContext(), 'context');
-  await recordPolicyViolations(context);
-  page = boundCalls(await context.newPage(), 'page');
-  page.setDefaultTimeout(15_000);
-  page.setDefaultNavigationTimeout(20_000);
-
-  // Attached before the first navigation, so a bound tripping in any stage describes what the row
-  // was doing rather than only naming the stage.
-  attachBrowserDiagnostics(page, diagnostics);
-
-  let releaseScripts;
-  const scriptGate = new Promise((resolveGate) => {
-    releaseScripts = resolveGate;
-  });
-  releaseScriptRequests = releaseScripts;
-
-  await page.route('**/*.js', async (route) => {
-    await scriptGate;
-    await route.continue();
-  });
-
+async function verifyHydration(row, page, releaseScripts) {
   enterStage(`${row.id}-hydration-navigation`);
   const navigation = page.goto(
     siteUrl(`${addresses.path('home', 'en-US')}?label=hydration-request`),
@@ -3232,6 +3307,7 @@ async function verifyBrowserRow(row) {
     await page.locator('html').getAttribute('data-client-ready'),
     null,
   );
+  await holdServerElements(page);
 
   enterStage(`${row.id}-hydration-adoption`);
   releaseScripts();
@@ -3296,10 +3372,411 @@ async function verifyBrowserRow(row) {
     'ready',
   );
   assert.match(
-    await page.locator('[data-rich-message]').textContent(),
+    await page.locator('localized-message[data-rich-message]').textContent(),
     /Read the guide/u,
   );
   assert.equal(await page.locator('[data-inert-text] img').count(), 0);
+
+  recordCapabilityClaim(
+    sectionCheck(row, 'hydration'),
+    'directive:LocalizedMessage',
+    await measuredContext(page),
+  );
+  return trustedTypes;
+}
+
+async function verifyLocalizedNotFound(row, context, diagnostics) {
+  // An address this application does not serve, under a locale it does. The locale resolved
+  // perfectly well; only the page is unknown, and the application's own not-found route is what
+  // answers. Treating that as a localization failure abandoned the navigation and rendered
+  // nothing at all.
+  const missing = boundCalls(await context.newPage(), 'page');
+  attachBrowserDiagnostics(missing, diagnostics);
+  missing.setDefaultTimeout(15_000);
+  const missingResponse = await visitFor(
+    context,
+    'missing',
+    'ar-EG',
+    (missingUrl) => {
+      expectedErrorDocuments.add(missingUrl);
+      return missing.goto(missingUrl, { waitUntil: 'networkidle' });
+    },
+  );
+  // The status is Equator's, and the page is the application's: a not-found page answered 200
+  // tells a crawler the address exists.
+  assert.equal(
+    missingResponse?.status(),
+    404,
+    'A not-found in Arabic did not answer 404',
+  );
+  await missing.waitForFunction(
+    () => document.querySelector('[data-route-view="not-found"]') !== null,
+    undefined,
+    { timeout: 10_000 },
+  );
+  assert.equal(
+    await missing.evaluate(() => document.documentElement.lang),
+    'ar-EG',
+    'A not-found in Arabic did not answer in Arabic',
+  );
+  await collectPolicyDiagnostics(missing, diagnostics);
+  claimRunningPolicy(
+    sectionCheck(row, 'not found'),
+    await measuredContext(missing),
+  );
+  await missing.close();
+
+  // The same address without a prefix, which is what an ordinary hand-written `href` produces.
+  // Locale entry has to be offered for an address the projection does not know, exactly as it is
+  // for one it knows. Answered as not-found where it stands, under a prefix policy nothing is
+  // mounted there, so the outlet renders empty and the document takes no title.
+  //
+  // The path deliberately opens with a segment no language tag can be: `/no-such-page` would
+  // not test this, because `no` is Norwegian and `no-such-page` parses as a language tag, so
+  // Equator reads it as intent toward an unsupported locale and answers 404 where it stands.
+  if (addresses.entryRedirects) {
+    const unprefixed = boundCalls(await context.newPage(), 'page');
+    attachBrowserDiagnostics(unprefixed, diagnostics);
+    unprefixed.setDefaultTimeout(15_000);
+    expectedErrorDocuments.add(
+      `${browserOrigin}${addresses.path('missing', 'en-US')}`,
+    );
+    const unprefixedResponse = await unprefixed.goto(
+      `${browserOrigin}/nothing-is-mounted-here`,
+      { waitUntil: 'networkidle' },
+    );
+    assert.equal(
+      unprefixedResponse?.status(),
+      404,
+      'The not-found page reached without a prefix did not answer 404',
+    );
+    await unprefixed.waitForFunction(
+      () => document.querySelector('[data-route-view="not-found"]') !== null,
+      undefined,
+      { timeout: 10_000 },
+    );
+    assert.equal(
+      new URL(unprefixed.url()).pathname,
+      addresses.path('missing', 'en-US'),
+      'An address with no locale prefix was not sent to one before answering',
+    );
+    assert.ok(
+      (await unprefixed.title()).length > 0,
+      'The not-found page reached without a prefix has no document title',
+    );
+    await collectPolicyDiagnostics(unprefixed, diagnostics);
+    await unprefixed.close();
+  }
+}
+
+async function verifyRouteDeferredScope(row, context, diagnostics) {
+  // A scope used nowhere but behind a lazy route boundary, reached by navigating to the route
+  // that defers it. Nothing here preloads anything: the generated route table names the scopes
+  // that route must have ready and the Router adapter loads them on activation.
+  //
+  // This stage exists because that derivation was covered by nothing. The unit tests load the
+  // scope by calling `preloadScope` themselves and the Router adapter's test declares its scopes
+  // through `requiredScopes`, so both prove the loading API works when something calls it, not
+  // that a route causes it. Deleting the derivation entirely left every gate passing, which is
+  // how a page that rendered no text reached a release.
+  //
+  // Both locales, directly rather than through a transition, because the derived list carries
+  // the startup scopes as well: a route that renders in one locale and not the other is the
+  // shape the omission took.
+  for (const [locale, expected] of [
+    ['en-US', 'Lazy scope ready.'],
+    ['ar-EG', 'النطاق الكسول جاهز.'],
+  ]) {
+    const deferred = boundCalls(await context.newPage(), 'page');
+    attachBrowserDiagnostics(deferred, diagnostics);
+    deferred.setDefaultTimeout(15_000);
+    const lazyUrl = await visitFor(context, 'lazy', locale, async (url) => {
+      await deferred.goto(url, { waitUntil: 'networkidle' });
+      return url;
+    });
+    await deferred.waitForFunction(
+      () => document.querySelector('[data-route-view="lazy"]') !== null,
+      undefined,
+      { timeout: 10_000 },
+    );
+    assert.equal(
+      (
+        await deferred.locator('[data-route-view="lazy"]').textContent()
+      )?.trim(),
+      expected,
+      `provideLocalizedRouter did not load the scope deferred behind ${lazyUrl} in ${locale} when that route activated`,
+    );
+    recordCapabilityClaim(
+      sectionCheck(row, 'route-deferred scope'),
+      'feature:provideLocalizedRouter',
+      await measuredContext(deferred),
+    );
+    await collectPolicyDiagnostics(deferred, diagnostics);
+    await deferred.close();
+  }
+}
+
+/** A switch to Arabic and back on the hydrated page, through the options the page renders. */
+async function verifyLocaleSwitches(row, page) {
+  enterStage(`${row.id}-arabic-route-switch`);
+  await localeChoice(page, 'ar-EG').click();
+  await page.waitForFunction(
+    () =>
+      document.documentElement.lang === 'ar-EG' &&
+      document.documentElement.dir === 'rtl' &&
+      document
+        .querySelector('h1')
+        ?.textContent?.includes('مختبر ميزات Equator') &&
+      document
+        .querySelector('[data-incremental-message]')
+        ?.textContent?.includes('حد الترجمة التدريجي جاهز.') &&
+      document
+        .querySelector('[data-dynamic-title]')
+        ?.textContent?.includes('دليل Equator للترجمة'),
+  );
+  await page.waitForURL(
+    (url) =>
+      isShown(url, 'home', 'ar-EG') &&
+      url.searchParams.get('label') === 'hydration-request',
+  );
+  assert.equal(
+    await page.locator('link[rel="canonical"]').getAttribute('href'),
+    addresses.shownUrl('home', 'ar-EG'),
+  );
+  assert.match(
+    await page.locator('localized-message[data-rich-message]').textContent(),
+    /اقرأ الدليل/,
+  );
+  assert.equal(await page.locator('[data-inert-text] img').count(), 0);
+  assert.match(
+    await page.locator('[data-source-fallback]').textContent(),
+    /Source fallback remains truthful/,
+  );
+  // A switch that is a document navigation arrives at a page its own origin rendered, and adopts
+  // that page's content rather than fetching it.
+  assert.equal(
+    await page
+      .locator('[data-dynamic-content]')
+      .getAttribute('data-source-requests'),
+    addresses.switchInDocument ? '1' : '0',
+  );
+  assert.equal(
+    await page.locator('[data-comment-id="community-ar"]').getAttribute('lang'),
+    'ar',
+  );
+  assert.equal(
+    await page.locator('[data-comment-id="community-ar"]').getAttribute('dir'),
+    'rtl',
+  );
+  assert.equal(
+    await page
+      .locator('[data-comment-id="community-multilingual"]')
+      .getAttribute('data-representation'),
+    'multilingual',
+  );
+
+  enterStage(`${row.id}-english-route-switch`);
+  await localeChoice(page, 'en-US').click();
+  await page.waitForFunction(
+    () =>
+      document.documentElement.lang === 'en-US' &&
+      document.documentElement.dir === 'ltr' &&
+      document
+        .querySelector('h1')
+        ?.textContent?.includes('Equator feature lab') &&
+      document
+        .querySelector('[data-incremental-message]')
+        ?.textContent?.includes('Incremental localization boundary ready.'),
+  );
+  await page.waitForURL(
+    (url) =>
+      isShown(url, 'home', 'en-US') &&
+      url.searchParams.get('label') === 'hydration-request',
+  );
+  assert.equal(
+    await page
+      .locator('[data-dynamic-content]')
+      .getAttribute('data-source-requests'),
+    addresses.switchInDocument ? '2' : '0',
+  );
+
+  const check = sectionCheck(row, 'locale switches');
+  const context = await measuredContext(page);
+  recordCapabilityClaim(check, 'directive:LocaleChoice', context);
+  recordCapabilityClaim(check, 'directive:LocalizedMessage', context);
+  claimRunningPolicy(check, context);
+}
+
+/** A router link to a child route, then back and forward through history. */
+async function verifyClientNavigation(row, page) {
+  const initialUrl = page.url();
+  assert.equal(
+    await page.locator('[data-route-view="home"]').textContent(),
+    'Home route',
+  );
+  enterStage(`${row.id}-child-route-navigation`);
+  await page.locator('[data-route-link="second"]').click();
+  await page.waitForURL((url) => isShown(url, 'second', 'en-US'));
+  await page.waitForFunction(
+    (canonical) =>
+      document
+        .querySelector('[data-route-view="second"]')
+        ?.textContent?.trim() === 'Second route' &&
+      document.querySelector('link[rel="canonical"]')?.getAttribute('href') ===
+        canonical,
+    addresses.url('second', 'en-US'),
+  );
+  assert.equal(
+    await page.locator('[data-route-view="second"]').textContent(),
+    'Second route',
+  );
+  assert.equal(
+    await page.locator('link[rel="canonical"]').getAttribute('href'),
+    addresses.url('second', 'en-US'),
+    'withRouting did not move the canonical to the second page on a client navigation',
+  );
+  const secondUrl = page.url();
+
+  enterStage(`${row.id}-history-back`);
+  await page.goBack();
+  await page.waitForSelector('[data-route-view="home"]');
+  assert.equal(page.url(), initialUrl);
+
+  enterStage(`${row.id}-history-forward`);
+  await page.goForward();
+  await page.waitForSelector('[data-route-view="second"]');
+  assert.equal(page.url(), secondUrl);
+
+  const check = sectionCheck(row, 'client navigation');
+  const context = await measuredContext(page);
+  recordCapabilityClaim(check, 'feature:withRouting', context);
+  claimRunningPolicy(check, context);
+}
+
+/** A route with a parameter whose spelling differs by locale, reached and then switched. */
+async function verifyDynamicArticle(row, page) {
+  enterStage(`${row.id}-dynamic-article-route`);
+  await page.locator('[data-route-link="home"]').click();
+  await page.waitForURL((url) => isShown(url, 'home', 'en-US'));
+  await page.locator('[data-route-link="article"]').click();
+  await page.waitForURL((url) => isShown(url, 'article', 'en-US'));
+  await page.waitForFunction(
+    () =>
+      document.title === 'The Equator localization handbook' &&
+      document
+        .querySelector('[data-route-view="article"]')
+        ?.getAttribute('data-entity-id') === 'handbook',
+  );
+  assert.equal(
+    await page.locator('link[rel="canonical"]').getAttribute('href'),
+    addresses.url('article', 'en-US'),
+    'withRouting did not move the canonical to the article on a client navigation',
+  );
+  // Only a locale the article has an address in is an alternate of it.
+  const arabicAlternate = page.locator(
+    'link[rel="alternate"][hreflang="ar-EG"]',
+  );
+  if (addresses.has('article', 'ar-EG')) {
+    assert.equal(
+      await arabicAlternate.getAttribute('href'),
+      addresses.url('article', 'ar-EG'),
+      "withRouting did not advertise the article's Arabic address",
+    );
+  } else {
+    assert.equal(
+      await arabicAlternate.count(),
+      0,
+      'withRouting advertised an Arabic alternate the article has no address for',
+    );
+  }
+  // The switcher's address and the alternate above are one derivation read twice, and each reader
+  // forms its own string: the head states where the page lives, absolutely, on the origin this
+  // application is deployed at; the option states where the reader is going, as a path on the host
+  // they are actually on. This lab is served from localhost and declares `https://site.example`,
+  // so an option carrying the head's string would take the reader off the machine they are on,
+  // which is why they are asserted apart rather than compared to each other.
+  //
+  // The slug is the loaded one, so this also says the option waited for the declaration: before it
+  // arrived there was no Arabic spelling to build an address from.
+  const arabicAddress = await localeChoice(page, 'ar-EG').getAttribute('href');
+  //
+  // An option links only an address that serves its locale to a reader who states nothing, so
+  // where the article has no Arabic address the option switches and links nowhere.
+  assert.equal(
+    arabicAddress,
+    addresses.has('article', 'ar-EG')
+      ? addresses.address('article', 'ar-EG')
+      : null,
+  );
+
+  enterStage(`${row.id}-dynamic-article-locale-switch`);
+  await localeChoice(page, 'ar-EG').click();
+  await page.waitForURL(
+    (url) =>
+      decodeURIComponent(url.pathname) ===
+        decodeURIComponent(addresses.shownPath('article', 'ar-EG')) &&
+      (!addresses.localeInOrigin || url.origin === addresses.origin('ar-EG')),
+  );
+  // The link said where the click would go, and it went there. A switcher whose href is derived
+  // separately from the switch can disagree with it (on the query the reader is carrying, or on
+  // the slug the page declared) and the reader finds that out by opening it in a new tab.
+  if (arabicAddress !== null) {
+    assert.equal(new URL(arabicAddress, page.url()).href, page.url());
+  }
+  await page.waitForFunction(
+    () =>
+      document.title === 'دليل Equator للترجمة' &&
+      document.documentElement.lang === 'ar-EG' &&
+      document
+        .querySelector('[data-dynamic-title]')
+        ?.textContent?.includes('دليل Equator للترجمة'),
+  );
+  assert.equal(
+    await page.locator('link[rel="canonical"]').getAttribute('href'),
+    addresses.shownUrl('article', 'ar-EG'),
+  );
+
+  const check = sectionCheck(row, 'dynamic article');
+  const context = await measuredContext(page);
+  recordCapabilityClaim(check, 'directive:LocaleChoice', context);
+  recordCapabilityClaim(check, 'feature:withRouting', context);
+  claimRunningPolicy(check, context);
+}
+
+/**
+ * One engine's pass, the same on every engine. The browser, context and page are the module's, so
+ * the failure block can read the page a failing row was on.
+ */
+async function verifyBrowserRow(row) {
+  enterStage(`${row.id}-browser-launch`);
+  const evidence = browserRowEvidence(row);
+  evidence.outcome = 'started';
+  browserDiagnostics = createBrowserDiagnostics(row);
+  const diagnostics = browserDiagnostics;
+  browser = await launchBrowserRow(row);
+  evidence.version = browser.version();
+  context = boundCalls(await browser.newContext(), 'context');
+  await recordPolicyViolations(context);
+  page = boundCalls(await context.newPage(), 'page');
+  page.setDefaultTimeout(15_000);
+  page.setDefaultNavigationTimeout(20_000);
+
+  // Attached before the first navigation, so a bound tripping in any stage describes what the row
+  // was doing rather than only naming the stage.
+  attachBrowserDiagnostics(page, diagnostics);
+
+  let releaseScripts;
+  const scriptGate = new Promise((resolveGate) => {
+    releaseScripts = resolveGate;
+  });
+  releaseScriptRequests = releaseScripts;
+
+  await page.route('**/*.js', async (route) => {
+    await scriptGate;
+    await route.continue();
+  });
+
+  const trustedTypes = await verifyHydration(row, page, releaseScripts);
 
   enterStage(`${row.id}-event-replay`);
   await page.locator('[data-counter]').click();
@@ -3308,128 +3785,10 @@ async function verifyBrowserRow(row) {
   );
 
   enterStage(`${row.id}-localized-not-found`);
-  {
-    // An address this application does not serve, under a locale it does. The locale resolved
-    // perfectly well; only the page is unknown, and the application's own not-found route is what
-    // answers. Treating that as a localization failure abandoned the navigation and rendered
-    // nothing at all.
-    const missing = boundCalls(await context.newPage(), 'page');
-    attachBrowserDiagnostics(missing, diagnostics);
-    missing.setDefaultTimeout(15_000);
-    const missingResponse = await visitFor(
-      context,
-      'missing',
-      'ar-EG',
-      (missingUrl) => {
-        expectedErrorDocuments.add(missingUrl);
-        return missing.goto(missingUrl, { waitUntil: 'networkidle' });
-      },
-    );
-    // The status is Equator's, and the page is the application's: a not-found page answered 200
-    // tells a crawler the address exists.
-    assert.equal(
-      missingResponse?.status(),
-      404,
-      'A not-found in Arabic did not answer 404',
-    );
-    await missing.waitForFunction(
-      () => document.querySelector('[data-route-view="not-found"]') !== null,
-      undefined,
-      { timeout: 10_000 },
-    );
-    assert.equal(
-      await missing.evaluate(() => document.documentElement.lang),
-      'ar-EG',
-      'A not-found in Arabic did not answer in Arabic',
-    );
-    await collectPolicyDiagnostics(missing, diagnostics);
-    await missing.close();
-
-    // The same address without a prefix, which is what an ordinary hand-written `href` produces.
-    // Locale entry has to be offered for an address the projection does not know, exactly as it is
-    // for one it knows. Answered as not-found where it stands, under a prefix policy nothing is
-    // mounted there, so the outlet renders empty and the document takes no title.
-    //
-    // The path deliberately opens with a segment no language tag can be: `/no-such-page` would
-    // not test this, because `no` is Norwegian and `no-such-page` parses as a language tag, so
-    // Equator reads it as intent toward an unsupported locale and answers 404 where it stands.
-    if (addresses.entryRedirects) {
-      const unprefixed = boundCalls(await context.newPage(), 'page');
-      attachBrowserDiagnostics(unprefixed, diagnostics);
-      unprefixed.setDefaultTimeout(15_000);
-      expectedErrorDocuments.add(
-        `${browserOrigin}${addresses.path('missing', 'en-US')}`,
-      );
-      const unprefixedResponse = await unprefixed.goto(
-        `${browserOrigin}/nothing-is-mounted-here`,
-        { waitUntil: 'networkidle' },
-      );
-      assert.equal(
-        unprefixedResponse?.status(),
-        404,
-        'The not-found page reached without a prefix did not answer 404',
-      );
-      await unprefixed.waitForFunction(
-        () => document.querySelector('[data-route-view="not-found"]') !== null,
-        undefined,
-        { timeout: 10_000 },
-      );
-      assert.equal(
-        new URL(unprefixed.url()).pathname,
-        addresses.path('missing', 'en-US'),
-        'An address with no locale prefix was not sent to one before answering',
-      );
-      assert.ok(
-        (await unprefixed.title()).length > 0,
-        'The not-found page reached without a prefix has no document title',
-      );
-      await collectPolicyDiagnostics(unprefixed, diagnostics);
-      await unprefixed.close();
-    }
-  }
+  await verifyLocalizedNotFound(row, context, diagnostics);
 
   enterStage(`${row.id}-route-deferred-scope`);
-  {
-    // A scope used nowhere but behind a lazy route boundary, reached by navigating to the route
-    // that defers it. Nothing here preloads anything: the generated route table names the scopes
-    // that route must have ready and the Router adapter loads them on activation.
-    //
-    // This stage exists because that derivation was covered by nothing. The unit tests load the
-    // scope by calling `preloadScope` themselves and the Router adapter's test declares its scopes
-    // through `requiredScopes`, so both prove the loading API works when something calls it, not
-    // that a route causes it. Deleting the derivation entirely left every gate passing, which is
-    // how a page that rendered no text reached a release.
-    //
-    // Both locales, directly rather than through a transition, because the derived list carries
-    // the startup scopes as well: a route that renders in one locale and not the other is the
-    // shape the omission took.
-    for (const [locale, expected] of [
-      ['en-US', 'Lazy scope ready.'],
-      ['ar-EG', 'النطاق الكسول جاهز.'],
-    ]) {
-      const deferred = boundCalls(await context.newPage(), 'page');
-      attachBrowserDiagnostics(deferred, diagnostics);
-      deferred.setDefaultTimeout(15_000);
-      const lazyUrl = await visitFor(context, 'lazy', locale, async (url) => {
-        await deferred.goto(url, { waitUntil: 'networkidle' });
-        return url;
-      });
-      await deferred.waitForFunction(
-        () => document.querySelector('[data-route-view="lazy"]') !== null,
-        undefined,
-        { timeout: 10_000 },
-      );
-      assert.equal(
-        (
-          await deferred.locator('[data-route-view="lazy"]').textContent()
-        )?.trim(),
-        expected,
-        `The scope deferred behind ${lazyUrl} did not load in ${locale} when that route activated`,
-      );
-      await collectPolicyDiagnostics(deferred, diagnostics);
-      await deferred.close();
-    }
-  }
+  await verifyRouteDeferredScope(row, context, diagnostics);
 
   enterStage(`${row.id}-incremental-hydration-after-locale-change`);
   {
@@ -3537,201 +3896,11 @@ async function verifyBrowserRow(row) {
     'Incremental hydration replaced its transferred boundary',
   );
 
-  enterStage(`${row.id}-arabic-route-switch`);
-  await page.locator('[data-locale-choice="ar-EG"]').click();
-  await page.waitForFunction(
-    () =>
-      document.documentElement.lang === 'ar-EG' &&
-      document.documentElement.dir === 'rtl' &&
-      document
-        .querySelector('h1')
-        ?.textContent?.includes('مختبر ميزات Equator') &&
-      document
-        .querySelector('[data-incremental-message]')
-        ?.textContent?.includes('حد الترجمة التدريجي جاهز.') &&
-      document
-        .querySelector('[data-dynamic-title]')
-        ?.textContent?.includes('دليل Equator للترجمة'),
-  );
-  await page.waitForURL(
-    (url) =>
-      isShown(url, 'home', 'ar-EG') &&
-      url.searchParams.get('label') === 'hydration-request',
-  );
-  assert.equal(
-    await page.locator('link[rel="canonical"]').getAttribute('href'),
-    addresses.shownUrl('home', 'ar-EG'),
-  );
-  assert.match(
-    await page.locator('[data-rich-message]').textContent(),
-    /اقرأ الدليل/,
-  );
-  assert.equal(await page.locator('[data-inert-text] img').count(), 0);
-  assert.match(
-    await page.locator('[data-source-fallback]').textContent(),
-    /Source fallback remains truthful/,
-  );
-  // A switch that is a document navigation arrives at a page its own origin rendered, and adopts
-  // that page's content rather than fetching it.
-  assert.equal(
-    await page
-      .locator('[data-dynamic-content]')
-      .getAttribute('data-source-requests'),
-    addresses.switchInDocument ? '1' : '0',
-  );
-  assert.equal(
-    await page.locator('[data-comment-id="community-ar"]').getAttribute('lang'),
-    'ar',
-  );
-  assert.equal(
-    await page.locator('[data-comment-id="community-ar"]').getAttribute('dir'),
-    'rtl',
-  );
-  assert.equal(
-    await page
-      .locator('[data-comment-id="community-multilingual"]')
-      .getAttribute('data-representation'),
-    'multilingual',
-  );
+  await verifyLocaleSwitches(row, page);
 
-  enterStage(`${row.id}-english-route-switch`);
-  await page.locator('[data-locale-choice="en-US"]').click();
-  await page.waitForFunction(
-    () =>
-      document.documentElement.lang === 'en-US' &&
-      document.documentElement.dir === 'ltr' &&
-      document
-        .querySelector('h1')
-        ?.textContent?.includes('Equator feature lab') &&
-      document
-        .querySelector('[data-incremental-message]')
-        ?.textContent?.includes('Incremental localization boundary ready.'),
-  );
-  await page.waitForURL(
-    (url) =>
-      isShown(url, 'home', 'en-US') &&
-      url.searchParams.get('label') === 'hydration-request',
-  );
-  assert.equal(
-    await page
-      .locator('[data-dynamic-content]')
-      .getAttribute('data-source-requests'),
-    addresses.switchInDocument ? '2' : '0',
-  );
+  await verifyClientNavigation(row, page);
 
-  const initialUrl = page.url();
-  assert.equal(
-    await page.locator('[data-route-view="home"]').textContent(),
-    'Home route',
-  );
-  enterStage(`${row.id}-child-route-navigation`);
-  await page.locator('[data-route-link="second"]').click();
-  await page.waitForURL((url) => isShown(url, 'second', 'en-US'));
-  await page.waitForFunction(
-    (canonical) =>
-      document
-        .querySelector('[data-route-view="second"]')
-        ?.textContent?.trim() === 'Second route' &&
-      document.querySelector('link[rel="canonical"]')?.getAttribute('href') ===
-        canonical,
-    addresses.url('second', 'en-US'),
-  );
-  assert.equal(
-    await page.locator('[data-route-view="second"]').textContent(),
-    'Second route',
-  );
-  assert.equal(
-    await page.locator('link[rel="canonical"]').getAttribute('href'),
-    addresses.url('second', 'en-US'),
-  );
-  const secondUrl = page.url();
-
-  enterStage(`${row.id}-history-back`);
-  await page.goBack();
-  await page.waitForSelector('[data-route-view="home"]');
-  assert.equal(page.url(), initialUrl);
-
-  enterStage(`${row.id}-history-forward`);
-  await page.goForward();
-  await page.waitForSelector('[data-route-view="second"]');
-  assert.equal(page.url(), secondUrl);
-
-  enterStage(`${row.id}-dynamic-article-route`);
-  await page.locator('[data-route-link="home"]').click();
-  await page.waitForURL((url) => isShown(url, 'home', 'en-US'));
-  await page.locator('[data-route-link="article"]').click();
-  await page.waitForURL((url) => isShown(url, 'article', 'en-US'));
-  await page.waitForFunction(
-    () =>
-      document.title === 'The Equator localization handbook' &&
-      document
-        .querySelector('[data-route-view="article"]')
-        ?.getAttribute('data-entity-id') === 'handbook',
-  );
-  assert.equal(
-    await page.locator('link[rel="canonical"]').getAttribute('href'),
-    addresses.url('article', 'en-US'),
-  );
-  // Only a locale the article has an address in is an alternate of it.
-  const arabicAlternate = page.locator(
-    'link[rel="alternate"][hreflang="ar-EG"]',
-  );
-  if (addresses.has('article', 'ar-EG')) {
-    assert.equal(
-      await arabicAlternate.getAttribute('href'),
-      addresses.url('article', 'ar-EG'),
-    );
-  } else {
-    assert.equal(await arabicAlternate.count(), 0);
-  }
-  // The switcher's address and the alternate above are one derivation read twice, and each reader
-  // forms its own string: the head states where the page lives, absolutely, on the origin this
-  // application is deployed at; the option states where the reader is going, as a path on the host
-  // they are actually on. This lab is served from localhost and declares `https://site.example`,
-  // so an option carrying the head's string would take the reader off the machine they are on,
-  // which is why they are asserted apart rather than compared to each other.
-  //
-  // The slug is the loaded one, so this also says the option waited for the declaration: before it
-  // arrived there was no Arabic spelling to build an address from.
-  const arabicAddress = await page
-    .locator('[data-locale-choice="ar-EG"]')
-    .getAttribute('href');
-  //
-  // An option links only an address that serves its locale to a reader who states nothing, so
-  // where the article has no Arabic address the option switches and links nowhere.
-  assert.equal(
-    arabicAddress,
-    addresses.has('article', 'ar-EG')
-      ? addresses.address('article', 'ar-EG')
-      : null,
-  );
-
-  enterStage(`${row.id}-dynamic-article-locale-switch`);
-  await page.locator('[data-locale-choice="ar-EG"]').click();
-  await page.waitForURL(
-    (url) =>
-      decodeURIComponent(url.pathname) ===
-        decodeURIComponent(addresses.shownPath('article', 'ar-EG')) &&
-      (!addresses.localeInOrigin || url.origin === addresses.origin('ar-EG')),
-  );
-  // The link said where the click would go, and it went there. A switcher whose href is derived
-  // separately from the switch can disagree with it (on the query the reader is carrying, or on
-  // the slug the page declared) and the reader finds that out by opening it in a new tab.
-  if (arabicAddress !== null) {
-    assert.equal(new URL(arabicAddress, page.url()).href, page.url());
-  }
-  await page.waitForFunction(
-    () =>
-      document.title === 'دليل Equator للترجمة' &&
-      document.documentElement.lang === 'ar-EG' &&
-      document
-        .querySelector('[data-dynamic-title]')
-        ?.textContent?.includes('دليل Equator للترجمة'),
-  );
-  assert.equal(
-    await page.locator('link[rel="canonical"]').getAttribute('href'),
-    addresses.shownUrl('article', 'ar-EG'),
-  );
+  await verifyDynamicArticle(row, page);
 
   await collectPolicyDiagnostics(page, diagnostics);
 
@@ -3742,8 +3911,8 @@ async function verifyBrowserRow(row) {
   await page.waitForFunction(
     () => document.documentElement.dataset['clientReady'] === 'true',
   );
-  await exerciseLocaleContinuity(page);
-  await assertDirectAccessibility(page);
+  await exerciseLocaleContinuity(page, row);
+  await assertDirectAccessibility(page, row);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   assert.equal(
     await page.evaluate(

@@ -123,14 +123,22 @@ const claimsFile = () => {
   return file === undefined || file === '' ? undefined : file;
 };
 
+// The consumer row the checks of this process drive, when they drive one.
+let openedConsumerRow;
+
 /**
  * Opens a check that is not a vitest test (a browser row's section, a command step, a Node row) as
  * a writer of its stage's claims. Called once when the check starts, before it has asserted
  * anything, so its stage shows the writer ran even when nothing it asserted can be named yet.
+ *
+ * `consumer` is the root of the materialized consumer the check drives. Its claims then carry the
+ * row that consumer was built as, read the way the suite reporter reads it.
  */
-export function openCapabilityEvidence(writer) {
+export function openCapabilityEvidence(writer, { consumer } = {}) {
   const file = claimsFile();
-  if (file !== undefined) opened(file, writer);
+  if (file === undefined) return;
+  if (consumer !== undefined) openedConsumerRow = consumerRow(consumer);
+  opened(file, writer);
 }
 
 /**
@@ -143,7 +151,13 @@ export function openCapabilityEvidence(writer) {
 export function recordCapabilityClaim(check, capability, observed) {
   const file = claimsFile();
   if (file === undefined) return;
-  append(file, { ...claimRecord(capability, observed), check });
+  append(file, {
+    ...claimRecord(capability, observed),
+    ...(openedConsumerRow === undefined
+      ? {}
+      : { angularRow: openedConsumerRow }),
+    check,
+  });
 }
 
 /**
