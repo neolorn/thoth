@@ -39,6 +39,9 @@ describe.runIf(expectedPageCaching !== undefined)(
         new Request(`${pageUrl('legacy', 'en-US')}?tab=one`),
       );
 
+      // The floor the answers show is the one the declaration makes, so a floor missing from it
+      // fails by name rather than as a header.
+      expect(responseCaching?.pageCaching).toBe(expectedPageCaching);
       expect(page.status).toBe(200);
       expect(page.headers.get('cache-control')).toBe(
         expectedPageCaching === 'not-stored'
