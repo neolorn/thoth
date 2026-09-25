@@ -3402,10 +3402,19 @@ export interface LocalizedServerRoutesOptions<Mode> {
    * obvious way to answer that error is to declare them, at which point whether they prerender
    * becomes a decision made by someone who does not know the addresses exist.
    *
-   * Required exactly when the policy produces such addresses, which `omitDefaultPrefix`,
-   * `locale-neutral` and `locale-host` do not.
+   * Required exactly when the table has such addresses: under a prefixing policy, and under any
+   * policy for a route whose path is spelled per locale.
    */
   readonly canonicalRenderMode?: Mode;
+  /**
+   * The origin this build answers at, under a `locale-host` policy, where it is required.
+   *
+   * The origin is what names the locale there, so a build answering at one renders that origin's
+   * locale, and each route is emitted spelled in it. It is the value `provideLocalizedRouter` is
+   * given as `origin`. Without it a build for another locale's origin renders the default locale's
+   * spellings, which that origin redirects, and writes a redirect where the page belongs.
+   */
+  readonly origin?: string;
 }
 
 /**
@@ -3425,9 +3434,9 @@ export interface LocalizedServerRoutesOptions<Mode> {
  * Locale order follows the policy, and declaration order is kept, because a server route table is
  * matched in order.
  *
- * A `locale-host` policy puts the locale in the host rather than the path, so one path serves
- * every locale and one entry per route is emitted. Rendering those variants ahead of time is a
- * build-per-host question, which is outside a route table.
+ * A `locale-host` policy puts the locale in the origin rather than the path, so a build answers at
+ * one origin and renders that origin's locale: `origin` names it, and one entry per route is
+ * emitted, spelled in that locale. The other locales are rendered by their own origins' builds.
  *
  * The generated `configuration` decides which of the policy's locales get addresses at all: see
  * `builtLocales`. A locale the policy names and this build did not generate is left out rather than
@@ -3445,10 +3454,10 @@ export function localizedServerRoutes<
 ): LocalizedServerRoutes<Mode> {
   const projection = validateRouteProjection(projectionValue);
   const built = builtLocales(policy, configuration);
-  // Only the prefixing branch is filtered, and that is not an oversight. Under `locale-neutral` and
-  // `locale-host` one path serves every locale, the address does not name one, so there is no
-  // per-locale address to withhold, and the entry emitted below is the application's own, which the
-  // default-locale check above has already confirmed this build produced.
+  // Only the prefixing branch filters by the build. Under `locale-neutral` no address names a
+  // locale, so the one emitted is the default locale's, which `builtLocales` has already confirmed
+  // this build produced; under `locale-host` it is the locale of the origin the build answers at,
+  // which `hostBuildLocale` holds to the same.
   const prefixes: readonly (readonly [string, string])[] =
     policy.kind === 'path-prefix'
       ? Object.entries(policy.locales)
@@ -3461,7 +3470,14 @@ export function localizedServerRoutes<
                 : prefix,
             ] as const),
           )
-      : [Object.freeze([policy.defaultLocale, ''] as const)];
+      : [
+          Object.freeze([
+            policy.kind === 'locale-host'
+              ? hostBuildLocale(policy, built, options.origin)
+              : policy.defaultLocale,
+            '',
+          ] as const),
+        ];
 
   const routes: LocalizedServerRoute<Mode>[] = [];
   const seen = new Set<string>();
@@ -3545,11 +3561,11 @@ export function localizedServerRoutes<
   if (canonical.length > 0) {
     if (options.canonicalRenderMode === undefined) {
       routeError(
-        `This policy gives every locale a path prefix, so ${canonical.length} declared route(s) also have a canonical address no visitor reaches (${canonical
+        `${canonical.length} declared route(s) also have a canonical address no visitor reaches (${canonical
           .map((path) => JSON.stringify(`/${path}`))
           .join(
             ', ',
-          )}). Pass \`canonicalRenderMode\`, \`RenderMode.Server\`, so they are rendered on demand instead of written as files nothing links to.`,
+          )}): the path the Router matches, which no locale's address spells. Pass \`canonicalRenderMode\`, \`RenderMode.Server\`, so they are rendered on demand instead of written as files nothing links to.`,
       );
     }
     const canonicalRenderMode = options.canonicalRenderMode;
@@ -3575,6 +3591,45 @@ export function localizedServerRoutes<
   // built every element, replaces one `as ServerRoute[]` per consumer: each of those sitting
   // above a whole table of entries it silenced along the way.
   return routes as LocalizedServerRoutes<Mode>;
+}
+
+/**
+ * The locale a build under a host policy renders: the one whose origin the build answers at.
+ *
+ * Refused at configuration when the origin is missing, is not one the policy names, or names a
+ * locale this build did not generate, because each of those renders another locale's spellings
+ * at an origin that redirects them.
+ */
+function hostBuildLocale(
+  policy: Extract<LocaleUrlPolicy, { kind: 'locale-host' }>,
+  built: ReadonlySet<string>,
+  origin: string | undefined,
+): string {
+  const named = Object.keys(policy.origins)
+    .map((each) => JSON.stringify(each))
+    .join(', ');
+  if (origin === undefined) {
+    routeError(
+      `A "locale-host" policy carries the locale in the origin, so localizedServerRoutes() needs to be told which origin this build answers at: pass {origin: ...} naming one of ${named}, the value provideLocalizedRouter() is given.`,
+    );
+  }
+  let locale: string | undefined;
+  try {
+    locale = policy.origins[new URL(origin).origin];
+  } catch {
+    locale = undefined;
+  }
+  if (locale === undefined) {
+    routeError(
+      `localizedServerRoutes() was given {origin: ${JSON.stringify(origin)}}, which the "locale-host" policy does not name. Its origins are ${named}. The scheme is part of an origin.`,
+    );
+  }
+  if (!built.has(canonicalLocale(locale))) {
+    routeError(
+      `localizedServerRoutes() was given {origin: ${JSON.stringify(origin)}}, the origin of ${locale}, which this build did not generate, so it has no page to render there.`,
+    );
+  }
+  return locale;
 }
 
 /**

@@ -65,10 +65,11 @@ known to the build, so only what the routes declare is checked.
 
 ## Serve a domain per locale
 
-Under a policy that puts the locale in the origin, `provideLocalizedRouter(routes, { origin })` names
-which origin this build is. It must be one of the policy's own, and the build prerenders that
-origin's locale only. The head still advertises the others. Serving several domains means a build per
-domain.
+Under a policy that puts the locale in the origin, the build has to be told which origin it is. Pass
+the same value to `provideLocalizedRouter(routes, { origin })` and as `origin` in the options of
+`provideLocalizedServerRendering`. It must be one of the policy's own, and the build prerenders that
+origin's locale only, at the addresses that origin serves. The head still advertises the others.
+Serving several domains means a build per domain.
 
 That policy also needs the server told the same list of domains. `@angular/ssr` answers a `Host`
 header it does not recognize with `400`, before your application runs, and it recognizes loopback and

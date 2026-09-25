@@ -12,7 +12,11 @@ import {
 import { configuration } from '#i18n';
 import { messages } from '#i18n/shell';
 
-import { routePolicy, appRouteProjection } from './localization.routes';
+import {
+  routePolicy,
+  appRouteProjection,
+  SITE_ORIGIN,
+} from './localization.routes';
 import { pageAddress } from './addresses';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
@@ -135,7 +139,11 @@ describe('type contracts', () => {
       appRouteProjection,
       configuration,
       [{ routeId: 'route:second', renderMode: RenderMode.Prerender }],
-      { canonicalRenderMode: RenderMode.Server, fallback: RenderMode.Server },
+      {
+        canonicalRenderMode: RenderMode.Server,
+        fallback: RenderMode.Server,
+        origin: SITE_ORIGIN,
+      },
     );
 
     // And the array itself is the caller's to hand on, which `withRoutes` requires.

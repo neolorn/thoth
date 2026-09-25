@@ -2,7 +2,11 @@ import { RenderMode } from '@angular/ssr';
 import { provideLocalizedServerRendering } from '@neolorn/equator/ssr';
 import { configuration } from '#i18n';
 
-import { routePolicy, appRouteProjection } from './localization.routes';
+import {
+  routePolicy,
+  appRouteProjection,
+  SITE_ORIGIN,
+} from './localization.routes';
 
 /**
  * One entry per route, not one per route per locale.
@@ -62,5 +66,8 @@ export const serverRendering = provideLocalizedServerRendering(
     // build error by declaring them `Prerender` instead.
     canonicalRenderMode: RenderMode.Server,
     fallback: RenderMode.Server,
+    // The origin the router is given too. Under a policy that puts each locale on an origin of its
+    // own it decides which locale this build renders.
+    origin: SITE_ORIGIN,
   },
 );

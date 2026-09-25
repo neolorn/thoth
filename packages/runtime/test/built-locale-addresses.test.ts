@@ -344,6 +344,67 @@ describe('the hostnames a policy admits', () => {
 });
 
 /**
+ * A build under a host policy answers at one origin, so it renders one locale: the origin's.
+ *
+ * `specs/07-routing-rendering-and-seo.spec.md` section 3. The route table is where that becomes
+ * files, and a route spelled per locale is where it shows: every other origin redirects the
+ * default locale's spelling, so a table spelled in it writes a redirect in place of each page.
+ */
+describe('the addresses a build under a host policy renders', () => {
+  const HOSTS = createHostLocalePolicy({
+    defaultLocale: 'en-US',
+    origins: {
+      'en-US': 'https://example.com',
+      'ar-EG': 'https://example.eg:8443',
+      'de-DE': 'https://example.de',
+    },
+  });
+
+  it('renders the locale of the origin the build answers at, spelled in it', () => {
+    const table = (origin: string) =>
+      localizedServerRoutes(
+        HOSTS,
+        PROJECTION,
+        SHIPPED,
+        [{ routeId: 'route:second', renderMode: 'prerender' }],
+        { origin, canonicalRenderMode: 'server' },
+      ).map(({ path, renderMode }) => [path, renderMode]);
+
+    // The Arabic origin's build renders the Arabic spelling. The English one is not an address
+    // there: that origin redirects it, so rendering it writes a redirect where the page belongs.
+    expect(table('https://example.eg:8443')).toEqual([
+      ['الثاني', 'prerender'],
+      ['second', 'server'],
+    ]);
+    // The control, from the same declaration: the English origin's build renders the English one.
+    expect(table('https://example.com')).toEqual([['second', 'prerender']]);
+    claimCapability('policy:locale-host', { policy: HOSTS });
+  });
+
+  it('refuses a build that does not say which of its origins it answers at', () => {
+    const at = (origin: string | undefined) => () =>
+      localizedServerRoutes(
+        HOSTS,
+        PROJECTION,
+        SHIPPED,
+        [{ routeId: 'route:second', renderMode: 'prerender' }],
+        {
+          canonicalRenderMode: 'server',
+          ...(origin === undefined ? {} : { origin }),
+        },
+      );
+
+    expect(at(undefined)).toThrow(/needs to be told which origin/u);
+    // The scheme is part of an origin, so this one is not the policy's.
+    expect(at('http://example.com')).toThrow(/does not name/u);
+    // Named by the policy, and German is not in this build.
+    expect(at('https://example.de')).toThrow(/did not generate/u);
+    expect(at('https://example.com')).not.toThrow();
+    claimCapability('policy:locale-host', { policy: HOSTS });
+  });
+});
+
+/**
  * An address is advertised for a locale only when arriving at it, with nothing said about
  * preference, yields that locale.
  *
