@@ -1,5 +1,6 @@
 {
   "policy": "locale-host",
+  "pageCaching": "per-visitor",
   "origins": {
     "en-US": "http://en-us.localhost",
     "ar-EG": "http://ar-eg.localhost",

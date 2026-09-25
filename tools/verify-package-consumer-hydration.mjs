@@ -3342,6 +3342,27 @@ try {
     historicalReplacement.headers.get('location'),
     `${addresses.address('second', 'en-US')}?tab=one`,
   );
+  // The floor a deployment declares for every page, where its table says it declares one. The
+  // second page is otherwise shared under this policy, so the floor is what makes it private, and
+  // the replacement above is a redirect, which carries no page and keeps the class routing gave it.
+  if (addresses.pageCaching !== undefined) {
+    const floored = await answer(addresses.path('second', 'en-US'), {
+      redirect: 'manual',
+    });
+    assert.equal(floored.status, 200);
+    assert.equal(
+      floored.headers.get('cache-control'),
+      addresses.pageCaching === 'not-stored'
+        ? 'private, no-store'
+        : 'private, no-cache',
+      'The floor this deployment declares for every page did not raise one',
+    );
+    assert.equal(
+      historicalReplacement.headers.get('cache-control'),
+      'public, max-age=86400',
+      'The floor this deployment declares for every page reached a redirect',
+    );
+  }
   // The locale a retired address answers in is the one it states, so only an address that states
   // one can show it is not the default.
   const goneLocale = addresses.localeInAddress ? 'ar-EG' : 'en-US';

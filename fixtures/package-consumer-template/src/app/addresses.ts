@@ -27,6 +27,29 @@ const origins: Readonly<Record<string, string>> = table.origins;
 /** The policy the table was written for, named as the capability matrix names its columns. */
 export const tablePolicy: string = table.policy;
 
+/**
+ * The least this deployment keeps any page as, where the table says it declares a floor.
+ *
+ * Written into the table rather than read from `response-caching.ts`, so a floor that goes missing
+ * there fails the checks that expect it instead of switching them off.
+ */
+export const expectedPageCaching = (():
+  | 'per-visitor'
+  | 'not-stored'
+  | undefined => {
+  const value = (table as Readonly<Record<string, unknown>>)['pageCaching'];
+  if (
+    value === undefined ||
+    value === 'per-visitor' ||
+    value === 'not-stored'
+  ) {
+    return value;
+  }
+  throw new Error(
+    `The address table gives pageCaching as ${JSON.stringify(value)}, which is no floor a deployment can declare.`,
+  );
+})();
+
 const written = (page: Page, locale: string): string => {
   const value = pages[page][locale];
   if (value === undefined) {

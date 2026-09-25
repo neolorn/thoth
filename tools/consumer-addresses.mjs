@@ -84,6 +84,8 @@ export async function readConsumerAddresses(consumerRoot) {
     switchInDocument: policy !== 'locale-host',
     /** Whether the origin names the locale, so a build answers at one origin and serves its locale. */
     localeInOrigin: policy === 'locale-host',
+    /** The least the deployment keeps any page as, where the table says it declares a floor. */
+    pageCaching: table.pageCaching,
   });
 }
 

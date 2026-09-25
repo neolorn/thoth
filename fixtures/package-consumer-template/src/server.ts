@@ -18,6 +18,7 @@ import { configuration } from '#i18n';
 
 import { localeCookie } from './app/locale-cookie';
 import { publishedRoutes } from './app/app.routes.server';
+import { responseCaching } from './app/response-caching';
 import {
   routePolicy,
   appRouteProjection,
@@ -66,12 +67,8 @@ const engine = new AngularNodeAppEngine({
 const PASS_THROUGH = 'x-consumer-passthrough';
 
 /**
- * What this deployment owns, and nothing else: two durations, and where it reads a preference.
- *
- * `successMaxAge` is deliberately not `0`. A zero is a deployment that revalidates every request,
- * which makes a response marked `public` behave privately and hides the difference between a
- * correct classification and a leaked one. This fixture is what the gate reads; a fixture that is
- * safe whatever Equator says cannot show that Equator is right.
+ * What this deployment owns, and nothing else: how long a response is kept, which
+ * `app/response-caching.ts` states, and where it reads a preference.
  *
  * `cookie` names the cookie this deployment remembers a choice in. Naming it is what tells Equator
  * that answers here vary by something a shared cache must not key on, and that is a fact stated
@@ -89,7 +86,7 @@ const PASS_THROUGH = 'x-consumer-passthrough';
 const localeRequests = createLocaleRequestHandler({
   policy: servedPolicy,
   projection: appRouteProjection,
-  cache: { successMaxAge: 600, permanentRedirectMaxAge: 86_400 },
+  cache: responseCaching,
   cookie: localeCookie,
   passthrough: () =>
     new Response(null, { status: 204, headers: { [PASS_THROUGH]: '1' } }),
