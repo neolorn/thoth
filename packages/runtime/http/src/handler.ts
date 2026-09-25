@@ -349,12 +349,16 @@ export function createLocaleRequestHandler(
 
     // The target as it arrived, when this entry point's own adapter built the request. A `Request`
     // carries a parsed URL, and parsing one resolves dot segments and rewrites a backslash, so the
-    // path on it is not always what was asked for.
+    // path on it is not always what was asked for. The origin is the one the adapter put on the
+    // request, which under a host policy is what names the locale.
     const resolution = resolveLocalizedRoute(
       rawTargetOf(request) ?? `${url.pathname}${url.search}`,
       policy,
       options.projection,
-      preferred === undefined ? undefined : { locale: preferred },
+      {
+        origin: url.origin,
+        ...(preferred === undefined ? {} : { locale: preferred }),
+      },
     );
 
     // Classified before anything dispatches on it, which is the order

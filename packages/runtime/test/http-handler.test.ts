@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createLocaleRequestHandler } from '../http/src/handler.js';
 import {
+  createHostLocalePolicy,
   createLocaleNeutralPolicy,
   resolveLocalizedRoute,
   routeCacheHeaders,
@@ -267,6 +268,42 @@ describe('where the handler gets its answers', () => {
       'private-no-store',
       'public',
     ]);
+  });
+});
+
+/**
+ * Under a host policy the path is the same in every locale and the origin is what names one, so the
+ * handler resolves at the origin the request arrived on.
+ */
+describe('a request under a policy that carries the locale in the origin', () => {
+  const handler = createLocaleRequestHandler({
+    policy: createHostLocalePolicy({
+      defaultLocale: 'en-US',
+      origins: {
+        'en-US': 'https://en.site.example',
+        'ar-EG': 'https://ar.site.example',
+      },
+    }),
+    projection: PROJECTION,
+    cache: CACHE,
+    cookie: false,
+    render: ({ locale }) =>
+      new Response(`<!doctype html><html lang="${locale}"></html>`, {
+        headers: { 'content-type': 'text/html' },
+      }),
+  });
+
+  it('answers in the locale of the origin it arrived on', async () => {
+    const arabic = await handler(new Request('https://ar.site.example/second'));
+    expect(arabic.status).toBe(200);
+    expect(arabic.headers.get('content-language')).toBe('ar-EG');
+    expect(await arabic.text()).toContain('lang="ar-EG"');
+
+    // The control: the same path on the other origin, so the answer above is the origin's.
+    const english = await handler(
+      new Request('https://en.site.example/second'),
+    );
+    expect(english.headers.get('content-language')).toBe('en-US');
   });
 });
 
