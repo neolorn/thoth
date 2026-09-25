@@ -203,7 +203,12 @@ export function declareOperationalFailure(
  */
 export type LocalizedRenderResult = Response | DeclaredPageOutcome;
 
-/** Produces the document. Called only for outcomes that have a body. */
+/**
+ * Produces the document. Called only for outcomes that have a body.
+ *
+ * A 304 or a redirect it returns keeps its status and is sent without content, because neither is an
+ * answer about the address.
+ */
 export type LocaleRenderer = (
   outcome: LocaleRequestOutcome,
 ) => LocalizedRenderResult | Promise<LocalizedRenderResult>;
@@ -390,7 +395,7 @@ export function createLocaleRequestHandler(
     // Taken as an argument rather than read from the outer descriptor, because a declared outcome
     // changes the status, the caching and the indexing of the response and nothing else about it,
     // and which of those apply is known only after the renderer has answered.
-    const responseHeaders = (
+    const cacheHeaders = (
       effective: DeclaredPageOutcomeDescriptor,
       page?: Headers,
     ): Headers => {
@@ -404,6 +409,13 @@ export function createLocaleRequestHandler(
       )) {
         headers.set(name, value);
       }
+      return headers;
+    };
+    const responseHeaders = (
+      effective: DeclaredPageOutcomeDescriptor,
+      page?: Headers,
+    ): Headers => {
+      const headers = cacheHeaders(effective, page);
       if (effective.contentLanguage !== undefined) {
         headers.set('content-language', effective.contentLanguage);
       }
@@ -442,18 +454,23 @@ export function createLocaleRequestHandler(
         headers: responseHeaders(descriptor),
       });
     }
+    // A server evaluates a precondition only where its answer without one would have succeeded
+    // (RFC 9110 section 13.2.1), and here the renderer is what would evaluate it. Handed one at a
+    // missing page, it answers the page it does not have as unchanged.
+    const handed =
+      resolution.status === 'success' ? request : withoutPreconditions(request);
     // Opened before the render and closed by the take below, so the render has a channel to
     // declare into and nothing else does. A declaration against a request this never opened is a
     // request that was replaced between here and the render, which the declaring side reports.
-    ɵopenPageOutcomeChannel(request);
+    ɵopenPageOutcomeChannel(handed);
     const result = await options.render({
-      request,
+      request: handed,
       resolution,
       locale: settled ?? policy.defaultLocale,
     });
     // Taken whether or not the renderer wrapped its answer, because the page declares from inside
     // the render and the renderer's own return says nothing about that.
-    const fromRender = ɵtakePageOutcome(request);
+    const fromRender = ɵtakePageOutcome(handed);
 
     let rendered: Response;
     let declared: PageOutcomeDeclaration | undefined = fromRender;
@@ -482,10 +499,27 @@ export function createLocaleRequestHandler(
         descriptor.status,
       );
     }
+    // Two answers a renderer gives are not routing outcomes, so the status the address resolved to
+    // does not replace theirs: a 304 says the client already holds this page, and a redirect is
+    // the application's router sending the reader elsewhere. Neither carries content, and sent
+    // as the address's 200 either is an empty page a cache keeps for the address.
+    const answeredWithoutContent =
+      !carriesDeclaration &&
+      (rendered.status === 304 || REDIRECT_STATUSES.has(rendered.status));
+    // A render asked for a page that returned no content failed to draw it, and a failed render is
+    // not the address's representation.
+    const drewNothing =
+      !carriesDeclaration &&
+      !answeredWithoutContent &&
+      descriptor.status === 200 &&
+      rendered.body === null;
+    if (drewNothing) reportEmptyRender(reported, url.pathname);
     const effective: DeclaredPageOutcomeDescriptor =
       carriesDeclaration && declared !== undefined
         ? pageOutcomeHttpDescriptor(declared, descriptor)
-        : descriptor;
+        : drewNothing
+          ? pageOutcomeHttpDescriptor(RENDER_FAILED, descriptor)
+          : descriptor;
 
     options.ɵobserve?.({
       request,
@@ -501,15 +535,67 @@ export function createLocaleRequestHandler(
     // a `Vary` the combination dropped.
     merged.delete('cache-control');
     merged.delete('vary');
-    for (const [name, value] of responseHeaders(effective, rendered.headers)) {
+    // A 304 repeats the cache directives and the varying fields of the 200 it stands for, and
+    // describes no representation of its own (RFC 9110 section 15.4.5).
+    const own =
+      answeredWithoutContent && rendered.status === 304
+        ? cacheHeaders(effective, rendered.headers)
+        : responseHeaders(effective, rendered.headers);
+    for (const [name, value] of own) {
       if (name === 'set-cookie') merged.append(name, value);
       else merged.set(name, value);
+    }
+    if (answeredWithoutContent) {
+      void rendered.body?.cancel();
+      return new Response(null, { status: rendered.status, headers: merged });
     }
     return new Response(rendered.body, {
       status: effective.status,
       headers: merged,
     });
   };
+}
+
+/** The redirect statuses a router can answer with, which are the ones that carry a location. */
+const REDIRECT_STATUSES: ReadonlySet<number> = new Set([
+  301, 302, 303, 307, 308,
+]);
+
+/** The request fields RFC 9110 section 13.1 defines as preconditions. */
+const PRECONDITIONS = [
+  'if-match',
+  'if-none-match',
+  'if-modified-since',
+  'if-unmodified-since',
+  'if-range',
+] as const;
+
+/** What a render that drew nothing is taken to have stated. */
+const RENDER_FAILED: PageOutcomeOperationalFailure = Object.freeze({
+  outcome: 'operational-failure',
+  status: 500,
+});
+
+function withoutPreconditions(request: Request): Request {
+  if (!PRECONDITIONS.some((name) => request.headers.has(name))) return request;
+  const headers = new Headers(request.headers);
+  for (const name of PRECONDITIONS) headers.delete(name);
+  return new Request(request, { headers });
+}
+
+/**
+ * Says once, where a developer will see it, that a render drew nothing.
+ *
+ * Once per handler, because the cause is how the renderer was written rather than the address, and
+ * the addresses are unbounded and supplied by the request.
+ */
+function reportEmptyRender(reported: Set<string>, pathname: string): void {
+  if (!inDevelopment()) return;
+  if (reported.has('empty-render')) return;
+  reported.add('empty-render');
+  console.warn(
+    `[Equator] The render of ${JSON.stringify(pathname)} returned no content where a page was asked for, and the response is 500. A render answers a page with its document, or states what happened with declarePageOutcome or declareOperationalFailure.`,
+  );
 }
 
 function pageCacheHeaders(page: Headers): Partial<RouteCacheHeaders> {

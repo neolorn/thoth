@@ -17,6 +17,7 @@ import { DOCUMENT } from '@angular/common';
 import {
   DestroyRef,
   EnvironmentInjector,
+  RESPONSE_INIT,
   effect,
   inject,
   isDevMode,
@@ -386,6 +387,9 @@ export class RouteLocalization {
     return coordinator;
   })(inject(LocalizationInteractionRestore));
   private readonly document = inject(DocumentLocalization, { optional: true });
+  // Present only while a request is rendered on the server, where the engine answers a navigation
+  // that moved the address with a redirect whose status it reads from here.
+  private readonly responseInit = inject(RESPONSE_INIT, { optional: true });
   private addresses:
     | {
         readonly navigationId: number;
@@ -650,6 +654,12 @@ export class RouteLocalization {
       },
     );
     if (resolution.status === 'redirect') {
+      // A redirect the runtime makes is a routing outcome, and section 5 of
+      // `specs/07-routing-rendering-and-seo.spec.md` gives it this status rather than the
+      // engine's default for a redirect it finds.
+      if (this.responseInit !== null) {
+        this.responseInit.status = resolution.httpStatus;
+      }
       return new RedirectCommand(this.router.parseUrl(resolution.location), {
         replaceUrl: resolution.reason === 'canonical-correction',
       });

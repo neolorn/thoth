@@ -92,11 +92,15 @@ objects and the web ones, for a server that speaks the former.
 
 ## Declare a status of your own
 
-A rendered response carries the status Equator resolved for its address. Serving maintenance, or
-reporting a render that failed, is your application's answer about its own condition rather than
-something about the address, so you state it. `declareOperationalFailure` wraps the response you
-were going to return, and the wrapper is what makes the status a statement: a 500 nobody meant and
-a 503 somebody chose arrive as the same number otherwise.
+A rendered response carries the status Equator resolved for its address. Two answers from your
+renderer keep their own status, because neither is about the address: a `304 Not Modified`, and a
+redirect your router made. Both are sent without content. Any other render that returns no content
+is sent as a 500, because an empty `200` is a blank page a cache would keep.
+
+Serving maintenance, or reporting a render that failed, is your application's answer about its own
+condition rather than something about the address, so you state it. `declareOperationalFailure`
+wraps the response you were going to return, and the wrapper is what makes the status a statement: a
+500 nobody meant and a 503 somebody chose arrive as the same number otherwise.
 
 ```ts src/app/maintenance.spec.ts
 import { describe, expect, it } from 'vitest';

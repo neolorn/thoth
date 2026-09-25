@@ -4195,6 +4195,63 @@ try {
       ?.getAttribute('href'),
     addresses.url('second', 'en-US'),
   );
+  // A revalidation of that page, which is what a browser sends on a reload and a cache sends when
+  // its copy goes stale. The engine answers a matching ETag with 304 and no content, and a 304 sent
+  // on as 200 is an empty page the cache then keeps for this address. Only where the address states
+  // its locale does the build write the page, and so give it an ETag.
+  if (addresses.localeInAddress) {
+    const etag = prerendered.headers.get('etag');
+    assert.ok(
+      etag !== null,
+      'the prerendered page carries no ETag, so nothing here can revalidate it',
+    );
+    const revalidated = await answer(addresses.path('second', 'en-US'), {
+      headers: { 'if-none-match': etag },
+    });
+    assert.equal(
+      revalidated.status,
+      304,
+      `a revalidation of the prerendered page answered ${revalidated.status}`,
+    );
+    assert.equal(await revalidated.text(), '');
+    // The fields RFC 9110 section 15.4.5 has a 304 repeat from the 200 it stands for, and no
+    // description of a representation it does not carry.
+    assert.equal(
+      revalidated.headers.get('cache-control'),
+      prerendered.headers.get('cache-control'),
+    );
+    assert.equal(
+      revalidated.headers.get('vary'),
+      prerendered.headers.get('vary'),
+    );
+    assert.equal(revalidated.headers.get('content-language'), null);
+  }
+  // A page that declares its own spelling of a parameter, asked for under the codec's. The runtime
+  // corrects the address during the render, and a correction is a routing outcome with the status
+  // section 5 of the routing specification gives it, whatever the engine's own default is.
+  if (
+    addresses.has('declared dossier', 'ar-EG') &&
+    addresses.path('dossier', 'ar-EG') !==
+      addresses.path('declared dossier', 'ar-EG')
+  ) {
+    const corrected = await answer(addresses.path('dossier', 'ar-EG'), {
+      redirect: 'manual',
+      locale: 'ar-EG',
+    });
+    assert.equal(
+      corrected.status,
+      308,
+      `the codec's spelling of the declared dossier answered ${corrected.status}`,
+    );
+    assert.equal(
+      new URL(
+        corrected.headers.get('location') ?? '',
+        addresses.origin('ar-EG'),
+      ).pathname,
+      addresses.path('declared dossier', 'ar-EG'),
+    );
+    assert.equal(await corrected.text(), '');
+  }
   // A page asked for under another locale's slug is sent to its own, which needs a slug per locale.
   if (addresses.has('article under the English slug', 'ar-EG')) {
     const articleAlias = await answer(

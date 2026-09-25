@@ -173,6 +173,24 @@ target MUST NOT reach it either: a structurally unsafe target has no presentatio
 diagnostic rather than a route, and asking an application to draw a page for one asks it to draw an
 address the release has just refused.
 
+Two answers a renderer can give are not routing outcomes, and a release MUST keep the renderer's
+status for both. A 304 is the conditional-request mechanism of RFC 9110 section 13 answering that
+the client already holds the representation the address resolved to, and a redirect is the
+application's router sending the reader to another address. A release MUST send either with no
+content and MUST compose its own fields onto it as it does onto a page. On a 304 those are the
+fields RFC 9110 section 15.4.5 requires a 304 to repeat from the 200 it stands for, the cache
+directives and the varying fields, and a release MUST NOT add other representation metadata to it. A
+release MUST NOT answer 200 for a render that carried no content, because a cache that stores that
+answer holds an empty page for the address, and one classified as shared gives that page to every
+later reader.
+
+A server evaluates a precondition only where its answer without it would have been successful
+(RFC 9110 section 13.2.1), so a release MUST NOT hand a renderer the request's preconditions where
+the address resolved to any other outcome. A redirect the runtime issues during a render, such as
+the correction to a parameter spelling a page declared, is a routing outcome, and a release MUST
+give it the status the table below gives it, through the response channel the render shares with the
+handler.
+
 The status table is fixed. A release MUST answer preference-dependent locale entry with 307
 for safe methods, deterministic canonical correction or declared replacement with 308, unsupported
 explicit locale intent with 404 at the requested URL, a missing route or an absent entity with the

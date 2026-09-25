@@ -3,7 +3,8 @@ import {
   PathLocationStrategy,
   PlatformLocation,
 } from '@angular/common';
-import { Injector, inject } from '@angular/core';
+import { Injector, RESPONSE_INIT, inject } from '@angular/core';
+import { UrlSerializer } from '@angular/router';
 import {
   Localization,
   toExternalPath,
@@ -28,6 +29,9 @@ import { LocalizedRouteParameters } from './route-parameters.js';
  * real authored route, so it matches directly, and the history write that follows goes through
  * `pushState` and comes out localized.
  */
+/** The statuses `@angular/ssr` sends a redirect with. */
+const REDIRECTS: ReadonlySet<number> = new Set([301, 302, 303, 307, 308]);
+
 export class LocalizedLocationStrategy extends PathLocationStrategy {
   private readonly localization = inject(Localization);
   /**
@@ -43,7 +47,18 @@ export class LocalizedLocationStrategy extends PathLocationStrategy {
    */
   private readonly injector = inject(Injector);
   private parametersRef: LocalizedRouteParameters | undefined;
+  private serializerRef: UrlSerializer | undefined;
   private readonly context: LocalizedAddressContext;
+  private readonly platform = inject(PlatformLocation);
+  // Present only while a request is rendered on the server, where the engine answers an address
+  // that moved during the render with a redirect whose status it reads from here.
+  private readonly responseInit = inject(RESPONSE_INIT, { optional: true });
+  /** The address the request named, and the page it names, while a request is rendered. */
+  private readonly arrival:
+    | { readonly shown: string; readonly page: string }
+    | undefined;
+  /** The status the render held before this strategy stated one, while one is stated. */
+  private stated: { readonly previous: number | undefined } | undefined;
 
   constructor(context: LocalizedAddressContext) {
     super(
@@ -51,6 +66,33 @@ export class LocalizedLocationStrategy extends PathLocationStrategy {
       inject(APP_BASE_HREF, { optional: true }) ?? undefined,
     );
     this.context = context;
+    this.arrival =
+      this.responseInit === null
+        ? undefined
+        : {
+            shown: this.shown(),
+            page: toInternalPath(this.externalPath(true), context),
+          };
+  }
+
+  override pushState(
+    state: unknown,
+    title: string,
+    url: string,
+    queryParams: string,
+  ): void {
+    super.pushState(state, title, url, queryParams);
+    this.stateCorrection(url, queryParams);
+  }
+
+  override replaceState(
+    state: unknown,
+    title: string,
+    url: string,
+    queryParams: string,
+  ): void {
+    super.replaceState(state, title, url, queryParams);
+    this.stateCorrection(url, queryParams);
   }
 
   override path(includeHash = false): string {
@@ -86,6 +128,57 @@ export class LocalizedLocationStrategy extends PathLocationStrategy {
         this.declaredSpellings(),
       ),
     );
+  }
+
+  /**
+   * States the status of the redirect a render is about to become, when this strategy moved it.
+   *
+   * `@angular/ssr` answers a render whose address moved with a redirect, and a move that keeps the
+   * page is this strategy's own: the Router writing the canonical spelling of an address it was
+   * handed another way, or a page's declared spelling replacing the codec's. That is a canonical
+   * correction or a declared replacement, which section 5 of
+   * `specs/07-routing-rendering-and-seo.spec.md` answers with 308. A move to another page is the
+   * application's router redirecting, and its status stays the application's. The addresses are
+   * compared the way the engine compares them, so no status is stated for a move it does not
+   * count, which would go out on the page itself.
+   */
+  private stateCorrection(url: string, queryParams: string): void {
+    const init = this.responseInit;
+    const arrival = this.arrival;
+    if (init === null || arrival === undefined) return;
+    const query =
+      queryParams.length > 0 && !queryParams.startsWith('?')
+        ? `?${queryParams}`
+        : queryParams;
+    const samePage = this.read(`${url}${query}`) === this.read(arrival.page);
+    const moved = this.read(this.shown()) !== this.read(arrival.shown);
+    if (samePage && moved) {
+      if (this.stated === undefined && !REDIRECTS.has(init.status ?? 0)) {
+        this.stated = { previous: init.status };
+        init.status = 308;
+      }
+    } else if (!moved && this.stated !== undefined) {
+      const { previous } = this.stated;
+      if (previous === undefined) delete init.status;
+      else init.status = previous;
+      this.stated = undefined;
+    }
+  }
+
+  /** The address shown, without a trailing slash, as `@angular/ssr` compares one. */
+  private shown(): string {
+    const { pathname, search, hash } = this.platform;
+    const path =
+      pathname.length > 1 && pathname.endsWith('/')
+        ? pathname.slice(0, -1)
+        : pathname;
+    return `${path}${search}${hash}`;
+  }
+
+  /** An address as the Router reads it, so two spellings of one address compare equal. */
+  private read(address: string): string {
+    this.serializerRef ??= this.injector.get(UrlSerializer);
+    return this.serializerRef.serialize(this.serializerRef.parse(address));
   }
 
   private declaredSpellings(): ReturnType<LocalizedRouteParameters['current']> {
