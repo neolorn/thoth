@@ -1,6 +1,11 @@
 import { describe, expect, it, afterEach } from 'vitest';
 
-import { Component } from '@angular/core';
+import {
+  Component,
+  EnvironmentInjector,
+  inject,
+  provideEnvironmentInitializer,
+} from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import {
   Localization,
@@ -243,12 +248,19 @@ describe('bootstrap when a catalog cannot load', () => {
 
   it('rejects bootstrap when no recovery presentation is configured', async () => {
     const host = mountHost();
+    // Angular keeps the injector of a rejected bootstrap until the platform is destroyed, and the
+    // platform here is the one every spec file in this worker shares. Held so the application can
+    // be released like the ones above, or what it wrote into the shared document outlives the file.
+    let injector: EnvironmentInjector | undefined;
 
     // Without a recovery message there is nothing to show, and an application whose every message
     // throws is worse than a hard failure. That case keeps failing loudly.
     await expect(
       bootstrapApplication(RecoveryHost, {
         providers: [
+          provideEnvironmentInitializer(() => {
+            injector = inject(EnvironmentInjector);
+          }),
           provideLocalizationSetup({
             configuration,
             catalogSet,
@@ -260,6 +272,10 @@ describe('bootstrap when a catalog cannot load', () => {
     ).rejects.toBeDefined();
 
     expect(host.querySelector('[data-application-shell]')).toBeNull();
+    expect(injector).toBeDefined();
+    injector?.destroy();
+    // Released, it leaves nothing behind in the document, the announcement region included.
+    expect(document.querySelector('[data-equator-announcer]')).toBeNull();
     claimCapability('feature:provideLocalizationSetup');
     claimCapability('entry:@neolorn/equator');
   });
