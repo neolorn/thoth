@@ -634,11 +634,16 @@ export class RouteLocalization {
   async prepare(
     target: string,
   ): Promise<RouteLocalizationContext | RedirectCommand | undefined> {
+    // The locale the reader is in. An address that does not name a locale is read in it, as the
+    // server reads it in the stated preference, so a navigation under locale-neutral stays in the
+    // language the reader switched to rather than falling back to the default.
+    const committed = this.localization.snapshot()?.primaryLocale;
     const resolution = resolveLocalizedRoute(
       target,
       this.options.policy,
       this.options.projection,
       {
+        ...(committed === undefined ? {} : { locale: committed }),
         ...(this.options.origin === undefined
           ? {}
           : { origin: this.options.origin }),
@@ -1343,6 +1348,9 @@ export class RouteLocalization {
       this.options.policy,
       this.options.projection,
       {
+        // Stated, because under locale-neutral the address built above is the same in every
+        // locale and says nothing about which one this is.
+        locale,
         ...(this.options.origin === undefined
           ? {}
           : { origin: this.options.origin }),
