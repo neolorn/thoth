@@ -2207,6 +2207,45 @@ if (prerenderedFile('second', 'en-Arab-XB', { pseudo: true }) !== undefined) {
   await verifyPseudoPages();
 }
 
+/**
+ * The formatting declaration, read off the sheet the pseudo build prerendered for the locale it
+ * names. `LOCALE_FORMATTING` gives `en-Arab-XB` the `arab` numbering system, so its number is
+ * written in those digits; the source locale's sheet from the same build declares nothing and
+ * keeps its own, which is what shows the digits came from the declaration.
+ */
+async function verifyPseudoFormatting() {
+  const { decimal } = await readExerciseInputs(consumerRoot);
+  const check = `${consumerName}: formatting declared for en-Arab-XB, prerendered`;
+  let declaredSheet;
+  for (const locale of ['en-Arab-XB', INIT_REQUEST.sourceLocale]) {
+    const html = await readFile(
+      resolve(pseudoRootOf(locale), addresses.file('exercise values', locale)),
+      'utf8',
+    );
+    const sheet = sheetInDocument(html);
+    const numberingSystem = LOCALE_FORMATTING[locale]?.numberingSystem;
+    assert.equal(
+      sheet.lines.get('formatNumber'),
+      new Intl.NumberFormat(locale, {
+        ...decimal.options,
+        ...(numberingSystem === undefined ? {} : { numberingSystem }),
+      }).format(Number(decimal.value)),
+      `${check}: the ${locale} sheet's number is not written in the digits the formatting declaration gives it`,
+    );
+    if (numberingSystem !== undefined) declaredSheet = { html, sheet };
+  }
+  recordCapabilityClaim(check, 'declaration:locale-formatting', {
+    document: declaredSheet.html,
+    policy: declaredSheet.sheet.policy,
+  });
+}
+if (
+  prerenderedFile('exercise values', 'en-Arab-XB', { pseudo: true }) !==
+  undefined
+) {
+  await verifyPseudoFormatting();
+}
+
 // And the generated source goes back to production shape, because the steps after this one rebuild
 // this consumer from it. The `dist/` they read was never touched; this is the other half of the
 // same tree.
