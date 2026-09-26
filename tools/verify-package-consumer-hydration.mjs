@@ -17,10 +17,13 @@ import {
   readConsumerBuilds,
 } from './consumer-addresses.mjs';
 import {
+  claimExercisedContext,
   claimExercisedControls,
   claimExercisedExtensions,
   claimExercisedFormats,
   claimExercisedPipes,
+  claimSheetParameter,
+  exerciseSheetNames,
   exerciseAuthority,
   readExerciseSources,
   readExerciseInputs,
@@ -2884,14 +2887,22 @@ async function verifyExerciseSheets(row, context, diagnostics) {
     await collectPolicyDiagnostics(page, diagnostics);
     await page.close();
   };
-  const verifySheet = async (page, check, locale, observed) => {
+  const verifySheet = async (page, check, locale, observed, sheetPage) => {
     const sheet = await exerciseSheetOn(page);
     assert.equal(sheet.locale, locale, `${check} shows ${sheet.locale}`);
+    claimSheetParameter(
+      check,
+      sheet,
+      exerciseSheetNames[sheetPage],
+      locale,
+      observed,
+    );
     const expected = await page.evaluate(exerciseAuthority, {
       inputs: exerciseInputs,
       locale,
       ...exerciseSources.get(locale),
     });
+    claimExercisedContext(check, sheet, expected, observed);
     claimExercisedPipes(check, sheet, expected, observed);
     claimExercisedFormats(check, sheet, expected, observed);
     claimExercisedControls(
@@ -2930,6 +2941,7 @@ async function verifyExerciseSheets(row, context, diagnostics) {
           sectionCheck(row, `exercise sheet in ${locale}, ${rendered}`),
           locale,
           observed,
+          sheetPage,
         );
       });
     }
@@ -2956,6 +2968,7 @@ async function verifyExerciseSheets(row, context, diagnostics) {
         sectionCheck(row, `exercise sheet in ${locale}, by client navigation`),
         locale,
         { engine, policy, clientNavigations },
+        'exercise',
       );
     });
   }
@@ -2998,7 +3011,7 @@ async function verifyTypedFields(page, check, expected, observed) {
     assert.equal(
       await field.inputValue(),
       text,
-      `The LocalizedInput field for ${kind} does not show its value as this engine writes it`,
+      `The LocalizedInput field of @neolorn/equator/forms for ${kind} does not show its value as this engine writes it`,
     );
     await field.fill('');
     assert.notEqual(
@@ -3036,6 +3049,7 @@ async function verifyTypedFields(page, check, expected, observed) {
   await typed('instant');
   recordCapabilityClaim(check, 'control:instant', observed);
   recordCapabilityClaim(check, 'directive:LocalizedInput', observed);
+  recordCapabilityClaim(check, 'entry:@neolorn/equator/forms', observed);
 }
 
 async function verifyRenderingModes(row, context, diagnostics) {

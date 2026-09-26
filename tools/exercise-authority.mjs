@@ -335,6 +335,17 @@ export function exerciseAuthority({ inputs, locale, catalog, direction }) {
         fieldText(field),
       ]),
     ),
+    formattingContext: JSON.stringify({
+      timeZone: context.timeZone,
+      calendar: context.calendar,
+      numberingSystem: context.numberingSystem,
+      hourCycle: context.hourCycle,
+    }),
+    'core:directionForLocale': direction,
+    // The Open Graph protocol writes a locale as language_TERRITORY, the territory CLDR's likely one.
+    'core:openGraphLocale': (({ language, region }) => `${language}_${region}`)(
+      new Intl.Locale(locale).maximize(),
+    ),
     'extension:message-function': called,
     'extension:identifier-segment':
       catalog[`feature-state.${extension.member}`],

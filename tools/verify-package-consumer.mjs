@@ -39,11 +39,14 @@ import {
   SITE_ORIGIN_DECLARATION,
 } from './consumer-addresses.mjs';
 import {
+  claimExercisedContext,
   claimExercisedControls,
   claimExercisedExtensions,
   claimExercisedFormats,
   claimExercisedPipes,
   claimOverlayLocale,
+  claimSheetParameter,
+  exerciseSheetNames,
   exerciseAuthority,
   readExerciseSources,
   readExerciseInputs,
@@ -1391,16 +1394,30 @@ verifyServerAnswers();
  */
 async function verifyExerciseSheets() {
   const inputs = await readExerciseInputs(consumerRoot);
-  const verifySheet = async (check, locale, document, rendered) => {
+  const verifySheet = async (check, locale, document, rendered, page) => {
     const sheet = sheetInDocument(document);
     assert.equal(sheet.locale, locale, `${check} shows ${sheet.locale}`);
     assert.ok(
       document.includes(`ng-server-context="${rendered}"`),
-      `${check} was not written by the ${rendered === 'ssr' ? 'server' : 'build'}`,
+      `${check} was not written by the ${rendered === 'ssr' ? 'server' : 'build'} that provideLocalizedServerRendering from @neolorn/equator/ssr sets up`,
     );
     const sources = await readExerciseSources(consumerRoot, locale, inputs);
     const expected = exerciseAuthority({ inputs, locale, ...sources });
     const observed = { document, policy: sheet.policy };
+    recordCapabilityClaim(
+      check,
+      'feature:provideLocalizedServerRendering',
+      observed,
+    );
+    recordCapabilityClaim(check, 'entry:@neolorn/equator/ssr', observed);
+    claimSheetParameter(
+      check,
+      sheet,
+      exerciseSheetNames[page],
+      locale,
+      observed,
+    );
+    claimExercisedContext(check, sheet, expected, observed);
     claimExercisedPipes(check, sheet, expected, observed);
     claimExercisedFormats(check, sheet, expected, observed);
     claimExercisedControls(check, sheet, expected, inputs.controls, observed);
@@ -1424,6 +1441,7 @@ async function verifyExerciseSheets() {
       locale,
       answers[index].body,
       'ssr',
+      'exercise',
     );
   }
   for (const locale of INIT_REQUEST.locales) {
@@ -1442,6 +1460,7 @@ async function verifyExerciseSheets() {
       locale,
       document,
       'ssg',
+      'exercise values',
     );
   }
 }

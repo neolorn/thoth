@@ -71,6 +71,7 @@ import {
   type PlainTimeValue,
   type RelativeTimePolicy,
 } from '@neolorn/equator';
+import { directionForLocale, openGraphLocale } from '@neolorn/equator/core';
 import { LocalizedInput } from '@neolorn/equator/forms';
 import { families, messages } from '#i18n/shell';
 import { personNames } from '#i18n/person-names';
@@ -501,6 +502,30 @@ function extensionLines(
   ];
 }
 
+/**
+ * What every line above was written under: the context the runtime carries, and what the core
+ * entry point, which loads without Angular, says of the locale.
+ */
+function contextLines({
+  locale,
+  timeZone,
+  calendar,
+  numberingSystem,
+  hourCycle,
+}: FormattingContext): readonly {
+  readonly id: string;
+  readonly text: string;
+}[] {
+  return [
+    {
+      id: 'formattingContext',
+      text: JSON.stringify({ timeZone, calendar, numberingSystem, hourCycle }),
+    },
+    { id: 'core:directionForLocale', text: directionForLocale(locale) },
+    { id: 'core:openGraphLocale', text: openGraphLocale(locale) ?? '' },
+  ];
+}
+
 /** The collation inputs in the order the locale sorts them, or the code of the first refusal. */
 function collated(context: FormattingContext): string {
   let refusal: string | undefined;
@@ -626,6 +651,7 @@ export class FeatureLabExerciseRoute {
           ...formattedLines(context),
           ...fieldLines(context),
           ...extensionLines(this.localization),
+          ...contextLines(context),
         ];
   });
   protected readonly fields = fields.map(({ kind, profile, value }) => ({

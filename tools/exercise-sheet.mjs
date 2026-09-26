@@ -18,6 +18,15 @@ import { recordCapabilityClaim } from './capability-evidence.mjs';
 
 export { exerciseAuthority } from './exercise-authority.mjs';
 
+/**
+ * The name the application gives each sheet page, which its address spells in the page's locale:
+ * `live` is `مباشر` in Arabic, and `values` is `قيم`.
+ */
+export const exerciseSheetNames = Object.freeze({
+  exercise: 'live',
+  'exercise values': 'values',
+});
+
 /** The inputs the consumer's sheet writes. */
 export async function readExerciseInputs(consumerRoot) {
   return JSON.parse(
@@ -128,13 +137,16 @@ export function sheetInDocument(html) {
   });
 }
 
-/** One line of the sheet, held to what the host's own formatter wrote for it. */
-function holds({ lines }, expected, id) {
+/**
+ * One line of the sheet, held to what the host's own formatter wrote for it. Where it matters which
+ * part of Equator wrote the line, the failure says so.
+ */
+function holds({ lines }, expected, id, writer) {
   assert.ok(lines.has(id), `The exercise sheet has no ${id} line`);
   assert.equal(
     lines.get(id),
     expected[id],
-    `The exercise sheet's ${id} line is not what the host writes for its input`,
+    `The exercise sheet's ${id} line${writer === undefined ? '' : `, written ${writer},`} is not what the host writes for its input`,
   );
 }
 
@@ -143,32 +155,41 @@ function holds({ lines }, expected, id) {
  * formatter; elsewhere the line holds the empty text a pipe renders for the typed result.
  */
 export function claimExercisedPipes(check, sheet, expected, context) {
-  holds(sheet, expected, 'localize');
+  const pipe = (id) =>
+    holds(sheet, expected, id, 'by a pipe of @neolorn/equator');
+  holds(
+    sheet,
+    expected,
+    'localize',
+    'from the catalog provideLocalizationSetup installed, by a pipe of @neolorn/equator',
+  );
+  recordCapabilityClaim(check, 'feature:provideLocalizationSetup', context);
   recordCapabilityClaim(check, 'pipe:localize', context);
-  holds(sheet, expected, 'localizedDecimal');
+  pipe('localizedDecimal');
   recordCapabilityClaim(check, 'pipe:localizedDecimal', context);
-  holds(sheet, expected, 'localizedMoney');
+  pipe('localizedMoney');
   recordCapabilityClaim(check, 'pipe:localizedMoney', context);
-  holds(sheet, expected, 'localizedMeasurement');
+  pipe('localizedMeasurement');
   recordCapabilityClaim(check, 'pipe:localizedMeasurement', context);
-  holds(sheet, expected, 'localizedPercent');
+  pipe('localizedPercent');
   recordCapabilityClaim(check, 'pipe:localizedPercent', context);
-  holds(sheet, expected, 'localizedPercentagePoints');
+  pipe('localizedPercentagePoints');
   recordCapabilityClaim(check, 'pipe:localizedPercentagePoints', context);
-  holds(sheet, expected, 'localizedInstant');
+  pipe('localizedInstant');
   recordCapabilityClaim(check, 'pipe:localizedInstant', context);
-  holds(sheet, expected, 'localizedPlainDate');
+  pipe('localizedPlainDate');
   recordCapabilityClaim(check, 'pipe:localizedPlainDate', context);
-  holds(sheet, expected, 'localizedPlainTime');
+  pipe('localizedPlainTime');
   recordCapabilityClaim(check, 'pipe:localizedPlainTime', context);
-  holds(sheet, expected, 'localizedPlainDateTime');
+  pipe('localizedPlainDateTime');
   recordCapabilityClaim(check, 'pipe:localizedPlainDateTime', context);
-  holds(sheet, expected, 'localizedZonedDateTime');
+  pipe('localizedZonedDateTime');
   recordCapabilityClaim(check, 'pipe:localizedZonedDateTime', context);
-  holds(sheet, expected, 'localizedDuration');
+  pipe('localizedDuration');
   if (expected.localizedDuration !== '') {
     recordCapabilityClaim(check, 'pipe:localizedDuration', context);
   }
+  recordCapabilityClaim(check, 'entry:@neolorn/equator', context);
 }
 
 /**
@@ -255,6 +276,21 @@ export function claimExercisedExtensions(check, sheet, expected, context) {
 }
 
 /**
+ * The sheet a page shows, as the route's parameter codec reads it from the address. Every locale's
+ * spelling must read back as the one name the application gives the sheet.
+ */
+export function claimSheetParameter(check, sheet, name, locale, context) {
+  assert.equal(
+    sheet.sheet,
+    name,
+    `${check}: the RouteParameterCodec the exercise route declares did not read the sheet's ${locale} spelling as ${name} through provideLocalizedRouter from @neolorn/equator/router`,
+  );
+  recordCapabilityClaim(check, 'declaration:route-parameter-codec', context);
+  recordCapabilityClaim(check, 'feature:provideLocalizedRouter', context);
+  recordCapabilityClaim(check, 'entry:@neolorn/equator/router', context);
+}
+
+/**
  * The root the application attaches overlays to, in the locale the page was written in and that
  * locale's direction, which only the adapter the application installed can have put there.
  */
@@ -266,6 +302,24 @@ export function claimOverlayLocale(check, sheet, locale, direction, context) {
   );
   recordCapabilityClaim(check, 'extension:overlay-adapter', context);
   recordCapabilityClaim(check, 'feature:withOverlayLocale', context);
+}
+
+/**
+ * What every line was written under: the formatting context the runtime carries, which is the one
+ * the application declared, and what the core entry point says of the locale.
+ */
+export function claimExercisedContext(check, sheet, expected, context) {
+  holds(
+    sheet,
+    expected,
+    'formattingContext',
+    'from what withFormattingContext declared',
+  );
+  recordCapabilityClaim(check, 'feature:withFormattingContext', context);
+  const core = (id) => holds(sheet, expected, id, 'by @neolorn/equator/core');
+  core('core:directionForLocale');
+  core('core:openGraphLocale');
+  recordCapabilityClaim(check, 'entry:@neolorn/equator/core', context);
 }
 
 /** Every formatting function, held and claimed, durations as above. */
