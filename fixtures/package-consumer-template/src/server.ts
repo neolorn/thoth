@@ -7,14 +7,19 @@ import {
 import {
   allowedLocaleHosts,
   builtLocalePolicy,
+  pageGone,
   projectSitemap,
 } from '@neolorn/equator';
 import {
   createLocaleRequestHandler,
+  declareOperationalFailure,
+  declarePageOutcome,
   toWebRequest,
   writeNodeResponse,
 } from '@neolorn/equator/http';
 import { configuration } from '#i18n';
+
+import { DossierStore, DossierStoreUnavailable } from './app/dossier-store';
 
 import { localeCookie } from './app/locale-cookie';
 import { publishedRoutes } from './app/published-routes';
@@ -83,6 +88,23 @@ const PASS_THROUGH = 'x-consumer-passthrough';
  * That reasoning lives with the declaration rather than here, so there is one place to read it and
  * one place to change it.
  */
+/**
+ * The short document this deployment answers with where it renders no page of the application's:
+ * a malformed address, and a dossier it settled before rendering.
+ */
+function shortDocument(locale: string, init?: ResponseInit): Response {
+  const direction = locale === 'ar-EG' ? 'rtl' : 'ltr';
+  const message = locale === 'ar-EG' ? 'الصفحة غير متاحة' : 'Page unavailable';
+  const headers = new Headers(init?.headers);
+  headers.set('Content-Type', 'text/html; charset=utf-8');
+  return new Response(
+    `<!doctype html><html lang="${locale}" dir="${direction}"><head><meta name="robots" content="noindex"></head><body><h1>${message}</h1></body></html>`,
+    { ...init, headers },
+  );
+}
+
+const dossiers = new DossierStore();
+
 const localeRequests = createLocaleRequestHandler({
   policy: servedPolicy,
   projection: appRouteProjection,
@@ -91,6 +113,29 @@ const localeRequests = createLocaleRequestHandler({
   passthrough: () =>
     new Response(null, { status: 204, headers: { [PASS_THROUGH]: '1' } }),
   render: async ({ request, resolution }) => {
+    // A dossier's standing is the store's to say, and this server asks before rendering. A
+    // withdrawn dossier is gone, which the address alone cannot tell, and a store that cannot
+    // answer is this application's failure rather than a fact about the address, so it states its
+    // own status and asks to be tried again.
+    if (resolution.status === 'success' && resolution.routeId === 'dossier') {
+      const slug = resolution.parameters['slug'];
+      try {
+        if (typeof slug === 'string' && (await dossiers.withdrawn(slug))) {
+          return declarePageOutcome(
+            pageGone(),
+            shortDocument(resolution.locale),
+          );
+        }
+      } catch (error: unknown) {
+        if (!(error instanceof DossierStoreUnavailable)) throw error;
+        return declareOperationalFailure(
+          shortDocument(resolution.locale, {
+            status: 503,
+            headers: { 'Retry-After': '120' },
+          }),
+        );
+      }
+    }
     // Every answer the router writes a head for is rendered by the application: a page, and the
     // three outcomes `outcomeDocuments` declares, an address it does not serve, one retired for
     // good, and one naming a locale this deployment does not serve. In each the locale to answer in
@@ -113,14 +158,7 @@ const localeRequests = createLocaleRequestHandler({
         new Response(null, { status: 204, headers: { [PASS_THROUGH]: '1' } })
       );
     }
-    const locale = resolution.presentationLocale;
-    const direction = locale === 'ar-EG' ? 'rtl' : 'ltr';
-    const message =
-      locale === 'ar-EG' ? 'الصفحة غير متاحة' : 'Page unavailable';
-    return new Response(
-      `<!doctype html><html lang="${locale}" dir="${direction}"><head><meta name="robots" content="noindex"></head><body><h1>${message}</h1></body></html>`,
-      { headers: { 'Content-Type': 'text/html; charset=utf-8' } },
-    );
+    return shortDocument(resolution.presentationLocale);
   },
 });
 

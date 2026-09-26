@@ -62,6 +62,16 @@
       "ar-EG": "/ar-eg/dossiers/dossier",
       "en-Arab-XB": "/en-arab-xb/dossiers/dossier"
     },
+    "withdrawn dossier": {
+      "en-US": "/en-us/dossiers/withdrawn-dossier",
+      "ar-EG": "/ar-eg/dossiers/withdrawn-dossier",
+      "en-Arab-XB": "/en-arab-xb/dossiers/withdrawn-dossier"
+    },
+    "unreachable dossier": {
+      "en-US": "/en-us/dossiers/unreachable-dossier",
+      "ar-EG": "/ar-eg/dossiers/unreachable-dossier",
+      "en-Arab-XB": "/en-arab-xb/dossiers/unreachable-dossier"
+    },
     "declared dossier": {
       "en-US": "/en-us/dossiers/dossier",
       "ar-EG": "/ar-eg/dossiers/ملف"

@@ -1505,6 +1505,8 @@ function verifyRouteDeclarations() {
     ['unfiled topic', ''],
     ['retired topic', ''],
     ['unavailable topic', ''],
+    ['withdrawn dossier', ''],
+    ['unreachable dossier', ''],
   ];
   const answers = serverAnswers(
     asked.map(([page, query]) => ({
@@ -1611,6 +1613,46 @@ function verifyRouteDeclarations() {
     check,
     'outcome:pageOperationalFailure',
     observed('unavailable topic'),
+  );
+
+  // The server settles a dossier before it renders, and declares what it found.
+  assert.equal(
+    status('withdrawn dossier'),
+    410,
+    `server.ts declared declarePageOutcome(pageGone()) for the withdrawn dossier and was answered ${status('withdrawn dossier')}`,
+  );
+  assert.equal(header('withdrawn dossier', 'content-language'), locale);
+  assert.equal(header('withdrawn dossier', 'x-robots-tag'), 'noindex');
+  assert.equal(
+    header('withdrawn dossier', 'cache-control'),
+    'private, no-store',
+  );
+  recordCapabilityClaim(
+    check,
+    'outcome:declarePageOutcome',
+    observed('withdrawn dossier'),
+  );
+  assert.equal(
+    status('unreachable dossier'),
+    503,
+    `server.ts declared declareOperationalFailure with a 503 for the unreachable dossier and was answered ${status('unreachable dossier')}`,
+  );
+  assert.equal(header('unreachable dossier', 'content-language'), locale);
+  assert.equal(
+    header('unreachable dossier', 'cache-control'),
+    'private, no-store',
+  );
+  assert.equal(
+    header('unreachable dossier', 'retry-after'),
+    '120',
+    'the Retry-After the declared failure carried did not reach the response',
+  );
+  // An operational failure says nothing about the address, so the dossier's own indexing stands.
+  assert.equal(header('unreachable dossier', 'x-robots-tag'), undefined);
+  recordCapabilityClaim(
+    check,
+    'outcome:declareOperationalFailure',
+    observed('unreachable dossier'),
   );
 }
 verifyRouteDeclarations();

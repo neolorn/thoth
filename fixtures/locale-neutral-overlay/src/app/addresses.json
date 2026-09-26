@@ -45,6 +45,12 @@
     "dossier": {
       "en-US": "/dossiers/dossier"
     },
+    "withdrawn dossier": {
+      "en-US": "/dossiers/withdrawn-dossier"
+    },
+    "unreachable dossier": {
+      "en-US": "/dossiers/unreachable-dossier"
+    },
     "declared dossier": {
       "en-US": "/dossiers/dossier"
     },

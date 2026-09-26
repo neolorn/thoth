@@ -41,6 +41,18 @@ const routed = {
   'retired topic': 'topic',
   'unavailable topic': 'topic',
   dossier: 'dossier',
+  'withdrawn dossier': 'dossier',
+  'unreachable dossier': 'dossier',
+} as const;
+
+/**
+ * The slug each dossier page names: one the store holds, and two the server answers for before it
+ * renders, once it has asked the store.
+ */
+const dossiers = {
+  dossier: 'dossier',
+  'withdrawn dossier': 'withdrawn-dossier',
+  'unreachable dossier': 'unreachable-dossier',
 } as const;
 
 /**
@@ -108,12 +120,14 @@ const build = (page: RoutedPage, locale: string): string => {
         { topic: topics[page] },
       );
     case 'dossier':
+    case 'withdrawn dossier':
+    case 'unreachable dossier':
       return buildLocalizedRoute(
         routePolicy,
         appRouteProjection,
         'dossier',
         locale,
-        { slug: 'dossier' },
+        { slug: dossiers[page] },
       );
   }
 };

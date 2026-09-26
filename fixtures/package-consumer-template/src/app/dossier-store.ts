@@ -31,8 +31,37 @@ const BY_SLUG: ReadonlyMap<string, FeatureDossier> = new Map(
   Object.values(DOSSIER.slugs).map((slug) => [slug, DOSSIER]),
 );
 
+/**
+ * Dossiers taken down for good. A store keeps their slugs so the addresses are never given to
+ * another record.
+ */
+const WITHDRAWN: ReadonlySet<string> = new Set(['withdrawn-dossier']);
+
+/**
+ * Slugs whose records sit where this deployment cannot reach them, which is what a store that
+ * spreads its records answers while one part of it is down: not that the dossier is missing, but
+ * that it cannot say.
+ */
+const UNREACHABLE: ReadonlySet<string> = new Set(['unreachable-dossier']);
+
+/** The store could not answer, which is not the same as answering that there is nothing. */
+export class DossierStoreUnavailable extends Error {}
+
 @Injectable({ providedIn: 'root' })
 export class DossierStore {
+  /**
+   * Whether the dossier at this slug was taken down for good.
+   *
+   * The server asks before it renders, as a deployment that loads its data ahead of the page does,
+   * so the status it sends is settled before any markup is written.
+   */
+  withdrawn(slug: string): Promise<boolean> {
+    if (UNREACHABLE.has(slug)) {
+      return Promise.reject(new DossierStoreUnavailable(slug));
+    }
+    return Promise.resolve(WITHDRAWN.has(slug));
+  }
+
   /**
    * Asynchronous on purpose, and not as a simulation.
    *
