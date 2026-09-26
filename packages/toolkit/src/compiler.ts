@@ -552,6 +552,11 @@ function virtualModules(
       contents:
         "import type { RecoveryRepresentation } from '@neolorn/equator';\nexport declare const recoveryPayload: readonly RecoveryRepresentation[];\n",
     },
+    {
+      specifier: '#i18n/person-names',
+      contents:
+        "import type { PersonNameProfileSet } from '@neolorn/equator';\nexport declare const personNames: PersonNameProfileSet;\n",
+    },
   ];
 }
 
