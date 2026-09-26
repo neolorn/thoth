@@ -16,6 +16,7 @@ import {
   withExtensions,
   withFormattingContext,
   withLocalizationClock,
+  withObservability,
   withOverlayLocale,
   withPersistence,
   withRecoveryMessage,
@@ -35,6 +36,7 @@ import { localeCookie } from './locale-cookie';
 import { overlayLocale } from './overlay-locale';
 import { runtimeExtensions } from './runtime-extensions';
 import { DynamicContentStore, provideDynamicContent } from './dynamic-content';
+import { eventLog } from './event-log';
 import inputs from './exercise-inputs.json';
 import {
   routePolicy,
@@ -261,6 +263,7 @@ export const appConfig: ApplicationConfig = {
       // Nothing finer than a minute, and a date rather than words past two days.
       withRelativeTimePolicy(inputs.relativeTimePolicy as RelativeTimePolicy),
       withOverlayLocale(overlayLocale),
+      withObservability(eventLog),
     ),
     provideDynamicContent(),
   ],

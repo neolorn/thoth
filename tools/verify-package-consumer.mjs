@@ -40,6 +40,7 @@ import {
   readConsumerBuilds,
   SITE_ORIGIN_DECLARATION,
 } from './consumer-addresses.mjs';
+import { claimLoggedHandOver, loggedEvents } from './consumer-events.mjs';
 import {
   claimExercisedContext,
   claimExercisedControls,
@@ -856,7 +857,7 @@ assert.ok(
 // rather than trusting the build to is the difference between asserting the switch works and
 // assuming it does: every check below reads what this produced.
 run(['exec', 'equator', 'generate']);
-run(['exec', 'ng', 'build', '--stats-json']);
+const siteBuild = run(['exec', 'ng', 'build', '--stats-json']);
 
 const configuration = await readJson(
   resolve(consumerRoot, 'equator.config.json'),
@@ -1179,6 +1180,9 @@ const collectPrerendered = async (root, prefix = '') => {
 const addresses = await readConsumerAddresses(consumerRoot);
 const builds = await readConsumerBuilds(consumerRoot);
 const policySource = await readFile(builds.policyPath, 'utf8');
+// What each origin's build wrote while it prerendered, which is where the application's event log
+// goes during a build.
+const buildLogs = new Map([[builds.siteOrigin, siteBuild.stdout]]);
 
 /**
  * The file prerendering writes a page to, or nothing where the page is not prerendered or has no
@@ -1214,7 +1218,8 @@ const servedAt = (origin, locales) =>
   locales.filter((locale) => addresses.origin(locale) === origin);
 
 /**
- * Builds the consumer as its deployment at `origin` is built, into `output`.
+ * Builds the consumer as its deployment at `origin` is built, into `output`, and returns what the
+ * build wrote.
  *
  * At the declared origin that is the source as it stands. At any other it is the same source with
  * `SITE_ORIGIN` changed, which is how a deployment that puts each locale on its own origin builds
@@ -1223,8 +1228,7 @@ const servedAt = (origin, locales) =>
  */
 async function buildAt(origin, output) {
   if (origin === builds.siteOrigin) {
-    run(['exec', 'ng', 'build', '--output-path', output]);
-    return;
+    return run(['exec', 'ng', 'build', '--output-path', output]).stdout;
   }
   await writeFile(
     builds.policyPath,
@@ -1235,7 +1239,7 @@ async function buildAt(origin, output) {
     'utf8',
   );
   try {
-    run(['exec', 'ng', 'build', '--output-path', output]);
+    return run(['exec', 'ng', 'build', '--output-path', output]).stdout;
   } finally {
     await writeFile(builds.policyPath, policySource, 'utf8');
   }
@@ -1316,7 +1320,9 @@ async function verifyPrerendered(root, origin, locales) {
 // above; under a host policy each origin prerenders its own locale's pages and no other's.
 for (const origin of originsOf(INIT_REQUEST.locales)) {
   const output = builds.output(origin);
-  if (origin !== builds.siteOrigin) await buildAt(origin, output);
+  if (origin !== builds.siteOrigin) {
+    buildLogs.set(origin, await buildAt(origin, output));
+  }
   await verifyPrerendered(
     resolve(consumerRoot, output, 'browser'),
     origin,
@@ -1331,6 +1337,11 @@ openCapabilityEvidence('consumer-stage', { consumer: consumerRoot });
 
 /** The answers of the builds above to these requests, in order: `[{ origin, path, headers }]`. */
 function serverAnswers(requests) {
+  return loggedServerAnswers(requests).answers;
+}
+
+/** The answers, as above, and what the servers wrote while they answered. */
+function loggedServerAnswers(requests) {
   const answersFile = resolve(consumerRoot, 'tmp/server-answers.json');
   mkdirSync(dirname(answersFile), { recursive: true });
   const asked = spawnSync(
@@ -1351,7 +1362,10 @@ function serverAnswers(requests) {
     0,
     `The consumer's server did not answer.\n${asked.error ?? ''}${asked.stdout}${asked.stderr}`,
   );
-  return JSON.parse(readFileSync(answersFile, 'utf8'));
+  return {
+    answers: JSON.parse(readFileSync(answersFile, 'utf8')),
+    log: asked.stdout,
+  };
 }
 
 function verifyServerAnswers() {
@@ -1994,7 +2008,7 @@ verifySitemap();
  */
 async function verifyExerciseSheets() {
   const inputs = await readExerciseInputs(consumerRoot);
-  const verifySheet = async (check, locale, document, rendered, page) => {
+  const verifySheet = async (check, locale, document, rendered, page, log) => {
     const sheet = sheetInDocument(document);
     assert.equal(sheet.locale, locale, `${check} shows ${sheet.locale}`);
     assert.ok(
@@ -2025,12 +2039,13 @@ async function verifyExerciseSheets() {
     claimExercisedControls(check, sheet, expected, inputs.controls, observed);
     claimExercisedExtensions(check, sheet, expected, observed);
     claimOverlayLocale(check, sheet, locale, sources.direction, observed);
+    claimLoggedHandOver(check, loggedEvents(log), locale, observed);
   };
 
   const served = INIT_REQUEST.locales.filter((locale) =>
     addresses.has('exercise', locale),
   );
-  const answers = serverAnswers(
+  const { answers, log } = loggedServerAnswers(
     served.map((locale) => ({
       origin: addresses.origin(locale),
       path: addresses.path('exercise', locale),
@@ -2044,6 +2059,7 @@ async function verifyExerciseSheets() {
       answers[index].body,
       'ssr',
       'exercise',
+      log,
     );
   }
   for (const locale of INIT_REQUEST.locales) {
@@ -2063,6 +2079,7 @@ async function verifyExerciseSheets() {
       document,
       'ssg',
       'exercise values',
+      buildLogs.get(addresses.origin(locale)),
     );
   }
 }

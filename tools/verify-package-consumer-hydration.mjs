@@ -17,6 +17,11 @@ import {
   readConsumerBuilds,
 } from './consumer-addresses.mjs';
 import {
+  claimLoggedChange,
+  claimLoggedHandOver,
+  loggedEvents,
+} from './consumer-events.mjs';
+import {
   claimExercisedContext,
   claimExercisedControls,
   claimExercisedDirectives,
@@ -861,6 +866,18 @@ async function measuredContext(page) {
     adoptedElements: reported.adoptedElements,
     clientNavigations: Number(reported.clientNavigations),
   };
+}
+
+/**
+ * The lines the application's event log writes to the console of `page`, as they arrive, for
+ * `loggedEvents` to read.
+ */
+function logOf(page) {
+  const lines = [];
+  page.on('console', (message) => {
+    if (message.text().startsWith('equator-event ')) lines.push(message.text());
+  });
+  return lines;
 }
 
 /** The name a section's claims are listed under. */
@@ -3677,7 +3694,7 @@ async function verifyLocaleSources(row, diagnostics) {
  * The first document, rendered by the server and adopted by the client. Scripts wait until the
  * server's markup has been read, so what the client kept can be told from what it replaced.
  */
-async function verifyHydration(row, page, releaseScripts) {
+async function verifyHydration(row, page, releaseScripts, events) {
   enterStage(`${row.id}-hydration-navigation`);
   const navigation = page.goto(
     siteUrl(`${addresses.path('home', 'en-US')}?label=hydration-request`),
@@ -3774,10 +3791,17 @@ async function verifyHydration(row, page, releaseScripts) {
   );
   assert.equal(await page.locator('[data-inert-text] img').count(), 0);
 
+  const adopted = await measuredContext(page);
   recordCapabilityClaim(
     sectionCheck(row, 'hydration'),
     'directive:LocalizedMessage',
-    await measuredContext(page),
+    adopted,
+  );
+  claimLoggedHandOver(
+    sectionCheck(row, 'hydration'),
+    loggedEvents(events.join('\n')),
+    'en-US',
+    adopted,
   );
   return trustedTypes;
 }
@@ -3922,7 +3946,7 @@ function overlayRoot(page) {
 }
 
 /** A switch to Arabic and back on the hydrated page, through the options the page renders. */
-async function verifyLocaleSwitches(row, page) {
+async function verifyLocaleSwitches(row, page, events) {
   enterStage(`${row.id}-arabic-route-switch`);
   await localeChoice(page, 'ar-EG').click();
   await page.waitForFunction(
@@ -4020,6 +4044,15 @@ async function verifyLocaleSwitches(row, page) {
 
   const check = sectionCheck(row, 'locale switches');
   const context = await measuredContext(page);
+  // Where the locale is the origin, the change is a document navigation, and that is what the sink
+  // is told rather than a commit.
+  claimLoggedChange(
+    check,
+    loggedEvents(events.join('\n')),
+    'ar-EG',
+    addresses.switchInDocument ? 'succeeded' : 'redirected',
+    context,
+  );
   recordCapabilityClaim(check, 'directive:LocaleChoice', context);
   recordCapabilityClaim(check, 'directive:LocalizedMessage', context);
   recordCapabilityClaim(check, 'extension:locale-participant', context);
@@ -4186,6 +4219,7 @@ async function verifyBrowserRow(row) {
   // Attached before the first navigation, so a bound tripping in any stage describes what the row
   // was doing rather than only naming the stage.
   attachBrowserDiagnostics(page, diagnostics);
+  const events = logOf(page);
 
   let releaseScripts;
   const scriptGate = new Promise((resolveGate) => {
@@ -4198,7 +4232,7 @@ async function verifyBrowserRow(row) {
     await route.continue();
   });
 
-  const trustedTypes = await verifyHydration(row, page, releaseScripts);
+  const trustedTypes = await verifyHydration(row, page, releaseScripts, events);
 
   enterStage(`${row.id}-event-replay`);
   await page.locator('[data-counter]').click();
@@ -4318,7 +4352,7 @@ async function verifyBrowserRow(row) {
     'Incremental hydration replaced its transferred boundary',
   );
 
-  await verifyLocaleSwitches(row, page);
+  await verifyLocaleSwitches(row, page, events);
 
   await verifyClientNavigation(row, page);
 
