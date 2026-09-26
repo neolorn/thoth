@@ -3224,7 +3224,19 @@ async function verifyRenderingModes(row, context, diagnostics) {
   const beforeSwitch = await inlineSourceCensus(csrPage);
 
   await localeChoice(csrPage, 'ar-EG').click();
-  await csrPage.waitForURL((url) => isShown(url, 'item', 'ar-EG'));
+  await csrPage
+    .waitForURL((url) => isShown(url, 'item', 'ar-EG'))
+    .catch(() => undefined);
+  assert.equal(
+    new URL(csrPage.url()).pathname,
+    addresses.shownPath('item', 'ar-EG'),
+    'the switch did not move item to the path localizedPaths gives it in ar-EG',
+  );
+  recordCapabilityClaim(
+    sectionCheck(row, 'client render switch'),
+    'declaration:localized-paths',
+    await measuredContext(csrPage),
+  );
   await csrPage.waitForFunction(
     () =>
       document.documentElement.lang === 'ar-EG' &&

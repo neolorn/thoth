@@ -1787,6 +1787,9 @@ function verifyAddressDeclarations() {
   const homes = INIT_REQUEST.locales.filter((each) =>
     addresses.has('home', each),
   );
+  const items = INIT_REQUEST.locales.filter((each) =>
+    addresses.has('item', each),
+  );
   const aliased = addresses.locales('second under an alias');
   const asked = [
     {
@@ -1796,6 +1799,10 @@ function verifyAddressDeclarations() {
     ...homes.map((each) => ({
       origin: addresses.origin(each),
       path: addresses.path('home', each),
+    })),
+    ...items.map((each) => ({
+      origin: addresses.origin(each),
+      path: addresses.path('item', each),
     })),
     ...aliased.map((each) => ({
       origin: addresses.origin(each),
@@ -1824,6 +1831,22 @@ function verifyAddressDeclarations() {
       `${check}: not where xDefaultPath or xDefaultUrl declares it`,
     );
     recordCapabilityClaim(check, 'declaration:x-default', {
+      document: answer.body,
+      policy,
+    });
+  }
+
+  // `item` is spelled with the words localizedPaths gives it in each locale.
+  for (const each of items) {
+    const answer = answers[next++];
+    const check = `${consumerName}: item in ${each}`;
+    assert.equal(
+      answer.status,
+      200,
+      `${check}: the path localizedPaths spells it with was not served`,
+    );
+    assert.equal(answer.headers['content-language'], each);
+    recordCapabilityClaim(check, 'declaration:localized-paths', {
       document: answer.body,
       policy,
     });

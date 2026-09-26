@@ -23,7 +23,8 @@
       "en-US": "/lazy"
     },
     "item": {
-      "en-US": "/items/42"
+      "en-US": "/items/42",
+      "ar-EG": "/عناصر/42"
     },
     "article": {
       "en-US": "/articles/handbook",

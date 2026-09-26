@@ -119,6 +119,12 @@ export const appRouteProjection = defineRouteProjection({
     topic: Object.freeze({ topic: createIdentifierParameterCodec() }),
     exercise: Object.freeze({ sheet: exerciseSheetCodec }),
   }),
+  // A path whose words are translated, where every other route here shares its words across
+  // locales. One route is enough to show the whole path is read per locale, and `item` is the one
+  // whose address every check reads from the table rather than spells.
+  localizedPaths: Object.freeze({
+    item: Object.freeze({ 'ar-EG': 'عناصر/:id' }),
+  }),
   historical: Object.freeze({
     legacy: Object.freeze({
       kind: 'replacement',

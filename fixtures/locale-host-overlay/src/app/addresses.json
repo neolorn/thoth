@@ -27,7 +27,7 @@
     },
     "item": {
       "en-US": "http://en-us.localhost/items/42",
-      "ar-EG": "http://ar-eg.localhost/items/42",
+      "ar-EG": "http://ar-eg.localhost/عناصر/42",
       "en-Arab-XB": "http://en-arab-xb.localhost/items/42"
     },
     "article": {
