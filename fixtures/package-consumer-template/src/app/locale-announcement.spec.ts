@@ -23,6 +23,7 @@ import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
+import { messages } from '#i18n/shell';
 
 import { runtimeExtensions } from './runtime-extensions';
 
@@ -90,6 +91,36 @@ describe('what a locale change is announced as', () => {
 
     await vi.waitFor(() => {
       expect(announced()).toBe('now ar-EG');
+    });
+  });
+
+  it('is worded from the catalog of the locale arrived at', async () => {
+    // The sentence an application writes is a message, and reading it is what the wording is for:
+    // asked before the change is published, the runtime answers in the language being left.
+    let reader: Localization | undefined;
+    const localization = setup(() => reader?.text(messages.appTitle));
+    reader = localization;
+    await localization.initialize();
+
+    await localization.changeLocale('ar-EG');
+
+    await vi.waitFor(() => {
+      expect(announced()).toBe(localization.text(messages.appTitle));
+    });
+    expect(announced()).toMatch(/\p{Script=Arabic}/u);
+  });
+
+  it('is the default wording where the application’s cannot be said', async () => {
+    // A replacement replaces the wording and not the decision to announce, and the change itself is
+    // not the announcement's to refuse.
+    const localization = setup(() => 'line\nbreak');
+    await localization.initialize();
+
+    const result = await localization.changeLocale('ar-EG');
+
+    expect(result.status).toBe('committed');
+    await vi.waitFor(() => {
+      expect(announced() ?? '').toMatch(/\p{Script=Arabic}/u);
     });
   });
 });

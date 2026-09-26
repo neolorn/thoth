@@ -663,8 +663,10 @@ export function withoutDocumentLocale(): LocalizationFeature<'document-locale'> 
  * Says what a screen reader hears when the language has finished changing.
  *
  * Takes a function from the committed snapshot to the sentence to announce, so the wording is the
- * application's and can be in the language just arrived at. Called once per commit, and what it
- * returns goes into a live region.
+ * application's and can be in the language just arrived at. Called once per commit, after the change
+ * is published, so a message read inside it answers in the arriving locale, and what it returns
+ * goes into a live region. A sentence that cannot be said, over 512 characters or holding a control
+ * character, is reported through `withObservability`, and the default wording is said instead.
  *
  * Returning `undefined` replaces the wording with none, which is what an application announcing the
  * change through a region of its own needs: the change is then announced once rather than twice.
@@ -1029,7 +1031,6 @@ class RoutingCommitHook implements LocalizationCommitHook {
 
 class LocaleAnnouncementCommitHook implements LocalizationCommitHook {
   private previousLocale: string | undefined;
-  private pending: string | undefined;
   private sequence = 0;
   private readonly region: HTMLElement | undefined;
 
@@ -1073,22 +1074,49 @@ class LocaleAnnouncementCommitHook implements LocalizationCommitHook {
     if (this.region !== undefined) this.region.textContent = message;
   }
 
-  apply(snapshot: LocalizationSnapshot): void {
+  apply(): void {
+    // Nothing is worded inside the transaction. `specs/06-runtime-and-angular.spec.md` section 11
+    // runs the announcement after the commit it belongs to, and the wording is the application's:
+    // asked here, the catalogs it reads and the head it describes are still the locale being left.
+  }
+
+  /**
+   * Worded once the change is published, and announced a frame after that.
+   *
+   * Worded here because this is the first moment the application's function can see the page it is
+   * describing: its messages answer in the arriving locale and the head has been re-projected, the
+   * routed steps being ahead of this hook. A wording that cannot be said is the application's
+   * failure and not the change's, so it is reported and the default is said instead, which keeps
+   * the decision to announce.
+   *
+   * Published a frame later still, because the message describes a locale the page has moved to,
+   * and a screen reader given it now reads it while the controls it describes may still show the
+   * previous locale. Waiting is also what keeps it truthful when a commit is abandoned: nothing was
+   * said yet, so there is nothing to retract.
+   */
+  committed(snapshot: LocalizationSnapshot): void {
     const previous = this.previousLocale;
-    if (previous === undefined || previous === snapshot.primaryLocale) {
-      this.previousLocale = snapshot.primaryLocale;
-      return;
+    this.previousLocale = snapshot.primaryLocale;
+    if (previous === undefined || previous === snapshot.primaryLocale) return;
+    // Moved even when nothing is said, so an announcement queued for a locale this commit has
+    // already left is dropped rather than read out after it.
+    this.sequence += 1;
+    let message: string | undefined;
+    let failure: unknown;
+    try {
+      message = this.worded(this.format(snapshot));
+    } catch (error: unknown) {
+      failure = error;
+      message = defaultLocaleAnnouncement(snapshot);
     }
-    const wording = this.format(snapshot);
-    if (wording === undefined) {
-      // A replacement that supplies no wording, which is how an application announcing the change
-      // through its own region says so. The sequence still moves, so an announcement queued for a
-      // locale this commit has already left is dropped rather than read out after it.
-      this.previousLocale = snapshot.primaryLocale;
-      this.sequence += 1;
-      this.pending = undefined;
-      return;
-    }
+    if (message !== undefined) this.schedule(message);
+    if (failure !== undefined) throw failure;
+  }
+
+  /** The wording as it will be said, or a refusal of one that cannot be. */
+  private worded(wording: string | undefined): string | undefined {
+    // No wording is how an application announcing the change through its own region says so.
+    if (wording === undefined) return undefined;
     const message = wording.normalize('NFC');
     if ([...message].length > 512 || /[\u0000-\u001f\u007f]/u.test(message)) {
       throw new LocalizationError({
@@ -1097,23 +1125,10 @@ class LocaleAnnouncementCommitHook implements LocalizationCommitHook {
         message: 'The locale announcement is invalid or outside bounds.',
       });
     }
-    this.previousLocale = snapshot.primaryLocale;
-    this.sequence += 1;
-    this.pending = message;
+    return message;
   }
 
-  /**
-   * Announced after the commit, not with it.
-   *
-   * The message describes a locale the page has already moved to, so publishing it from `apply`
-   * puts it in front of a screen reader while the controls it is about to describe still show the
-   * previous locale. Waiting a frame is also what keeps it truthful when a commit is abandoned:
-   * nothing was said yet, so there is nothing to retract.
-   */
-  committed(): void {
-    const message = this.pending;
-    this.pending = undefined;
-    if (message === undefined) return;
+  private schedule(message: string): void {
     const sequence = this.sequence;
     const view = this.document.defaultView;
     const publish = () => {
@@ -1130,14 +1145,12 @@ class LocaleAnnouncementCommitHook implements LocalizationCommitHook {
 
   rollback(snapshot: LocalizationSnapshot | undefined): void {
     this.sequence += 1;
-    this.pending = undefined;
     this.previousLocale = snapshot?.primaryLocale;
     this.publish('');
   }
 
   dispose(): void {
     this.sequence += 1;
-    this.pending = undefined;
     this.publish('');
     this.region?.remove();
   }

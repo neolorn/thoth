@@ -224,6 +224,9 @@ treat that as a replacement of the wording alone rather than of the decision to 
 replacement that supplies no wording is still a replacement of the wording. An application
 announcing the change through a region of its own supplies none, so the change is not announced
 twice, and a release MUST accept that rather than treat an empty replacement as a mistake.
+A release MUST ask for the replacement wording once the change is published, so a wording read
+from the application's messages is in the locale arrived at. Where the wording it gets cannot be
+announced, a release MUST report that and announce the default instead.
 
 A release MUST NOT announce an entire page, a pending locale, a failed switch as a success,
 or every translated node. Withdrawing document ownership withdraws the announcement with it, because
