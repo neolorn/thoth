@@ -31,6 +31,15 @@
     "topic": {
       "en-US": "/topics/handbook"
     },
+    "unfiled topic": {
+      "en-US": "/topics/unfiled-topic"
+    },
+    "retired topic": {
+      "en-US": "/topics/retired-topic"
+    },
+    "unavailable topic": {
+      "en-US": "/topics/unavailable-topic"
+    },
     "dossier": {
       "en-US": "/dossiers/dossier"
     },

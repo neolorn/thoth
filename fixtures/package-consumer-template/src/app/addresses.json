@@ -40,6 +40,21 @@
       "ar-EG": "/ar-eg/topics/handbook",
       "en-Arab-XB": "/en-arab-xb/topics/handbook"
     },
+    "unfiled topic": {
+      "en-US": "/en-us/topics/unfiled-topic",
+      "ar-EG": "/ar-eg/topics/unfiled-topic",
+      "en-Arab-XB": "/en-arab-xb/topics/unfiled-topic"
+    },
+    "retired topic": {
+      "en-US": "/en-us/topics/retired-topic",
+      "ar-EG": "/ar-eg/topics/retired-topic",
+      "en-Arab-XB": "/en-arab-xb/topics/retired-topic"
+    },
+    "unavailable topic": {
+      "en-US": "/en-us/topics/unavailable-topic",
+      "ar-EG": "/ar-eg/topics/unavailable-topic",
+      "en-Arab-XB": "/en-arab-xb/topics/unavailable-topic"
+    },
     "dossier": {
       "en-US": "/en-us/dossiers/dossier",
       "ar-EG": "/ar-eg/dossiers/dossier",

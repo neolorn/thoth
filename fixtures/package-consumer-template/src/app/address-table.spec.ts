@@ -34,7 +34,21 @@ const routed = {
   item: 'item',
   article: 'article',
   topic: 'topic',
+  'unfiled topic': 'topic',
+  'retired topic': 'topic',
+  'unavailable topic': 'topic',
   dossier: 'dossier',
+} as const;
+
+/**
+ * The topic each topic page names: one that is filed, and three the page declares an outcome for
+ * once it has looked the topic up.
+ */
+const topics = {
+  topic: 'handbook',
+  'unfiled topic': 'unfiled-topic',
+  'retired topic': 'retired-topic',
+  'unavailable topic': 'unavailable-topic',
 } as const;
 
 type RoutedPage = keyof typeof routed;
@@ -80,12 +94,15 @@ const build = (page: RoutedPage, locale: string): string => {
         { slug: 'handbook' },
       );
     case 'topic':
+    case 'unfiled topic':
+    case 'retired topic':
+    case 'unavailable topic':
       return buildLocalizedRoute(
         routePolicy,
         appRouteProjection,
         'topic',
         locale,
-        { topic: 'handbook' },
+        { topic: topics[page] },
       );
     case 'dossier':
       return buildLocalizedRoute(

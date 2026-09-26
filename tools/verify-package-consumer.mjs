@@ -1484,6 +1484,135 @@ function verifyLocaleSources() {
 verifyLocaleSources();
 
 /**
+ * What the routes declare, read off the server's answers in the default locale: the indexing and
+ * caching classes a route's data names, the floor a deployment puts under every page, what became
+ * of a retired address, and the outcome a page declares once it has looked up what it was asked
+ * for. The policy is the one the exercise sheet reports from the same server in the same run.
+ */
+function verifyRouteDeclarations() {
+  const locale = INIT_REQUEST.defaultLocale;
+  const asked = [
+    ['exercise', ''],
+    ['home', ''],
+    ['second', ''],
+    ['item', ''],
+    ['lazy', ''],
+    ['legacy', '?tab=one'],
+    ['removed', ''],
+    ['unfiled topic', ''],
+    ['retired topic', ''],
+    ['unavailable topic', ''],
+  ];
+  const answers = serverAnswers(
+    asked.map(([page, query]) => ({
+      origin: addresses.origin(locale),
+      path: `${addresses.path(page, locale)}${query}`,
+    })),
+  );
+  const answered = new Map(
+    asked.map(([page], index) => [page, answers[index]]),
+  );
+  const { policy } = sheetInDocument(answered.get('exercise').body);
+  const check = `${consumerName}: route declarations`;
+  const observed = (page) => ({ document: answered.get(page).body, policy });
+  const header = (page, name) => answered.get(page).headers[name];
+  const status = (page) => answered.get(page).status;
+
+  assert.equal(status('home'), 200, 'home was not answered');
+  assert.equal(
+    header('home', 'x-robots-tag'),
+    undefined,
+    'home declares equatorIndexing indexable and was answered noindex',
+  );
+  assert.equal(status('item'), 200, 'item was not answered');
+  assert.equal(
+    header('item', 'x-robots-tag'),
+    'noindex',
+    'item declares equatorIndexing non-indexable and was answered without noindex',
+  );
+  recordCapabilityClaim(
+    check,
+    'declaration:route-indexing-class',
+    observed('item'),
+  );
+
+  assert.equal(status('lazy'), 200, 'lazy was not answered');
+  assert.equal(
+    header('lazy', 'cache-control'),
+    'private, no-cache',
+    'lazy declares equatorCaching per-visitor and a shared cache may keep it',
+  );
+  recordCapabilityClaim(
+    check,
+    'declaration:route-caching-class',
+    observed('lazy'),
+  );
+
+  // Only a deployment whose table says it declares a floor has one to hold.
+  if (addresses.pageCaching !== undefined) {
+    assert.equal(
+      header('second', 'cache-control'),
+      addresses.pageCaching === 'not-stored'
+        ? 'private, no-store'
+        : 'private, no-cache',
+      `second declares no caching class and was not raised to the ${addresses.pageCaching} floor`,
+    );
+    recordCapabilityClaim(
+      check,
+      'declaration:host-page-floor',
+      observed('second'),
+    );
+  }
+
+  assert.equal(
+    status('legacy'),
+    308,
+    'legacy is declared historical, replaced by second, and was not sent on',
+  );
+  assert.equal(
+    header('legacy', 'location'),
+    `${addresses.address('second', locale)}?tab=one`,
+    'legacy was not sent to second with its query kept',
+  );
+  assert.equal(
+    status('removed'),
+    410,
+    'removed is declared historical and gone, and was not answered 410',
+  );
+  assert.equal(header('removed', 'content-language'), locale);
+  assert.equal(header('removed', 'x-robots-tag'), 'noindex');
+  recordCapabilityClaim(
+    check,
+    'declaration:historical-route-outcome',
+    observed('removed'),
+  );
+
+  // The topic page resolves as a page, and declares its outcome once it has looked the topic up.
+  const declared = (page, expected, declaration) => {
+    assert.equal(
+      status(page),
+      expected,
+      `The topic page declared ${declaration} for ${page} and was answered ${status(page)}`,
+    );
+    assert.equal(header(page, 'content-language'), locale);
+    assert.equal(header(page, 'cache-control'), 'private, no-store');
+  };
+  declared('unfiled topic', 404, 'pageAbsent()');
+  assert.equal(header('unfiled topic', 'x-robots-tag'), 'noindex');
+  recordCapabilityClaim(check, 'outcome:pageAbsent', observed('unfiled topic'));
+  declared('retired topic', 410, 'pageGone()');
+  assert.equal(header('retired topic', 'x-robots-tag'), 'noindex');
+  recordCapabilityClaim(check, 'outcome:pageGone', observed('retired topic'));
+  declared('unavailable topic', 503, 'pageOperationalFailure(503)');
+  recordCapabilityClaim(
+    check,
+    'outcome:pageOperationalFailure',
+    observed('unavailable topic'),
+  );
+}
+verifyRouteDeclarations();
+
+/**
  * The exercise sheet, as these servers answer it and as these builds wrote it, in every locale
  * they serve. Each line is held to what this Node's own formatters write for the same input, on
  * the Node the server and the build ran on.
