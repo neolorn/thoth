@@ -11,6 +11,8 @@ import { createServer } from 'node:http';
 
 import { chromium, firefox, webkit } from 'playwright';
 
+import { listenForBrowsers } from './browser-reachable-port.mjs';
+
 assert.equal(
   process.version,
   'v24.18.0',
@@ -306,10 +308,7 @@ const capabilityServer = createServer((_request, response) => {
   response.end('<!doctype html><title>Equator capability probe</title>');
 });
 
-await new Promise((resolveListen, rejectListen) => {
-  capabilityServer.once('error', rejectListen);
-  capabilityServer.listen(0, '127.0.0.1', resolveListen);
-});
+await listenForBrowsers(capabilityServer, '127.0.0.1');
 
 const browserRows = Object.freeze([
   Object.freeze({ id: 'chromium', label: 'Chromium', browserType: chromium }),

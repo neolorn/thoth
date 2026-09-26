@@ -7,6 +7,7 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 
 import { JSDOM } from 'jsdom';
 
+import { listenForBrowsers } from './browser-reachable-port.mjs';
 import {
   openCapabilityEvidence,
   recordCapabilityClaim,
@@ -586,10 +587,7 @@ const server = createServer((request, response) => {
   }
 });
 
-await new Promise((resolveListen, rejectListen) => {
-  server.once('error', rejectListen);
-  server.listen(0, '127.0.0.1', resolveListen);
-});
+await listenForBrowsers(server, '127.0.0.1');
 
 const address = server.address();
 assert.notEqual(address, null, 'SSR server has no address');
@@ -744,10 +742,7 @@ edge.on('connect', (request, socket) => {
   socket.end('HTTP/1.1 502 Bad Gateway\r\n\r\n');
 });
 
-await new Promise((resolveListen, rejectListen) => {
-  edge.once('error', rejectListen);
-  edge.listen(0, '127.0.0.1', resolveListen);
-});
+await listenForBrowsers(edge, '127.0.0.1');
 const edgeAddress = edge.address();
 assert.equal(
   typeof edgeAddress,

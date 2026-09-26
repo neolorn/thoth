@@ -346,7 +346,7 @@ const declared = Object.freeze([
   // built with the wrong locale set, twice, and looked no different from a real pass.
   {
     id: 'verify:browser-assurance:self-test',
-    reads: ['consumer:package', 'source:packages'],
+    reads: ['consumer:package', 'source:packages', 'source:tools'],
   },
   // The browser rows run alone: serial among themselves and not overlapped with anything else
   // either. This is the one exclusion that is declared rather than derived: they share no artefact,
