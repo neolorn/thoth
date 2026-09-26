@@ -372,12 +372,12 @@ describe('pseudo-locales are generated rather than authored', () => {
    * `specs/10-compiler-and-tooling.spec.md` section 16. Each case is refused for one reason, and
    * the accepted tag in the case above is the control for all three.
    */
-  const pseudoLocaleRefusal = (
+  const pseudoLocaleDeclaration = (
     tag: string,
     transform: PseudoLocaleTransform = { lengthFactor: 0.4 },
     sourceLocale = 'en-US',
-  ) => {
-    const parsed = parseConfiguration(
+  ) =>
+    parseConfiguration(
       JSON.stringify({
         schemaVersion: 1,
         sourceLocale,
@@ -386,6 +386,13 @@ describe('pseudo-locales are generated rather than authored', () => {
         pseudoLocales: { [tag]: transform },
       }),
     );
+
+  const pseudoLocaleRefusal = (
+    tag: string,
+    transform?: PseudoLocaleTransform,
+    sourceLocale?: string,
+  ) => {
+    const parsed = pseudoLocaleDeclaration(tag, transform, sourceLocale);
     return parsed.diagnostics
       .filter(({ code }) => code === 'EQ1008')
       .map(({ path, summary }) => ({ path, summary }));
@@ -438,6 +445,7 @@ describe('pseudo-locales are generated rather than authored', () => {
         transform,
       );
       expect(rest).toEqual([]);
+      expect(refusal?.path).toEqual(['pseudoLocales', PSEUDO_LOCALE_EXPANDED]);
       expect(refusal?.summary).toMatch(/lengthFactor does not lengthen it/u);
     }
     claimCapability('capability:pseudo-locale');
@@ -452,6 +460,7 @@ describe('pseudo-locales are generated rather than authored', () => {
         'de-DE',
       );
       expect(rest).toEqual([]);
+      expect(refusal?.path).toEqual(['pseudoLocales', tag]);
       expect(refusal?.summary).toMatch(/and it is in de\./u);
     }
     claimCapability('capability:pseudo-locale');
@@ -464,7 +473,11 @@ describe('pseudo-locales are generated rather than authored', () => {
       ['de-Latn-XJ', { lengthFactor: 0.4 }, 'de-DE'],
       ['de-Arab-XL', { lengthFactor: -0.4 }, 'de-DE'],
     ] as const) {
-      expect(pseudoLocaleRefusal(tag, transform, sourceLocale)).toEqual([]);
+      const parsed = pseudoLocaleDeclaration(tag, transform, sourceLocale);
+      expect(parsed.diagnostics).toEqual([]);
+      expect(parsed.ok && parsed.value.pseudoLocales).toEqual({
+        [tag]: transform,
+      });
     }
     claimCapability('capability:pseudo-locale');
   });
