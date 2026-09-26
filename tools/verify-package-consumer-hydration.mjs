@@ -3752,6 +3752,14 @@ async function verifyRouteDeferredScope(row, context, diagnostics) {
   }
 }
 
+/** The language and direction of the root the application attaches overlays to. */
+function overlayRoot(page) {
+  return page.locator('[data-overlay-root]').evaluate((root) => ({
+    lang: root.getAttribute('lang'),
+    dir: root.getAttribute('dir'),
+  }));
+}
+
 /** A switch to Arabic and back on the hydrated page, through the options the page renders. */
 async function verifyLocaleSwitches(row, page) {
   enterStage(`${row.id}-arabic-route-switch`);
@@ -3778,6 +3786,13 @@ async function verifyLocaleSwitches(row, page) {
   assert.equal(
     await page.locator('link[rel="canonical"]').getAttribute('href'),
     addresses.shownUrl('home', 'ar-EG'),
+    'withRouting did not move the canonical address to the Arabic page',
+  );
+  // Nothing the application renders reaches the overlay root, so only the adapter can move it.
+  assert.deepEqual(
+    await overlayRoot(page),
+    { lang: 'ar-EG', dir: 'rtl' },
+    'The LocalizationOverlayAdapter installed with withOverlayLocale did not move the overlay root to Arabic',
   );
   assert.match(
     await page.locator('localized-message[data-rich-message]').textContent(),
@@ -3795,6 +3810,7 @@ async function verifyLocaleSwitches(row, page) {
       .locator('[data-dynamic-content]')
       .getAttribute('data-source-requests'),
     addresses.switchInDocument ? '1' : '0',
+    "The dynamic content's LocalizationParticipant did not fetch the Arabic content once, or did not adopt the page's own",
   );
   assert.equal(
     await page.locator('[data-comment-id="community-ar"]').getAttribute('lang'),
@@ -3835,11 +3851,20 @@ async function verifyLocaleSwitches(row, page) {
       .getAttribute('data-source-requests'),
     addresses.switchInDocument ? '2' : '0',
   );
+  assert.deepEqual(
+    await overlayRoot(page),
+    { lang: 'en-US', dir: 'ltr' },
+    'The LocalizationOverlayAdapter did not move the overlay root back to English',
+  );
 
   const check = sectionCheck(row, 'locale switches');
   const context = await measuredContext(page);
   recordCapabilityClaim(check, 'directive:LocaleChoice', context);
   recordCapabilityClaim(check, 'directive:LocalizedMessage', context);
+  recordCapabilityClaim(check, 'extension:locale-participant', context);
+  recordCapabilityClaim(check, 'extension:overlay-adapter', context);
+  recordCapabilityClaim(check, 'feature:withOverlayLocale', context);
+  recordCapabilityClaim(check, 'feature:withRouting', context);
   claimRunningPolicy(check, context);
 }
 

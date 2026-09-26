@@ -43,6 +43,7 @@ import {
   claimExercisedExtensions,
   claimExercisedFormats,
   claimExercisedPipes,
+  claimOverlayLocale,
   exerciseAuthority,
   readExerciseSources,
   readExerciseInputs,
@@ -1397,16 +1398,14 @@ async function verifyExerciseSheets() {
       document.includes(`ng-server-context="${rendered}"`),
       `${check} was not written by the ${rendered === 'ssr' ? 'server' : 'build'}`,
     );
-    const expected = exerciseAuthority({
-      inputs,
-      locale,
-      ...(await readExerciseSources(consumerRoot, locale, inputs)),
-    });
+    const sources = await readExerciseSources(consumerRoot, locale, inputs);
+    const expected = exerciseAuthority({ inputs, locale, ...sources });
     const observed = { document, policy: sheet.policy };
     claimExercisedPipes(check, sheet, expected, observed);
     claimExercisedFormats(check, sheet, expected, observed);
     claimExercisedControls(check, sheet, expected, inputs.controls, observed);
     claimExercisedExtensions(check, sheet, expected, observed);
+    claimOverlayLocale(check, sheet, locale, sources.direction, observed);
   };
 
   const served = INIT_REQUEST.locales.filter((locale) =>

@@ -14,6 +14,7 @@ import {
   withExtensions,
   withFormattingContext,
   withLocalizationClock,
+  withOverlayLocale,
   systemClock,
   withPersistence,
   withRecoveryMessage,
@@ -28,6 +29,7 @@ import { messages } from '#i18n/shell';
 
 import { routes } from './app.routes';
 import { localeCookie } from './locale-cookie';
+import { overlayLocale } from './overlay-locale';
 import { runtimeExtensions } from './runtime-extensions';
 import { DynamicContentStore, provideDynamicContent } from './dynamic-content';
 import {
@@ -248,6 +250,7 @@ export const appConfig: ApplicationConfig = {
       // naming it is what makes the substitution in a test a change to one line rather than a
       // change of shape: the application already says which clock it uses.
       withLocalizationClock(systemClock()),
+      withOverlayLocale(overlayLocale),
     ),
     provideDynamicContent(),
   ],

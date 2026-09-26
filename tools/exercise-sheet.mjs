@@ -89,12 +89,17 @@ export async function readExerciseSources(consumerRoot, locale, inputs) {
   };
 }
 
-/** What a page's sheet says: its locale, its policy, and each line by the capability it shows. */
-export function sheetOf({ locale, sheet, policy, lines }) {
+/**
+ * What a page's sheet says: its locale, its policy, and each line by the capability it shows. Where
+ * the whole document was read, also the language and direction of the root the application
+ * attaches overlays to.
+ */
+export function sheetOf({ locale, sheet, policy, lines, overlay }) {
   return Object.freeze({
     locale,
     sheet,
     policy: JSON.parse(policy),
+    overlay,
     // Angular keeps one space where the template breaks the line around an interpolation. A
     // direction mark the formatter writes is not white space, and survives.
     lines: new Map(lines.map(([id, text]) => [id, text.trim()])),
@@ -106,7 +111,13 @@ export function sheetInDocument(html) {
   const { document } = new JSDOM(html).window;
   const section = document.querySelector('[data-route-view="exercise"]');
   assert.notEqual(section, null, 'The document shows no exercise sheet');
+  const overlay = document.querySelector('[data-overlay-root]');
+  assert.notEqual(overlay, null, 'The document has no overlay root');
   return sheetOf({
+    overlay: {
+      lang: overlay.getAttribute('lang'),
+      dir: overlay.getAttribute('dir'),
+    },
     locale: section.getAttribute('data-exercise-locale'),
     sheet: section.getAttribute('data-exercise-sheet'),
     policy: section.getAttribute('data-url-policy'),
@@ -241,6 +252,20 @@ export function claimExercisedExtensions(check, sheet, expected, context) {
   read('parsing-adapter');
   recordCapabilityClaim(check, 'extension:parsing-adapter', context);
   recordCapabilityClaim(check, 'feature:withExtensions', context);
+}
+
+/**
+ * The root the application attaches overlays to, in the locale the page was written in and that
+ * locale's direction, which only the adapter the application installed can have put there.
+ */
+export function claimOverlayLocale(check, sheet, locale, direction, context) {
+  assert.deepEqual(
+    sheet.overlay,
+    { lang: locale, dir: direction },
+    `${check}: the overlay root is not in the locale the LocalizationOverlayAdapter installed with withOverlayLocale was handed`,
+  );
+  recordCapabilityClaim(check, 'extension:overlay-adapter', context);
+  recordCapabilityClaim(check, 'feature:withOverlayLocale', context);
 }
 
 /** Every formatting function, held and claimed, durations as above. */
