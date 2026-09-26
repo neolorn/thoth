@@ -172,12 +172,12 @@ const injections = Object.freeze([
       'A pathless layout route is descended through, so the routes and lazy boundaries beneath it are still read.',
     source: 'packages/toolkit/src/static-analysis.ts',
     find: `      const ownPath =
-        pathExpression === undefined
-          ? ''`,
-    replace: `      if (pathExpression === undefined) continue;
-      const ownPath =
-        pathExpression === undefined
-          ? ''`,
+        declared.kind === 'literal' ? declared.path.text : undefined;
+`,
+    replace: `      const ownPath =
+        declared.kind === 'literal' ? declared.path.text : undefined;
+      if (ownPath === '') continue;
+`,
     caughtBy: 'packages/toolkit/test/route-identity.test.ts',
   },
   {
