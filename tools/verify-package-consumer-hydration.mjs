@@ -19,6 +19,7 @@ import {
 import {
   claimExercisedContext,
   claimExercisedControls,
+  claimExercisedDirectives,
   claimExercisedExtensions,
   claimExercisedFormats,
   claimExercisedPipes,
@@ -2861,10 +2862,17 @@ async function exerciseSheetOn(page) {
         locale: section.getAttribute('data-exercise-locale'),
         sheet: section.getAttribute('data-exercise-sheet'),
         policy: section.getAttribute('data-url-policy'),
-        lines: [...section.querySelectorAll('[data-exercise]')].map((line) => [
-          line.getAttribute('data-exercise'),
-          line.textContent,
-        ]),
+        // Read as the consumer stage reads a document. The page's policy runs no code built from a
+        // string, so the reader is written out here rather than handed over.
+        lines: [...section.querySelectorAll('[data-exercise]')].map((line) => {
+          const attribute = line.getAttribute('data-exercise-attribute');
+          return [
+            line.getAttribute('data-exercise'),
+            attribute === null
+              ? line.textContent
+              : (line.getAttribute(attribute) ?? ''),
+          ];
+        }),
       };
     }),
   );
@@ -2904,6 +2912,7 @@ async function verifyExerciseSheets(row, context, diagnostics) {
     });
     claimExercisedContext(check, sheet, expected, observed);
     claimExercisedPipes(check, sheet, expected, observed);
+    claimExercisedDirectives(check, sheet, expected, observed);
     claimExercisedFormats(check, sheet, expected, observed);
     claimExercisedControls(
       check,

@@ -41,6 +41,7 @@ import {
 import {
   claimExercisedContext,
   claimExercisedControls,
+  claimExercisedDirectives,
   claimExercisedExtensions,
   claimExercisedFormats,
   claimExercisedPipes,
@@ -1419,6 +1420,7 @@ async function verifyExerciseSheets() {
     );
     claimExercisedContext(check, sheet, expected, observed);
     claimExercisedPipes(check, sheet, expected, observed);
+    claimExercisedDirectives(check, sheet, expected, observed);
     claimExercisedFormats(check, sheet, expected, observed);
     claimExercisedControls(check, sheet, expected, inputs.controls, observed);
     claimExercisedExtensions(check, sheet, expected, observed);

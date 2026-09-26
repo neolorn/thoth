@@ -14,7 +14,9 @@ import {
   LocalizedDecimalPipe,
   LocalizedDurationPipe,
   LocalizedInstantPipe,
+  LocalizedLabel,
   LocalizedMeasurementPipe,
+  LocalizedMessage,
   LocalizedMoneyPipe,
   LocalizedPercentPipe,
   LocalizedPercentagePointsPipe,
@@ -563,6 +565,8 @@ function collated(context: FormattingContext): string {
     LocalizedPlainTimePipe,
     LocalizedZonedDateTimePipe,
     LocalizedInput,
+    LocalizedLabel,
+    LocalizedMessage,
     ReactiveFormsModule,
   ],
   template: `
@@ -573,6 +577,14 @@ function collated(context: FormattingContext): string {
       [attr.data-url-policy]="policy"
     >
       <p data-exercise="localize">{{ messages.appTitle | localize }}</p>
+      <p data-exercise="directive:LocalizedMessage">
+        <localized-message [handle]="messages.learnMore" />
+      </p>
+      <p
+        data-exercise="directive:LocalizedLabel"
+        data-exercise-attribute="aria-label"
+        [localizedLabel]="messages.appTitle"
+      ></p>
       <p data-exercise="localizedDecimal">
         {{ values.decimal | localizedDecimal: options.decimal }}
       </p>

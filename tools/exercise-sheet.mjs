@@ -81,6 +81,7 @@ async function directionOf(locale) {
 export async function readExerciseSources(consumerRoot, locale, inputs) {
   const keys = [
     inputs.message,
+    inputs.richMessage,
     'extension.uppercase',
     'extension.badge',
     `feature-state.${inputs.extensions.member}`,
@@ -115,6 +116,20 @@ export function sheetOf({ locale, sheet, policy, lines, overlay }) {
   });
 }
 
+/**
+ * One line of a sheet, as `[id, text]`: its text, or the attribute it names where a directive
+ * writes the line into an attribute.
+ */
+function lineOf(line) {
+  const attribute = line.getAttribute('data-exercise-attribute');
+  return [
+    line.getAttribute('data-exercise'),
+    attribute === null
+      ? line.textContent
+      : (line.getAttribute(attribute) ?? ''),
+  ];
+}
+
 /** The sheet in a document a server answered or a build wrote. */
 export function sheetInDocument(html) {
   const { document } = new JSDOM(html).window;
@@ -130,10 +145,7 @@ export function sheetInDocument(html) {
     locale: section.getAttribute('data-exercise-locale'),
     sheet: section.getAttribute('data-exercise-sheet'),
     policy: section.getAttribute('data-url-policy'),
-    lines: [...section.querySelectorAll('[data-exercise]')].map((line) => [
-      line.getAttribute('data-exercise'),
-      line.textContent,
-    ]),
+    lines: [...section.querySelectorAll('[data-exercise]')].map(lineOf),
   });
 }
 
@@ -302,6 +314,24 @@ export function claimOverlayLocale(check, sheet, locale, direction, context) {
   );
   recordCapabilityClaim(check, 'extension:overlay-adapter', context);
   recordCapabilityClaim(check, 'feature:withOverlayLocale', context);
+}
+
+/** The directive and the component that put a message where interpolation cannot, held and claimed. */
+export function claimExercisedDirectives(check, sheet, expected, context) {
+  holds(
+    sheet,
+    expected,
+    'directive:LocalizedMessage',
+    'by the localized-message component',
+  );
+  recordCapabilityClaim(check, 'directive:LocalizedMessage', context);
+  holds(
+    sheet,
+    expected,
+    'directive:LocalizedLabel',
+    'into aria-label by the localizedLabel directive',
+  );
+  recordCapabilityClaim(check, 'directive:LocalizedLabel', context);
 }
 
 /**

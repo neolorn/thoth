@@ -256,11 +256,15 @@ export function exerciseAuthority({ inputs, locale, catalog, direction }) {
   const badge = /\{#badge[^}]*\}(.*)\{\/badge\}/u.exec(
     catalog['extension.badge'],
   )[1];
+  // The structured message's markup only wraps words, so a reader gets the message without it.
+  const richText = catalog[inputs.richMessage].replace(/\{[#/][^}]*\}/gu, '');
   // Its SKU adapters write a SKU in capitals after "SKU-", and read one back with or without it.
   const sku = extension.parsed.replace(/^SKU-/iu, '').toUpperCase();
 
   return {
     localize: catalog[inputs.message],
+    'directive:LocalizedMessage': richText,
+    'directive:LocalizedLabel': catalog[inputs.message],
     localizedDecimal: decimal,
     localizedMoney: money,
     localizedMeasurement: measurement,
