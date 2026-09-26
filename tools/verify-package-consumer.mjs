@@ -8,6 +8,7 @@
  * wired to the workspace would resolve the sources instead of the published files.
  */
 import assert from 'node:assert/strict';
+import { mkdirSync, readFileSync } from 'node:fs';
 import {
   lstat,
   readFile,
@@ -28,6 +29,10 @@ import {
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawn, spawnSync } from 'node:child_process';
 
+import {
+  openCapabilityEvidence,
+  recordCapabilityClaim,
+} from './capability-evidence.mjs';
 import {
   readConsumerAddresses,
   readConsumerBuilds,
@@ -1299,6 +1304,74 @@ for (const origin of originsOf(INIT_REQUEST.locales)) {
     INIT_REQUEST.locales,
   );
 }
+
+// What these builds' servers answer, asked on this row's Node. The browser stage asks the same
+// servers, on the gate's own Node only, so without this a row for another Node line would build a
+// server and never start it.
+openCapabilityEvidence('consumer-stage', { consumer: consumerRoot });
+
+/** The answers of the builds above to these requests, in order: `[{ origin, path, headers }]`. */
+function serverAnswers(requests) {
+  const answersFile = resolve(consumerRoot, 'tmp/server-answers.json');
+  mkdirSync(dirname(answersFile), { recursive: true });
+  const asked = spawnSync(
+    process.execPath,
+    [
+      resolve(workspaceRoot, 'tools/consumer-server-answers.mjs'),
+      consumerRoot,
+      answersFile,
+    ],
+    {
+      input: JSON.stringify(requests),
+      encoding: 'utf8',
+      timeout: 120_000,
+    },
+  );
+  assert.equal(
+    asked.status,
+    0,
+    `The consumer's server did not answer.\n${asked.error ?? ''}${asked.stdout}${asked.stderr}`,
+  );
+  return JSON.parse(readFileSync(answersFile, 'utf8'));
+}
+
+function verifyServerAnswers() {
+  const locales = INIT_REQUEST.locales.filter((locale) =>
+    addresses.has('home', locale),
+  );
+  const asked = [
+    ...locales.map((locale) => ({ page: 'home', locale })),
+    { page: 'missing', locale: INIT_REQUEST.sourceLocale },
+  ];
+  const answers = serverAnswers(
+    asked.map(({ page, locale }) => ({
+      origin: addresses.origin(locale),
+      path: addresses.path(page, locale),
+    })),
+  );
+  asked.forEach(({ page, locale }, index) => {
+    const { status, headers, body } = answers[index];
+    const where = `${page} in ${locale} at ${addresses.path(page, locale)}`;
+    assert.equal(status, page === 'missing' ? 404 : 200, where);
+    assert.equal(
+      headers['content-language'],
+      locale,
+      `${where}: the language the @neolorn/equator/http request handler resolved`,
+    );
+    assert.match(body, new RegExp(`<html[^>]* lang="${locale}"`, 'u'), where);
+    assert.match(
+      body,
+      /\bng-server-context="ssr"/u,
+      `${where} was not rendered for the request`,
+    );
+    recordCapabilityClaim(
+      `${consumerName}: server answers`,
+      'entry:@neolorn/equator/http',
+      { document: body },
+    );
+  });
+}
+verifyServerAnswers();
 
 const browserText = (
   await Promise.all(browserFiles.map((path) => readFile(path, 'utf8')))
