@@ -5,6 +5,7 @@ import {
   type LocaleDirection,
   type LocalizationDiagnostic,
 } from './contracts';
+import { PSEUDO_LOCALE_REGIONS } from './pseudo-locale-tags';
 import { escapeXml } from './xml-text';
 
 /**
@@ -1199,6 +1200,51 @@ function builtLocales(
     );
   }
   return built;
+}
+
+/**
+ * Whether a generated list of pseudo-locales is one a build could have written.
+ *
+ * Checked wherever the rest of the generated configuration is, because the list decides where a
+ * build renders on request instead of failing, and an edited list could mark a translation as a
+ * pseudo-locale. A build that generated none writes no list, so an empty one is refused too.
+ */
+export function ɵisGeneratedPseudoLocales(
+  value: unknown,
+  locales: readonly unknown[],
+): boolean {
+  if (!Array.isArray(value)) return false;
+  const entries: readonly unknown[] = value;
+  if (entries.length === 0 || entries.length > locales.length) return false;
+  if (new Set(entries).size !== entries.length) return false;
+  return entries.every(
+    (entry) =>
+      typeof entry === 'string' &&
+      locales.includes(entry) &&
+      PSEUDO_LOCALE_REGIONS.includes(localeRegion(entry) ?? ''),
+  );
+}
+
+function localeRegion(tag: string): string | undefined {
+  try {
+    return new Intl.Locale(tag).region;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The pseudo-locales this build generated, refused where the list is not one it could write. */
+function generatedPseudoLocales(
+  configuration: GeneratedConfiguration,
+): ReadonlySet<string> {
+  const listed: unknown = configuration.pseudoLocales;
+  if (listed === undefined) return new Set();
+  if (!ɵisGeneratedPseudoLocales(listed, configuration.locales)) {
+    routeError(
+      `The generated configuration lists ${JSON.stringify(listed)} as its pseudo-locales, which is not a list a build writes: each must be one of its locales, once, carrying a pseudo-locale region. Generate the configuration again rather than editing it.`,
+    );
+  }
+  return new Set(configuration.pseudoLocales);
 }
 
 /**
@@ -2690,18 +2736,6 @@ function splitAbsoluteTarget(
   });
 }
 
-function unsupportedLocaleResolution(
-  policy: LocaleUrlPolicy,
-  requestedLocale: string,
-): RouteResolution {
-  return Object.freeze({
-    status: 'unsupported-locale',
-    httpStatus: 404,
-    presentationLocale: policy.defaultLocale,
-    requestedLocale,
-  });
-}
-
 function resolveLocaleNeutralRoute(
   target: string,
   policy: LocaleNeutralPolicy,
@@ -2730,37 +2764,37 @@ function resolveLocaleNeutralRoute(
       presentationLocale: policy.defaultLocale,
     });
   }
-  let locale = policy.defaultLocale;
-  if (context.locale !== undefined) {
-    let requested: string;
-    try {
-      requested = canonicalLocale(context.locale);
-    } catch {
-      return unsupportedLocaleResolution(policy, context.locale);
+  const preferred = servedPreference(policy, context.locale);
+  const matches = neutralMatches(
+    parsed.segments,
+    neutralOrder(policy),
+    projection,
+  );
+  const spelling = matches.filter(({ match }) => !match.corrected);
+  if (spelling.length === 0) {
+    const nearest = matches[0];
+    if (nearest !== undefined) {
+      // No locale spells the address as written, and the first that reads it in the policy's order
+      // is the one it is corrected to, so the location is the same whatever the request prefers.
+      const location = `${neutralPath(nearest.match)}${parsed.canonicalSuffix}`;
+      return Object.freeze({
+        status: 'redirect',
+        reason: 'canonical-correction',
+        httpStatus: 308,
+        cache: 'consumer-defined-permanent',
+        locale: negotiated(
+          matches.filter(
+            ({ match }) =>
+              encodedSegments(match.canonicalSegments) ===
+              encodedSegments(nearest.match.canonicalSegments),
+          ),
+          preferred,
+        ).locale,
+        routeId: nearest.match.route.id,
+        location,
+      });
     }
-    if (policy.locales[requested] === undefined) {
-      return unsupportedLocaleResolution(policy, context.locale);
-    }
-    locale = requested;
-  }
-  let match = matchRoute(parsed.segments, projection, locale);
-  if (match === undefined && context.locale === undefined) {
-    const alternatives = Object.keys(policy.locales)
-      .filter((candidate) => candidate !== locale)
-      .map((candidate) => ({
-        locale: candidate,
-        match: matchRoute(parsed.segments, projection, candidate),
-      }))
-      .filter(
-        (candidate): candidate is { locale: string; match: RouteMatch } =>
-          candidate.match !== undefined,
-      );
-    if (alternatives.length === 1) {
-      locale = alternatives[0]?.locale as string;
-      match = alternatives[0]?.match;
-    }
-  }
-  if (match === undefined) {
+    const locale = preferred ?? policy.defaultLocale;
     const historical = historicalResolution(
       parsed.segments,
       locale,
@@ -2775,11 +2809,10 @@ function resolveLocaleNeutralRoute(
       presentationLocale: locale,
     });
   }
-  const routeText = encodedSegments(match.canonicalSegments);
-  const canonicalPath = routeText.length === 0 ? '/' : `/${routeText}`;
+  const { locale, match } = negotiated(spelling, preferred);
+  const canonicalPath = neutralPath(match);
   if (
     parsed.trailingSlash ||
-    match.corrected ||
     target !== `${canonicalPath}${parsed.canonicalSuffix}`
   ) {
     return Object.freeze({
@@ -2805,28 +2838,86 @@ function resolveLocaleNeutralRoute(
     ...(match.route.caching === undefined
       ? {}
       : { caching: match.route.caching }),
-    // Every success here, not only the ones that read a preference on this request.
-    //
-    // The address carries no locale, so the document it returns is chosen by something the address
-    // does not state, and the requests that state nothing share a cache key with the requests that
-    // do. A response marked cacheable because *this* request consulted nothing is the one a shared
-    // cache hands to everybody, which is 6.1's lesson on a response that has a body. A preference
-    // for a locale the site does not have turns this same address into a 404, so even an address
-    // only one locale can answer does not return the same response to every request.
-    variesBy: 'locale-preference',
+    // Every success at an address more than one locale spells, not only the ones that read a
+    // preference on this request. The requests that state nothing share a cache key with the ones
+    // that do, and a response marked cacheable because this request consulted nothing is the one a
+    // shared cache hands to everybody. An address one locale alone spells answers every request in
+    // that locale, as a prefixed one does.
+    ...(spelling.length > 1 ? { variesBy: 'locale-preference' as const } : {}),
   });
 }
 
 /**
  * The redirects above are deliberately not marked.
  *
- * What a redirect returns is its `Location`, and that is computed from the matched route's
- * canonical segments, which are the same text for every locale that can reach this address.
- * Measured: `/about/` corrects to `/about` under `en-US` and under `ar-EG` alike. A preference for
- * an unsupported locale answers 404 here instead, and a shared cache serving the correction to that
- * visitor sends them to an address that will answer them correctly. Marking these would split a
- * cache by language for a response that is byte-identical in every language.
+ * What a redirect returns is its `Location`, and that is computed without the preference: from the
+ * spelling the address already has, or from the first locale in the policy's order that reads it.
+ * Measured: `/about/` corrects to `/about` under `en-US` and under `ar-EG` alike. Marking these
+ * would split a cache by language for a response that is byte-identical in every language.
  */
+
+/** The locales in the order a locale-neutral policy chooses among them: its default first. */
+function neutralOrder(policy: LocaleNeutralPolicy): readonly string[] {
+  return [
+    policy.defaultLocale,
+    ...Object.keys(policy.locales).filter(
+      (locale) => locale !== policy.defaultLocale,
+    ),
+  ];
+}
+
+/** Every locale that reads the segments as a route, in the order given, with what it read. */
+function neutralMatches(
+  segments: readonly string[],
+  locales: readonly string[],
+  projection: RouteRuntimeProjection,
+): readonly { readonly locale: string; readonly match: RouteMatch }[] {
+  return locales.flatMap((locale) => {
+    const match = matchRoute(segments, projection, locale);
+    return match === undefined ? [] : [Object.freeze({ locale, match })];
+  });
+}
+
+/** The locales that spell the segments exactly as they are written, in the order given. */
+function neutralSpellers(
+  segments: readonly string[],
+  locales: readonly string[],
+  projection: RouteRuntimeProjection,
+): readonly string[] {
+  return neutralMatches(segments, locales, projection)
+    .filter(({ match }) => !match.corrected)
+    .map(({ locale }) => locale);
+}
+
+/** The preference, where it names a locale the policy serves; one that names none chooses none. */
+function servedPreference(
+  policy: LocaleNeutralPolicy,
+  requested: string | undefined,
+): string | undefined {
+  if (requested === undefined) return undefined;
+  try {
+    const locale = canonicalLocale(requested);
+    return policy.locales[locale] === undefined ? undefined : locale;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The preferred locale where it is one of the candidates, and the first candidate otherwise. */
+function negotiated<Candidate extends { readonly locale: string }>(
+  candidates: readonly Candidate[],
+  preferred: string | undefined,
+): Candidate {
+  const chosen =
+    candidates.find(({ locale }) => locale === preferred) ?? candidates[0];
+  if (chosen === undefined) routeError('Nothing to negotiate among.');
+  return chosen;
+}
+
+function neutralPath(match: RouteMatch): string {
+  const routeText = encodedSegments(match.canonicalSegments);
+  return routeText.length === 0 ? '/' : `/${routeText}`;
+}
 
 function resolveHostRoute(
   target: string,
@@ -3043,18 +3134,20 @@ function requestTarget(context: unknown): string | undefined {
  * chain, where a URL that states nothing must step aside and let the next source answer rather
  * than pre-empting it with a default.
  *
- * A locale-neutral policy never states a locale in the URL, so it always declines. Under a prefix
- * policy an unprefixed request produces a locale-entry redirect, and that redirect is precisely
- * the signal that the URL said nothing.
+ * Under a prefix policy an unprefixed request produces a locale-entry redirect, and that redirect is
+ * precisely the signal that the URL said nothing. Under a locale-neutral policy an address states a
+ * locale where one locale alone spells it, and says nothing where several do.
  */
 export function localeFromRoute(
   context: unknown,
   policy: LocaleUrlPolicy,
   projection: RouteRuntimeProjection,
 ): string | undefined {
-  if (policy.kind === 'locale-neutral') return undefined;
   const target = requestTarget(context);
   if (target === undefined) return undefined;
+  if (policy.kind === 'locale-neutral') {
+    return neutralAddressLocale(target, policy, projection);
+  }
   const origin =
     typeof context === 'object' &&
     context !== null &&
@@ -3077,6 +3170,28 @@ export function localeFromRoute(
   return resolution.status === 'redirect' &&
     resolution.reason !== 'locale-entry'
     ? resolution.locale
+    : undefined;
+}
+
+/**
+ * The locale a locale-neutral address states, read with no preference so the address alone decides.
+ *
+ * A canonical correction is followed once, because the corrected address is the one the reader is
+ * sent to and it states whatever its spelling states. A replacement is not: a retired address
+ * names a page, not a locale.
+ */
+function neutralAddressLocale(
+  target: string,
+  policy: LocaleNeutralPolicy,
+  projection: RouteRuntimeProjection,
+): string | undefined {
+  const arrival = resolveLocalizedRoute(target, policy, projection);
+  const settled =
+    arrival.status === 'redirect' && arrival.reason === 'canonical-correction'
+      ? resolveLocalizedRoute(arrival.location, policy, projection)
+      : arrival;
+  return settled.status === 'success' && settled.variesBy === undefined
+    ? settled.locale
     : undefined;
 }
 
@@ -3454,10 +3569,9 @@ export function localizedServerRoutes<
 ): LocalizedServerRoutes<Mode> {
   const projection = validateRouteProjection(projectionValue);
   const built = builtLocales(policy, configuration);
-  // Only the prefixing branch filters by the build. Under `locale-neutral` no address names a
-  // locale, so the one emitted is the default locale's, which `builtLocales` has already confirmed
-  // this build produced; under `locale-host` it is the locale of the origin the build answers at,
-  // which `hostBuildLocale` holds to the same.
+  // Under `locale-host` the one locale emitted is the locale of the origin the build answers at,
+  // which `hostBuildLocale` holds to the build. `locale-neutral` has a branch of its own below,
+  // because there the addresses themselves decide which locale each one is in.
   const prefixes: readonly (readonly [string, string])[] =
     policy.kind === 'path-prefix'
       ? Object.entries(policy.locales)
@@ -3470,14 +3584,23 @@ export function localizedServerRoutes<
                 : prefix,
             ] as const),
           )
-      : [
-          Object.freeze([
-            policy.kind === 'locale-host'
-              ? hostBuildLocale(policy, built, options.origin)
-              : policy.defaultLocale,
-            '',
-          ] as const),
-        ];
+      : policy.kind === 'locale-host'
+        ? [
+            Object.freeze([
+              hostBuildLocale(policy, built, options.origin),
+              '',
+            ] as const),
+          ]
+        : [];
+  const neutral =
+    policy.kind === 'locale-neutral'
+      ? Object.freeze({
+          locales: neutralOrder(policy).filter((locale) =>
+            built.has(canonicalLocale(locale)),
+          ),
+          pseudoLocales: generatedPseudoLocales(configuration),
+        })
+      : undefined;
 
   const routes: LocalizedServerRoute<Mode>[] = [];
   const seen = new Set<string>();
@@ -3495,6 +3618,22 @@ export function localizedServerRoutes<
       );
     }
     const declaredValues = prerenderValues(declaration.prerender);
+    if (neutral !== undefined) {
+      for (const entry of neutralServerRoutes(
+        policy,
+        projection,
+        route,
+        declaration.renderMode,
+        declaredValues,
+        neutral,
+        options,
+      )) {
+        if (seen.has(entry.path)) continue;
+        seen.add(entry.path);
+        routes.push(entry);
+      }
+      continue;
+    }
     for (const [localeValue, prefix] of prefixes) {
       const locale = canonicalLocale(localeValue);
       const presentation = presentationPath(projection, route, locale);
@@ -3591,6 +3730,105 @@ export function localizedServerRoutes<
   // built every element, replaces one `as ServerRoute[]` per consumer: each of those sitting
   // above a whole table of entries it silenced along the way.
   return routes as LocalizedServerRoutes<Mode>;
+}
+
+/**
+ * One declaration's entries under a locale-neutral policy, one per distinct spelling of its path.
+ *
+ * Each address is in the locale that spells it. One a single locale spells is that locale's page and
+ * takes the declared mode. One several locales spell is per visitor, and takes the declared mode as
+ * well, so a build that prerenders it meets the refusal every per-visitor page meets
+ * (`specs/07-routing-rendering-and-seo.spec.md` section 9). The exception is an address only one of
+ * this build's translations spells, shared only with pseudo-locales it generated: it is rendered on
+ * request, because the build without them prerenders it from the same table.
+ */
+function neutralServerRoutes<Mode>(
+  policy: LocaleUrlPolicy,
+  projection: RouteRuntimeProjection,
+  route: GeneratedRouteProjectionEntry,
+  renderMode: Mode,
+  declaredValues: ReturnType<typeof prerenderValues>,
+  neutral: {
+    readonly locales: readonly string[];
+    readonly pseudoLocales: ReadonlySet<string>;
+  },
+  options: LocalizedServerRoutesOptions<Mode>,
+): readonly LocalizedServerRoute<Mode>[] {
+  const spelledIn = new Map<string, string[]>();
+  for (const locale of neutral.locales) {
+    const presentation = presentationPath(projection, route, locale);
+    refuseClaimedSegments(policy, route.id, locale, presentation.split('/'));
+    spelledIn.set(presentation, [
+      ...(spelledIn.get(presentation) ?? []),
+      locale,
+    ]);
+  }
+  // Rendered on request exactly where a translation shares the address with pseudo-locales alone.
+  const sharedOnlyWithPseudoLocales = (segments: readonly string[]) => {
+    const spellers = neutralSpellers(segments, neutral.locales, projection);
+    return (
+      spellers.length > 1 &&
+      spellers.filter((locale) => !neutral.pseudoLocales.has(locale)).length ===
+        1
+    );
+  };
+  const entries: LocalizedServerRoute<Mode>[] = [];
+  for (const [presentation, locales] of spelledIn) {
+    const pattern = presentation.length === 0 ? [] : presentation.split('/');
+    if (route.parameterNames.length === 0) {
+      let mode = renderMode;
+      if (sharedOnlyWithPseudoLocales(pattern)) {
+        if (options.canonicalRenderMode === undefined) {
+          routeError(
+            `Route ${route.id} at ${JSON.stringify(`/${presentation}`)} is shared by one locale and the pseudo-locales this build generated, so it is rendered on request here and prerendered by a build without them. Pass \`canonicalRenderMode\`, \`RenderMode.Server\`, for the mode it is rendered in.`,
+          );
+        }
+        mode = options.canonicalRenderMode;
+      }
+      entries.push(Object.freeze({ path: presentation, renderMode: mode }));
+      continue;
+    }
+    entries.push(
+      Object.freeze({
+        path: presentation,
+        renderMode,
+        ...(declaredValues === undefined
+          ? {}
+          : {
+              // Asked for before anything is awaited, for the reason the prefixed entries give.
+              getPrerenderParams: () =>
+                declaredValues().then((values) => {
+                  const kept = new Map<
+                    string,
+                    Readonly<Record<string, string>>
+                  >();
+                  for (const locale of locales) {
+                    for (const parameters of prerenderParameters(
+                      projection,
+                      route,
+                      locale,
+                      values,
+                    )) {
+                      const segments = pattern.map((segment) =>
+                        segment.startsWith(':')
+                          ? (parameters[segment.slice(1)] ?? segment)
+                          : segment,
+                      );
+                      const address = segments.join('/');
+                      if (kept.has(address)) continue;
+                      // Left out, the address falls to the route's own fallback, which renders it
+                      // on request.
+                      if (sharedOnlyWithPseudoLocales(segments)) continue;
+                      kept.set(address, parameters);
+                    }
+                  }
+                  return [...kept.values()];
+                }),
+            }),
+      }),
+    );
+  }
+  return entries;
 }
 
 /**

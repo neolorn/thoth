@@ -57,7 +57,7 @@ Four creators, all exported from `@neolorn/equator`:
 | `createPathPrefixLocalePolicy`    | In the first path segment         | one origin serves every locale              |
 | `createDefaultLocalePrefixPolicy` | In the first path segment, always | every locale is prefixed, the default too   |
 | `createHostLocalePolicy`          | In the origin                     | one host per language, one build per origin |
-| `createLocaleNeutralPolicy`       | Nowhere                           | pages sit behind a sign-in, never indexed   |
+| `createLocaleNeutralPolicy`       | Only in a path spelled per locale | pages sit behind a sign-in, never indexed   |
 
 `createPathPrefixLocalePolicy` is the default choice. It takes `omitDefaultPrefix` to serve the
 default locale without its prefix. `createDefaultLocalePrefixPolicy` takes the same options without

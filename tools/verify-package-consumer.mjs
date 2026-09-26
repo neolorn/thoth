@@ -1099,18 +1099,23 @@ const addresses = await readConsumerAddresses(consumerRoot);
 const builds = await readConsumerBuilds(consumerRoot);
 const policySource = await readFile(builds.policyPath, 'utf8');
 
-/** The file prerendering writes a page to, or nothing where the page has no address. */
-const prerenderedFile = (page, locale) =>
-  addresses.has(page, locale) ? addresses.file(page, locale) : undefined;
-
-// The routes `app.routes.server.ts` prerenders.
-const prerenderedPages = ['second', 'article'];
+/**
+ * The file prerendering writes a page to, or nothing where the page is not prerendered or has no
+ * address. In a build that generates pseudo-locales, an address one of them also spells is rendered
+ * on request instead, which the table says where it happens.
+ */
+const prerenderedFile = (page, locale, { pseudo = false } = {}) =>
+  addresses.prerendered.includes(page) &&
+  addresses.has(page, locale) &&
+  !(pseudo && addresses.sharedWithPseudoLocales(page, locale))
+    ? addresses.file(page, locale)
+    : undefined;
 
 /** Every file the prerender writes for these locales. */
-const prerenderedFiles = (locales) =>
+const prerenderedFiles = (locales, options) =>
   locales.flatMap((locale) =>
-    prerenderedPages
-      .map((page) => prerenderedFile(page, locale))
+    addresses.prerendered
+      .map((page) => prerenderedFile(page, locale, options))
       .filter((file) => file !== undefined),
   );
 
@@ -1283,7 +1288,9 @@ for (const origin of originsOf([INIT_REQUEST.sourceLocale, 'en-Arab-XB'])) {
   await buildAt(origin, output);
   const root = resolve(consumerRoot, output, 'browser');
   const emitted = (await collectPrerendered(root)).sort();
-  const expected = prerenderedFiles(servedAt(origin, pseudoLocales)).sort();
+  const expected = prerenderedFiles(servedAt(origin, pseudoLocales), {
+    pseudo: true,
+  }).sort();
   assert.deepEqual(
     emitted,
     expected,
@@ -1296,8 +1303,8 @@ const pseudoRootOf = (locale) => pseudoRoots.get(addresses.origin(locale));
 
 /**
  * The pseudo-locale's prerendered pages, where the policy gives it addresses of its own. Under a
- * locale-neutral policy it has none, because no address names a locale, and the set above has
- * already held its builds to writing no page for it.
+ * locale-neutral policy it has none, because it spells every address the way English does, and the
+ * set above has already held its builds to writing no page for it.
  */
 async function verifyPseudoPages() {
   const routeViewText = (html, view) => {
@@ -1438,7 +1445,9 @@ async function verifyPseudoPages() {
     'The prerendered pseudo-locale article page carries no transformed message',
   );
 }
-if (addresses.has('second', 'en-Arab-XB')) await verifyPseudoPages();
+if (prerenderedFile('second', 'en-Arab-XB', { pseudo: true }) !== undefined) {
+  await verifyPseudoPages();
+}
 
 // And the generated source goes back to production shape, because the steps after this one rebuild
 // this consumer from it. The `dist/` they read was never touched; this is the other half of the
@@ -1460,81 +1469,110 @@ assert.ok(
 );
 
 /**
- * A per-visitor route listed for prerender, which the build has to refuse.
+ * A route listed for prerender that the build has to refuse.
  *
- * `specs/07-routing-rendering-and-seo.spec.md` section 9. `route:lazy` is per visitor, and it is
- * listed where an application lists it, in its own server routes, so the refusal is met the way a
- * release meets it. The three answers are gathered before any is asserted, so a build that lets the
- * page through reports every way it did. `@angular/build` before 22.1.7 drops a page whose
- * navigation fails and still succeeds, which is why the written files are read as well as the
- * status. Built to its own output path and put back afterwards, because the steps after this one
- * read the production build and its source.
+ * `specs/07-routing-rendering-and-seo.spec.md` section 9. The route is listed where an application
+ * lists it, in its own published routes, so the refusal is met the way a release meets it. The three
+ * answers are gathered before any is asserted, so a build that lets the page through reports every
+ * way it did. `@angular/build` before 22.1.7 drops a page whose navigation fails and still
+ * succeeds, which is why the written files are read as well as the status. Built to its own output
+ * path and put back afterwards, because the steps after this one read the production build and its
+ * source.
  */
-const serverRoutesPath = resolve(consumerRoot, 'src/app/app.routes.server.ts');
+const serverRoutesPath = resolve(consumerRoot, 'src/app/published-routes.ts');
 const serverRoutes = await readFile(serverRoutesPath, 'utf8');
-const listedBefore = "  { routeId: 'item', renderMode: RenderMode.Client },\n";
-assert.equal(
-  serverRoutes.split(listedBefore).length,
-  2,
-  'The server routes no longer carry the entry the refused route is listed after',
-);
-await writeFile(
-  serverRoutesPath,
-  serverRoutes.replace(
-    listedBefore,
-    `${listedBefore}  { routeId: 'route:lazy', renderMode: RenderMode.Prerender },\n`,
-  ),
-  'utf8',
-);
-const refusedRoot = resolve(consumerRoot, 'dist/feature-lab-refused');
-await rm(refusedRoot, { force: true, recursive: true });
-let refusedBuild;
-try {
-  refusedBuild = spawnPnpm([
-    'exec',
-    'ng',
-    'build',
-    '--output-path',
-    'dist/feature-lab-refused',
-  ]);
-} finally {
-  await writeFile(serverRoutesPath, serverRoutes, 'utf8');
+async function verifyRefusedPrerender({
+  page,
+  routeId,
+  listed,
+  listing,
+  refusal,
+}) {
+  assert.equal(
+    serverRoutes.split(listed).length,
+    2,
+    `The published routes no longer carry the entry the refused ${routeId} is listed by`,
+  );
+  await writeFile(
+    serverRoutesPath,
+    serverRoutes.replace(listed, listing),
+    'utf8',
+  );
+  const refusedRoot = resolve(consumerRoot, 'dist/feature-lab-refused');
+  await rm(refusedRoot, { force: true, recursive: true });
+  let refusedBuild;
+  try {
+    refusedBuild = spawnPnpm([
+      'exec',
+      'ng',
+      'build',
+      '--output-path',
+      'dist/feature-lab-refused',
+    ]);
+  } finally {
+    await writeFile(serverRoutesPath, serverRoutes, 'utf8');
+  }
+  const refusedOutput = [refusedBuild.stdout, refusedBuild.stderr].join('\n');
+  const refusedFile = new RegExp(`(?:^|/)${page}/index\\.html$`, 'u');
+  const refusedPages = (
+    await readdir(refusedRoot).then(
+      () => collectPrerendered(refusedRoot),
+      () => [],
+    )
+  ).filter((path) => refusedFile.test(path));
+  // The refusal names the address it met, which is one of the page's, as a path.
+  const pageAddresses = INIT_REQUEST.locales
+    .filter((locale) => addresses.has(page, locale))
+    .map((locale) => addresses.path(page, locale));
+  const namesTheRefusal = new RegExp(
+    `Route ${routeId} at "(?:${pageAddresses
+      .map((address) => address.replaceAll(/[.*+?^${}()|[\]\\]/gu, '\\$&'))
+      .join('|')})" ${refusal}`,
+    'u',
+  );
+  assert.deepEqual(
+    [
+      ...refusedPages.map((path) => `it wrote ${path}`),
+      ...(refusedBuild.status === 1
+        ? []
+        : [`it exited ${String(refusedBuild.status)}`]),
+      ...(namesTheRefusal.test(refusedOutput)
+        ? []
+        : ['its output does not name the route and the refusal']),
+    ],
+    [],
+    `The build prerendered ${routeId}, which it has to refuse:\n${refusedOutput}`,
+  );
+  assert.equal(
+    await readFile(serverRoutesPath, 'utf8'),
+    serverRoutes,
+    'The published routes were not put back after the refused build',
+  );
 }
-const refusedOutput = [refusedBuild.stdout, refusedBuild.stderr].join('\n');
-const refusedPages = (
-  await readdir(refusedRoot).then(
-    () => collectPrerendered(refusedRoot),
-    () => [],
-  )
-).filter((path) => /(?:^|\/)lazy\/index\.html$/u.test(path));
-// The refusal names the address it met, which is one of the lazy page's, as a path.
-const lazyAddresses = INIT_REQUEST.locales
-  .filter((locale) => addresses.has('lazy', locale))
-  .map((locale) => addresses.path('lazy', locale));
-const namesTheRefusal = new RegExp(
-  `Route route:lazy at "(?:${lazyAddresses
-    .map((address) => address.replaceAll(/[.*+?^${}()|[\]\\]/gu, '\\$&'))
-    .join('|')})" is per-visitor, and it is being rendered ahead of a request`,
-  'u',
-);
-assert.deepEqual(
-  [
-    ...refusedPages.map((path) => `it wrote ${path}`),
-    ...(refusedBuild.status === 1
-      ? []
-      : [`it exited ${String(refusedBuild.status)}`]),
-    ...(namesTheRefusal.test(refusedOutput)
-      ? []
-      : ['its output does not name the route and the refusal']),
-  ],
-  [],
-  `The build prerendered a per-visitor route:\n${refusedOutput}`,
-);
-assert.equal(
-  await readFile(serverRoutesPath, 'utf8'),
-  serverRoutes,
-  'The server routes were not put back after the refused build',
-);
+
+// `route:lazy` is per visitor, which its route declares.
+const listedBefore = "  { routeId: 'item', renderMode: RenderMode.Client },\n";
+await verifyRefusedPrerender({
+  page: 'lazy',
+  routeId: 'route:lazy',
+  listed: listedBefore,
+  listing: `${listedBefore}  { routeId: 'route:lazy', renderMode: RenderMode.Prerender },\n`,
+  refusal: 'is per-visitor, and it is being rendered ahead of a request',
+});
+// Under a locale-neutral policy `/second` is spelled alike in every locale, so it is per visitor
+// whatever its route declares, and the application lists it for rendering on request.
+if (addresses.policy === 'locale-neutral') {
+  const onRequest =
+    "  { routeId: 'route:second', renderMode: RenderMode.Server },\n";
+  await verifyRefusedPrerender({
+    page: 'second',
+    routeId: 'route:second',
+    listed: onRequest,
+    listing: onRequest.replace('RenderMode.Server', 'RenderMode.Prerender'),
+    refusal:
+      'is spelled alike in more than one locale, so which locale it is in depends on the visitor, and it is being rendered ahead of a request',
+  });
+}
 
 process.stdout.write(
   `Equator package consumer verified: ${consumerProfile.label}, Angular ${consumerProfile.angular}, TypeScript ${consumerProfile.typescript}, RxJS ${consumerProfile.rxjs}, ${collectedFiles[2]} spec file(s) and ${collectedCases[1]} case(s) passing.\n`,

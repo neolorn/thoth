@@ -102,8 +102,8 @@ describe('a project declares which locales are still being translated', () => {
         sourceLocale: 'en-US',
         defaultLocale: 'en-US',
         locales: ['en-US', 'ar-EG'],
-        pseudoLocales: { 'en-XA': { markers: true } },
-        inProgress: { 'en-XA': { note: 'Later.' } },
+        pseudoLocales: { 'en-Latn-XA': { markers: true } },
+        inProgress: { 'en-Latn-XA': { note: 'Later.' } },
       }),
     );
     expect(result.ok).toBe(false);

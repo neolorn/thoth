@@ -245,6 +245,16 @@ export interface GeneratedConfiguration {
    * lists. Chains also depend on which locales this owner ships, which only the build knows.
    */
   readonly localeFallbacks?: Readonly<Record<string, readonly string[]>>;
+  /**
+   * The locales this build generated from the source catalog rather than had translated.
+   *
+   * Present only in a build that generated at least one, and generated output like the rest of
+   * this value: never written by hand. It has one use. Under a locale-neutral policy an address is
+   * per visitor when more than one locale spells it, and a server route table renders it on
+   * request rather than failing the build when the only other locales that spell it are these,
+   * because the same configuration serves a build that generates them and one that does not.
+   */
+  readonly pseudoLocales?: readonly string[];
   /** A digest of every message contract in the application, which a catalog is matched against. */
   readonly applicationContractFingerprint: string;
   /** A digest of the extension registry the messages were compiled against. */

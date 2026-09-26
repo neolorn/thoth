@@ -43,6 +43,10 @@ A locale alias points somewhere it must not: it shadows a supported locale, or i
 
 A declared parent locale cannot be inherited from: it is the locale itself, or the chain it starts comes back to a locale already in that chain.
 
+### EQ1008
+
+A pseudo-locale tag is well formed and cannot identify a pseudo-locale: it names no script, its region is neither XA nor XB, the regions of `PSEUDO_LOCALE_EXPANDED` and `PSEUDO_LOCALE_CONTRACTED`, or its language is not the source locale's.
+
 ## The catalog file
 
 ### EQ1101

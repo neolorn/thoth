@@ -236,7 +236,7 @@ export const CONFIGURATION_SCHEMA = Object.freeze({
         },
       },
       description:
-        'Locales derived from the source catalog rather than authored. Generated only by --pseudo.',
+        'Generated only by --pseudo, each in the source language with a script and the region XA or XB.',
     },
     // How each locale is written, where the application disagrees with CLDR about it.
     //

@@ -479,11 +479,14 @@ command rather than from the environment, so one configuration serves the develo
 wants pseudo-locales and the production build that must not contain them, and an environment
 variable set once on a build runner cannot reach the production build.
 
-The transform runs at build time and produces an ordinary compiled catalog. A release MUST
-NOT run it in the runtime and MUST NOT ship it from a runtime entry point, so excluding a
-pseudo-locale from a production build is an absence rather than a guard. A derived catalog is
-otherwise indistinguishable from a translation, so prerendering, server rendering, lazy scopes, and
-locale switching work on it without knowing the concept exists.
+The transform runs at build time and produces an ordinary compiled catalog. A release MUST NOT run
+it in the runtime and MUST NOT ship it from a runtime entry point, so excluding a pseudo-locale from
+a production build is an absence rather than a guard. A derived catalog is otherwise
+indistinguishable from a translation, with the same provider, the same scope and the same compiled
+contract, so server rendering, lazy scopes and locale switching work on it without knowing the
+concept exists. The generated configuration lists the pseudo-locales a build generated, and the list
+has one use: under section 9 of `07-routing-rendering-and-seo.spec.md`, an address whose only other
+locales are pseudo-locales is rendered on request instead of failing the build.
 
 ## 17. Refactoring and migrations
 

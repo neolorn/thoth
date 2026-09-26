@@ -542,12 +542,22 @@ function refuseSharedFile(options: RouteLocalizationOptions): () => void {
     if (resolution.status !== 'success') return;
     const level =
       resolution.indexing === 'private' ? 'private' : resolution.caching;
-    if (level === undefined) return;
-    throw new LocalizationError({
-      code: 'invalid-configuration',
-      outcome: 'operational-failure',
-      message: `Route ${resolution.routeId} at ${JSON.stringify(address)} is ${level}, and it is being rendered ahead of a request, which writes one file that is served to every visitor. Render this route on demand instead of prerendering it.`,
-    });
+    if (level !== undefined) {
+      throw new LocalizationError({
+        code: 'invalid-configuration',
+        outcome: 'operational-failure',
+        message: `Route ${resolution.routeId} at ${JSON.stringify(address)} is ${level}, and it is being rendered ahead of a request, which writes one file that is served to every visitor. Render this route on demand instead of prerendering it.`,
+      });
+    }
+    // An address more than one locale spells has no locale until a request states a preference,
+    // so it is per visitor whatever its route declares.
+    if (resolution.variesBy === 'locale-preference') {
+      throw new LocalizationError({
+        code: 'invalid-configuration',
+        outcome: 'operational-failure',
+        message: `Route ${resolution.routeId} at ${JSON.stringify(address)} is spelled alike in more than one locale, so which locale it is in depends on the visitor, and it is being rendered ahead of a request, which writes one file that is served to every visitor. Render this route on demand instead of prerendering it, or give it a path of its own in each locale.`,
+      });
+    }
   };
 }
 

@@ -21,6 +21,7 @@ import {
   GENERATED_ABI,
   localeProfile,
   LocalizationError,
+  ɵisGeneratedPseudoLocales,
   type ChildLocalizationOptions,
   type DecimalValue,
   type DurationValue,
@@ -1087,6 +1088,11 @@ class LocalizationInternal {
       (configuration.localeFallbacks !== undefined &&
         !isGeneratedLocaleFallbacks(
           configuration.localeFallbacks,
+          configuration.locales,
+        )) ||
+      (configuration.pseudoLocales !== undefined &&
+        !ɵisGeneratedPseudoLocales(
+          configuration.pseudoLocales,
           configuration.locales,
         ))
     ) {

@@ -280,6 +280,25 @@ describe('pseudo-locales are generated rather than authored', () => {
     claimCapability('capability:pseudo-locale');
   });
 
+  it('names them in the generated configuration, for the server route table', async () => {
+    const root = await createProject('pseudo-listed-');
+    await declarePseudoLocales(root);
+
+    const generated = await generateProject({
+      project: root,
+      pseudoLocales: true,
+    });
+    expect(generated.ok).toBe(true);
+    if (!generated.ok) return;
+
+    // In the order the locale table lists them.
+    expect(await generatedText(root)).toContain(
+      `  pseudoLocales: Object.freeze([${JSON.stringify(PSEUDO_LOCALE_CONTRACTED)}, ${JSON.stringify(PSEUDO_LOCALE_EXPANDED)}]),`,
+    );
+    claimCapability('cli:generate');
+    claimCapability('capability:pseudo-locale');
+  });
+
   it('leaves no trace of them when the flag is absent', async () => {
     const root = await createProject('pseudo-off-');
     await declarePseudoLocales(root);
@@ -293,6 +312,8 @@ describe('pseudo-locales are generated rather than authored', () => {
     expect(output).not.toContain(PSEUDO_LOCALE_EXPANDED);
     expect(output).not.toContain(PSEUDO_LOCALE_CONTRACTED);
     expect(output).not.toContain('⟦');
+    // No list at all rather than an empty one, which the runtime refuses as one no build writes.
+    expect(output).not.toContain('pseudoLocales');
 
     // The control, without which the three absences above prove only that the file was read. An
     // authored locale from the same configuration must be present in the same text.
@@ -341,6 +362,55 @@ describe('pseudo-locales are generated rather than authored', () => {
       }),
     );
     expect(accepted.ok).toBe(true);
+    claimCapability('capability:pseudo-locale');
+  });
+
+  /**
+   * A tag that parses and still cannot be a pseudo-locale.
+   *
+   * `specs/10-compiler-and-tooling.spec.md` section 16. Each case is refused for one reason, and
+   * the accepted tag in the case above is the control for all three.
+   */
+  const pseudoLocaleRefusal = (tag: string) => {
+    const parsed = parseConfiguration(
+      JSON.stringify({
+        schemaVersion: 1,
+        sourceLocale: 'en-US',
+        defaultLocale: 'en-US',
+        locales: ['en-US'],
+        pseudoLocales: { [tag]: { lengthFactor: 0.4 } },
+      }),
+    );
+    return parsed.diagnostics
+      .filter(({ code }) => code === 'EQ1008')
+      .map(({ path, summary }) => ({ path, summary }));
+  };
+
+  it('refuses a pseudo-locale tag that names no script', () => {
+    // The script is what carries the direction, so leaving it to be inferred leaves the direction
+    // to whatever a platform infers for the language.
+    const [refusal, ...rest] = pseudoLocaleRefusal('en-XA');
+    expect(rest).toEqual([]);
+    expect(refusal?.path).toEqual(['pseudoLocales', 'en-XA']);
+    expect(refusal?.summary).toMatch(/names no script/u);
+    claimCapability('capability:pseudo-locale');
+  });
+
+  it('refuses a pseudo-locale tag whose region is a real one', () => {
+    // `GB` is a country, so this tag reads as British English to everything outside the build.
+    const [refusal, ...rest] = pseudoLocaleRefusal('en-Latn-GB');
+    expect(rest).toEqual([]);
+    expect(refusal?.path).toEqual(['pseudoLocales', 'en-Latn-GB']);
+    expect(refusal?.summary).toContain('XA or XB');
+    expect(refusal?.summary).toContain('PSEUDO_LOCALE_EXPANDED');
+    claimCapability('capability:pseudo-locale');
+  });
+
+  it('refuses a pseudo-locale tag in a language other than the source', () => {
+    const [refusal, ...rest] = pseudoLocaleRefusal('ar-Arab-XB');
+    expect(rest).toEqual([]);
+    expect(refusal?.path).toEqual(['pseudoLocales', 'ar-Arab-XB']);
+    expect(refusal?.summary).toMatch(/source locale is in en/u);
     claimCapability('capability:pseudo-locale');
   });
 

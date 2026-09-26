@@ -1,5 +1,7 @@
 {
   "policy": "locale-neutral",
+  "prerendered": ["article"],
+  "sharedWithPseudoLocales": { "article": ["en-US"] },
   "origins": {
     "en-US": "https://site.example",
     "ar-EG": "https://site.example",
@@ -19,7 +21,8 @@
       "en-US": "/items/42"
     },
     "article": {
-      "en-US": "/articles/handbook"
+      "en-US": "/articles/handbook",
+      "ar-EG": "/articles/دليل"
     },
     "article under the English slug": {},
     "topic": {

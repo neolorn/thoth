@@ -870,10 +870,10 @@ async function readExtensionRegistry(location: ProjectLocation): Promise<
 /**
  * One derived catalog per declared pseudo-locale per scope, built from that scope's source catalog.
  *
- * The result is an ordinary target catalog: same shape, same provider, same scope, and a locale the
- * rest of the pipeline has no way to tell apart from a translated one. That is the design, not a
- * convenience: it is why prerendering, server rendering, lazy scopes and the locale switcher all
- * work on a pseudo-locale without knowing the concept exists.
+ * The result is an ordinary target catalog: same shape, same provider, same scope, and a compiled
+ * contract no different from a translated one's. That is the design, not a convenience: it is why
+ * server rendering, lazy scopes and the locale switcher all work on a pseudo-locale without knowing
+ * the concept exists.
  *
  * Derived only from `role === 'source'`. A pseudo-locale built from a translation would compound
  * two transformations and measure neither.
@@ -1464,9 +1464,9 @@ export async function loadProject(
 
   // Pseudo-locales enter here and nowhere else. `configuration` gains their tags so the generated
   // locale table, the availability lookup and the typed constants include them; `catalogs` gains
-  // the derived catalogs so every later stage compiles them like any other. Nothing downstream is
-  // told which locales are pseudo, and nothing downstream asks, which is what makes leaving the
-  // flag off an absence rather than a disabled feature.
+  // the derived catalogs so every later stage compiles them like any other. The generated
+  // configuration names them once, for a server route table and nothing else, so leaving the flag
+  // off is still an absence rather than a disabled feature.
   //
   // They stay out of `catalogFiles`, which is the list of authored files on disk: `format` writes
   // to those paths and `uninstall` deletes them, and a derived catalog has no file to do either to.

@@ -413,13 +413,11 @@ describe('the addresses a build under a host policy renders', () => {
  * `Accept-Language`". The claim is therefore true exactly when the address on its own decides the
  * locale, which is a property of the address and not of the policy it was built under.
  *
- * **That distinction is why this is not written per policy kind, and one policy here gives three
- * different answers.** Under `locale-neutral`: a route every locale spells alike is negotiated, so
- * only the locale it is negotiated to is served there; a route with a localized *path* is a real
- * per-locale address and is advertised; and a route whose *slug* is spelled per locale answers a
- * `308` back to the default spelling, because a parameter codec's `parse` maps both spellings to one
- * entity and reports no locale for the canonicalizer to keep. A rule written on the policy kind
- * would have to give all three the same answer.
+ * **That distinction is why this is not written per policy kind, and one policy here gives two
+ * different answers.** Under `locale-neutral`: an address several locales spell is negotiated, so
+ * only the locale it is negotiated to is served there; an address one locale alone spells, through a
+ * localized *path* or a *slug* its codec spells per locale, is a real per-locale address and is
+ * advertised. A rule written on the policy kind would have to give both the same answer.
  *
  * The prefix and host blocks below are the controls, on the same projection and the same routes.
  * There the prefix or the origin is the locale, every address passes, and nothing changes, which
@@ -537,21 +535,22 @@ describe('the addresses a page may be advertised at', () => {
     expect(hreflangs(NEUTRAL, 'spelled')).toEqual(['en-US', 'ar-EG']);
   });
 
-  it('drops an address that answers a redirect rather than the page', () => {
+  it('names a locale whose own slug reaches it', () => {
     const arabic = buildLocalizedRoute(NEUTRAL, SHAPES, 'article', 'ar-EG', {
       slug: 'handbook',
     });
-    // Measured rather than assumed, because the whole entry turns on it: the Arabic spelling is a
-    // real, unique URL that a filter counting duplicates keeps, and it is a 308 to the English one.
+    // Measured rather than assumed, because the whole entry turns on it: only `ar-EG` spells the
+    // Arabic slug, so arriving there is the Arabic page, whatever the request prefers.
     expect(resolveLocalizedRoute(arabic, NEUTRAL, SHAPES)).toMatchObject({
-      status: 'redirect',
-      httpStatus: 308,
-      location: from(NEUTRAL, 'article', { slug: 'handbook' }),
+      status: 'success',
+      locale: 'ar-EG',
     });
-    expect(addressSelectsLocale(arabic, 'ar-EG', NEUTRAL, SHAPES)).toBe(false);
+    expect(addressSelectsLocale(arabic, 'ar-EG', NEUTRAL, SHAPES)).toBe(true);
 
+    // `de-DE` spells the English slug, so it shares the English address and is not named.
     expect(hreflangs(NEUTRAL, 'article', { slug: 'handbook' })).toEqual([
       'en-US',
+      'ar-EG',
     ]);
   });
 

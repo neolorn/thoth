@@ -17,7 +17,7 @@ import {
 import { configuration } from '#i18n';
 
 import { localeCookie } from './app/locale-cookie';
-import { publishedRoutes } from './app/app.routes.server';
+import { publishedRoutes } from './app/published-routes';
 import { responseCaching } from './app/response-caching';
 import {
   routePolicy,

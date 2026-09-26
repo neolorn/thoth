@@ -256,6 +256,8 @@ export interface SemanticGraph {
   readonly defaultLocale: CanonicalLocale;
   /** Every locale the project builds, canonically spelled. */
   readonly locales: readonly CanonicalLocale[];
+  /** The locales among those this build derived from the source catalog rather than authored. */
+  readonly pseudoLocales: readonly CanonicalLocale[];
   /** Extra locales whose person-name patterns this owner generates. See the configuration key. */
   readonly personNameLocales: readonly CanonicalLocale[];
   /** Spellings that resolve to a built locale, so an old tag keeps working after a rename. */
@@ -2226,6 +2228,12 @@ export function analyzeCatalogSet(
       sourceLocale: request.configuration.sourceLocale,
       defaultLocale: request.configuration.defaultLocale,
       locales: Object.freeze([...request.configuration.locales]),
+      // A declared pseudo-locale is in the locale set only when this build generated it.
+      pseudoLocales: Object.freeze(
+        request.configuration.locales.filter(
+          (locale) => request.configuration.pseudoLocales[locale] !== undefined,
+        ),
+      ),
       personNameLocales: Object.freeze([
         ...request.configuration.personNameLocales,
       ]),

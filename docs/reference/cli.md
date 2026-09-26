@@ -38,7 +38,7 @@ Init options:
   --person-name-locale <locale>   (repeatable)
       Locales a person name may be written in, beyond the ones this project is translated into.
   --pseudo-locale <locale>[.<option>=<value>]   (repeatable)
-      Locales derived from the source catalog rather than authored. Generated only by --pseudo.
+      Generated only by --pseudo, each in the source language with a script and the region XA or XB.
       lengthFactor (number)
         Signed length change. Positive expands, negative elides vowels; absent leaves length alone.
       markers (boolean)
@@ -61,8 +61,9 @@ Init options:
       Extra identifiers that resolve to a supported locale.
 
   A repeatable flag may appear more than once. Where a value contains "=", the left side is a
-  path beneath the field: "eg=ar-EG" sets one entry, "en-XA.markers=true" sets one option of
-  one entry. Every field equator.config.json accepts is above; there is no other way to set one.
+  path beneath the field: "eg=ar-EG" sets one entry, "en-Latn-XA.markers=true" sets one
+  option of one entry. Every field equator.config.json accepts is above; there is no other way
+  to set one.
 
 Uninstall options:
   --catalogs         Also remove authored catalogs (off by default)

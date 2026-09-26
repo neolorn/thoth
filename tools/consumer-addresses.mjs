@@ -78,7 +78,7 @@ export async function readConsumerAddresses(consumerRoot) {
       policy === 'path-prefix' || policy === 'default-locale-prefix',
     /** Whether an address that names no locale is sent to one. */
     entryRedirects: policy === 'path-prefix',
-    /** Whether an address alone says which locale it is in. */
+    /** Whether every address says which locale it is in, which under locale-neutral only some do. */
     localeInAddress: policy !== 'locale-neutral',
     /** Whether a locale switch stays in the document. */
     switchInDocument: policy !== 'locale-host',
@@ -86,6 +86,14 @@ export async function readConsumerAddresses(consumerRoot) {
     localeInOrigin: policy === 'locale-host',
     /** The least the deployment keeps any page as, where the table says it declares a floor. */
     pageCaching: table.pageCaching,
+    /** The pages the build prerenders, each in every locale it has an address in. */
+    prerendered: Object.freeze([...table.prerendered]),
+    /**
+     * Whether a pseudo-locale also spells the page's address in the locale, so a build that
+     * generates one renders it on request rather than prerendering it.
+     */
+    sharedWithPseudoLocales: (page, locale) =>
+      table.sharedWithPseudoLocales?.[page]?.includes(locale) ?? false,
   });
 }
 

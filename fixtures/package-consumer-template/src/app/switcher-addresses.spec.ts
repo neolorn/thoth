@@ -233,11 +233,14 @@ describe('a link the switcher can keep', () => {
     const router = await configure({ origin: 'https://site.example' }, NEUTRAL);
     await router.navigateByUrl('/articles/handbook');
 
-    // One route, three locales, and only the first survives: each for its own reason.
+    // One route, three locales, and two survive, each for its own reason.
     //   en-US       is what this address serves a visitor who states no preference.
-    //   ar-EG       would be `/articles/دليل`, which answers 308 back to this one.
+    //   ar-EG       is `/articles/دليل`, a slug only Arabic spells, so it is the Arabic page.
     //   en-Arab-XB  has no slug of its own, so its address *is* this one, which is English.
-    expect(addresses()).toEqual({ 'en-US': '/articles/handbook' });
+    expect(addresses()).toEqual({
+      'en-US': '/articles/handbook',
+      'ar-EG': `/articles/${encodeURIComponent('دليل')}`,
+    });
     claimCapability('policy:locale-neutral', { policy: NEUTRAL });
   });
 
@@ -249,13 +252,14 @@ describe('a link the switcher can keep', () => {
     // they agree, not that each is right on its own.
     expect(alternates()).toEqual([
       ['en-US', 'https://site.example/articles/handbook'],
+      ['ar-EG', `https://site.example/articles/${encodeURIComponent('دليل')}`],
     ]);
     claimCapability('policy:locale-neutral', { policy: NEUTRAL });
   });
 
   it('keeps all three where the prefix carries the locale', async () => {
-    // The control, on the same route and the same fixture: one policy changed, and the two
-    // absences above become presences. A rule that emptied every switcher would satisfy both.
+    // The control, on the same route and the same fixture: one policy changed, and the absence
+    // above becomes a presence. A rule that dropped every pseudo-locale would satisfy both.
     const router = await configure(
       { origin: 'https://site.example' },
       PATH_PREFIX,

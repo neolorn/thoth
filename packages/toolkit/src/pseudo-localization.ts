@@ -21,47 +21,37 @@ import {
   parseMessageSemanticModel,
   type MessageCustomFunction,
 } from './message-format.js';
+import {
+  PSEUDO_LOCALE_CONTRACTED,
+  PSEUDO_LOCALE_EXPANDED,
+  PSEUDO_LOCALE_REGIONS,
+} from './pseudo-locale-tags.js';
 
 /**
- * The expanded pseudo-locale: Latin script, left-to-right, modelling a language longer than English.
+ * What stops a well-formed tag from identifying a pseudo-locale, or nothing when it does.
  *
- * `XA` is a user-assigned ISO 3166-1 region code, permanently unassigned to any country, so it
- * cannot collide with a real locale now or later. It is also the established pseudo-locale
- * convention, Chrome and Android use `en-XA` for exactly this, so a developer who sees it in a
- * locale switcher recognises what it is.
- *
- * The script subtag is written out rather than left to be inferred, because the script is what
- * carries direction and this file's whole design rests on direction being a property of the tag.
- * `en-XA` maximizes to `en-Latn-XA` and resolves the same way; stating `Latn` means the reader does
- * not have to know that.
+ * `specs/10-compiler-and-tooling.spec.md` section 16: the script subtag carries the direction, so
+ * it is written out; the region is one of the user-assigned codes the two constants carry, so a
+ * pseudo-locale is never mistaken for a real one; and the language is the source catalog's, so a
+ * developer reads their own screens transformed.
  */
-export const PSEUDO_LOCALE_EXPANDED = 'en-Latn-XA';
-
-/**
- * The contracted pseudo-locale: Arabic script, right-to-left, modelling a language shorter than
- * English, which Arabic is, and which is the case that finds containers sized to English copy.
- *
- * **The base language is `en`, deliberately, and this is the part worth not changing.** A developer
- * reading their own screens must still be able to read them; the point is to see *their* layout
- * mirrored and their own physical CSS become visible. `ar-XB` would be an Arabic-language
- * pseudo-locale, which tests translation coverage instead and leaves the developer unable to
- * evaluate what they are looking at.
- *
- * `Arab` is in the generated `RTL_SCRIPTS` table, so this tag resolves `direction: 'rtl'` through
- * the lookup every locale uses. There is no pseudo-locale branch anywhere in the runtime, and
- * nothing to exclude from a production build beyond not generating the catalog.
- *
- * **Why not `en-x-psexpand` and `en-Arab-x-pscontr`, which say what they are?** Because
- * `canonicalizeLocale` refuses any single-character subtag, and `x` is one, so a private-use
- * tag is rejected as a catalog identity. This is recorded here because the private-use form looks
- * correct from outside: it passes `Intl.getCanonicalLocales`, it survives `Intl.Locale.maximize()`,
- * and the runtime's direction lookup returns `rtl` for it. Three external authorities accept it and
- * the one validator that belongs to Equator does not.
- * `specs/03-locale-identity-and-resolution.spec.md` section 3 is the reason the validator is right:
- * a private-use subtag carries no application semantics, so admitting one into a catalog identity
- * would let two catalogs differ only in a part that no lookup reads.
- */
-export const PSEUDO_LOCALE_CONTRACTED = 'en-Arab-XB';
+export function pseudoLocaleTagProblem(
+  tag: string,
+  sourceLocale: string,
+): string | undefined {
+  const locale = new Intl.Locale(tag);
+  if (locale.script === undefined) {
+    return `Pseudo-locale ${JSON.stringify(tag)} names no script. A pseudo-locale carries its text direction in its own script subtag, as ${PSEUDO_LOCALE_EXPANDED} and ${PSEUDO_LOCALE_CONTRACTED} do.`;
+  }
+  if (!PSEUDO_LOCALE_REGIONS.includes(locale.region ?? '')) {
+    return `Pseudo-locale ${JSON.stringify(tag)} ${locale.region === undefined ? 'has no region' : `has the region ${locale.region}`}. A pseudo-locale is identified by the region ${PSEUDO_LOCALE_REGIONS.join(' or ')}, the regions of PSEUDO_LOCALE_EXPANDED and PSEUDO_LOCALE_CONTRACTED.`;
+  }
+  const source = new Intl.Locale(sourceLocale).language;
+  if (locale.language !== source) {
+    return `Pseudo-locale ${JSON.stringify(tag)} is in the language ${locale.language}, and the source locale is in ${source}. A pseudo-locale keeps the source language, so a developer reads their own screens transformed.`;
+  }
+  return undefined;
+}
 
 /**
  * How a pseudo-locale differs from its source, as settings that combine freely.
@@ -391,8 +381,8 @@ function pseudoMessage(
  * An ordinary target catalog, derived from a source catalog with no authored translation.
  *
  * Ordinary is the point. What comes back is an `Catalog` like any other, so it compiles,
- * loads and renders through the same path a real translation does, and nothing downstream, least
- * of all the runtime, can tell the difference or needs to. That is what keeps the transform at
+ * loads and renders through the same path a real translation does, and the catalog itself carries
+ * nothing that tells it apart. That is what keeps the transform at
  * build time, and what makes a production build's exclusion an absence rather than a guard: this
  * function lives in the toolkit, which is a development dependency and reaches no bundle.
  */

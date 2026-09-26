@@ -11,6 +11,10 @@
     {
       "runtime": "packages/runtime/core/src/xml-text.ts",
       "toolkit": "packages/toolkit/src/xml-text.ts"
+    },
+    {
+      "runtime": "packages/runtime/core/src/pseudo-locale-tags.ts",
+      "toolkit": "packages/toolkit/src/pseudo-locale-tags.ts"
     }
   ]
 }

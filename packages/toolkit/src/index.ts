@@ -94,8 +94,8 @@ export type { CanonicalLocale } from './locales.js';
 export {
   PSEUDO_LOCALE_CONTRACTED,
   PSEUDO_LOCALE_EXPANDED,
-  createPseudoCatalog,
-} from './pseudo-localization.js';
+} from './pseudo-locale-tags.js';
+export { createPseudoCatalog } from './pseudo-localization.js';
 export type {
   PseudoLocaleTransform,
   PseudoLocaleOptions,

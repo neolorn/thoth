@@ -348,9 +348,15 @@ export function createLocaleRequestHandler(
       cookieName === undefined
         ? undefined
         : readCookie(request.headers.get('cookie'), cookieName);
+    // A signal that names a locale this build does not serve says nothing, so negotiation carries
+    // on to the next one: a remembered choice of a removed locale must not turn an address that
+    // exists into a 404, and a visitor whose first language is not served still has a second.
     const preferred =
-      carried ??
-      preferredFromAcceptLanguage(request.headers.get('accept-language'));
+      servedLocale(policy, carried) ??
+      preferredFromAcceptLanguage(
+        request.headers.get('accept-language'),
+        (tag) => servedLocale(policy, tag),
+      );
 
     // The target as it arrived, when this entry point's own adapter built the request. A `Request`
     // carries a parsed URL, and parsing one resolves dot segments and rewrites a backslash, so the
@@ -747,8 +753,26 @@ function readCookie(header: string | null, name: string): string | undefined {
  * that decides whether Equator supports it, so nothing here needs to know the locale set. An
  * unsupported value is ignored there rather than being an error here.
  */
+/** The locale a signal names, where this build serves it. */
+function servedLocale(
+  policy: LocaleUrlPolicy,
+  tag: string | undefined,
+): string | undefined {
+  if (tag === undefined) return undefined;
+  try {
+    const locale = Intl.getCanonicalLocales(tag)[0];
+    return locale !== undefined && policy.locales[locale] !== undefined
+      ? locale
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The most preferred language the header names that this build serves. */
 function preferredFromAcceptLanguage(
   header: string | null,
+  served: (tag: string) => string | undefined,
 ): string | undefined {
   if (header === null) return undefined;
   const ranked = header
@@ -766,7 +790,11 @@ function preferredFromAcceptLanguage(
     .filter((entry) => entry.tag.length > 0 && entry.tag !== '*')
     .filter((entry) => Number.isFinite(entry.quality) && entry.quality > 0)
     .sort((left, right) => right.quality - left.quality);
-  return ranked[0]?.tag;
+  for (const { tag } of ranked) {
+    const locale = served(tag);
+    if (locale !== undefined) return locale;
+  }
+  return undefined;
 }
 
 function serializeCookie(

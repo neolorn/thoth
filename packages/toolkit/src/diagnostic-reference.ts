@@ -56,6 +56,8 @@ const REFERENCE = {
     'A locale alias points somewhere it must not: it shadows a supported locale, or it targets a locale the project does not serve.',
   EQ1007:
     'A declared parent locale cannot be inherited from: it is the locale itself, or the chain it starts comes back to a locale already in that chain.',
+  EQ1008:
+    "A pseudo-locale tag is well formed and cannot identify a pseudo-locale: it names no script, its region is neither XA nor XB, the regions of `PSEUDO_LOCALE_EXPANDED` and `PSEUDO_LOCALE_CONTRACTED`, or its language is not the source locale's.",
   EQ1101:
     'A catalog file is not the YAML Equator accepts: invalid, oversized, or more than one document; anchors, aliases, merge keys, directives, non-string keys or non-Core scalars; a root that is not a mapping; malformed Unicode or unauthorized invisible and bidi controls; or the node, depth and message ceilings.',
   EQ1102:

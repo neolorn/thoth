@@ -74,11 +74,23 @@ function deploymentOf(locale) {
     ? deployments.find((deployment) => deployment.locales.includes(locale))
     : deployments[0];
 }
-// The pages `app.routes.server.ts` prerenders, by the route view each one renders.
+// The route view each page renders, for the pages the address table says the build prerenders.
 const prerenderedViews = Object.freeze({
   second: 'second',
   article: 'article',
 });
+// The page the checks of a prerendered file load, because a policy decides which pages can be
+// written once for every visitor.
+const prerenderedPage = addresses.prerendered[0];
+const prerenderedView = `[data-route-view="${prerenderedViews[prerenderedPage]}"]`;
+// What that page shows in Arabic.
+const prerenderedArabic = Object.freeze({
+  second: Object.freeze({ selector: prerenderedView, text: 'الصفحة الثانية' }),
+  article: Object.freeze({
+    selector: `${prerenderedView} h2`,
+    text: 'دليل Equator للترجمة',
+  }),
+})[prerenderedPage];
 // Every locale's copy of every prerendered route a deployment writes, and none that Equator did not
 // derive. The article's slug is spelled differently per locale, so its addresses share no path
 // segment after `/articles/`, which is exactly the expansion a hand-written list gets wrong
@@ -87,7 +99,10 @@ function prerenderedRouteViews(deployment) {
   return new Map(
     deployment.locales.flatMap((locale) =>
       Object.entries(prerenderedViews)
-        .filter(([page]) => addresses.has(page, locale))
+        .filter(
+          ([page]) =>
+            addresses.prerendered.includes(page) && addresses.has(page, locale),
+        )
         .map(([page, view]) => [
           decodeURIComponent(addresses.path(page, locale)),
           view,
@@ -2809,7 +2824,7 @@ async function navigateWithScriptGate(page, url, beforeScripts) {
 }
 
 async function verifyRenderingModes(row, context, diagnostics) {
-  const prerenderPath = addresses.path('second', 'en-US');
+  const prerenderPath = addresses.path(prerenderedPage, 'en-US');
   const prerenderArtifact = prerenderArtifacts.get(
     `${deploymentOf('en-US').origin}${decodeURIComponent(prerenderPath)}`,
   );
@@ -2824,27 +2839,31 @@ async function verifyRenderingModes(row, context, diagnostics) {
   prerenderPage.setDefaultNavigationTimeout(20_000);
   let prerenderRoot;
   let prerenderRoute;
-  const prerenderResponse = await visitFor(context, 'second', 'en-US', (url) =>
-    navigateWithScriptGate(prerenderPage, url, async () => {
-      await prerenderPage.waitForSelector('[data-route-view="second"]');
-      prerenderRoot = await prerenderPage.$('app-root');
-      prerenderRoute = await prerenderPage.$('[data-route-view="second"]');
-      assert.notEqual(
-        prerenderRoot,
-        null,
-        `${row.label} prerender root is absent`,
-      );
-      assert.notEqual(
-        prerenderRoute,
-        null,
-        `${row.label} prerender route is absent`,
-      );
-      assert.equal(
-        await prerenderPage.locator('html').getAttribute('data-client-ready'),
-        null,
-      );
-      await holdServerElements(prerenderPage);
-    }),
+  const prerenderResponse = await visitFor(
+    context,
+    prerenderedPage,
+    'en-US',
+    (url) =>
+      navigateWithScriptGate(prerenderPage, url, async () => {
+        await prerenderPage.waitForSelector(prerenderedView);
+        prerenderRoot = await prerenderPage.$('app-root');
+        prerenderRoute = await prerenderPage.$(prerenderedView);
+        assert.notEqual(
+          prerenderRoot,
+          null,
+          `${row.label} prerender root is absent`,
+        );
+        assert.notEqual(
+          prerenderRoute,
+          null,
+          `${row.label} prerender route is absent`,
+        );
+        assert.equal(
+          await prerenderPage.locator('html').getAttribute('data-client-ready'),
+          null,
+        );
+        await holdServerElements(prerenderPage);
+      }),
   );
   await assertTrustedTypesPolicy(prerenderPage, prerenderResponse, row);
   assert.equal(
@@ -2864,20 +2883,22 @@ async function verifyRenderingModes(row, context, diagnostics) {
   );
   assert.equal(
     await prerenderRoute.evaluate(
-      (element) =>
-        element === document.querySelector('[data-route-view="second"]'),
+      (element, view) => element === document.querySelector(view),
+      prerenderedView,
     ),
     true,
     `${row.label} replaced the prerender route`,
   );
   assert.equal(
     await prerenderPage.locator('link[rel="canonical"]').getAttribute('href'),
-    addresses.url('second', 'en-US'),
+    addresses.url(prerenderedPage, 'en-US'),
   );
   const prerenderCheck = sectionCheck(row, 'prerender');
   claimRunningPolicy(prerenderCheck, await measuredContext(prerenderPage));
   await localeChoice(prerenderPage, 'ar-EG').click();
-  await prerenderPage.waitForURL((url) => isShown(url, 'second', 'ar-EG'));
+  await prerenderPage.waitForURL((url) =>
+    isShown(url, prerenderedPage, 'ar-EG'),
+  );
   await prerenderPage.waitForFunction(
     () =>
       document.documentElement.lang === 'ar-EG' &&
@@ -2890,14 +2911,14 @@ async function verifyRenderingModes(row, context, diagnostics) {
   );
   await collectPolicyDiagnostics(prerenderPage, diagnostics);
   await prerenderPage.goto(
-    siteUrl(addresses.shownPath('second', 'ar-EG'), 'ar-EG'),
+    siteUrl(addresses.shownPath(prerenderedPage, 'ar-EG'), 'ar-EG'),
   );
   await prerenderPage.waitForFunction(
     () => document.documentElement.dataset['clientReady'] === 'true',
   );
   assert.equal(
-    await prerenderPage.locator('[data-route-view="second"]').textContent(),
-    'الصفحة الثانية',
+    await prerenderPage.locator(prerenderedArabic.selector).textContent(),
+    prerenderedArabic.text,
   );
 
   const csrPage = boundCalls(await context.newPage(), 'page');
@@ -4184,7 +4205,7 @@ try {
   assert.equal(nonIndexable.status, 200);
   assert.equal(nonIndexable.headers.get('content-language'), 'en-US');
   assert.equal(nonIndexable.headers.get('x-robots-tag'), 'noindex');
-  const prerendered = await answer(addresses.path('second', 'en-US'));
+  const prerendered = await answer(addresses.path(prerenderedPage, 'en-US'));
   assert.equal(prerendered.status, 200);
   assert.equal(prerendered.headers.get('content-language'), 'en-US');
   const prerenderedDocument = new JSDOM(await prerendered.text()).window
@@ -4193,39 +4214,36 @@ try {
     prerenderedDocument
       .querySelector('link[rel="canonical"]')
       ?.getAttribute('href'),
-    addresses.url('second', 'en-US'),
+    addresses.url(prerenderedPage, 'en-US'),
   );
   // A revalidation of that page, which is what a browser sends on a reload and a cache sends when
   // its copy goes stale. The engine answers a matching ETag with 304 and no content, and a 304 sent
-  // on as 200 is an empty page the cache then keeps for this address. Only where the address states
-  // its locale does the build write the page, and so give it an ETag.
-  if (addresses.localeInAddress) {
-    const etag = prerendered.headers.get('etag');
-    assert.ok(
-      etag !== null,
-      'the prerendered page carries no ETag, so nothing here can revalidate it',
-    );
-    const revalidated = await answer(addresses.path('second', 'en-US'), {
-      headers: { 'if-none-match': etag },
-    });
-    assert.equal(
-      revalidated.status,
-      304,
-      `a revalidation of the prerendered page answered ${revalidated.status}`,
-    );
-    assert.equal(await revalidated.text(), '');
-    // The fields RFC 9110 section 15.4.5 has a 304 repeat from the 200 it stands for, and no
-    // description of a representation it does not carry.
-    assert.equal(
-      revalidated.headers.get('cache-control'),
-      prerendered.headers.get('cache-control'),
-    );
-    assert.equal(
-      revalidated.headers.get('vary'),
-      prerendered.headers.get('vary'),
-    );
-    assert.equal(revalidated.headers.get('content-language'), null);
-  }
+  // on as 200 is an empty page the cache then keeps for this address.
+  const etag = prerendered.headers.get('etag');
+  assert.ok(
+    etag !== null,
+    'the prerendered page carries no ETag, so nothing here can revalidate it',
+  );
+  const revalidated = await answer(addresses.path(prerenderedPage, 'en-US'), {
+    headers: { 'if-none-match': etag },
+  });
+  assert.equal(
+    revalidated.status,
+    304,
+    `a revalidation of the prerendered page answered ${revalidated.status}`,
+  );
+  assert.equal(await revalidated.text(), '');
+  // The fields RFC 9110 section 15.4.5 has a 304 repeat from the 200 it stands for, and no
+  // description of a representation it does not carry.
+  assert.equal(
+    revalidated.headers.get('cache-control'),
+    prerendered.headers.get('cache-control'),
+  );
+  assert.equal(
+    revalidated.headers.get('vary'),
+    prerendered.headers.get('vary'),
+  );
+  assert.equal(revalidated.headers.get('content-language'), null);
   // A page that declares its own spelling of a parameter, asked for under the codec's. The runtime
   // corrects the address during the render, and a correction is a routing outcome with the status
   // section 5 of the routing specification gives it, whatever the engine's own default is.

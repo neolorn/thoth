@@ -33,7 +33,10 @@ import {
   sortedSchemaErrors,
 } from './schema-validation.js';
 import { CONFIGURATION_SCHEMA } from './schemas.js';
-import type { PseudoLocaleTransform } from './pseudo-localization.js';
+import {
+  pseudoLocaleTagProblem,
+  type PseudoLocaleTransform,
+} from './pseudo-localization.js';
 import { RESOURCE_LIMITS } from './resource-limits.js';
 import {
   constructJsonValue,
@@ -496,6 +499,22 @@ export function parseConfiguration(
           options.sourcePath,
           'EQ1004',
           `Pseudo-locale ${JSON.stringify(canonical.value)} is also declared in "locales". A pseudo-locale is generated from the source catalog, so declaring it as an authored locale would ask for both a written catalog and a derived one under the same identity.`,
+          ['pseudoLocales', tag],
+        ),
+      );
+      continue;
+    }
+    const problem = sourceLocale.ok
+      ? pseudoLocaleTagProblem(canonical.value, sourceLocale.value)
+      : undefined;
+    if (problem !== undefined) {
+      diagnostics.push(
+        configurationDiagnostic(
+          source,
+          root,
+          options.sourcePath,
+          'EQ1008',
+          problem,
           ['pseudoLocales', tag],
         ),
       );

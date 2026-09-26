@@ -36,8 +36,8 @@
  *   scalar         --source-locale en-US            once
  *   list           --locale ar-EG                   repeatable, one value each
  *   map, depth 1   --alias eg=ar-EG                 repeatable, path is the entry key
- *   map, depth 2   --pseudo-locale en-XA.markers=true
- *                  --pseudo-locale en-XA            the entry with no options set
+ *   map, depth 2   --pseudo-locale en-Latn-XA.markers=true
+ *                  --pseudo-locale en-Latn-XA       the entry with no options set
  *
  * `--alias` is unchanged: it is this convention at depth 1 and always was. Depth 2 adds one dot and
  * no new rule, which is why a third level would need no new rule either.
@@ -231,8 +231,9 @@ for (const descriptor of ordered) {
 helpLines.push(
   '',
   '  A repeatable flag may appear more than once. Where a value contains "=", the left side is a',
-  '  path beneath the field: "eg=ar-EG" sets one entry, "en-XA.markers=true" sets one option of',
-  '  one entry. Every field equator.config.json accepts is above; there is no other way to set one.',
+  '  path beneath the field: "eg=ar-EG" sets one entry, "en-Latn-XA.markers=true" sets one',
+  '  option of one entry. Every field equator.config.json accepts is above; there is no other way',
+  '  to set one.',
 );
 
 for (const line of helpLines) {

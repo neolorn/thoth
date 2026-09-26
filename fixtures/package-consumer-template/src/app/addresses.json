@@ -1,5 +1,6 @@
 {
   "policy": "path-prefix",
+  "prerendered": ["second", "article"],
   "origins": {
     "en-US": "https://site.example",
     "ar-EG": "https://site.example",

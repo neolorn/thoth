@@ -1,5 +1,6 @@
 {
   "policy": "locale-host",
+  "prerendered": ["second", "article"],
   "pageCaching": "per-visitor",
   "origins": {
     "en-US": "http://en-us.localhost",

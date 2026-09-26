@@ -275,7 +275,10 @@ A release MUST export that reset and MUST use it in its own documented testing r
 
 Pseudo-locales are not part of this surface. A test that wants one loads a generated pseudo-locale
 catalog like any other catalog, because the transform runs at build time under
-`10-compiler-and-tooling.spec.md` and the runtime cannot tell a pseudo-locale from a translation.
+`10-compiler-and-tooling.spec.md`. The runtime renders a pseudo-locale as it renders a translation.
+The one fact it holds about a pseudo-locale is that the build generated it, which the generated
+configuration states so a render table can apply section 9 of
+`07-routing-rendering-and-seo.spec.md`.
 
 ## 13. Primary references
 

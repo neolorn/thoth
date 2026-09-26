@@ -98,7 +98,10 @@ export function pagePath(page: Page, locale: string): string {
 // Each is read from the policy rather than written into the table, so a kind misspelled here is a
 // compile error rather than a spec that never runs.
 
-/** Whether an address alone says which locale it is in. Under locale-neutral none does. */
+/**
+ * Whether every address says which locale it is in. Under locale-neutral only one that a single
+ * locale spells does, such as the Arabic article's slug.
+ */
 export const localeInAddress = routePolicy.kind !== 'locale-neutral';
 
 /** Whether the locale is a segment of the path, so an address an application writes can carry one. */
@@ -119,8 +122,8 @@ export const entryRedirects =
 
 /**
  * Whether some address states no locale, so a source that reads the URL has nothing to read
- * there: the root under a policy that prefixes every locale, and every address under
- * locale-neutral. `unstatedAddress` is one.
+ * there: the root under a policy that prefixes every locale, and under locale-neutral every
+ * address more than one locale spells. `unstatedAddress` is one.
  */
 export const addressCanStateNone =
   entryRedirects || routePolicy.kind === 'locale-neutral';

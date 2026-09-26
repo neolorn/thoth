@@ -115,16 +115,19 @@ succeeds. One build then prerenders one origin's locale while the document adver
 that build does not produce, which is where those locales live. A locale switch is a document
 navigation, because no application state crosses an origin.
 
-A release MUST advertise or link a locale only where arriving at the address with nothing
-said about preference yields that locale. That is one observation rather than a property of the
-policy kind, it is the only kind of visitor a crawler is, and it is also what a reader gets from a
-link opened in a new tab, copied, or returned to tomorrow. Under a prefix
-or origin policy every address passes by construction. Under a locale-neutral policy one policy
-gives three answers: a route every locale spells alike is negotiated and only the locale it
-negotiates to is served there; a route with a localized path is a genuine per-locale address and is
-advertised; and a route whose slug is spelled per locale answers a permanent redirect to the
-default spelling, because the codec maps both spellings to one entity and leaves nothing for
-canonicalization to keep.
+A release MUST advertise or link a locale only where arriving at the address with nothing said about
+preference yields that locale. That is one observation rather than a property of the policy kind, it
+is the only kind of visitor a crawler is, and it is also what a reader gets from a link opened in a
+new tab, copied, or returned to tomorrow. Under a prefix or origin policy every address passes by
+construction. Under a locale-neutral policy the answer depends on how many locales spell the
+address. An address one locale alone spells, through a localized path or a parameter its codec
+spells per locale, states that locale as a prefix would: arriving there commits it, it is
+advertised, and a build may prerender it in that locale. An address more than one locale spells
+states none. It is negotiated among the locales that spell it, the first of them in the policy's
+order where nothing chooses one, and only the locale it negotiates to is served and advertised
+there. The policy's order is its default locale first, then its other locales in the order the
+policy lists them. A generated nonproduction locale counts among the locales that spell an address,
+so a switch to it works wherever it shares one.
 
 ## 4. Dispatch and path safety
 
@@ -280,11 +283,12 @@ not stored because its answer depends on request state and is not sensitive: a b
 it, and asks the server again before using it, so a visitor whose preference has changed is sent
 where the new one points.
 
-Under a locale-neutral policy no address states a locale, so a release MUST classify a
-successful response as varying by locale preference, including a response that consulted nothing,
-because it shares a key with one that did. A release MUST NOT classify a redirect produced
-under that policy as varying, because what a redirect returns is its location and that is the
-matched route's canonical text, the same for every locale.
+Under a locale-neutral policy an address more than one locale spells states no locale, so a release
+MUST classify a successful response there as varying by locale preference, including a response that
+consulted nothing, because it shares a key with one that did. An address one locale alone spells
+states its locale and is classified as it would be under a prefix policy. A release MUST NOT
+classify a redirect produced under that policy as varying, because what a redirect returns is its
+location and that is the same for every locale.
 
 Whether a shared cache may hold a varying response depends on where the deployment reads the
 preference, which is the one fact here a release cannot observe. A consumer application MUST
@@ -464,11 +468,16 @@ A prerendered page is one file served for every request to its address, so it ca
 every visitor may be given. A release MUST fail the build when it renders a route whose level under
 section 16 is per visitor or not stored, or whose indexing class is private, and MUST NOT write the
 page, whichever declaration led the build to render it: an entry of its own, a fallback, or an
-application shell. It MUST decide this from the route's classification and from the render having
-no request, and MUST NOT read a render mode value to decide it, because this section relays those
-values without interpreting them. The least level a host declares under section 16 is declared
-where requests are answered and is not known to the build, so this refusal covers what the routes
-declare.
+application shell. It MUST decide this from the route's classification and from the render having no
+request, and MUST NOT read a render mode value to decide it, because this section relays those
+values without interpreting them. The least level a host declares under section 16 is declared where
+requests are answered and is not known to the build, so this refusal covers what the routes declare.
+Under a locale-neutral policy an address more than one locale spells has no locale until a request
+states a preference, so it is per visitor whatever its route declares, and a release MUST refuse to
+prerender it the same way. Where the only other locales that spell it are generated nonproduction
+ones, a build that generates them renders the address on request instead of failing, because one
+configuration serves the development and the production build (`10-compiler-and-tooling.spec.md`
+section 16), and the build without them prerenders it.
 
 ## 10. Canonical, alternate, and x-default
 

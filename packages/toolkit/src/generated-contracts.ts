@@ -637,6 +637,13 @@ function indexModule(
       : [
           `  localeFallbacks: Object.freeze(${JSON.stringify(localeFallbacks)} as const),`,
         ]),
+    // Only where this generation produced one, because a build without them has none to name, and
+    // the runtime refuses an empty list as one no build writes.
+    ...(graph.pseudoLocales.length === 0
+      ? []
+      : [
+          `  pseudoLocales: Object.freeze([${graph.pseudoLocales.map(quote).join(', ')}]),`,
+        ]),
     `  applicationContractFingerprint: ${quote(graph.applicationContractFingerprint)},`,
     `  semanticRegistryFingerprint: ${quote(graph.semanticRegistryFingerprint)},`,
     `  extensionDescriptors: Object.freeze(${JSON.stringify(graph.extensionDescriptors)} as const),`,

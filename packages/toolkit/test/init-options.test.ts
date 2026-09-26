@@ -101,7 +101,7 @@ describe('the option set is the configuration schema', () => {
         defaultLocale: 'en-US',
         locales: ['en-US', 'ar-EG'],
         personNameLocales: ['ja'],
-        pseudoLocales: { 'en-XA': { lengthFactor: 0.3, markers: true } },
+        pseudoLocales: { 'en-Latn-XA': { lengthFactor: 0.3, markers: true } },
         aliases: { eg: 'ar-EG' },
       },
     });
@@ -118,7 +118,7 @@ describe('the option set is the configuration schema', () => {
     if (!reparsed.ok) return;
     expect(reparsed.value.personNameLocales).toEqual(['ja']);
     expect(reparsed.value.pseudoLocales).toEqual({
-      'en-XA': { lengthFactor: 0.3, markers: true },
+      'en-Latn-XA': { lengthFactor: 0.3, markers: true },
     });
     expect(reparsed.value.aliases).toEqual({ eg: 'ar-EG' });
     claimCapability('cli:init');
@@ -180,17 +180,17 @@ describe('one convention, at every depth a value has', () => {
   it('reads two beneath a map of objects, and the entry on its own', () => {
     expect(
       collect(
-        ['--pseudo-locale', 'en-XA.lengthFactor=0.3'],
-        ['--pseudo-locale', 'en-XA.markers=true'],
-        ['--pseudo-locale', 'en-XB'],
+        ['--pseudo-locale', 'en-Latn-XA.lengthFactor=0.3'],
+        ['--pseudo-locale', 'en-Latn-XA.markers=true'],
+        ['--pseudo-locale', 'en-Arab-XB'],
       ),
     ).toEqual({
       pseudoLocales: {
-        'en-XA': { lengthFactor: 0.3, markers: true },
+        'en-Latn-XA': { lengthFactor: 0.3, markers: true },
         // Both options are optional, so an entry with none is a thing to ask for rather than an
         // incomplete invocation. The transform's own defaults then apply, which is what the
         // absent keys mean.
-        'en-XB': {},
+        'en-Arab-XB': {},
       },
     });
   });
@@ -200,27 +200,27 @@ describe('one convention, at every depth a value has', () => {
     // `Number("x")` is `NaN`, and `Boolean("false")` is `true`: all three would reach the file as
     // a plausible-looking value, and the last one switches on the setting it was asked to switch
     // off.
-    expect(() => collect(['--pseudo-locale', 'en-XA.markers=yes'])).toThrow(
-      /takes true or false, and received "yes"/u,
-    );
     expect(() =>
-      collect(['--pseudo-locale', 'en-XA.lengthFactor=abc']),
+      collect(['--pseudo-locale', 'en-Latn-XA.markers=yes']),
+    ).toThrow(/takes true or false, and received "yes"/u);
+    expect(() =>
+      collect(['--pseudo-locale', 'en-Latn-XA.lengthFactor=abc']),
     ).toThrow(/takes a number, and received "abc"/u);
-    expect(() => collect(['--pseudo-locale', 'en-XA.lengthFactor= '])).toThrow(
-      /takes a number/u,
-    );
+    expect(() =>
+      collect(['--pseudo-locale', 'en-Latn-XA.lengthFactor= ']),
+    ).toThrow(/takes a number/u);
     // A number that is a number still gets through, or the three refusals above would be a rule
     // that refuses everything.
-    expect(collect(['--pseudo-locale', 'en-XA.lengthFactor=-1'])).toEqual({
-      pseudoLocales: { 'en-XA': { lengthFactor: -1 } },
+    expect(collect(['--pseudo-locale', 'en-Latn-XA.lengthFactor=-1'])).toEqual({
+      pseudoLocales: { 'en-Latn-XA': { lengthFactor: -1 } },
     });
   });
 
   it('names the options an entry has when given one it does not', () => {
-    expect(() => collect(['--pseudo-locale', 'en-XA.invented=1'])).toThrow(
+    expect(() => collect(['--pseudo-locale', 'en-Latn-XA.invented=1'])).toThrow(
       /has no option "invented"\. It takes lengthFactor, markers/u,
     );
-    expect(() => collect(['--pseudo-locale', 'en-XA.markers'])).toThrow(
+    expect(() => collect(['--pseudo-locale', 'en-Latn-XA.markers'])).toThrow(
       InvocationError,
     );
     expect(() => collect(['--pseudo-locale', '.markers=true'])).toThrow(
