@@ -2807,6 +2807,10 @@ async function navigateWithScriptGate(page, url, beforeScripts) {
   };
   await page.route('**/*.js', routeHandler);
   const navigation = page.goto(url, { waitUntil: 'load' });
+  // When the wait below fails, its error is the one to report. The navigation then rejects as the
+  // page closes under it, and unhandled, that rejection ends the process before the wait's error is
+  // printed.
+  navigation.catch(() => {});
 
   try {
     await beforeScripts();
