@@ -1,4 +1,9 @@
-import { floorOf, peerRange } from './supported-versions.mjs';
+import {
+  developmentNode,
+  floorOf,
+  nodeFloors,
+  peerRange,
+} from './supported-versions.mjs';
 
 // Angular ships its framework and its tooling on separate patch trains, so the two can sit at
 // different versions on the same day. A profile that says nothing about tooling gets the framework
@@ -117,15 +122,37 @@ export const policyConsumerProfiles = new Map([
   ],
 ]);
 
+const lineOf = (version) => version.split('.')[0];
+
+// The development row on every Node line the packages admit other than the one this repository
+// develops on, at the lowest version of that line. Read from the engines range, so a line added or a
+// floor raised moves these rows with it. The development line has no row here because every other
+// row already runs on it. Like the policy rows they vary no package, so a claim names the
+// development row and carries the Node it ran on.
+export const nodeConsumerProfiles = new Map(
+  nodeFloors
+    .filter((version) => lineOf(version) !== lineOf(developmentNode))
+    .map((version) => [
+      `node-${lineOf(version)}-consumer`,
+      {
+        row: 'package-consumer',
+        label: `Equator development row on Node ${version}`,
+        node: version,
+      },
+    ]),
+);
+
 /** A consumer's profile, with `row` naming the row whose versions and lock it installs. */
 export const resolveConsumerProfile = (consumerName) => {
   const consumerProfile = consumerProfiles.get(consumerName);
   if (consumerProfile !== undefined) {
     return { ...consumerProfile, row: consumerName };
   }
-  const policyProfile = policyConsumerProfiles.get(consumerName);
-  if (policyProfile !== undefined) {
-    return { ...resolveConsumerProfile(policyProfile.row), ...policyProfile };
+  for (const variants of [policyConsumerProfiles, nodeConsumerProfiles]) {
+    const variant = variants.get(consumerName);
+    if (variant !== undefined) {
+      return { ...resolveConsumerProfile(variant.row), ...variant };
+    }
   }
   throw new Error(`Unknown package-consumer profile: ${consumerName}`);
 };

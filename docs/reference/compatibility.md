@@ -14,6 +14,9 @@ repository develops on:
 
 `22.22.3`, `24.15.0`, `24.18.0`, `26.0.0`.
 
+The development row below is also installed, tested, built and served on `22.22.3` and `26.0.0`,
+the lowest version of each line other than the one this repository develops on.
+
 ## Angular, TypeScript and RxJS
 
 | What                | Range                           |

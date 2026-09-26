@@ -176,8 +176,10 @@ by package verification, so a manifest that moves without it fails rather than s
 Verification runs a built-package consumer on the development row, on an Angular patch row, and on
 the row that sits at the declared lower bound of Angular, TypeScript, and RxJS at once, in the
 Chromium, Firefox, and WebKit engines, and it runs the suites on each Node version the engines range
-admits. A combination inside a declared range that nothing has executed is installable and not
-verified, and a release MUST NOT describe it as supported.
+admits. It also runs the development row's consumer, from install to its server's answers, on the
+lowest version of each Node line the range admits other than the line the development row uses. A
+combination inside a declared range that nothing has executed is installable and not verified, and
+a release MUST NOT describe it as supported.
 
 A release MUST NOT claim a host outside these ranges, and MUST NOT imply that verifying one
 combination verifies every combination a range admits.

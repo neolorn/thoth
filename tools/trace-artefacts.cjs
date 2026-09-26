@@ -40,6 +40,7 @@ const fs = require('node:fs');
 const { registerHooks } = require('node:module');
 const path = require('node:path');
 const { fileURLToPath } = require('node:url');
+const { isInternalThread } = require('node:worker_threads');
 
 const traceFile = process.env['EQUATOR_TRACE_FILE'];
 const workspaceRoot = process.env['EQUATOR_TRACE_ROOT'];
@@ -112,6 +113,8 @@ function install(traceFile, workspaceRoot) {
       'tmp/package-consumer-verification/locale-host-consumer',
       'consumer:locale-host',
     ],
+    ['tmp/package-consumer-verification/node-22-consumer', 'consumer:node-22'],
+    ['tmp/package-consumer-verification/node-26-consumer', 'consumer:node-26'],
     ['tmp/focused-package-consumer-verification', 'consumer:focused'],
     // `tmp/package-consumer-verification`, the directory that holds the consumers above,
     // is deliberately not one. The only thing any stage does to it is `mkdir` it before installing
@@ -326,17 +329,25 @@ function install(traceFile, workspaceRoot) {
    * wrong one. Node's synchronous `load` hook sees every module `require` and `import` load (Node's
    * `module.registerHooks` documentation), and registered here it sees a worker thread's loads too,
    * because this file is preloaded into the worker. The source is passed on untouched.
+   *
+   * Not in Node's own loader thread, the one that runs `module.register` hooks. On Node 22 a
+   * synchronous hook's `nextLoad` there reaches a default step that calls `loadSync` on that
+   * thread's asynchronous hooks object, which has none (`lib/internal/modules/esm/loader.js` at
+   * v22.22.3), so every load in it throws. Angular's build registers such hooks to extract routes.
+   * What that thread loads goes untraced.
    */
-  registerHooks({
-    load(url, context, nextLoad) {
-      if (url.startsWith('file:')) {
-        try {
-          record('read', fileURLToPath(url));
-        } catch {
-          // A tracer that can throw is a tracer that changes what it measures.
+  if (!isInternalThread) {
+    registerHooks({
+      load(url, context, nextLoad) {
+        if (url.startsWith('file:')) {
+          try {
+            record('read', fileURLToPath(url));
+          } catch {
+            // A tracer that can throw is a tracer that changes what it measures.
+          }
         }
-      }
-      return nextLoad(url, context);
-    },
-  });
+        return nextLoad(url, context);
+      },
+    });
+  }
 }

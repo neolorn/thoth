@@ -53,7 +53,10 @@ import { fileURLToPath } from 'node:url';
 
 import { format, resolveConfig } from 'prettier';
 
-import { consumerProfiles } from './package-consumer-profiles.mjs';
+import {
+  consumerProfiles,
+  nodeConsumerProfiles,
+} from './package-consumer-profiles.mjs';
 import {
   composableExports,
   isComposable,
@@ -458,6 +461,10 @@ const runNodeVersions = [...new Set([...nodeFloors, developmentNode])].sort(
   compareVersions,
 );
 
+const nodeRowVersions = [...nodeConsumerProfiles.values()]
+  .map(({ node }) => `\`${node}\``)
+  .join(' and ');
+
 const compatibilityDocument = `${[
   '# Compatibility',
   '',
@@ -474,6 +481,9 @@ const compatibilityDocument = `${[
   'repository develops on:',
   '',
   `${runNodeVersions.map((version) => `\`${version}\``).join(', ')}.`,
+  '',
+  `The development row below is also installed, tested, built and served on ${nodeRowVersions},`,
+  'the lowest version of each line other than the one this repository develops on.',
   '',
   '## Angular, TypeScript and RxJS',
   '',

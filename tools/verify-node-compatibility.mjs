@@ -22,6 +22,11 @@ import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  describeSpawnFailure,
+  locateNode,
+  nodeRoot,
+} from './node-runtimes.mjs';
+import {
   compareVersions,
   developmentNode,
   nodeFloors,
@@ -29,10 +34,6 @@ import {
 } from './supported-versions.mjs';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const defaultNodeRoot = resolve(workspaceRoot, '.runtimes/node');
-const nodeRoot = resolve(
-  process.env.EQUATOR_NODE_COMPATIBILITY_ROOT ?? defaultNodeRoot,
-);
 const rowWorker = resolve(
   workspaceRoot,
   'tools/verify-node-compatibility-row.mjs',
@@ -59,12 +60,7 @@ const rows = Object.freeze(
       : [{ id: 'development-reference', version: developmentNode }]),
   ]
     .sort((left, right) => compareVersions(left.version, right.version))
-    .map((row) =>
-      Object.freeze({
-        ...row,
-        environment: `EQUATOR_NODE_${row.version.replaceAll('.', '_')}_EXECUTABLE`,
-      }),
-    ),
+    .map((row) => Object.freeze(row)),
 );
 
 const isWithin = (candidate, owner) => {
@@ -86,32 +82,6 @@ async function isFile(path) {
   }
 }
 
-function platformLayout(version) {
-  const executable = process.platform === 'win32' ? 'node.exe' : 'bin/node';
-  const distributionPlatform =
-    process.platform === 'win32'
-      ? 'win'
-      : process.platform === 'darwin'
-        ? 'darwin'
-        : process.platform;
-  const distribution = `node-v${version}-${distributionPlatform}-${process.arch}`;
-  return Object.freeze({ executable, distribution });
-}
-
-function candidatesFor(row) {
-  const explicit = process.env[row.environment];
-  if (explicit !== undefined && explicit.trim() !== '') {
-    return Object.freeze([resolve(explicit)]);
-  }
-  const layout = platformLayout(row.version);
-  return Object.freeze([
-    resolve(nodeRoot, row.version, layout.executable),
-    resolve(nodeRoot, `v${row.version}`, layout.executable),
-    resolve(nodeRoot, layout.distribution, layout.executable),
-    resolve(nodeRoot, row.version, layout.distribution, layout.executable),
-  ]);
-}
-
 function spawnOptions() {
   return {
     cwd: workspaceRoot,
@@ -128,58 +98,13 @@ function spawnOptions() {
   };
 }
 
-function describeSpawnFailure(result) {
-  if (result.error !== undefined) return result.error.message;
-  if (result.signal !== null) return `terminated by signal ${result.signal}`;
-  return (result.stderr || result.stdout || `exit ${result.status}`).trim();
-}
-
 async function locateRows() {
   const located = [];
   const failures = [];
   for (const row of rows) {
-    const candidates = candidatesFor(row);
-    const executable = await (async () => {
-      for (const candidate of candidates) {
-        if (await isFile(candidate)) return realpath(candidate);
-      }
-      return undefined;
-    })();
-    if (executable === undefined) {
-      const layout = platformLayout(row.version);
-      failures.push(
-        [
-          `Missing Node.js ${row.version} (${row.id}).`,
-          `Looked for:`,
-          ...candidates.map((candidate) => `  ${candidate}`),
-          '`pnpm run stage:node-runtimes` downloads the official archive for every row,',
-          `checks it against nodejs.org's published digest and extracts it under`,
-          `${nodeRoot}: this one as ${layout.distribution}. Or set`,
-          `${row.environment} to that row's exact Node executable.`,
-        ].join('\n'),
-      );
-      continue;
-    }
-    const probe = spawnSync(
-      executable,
-      ['--eval', 'process.stdout.write(process.versions.node)'],
-      spawnOptions(),
-    );
-    if (
-      probe.status !== 0 ||
-      probe.error !== undefined ||
-      probe.signal !== null
-    ) {
-      failures.push(
-        `Could not run ${row.id} at ${executable}: ${describeSpawnFailure(probe)}`,
-      );
-      continue;
-    }
-    const actualVersion = probe.stdout.trim();
-    if (actualVersion !== row.version) {
-      failures.push(
-        `${row.id} resolved to ${executable}, but it reports Node.js ${actualVersion}; expected exactly ${row.version}.`,
-      );
+    const { executable, failure } = await locateNode(row.version, row.id);
+    if (failure !== undefined) {
+      failures.push(failure);
       continue;
     }
     located.push(Object.freeze({ ...row, executable }));

@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { nodeConsumerProfiles } from './package-consumer-profiles.mjs';
+
 /**
  * The gate's stages, and what each one reads and writes.
  *
@@ -281,6 +283,14 @@ const declared = Object.freeze([
     writes: ['consumer:locale-host'],
     claims: true,
   },
+  // The development row on each other Node line the packages admit: install, the command steps,
+  // the specs, the build and prerender, and the server bundle's answers, all on that line's Node.
+  ...[...nodeConsumerProfiles.keys()].map((name) => ({
+    id: `verify:${name}`,
+    reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
+    writes: [`consumer:${name.replace(/-consumer$/u, '')}`],
+    claims: true,
+  })),
   // Edits the materialized consumer in place and restores it, asserting the restore was exact. It
   // declares the write, so everything that reads that tree is ordered around it, which under the
   // list was true only because it happened to be written here.

@@ -33,6 +33,7 @@ import {
   readConsumerBuilds,
   SITE_ORIGIN_DECLARATION,
 } from './consumer-addresses.mjs';
+import { locateNode, withNodeFirst } from './node-runtimes.mjs';
 import { withOfflineStoreRemedy } from './offline-store.mjs';
 
 import {
@@ -48,22 +49,45 @@ const consumerRoot = resolve(
   'tmp/package-consumer-verification',
   consumerName,
 );
-const pnpmCommand =
-  process.platform === 'win32' ? (process.env.ComSpec ?? 'cmd.exe') : 'pnpm';
 
-const spawnPnpm = (args) =>
-  spawnSync(
-    pnpmCommand,
-    process.platform === 'win32' ? ['/d', '/s', '/c', 'pnpm', ...args] : args,
-    {
-      cwd: consumerRoot,
-      encoding: 'utf8',
-      env: { ...process.env, CI: 'true' },
-    },
+// A row on another Node line runs every step on that Node: this script, the package manager, and
+// each tool the consumer's scripts start. Started again here rather than by the caller, so every
+// caller gets the row's Node: the gate, the runtime assurance stage, and a person running the row.
+if (
+  consumerProfile.node !== undefined &&
+  process.versions.node !== consumerProfile.node
+) {
+  const { executable, failure } = await locateNode(
+    consumerProfile.node,
+    consumerName,
   );
+  if (failure !== undefined) throw new Error(failure);
+  const rerun = spawnSync(
+    executable,
+    [fileURLToPath(import.meta.url), ...process.argv.slice(2)],
+    { stdio: 'inherit', env: withNodeFirst(process.env, executable) },
+  );
+  process.exit(rerun.status ?? 1);
+}
 
-const run = (args, expectedStatus = 0) => {
-  const result = spawnPnpm(args);
+// The package manager this process was started by, run on this process's Node. Its command shim
+// starts the machine's default Node whatever the search path says, which on a row for another Node
+// line would install and build on the wrong one.
+const pnpmEntry = process.env.npm_execpath;
+assert.ok(
+  pnpmEntry !== undefined && pnpmEntry !== '',
+  'npm_execpath is not set, so there is no package manager to run the consumer with. Start this through "pnpm run", as the gate does.',
+);
+
+const spawnPnpm = (args, env = {}) =>
+  spawnSync(process.execPath, [pnpmEntry, ...args], {
+    cwd: consumerRoot,
+    encoding: 'utf8',
+    env: { ...process.env, CI: 'true', ...env },
+  });
+
+const run = (args, expectedStatus = 0, env = {}) => {
+  const result = spawnPnpm(args, env);
 
   assert.equal(
     result.status,
@@ -165,7 +189,24 @@ const verifyWatchCommand = async () => {
   assert.match(stdout, /Equator watch cycle 2:/u, stderr);
 };
 
+// The consumer names the package manager it is installed with, and it is the one this process was
+// started by, so the install is the one the lock was written for.
+assert.equal(
+  `pnpm@${run(['--version']).stdout.trim()}`,
+  (await readJson(resolve(consumerRoot, 'package.json'))).packageManager,
+  'The consumer is installed with a package manager other than the one it names.',
+);
+
 run(['install', '--offline', '--frozen-lockfile']);
+
+// The Node the consumer's own tools start on, asked of the consumer. A row whose tools ran on
+// another Node would otherwise pass and leave only its claims to say so.
+assert.equal(
+  run(['exec', 'node', '--eval', 'process.stdout.write(process.versions.node)'])
+    .stdout,
+  consumerProfile.node ?? process.versions.node,
+  "The consumer's tools start on a Node other than the one this row runs on.",
+);
 
 const help = run(['run', 'equator:help']);
 assert.match(
@@ -732,7 +773,23 @@ ${negativeOutput}`,
 // the terminal was told to draw. Both lines are matched loosely because a skipped file or case puts
 // `| n skipped` between the count and the total: a spec written for an address only some URL
 // policies have is skipped under the others, and is still collected.
-const tested = run(['test']);
+// Node 25 turned on its own Web Storage, and without a storage file its `localStorage` is
+// undefined. Vitest 4 keeps a global Node already defines instead of taking jsdom's, so the specs
+// would read Node's rather than the browser's jsdom stands in for. Vitest 5 takes jsdom's
+// (vitest-dev/vitest#10293), and Angular 22's test builder accepts Vitest 4 only. So the specs'
+// process turns Node's off where Node has it. The server bundle keeps it, as a server on that Node
+// does.
+const tested = run(
+  ['test'],
+  0,
+  'localStorage' in globalThis
+    ? {
+        NODE_OPTIONS: [process.env.NODE_OPTIONS, '--no-experimental-webstorage']
+          .filter(Boolean)
+          .join(' '),
+      }
+    : {},
+);
 const testedOutput = `${tested.stdout}\n${tested.stderr}`.replaceAll(
   /\u001B\[[0-9;]*m/gu,
   '',
