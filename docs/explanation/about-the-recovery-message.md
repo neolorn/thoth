@@ -36,6 +36,10 @@ The alternative to a default is a build that stops. The omission is reported at 
 the runtime is in. `retry()` makes another attempt rather than reloading, so application state
 survives it: a visitor who has filled in a form does not lose it to a failed catalog fetch.
 
+That holds in a browser that fetches a module again after a failed fetch, which is what the HTML
+standard asks of it. A browser that remembers the failure answers the retry with it, with the
+reason `module-load-failed`, and in that page a reload is what brings the catalog back.
+
 A failure carries a reason from a closed set rather than a sentence, so counting them is a matter of
 grouping on a value, which is
 [About diagnostics and runtime outcomes](about-diagnostics.md).

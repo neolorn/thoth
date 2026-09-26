@@ -47,13 +47,28 @@ control's wording. `lifecycle()` reports which state the runtime is in. Render t
 second reports failed.
 
 `retry()` makes another attempt rather than reloading, so application state survives it. Put it
-behind the button on your failure screen.
+behind the button on your failure screen. With `provideLocalizedRouter`, the address the reader
+asked for stays in the address bar while the failure is on screen, and a retry that succeeds
+completes the navigation to it.
 
 `<localization-recovery />` does all of that: it renders the message in a live region with the
 message's own language and direction, and the button with the retry label's. Its `retryLabel` input
 takes a plain string, for an application with no handle to give, and a handle passed to
 `withRecoveryMessage` wins over it. A string is in whichever language the call site was typed in,
 inside a region already marked as the reader's, so prefer the handle.
+
+Where a failed attempt leads is yours to decide. The HTML standard has a browser forget a module it
+failed to fetch, so the next attempt fetches it again. A browser that still remembers the failure
+answers every later attempt with it and sends no request, and in that page the catalog cannot be
+reached again. The failure's `reason` is then `module-load-failed`, and reloading the page is the way
+back. `<localization-recovery />` hands you the diagnostic of an attempt that failed through its
+`retryFailed` output.
+
+Render the rest of the template only while `snapshot()` has a value. With no catalog loaded, reading
+any other message throws, and a template that reads one fails to render, recovery region included.
+`lifecycle()` is not the condition to use, because a retry leaves `failed` as it starts, before
+anything has loaded. Place `<localization-recovery />` outside that condition and everything
+localized inside it.
 
 ## Count the failures
 
