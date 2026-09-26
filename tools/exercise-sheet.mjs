@@ -119,6 +119,60 @@ export function claimExercisedPipes(check, sheet, expected, context) {
   }
 }
 
+/**
+ * A field kind's two lines: the text its value is written as, held to the host's, and what reading
+ * that text back gives, which must be the value the field was given.
+ */
+function holdsField(sheet, expected, value, written, read) {
+  holds(sheet, expected, written);
+  assert.ok(sheet.lines.has(read), `The exercise sheet has no ${read} line`);
+  assert.deepEqual(
+    JSON.parse(sheet.lines.get(read)),
+    value,
+    `The exercise sheet's ${read} line is not the value its field was given`,
+  );
+}
+
+/** Every field kind, held and claimed. */
+export function claimExercisedControls(
+  check,
+  sheet,
+  expected,
+  controls,
+  context,
+) {
+  const field = (kind) =>
+    holdsField(
+      sheet,
+      expected,
+      controls[kind].value,
+      `formatLocalizedInput:${kind}`,
+      `parseLocalizedInput:${kind}`,
+    );
+  field('decimal');
+  recordCapabilityClaim(check, 'control:decimal', context);
+  field('money');
+  recordCapabilityClaim(check, 'control:money', context);
+  field('measurement');
+  recordCapabilityClaim(check, 'control:measurement', context);
+  field('percent');
+  recordCapabilityClaim(check, 'control:percent', context);
+  field('percentage-points');
+  recordCapabilityClaim(check, 'control:percentage-points', context);
+  field('plain-date');
+  recordCapabilityClaim(check, 'control:plain-date', context);
+  field('plain-time');
+  recordCapabilityClaim(check, 'control:plain-time', context);
+  field('plain-date-time');
+  recordCapabilityClaim(check, 'control:plain-date-time', context);
+  field('time-zone');
+  recordCapabilityClaim(check, 'control:time-zone', context);
+  field('duration');
+  recordCapabilityClaim(check, 'control:duration', context);
+  field('instant');
+  recordCapabilityClaim(check, 'control:instant', context);
+}
+
 /** Every formatting function, held and claimed, durations as above. */
 export function claimExercisedFormats(check, sheet, expected, context) {
   holds(sheet, expected, 'formatNumber');

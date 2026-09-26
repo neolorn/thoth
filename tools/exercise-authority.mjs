@@ -13,7 +13,10 @@
  * - a person's name, which `Intl` has no formatter for, written by hand from the pinned CLDR
  *   release with the pattern quoted beside it;
  * - which unit a relative time is counted in, which is a rule of Equator's policy rather than of
- *   any locale, worked out by hand from that rule below.
+ *   any locale, worked out by hand from that rule below;
+ * - how a field writes a date, a time, a duration or a zone, which is the pattern its profile
+ *   declares, filled with the digits the host writes, and how it writes an instant, which is
+ *   RFC 3339.
  *
  * It reads nothing outside its argument, so a browser row can hand this function to the engine and
  * compare the page with that engine's own formatters, and the consumer stage can run it on the
@@ -137,7 +140,100 @@ export function exerciseAuthority({ inputs, locale, catalog }) {
     'ar-EG': 'محمد المصري',
   };
 
-  const localizedInput = inputs.localizedInput;
+  // A field writes a number the way the formatters do, without grouping unless its profile allows
+  // it, and a date, a time or a duration field by field in the order and with the separators its
+  // profile declares.
+  const digits = (value, minimumIntegerDigits) =>
+    number({ useGrouping: false, minimumIntegerDigits }, value);
+  const dateText = (pattern, value) =>
+    pattern.order
+      .split('-')
+      .map((field) => digits(value[field], field === 'year' ? 4 : 2))
+      .join(pattern.separator);
+  const timeText = (pattern, { hour, minute, second }) => {
+    // UTS #35's hour cycles: h11 counts 0 to 11, h12 1 to 12, h23 0 to 23 and h24 1 to 24.
+    const shown = {
+      h11: hour % 12,
+      h12: hour % 12 || 12,
+      h23: hour,
+      h24: hour || 24,
+    }[pattern.hourCycle];
+    const fields = [digits(shown, 2), digits(minute, 2)];
+    if (pattern.precision !== 'minute') fields.push(digits(second, 2));
+    const text = fields.join(pattern.separator);
+    const period = pattern.dayPeriod;
+    if (period === undefined || !['h11', 'h12'].includes(pattern.hourCycle)) {
+      return text;
+    }
+    const marker = hour < 12 ? period.am : period.pm;
+    return period.position === 'prefix'
+      ? `${marker}${period.separator ?? ''}${text}`
+      : `${text}${period.separator ?? ''}${marker}`;
+  };
+  const fieldText = ({ profile, value }) => {
+    switch (value.kind) {
+      case 'decimal':
+        return number(
+          {
+            useGrouping: false,
+            maximumFractionDigits: profile.maximumFractionDigits,
+          },
+          value.value,
+        );
+      case 'money':
+        return number(
+          { style: 'currency', currency: value.currency, useGrouping: false },
+          value.amount.value,
+        );
+      case 'measurement':
+        return number(
+          { style: 'unit', unit: value.unit, useGrouping: false },
+          value.amount.value,
+        );
+      case 'percent':
+        return number(
+          { style: 'percent', useGrouping: false },
+          value.scale === 'fractional'
+            ? Number(value.amount.value)
+            : Number(value.amount.value) / 100,
+        );
+      case 'percentage-points':
+        return number({ useGrouping: false }, value.amount.value);
+      case 'plain-date':
+        return dateText(profile, value);
+      case 'plain-time':
+        return timeText(profile, value);
+      case 'plain-date-time':
+        return [
+          dateText(profile.date, value.date),
+          timeText(profile.time, value.time),
+        ].join(profile.separator);
+      case 'time-zone':
+        return profile.options.find(({ timeZone }) => timeZone === value.id)
+          .labels[0];
+      case 'duration':
+        return profile.pattern
+          .map((token) =>
+            typeof token === 'string'
+              ? token
+              : digits(
+                  token.field === 'seconds'
+                    ? value.seconds.value
+                    : value[token.field],
+                  token.minimumIntegerDigits ?? 1,
+                ),
+          )
+          .join('');
+      case 'instant':
+        // Whole seconds in UTC, with no fraction when there is none to write.
+        return new Date(Number(BigInt(value.epochNanoseconds) / 1_000_000n))
+          .toISOString()
+          .replace('.000Z', 'Z');
+      default:
+        throw new Error(`No field text is written for ${value.kind}`);
+    }
+  };
+  const moneyField = inputs.controls.money;
 
   return {
     localize: catalog[inputs.message],
@@ -207,15 +303,13 @@ export function exerciseAuthority({ inputs, locale, catalog }) {
       .map(({ segment }) => segment)
       .join('|'),
     formatPersonName: personNames[locale],
-    // An input field writes its number without grouping unless its profile allows it.
-    formatLocalizedInput: number(
-      {
-        style: 'currency',
-        currency: localizedInput.profile.currency,
-        useGrouping: false,
-      },
-      localizedInput.amount,
+    formatLocalizedInput: fieldText(moneyField),
+    parseLocalizedInput: `${moneyField.value.amount.value} ${moneyField.value.currency}`,
+    ...Object.fromEntries(
+      Object.entries(inputs.controls).map(([kind, field]) => [
+        `formatLocalizedInput:${kind}`,
+        fieldText(field),
+      ]),
     ),
-    parseLocalizedInput: `${localizedInput.amount} ${localizedInput.profile.currency}`,
   };
 }

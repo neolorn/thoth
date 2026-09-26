@@ -17,6 +17,7 @@ import {
   readConsumerBuilds,
 } from './consumer-addresses.mjs';
 import {
+  claimExercisedControls,
   claimExercisedFormats,
   claimExercisedPipes,
   exerciseAuthority,
@@ -2898,6 +2899,14 @@ async function verifyExerciseSheets(row, context, diagnostics) {
     });
     claimExercisedPipes(check, sheet, expected, observed);
     claimExercisedFormats(check, sheet, expected, observed);
+    claimExercisedControls(
+      check,
+      sheet,
+      expected,
+      exerciseInputs.controls,
+      observed,
+    );
+    await verifyTypedFields(page, check, expected, observed);
   };
 
   for (const locale of builtLocales) {
@@ -2954,6 +2963,83 @@ async function verifyExerciseSheets(row, context, diagnostics) {
       );
     });
   }
+}
+
+/**
+ * Every field kind as a reader meets it in this engine: the field shows its value as the engine's
+ * own formatters write it, refuses an empty entry, and reads that text back as the value.
+ *
+ * Each step waits on what the field itself reports it read, which the sheet shows, rather than on
+ * the form's next render.
+ */
+async function verifyTypedFields(page, check, expected, observed) {
+  const readBy = async (kind, status) => {
+    const line = `[data-field-read="${kind}"]`;
+    await page
+      .waitForFunction(
+        ({ line, status }) =>
+          JSON.parse(document.querySelector(line)?.textContent ?? 'null')
+            ?.status === status,
+        { line, status },
+        { timeout: 5_000 },
+      )
+      .catch(() => undefined);
+    return JSON.parse((await page.locator(line).textContent()) ?? 'null');
+  };
+  const typed = async (kind) => {
+    const field = page.locator(`[data-field="${kind}"]`);
+    const text = expected[`formatLocalizedInput:${kind}`];
+    // The field is written once the client has its value, which can land after the sheet is
+    // drawn. A field that never shows the text is reported with what it does show.
+    await page
+      .waitForFunction(
+        ({ selector, text }) =>
+          document.querySelector(selector)?.value === text,
+        { selector: `[data-field="${kind}"]`, text },
+        { timeout: 5_000 },
+      )
+      .catch(() => undefined);
+    assert.equal(
+      await field.inputValue(),
+      text,
+      `The LocalizedInput field for ${kind} does not show its value as this engine writes it`,
+    );
+    await field.fill('');
+    assert.notEqual(
+      (await readBy(kind, 'incomplete'))?.status,
+      'valid',
+      `The LocalizedInput field for ${kind} read an empty entry as a value`,
+    );
+    await field.fill(text);
+    assert.deepEqual(
+      await readBy(kind, 'valid'),
+      { status: 'valid', value: exerciseInputs.controls[kind].value },
+      `The LocalizedInput field for ${kind} did not read ${JSON.stringify(text)} as its value`,
+    );
+  };
+  await typed('decimal');
+  recordCapabilityClaim(check, 'control:decimal', observed);
+  await typed('money');
+  recordCapabilityClaim(check, 'control:money', observed);
+  await typed('measurement');
+  recordCapabilityClaim(check, 'control:measurement', observed);
+  await typed('percent');
+  recordCapabilityClaim(check, 'control:percent', observed);
+  await typed('percentage-points');
+  recordCapabilityClaim(check, 'control:percentage-points', observed);
+  await typed('plain-date');
+  recordCapabilityClaim(check, 'control:plain-date', observed);
+  await typed('plain-time');
+  recordCapabilityClaim(check, 'control:plain-time', observed);
+  await typed('plain-date-time');
+  recordCapabilityClaim(check, 'control:plain-date-time', observed);
+  await typed('time-zone');
+  recordCapabilityClaim(check, 'control:time-zone', observed);
+  await typed('duration');
+  recordCapabilityClaim(check, 'control:duration', observed);
+  await typed('instant');
+  recordCapabilityClaim(check, 'control:instant', observed);
+  recordCapabilityClaim(check, 'directive:LocalizedInput', observed);
 }
 
 async function verifyRenderingModes(row, context, diagnostics) {

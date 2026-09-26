@@ -4,7 +4,9 @@ import {
   afterNextRender,
   computed,
   inject,
+  viewChildren,
 } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import {
   LOCALE_URL_POLICY,
@@ -55,14 +57,20 @@ import {
   resolveRelativeTime,
   segmentText,
   selectPlural,
+  timeZone,
   zonedDateTime,
   type FormattingContext,
   type FormattingResult,
+  type LocalizedInputProfile,
+  type LocalizedInputValue,
   type LocalizedMoneyInputProfile,
   type PercentScale,
   type PersonNameFieldKey,
+  type PlainDateValue,
+  type PlainTimeValue,
   type RelativeTimePolicy,
 } from '@neolorn/equator';
+import { LocalizedInput } from '@neolorn/equator/forms';
 import { messages } from '#i18n/shell';
 import { personNames } from '#i18n/person-names';
 
@@ -136,7 +144,81 @@ const options = Object.freeze({
   segmentation: inputs.segmentation.options as Intl.SegmenterOptions,
 });
 
-const moneyInput = inputs.localizedInput.profile as LocalizedMoneyInputProfile;
+/** A field's value as the inputs write it, which is the shape the runtime's own values take. */
+interface WrittenValue {
+  readonly kind: string;
+  // The fields differ by kind, and each case below reads its own kind's.
+  readonly [field: string]: any;
+}
+
+/** A field's value, made the way an application makes one, from what the inputs write. */
+function made(
+  written: WrittenValue,
+): LocalizedInputValue<LocalizedInputProfile> {
+  switch (written.kind) {
+    case 'decimal':
+      return decimal(written['value']);
+    case 'money':
+      return money(decimal(written['amount'].value), written['currency']);
+    case 'measurement':
+      return measurement(decimal(written['amount'].value), written['unit']);
+    case 'percent':
+      return percent(decimal(written['amount'].value), written['scale']);
+    case 'percentage-points':
+      return percentagePoints(decimal(written['amount'].value));
+    case 'plain-date':
+      return plainDate(
+        written['year'],
+        written['month'],
+        written['day'],
+        written['calendar'],
+      );
+    case 'plain-time':
+      return plainTime(
+        written['hour'],
+        written['minute'],
+        written['second'],
+        written['nanosecond'],
+      );
+    case 'plain-date-time':
+      return plainDateTime(
+        made(written['date']) as PlainDateValue,
+        made(written['time']) as PlainTimeValue,
+      );
+    case 'time-zone':
+      return timeZone(written['id']);
+    case 'duration':
+      return duration(
+        {
+          years: written['years'],
+          months: written['months'],
+          weeks: written['weeks'],
+          days: written['days'],
+          hours: written['hours'],
+          minutes: written['minutes'],
+          seconds: decimal(written['seconds'].value),
+        },
+        written['sign'],
+      );
+    case 'instant':
+      return instant(written['epochNanoseconds']);
+    default:
+      throw new Error(
+        `The exercise inputs give a field of a kind the sheet cannot make: ${written.kind}`,
+      );
+  }
+}
+
+/** One field of every kind the runtime reads, each with the value the inputs give it. */
+const fields = Object.entries(inputs.controls).map(
+  ([kind, { profile, value }]) => ({
+    kind,
+    profile: profile as LocalizedInputProfile,
+    value: made(value),
+  }),
+);
+
+const moneyInput = inputs.controls.money.profile as LocalizedMoneyInputProfile;
 
 /** What a failed call puts on the sheet: its code, which the checks can name. */
 const written = (result: FormattingResult): string =>
@@ -157,7 +239,10 @@ function formattedLines(
   >;
   const name = names[context.locale];
   const input = formatLocalizedInput(
-    money(decimal(inputs.localizedInput.amount), moneyInput.currency),
+    money(
+      decimal(inputs.controls.money.value.amount.value),
+      moneyInput.currency,
+    ),
     moneyInput,
     context,
   );
@@ -344,6 +429,32 @@ function formattedLines(
   ];
 }
 
+/**
+ * Each field kind's two lines: the text its value is written as, and what reading that text back
+ * gives, which is the value again.
+ */
+function fieldLines(
+  context: FormattingContext,
+): readonly { readonly id: string; readonly text: string }[] {
+  return fields.flatMap(({ kind, profile, value }) => {
+    const text = formatLocalizedInput(value, profile, context);
+    const read = parseLocalizedInput(
+      text.ok ? text.value.text : '',
+      profile,
+      context,
+    );
+    return [
+      { id: `formatLocalizedInput:${kind}`, text: written(text) },
+      {
+        id: `parseLocalizedInput:${kind}`,
+        text: JSON.stringify(
+          read.status === 'valid' ? read.value : { status: read.status },
+        ),
+      },
+    ];
+  });
+}
+
 /** The collation inputs in the order the locale sorts them, or the code of the first refusal. */
 function collated(context: FormattingContext): string {
   let refusal: string | undefined;
@@ -380,6 +491,8 @@ function collated(context: FormattingContext): string {
     LocalizedPlainDateTimePipe,
     LocalizedPlainTimePipe,
     LocalizedZonedDateTimePipe,
+    LocalizedInput,
+    ReactiveFormsModule,
   ],
   template: `
     <section
@@ -432,6 +545,17 @@ function collated(context: FormattingContext): string {
       @for (line of lines(); track line.id) {
         <p [attr.data-exercise]="line.id">{{ line.text }}</p>
       }
+      @for (field of fields; track field.kind) {
+        <label>
+          {{ field.kind }}
+          <input
+            [attr.data-field]="field.kind"
+            [formControl]="field.control"
+            [localizedInput]="field.profile"
+          />
+        </label>
+        <p [attr.data-field-read]="field.kind">{{ readBy($index) }}</p>
+      }
     </section>
   `,
 })
@@ -450,8 +574,31 @@ export class FeatureLabExerciseRoute {
   );
   protected readonly lines = computed(() => {
     const context = this.localization.snapshot()?.formatting;
-    return context === undefined ? [] : formattedLines(context);
+    return context === undefined
+      ? []
+      : [...formattedLines(context), ...fieldLines(context)];
   });
+  protected readonly fields = fields.map(({ kind, profile, value }) => ({
+    kind,
+    profile,
+    control: new FormControl(value, { nonNullable: true }),
+  }));
+  private readonly readers = viewChildren(LocalizedInput);
+
+  /**
+   * What a field last read from what was typed into it, as the field itself reports it, so a
+   * reader of the page can wait for the read rather than for the form's next render.
+   */
+  protected readBy(index: number): string {
+    const result = this.readers()[index]?.result();
+    return JSON.stringify(
+      result === undefined
+        ? null
+        : result.status === 'valid'
+          ? { status: result.status, value: result.value }
+          : { status: result.status },
+    );
+  }
 
   constructor() {
     // The application reports itself ready after its own first render, which can come before a

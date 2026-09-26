@@ -39,6 +39,7 @@ import {
   SITE_ORIGIN_DECLARATION,
 } from './consumer-addresses.mjs';
 import {
+  claimExercisedControls,
   claimExercisedFormats,
   claimExercisedPipes,
   exerciseAuthority,
@@ -1409,6 +1410,7 @@ async function verifyExerciseSheets() {
     const observed = { document, policy: sheet.policy };
     claimExercisedPipes(check, sheet, expected, observed);
     claimExercisedFormats(check, sheet, expected, observed);
+    claimExercisedControls(check, sheet, expected, inputs.controls, observed);
   };
 
   const served = INIT_REQUEST.locales.filter((locale) =>
