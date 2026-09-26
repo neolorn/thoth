@@ -157,8 +157,35 @@ const NUMERIC_MARKERS = [
   'data-plain-time',
   'data-plain-date-time',
   'data-zoned-date-time',
-  'data-duration',
 ] as const;
+
+/**
+ * Whether the host writes durations at all. Node 22 has no `Intl.DurationFormat`, and
+ * `specs/08-formatting-parsing-and-domain.spec.md` section 3 has a formatter return a typed
+ * unsupported result there rather than assemble the units itself. So on that host what is asserted
+ * is that result, and an empty element in place of the text.
+ */
+const HOST_WRITES_DURATIONS =
+  typeof (Intl as { readonly DurationFormat?: unknown }).DurationFormat ===
+  'function';
+
+function expectDuration(
+  fixture: { nativeElement: unknown },
+  localization: Localization,
+  written: (text: string) => void,
+): void {
+  if (HOST_WRITES_DURATIONS) {
+    written(textOf(fixture, 'data-duration'));
+    return;
+  }
+  expect(textOf(fixture, 'data-duration')).toBe('');
+  const result = localization.formatDuration(
+    duration({ hours: 2, minutes: 30 }),
+  );
+  expect(result.ok || result.diagnostic.code).toBe(
+    'unsupported-formatting-capability',
+  );
+}
 
 function setup(): Localization {
   events.length = 0;
@@ -211,7 +238,9 @@ describe('a formatting pipe for each canonical value kind', () => {
     expect(textOf(fixture, 'data-plain-date-time')).toContain('9:30');
     expect(textOf(fixture, 'data-instant')).toContain('Mar 14, 2026');
     expect(textOf(fixture, 'data-zoned-date-time')).toContain('Mar 14, 2026');
-    expect(textOf(fixture, 'data-duration')).toContain('30');
+    expectDuration(fixture, localization, (text) => {
+      expect(text).toContain('30');
+    });
   });
 
   it('rewrites every kind when the locale moves under it', async () => {
@@ -230,6 +259,10 @@ describe('a formatting pipe for each canonical value kind', () => {
       // line above by having something to match.
       expect(rendered, marker).not.toMatch(LATIN_DIGIT);
     }
+    expectDuration(fixture, localization, (text) => {
+      expect(text).toMatch(ARABIC_INDIC);
+      expect(text).not.toMatch(LATIN_DIGIT);
+    });
   });
 });
 

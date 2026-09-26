@@ -68,9 +68,11 @@ requested and cannot be produced, which no date-time option expresses below a mi
 millisecond an instant occupies is the one containing it, so an instant before the epoch is never
 displayed as later than it is.
 
-Localized output is identical across every runtime in the supported envelope. A release MUST
-format real content in each supported locale on each supported runtime and compare the results,
-because a browser and a server that render the same page must not produce different text.
+Localized output is identical across every runtime in the supported envelope, except where a
+supported runtime lacks a capability: that runtime returns the typed unsupported result above, and a
+release MUST name the capability and the runtime in its documentation. A release MUST format real
+content in each supported locale on each supported runtime and compare the results, because a
+browser and a server that render the same page must not produce different text.
 
 A release MUST use one immutable formatting snapshot across server rendering, hydration, and
 browser evaluation, so hydrated output matches the server exactly, and MUST take an explicit
