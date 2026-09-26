@@ -1,19 +1,26 @@
 /**
- * The tags of the two pseudo-locales, and the regions that identify a pseudo-locale.
+ * The tags of the two pseudo-locales, and what a pseudo-locale's region says about it.
  *
- * The toolkit refuses a pseudo-locale tag without one of these regions, and the runtime refuses a
- * generated list that names a locale without one. Neither package can import from the other, so
+ * The toolkit refuses a pseudo-locale whose region claims something the locale is not, and the
+ * runtime refuses a generated list that names one. Neither package can import from the other, so
  * this file is duplicated byte for byte and `packages/runtime/test/message-function-options.test.ts`
  * compares the copies. The toolkit exports the two constants; the runtime's copy stays internal.
+ *
+ * UTS #35 Part 1, in LDML 48.2's table of `unicode_region_subtag` codes, defines two regions for
+ * pseudo-locales: `XA`, Pseudo-Accents, a "derived testing locale with English + added accents and
+ * lengthened", and `XB`, Pseudo-Bidi, a "derived testing locale with forced RTL English". Its table
+ * of private use codes lists `XC` to `XJ` and `XL` to `XZ` as excluded: CLDR will never give them a
+ * meaning, so an application can. Every pseudo-locale Equator derives is accented, so a region
+ * states the rest: `XA` for English lengthened left to right, `XB` for English right to left, and an
+ * excluded code for anything else.
  */
 
 /**
  * The expanded pseudo-locale: Latin script, left-to-right, modelling a language longer than English.
  *
- * `XA` is a user-assigned ISO 3166-1 region code, permanently unassigned to any country, so it
- * cannot collide with a real locale now or later. It is also the established pseudo-locale
- * convention, Chrome and Android use `en-XA` for exactly this, so a developer who sees it in a
- * locale switcher recognises what it is.
+ * `XA` is what UTS #35 names English with accents, lengthened, and it is the established convention,
+ * Chrome and Android use `en-XA` for exactly this, so a developer who sees it in a locale switcher
+ * recognises what it is. A configuration that declares it gives it a positive `lengthFactor`.
  *
  * The script subtag is written out rather than left to be inferred, because the script is what
  * carries direction and pseudo-localization rests on direction being a property of the tag.
@@ -25,6 +32,9 @@ export const PSEUDO_LOCALE_EXPANDED = 'en-Latn-XA';
 /**
  * The contracted pseudo-locale: Arabic script, right-to-left, modelling a language shorter than
  * English, which Arabic is, and which is the case that finds containers sized to English copy.
+ *
+ * `XB` is what UTS #35 names English forced right to left, and says nothing about length, so the
+ * contraction is this locale's own.
  *
  * **The base language is `en`, deliberately, and this is the part worth not changing.** A developer
  * reading their own screens must still be able to read them; the point is to see *their* layout
@@ -48,9 +58,43 @@ export const PSEUDO_LOCALE_EXPANDED = 'en-Latn-XA';
  */
 export const PSEUDO_LOCALE_CONTRACTED = 'en-Arab-XB';
 
-/** The regions a pseudo-locale is identified by: the two the constants above carry. */
-export const PSEUDO_LOCALE_REGIONS: readonly string[] = Object.freeze(
-  [PSEUDO_LOCALE_EXPANDED, PSEUDO_LOCALE_CONTRACTED].map(
-    (tag) => new Intl.Locale(tag).region ?? tag,
-  ),
-);
+/** What a pseudo-locale is, as far as its region can speak for it. */
+export interface PseudoLocaleFacts {
+  readonly language: string;
+  readonly region: string | undefined;
+  readonly direction: 'ltr' | 'rtl';
+  /** Whether its text is lengthened, where the reader knows; the runtime does not. */
+  readonly lengthened?: boolean;
+}
+
+/** The sentence every refusal ends with, naming what each region is for. */
+const REGION_RULE =
+  'A pseudo-locale takes XA when it is English lengthened left to right, as PSEUDO_LOCALE_EXPANDED is, XB when it is English right to left, as PSEUDO_LOCALE_CONTRACTED is, and otherwise one of XC to XJ or XL to XZ, which UTS #35 leaves free.';
+
+/** What the region claims that the locale is not, or nothing where the claim holds. */
+export function pseudoLocaleRegionProblem(
+  facts: PseudoLocaleFacts,
+): string | undefined {
+  const { language, region, direction, lengthened } = facts;
+  if (region !== undefined && /^X[C-JL-Z]$/u.test(region)) return undefined;
+  if (region !== 'XA' && region !== 'XB') {
+    return `${region === undefined ? 'has no region' : `has the region ${region}`}. ${REGION_RULE}`;
+  }
+  const claims =
+    region === 'XA'
+      ? 'XA, which UTS #35 gives to English lengthened left to right'
+      : 'XB, which UTS #35 gives to English right to left';
+  if (language !== 'en') {
+    return `carries ${claims}, and it is in ${language}. ${REGION_RULE}`;
+  }
+  if (region === 'XA' && direction !== 'ltr') {
+    return `carries ${claims}, and its script is written right to left. ${REGION_RULE}`;
+  }
+  if (region === 'XB' && direction !== 'rtl') {
+    return `carries ${claims}, and its script is written left to right. ${REGION_RULE}`;
+  }
+  if (region === 'XA' && lengthened === false) {
+    return `carries ${claims}, and its lengthFactor does not lengthen it. ${REGION_RULE}`;
+  }
+  return undefined;
+}

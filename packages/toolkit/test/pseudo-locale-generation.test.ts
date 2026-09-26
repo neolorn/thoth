@@ -35,6 +35,7 @@ import {
   PSEUDO_LOCALE_EXPANDED,
   generateProject,
   parseConfiguration,
+  type PseudoLocaleTransform,
 } from '../src/index.js';
 import { initializeProject } from '../src/project-host.js';
 
@@ -371,14 +372,18 @@ describe('pseudo-locales are generated rather than authored', () => {
    * `specs/10-compiler-and-tooling.spec.md` section 16. Each case is refused for one reason, and
    * the accepted tag in the case above is the control for all three.
    */
-  const pseudoLocaleRefusal = (tag: string) => {
+  const pseudoLocaleRefusal = (
+    tag: string,
+    transform: PseudoLocaleTransform = { lengthFactor: 0.4 },
+    sourceLocale = 'en-US',
+  ) => {
     const parsed = parseConfiguration(
       JSON.stringify({
         schemaVersion: 1,
-        sourceLocale: 'en-US',
-        defaultLocale: 'en-US',
-        locales: ['en-US'],
-        pseudoLocales: { [tag]: { lengthFactor: 0.4 } },
+        sourceLocale,
+        defaultLocale: sourceLocale,
+        locales: [sourceLocale],
+        pseudoLocales: { [tag]: transform },
       }),
     );
     return parsed.diagnostics
@@ -398,11 +403,69 @@ describe('pseudo-locales are generated rather than authored', () => {
 
   it('refuses a pseudo-locale tag whose region is a real one', () => {
     // `GB` is a country, so this tag reads as British English to everything outside the build.
-    const [refusal, ...rest] = pseudoLocaleRefusal('en-Latn-GB');
+    // `XK` is private use and still has a meaning: CLDR gives it to Kosovo.
+    for (const tag of ['en-Latn-GB', 'en-Latn-XK']) {
+      const [refusal, ...rest] = pseudoLocaleRefusal(tag);
+      expect(rest).toEqual([]);
+      expect(refusal?.path).toEqual(['pseudoLocales', tag]);
+      expect(refusal?.summary).toContain('XC to XJ or XL to XZ');
+      expect(refusal?.summary).toContain('PSEUDO_LOCALE_EXPANDED');
+    }
+    claimCapability('capability:pseudo-locale');
+  });
+
+  it('refuses XB on a script written left to right', () => {
+    // UTS #35 gives XB to English forced right to left, so this tag claims a direction it lacks.
+    const [refusal, ...rest] = pseudoLocaleRefusal('en-Latn-XB');
     expect(rest).toEqual([]);
-    expect(refusal?.path).toEqual(['pseudoLocales', 'en-Latn-GB']);
-    expect(refusal?.summary).toContain('XA or XB');
-    expect(refusal?.summary).toContain('PSEUDO_LOCALE_EXPANDED');
+    expect(refusal?.path).toEqual(['pseudoLocales', 'en-Latn-XB']);
+    expect(refusal?.summary).toMatch(/its script is written left to right/u);
+    claimCapability('capability:pseudo-locale');
+  });
+
+  it('refuses XA on a script written right to left', () => {
+    const [refusal, ...rest] = pseudoLocaleRefusal('en-Arab-XA');
+    expect(rest).toEqual([]);
+    expect(refusal?.path).toEqual(['pseudoLocales', 'en-Arab-XA']);
+    expect(refusal?.summary).toMatch(/its script is written right to left/u);
+    claimCapability('capability:pseudo-locale');
+  });
+
+  it('refuses XA where the text is not lengthened', () => {
+    for (const transform of [{ markers: true }, { lengthFactor: -0.4 }]) {
+      const [refusal, ...rest] = pseudoLocaleRefusal(
+        PSEUDO_LOCALE_EXPANDED,
+        transform,
+      );
+      expect(rest).toEqual([]);
+      expect(refusal?.summary).toMatch(/lengthFactor does not lengthen it/u);
+    }
+    claimCapability('capability:pseudo-locale');
+  });
+
+  it('refuses XA and XB where the source is not English', () => {
+    // Both are defined as English, so a German pseudo-locale takes a region that claims nothing.
+    for (const tag of ['de-Latn-XA', 'de-Arab-XB']) {
+      const [refusal, ...rest] = pseudoLocaleRefusal(
+        tag,
+        { lengthFactor: 0.4 },
+        'de-DE',
+      );
+      expect(rest).toEqual([]);
+      expect(refusal?.summary).toMatch(/and it is in de\./u);
+    }
+    claimCapability('capability:pseudo-locale');
+  });
+
+  it('accepts any other combination under a region UTS #35 leaves free', () => {
+    for (const [tag, transform, sourceLocale] of [
+      ['en-Latn-XC', { lengthFactor: -0.4 }, 'en-US'],
+      ['en-Latn-XZ', { markers: true }, 'en-US'],
+      ['de-Latn-XJ', { lengthFactor: 0.4 }, 'de-DE'],
+      ['de-Arab-XL', { lengthFactor: -0.4 }, 'de-DE'],
+    ] as const) {
+      expect(pseudoLocaleRefusal(tag, transform, sourceLocale)).toEqual([]);
+    }
     claimCapability('capability:pseudo-locale');
   });
 

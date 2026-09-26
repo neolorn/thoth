@@ -102,7 +102,7 @@ describe('a project declares which locales are still being translated', () => {
         sourceLocale: 'en-US',
         defaultLocale: 'en-US',
         locales: ['en-US', 'ar-EG'],
-        pseudoLocales: { 'en-Latn-XA': { markers: true } },
+        pseudoLocales: { 'en-Latn-XA': { lengthFactor: 0.4, markers: true } },
         inProgress: { 'en-Latn-XA': { note: 'Later.' } },
       }),
     );

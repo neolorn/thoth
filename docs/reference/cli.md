@@ -38,7 +38,7 @@ Init options:
   --person-name-locale <locale>   (repeatable)
       Locales a person name may be written in, beyond the ones this project is translated into.
   --pseudo-locale <locale>[.<option>=<value>]   (repeatable)
-      Generated only by --pseudo, each in the source language with a script and the region XA or XB.
+      Generated only by --pseudo, in the source language, with a script and a pseudo-locale region.
       lengthFactor (number)
         Signed length change. Positive expands, negative elides vowels; absent leaves length alone.
       markers (boolean)

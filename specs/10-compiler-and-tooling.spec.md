@@ -463,10 +463,17 @@ release MUST NOT ship a default length factor, because a generic figure is a num
 measured.
 
 A pseudo-locale is identified by a tag whose script subtag carries its direction and whose region
-subtag is one of the permanently unassigned user-assigned codes, exported as a named constant so a
-consumer application never types one. A release MUST keep the base language that of the
-source catalog, because the point is for a developer to see their own screens transformed, and a
-pseudo-locale in another language tests translation coverage instead.
+subtag claims nothing the locale is not. UTS #35 Part 1 defines two region codes for pseudo-locales:
+`XA`, English with added accents and lengthened, and `XB`, English forced right to left. It leaves
+`XC` to `XJ` and `XL` to `XZ` without a meaning, for applications to use. Every pseudo-locale a
+release derives is accented, so a release MUST accept `XA` only on an English pseudo-locale whose
+script is written left to right and whose length factor is positive, MUST accept `XB` only on an
+English pseudo-locale whose script is written right to left, and MUST take any other pseudo-locale
+under one of the codes UTS #35 leaves free. The two defined combinations are exported as named
+constants so a consumer application never types one. A release MUST keep the base language that of
+the source catalog, because the point is for a developer to see their own screens transformed, and a
+pseudo-locale in another language tests translation coverage instead. A project whose source
+language is not English therefore takes a free code for every pseudo-locale.
 
 A release MUST NOT introduce a private-use subtag for this. A catalog locale identity may not carry
 an extension or a private-use subtag, because a subtag with no application semantics would let two
@@ -484,7 +491,10 @@ it in the runtime and MUST NOT ship it from a runtime entry point, so excluding 
 a production build is an absence rather than a guard. A derived catalog is otherwise
 indistinguishable from a translation, with the same provider, the same scope and the same compiled
 contract, so server rendering, lazy scopes and locale switching work on it without knowing the
-concept exists. The generated configuration lists the pseudo-locales a build generated, and the list
+concept exists. The generated configuration lists the pseudo-locales a build generated, and a
+runtime MUST refuse a list that names a locale the build does not have, names one twice, names one
+without a script, or names one whose region claims a language or a direction it does not have; the
+length factor is not in the generated configuration, so only the toolkit holds `XA` to it. The list
 has one use: under section 9 of `07-routing-rendering-and-seo.spec.md`, an address whose only other
 locales are pseudo-locales is rendered on request instead of failing the build.
 

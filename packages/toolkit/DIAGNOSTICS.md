@@ -46,7 +46,7 @@ A declared parent locale cannot be inherited from: it is the locale itself, or t
 
 ### EQ1008
 
-A pseudo-locale tag is well formed and cannot identify a pseudo-locale: it names no script, its region is neither XA nor XB, the regions of `PSEUDO_LOCALE_EXPANDED` and `PSEUDO_LOCALE_CONTRACTED`, or its language is not the source locale's.
+A pseudo-locale tag is well formed and cannot identify a pseudo-locale: it names no script, its language is not the source locale's, or its region claims what the locale is not. XA is English lengthened left to right, as `PSEUDO_LOCALE_EXPANDED` is, XB is English right to left, as `PSEUDO_LOCALE_CONTRACTED` is, and any other pseudo-locale takes one of XC to XJ or XL to XZ, which UTS #35 leaves free.
 
 ## The catalog file
 

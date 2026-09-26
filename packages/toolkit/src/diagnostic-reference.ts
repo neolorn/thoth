@@ -57,7 +57,7 @@ const REFERENCE = {
   EQ1007:
     'A declared parent locale cannot be inherited from: it is the locale itself, or the chain it starts comes back to a locale already in that chain.',
   EQ1008:
-    "A pseudo-locale tag is well formed and cannot identify a pseudo-locale: it names no script, its region is neither XA nor XB, the regions of `PSEUDO_LOCALE_EXPANDED` and `PSEUDO_LOCALE_CONTRACTED`, or its language is not the source locale's.",
+    "A pseudo-locale tag is well formed and cannot identify a pseudo-locale: it names no script, its language is not the source locale's, or its region claims what the locale is not. XA is English lengthened left to right, as `PSEUDO_LOCALE_EXPANDED` is, XB is English right to left, as `PSEUDO_LOCALE_CONTRACTED` is, and any other pseudo-locale takes one of XC to XJ or XL to XZ, which UTS #35 leaves free.",
   EQ1101:
     'A catalog file is not the YAML Equator accepts: invalid, oversized, or more than one document; anchors, aliases, merge keys, directives, non-string keys or non-Core scalars; a root that is not a mapping; malformed Unicode or unauthorized invisible and bidi controls; or the node, depth and message ceilings.',
   EQ1102:

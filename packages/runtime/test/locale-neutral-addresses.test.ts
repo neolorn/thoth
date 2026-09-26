@@ -436,6 +436,36 @@ describe('the pseudo-locales a generated configuration lists', () => {
     expect(await tableReading(edited)).toMatch(/pseudo-locales/u);
   });
 
+  it('refuses one whose region claims what it is not', async () => {
+    // XB is English right to left and XA English left to right, and each of these is the other.
+    for (const pseudo of ['en-Latn-XB', 'en-Arab-XA', 'de-Latn-XA']) {
+      const edited = configurationFor(
+        ['en-US', 'ar-EG', 'en-Arab-XB', pseudo],
+        ['en-Arab-XB', pseudo],
+      );
+      expect(runtimeReading(edited)).toMatch(/inconsistent/u);
+      expect(await tableReading(edited)).toMatch(/pseudo-locales/u);
+    }
+  });
+
+  it('refuses one that names no script, which no build writes', async () => {
+    const edited = configurationFor(
+      ['en-US', 'ar-EG', 'en-Arab-XB', 'en-XA'],
+      ['en-Arab-XB', 'en-XA'],
+    );
+    expect(runtimeReading(edited)).toMatch(/inconsistent/u);
+    expect(await tableReading(edited)).toMatch(/pseudo-locales/u);
+  });
+
+  it('accepts one under a region UTS #35 leaves free', async () => {
+    const locales = ['en-US', 'ar-EG', 'en-Arab-XB', 'en-Latn-XC'];
+    const listed = configurationFor(locales, ['en-Arab-XB', 'en-Latn-XC']);
+    expect(runtimeReading(listed)).toBe(
+      runtimeReading(configurationFor(locales)),
+    );
+    expect(await tableReading(listed)).toBe('accepted');
+  });
+
   it('refuses an empty list, which no build writes', async () => {
     const edited = configurationFor(['en-US', 'ar-EG'], []);
     expect(runtimeReading(edited)).toMatch(/inconsistent/u);

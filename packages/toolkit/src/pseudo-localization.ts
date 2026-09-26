@@ -24,33 +24,40 @@ import {
 import {
   PSEUDO_LOCALE_CONTRACTED,
   PSEUDO_LOCALE_EXPANDED,
-  PSEUDO_LOCALE_REGIONS,
+  pseudoLocaleRegionProblem,
 } from './pseudo-locale-tags.js';
+import { RTL_SCRIPTS } from './rtl-scripts.generated.js';
 
 /**
  * What stops a well-formed tag from identifying a pseudo-locale, or nothing when it does.
  *
  * `specs/10-compiler-and-tooling.spec.md` section 16: the script subtag carries the direction, so
- * it is written out; the region is one of the user-assigned codes the two constants carry, so a
- * pseudo-locale is never mistaken for a real one; and the language is the source catalog's, so a
- * developer reads their own screens transformed.
+ * it is written out; the language is the source catalog's, so a developer reads their own screens
+ * transformed; and the region claims nothing the locale is not, which needs the declared length
+ * because `XA` means lengthened.
  */
 export function pseudoLocaleTagProblem(
   tag: string,
   sourceLocale: string,
+  transform: PseudoLocaleTransform,
 ): string | undefined {
   const locale = new Intl.Locale(tag);
   if (locale.script === undefined) {
     return `Pseudo-locale ${JSON.stringify(tag)} names no script. A pseudo-locale carries its text direction in its own script subtag, as ${PSEUDO_LOCALE_EXPANDED} and ${PSEUDO_LOCALE_CONTRACTED} do.`;
   }
-  if (!PSEUDO_LOCALE_REGIONS.includes(locale.region ?? '')) {
-    return `Pseudo-locale ${JSON.stringify(tag)} ${locale.region === undefined ? 'has no region' : `has the region ${locale.region}`}. A pseudo-locale is identified by the region ${PSEUDO_LOCALE_REGIONS.join(' or ')}, the regions of PSEUDO_LOCALE_EXPANDED and PSEUDO_LOCALE_CONTRACTED.`;
-  }
   const source = new Intl.Locale(sourceLocale).language;
   if (locale.language !== source) {
     return `Pseudo-locale ${JSON.stringify(tag)} is in the language ${locale.language}, and the source locale is in ${source}. A pseudo-locale keeps the source language, so a developer reads their own screens transformed.`;
   }
-  return undefined;
+  const problem = pseudoLocaleRegionProblem({
+    language: locale.language,
+    region: locale.region,
+    direction: RTL_SCRIPTS.includes(locale.script) ? 'rtl' : 'ltr',
+    lengthened: (transform.lengthFactor ?? 0) > 0,
+  });
+  return problem === undefined
+    ? undefined
+    : `Pseudo-locale ${JSON.stringify(tag)} ${problem}`;
 }
 
 /**

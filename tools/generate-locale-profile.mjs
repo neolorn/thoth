@@ -828,6 +828,26 @@ const parentLocaleOutput = [
   '',
 ].join('\n');
 
+const toolkitRtlOutput = [
+  '/** Generated from cldr-core 48.2.0 by tools/generate-locale-profile.mjs. */',
+  '',
+  '/**',
+  " * Every script code written right to left: the list the runtime's `RTL_SCRIPTS` holds, generated",
+  ' * from the same CLDR release rather than imported, because the toolkit cannot import the runtime.',
+  ' *',
+  " * The toolkit reads it to check that a pseudo-locale's script agrees with what its region says",
+  ' * about direction.',
+  ' */',
+  '// prettier-ignore',
+  `export const RTL_SCRIPTS: readonly string[] = Object.freeze(${JSON.stringify(rtlScripts)});`,
+  '',
+].join('\n');
+
+const toolkitRtlOutputPath = resolve(
+  workspaceRoot,
+  'packages/toolkit/src/rtl-scripts.generated.ts',
+);
+
 const encompassedOutputPath = resolve(
   workspaceRoot,
   'packages/runtime/src/encompassed-languages.generated.ts',
@@ -877,6 +897,11 @@ if (process.argv.includes('--check')) {
     await readFile(parentLocaleOutputPath, 'utf8'),
     parentLocaleOutput,
     'The checked-in Equator parent-locale table is stale; run pnpm run generate:locale-profile.',
+  );
+  assert.equal(
+    await readFile(toolkitRtlOutputPath, 'utf8'),
+    toolkitRtlOutput,
+    'The checked-in toolkit copy of the right-to-left scripts is stale; run pnpm run generate:locale-profile.',
   );
   console.log(
     `Verified ${rtlScripts.length} RTL scripts, ${rtlRanges.length} strong right-to-left code point ranges derived from Unicode 17.0.0 Bidi_Class, agreeing with the CLDR script data on every letter in Unicode and dropping ${droppedByBidiClass.length} context-resolved code points and no strong one, and cardinal plural categories for ${Object.keys(pluralCategories).length} languages and ordinal plural categories for ${Object.keys(ordinalCategories).length} languages from cldr-core 48.2.0, and ${encompassedPairs} encompassed-language pairs over ${Object.keys(encompassed).length} language subtags, every one ranked by CLDR at ${widestKept} or closer where two languages it does not relate stand at ${unrelatedDistance._distance} and its default matching threshold is ${DEFAULT_THRESHOLD}; likely-script resolution remains native Intl under the tested platform matrix; and ${Object.keys(endonyms).length} endonyms from cldr-localenames-full ${localeNamesManifest.version}, agreeing with this platform's ICU on ${endonymsComparedToIcu.length - endonymsDisagreeingWithIcu.length} of the ${endonymsComparedToIcu.length} locales it has display names for; and ${Object.keys(orderedParentLocales).length} declared parent locales from cldr-core ${manifest.version}, ${undParents} of which name root.`,
@@ -928,5 +953,15 @@ if (process.argv.includes('--check')) {
   }
   if (currentParentLocales !== parentLocaleOutput) {
     await writeFile(parentLocaleOutputPath, parentLocaleOutput, 'utf8');
+  }
+
+  let currentToolkitRtl;
+  try {
+    currentToolkitRtl = await readFile(toolkitRtlOutputPath, 'utf8');
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
+  if (currentToolkitRtl !== toolkitRtlOutput) {
+    await writeFile(toolkitRtlOutputPath, toolkitRtlOutput, 'utf8');
   }
 }

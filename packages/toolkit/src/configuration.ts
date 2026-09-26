@@ -505,7 +505,7 @@ export function parseConfiguration(
       continue;
     }
     const problem = sourceLocale.ok
-      ? pseudoLocaleTagProblem(canonical.value, sourceLocale.value)
+      ? pseudoLocaleTagProblem(canonical.value, sourceLocale.value, transform)
       : undefined;
     if (problem !== undefined) {
       diagnostics.push(

@@ -5,7 +5,7 @@ import {
   type LocaleDirection,
   type LocalizationDiagnostic,
 } from './contracts';
-import { PSEUDO_LOCALE_REGIONS } from './pseudo-locale-tags';
+import { pseudoLocaleRegionProblem } from './pseudo-locale-tags';
 import { escapeXml } from './xml-text';
 
 /**
@@ -1221,16 +1221,26 @@ export function ɵisGeneratedPseudoLocales(
     (entry) =>
       typeof entry === 'string' &&
       locales.includes(entry) &&
-      PSEUDO_LOCALE_REGIONS.includes(localeRegion(entry) ?? ''),
+      pseudoLocaleTagHolds(entry),
   );
 }
 
-function localeRegion(tag: string): string | undefined {
+/** Whether the tag names its script and its region claims nothing it is not, as a build writes it. */
+function pseudoLocaleTagHolds(tag: string): boolean {
+  let locale: Intl.Locale;
   try {
-    return new Intl.Locale(tag).region;
+    locale = new Intl.Locale(tag);
   } catch {
-    return undefined;
+    return false;
   }
+  return (
+    locale.script !== undefined &&
+    pseudoLocaleRegionProblem({
+      language: locale.language,
+      region: locale.region,
+      direction: directionForLocale(tag),
+    }) === undefined
+  );
 }
 
 /** The pseudo-locales this build generated, refused where the list is not one it could write. */
