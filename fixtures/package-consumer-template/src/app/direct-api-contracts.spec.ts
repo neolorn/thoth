@@ -25,6 +25,10 @@ import {
   localeMetadata,
   measurement,
   money,
+  pageAbsent,
+  pageGone,
+  pageOperationalFailure,
+  pageOutcomeHttpDescriptor,
   parseLocalizedInput,
   percent,
   percentagePoints,
@@ -179,6 +183,52 @@ describe('route and SEO contracts, called directly', () => {
       ).cache,
     ).toBe('private-no-cache');
     claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+  });
+
+  /**
+   * What a declared outcome does to the response an address would have had, for a server that
+   * composes its own response rather than handing the render to `createLocaleRequestHandler`.
+   *
+   * The statuses are written out. The language is the address's own, whatever is declared, so it
+   * is read from what the address resolved to.
+   */
+  it('turns a declared outcome into the response it states', () => {
+    const resolved = routeHttpDescriptor(
+      resolveLocalizedRoute(
+        pageAddress('topic', 'en-US'),
+        routePolicy,
+        appRouteProjection,
+      ),
+    );
+    expect(resolved.status).toBe(200);
+    expect(resolved.robots).toBeUndefined();
+    const language = {
+      ...(resolved.contentLanguage === undefined
+        ? {}
+        : { contentLanguage: resolved.contentLanguage }),
+      ...(resolved.variesBy === undefined
+        ? {}
+        : { variesBy: resolved.variesBy }),
+    };
+    expect(pageOutcomeHttpDescriptor(pageAbsent(), resolved)).toEqual({
+      status: 404,
+      ...language,
+      robots: 'noindex',
+      cache: 'private-no-store',
+    });
+    expect(pageOutcomeHttpDescriptor(pageGone(), resolved)).toEqual({
+      status: 410,
+      ...language,
+      robots: 'noindex',
+      cache: 'private-no-store',
+    });
+    // A failure is a fact about one response, so the page keeps the indexing its address has.
+    expect(
+      pageOutcomeHttpDescriptor(pageOperationalFailure(503), resolved),
+    ).toEqual({ status: 503, ...language, cache: 'private-no-store' });
+    claimCapability('outcome:pageOutcomeHttpDescriptor', {
+      policy: routePolicy,
+    });
   });
 
   /**
