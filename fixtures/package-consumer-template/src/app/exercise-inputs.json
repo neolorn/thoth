@@ -94,6 +94,13 @@
       "fields": { "given": "محمد", "surname": "المصري" }
     }
   },
+  "extensions": {
+    "operand": "equator",
+    "member": "ready",
+    "refusedMember": "READY",
+    "formatted": "item-42",
+    "parsed": "sku-item-42"
+  },
   "controls": {
     "decimal": {
       "profile": { "kind": "decimal", "maximumFractionDigits": 2 },

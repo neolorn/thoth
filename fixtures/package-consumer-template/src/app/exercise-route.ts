@@ -60,6 +60,7 @@ import {
   timeZone,
   zonedDateTime,
   type FormattingContext,
+  type Localization,
   type FormattingResult,
   type LocalizedInputProfile,
   type LocalizedInputValue,
@@ -71,10 +72,11 @@ import {
   type RelativeTimePolicy,
 } from '@neolorn/equator';
 import { LocalizedInput } from '@neolorn/equator/forms';
-import { messages } from '#i18n/shell';
+import { families, messages } from '#i18n/shell';
 import { personNames } from '#i18n/person-names';
 
 import inputs from './exercise-inputs.json';
+import { skuFormatAdapter, skuParseAdapter } from './runtime-extensions';
 
 /** Epoch milliseconds as the epoch-nanosecond string `instant` takes. */
 const at = (milliseconds: number) =>
@@ -455,6 +457,50 @@ function fieldLines(
   });
 }
 
+/**
+ * A line for each kind of extension the application registers, each reached the way an
+ * application reaches it: a message that calls the function, a family member named by a segment, a
+ * slot read as plain text, and the two adapters called through the localization.
+ */
+function extensionLines(
+  localization: Localization,
+): readonly { readonly id: string; readonly text: string }[] {
+  const { operand, member, refusedMember, formatted, parsed } =
+    inputs.extensions;
+  const resolved = families.featureState.resolve({ state: member });
+  const refused = families.featureState.resolve({ state: refusedMember });
+  return [
+    {
+      id: 'extension:message-function',
+      text: localization.text(messages.extension.uppercase, { name: operand }),
+    },
+    {
+      id: 'extension:identifier-segment',
+      text: resolved === undefined ? 'absent' : localization.text(resolved),
+    },
+    {
+      id: 'extension:identifier-segment:refused',
+      text: refused === undefined ? 'absent' : localization.text(refused),
+    },
+    {
+      id: 'extension:rich-slot-kind',
+      text: localization.parts(messages.extension.badge).text,
+    },
+    {
+      id: 'extension:formatting-adapter',
+      text: written(
+        localization.formatWithAdapter(skuFormatAdapter, formatted),
+      ),
+    },
+    {
+      id: 'extension:parsing-adapter',
+      text: JSON.stringify(
+        localization.parseWithAdapter(skuParseAdapter, parsed),
+      ),
+    },
+  ];
+}
+
 /** The collation inputs in the order the locale sorts them, or the code of the first refusal. */
 function collated(context: FormattingContext): string {
   let refusal: string | undefined;
@@ -576,7 +622,11 @@ export class FeatureLabExerciseRoute {
     const context = this.localization.snapshot()?.formatting;
     return context === undefined
       ? []
-      : [...formattedLines(context), ...fieldLines(context)];
+      : [
+          ...formattedLines(context),
+          ...fieldLines(context),
+          ...extensionLines(this.localization),
+        ];
   });
   protected readonly fields = fields.map(({ kind, profile, value }) => ({
     kind,

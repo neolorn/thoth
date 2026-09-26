@@ -7,22 +7,25 @@
  * formatter that picked the wrong digits, the wrong zone, the wrong calendar or the wrong locale
  * would still round-trip through Equator's own parser, and it disagrees with this.
  *
- * Three answers are not the host's to give, and are written out here instead:
+ * Some answers are not the host's to give, and are written out here instead:
  *
- * - the message, which is the translator's, read from the consumer's catalog by the caller;
+ * - a message, which is the translator's, read from the consumer's catalog by the caller, with the
+ *   direction CLDR gives its locale, also from the caller;
  * - a person's name, which `Intl` has no formatter for, written by hand from the pinned CLDR
  *   release with the pattern quoted beside it;
  * - which unit a relative time is counted in, which is a rule of Equator's policy rather than of
  *   any locale, worked out by hand from that rule below;
  * - how a field writes a date, a time, a duration or a zone, which is the pattern its profile
  *   declares, filled with the digits the host writes, and how it writes an instant, which is
- *   RFC 3339.
+ *   RFC 3339;
+ * - what an extension the application registers answers, which is the application's own rule for
+ *   it, stated beside each line below.
  *
  * It reads nothing outside its argument, so a browser row can hand this function to the engine and
  * compare the page with that engine's own formatters, and the consumer stage can run it on the
  * Node its server ran on.
  */
-export function exerciseAuthority({ inputs, locale, catalog }) {
+export function exerciseAuthority({ inputs, locale, catalog, direction }) {
   const context = inputs.formattingContext;
   const tag = new Intl.Locale(locale, {
     numberingSystem: context.numberingSystem,
@@ -235,6 +238,27 @@ export function exerciseAuthority({ inputs, locale, catalog }) {
   };
   const moneyField = inputs.controls.money;
 
+  // A message function formats in the message's locale, so its text takes that locale's direction:
+  // isolated right to left in a right-to-left message, and bare in a left-to-right one, as spec 09
+  // section 8 has it. The application's function writes its operand in capitals, and adds an
+  // exclamation mark when the message asks for loud emphasis.
+  const extension = inputs.extensions;
+  const isolated = (text) =>
+    direction === 'rtl' ? `\u2067${text}\u2069` : text;
+  const called = catalog['extension.uppercase'].replace(
+    /\{\$name :feature:uppercase emphasis=(\w+)\}/u,
+    (_, emphasis) =>
+      isolated(
+        `${extension.operand.toLocaleUpperCase(locale)}${emphasis === 'loud' ? '!' : ''}`,
+      ),
+  );
+  // The application reads a badge as plain text as the word "Badge" and the words it holds.
+  const badge = /\{#badge[^}]*\}(.*)\{\/badge\}/u.exec(
+    catalog['extension.badge'],
+  )[1];
+  // Its SKU adapters write a SKU in capitals after "SKU-", and read one back with or without it.
+  const sku = extension.parsed.replace(/^SKU-/iu, '').toUpperCase();
+
   return {
     localize: catalog[inputs.message],
     localizedDecimal: decimal,
@@ -311,5 +335,17 @@ export function exerciseAuthority({ inputs, locale, catalog }) {
         fieldText(field),
       ]),
     ),
+    'extension:message-function': called,
+    'extension:identifier-segment':
+      catalog[`feature-state.${extension.member}`],
+    // A spelling outside the segment's declared syntax names no member.
+    'extension:identifier-segment:refused': 'absent',
+    'extension:rich-slot-kind': `Badge: ${badge}`,
+    'extension:formatting-adapter': `SKU-${extension.formatted.toUpperCase()}`,
+    'extension:parsing-adapter': JSON.stringify({
+      status: 'valid',
+      text: extension.parsed,
+      value: { value: sku },
+    }),
   };
 }

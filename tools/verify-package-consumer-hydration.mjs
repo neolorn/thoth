@@ -18,10 +18,11 @@ import {
 } from './consumer-addresses.mjs';
 import {
   claimExercisedControls,
+  claimExercisedExtensions,
   claimExercisedFormats,
   claimExercisedPipes,
   exerciseAuthority,
-  readCatalogMessage,
+  readExerciseSources,
   readExerciseInputs,
   sheetOf,
 } from './exercise-sheet.mjs';
@@ -2832,20 +2833,14 @@ async function navigateWithScriptGate(page, url, beforeScripts) {
   }
 }
 
-// The inputs the consumer's exercise sheet writes, and the message it localizes as each locale's
-// catalog has it, which the engine's own formatters are handed to write the same lines.
+// The inputs the consumer's exercise sheet writes, and the messages it localizes as each locale's
+// catalog has them, which the engine's own formatters are handed to write the same lines.
 const exerciseInputs = await readExerciseInputs(consumerRoot);
-const exerciseCatalogs = new Map(
+const exerciseSources = new Map(
   await Promise.all(
     builtLocales.map(async (locale) => [
       locale,
-      {
-        [exerciseInputs.message]: await readCatalogMessage(
-          consumerRoot,
-          locale,
-          exerciseInputs.message,
-        ),
-      },
+      await readExerciseSources(consumerRoot, locale, exerciseInputs),
     ]),
   ),
 );
@@ -2895,7 +2890,7 @@ async function verifyExerciseSheets(row, context, diagnostics) {
     const expected = await page.evaluate(exerciseAuthority, {
       inputs: exerciseInputs,
       locale,
-      catalog: exerciseCatalogs.get(locale),
+      ...exerciseSources.get(locale),
     });
     claimExercisedPipes(check, sheet, expected, observed);
     claimExercisedFormats(check, sheet, expected, observed);
@@ -2906,6 +2901,7 @@ async function verifyExerciseSheets(row, context, diagnostics) {
       exerciseInputs.controls,
       observed,
     );
+    claimExercisedExtensions(check, sheet, expected, observed);
     await verifyTypedFields(page, check, expected, observed);
   };
 

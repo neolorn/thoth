@@ -29,8 +29,9 @@ export async function readExerciseInputs(consumerRoot) {
 }
 
 /**
- * The message the sheet localizes, as the translator wrote it in the consumer's catalog for the
- * locale. Read from the catalog line itself, which holds a plain or single-quoted scalar.
+ * A message the sheet localizes, as the translator wrote it in the consumer's catalog for the
+ * locale. Read from the catalog line itself, which holds a plain or single-quoted scalar, either as
+ * the entry's value or as the `message` of an entry that also declares its slots.
  */
 export async function readCatalogMessage(consumerRoot, locale, key) {
   const catalog = await readFile(
@@ -38,14 +39,54 @@ export async function readCatalogMessage(consumerRoot, locale, key) {
     'utf8',
   );
   const line = new RegExp(
-    `^  ${key.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}: (.+)$`,
+    `^  ${key.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}:(?: (.+)|\n    message: (.+))$`,
     'mu',
   ).exec(catalog);
   assert.ok(line, `The ${locale} catalog has no line for ${key}`);
-  const written = line[1].trim();
+  const written = (line[1] ?? line[2]).trim();
   return written.startsWith("'")
     ? written.slice(1, -1).replaceAll("''", "'")
     : written;
+}
+
+/**
+ * The direction CLDR gives a locale: that of its likely script, from the pinned CLDR release's
+ * script metadata, rather than from anything Equator derives.
+ */
+async function directionOf(locale) {
+  const { scriptMetadata } = JSON.parse(
+    await readFile(
+      new URL('../node_modules/cldr-core/scriptMetadata.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const { script } = new Intl.Locale(locale).maximize();
+  assert.ok(script in scriptMetadata, `CLDR has no metadata for ${script}`);
+  return scriptMetadata[script].rtl === 'YES' ? 'rtl' : 'ltr';
+}
+
+/**
+ * What the authority needs beside the inputs for one locale: each message the sheet localizes, as
+ * the catalog has it, and the locale's direction.
+ */
+export async function readExerciseSources(consumerRoot, locale, inputs) {
+  const keys = [
+    inputs.message,
+    'extension.uppercase',
+    'extension.badge',
+    `feature-state.${inputs.extensions.member}`,
+  ];
+  return {
+    catalog: Object.fromEntries(
+      await Promise.all(
+        keys.map(async (key) => [
+          key,
+          await readCatalogMessage(consumerRoot, locale, key),
+        ]),
+      ),
+    ),
+    direction: await directionOf(locale),
+  };
 }
 
 /** What a page's sheet says: its locale, its policy, and each line by the capability it shows. */
@@ -171,6 +212,35 @@ export function claimExercisedControls(
   recordCapabilityClaim(check, 'control:duration', context);
   field('instant');
   recordCapabilityClaim(check, 'control:instant', context);
+}
+
+/**
+ * Every kind of extension the application registers through `withExtensions`, held and claimed. A
+ * parse result is compared as the value it is, whatever order its fields were written in.
+ */
+export function claimExercisedExtensions(check, sheet, expected, context) {
+  const extension = (kind) => holds(sheet, expected, `extension:${kind}`);
+  extension('message-function');
+  recordCapabilityClaim(check, 'extension:message-function', context);
+  extension('identifier-segment');
+  extension('identifier-segment:refused');
+  recordCapabilityClaim(check, 'extension:identifier-segment', context);
+  extension('rich-slot-kind');
+  recordCapabilityClaim(check, 'extension:rich-slot-kind', context);
+  extension('formatting-adapter');
+  recordCapabilityClaim(check, 'extension:formatting-adapter', context);
+  const parsed = 'extension:parsing-adapter';
+  assert.ok(
+    sheet.lines.has(parsed),
+    `The exercise sheet has no ${parsed} line`,
+  );
+  assert.deepEqual(
+    JSON.parse(sheet.lines.get(parsed)),
+    JSON.parse(expected[parsed]),
+    `The exercise sheet's ${parsed} line is not what the application's parsing-adapter reads`,
+  );
+  recordCapabilityClaim(check, 'extension:parsing-adapter', context);
+  recordCapabilityClaim(check, 'feature:withExtensions', context);
 }
 
 /** Every formatting function, held and claimed, durations as above. */

@@ -40,10 +40,11 @@ import {
 } from './consumer-addresses.mjs';
 import {
   claimExercisedControls,
+  claimExercisedExtensions,
   claimExercisedFormats,
   claimExercisedPipes,
   exerciseAuthority,
-  readCatalogMessage,
+  readExerciseSources,
   readExerciseInputs,
   sheetInDocument,
 } from './exercise-sheet.mjs';
@@ -1399,18 +1400,13 @@ async function verifyExerciseSheets() {
     const expected = exerciseAuthority({
       inputs,
       locale,
-      catalog: {
-        [inputs.message]: await readCatalogMessage(
-          consumerRoot,
-          locale,
-          inputs.message,
-        ),
-      },
+      ...(await readExerciseSources(consumerRoot, locale, inputs)),
     });
     const observed = { document, policy: sheet.policy };
     claimExercisedPipes(check, sheet, expected, observed);
     claimExercisedFormats(check, sheet, expected, observed);
     claimExercisedControls(check, sheet, expected, inputs.controls, observed);
+    claimExercisedExtensions(check, sheet, expected, observed);
   };
 
   const served = INIT_REQUEST.locales.filter((locale) =>
