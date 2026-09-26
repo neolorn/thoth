@@ -352,6 +352,21 @@ export function claimExercisedContext(check, sheet, expected, context) {
   recordCapabilityClaim(check, 'entry:@neolorn/equator/core', context);
 }
 
+/**
+ * A moment the page asks the localization to word, held and claimed. The call names neither a clock
+ * nor thresholds, so the words are the ones the application installed.
+ */
+export function claimInstalledRelativeTime(check, sheet, expected, context) {
+  holds(
+    sheet,
+    expected,
+    'relativeTime',
+    'against the clock withLocalizationClock installed and the thresholds withRelativeTimePolicy declared',
+  );
+  recordCapabilityClaim(check, 'feature:withLocalizationClock', context);
+  recordCapabilityClaim(check, 'feature:withRelativeTimePolicy', context);
+}
+
 /** Every formatting function, held and claimed, durations as above. */
 export function claimExercisedFormats(check, sheet, expected, context) {
   holds(sheet, expected, 'formatNumber');

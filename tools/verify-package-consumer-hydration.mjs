@@ -23,6 +23,7 @@ import {
   claimExercisedExtensions,
   claimExercisedFormats,
   claimExercisedPipes,
+  claimInstalledRelativeTime,
   claimSheetParameter,
   exerciseSheetNames,
   exerciseAuthority,
@@ -2916,6 +2917,7 @@ async function verifyExerciseSheets(row, context, diagnostics) {
       ...exerciseSources.get(locale),
     });
     claimExercisedContext(check, sheet, expected, observed);
+    claimInstalledRelativeTime(check, sheet, expected, observed);
     claimExercisedPipes(check, sheet, expected, observed);
     claimExercisedDirectives(check, sheet, expected, observed);
     claimExercisedFormats(check, sheet, expected, observed);

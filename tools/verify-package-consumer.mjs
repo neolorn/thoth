@@ -47,6 +47,7 @@ import {
   claimExercisedExtensions,
   claimExercisedFormats,
   claimExercisedPipes,
+  claimInstalledRelativeTime,
   claimOverlayLocale,
   claimSheetParameter,
   exerciseSheetNames,
@@ -2017,6 +2018,7 @@ async function verifyExerciseSheets() {
       observed,
     );
     claimExercisedContext(check, sheet, expected, observed);
+    claimInstalledRelativeTime(check, sheet, expected, observed);
     claimExercisedPipes(check, sheet, expected, observed);
     claimExercisedDirectives(check, sheet, expected, observed);
     claimExercisedFormats(check, sheet, expected, observed);

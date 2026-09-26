@@ -11,14 +11,17 @@ import {
 import { TitleStrategy, withInMemoryScrolling } from '@angular/router';
 import {
   cookieStore,
+  fixedClock,
+  instant,
   withExtensions,
   withFormattingContext,
   withLocalizationClock,
   withOverlayLocale,
-  systemClock,
   withPersistence,
   withRecoveryMessage,
+  withRelativeTimePolicy,
   withRouting,
+  type RelativeTimePolicy,
 } from '@neolorn/equator';
 import {
   LocalizedTitleStrategy,
@@ -32,6 +35,7 @@ import { localeCookie } from './locale-cookie';
 import { overlayLocale } from './overlay-locale';
 import { runtimeExtensions } from './runtime-extensions';
 import { DynamicContentStore, provideDynamicContent } from './dynamic-content';
+import inputs from './exercise-inputs.json';
 import {
   routePolicy,
   appRouteProjection,
@@ -246,10 +250,16 @@ export const appConfig: ApplicationConfig = {
         retryLabel: messages.control.retry,
       }),
       withFormattingContext(appFormattingContext),
-      // Declared rather than defaulted. `systemClock()` is what Equator would install anyway, and
-      // naming it is what makes the substitution in a test a change to one line rather than a
-      // change of shape: the application already says which clock it uses.
-      withLocalizationClock(systemClock()),
+      // One moment for every render, the server's, the build's and the browser's, so a relative
+      // time is worded the same in each and the checks can hold the words to the inputs. A
+      // deployment wording against the present leaves the line out and gets `systemClock()`.
+      withLocalizationClock(
+        fixedClock(
+          instant(`${BigInt(inputs.clock.epochMilliseconds) * 1_000_000n}`),
+        ),
+      ),
+      // Nothing finer than a minute, and a date rather than words past two days.
+      withRelativeTimePolicy(inputs.relativeTimePolicy as RelativeTimePolicy),
       withOverlayLocale(overlayLocale),
     ),
     provideDynamicContent(),

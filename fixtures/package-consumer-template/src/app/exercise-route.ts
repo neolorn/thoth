@@ -71,6 +71,7 @@ import {
   type PersonNameFieldKey,
   type PlainDateValue,
   type PlainTimeValue,
+  type RelativeTimeOutcome,
   type RelativeTimePolicy,
 } from '@neolorn/equator';
 import { directionForLocale, openGraphLocale } from '@neolorn/equator/core';
@@ -142,6 +143,8 @@ const options = Object.freeze({
   list: inputs.list.options as Intl.ListFormatOptions,
   relativeTime: inputs.relativeTime.options as Intl.RelativeTimeFormatOptions,
   resolvedRelativeTime: inputs.resolvedRelativeTime
+    .options as Intl.RelativeTimeFormatOptions,
+  installedRelativeTime: inputs.installedRelativeTime
     .options as Intl.RelativeTimeFormatOptions,
   displayName: inputs.displayName.options as Intl.DisplayNamesOptions,
   plural: inputs.plural.options as Intl.PluralRulesOptions,
@@ -228,6 +231,14 @@ const moneyInput = inputs.controls.money.profile as LocalizedMoneyInputProfile;
 /** What a failed call puts on the sheet: its code, which the checks can name. */
 const written = (result: FormattingResult): string =>
   result.ok ? result.value.text : result.diagnostic.code;
+
+/** A relative time's words, or the kind of answer it was where it has none. */
+const said = (outcome: RelativeTimeOutcome): string =>
+  outcome.kind === 'relative'
+    ? outcome.formatted.text
+    : outcome.kind === 'unavailable'
+      ? outcome.diagnostic.code
+      : outcome.kind;
 
 /** The sheet's line for every formatting function, in the locale the runtime has committed. */
 function formattedLines(
@@ -379,15 +390,7 @@ function formattedLines(
         ),
       ),
     },
-    {
-      id: 'resolveRelativeTime',
-      text:
-        resolved.kind === 'relative'
-          ? resolved.formatted.text
-          : resolved.kind === 'unavailable'
-            ? resolved.diagnostic.code
-            : resolved.kind,
-    },
+    { id: 'resolveRelativeTime', text: said(resolved) },
     {
       id: 'formatDisplayName',
       text: written(
@@ -499,6 +502,26 @@ function extensionLines(
       id: 'extension:parsing-adapter',
       text: JSON.stringify(
         localization.parseWithAdapter(skuParseAdapter, parsed),
+      ),
+    },
+  ];
+}
+
+/**
+ * A moment worded by the localization itself, which names no clock and no thresholds, so the words
+ * are the ones the application installed.
+ */
+function installedLines(
+  localization: Localization,
+): readonly { readonly id: string; readonly text: string }[] {
+  return [
+    {
+      id: 'relativeTime',
+      text: said(
+        localization.relativeTime(
+          at(inputs.installedRelativeTime.targetEpochMilliseconds),
+          options.installedRelativeTime,
+        ),
       ),
     },
   ];
@@ -663,6 +686,7 @@ export class FeatureLabExerciseRoute {
           ...formattedLines(context),
           ...fieldLines(context),
           ...extensionLines(this.localization),
+          ...installedLines(this.localization),
           ...contextLines(context),
         ];
   });

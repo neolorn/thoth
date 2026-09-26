@@ -132,6 +132,10 @@ export function exerciseAuthority({ inputs, locale, catalog, direction }) {
   // `largestUnit: 'week'` and a target three days before the reference: three days is short of a
   // week and at least a day, so the policy counts it in days, truncated toward zero, as -3.
   const resolved = { value: -3, unit: 'day' };
+  // The application's clock reads `inputs.clock` and its policy names nothing smaller than a
+  // minute. The target is 45 seconds before that clock, short of the smallest unit, so it is zero
+  // minutes.
+  const installed = { value: 0, unit: 'minute' };
 
   // `en` givenFirst/medium/referring/informal is `{given-informal} {surname}`, and the name
   // carries no informal given name, so the given name stands in. `ar` defaults to long and formal,
@@ -313,6 +317,10 @@ export function exerciseAuthority({ inputs, locale, catalog, direction }) {
       tag,
       inputs.resolvedRelativeTime.options,
     ).format(resolved.value, resolved.unit),
+    relativeTime: new Intl.RelativeTimeFormat(
+      tag,
+      inputs.installedRelativeTime.options,
+    ).format(installed.value, installed.unit),
     formatDisplayName: new Intl.DisplayNames(
       locale,
       inputs.displayName.options,
