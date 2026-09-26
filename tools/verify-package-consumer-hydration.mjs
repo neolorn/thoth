@@ -26,6 +26,7 @@ import {
   claimSheetParameter,
   exerciseSheetNames,
   exerciseAuthority,
+  readCatalogMessage,
   readExerciseSources,
   readExerciseInputs,
   sheetOf,
@@ -3185,6 +3186,41 @@ async function verifyRenderingModes(row, context, diagnostics) {
   assert.equal(await csrPage.locator('html').getAttribute('lang'), 'en-US');
   assert.equal(await csrPage.locator('html').getAttribute('dir'), 'ltr');
 
+  // The server sent this page's shell with the application's own head, so the head documentMetadata
+  // declares for `item` is one only the browser writes.
+  const itemHead = async (locale) => {
+    const title = await readCatalogMessage(
+      consumerRoot,
+      locale,
+      'document.item.title',
+    );
+    // A title the render never writes is a wrong head, not a slow one, so the wait's end is read
+    // as an answer and the assertion below says which.
+    await csrPage
+      .waitForFunction((expected) => document.title === expected, title)
+      .catch(() => undefined);
+    assert.equal(
+      await csrPage.title(),
+      title,
+      `the title the client render of item wrote in ${locale} is not the one documentMetadata declares`,
+    );
+    assert.equal(
+      await csrPage.locator('meta[name="description"]').getAttribute('content'),
+      await readCatalogMessage(
+        consumerRoot,
+        locale,
+        'document.item.description',
+      ),
+      `the description the client render of item wrote in ${locale} is not the one documentMetadata declares`,
+    );
+    recordCapabilityClaim(
+      sectionCheck(row, `client render head in ${locale}`),
+      'declaration:document-metadata',
+      await measuredContext(csrPage),
+    );
+  };
+  await itemHead('en-US');
+
   const beforeSwitch = await inlineSourceCensus(csrPage);
 
   await localeChoice(csrPage, 'ar-EG').click();
@@ -3199,6 +3235,7 @@ async function verifyRenderingModes(row, context, diagnostics) {
     'directive:LocaleChoice',
     await measuredContext(csrPage),
   );
+  await itemHead('ar-EG');
 
   // A locale switch re-renders every localized surface on the page. If Equator emitted inline
   // script or style anywhere in that path, it would appear here, and it would be

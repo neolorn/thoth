@@ -370,8 +370,8 @@ const REGISTRY = Object.freeze([
   },
   {
     id: 'declaration:document-metadata',
-    resolves: { export: 'documentMessage' },
-    binding: [named('documentMessage')],
+    resolves: { member: ['RouteLocalizationOptions', 'documentMetadata'] },
+    binding: [named('documentMetadata', 'documentMessage')],
   },
   {
     id: 'declaration:outcome-documents',

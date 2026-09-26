@@ -29,6 +29,8 @@ import {
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawn, spawnSync } from 'node:child_process';
 
+import { JSDOM } from 'jsdom';
+
 import {
   openCapabilityEvidence,
   recordCapabilityClaim,
@@ -49,6 +51,7 @@ import {
   claimSheetParameter,
   exerciseSheetNames,
   exerciseAuthority,
+  readCatalogMessage,
   readExerciseSources,
   readExerciseInputs,
   sheetInDocument,
@@ -1611,6 +1614,125 @@ function verifyRouteDeclarations() {
   );
 }
 verifyRouteDeclarations();
+
+/**
+ * What each page's head says, declared once per route in `documentMetadata` and once per outcome
+ * in `outcomeDocuments`, held to the catalog messages each declaration names. Read from what the
+ * server answered in every locale the page is served in, and from what the build wrote for the
+ * pages it prerenders.
+ */
+async function verifyDocumentDeclarations() {
+  // The key the title and description of each page's head are declared under. `item` is declared
+  // too and is not here: it is published client-rendered, so the server sends the shell and the
+  // head is written in the browser, where the browser row reads it.
+  const declared = {
+    home: 'document',
+    second: 'document.second',
+    lazy: 'document.lazy',
+  };
+  const outcomes = {
+    missing: 'document.not-found',
+    removed: 'document.gone',
+    'an unsupported locale': 'document.unsupported-locale',
+  };
+  const served = [
+    ...[...Object.keys(declared), ...Object.keys(outcomes)].flatMap((page) =>
+      INIT_REQUEST.locales
+        .filter((locale) => addresses.has(page, locale))
+        .map((locale) => ({
+          page,
+          locale,
+          path: addresses.path(page, locale),
+        })),
+    ),
+    // A locale-shaped first segment names a locale only where every locale is one, and it is
+    // answered in the default locale.
+    ...(addresses.entryRedirects
+      ? [
+          {
+            page: 'an unsupported locale',
+            locale: INIT_REQUEST.defaultLocale,
+            path: '/fr/second',
+          },
+        ]
+      : []),
+  ];
+  const asked = [
+    {
+      locale: INIT_REQUEST.defaultLocale,
+      path: addresses.path('exercise', INIT_REQUEST.defaultLocale),
+    },
+    ...served,
+  ];
+  const answers = serverAnswers(
+    asked.map(({ locale, path }) => ({
+      origin: addresses.origin(locale),
+      path,
+    })),
+  );
+  // The sheet names the policy the server runs, answered by the same server in the same run.
+  const { policy } = sheetInDocument(answers[0].body);
+  const head = async (check, page, locale, html) => {
+    const { document } = new JSDOM(html).window;
+    const key = declared[page] ?? outcomes[page];
+    assert.deepEqual(
+      {
+        title: document.title,
+        description: document
+          .querySelector('meta[name="description"]')
+          ?.getAttribute('content'),
+      },
+      {
+        title: await readCatalogMessage(consumerRoot, locale, `${key}.title`),
+        description: await readCatalogMessage(
+          consumerRoot,
+          locale,
+          `${key}.description`,
+        ),
+      },
+      `${check}: the head of ${page} in ${locale} is not what ${page in outcomes ? 'outcomeDocuments' : 'documentMetadata'} declares for it`,
+    );
+    if (page in outcomes) {
+      recordCapabilityClaim(check, 'declaration:outcome-documents', {
+        document: html,
+        policy,
+      });
+    } else {
+      recordCapabilityClaim(check, 'declaration:document-metadata', {
+        document: html,
+        policy,
+      });
+    }
+  };
+  for (const [index, { page, locale }] of served.entries()) {
+    await head(
+      `${consumerName}: the head of ${page} in ${locale}, rendered on request`,
+      page,
+      locale,
+      answers[index + 1].body,
+    );
+  }
+  for (const page of addresses.prerendered.filter((each) => each in declared)) {
+    for (const locale of INIT_REQUEST.locales) {
+      if (!addresses.has(page, locale)) continue;
+      await head(
+        `${consumerName}: the head of ${page} in ${locale}, prerendered`,
+        page,
+        locale,
+        await readFile(
+          resolve(
+            consumerRoot,
+            builds.output(addresses.origin(locale)),
+            'browser',
+            addresses.file(page, locale),
+          ),
+          'utf8',
+        ),
+      );
+    }
+  }
+}
+await verifyDocumentDeclarations();
 
 /**
  * The exercise sheet, as these servers answer it and as these builds wrote it, in every locale

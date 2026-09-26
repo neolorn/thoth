@@ -91,17 +91,23 @@ const localeRequests = createLocaleRequestHandler({
   passthrough: () =>
     new Response(null, { status: 204, headers: { [PASS_THROUGH]: '1' } }),
   render: async ({ request, resolution }) => {
-    // A not-found under a supported locale is answered by the application's own routing, which is
-    // what a real consumer does: the locale resolved, only the page is unknown, and the application
-    // has a not-found page written in it. Anything else (a malformed address, an unsupported
-    // locale) never reached Angular before and does not now.
+    // Every answer the router writes a head for is rendered by the application: a page, and the
+    // three outcomes `outcomeDocuments` declares, an address it does not serve, one retired for
+    // good, and one naming a locale this deployment does not serve. In each the locale to answer in
+    // is known and the application has a page written in it. A malformed address names neither,
+    // so it gets the short document below.
     //
     // Rendered here rather than after the handler returns, so the handler composes the page with
     // the status, language and caching it resolved, which is its job and not this file's. Composing
     // by hand afterwards lost the status: Angular's writer sets its own, so a not-found answered
     // 200. The request is the handler's own, which is also what lets a page's declared outcome
     // reach it.
-    if (resolution.status === 'success' || resolution.status === 'not-found') {
+    if (
+      resolution.status === 'success' ||
+      resolution.status === 'not-found' ||
+      resolution.status === 'gone' ||
+      resolution.status === 'unsupported-locale'
+    ) {
       return (
         (await engine.handle(request, createProbeContext(request))) ??
         new Response(null, { status: 204, headers: { [PASS_THROUGH]: '1' } })
