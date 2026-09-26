@@ -38,6 +38,14 @@ import {
   readConsumerBuilds,
   SITE_ORIGIN_DECLARATION,
 } from './consumer-addresses.mjs';
+import {
+  claimExercisedFormats,
+  claimExercisedPipes,
+  exerciseAuthority,
+  readCatalogMessage,
+  readExerciseInputs,
+  sheetInDocument,
+} from './exercise-sheet.mjs';
 import { locateNode, withNodeFirst } from './node-runtimes.mjs';
 import { withOfflineStoreRemedy } from './offline-store.mjs';
 
@@ -1372,6 +1380,75 @@ function verifyServerAnswers() {
   });
 }
 verifyServerAnswers();
+
+/**
+ * The exercise sheet, as these servers answer it and as these builds wrote it, in every locale
+ * they serve. Each line is held to what this Node's own formatters write for the same input, on
+ * the Node the server and the build ran on.
+ */
+async function verifyExerciseSheets() {
+  const inputs = await readExerciseInputs(consumerRoot);
+  const verifySheet = async (check, locale, document, rendered) => {
+    const sheet = sheetInDocument(document);
+    assert.equal(sheet.locale, locale, `${check} shows ${sheet.locale}`);
+    assert.ok(
+      document.includes(`ng-server-context="${rendered}"`),
+      `${check} was not written by the ${rendered === 'ssr' ? 'server' : 'build'}`,
+    );
+    const expected = exerciseAuthority({
+      inputs,
+      locale,
+      catalog: {
+        [inputs.message]: await readCatalogMessage(
+          consumerRoot,
+          locale,
+          inputs.message,
+        ),
+      },
+    });
+    const observed = { document, policy: sheet.policy };
+    claimExercisedPipes(check, sheet, expected, observed);
+    claimExercisedFormats(check, sheet, expected, observed);
+  };
+
+  const served = INIT_REQUEST.locales.filter((locale) =>
+    addresses.has('exercise', locale),
+  );
+  const answers = serverAnswers(
+    served.map((locale) => ({
+      origin: addresses.origin(locale),
+      path: addresses.path('exercise', locale),
+    })),
+  );
+  for (const [index, locale] of served.entries()) {
+    assert.equal(answers[index].status, 200, `exercise in ${locale}`);
+    await verifySheet(
+      `${consumerName}: exercise sheet in ${locale}, rendered on request`,
+      locale,
+      answers[index].body,
+      'ssr',
+    );
+  }
+  for (const locale of INIT_REQUEST.locales) {
+    if (!addresses.has('exercise values', locale)) continue;
+    const document = await readFile(
+      resolve(
+        consumerRoot,
+        builds.output(addresses.origin(locale)),
+        'browser',
+        addresses.file('exercise values', locale),
+      ),
+      'utf8',
+    );
+    await verifySheet(
+      `${consumerName}: exercise sheet in ${locale}, prerendered`,
+      locale,
+      document,
+      'ssg',
+    );
+  }
+}
+await verifyExerciseSheets();
 
 const browserText = (
   await Promise.all(browserFiles.map((path) => readFile(path, 'utf8')))

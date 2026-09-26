@@ -47,6 +47,36 @@ export const dossierSlugCodec: RouteParameterCodec<string> = Object.freeze({
 });
 
 /**
+ * The exercise sheet's name, in the language of the page that shows it.
+ *
+ * Spelled apart in each locale so that every address names one locale under every policy, which is
+ * what lets a build prerender a sheet under a locale-neutral policy too. A locale with no spelling
+ * of its own takes the English one.
+ */
+const EXERCISE_SHEETS: Readonly<
+  Record<string, Readonly<Record<string, string>>>
+> = Object.freeze({
+  live: Object.freeze({ 'en-US': 'live', 'ar-EG': 'مباشر' }),
+  values: Object.freeze({ 'en-US': 'values', 'ar-EG': 'قيم' }),
+});
+
+export const exerciseSheetCodec: RouteParameterCodec<string> = Object.freeze({
+  parse: (spelled: string) => {
+    const sheet = Object.entries(EXERCISE_SHEETS).find(([, spellings]) =>
+      Object.values(spellings).includes(spelled),
+    )?.[0];
+    return Object.freeze(
+      sheet === undefined ? { ok: false } : { ok: true, value: sheet },
+    );
+  },
+  serialize: (sheet: string, context?: RouteParameterContext) => {
+    const spellings = EXERCISE_SHEETS[sheet];
+    if (spellings === undefined) return undefined;
+    return spellings[context?.locale ?? 'en-US'] ?? spellings['en-US'];
+  },
+});
+
+/**
  * An application whose routes take no parameters at all.
  *
  * Declared here because every other projection in this fixture has a parameterised route, which
@@ -87,6 +117,7 @@ export const appRouteProjection = defineRouteProjection({
     // empty segment, a leading hyphen and a 129th character, and accepts an ordinary slug
     // unchanged in both locales.
     topic: Object.freeze({ topic: createIdentifierParameterCodec() }),
+    exercise: Object.freeze({ sheet: exerciseSheetCodec }),
   }),
   historical: Object.freeze({
     legacy: Object.freeze({

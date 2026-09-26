@@ -36,4 +36,10 @@ export const publishedRoutes = [
     prerender: [{ slug: 'handbook' }],
   },
   { routeId: 'item', renderMode: RenderMode.Client },
+  // One sheet written by the build; the other is rendered on request.
+  {
+    routeId: 'exercise',
+    renderMode: RenderMode.Prerender,
+    prerender: [{ sheet: 'values' }],
+  },
 ] as const;

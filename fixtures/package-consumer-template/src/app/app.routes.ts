@@ -25,6 +25,9 @@ import { DynamicContentStore } from './dynamic-content';
     <a data-route-link="second" routerLink="second">{{ secondLink() }}</a>
     <a data-route-link="item" routerLink="items/42">{{ itemLink() }}</a>
     <a data-route-link="article" [routerLink]="articlePath()">Article</a>
+    <a data-route-link="exercise" [routerLink]="exercisePath()">{{
+      exerciseLink()
+    }}</a>
   `,
 })
 class FeatureLabHomeRoute {
@@ -40,6 +43,14 @@ class FeatureLabHomeRoute {
     this.localization.snapshot()?.primaryLocale === 'ar-EG'
       ? 'articles/دليل'
       : 'articles/handbook',
+  );
+  protected readonly exerciseLink = this.localization.textSignal(
+    messages.route.openExercise,
+  );
+  protected readonly exercisePath = computed(() =>
+    this.localization.snapshot()?.primaryLocale === 'ar-EG'
+      ? 'exercise/مباشر'
+      : 'exercise/live',
   );
 }
 
@@ -256,8 +267,8 @@ export const routes = [
     data: { equatorRouteId: 'item', equatorIndexing: 'non-indexable' },
   },
   {
-    // The application's only lazy boundary, and therefore the only reason any scope of this
-    // application is not a startup scope.
+    // The only lazy boundary with a scope of its own, and therefore the only reason any scope of
+    // this application is not a startup scope.
     path: 'lazy',
     loadComponent: () =>
       import('./lazy-route').then((module) => module.FeatureLabLazyRoute),
@@ -285,6 +296,17 @@ export const routes = [
     path: 'topics/:topic',
     component: FeatureLabTopicRoute,
     data: { equatorRouteId: 'topic', equatorIndexing: 'indexable' },
+  },
+  {
+    // Every pipe and formatting function on one page, which the gate reads in every way a page
+    // reaches a reader. Lazy, so none of it is in the first render's bundle, and not indexable,
+    // because it is a sheet of values rather than a page anyone searches for.
+    path: 'exercise/:sheet',
+    loadComponent: () =>
+      import('./exercise-route').then(
+        (module) => module.FeatureLabExerciseRoute,
+      ),
+    data: { equatorRouteId: 'exercise', equatorIndexing: 'non-indexable' },
   },
   {
     // The address this application does not serve. No fixture had one, which is why an

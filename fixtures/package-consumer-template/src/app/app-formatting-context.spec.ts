@@ -13,6 +13,7 @@ import { recoveryPayload } from '#i18n/recovery-payload';
 import { messages } from '#i18n/shell';
 
 import { appFormattingContext } from './app.config';
+import inputs from './exercise-inputs.json';
 import { runtimeExtensions } from './runtime-extensions';
 
 /**
@@ -86,6 +87,13 @@ describe('the declared formatting context reaches rendered output', () => {
     const platformDefault = new Intl.NumberFormat('ar-EG').resolvedOptions()
       .numberingSystem;
     expect(platformDefault).not.toBe(appFormattingContext.numberingSystem);
+  });
+
+  it('is the context the exercise sheet is checked against', () => {
+    // The gate hands the sheet's inputs to the host's own formatters with this context, and the
+    // sheet is written with the application's. Held equal here, so a change to either one is a
+    // change to both.
+    expect(inputs.formattingContext).toEqual(appFormattingContext);
   });
 
   it('still renders Arabic text around the Latin digits', () => {

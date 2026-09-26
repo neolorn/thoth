@@ -1,7 +1,10 @@
 {
   "policy": "locale-neutral",
-  "prerendered": ["article"],
-  "sharedWithPseudoLocales": { "article": ["en-US"] },
+  "prerendered": ["article", "exercise values"],
+  "sharedWithPseudoLocales": {
+    "article": ["en-US"],
+    "exercise values": ["en-US"]
+  },
   "origins": {
     "en-US": "https://site.example",
     "ar-EG": "https://site.example",
@@ -42,6 +45,14 @@
     },
     "removed": {
       "en-US": "/removed"
+    },
+    "exercise": {
+      "en-US": "/exercise/live",
+      "ar-EG": "/exercise/مباشر"
+    },
+    "exercise values": {
+      "en-US": "/exercise/values",
+      "ar-EG": "/exercise/قيم"
     },
     "missing": {
       "en-US": "/nothing-is-mounted-here"

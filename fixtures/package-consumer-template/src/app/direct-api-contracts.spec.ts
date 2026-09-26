@@ -123,6 +123,12 @@ describe('route and SEO contracts, called directly', () => {
         indexing: 'indexable',
       },
       {
+        id: 'exercise',
+        path: 'exercise/:sheet',
+        parameterNames: ['sheet'],
+        indexing: 'non-indexable',
+      },
+      {
         id: 'item',
         path: 'items/:id',
         parameterNames: ['id'],

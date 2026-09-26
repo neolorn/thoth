@@ -1,6 +1,6 @@
 {
   "policy": "locale-host",
-  "prerendered": ["second", "article"],
+  "prerendered": ["second", "article", "exercise values"],
   "pageCaching": "per-visitor",
   "origins": {
     "en-US": "http://en-us.localhost",
@@ -63,6 +63,16 @@
       "en-US": "http://en-us.localhost/removed",
       "ar-EG": "http://ar-eg.localhost/removed",
       "en-Arab-XB": "http://en-arab-xb.localhost/removed"
+    },
+    "exercise": {
+      "en-US": "http://en-us.localhost/exercise/live",
+      "ar-EG": "http://ar-eg.localhost/exercise/مباشر",
+      "en-Arab-XB": "http://en-arab-xb.localhost/exercise/live"
+    },
+    "exercise values": {
+      "en-US": "http://en-us.localhost/exercise/values",
+      "ar-EG": "http://ar-eg.localhost/exercise/قيم",
+      "en-Arab-XB": "http://en-arab-xb.localhost/exercise/values"
     },
     "missing": {
       "en-US": "http://en-us.localhost/nothing-is-mounted-here",

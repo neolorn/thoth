@@ -37,6 +37,7 @@ messages:
   route.open-second: Open second route
   route.open-item: Open item 42
   route.return-home: Return home
+  route.open-exercise: Open the exercise sheet
   issue.unknown: Something went wrong.
   issue.required: This value is required.
   issue.insufficient-stock: Not enough left in stock.

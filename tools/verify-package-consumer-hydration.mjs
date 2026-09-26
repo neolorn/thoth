@@ -16,6 +16,14 @@ import {
   readConsumerAddresses,
   readConsumerBuilds,
 } from './consumer-addresses.mjs';
+import {
+  claimExercisedFormats,
+  claimExercisedPipes,
+  exerciseAuthority,
+  readCatalogMessage,
+  readExerciseInputs,
+  sheetOf,
+} from './exercise-sheet.mjs';
 import { resolveConsumerProfile } from './package-consumer-profiles.mjs';
 import { chromium, firefox, webkit } from 'playwright';
 
@@ -79,6 +87,7 @@ function deploymentOf(locale) {
 const prerenderedViews = Object.freeze({
   second: 'second',
   article: 'article',
+  'exercise values': 'exercise',
 });
 // The page the checks of a prerendered file load, because a policy decides which pages can be
 // written once for every visitor.
@@ -2822,6 +2831,131 @@ async function navigateWithScriptGate(page, url, beforeScripts) {
   }
 }
 
+// The inputs the consumer's exercise sheet writes, and the message it localizes as each locale's
+// catalog has it, which the engine's own formatters are handed to write the same lines.
+const exerciseInputs = await readExerciseInputs(consumerRoot);
+const exerciseCatalogs = new Map(
+  await Promise.all(
+    builtLocales.map(async (locale) => [
+      locale,
+      {
+        [exerciseInputs.message]: await readCatalogMessage(
+          consumerRoot,
+          locale,
+          exerciseInputs.message,
+        ),
+      },
+    ]),
+  ),
+);
+
+/** The exercise sheet a page shows, read once its client has drawn it. */
+async function exerciseSheetOn(page) {
+  await page.waitForSelector(
+    '[data-route-view="exercise"][data-exercise-drawn="client"]',
+    { state: 'attached' },
+  );
+  return sheetOf(
+    await page.evaluate(() => {
+      const section = document.querySelector('[data-route-view="exercise"]');
+      return {
+        locale: section.getAttribute('data-exercise-locale'),
+        sheet: section.getAttribute('data-exercise-sheet'),
+        policy: section.getAttribute('data-url-policy'),
+        lines: [...section.querySelectorAll('[data-exercise]')].map((line) => [
+          line.getAttribute('data-exercise'),
+          line.textContent,
+        ]),
+      };
+    }),
+  );
+}
+
+/**
+ * The exercise sheet in this engine: every pipe and formatting function, rendered on request and
+ * adopted, prerendered and adopted, and drawn by a client navigation, in each locale the build
+ * serves. Each line is held to what this engine's own formatters write for the same input.
+ */
+async function verifyExerciseSheets(row, context, diagnostics) {
+  // A page for each visit. A second load in the same page can find the sheet it is waiting for in
+  // the document it is leaving, and read that one.
+  const visit = async (read) => {
+    const page = boundCalls(await context.newPage(), 'page');
+    attachBrowserDiagnostics(page, diagnostics);
+    page.setDefaultTimeout(15_000);
+    page.setDefaultNavigationTimeout(20_000);
+    await read(page);
+    await collectPolicyDiagnostics(page, diagnostics);
+    await page.close();
+  };
+  const verifySheet = async (page, check, locale, observed) => {
+    const sheet = await exerciseSheetOn(page);
+    assert.equal(sheet.locale, locale, `${check} shows ${sheet.locale}`);
+    const expected = await page.evaluate(exerciseAuthority, {
+      inputs: exerciseInputs,
+      locale,
+      catalog: exerciseCatalogs.get(locale),
+    });
+    claimExercisedPipes(check, sheet, expected, observed);
+    claimExercisedFormats(check, sheet, expected, observed);
+  };
+
+  for (const locale of builtLocales) {
+    for (const [sheetPage, rendered] of [
+      ['exercise', 'rendered on request'],
+      ['exercise values', 'prerendered'],
+    ]) {
+      if (!addresses.has(sheetPage, locale)) continue;
+      await visit(async (page) => {
+        await visitFor(context, sheetPage, locale, (url) =>
+          navigateWithScriptGate(page, url, async () => {
+            await page.waitForSelector('[data-route-view="exercise"]', {
+              state: 'attached',
+            });
+            await holdServerElements(page);
+          }),
+        );
+        const observed = await measuredContext(page);
+        assert.ok(
+          observed.adoptedElements > 0,
+          `${row.label} kept none of the ${sheetPage} sheet's server elements in ${locale}`,
+        );
+        await verifySheet(
+          page,
+          sectionCheck(row, `exercise sheet in ${locale}, ${rendered}`),
+          locale,
+          observed,
+        );
+      });
+    }
+
+    await visit(async (page) => {
+      await visitFor(context, 'home', locale, (url) => page.goto(url));
+      await page.waitForFunction(
+        () => document.documentElement.dataset['clientReady'] === 'true',
+      );
+      await page.locator('[data-route-link="exercise"]').click();
+      await page.waitForURL((url) => isShown(url, 'exercise', locale));
+      await page.waitForSelector(
+        '[data-route-view="exercise"] [data-exercise="formatNumber"]',
+      );
+      // Only what the navigation measured. The document is still the home page's, which the
+      // server wrote, and the sheet in it is not.
+      const { engine, policy, clientNavigations } = await measuredContext(page);
+      assert.ok(
+        clientNavigations > 0,
+        `${row.label} reached the exercise sheet in ${locale} without a client navigation`,
+      );
+      await verifySheet(
+        page,
+        sectionCheck(row, `exercise sheet in ${locale}, by client navigation`),
+        locale,
+        { engine, policy, clientNavigations },
+      );
+    });
+  }
+}
+
 async function verifyRenderingModes(row, context, diagnostics) {
   const prerenderPath = addresses.path(prerenderedPage, 'en-US');
   const prerenderArtifact = prerenderArtifacts.get(
@@ -3958,6 +4092,9 @@ async function verifyBrowserRow(row) {
 
   enterStage(`${row.id}-prerender-csr`);
   await verifyRenderingModes(row, context, diagnostics);
+
+  enterStage(`${row.id}-exercise-sheets`);
+  await verifyExerciseSheets(row, context, diagnostics);
 
   enterStage(`${row.id}-switch-endurance`);
   await verifySwitchEndurance(page, row);

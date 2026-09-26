@@ -1,0 +1,101 @@
+{
+  "formattingContext": {
+    "timeZone": "UTC",
+    "calendar": "gregory",
+    "numberingSystem": "latn",
+    "hourCycle": "h23"
+  },
+  "message": "app-title",
+  "decimal": { "value": "1234.5", "options": { "maximumFractionDigits": 2 } },
+  "money": { "amount": "1234.5", "currency": "EGP", "options": {} },
+  "measurement": {
+    "amount": "3.5",
+    "unit": "kilometer",
+    "options": { "unitDisplay": "long" }
+  },
+  "percent": { "amount": "25", "scale": "percent-unit", "options": {} },
+  "percentagePoints": {
+    "amount": "2.5",
+    "options": { "minimumFractionDigits": 1 }
+  },
+  "instant": {
+    "epochMilliseconds": 1773480600000,
+    "options": { "dateStyle": "medium", "timeStyle": "short" }
+  },
+  "plainDate": {
+    "year": 2026,
+    "month": 3,
+    "day": 14,
+    "options": { "dateStyle": "long" }
+  },
+  "plainTime": {
+    "hour": 9,
+    "minute": 30,
+    "second": 0,
+    "options": { "timeStyle": "short" }
+  },
+  "plainDateTime": {
+    "date": { "year": 2026, "month": 3, "day": 14 },
+    "time": { "hour": 9, "minute": 30, "second": 0 },
+    "options": { "dateStyle": "medium", "timeStyle": "short" }
+  },
+  "zonedDateTime": {
+    "epochMilliseconds": 1773480600000,
+    "timeZone": "Africa/Cairo",
+    "options": { "dateStyle": "medium", "timeStyle": "long" }
+  },
+  "duration": {
+    "fields": { "hours": 2, "minutes": 30 },
+    "options": { "style": "long" }
+  },
+  "numberRange": { "start": "3", "end": "5", "options": {} },
+  "instantRange": {
+    "startEpochMilliseconds": 1773480600000,
+    "endEpochMilliseconds": 1773739800000,
+    "options": { "dateStyle": "medium" }
+  },
+  "list": {
+    "values": ["Equator", "Angular", "Intl"],
+    "options": { "type": "conjunction" }
+  },
+  "relativeTime": {
+    "value": "-1",
+    "unit": "day",
+    "options": { "numeric": "auto" }
+  },
+  "resolvedRelativeTime": {
+    "referenceEpochMilliseconds": 1773480600000,
+    "targetEpochMilliseconds": 1773221400000,
+    "policy": { "largestUnit": "week" },
+    "options": {}
+  },
+  "displayName": { "value": "ar", "options": { "type": "language" } },
+  "plural": { "value": "2", "options": {} },
+  "collation": {
+    "values": ["pêche", "Péché", "peach", "péché"],
+    "options": {}
+  },
+  "segmentation": {
+    "text": "Equator خط الاستواء",
+    "options": { "granularity": "word" }
+  },
+  "personName": {
+    "en-US": {
+      "language": "en",
+      "fields": {
+        "title": "Dr.",
+        "given": "Mary",
+        "given2": "Sue",
+        "surname": "Hamish"
+      }
+    },
+    "ar-EG": {
+      "language": "ar",
+      "fields": { "given": "محمد", "surname": "المصري" }
+    }
+  },
+  "localizedInput": {
+    "profile": { "kind": "money", "currency": "EGP", "requireCurrency": true },
+    "amount": "1234.5"
+  }
+}

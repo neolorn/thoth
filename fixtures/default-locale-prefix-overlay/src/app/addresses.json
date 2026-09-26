@@ -1,6 +1,6 @@
 {
   "policy": "default-locale-prefix",
-  "prerendered": ["second", "article"],
+  "prerendered": ["second", "article", "exercise values"],
   "origins": {
     "en-US": "https://site.example",
     "ar-EG": "https://site.example",
@@ -62,6 +62,16 @@
       "en-US": "/removed",
       "ar-EG": "/ar-eg/removed",
       "en-Arab-XB": "/en-arab-xb/removed"
+    },
+    "exercise": {
+      "en-US": "/exercise/live",
+      "ar-EG": "/ar-eg/exercise/مباشر",
+      "en-Arab-XB": "/en-arab-xb/exercise/live"
+    },
+    "exercise values": {
+      "en-US": "/exercise/values",
+      "ar-EG": "/ar-eg/exercise/قيم",
+      "en-Arab-XB": "/en-arab-xb/exercise/values"
     },
     "missing": {
       "en-US": "/nothing-is-mounted-here",

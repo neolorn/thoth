@@ -35,6 +35,7 @@ messages:
   route.item: صفحة العنصر
   route.open-second: افتح الصفحة الثانية
   route.open-item: افتح العنصر 42
+  route.open-exercise: افتح ورقة التمرين
   route.return-home: عُد إلى الصفحة الرئيسية
   issue.unknown: حدث خطأ ما.
   issue.required: هذه القيمة مطلوبة.
