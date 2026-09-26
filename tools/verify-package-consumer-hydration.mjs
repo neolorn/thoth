@@ -1410,10 +1410,10 @@ async function assertDirectAccessibility(page, row) {
   const context = await measuredContext(page);
   recordCapabilityClaim(check, 'directive:LocaleChoice', context);
   recordCapabilityClaim(check, 'directive:LocalizedMessage', context);
-  await assertKeyboardLocaleAccessibility(page);
+  await assertKeyboardLocaleAccessibility(page, check);
 }
 
-async function assertKeyboardLocaleAccessibility(page) {
+async function assertKeyboardLocaleAccessibility(page, check) {
   if (!addresses.switchInDocument) {
     await assertKeyboardLocaleNavigation(page);
     return;
@@ -1608,6 +1608,19 @@ async function assertKeyboardLocaleAccessibility(page) {
         `${selector} published an announcement while the English control was still busy:\n${sequence}`,
       );
     }
+    // The wording is the application's, and the application gives the page's title, which the
+    // head holds in the arriving locale by the time the change is announced.
+    const announced = committedAnnouncements.at(-1).text;
+    assert.equal(
+      announced,
+      await readCatalogMessage(consumerRoot, expectedLocale, 'document.title'),
+      `${selector} announced ${JSON.stringify(announced)}, not the page's ${expectedLocale} title that withLocaleAnnouncement gives as the wording:\n${sequence}`,
+    );
+    recordCapabilityClaim(
+      check,
+      'feature:withLocaleAnnouncement',
+      await measuredContext(page),
+    );
   };
 
   try {

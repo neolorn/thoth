@@ -15,6 +15,7 @@ import {
   instant,
   withExtensions,
   withFormattingContext,
+  withLocaleAnnouncement,
   withLocalizationClock,
   withObservability,
   withOverlayLocale,
@@ -149,6 +150,17 @@ const OUTCOME_DOCUMENTS = {
   },
 } as const;
 
+/**
+ * What a screen reader hears when the language changes: the page's title, in the language just
+ * arrived at. Equator's own wording names the language, which a reader who chose it already knows;
+ * the title says where they are. Equator asks for the wording once it has written the head, so the
+ * title read here is already the new one.
+ *
+ * A server commits once per render and announces nothing, so there is no document to read there.
+ */
+const announcedTitle = (): string | undefined =>
+  typeof document === 'undefined' ? undefined : document.title;
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -264,6 +276,7 @@ export const appConfig: ApplicationConfig = {
       withRelativeTimePolicy(inputs.relativeTimePolicy as RelativeTimePolicy),
       withOverlayLocale(overlayLocale),
       withObservability(eventLog),
+      withLocaleAnnouncement(announcedTitle),
     ),
     provideDynamicContent(),
   ],
