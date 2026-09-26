@@ -1,6 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
 import {
   Component,
+  DOCUMENT,
   PLATFORM_ID,
   TransferState,
   afterNextRender,
@@ -24,6 +25,7 @@ import {
   percent,
   percentagePoints,
   personName,
+  type LocalizationDiagnostic,
   type LocalizedPercentInputProfile,
 } from '@neolorn/equator';
 import { LocalizedInput } from '@neolorn/equator/forms';
@@ -75,137 +77,145 @@ import { FeatureLabReadiness } from './readiness';
           <span [attr.data-inline-cell]="cell">{{ cell }}</span>
         }
       </section>
-      <localization-recovery [retryLabel]="retryLabel()" />
-      <h1>{{ title() }}</h1>
-      <p data-welcome>{{ welcome() }}</p>
-      <p
-        data-source-fallback
-        [attr.lang]="sourceFallback().language"
-        [attr.dir]="sourceFallback().direction"
-        [attr.data-supplying-locale]="sourceFallback().supplyingLocale"
-      >
-        {{ sourceFallback().value }}
-      </p>
-      <p data-inert-text>{{ inertText() }}</p>
-      <p data-pipe>{{ messages.appTitle | localize }}</p>
-      <!-- An attribute is where the ordinary ways of putting a message in a template run out. -->
-      <div data-label [localizedLabel]="messages.appTitle"></div>
-      <img
-        data-label-alt
-        alt="static alt"
-        src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
-        [localizedLabel]="messages.asset.alt"
-        localizedLabelAttribute="title"
-      />
-      <localized-message data-rich-message [handle]="messages.learnMore" />
-      <localized-message
-        data-rich-link
-        [handle]="messages.helpLink"
-        [slots]="helpBindings"
-      />
-      <localized-message
-        data-rich-action
-        [handle]="messages.continueAction"
-        [slots]="actionBindings"
-      />
-      <span data-action-count>{{ actionCount() }}</span>
-      <p data-percent>{{ formattedPercent() }}</p>
-      <p data-percentage-points>{{ formattedPercentagePoints() }}</p>
-      <p data-list>{{ formattedList() }}</p>
-      <p data-relative-time>{{ formattedRelativeTime() }}</p>
-      <p
-        data-person-name
-        [attr.lang]="personPresentation().language"
-        [attr.dir]="personPresentation().direction"
-      >
-        {{ personPresentation().text }}
-      </p>
-      <form data-localized-form (submit)="submitForm($event)">
-        <label>
-          {{ localizedPercentLabel() }}
-          <input
-            data-percent-input
-            inputmode="decimal"
-            [formControl]="percentControl"
-            [localizedInput]="percentProfile"
-          />
-        </label>
-        <button data-submit type="submit">{{ submitLabel() }}</button>
-      </form>
-      <p data-percent-model>{{ percentControl.value.amount.value }}</p>
-      <p data-submitted>{{ submitted() }}</p>
-      <p data-locale>{{ locale() }}</p>
-      <feature-readiness />
-      <section
-        data-dynamic-content
-        [attr.data-presentation]="dynamicPresentation().kind"
-        [attr.data-participant-status]="dynamicParticipantStatus()"
-        [attr.data-source-requests]="dynamicStore.source.requestCount"
-      >
-        <p data-dynamic-status>{{ dynamicParticipantStatus() }}</p>
-        @if (dynamicPresentation().article; as article) {
-          <article
-            data-dynamic-article
-            [attr.lang]="article.supplyingLocale"
-            [attr.dir]="article.direction"
-            [attr.data-payload-marker]="article.payloadMarker"
-          >
-            <h2 data-dynamic-title>{{ article.title }}</h2>
-            <p data-dynamic-summary>{{ article.summary }}</p>
-            <p data-dynamic-source>{{ article.sourceLabel }}</p>
-            <ul data-dynamic-comments>
-              @for (comment of article.comments; track comment.id) {
-                <li
-                  [attr.data-comment-id]="comment.id"
-                  [attr.data-representation]="comment.representation.kind"
-                  [attr.lang]="commentLanguage(comment)"
-                  [attr.dir]="commentDirection(comment)"
-                >
-                  {{ comment.text }}
-                </li>
-              }
-            </ul>
-          </article>
-        } @else {
-          <p data-dynamic-placeholder>{{ dynamicPresentation().kind }}</p>
-        }
-        <button
-          type="button"
-          data-policy-retain
-          (click)="setDynamicPolicy('retain')"
-        >
-          {{ retainLabel() }}
-        </button>
-        <button
-          type="button"
-          data-policy-skeleton
-          (click)="setDynamicPolicy('skeleton')"
-        >
-          {{ skeletonLabel() }}
-        </button>
-        <button
-          type="button"
-          data-policy-hide
-          (click)="setDynamicPolicy('hide')"
-        >
-          {{ hideLabel() }}
-        </button>
-        <button
-          type="button"
-          data-policy-substitute
-          (click)="setDynamicPolicy('substitute')"
-        >
-          {{ substituteLabel() }}
-        </button>
-        <button
-          type="button"
-          data-dynamic-retry
-          (click)="retryDynamicContent()"
-        >
-          {{ dynamicRetryLabel() }}
-        </button>
-      </section>
+      <localization-recovery (retryFailed)="afterFailedRetry($event)" />
       <!--
+        Everything localized waits on a snapshot. With no catalog loaded a message has nothing to
+        be read from and throws, and a template that reads one takes the recovery above down with
+        it. The recovery reads the payload withRecoveryMessage selects, which is loaded apart from
+        the catalogs, so it is the one thing that can render then. The lifecycle is not the test: a
+        retry leaves failed as it starts, before anything has loaded.
+      -->
+      @if (started()) {
+        <h1>{{ title() }}</h1>
+        <p data-welcome>{{ welcome() }}</p>
+        <p
+          data-source-fallback
+          [attr.lang]="sourceFallback().language"
+          [attr.dir]="sourceFallback().direction"
+          [attr.data-supplying-locale]="sourceFallback().supplyingLocale"
+        >
+          {{ sourceFallback().value }}
+        </p>
+        <p data-inert-text>{{ inertText() }}</p>
+        <p data-pipe>{{ messages.appTitle | localize }}</p>
+        <!-- An attribute is where the ordinary ways of putting a message in a template run out. -->
+        <div data-label [localizedLabel]="messages.appTitle"></div>
+        <img
+          data-label-alt
+          alt="static alt"
+          src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+          [localizedLabel]="messages.asset.alt"
+          localizedLabelAttribute="title"
+        />
+        <localized-message data-rich-message [handle]="messages.learnMore" />
+        <localized-message
+          data-rich-link
+          [handle]="messages.helpLink"
+          [slots]="helpBindings"
+        />
+        <localized-message
+          data-rich-action
+          [handle]="messages.continueAction"
+          [slots]="actionBindings"
+        />
+        <span data-action-count>{{ actionCount() }}</span>
+        <p data-percent>{{ formattedPercent() }}</p>
+        <p data-percentage-points>{{ formattedPercentagePoints() }}</p>
+        <p data-list>{{ formattedList() }}</p>
+        <p data-relative-time>{{ formattedRelativeTime() }}</p>
+        <p
+          data-person-name
+          [attr.lang]="personPresentation().language"
+          [attr.dir]="personPresentation().direction"
+        >
+          {{ personPresentation().text }}
+        </p>
+        <form data-localized-form (submit)="submitForm($event)">
+          <label>
+            {{ localizedPercentLabel() }}
+            <input
+              data-percent-input
+              inputmode="decimal"
+              [formControl]="percentControl"
+              [localizedInput]="percentProfile"
+            />
+          </label>
+          <button data-submit type="submit">{{ submitLabel() }}</button>
+        </form>
+        <p data-percent-model>{{ percentControl.value.amount.value }}</p>
+        <p data-submitted>{{ submitted() }}</p>
+        <p data-locale>{{ locale() }}</p>
+        <feature-readiness />
+        <section
+          data-dynamic-content
+          [attr.data-presentation]="dynamicPresentation().kind"
+          [attr.data-participant-status]="dynamicParticipantStatus()"
+          [attr.data-source-requests]="dynamicStore.source.requestCount"
+        >
+          <p data-dynamic-status>{{ dynamicParticipantStatus() }}</p>
+          @if (dynamicPresentation().article; as article) {
+            <article
+              data-dynamic-article
+              [attr.lang]="article.supplyingLocale"
+              [attr.dir]="article.direction"
+              [attr.data-payload-marker]="article.payloadMarker"
+            >
+              <h2 data-dynamic-title>{{ article.title }}</h2>
+              <p data-dynamic-summary>{{ article.summary }}</p>
+              <p data-dynamic-source>{{ article.sourceLabel }}</p>
+              <ul data-dynamic-comments>
+                @for (comment of article.comments; track comment.id) {
+                  <li
+                    [attr.data-comment-id]="comment.id"
+                    [attr.data-representation]="comment.representation.kind"
+                    [attr.lang]="commentLanguage(comment)"
+                    [attr.dir]="commentDirection(comment)"
+                  >
+                    {{ comment.text }}
+                  </li>
+                }
+              </ul>
+            </article>
+          } @else {
+            <p data-dynamic-placeholder>{{ dynamicPresentation().kind }}</p>
+          }
+          <button
+            type="button"
+            data-policy-retain
+            (click)="setDynamicPolicy('retain')"
+          >
+            {{ retainLabel() }}
+          </button>
+          <button
+            type="button"
+            data-policy-skeleton
+            (click)="setDynamicPolicy('skeleton')"
+          >
+            {{ skeletonLabel() }}
+          </button>
+          <button
+            type="button"
+            data-policy-hide
+            (click)="setDynamicPolicy('hide')"
+          >
+            {{ hideLabel() }}
+          </button>
+          <button
+            type="button"
+            data-policy-substitute
+            (click)="setDynamicPolicy('substitute')"
+          >
+            {{ substituteLabel() }}
+          </button>
+          <button
+            type="button"
+            data-dynamic-retry
+            (click)="retryDynamicContent()"
+          >
+            {{ dynamicRetryLabel() }}
+          </button>
+        </section>
+        <!--
         The switcher, with no locale in it.
 
         This was two buttons carrying 'en-US' and 'ar-EG' as literals, a hand-written lang and dir
@@ -219,44 +229,44 @@ import { FeatureLabReadiness } from './readiness';
         activation. Anchors rather than buttons because there is an address: this control leads
         somewhere, and a reader who opens it in a new tab gets the page they asked for.
       -->
-      @for (choice of localeChoices(); track choice.locale) {
-        <a [attr.data-locale-choice]="choice.locale" [localeChoice]="choice">
-          {{ choice.selfName }}
-        </a>
-      }
-      <button data-lazy-load type="button" (click)="loadLazyScope()">
-        {{ loadScopeLabel() }}
-      </button>
-      @if (progressiveTarget(); as target) {
-        <!--
+        @for (choice of localeChoices(); track choice.locale) {
+          <a [attr.data-locale-choice]="choice.locale" [localeChoice]="choice">
+            {{ choice.selfName }}
+          </a>
+        }
+        <button data-lazy-load type="button" (click)="loadLazyScope()">
+          {{ loadScopeLabel() }}
+        </button>
+        @if (progressiveTarget(); as target) {
+          <!--
           The same rule as the switcher above: the locale this demonstrates progressive mode
           against is the one that is not current, which the choices already say. Written as the
           string 'ar-EG', a third configured locale would leave it demonstrating nothing.
         -->
-        <button
-          data-locale-ar-progressive
-          type="button"
-          (click)="selectLocaleProgressive(target.locale)"
+          <button
+            data-locale-ar-progressive
+            type="button"
+            (click)="selectLocaleProgressive(target.locale)"
+          >
+            {{ progressiveLocaleLabel() }}
+          </button>
+        }
+        <p data-lazy-readiness>{{ lazyReadiness().status }}</p>
+        <p data-lazy-message>{{ lazyText() }}</p>
+        <section
+          data-ssr-probe
+          [attr.data-request-id]="probeSnapshot.requestId"
+          [attr.data-label]="probeSnapshot.label"
+          [attr.data-source]="probeSnapshot.source"
+          [attr.data-snapshot-locale]="probeSnapshot.locale"
         >
-          {{ progressiveLocaleLabel() }}
+          <span data-probe-label>{{ probeSnapshot.label }}</span>
+        </section>
+        <button data-counter type="button" (click)="increment()">
+          {{ counterLabel() }} {{ counter() }}
         </button>
-      }
-      <p data-lazy-readiness>{{ lazyReadiness().status }}</p>
-      <p data-lazy-message>{{ lazyText() }}</p>
-      <section
-        data-ssr-probe
-        [attr.data-request-id]="probeSnapshot.requestId"
-        [attr.data-label]="probeSnapshot.label"
-        [attr.data-source]="probeSnapshot.source"
-        [attr.data-snapshot-locale]="probeSnapshot.locale"
-      >
-        <span data-probe-label>{{ probeSnapshot.label }}</span>
-      </section>
-      <button data-counter type="button" (click)="increment()">
-        {{ counterLabel() }} {{ counter() }}
-      </button>
-      @defer (hydrate on interaction) {
-        <!--
+        @defer (hydrate on interaction) {
+          <!--
           The locale can commit while this block is still inert server HTML, and hydration claims
           that HTML rather than writing it. What keeps the block honest is not a directive but the
           ordinary update pass: the browser gate switches the locale first, then triggers hydration,
@@ -264,19 +274,20 @@ import { FeatureLabReadiness } from './readiness';
           still lands. Measured across eight binding kinds; every one is corrected on
           the claim.
         -->
-        <section data-incremental-boundary>
-          <p data-incremental-message>{{ incrementalText() }}</p>
-          <button
-            data-incremental-action
-            type="button"
-            (click)="activateIncremental()"
-          >
-            {{ incrementalActionLabel() }}
-          </button>
-          <span data-incremental-count>{{ incrementalCount() }}</span>
-        </section>
+          <section data-incremental-boundary>
+            <p data-incremental-message>{{ incrementalText() }}</p>
+            <button
+              data-incremental-action
+              type="button"
+              (click)="activateIncremental()"
+            >
+              {{ incrementalActionLabel() }}
+            </button>
+            <span data-incremental-count>{{ incrementalCount() }}</span>
+          </section>
+        }
+        <router-outlet />
       }
-      <router-outlet />
     </main>
   `,
   styles: `
@@ -297,6 +308,7 @@ import { FeatureLabReadiness } from './readiness';
 })
 export class App {
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly document = inject(DOCUMENT);
   private readonly transferState = inject(TransferState);
   private readonly localization = injectLocalization();
   protected readonly dynamicStore = inject(DynamicContentStore);
@@ -366,8 +378,8 @@ export class App {
           direction: 'rtl' as const,
         };
   });
-  protected readonly retryLabel = this.localization.textSignal(
-    messages.control.retry,
+  protected readonly started = computed(
+    () => this.localization.snapshot() !== undefined,
   );
   protected readonly submitLabel = this.localization.textSignal(
     messages.control.submit,
@@ -483,6 +495,19 @@ export class App {
       root.dataset['transferSource'] = adoptedSource;
       root.dataset['urlPolicy'] = JSON.stringify(policy);
     });
+  }
+
+  /**
+   * Where a retry leads when it fails. The HTML standard drops a module whose fetch failed, so a
+   * browser that follows it fetched the catalog again for the retry. A browser that still keeps
+   * the failure answers the import with it and sends nothing, and in that page the catalog cannot
+   * be reached again, so a new document is the way back to it. Any other reason leaves the region
+   * up for another try.
+   */
+  protected afterFailedRetry(diagnostic: LocalizationDiagnostic): void {
+    if (diagnostic.reason === 'module-load-failed') {
+      this.document.location.reload();
+    }
   }
 
   protected increment(): void {

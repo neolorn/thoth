@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { createServer, request as httpRequest } from 'node:http';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
@@ -3819,6 +3819,176 @@ async function verifyHydration(row, page, releaseScripts, events) {
   return trustedTypes;
 }
 
+/**
+ * The scripts in a build that are catalog modules, by the address they are served at.
+ *
+ * A catalog module is told from any other script by the one name the generated loaders read from
+ * it, since its file name is a content hash. It is read from the files rather than from the answer
+ * in the page, because reading an answer there takes a second request, and under a policy that puts
+ * each locale on an origin of its own that request leaves through the browser's proxy and reaches
+ * nothing.
+ */
+async function catalogModulesOf(browserRoot) {
+  const modules = new Set();
+  for (const name of await readdir(browserRoot, { recursive: true })) {
+    if (extname(name) !== '.js') continue;
+    const body = await readFile(resolve(browserRoot, name), 'utf8');
+    if (/export\s*\{[^}]*\bas compiledCatalog\b/u.test(body)) {
+      modules.add(`/${name.split(sep).join('/')}`);
+    }
+  }
+  return modules;
+}
+
+/**
+ * What a visitor reads when no catalog loads at all, and where its retry leads. Every catalog
+ * module answers 503, which is how a bad deploy or an outage reaches a browser, and the page shows
+ * the sentence withRecoveryMessage selects, in the page's locale, until the retry brings the
+ * catalogs back.
+ *
+ * The retry is Equator's either way, and how it reaches the catalog is the engine's. The HTML
+ * standard drops a module whose fetch failed, so an engine that follows it fetches the catalog
+ * again and the page recovers where it stands. An engine that still keeps the failure answers the
+ * import with it and sends nothing; the attempt then fails with a reason the application reads, and
+ * this one reloads the document on it. Which of the two happened is read from the network, so each
+ * is held to its own end.
+ */
+async function verifyRecovery(row, context) {
+  const locale = 'ar-EG';
+  const catalogModules = await catalogModulesOf(
+    deploymentOf(locale).browserRoot,
+  );
+  assert.ok(
+    catalogModules.size > 0,
+    `No script in the ${locale} build exports a compiled catalog`,
+  );
+  const page = boundCalls(await context.newPage(), 'page');
+  page.setDefaultTimeout(15_000);
+  page.setDefaultNavigationTimeout(20_000);
+  // The row's own diagnostics would count the refusals as faults. These are held to naming them.
+  const pageErrors = [];
+  const consoleErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      consoleErrors.push(`${message.location().url} ${message.text()}`);
+    }
+  });
+  const events = logOf(page);
+  const refused = new Set();
+  const fetchedAgain = [];
+  let outage = true;
+  let reloaded = false;
+  page.on('request', (request) => {
+    if (
+      !outage &&
+      request.isNavigationRequest() &&
+      request.frame() === page.mainFrame()
+    ) {
+      reloaded = true;
+    }
+  });
+  await page.route('**/*.js', async (route) => {
+    const url = route.request().url();
+    if (catalogModules.has(new URL(url).pathname)) {
+      if (outage) {
+        refused.add(url);
+        await route.fulfill({ status: 503, body: '' });
+        return;
+      }
+      if (!reloaded) fetchedAgain.push(url);
+    }
+    await route.continue();
+  });
+  await visitFor(context, 'item', locale, (url) => page.goto(url));
+
+  const recovery = page.locator('localization-recovery [role="alert"]');
+  await recovery.waitFor();
+  assert.ok(
+    refused.size > 0,
+    'The page asked for no catalog module, so the outage refused nothing',
+  );
+  assert.equal(
+    (await recovery.locator('p').textContent()).trim(),
+    await readCatalogMessage(consumerRoot, locale, 'recovery.unavailable'),
+    `LocalizationRecovery did not show the ${locale} sentence withRecoveryMessage selects`,
+  );
+  // Marked with the language subtag, as Equator marks every message it renders.
+  assert.equal(
+    await recovery.getAttribute('lang'),
+    new Intl.Locale(locale).language,
+  );
+  assert.equal(await recovery.getAttribute('dir'), 'rtl');
+  const retry = recovery.locator('button');
+  assert.equal(
+    (await retry.textContent()).trim(),
+    await readCatalogMessage(consumerRoot, locale, 'control.retry'),
+    `LocalizationRecovery did not label its retry with the ${locale} label withRecoveryMessage selects`,
+  );
+
+  outage = false;
+  await retry.click();
+  // The engine answers the retry's import one of two ways, a request for the catalog or a failure
+  // the application reloads on, and whichever shows first decides what the rest is held to.
+  const decided = Date.now() + 15_000;
+  while (fetchedAgain.length === 0 && !reloaded && Date.now() < decided) {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  const inPlace = fetchedAgain.length > 0;
+  assert.ok(
+    inPlace || reloaded,
+    'The engine kept the failed catalog module, and the page did not reload on the reason retryFailed gave',
+  );
+  // Both ways back end on the page in its locale, so that is what is waited for.
+  const title = page.locator('h1');
+  await title.waitFor();
+  assert.equal(
+    (await title.textContent()).trim(),
+    await readCatalogMessage(consumerRoot, locale, 'app-title'),
+    'The retry did not bring the page back in its locale',
+  );
+  assert.equal(await recovery.count(), 0, 'The recovery stayed up');
+  const retried = loggedEvents(events.join('\n')).filter(
+    (event) => event.phase === 'initialization' && event.transitionId > 0,
+  );
+  if (inPlace) {
+    assert.equal(
+      reloaded,
+      false,
+      'The engine fetched the catalog again for the retry, and the page reloaded anyway',
+    );
+    assert.ok(
+      retried.some((event) => event.status === 'succeeded'),
+      `The retry fetched the catalog again and did not succeed. The sink was told:\n${JSON.stringify(retried, null, 2)}`,
+    );
+  } else {
+    // How the attempt ended is not read from the log here. The reload follows the failure in the
+    // same task, and Chromium did not deliver the page's last console line before it unloaded.
+    assert.ok(
+      retried.some((event) => event.status === 'started'),
+      `The engine did not fetch the catalog again, and the sink was told of no retry. It was told:\n${JSON.stringify(retried, null, 2)}`,
+    );
+  }
+  process.stderr.write(
+    `[assurance] ${row.id}-recovery: ${inPlace ? 'the engine fetched the catalog again' : 'the engine kept the failed module, and the page reloaded'}\n`,
+  );
+  assert.deepEqual(pageErrors, [], 'The outage threw in the page');
+  const unexplained = consoleErrors.filter(
+    (error) => ![...refused].some((url) => error.includes(url)),
+  );
+  assert.deepEqual(
+    unexplained,
+    [],
+    'The page reported errors other than the refused catalog modules',
+  );
+
+  const check = sectionCheck(row, 'recovery');
+  const observed = await measuredContext(page);
+  recordCapabilityClaim(check, 'feature:withRecoveryMessage', observed);
+  recordCapabilityClaim(check, 'directive:LocalizationRecovery', observed);
+  await page.close();
+}
+
 async function verifyLocalizedNotFound(row, context, diagnostics) {
   // An address this application does not serve, under a locale it does. The locale resolved
   // perfectly well; only the page is unknown, and the application's own not-found route is what
@@ -4258,6 +4428,9 @@ async function verifyBrowserRow(row) {
 
   enterStage(`${row.id}-route-deferred-scope`);
   await verifyRouteDeferredScope(row, context, diagnostics);
+
+  enterStage(`${row.id}-recovery`);
+  await verifyRecovery(row, context);
 
   enterStage(`${row.id}-incremental-hydration-after-locale-change`);
   {
