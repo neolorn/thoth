@@ -50,6 +50,37 @@ export const expectedPageCaching = (():
   );
 })();
 
+/**
+ * The absolute URL `x-default` points at, where the table says the policy declares one.
+ *
+ * Written into the table for the reason the floor is: a declaration that goes missing from
+ * `route-policy.ts` fails the checks that expect it instead of switching them off.
+ */
+export const expectedXDefault = ((): string | undefined => {
+  const value = (table as Readonly<Record<string, unknown>>)['xDefault'];
+  if (value === undefined || typeof value === 'string') return value;
+  throw new Error(
+    `The address table gives xDefault as ${JSON.stringify(value)}, which is not an address.`,
+  );
+})();
+
+/** The first path segments the table says the policy leaves to whatever serves them. */
+export const expectedLocaleNeutralRoots = ((): readonly string[] => {
+  const value = (table as Readonly<Record<string, unknown>>)[
+    'localeNeutralRoots'
+  ];
+  if (value === undefined) return [];
+  if (
+    Array.isArray(value) &&
+    value.every((each): each is string => typeof each === 'string')
+  ) {
+    return value;
+  }
+  throw new Error(
+    `The address table gives localeNeutralRoots as ${JSON.stringify(value)}, which is not a list of segments.`,
+  );
+})();
+
 const written = (page: Page, locale: string): string => {
   const value = pages[page][locale];
   if (value === undefined) {

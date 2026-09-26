@@ -1,6 +1,8 @@
 {
   "policy": "locale-neutral",
   "prerendered": ["article", "exercise values"],
+  "xDefault": "https://site.example/",
+  "localeNeutralRoots": ["assets"],
   "sharedWithPseudoLocales": {
     "article": ["en-US"],
     "exercise values": ["en-US"]
@@ -49,6 +51,7 @@
     "unlisted dossier": {
       "en-US": "/dossiers/unlisted-dossier"
     },
+    "second under an alias": {},
     "legacy": {
       "en-US": "/legacy"
     },

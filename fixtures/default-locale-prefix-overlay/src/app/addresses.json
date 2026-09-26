@@ -1,6 +1,8 @@
 {
   "policy": "default-locale-prefix",
   "prerendered": ["second", "article", "exercise values"],
+  "xDefault": "https://site.example/",
+  "localeNeutralRoots": ["assets"],
   "origins": {
     "en-US": "https://site.example",
     "ar-EG": "https://site.example",
@@ -67,6 +69,10 @@
     "unlisted dossier": {
       "en-US": "/dossiers/unlisted-dossier",
       "ar-EG": "/ar-eg/dossiers/unlisted-dossier"
+    },
+    "second under an alias": {
+      "en-US": "/en/second",
+      "ar-EG": "/ar/second"
     },
     "legacy": {
       "en-US": "/legacy",

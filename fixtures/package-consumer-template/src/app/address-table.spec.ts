@@ -9,6 +9,9 @@ import {
 import {
   addressedLocales,
   claimRunningPolicy,
+  expectedLocaleNeutralRoots,
+  expectedXDefault,
+  localeOrigin,
   pageAddress,
   tablePolicy,
 } from './addresses';
@@ -162,6 +165,42 @@ describe('the address table', () => {
         location: pageAddress('second', locale),
       });
     }
+  });
+
+  it('points x-default where the policy declares it', () => {
+    const declared =
+      routePolicy.kind === 'locale-host'
+        ? routePolicy.xDefaultUrl
+        : routePolicy.xDefaultPath;
+    expect(
+      declared === undefined
+        ? undefined
+        : new URL(declared, localeOrigin(routePolicy.defaultLocale)).href,
+    ).toBe(expectedXDefault);
+  });
+
+  it('spells the second page under every alias the policy accepts', () => {
+    // An alias names a locale, so the table lists one address for each aliased locale, and a policy
+    // without aliases lists none.
+    const aliased =
+      routePolicy.kind === 'path-prefix'
+        ? Object.values(routePolicy.aliases)
+        : [];
+    expect([...addressedLocales('second under an alias')].sort()).toEqual(
+      [...aliased].sort(),
+    );
+    for (const locale of addressedLocales('second under an alias')) {
+      expect(
+        resolve(pageAddress('second under an alias', locale)),
+      ).toMatchObject({
+        status: 'redirect',
+        location: pageAddress('second', locale),
+      });
+    }
+  });
+
+  it('leaves the roots the policy declares to whatever serves them', () => {
+    expect(routePolicy.localeNeutralRoots).toEqual(expectedLocaleNeutralRoots);
   });
 
   it('answers a removed page, and a page that never existed, in the locale of the address', () => {

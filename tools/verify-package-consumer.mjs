@@ -1735,6 +1735,107 @@ async function verifyDocumentDeclarations() {
 await verifyDocumentDeclarations();
 
 /**
+ * What the policy declares about addresses beyond its pages, read off the server's answers: where
+ * `x-default` points, which spellings stand for a locale, and which first segments are left to
+ * whatever serves them. Each value is the address table's, which the table spec holds to
+ * `route-policy.ts`.
+ */
+function verifyAddressDeclarations() {
+  const locale = INIT_REQUEST.defaultLocale;
+  const homes = INIT_REQUEST.locales.filter((each) =>
+    addresses.has('home', each),
+  );
+  const aliased = addresses.locales('second under an alias');
+  const asked = [
+    {
+      origin: addresses.origin(locale),
+      path: addresses.path('exercise', locale),
+    },
+    ...homes.map((each) => ({
+      origin: addresses.origin(each),
+      path: addresses.path('home', each),
+    })),
+    ...aliased.map((each) => ({
+      origin: addresses.origin(each),
+      path: `${addresses.path('second under an alias', each)}?tab=one`,
+    })),
+    // Each root beside a segment one word longer, which the policy does take, so a root that
+    // stopped being declared answers differently from one that is.
+    ...addresses.localeNeutralRoots.flatMap((segment) => [
+      { origin: addresses.origin(locale), path: `/${segment}/logo` },
+      { origin: addresses.origin(locale), path: `/${segment}-elsewhere/logo` },
+    ]),
+  ];
+  const answers = serverAnswers(asked);
+  const { policy } = sheetInDocument(answers[0].body);
+  let next = 1;
+
+  for (const each of homes) {
+    const answer = answers[next++];
+    const check = `${consumerName}: x-default on home in ${each}`;
+    const { document } = new JSDOM(answer.body).window;
+    assert.equal(
+      document
+        .querySelector('link[rel="alternate"][hreflang="x-default"]')
+        ?.getAttribute('href'),
+      addresses.xDefault,
+      `${check}: not where xDefaultPath or xDefaultUrl declares it`,
+    );
+    recordCapabilityClaim(check, 'declaration:x-default', {
+      document: answer.body,
+      policy,
+    });
+  }
+
+  for (const each of aliased) {
+    const answer = answers[next++];
+    const check = `${consumerName}: the ${each} alias`;
+    assert.equal(
+      answer.status,
+      308,
+      `${check}: an address under one of the aliases the policy declares was not sent on`,
+    );
+    assert.equal(
+      answer.headers.location,
+      `${addresses.address('second', each)}?tab=one`,
+      `${check}: not sent to the address of the locale it stands for, with its query kept`,
+    );
+    // An alias is answered before anything renders, so there is no document to observe.
+    recordCapabilityClaim(check, 'declaration:locale-aliases', { policy });
+  }
+
+  for (const segment of addresses.localeNeutralRoots) {
+    const declined = answers[next++];
+    const taken = answers[next++];
+    const check = `${consumerName}: the ${segment} root`;
+    assert.deepEqual(
+      {
+        status: declined.status,
+        contentLanguage: declined.headers['content-language'],
+        location: declined.headers.location,
+        robots: declined.headers['x-robots-tag'],
+      },
+      {
+        status: 404,
+        contentLanguage: undefined,
+        location: undefined,
+        robots: undefined,
+      },
+      `${check}: an address under a segment localeNeutralRoots declares was answered by Equator rather than left to the server that owns it`,
+    );
+    assert.ok(
+      taken.headers['content-language'] !== undefined ||
+        taken.headers.location !== undefined,
+      `${check}: an address under ${segment}-elsewhere, which is no root, was not answered by Equator, so the root's answer shows nothing`,
+    );
+    recordCapabilityClaim(check, 'declaration:locale-neutral-roots', {
+      policy,
+    });
+  }
+}
+verifyAddressDeclarations();
+
+/**
  * The exercise sheet, as these servers answer it and as these builds wrote it, in every locale
  * they serve. Each line is held to what this Node's own formatters write for the same input, on
  * the Node the server and the build ran on.

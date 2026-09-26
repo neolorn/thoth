@@ -1,6 +1,8 @@
 {
   "policy": "locale-host",
   "prerendered": ["second", "article", "exercise values"],
+  "xDefault": "http://en-us.localhost/",
+  "localeNeutralRoots": ["assets"],
   "pageCaching": "per-visitor",
   "origins": {
     "en-US": "http://en-us.localhost",
@@ -69,6 +71,7 @@
       "en-US": "http://en-us.localhost/dossiers/unlisted-dossier",
       "ar-EG": "http://ar-eg.localhost/dossiers/unlisted-dossier"
     },
+    "second under an alias": {},
     "legacy": {
       "en-US": "http://en-us.localhost/legacy",
       "ar-EG": "http://ar-eg.localhost/legacy",
