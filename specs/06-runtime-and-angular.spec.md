@@ -116,6 +116,11 @@ When no initial snapshot can be built, a release MUST expose a typed failure and
 generated recovery payload. Section 11 of `03-locale-identity-and-resolution.spec.md` owns the
 renderer for that payload. An explicit retry starts a new attempt.
 
+A failed initialization MUST NOT move the address the reader asked for. In a browser a release
+MUST hold the navigation to that address until a retry succeeds and then complete it, so a retry
+brings the reader to the page they asked for, in the locale its address states. A server render has
+no retry to wait for, and a release MUST NOT hold one.
+
 ## 6. Contexts and request isolation
 
 One context per application root, or per server request, is the ordinary case. A child context may

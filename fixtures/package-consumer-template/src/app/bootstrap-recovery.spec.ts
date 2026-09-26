@@ -1,12 +1,24 @@
-import { describe, expect, it, afterEach } from 'vitest';
+import { describe, expect, it, afterEach, vi } from 'vitest';
 
+import { PlatformLocation } from '@angular/common';
+import { MOCK_PLATFORM_LOCATION_CONFIG } from '@angular/common/testing';
 import {
   Component,
   EnvironmentInjector,
   inject,
   provideEnvironmentInitializer,
 } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { bootstrapApplication } from '@angular/platform-browser';
+import {
+  NavigationCancel,
+  NavigationEnd,
+  NavigationError,
+  Router,
+  RouterOutlet,
+  type Event as RouterEvent,
+} from '@angular/router';
+import { filter, firstValueFrom } from 'rxjs';
 import {
   Localization,
   LocalizationRecovery,
@@ -14,14 +26,20 @@ import {
   withLocaleSources,
   withPersistence,
   withRecoveryMessage,
+  withRouting,
 } from '@neolorn/equator';
+import { provideLocalizedRouter } from '@neolorn/equator/router';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
+import { routeProjection } from '#i18n/routes';
 import { messages, providerId, scopeId } from '#i18n/shell';
 
 import { runtimeExtensions } from './runtime-extensions';
+import { routes as appRoutes } from './app.routes';
+import { appRouteProjection, routePolicy } from './localization.routes';
+import { localeOrigin, pagePath } from './addresses';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
@@ -66,6 +84,17 @@ class RecoveryHost {}
   `,
 })
 class PayloadRecoveryHost {}
+
+/** The recovery beside the page, as an application's shell holds the two. */
+@Component({
+  selector: 'routed-recovery-host',
+  imports: [LocalizationRecovery, RouterOutlet],
+  template: `
+    <localization-recovery />
+    <router-outlet />
+  `,
+})
+class RoutedRecoveryHost {}
 
 /** A store that remembers one locale, so the failure is resolved against `ar-EG`. */
 const remembering = (locale: string) => () =>
@@ -277,6 +306,106 @@ describe('bootstrap when a catalog cannot load', () => {
     // Released, it leaves nothing behind in the document, the announcement region included.
     expect(document.querySelector('[data-equator-announcer]')).toBeNull();
     claimCapability('feature:provideLocalizationSetup');
+    claimCapability('entry:@neolorn/equator');
+  });
+});
+
+describe('the first navigation when a catalog cannot load', () => {
+  it('keeps the address the reader asked for, and a retry arrives there', async () => {
+    const origin = localeOrigin('ar-EG');
+    const address = pagePath('item', 'ar-EG');
+    let fail = true;
+    // Every locale's shell, so no locale the start could fall back to lets it start.
+    const shellLoaders = Object.fromEntries(
+      Object.entries(catalogLoaders)
+        .filter(([identity]) =>
+          identity.startsWith(`${providerId}:${scopeId}:`),
+        )
+        .map(([identity, load]) => [
+          identity,
+          () =>
+            fail
+              ? Promise.reject(
+                  new TypeError('Failed to fetch dynamically imported module'),
+                )
+              : load(),
+        ]),
+    );
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: MOCK_PLATFORM_LOCATION_CONFIG,
+          useValue: { startUrl: `${origin}${address}` },
+        },
+        provideLocalizedRouter(appRoutes, { origin }),
+        provideLocalizationSetup(
+          {
+            configuration,
+            catalogSet,
+            catalogLoaders: { ...catalogLoaders, ...shellLoaders },
+            recoveryPayload,
+            extensions: runtimeExtensions,
+            routeProjection,
+          },
+          withRouting({ policy: routePolicy, projection: appRouteProjection }),
+          // The start reads the document this spec runs in, which is not at the address the Router
+          // is given, so the locale that address states is what the store remembers.
+          withPersistence(remembering('ar-EG')),
+          withLocaleSources('stored', 'default'),
+          withRecoveryMessage({
+            message: messages.recovery.unavailable,
+            retryLabel: messages.control.retry,
+          }),
+        ),
+      ],
+    });
+    const localization = TestBed.inject(Localization);
+    await expect(localization.initialize()).rejects.toBeDefined();
+    const router = TestBed.inject(Router);
+    const platform = TestBed.inject(PlatformLocation);
+    const fixture = TestBed.createComponent(RoutedRecoveryHost);
+    let outcome: RouterEvent | undefined;
+    void firstValueFrom(
+      router.events.pipe(
+        filter(
+          (event) =>
+            event instanceof NavigationEnd ||
+            event instanceof NavigationCancel ||
+            event instanceof NavigationError,
+        ),
+      ),
+    ).then((event) => (outcome = event));
+    router.initialNavigation();
+    await new Promise((done) => setTimeout(done, 50));
+    TestBed.tick();
+
+    // Where the reader is while the recovery is on screen, which is what a reload returns to.
+    expect(outcome).toBeUndefined();
+    expect(platform.pathname).toBe(address);
+    expect(
+      fixture.nativeElement.querySelector('[role="alert"]'),
+    ).not.toBeNull();
+
+    fail = false;
+    await localization.retry();
+    await vi.waitFor(() => {
+      TestBed.tick();
+      expect(outcome).toBeDefined();
+    });
+    TestBed.tick();
+
+    expect(outcome).toBeInstanceOf(NavigationEnd);
+    expect(platform.pathname).toBe(address);
+    expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
+    expect(
+      fixture.nativeElement.querySelector('[data-route-view="item"]'),
+    ).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
+    fixture.destroy();
+    TestBed.resetTestingModule();
+    claimCapability('feature:withRecoveryMessage');
+    claimCapability('feature:withRouting');
     claimCapability('entry:@neolorn/equator');
   });
 });

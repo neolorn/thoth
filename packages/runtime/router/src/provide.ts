@@ -2,8 +2,10 @@ import { LocationStrategy, isPlatformServer } from '@angular/common';
 import {
   APP_BOOTSTRAP_LISTENER,
   InjectionToken,
+  Injector,
   PLATFORM_ID,
   REQUEST,
+  effect,
   inject,
   isDevMode,
   makeEnvironmentProviders,
@@ -101,6 +103,45 @@ const LOCALIZED_ROUTE_TABLE = new InjectionToken<LocalizedRouteTable>(
 );
 
 /**
+ * Settles once the runtime has a snapshot to read an address in.
+ *
+ * A start that failed leaves none, and a navigation that fails over it makes the Router put back the
+ * address it last settled on, which for the first navigation is the root. The reader's address was
+ * gone before the recovery was on screen, a reload landed on another page, and a retry that
+ * succeeded had no page to return to. In a browser the navigation is held instead, and completes
+ * when a retry succeeds. A server render has no retry to wait for, and holding it would hold the
+ * response, so there the failure stands.
+ *
+ * A runtime that has failed is not asked to start again here. Starting it is the retry's to do, and
+ * an attempt made by every navigation would be a retry nobody asked for.
+ */
+async function startedRuntime(
+  localization: Localization,
+  injector: Injector,
+  server: boolean,
+): Promise<void> {
+  if (localization.snapshot() !== undefined) return;
+  if (server || localization.lifecycle() !== 'failed') {
+    try {
+      await localization.initialize();
+      return;
+    } catch (error: unknown) {
+      if (server) throw error;
+    }
+  }
+  await new Promise<void>((settle) => {
+    const watch = effect(
+      () => {
+        if (localization.snapshot() === undefined) return;
+        watch.destroy();
+        settle();
+      },
+      { injector },
+    );
+  });
+}
+
+/**
  * The resolver, reading a canonical address.
  *
  * It does not decide which locale the address states: the strategy settles that before the Router
@@ -123,12 +164,20 @@ const LOCALIZED_ROUTE_TABLE = new InjectionToken<LocalizedRouteTable>(
 function resolveCanonicalRouteLocalization(
   options: LocalizedRouterOptions,
 ): ResolveFn<RouteLocalizationContext | RedirectCommand | undefined> {
-  return (_route, state) => {
+  return async (_route, state) => {
     const context = servedAddressContext(options);
+    const localization = inject(Localization);
+    const routeLocalization = inject(RouteLocalization);
+    await startedRuntime(
+      localization,
+      inject(Injector),
+      isPlatformServer(inject(PLATFORM_ID)),
+    );
+    // Read after the start, because the locale that reads the address is the one the start
+    // committed. Read before it, a held navigation completed in the default locale.
     const active =
-      inject(Localization).snapshot()?.primaryLocale ??
-      context.policy.defaultLocale;
-    return inject(RouteLocalization).prepare(
+      localization.snapshot()?.primaryLocale ?? context.policy.defaultLocale;
+    return routeLocalization.prepare(
       toExternalPath(state.url, active, context),
     );
   };
