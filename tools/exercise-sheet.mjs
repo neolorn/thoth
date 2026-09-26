@@ -229,16 +229,16 @@ export function claimExercisedExtensions(check, sheet, expected, context) {
   recordCapabilityClaim(check, 'extension:rich-slot-kind', context);
   extension('formatting-adapter');
   recordCapabilityClaim(check, 'extension:formatting-adapter', context);
-  const parsed = 'extension:parsing-adapter';
-  assert.ok(
-    sheet.lines.has(parsed),
-    `The exercise sheet has no ${parsed} line`,
-  );
-  assert.deepEqual(
-    JSON.parse(sheet.lines.get(parsed)),
-    JSON.parse(expected[parsed]),
-    `The exercise sheet's ${parsed} line is not what the application's parsing-adapter reads`,
-  );
+  const read = (kind) => {
+    const id = `extension:${kind}`;
+    assert.ok(sheet.lines.has(id), `The exercise sheet has no ${id} line`);
+    assert.deepEqual(
+      JSON.parse(sheet.lines.get(id)),
+      JSON.parse(expected[id]),
+      `The exercise sheet's ${id} line is not what the binding installed with withExtensions reads`,
+    );
+  };
+  read('parsing-adapter');
   recordCapabilityClaim(check, 'extension:parsing-adapter', context);
   recordCapabilityClaim(check, 'feature:withExtensions', context);
 }
