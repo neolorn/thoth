@@ -3499,9 +3499,10 @@ async function verifyBackForwardRestore(row, context, diagnostics) {
       { left: true, persisted: true },
       `${row.label} did not bring the page back from its back-forward cache, so nothing here reached the listener`,
     );
-    // Where the address states the locale the page stays in it; where it does not, the page moves
-    // to the one stored since it was left.
-    const expected = addresses.localeInAddress ? 'en-US' : 'ar-EG';
+    // Where the address states the locale the address decides, and the page stays in it; where it
+    // does not the stored locale decides, and the page moves to the one stored since it was left.
+    const decides = addresses.localeInAddress ? 'url' : 'stored';
+    const expected = decides === 'url' ? 'en-US' : 'ar-EG';
     if (expected === 'en-US') {
       await settleBrowserLifecycle(restorePage);
     } else {
@@ -3527,12 +3528,89 @@ async function verifyBackForwardRestore(row, context, diagnostics) {
       [{ value: 'ar-EG', expires: -1 }],
       `${row.label} wrote the locale cookie on a restore, which resolves a locale rather than choosing one`,
     );
+    const observed = await measuredContext(restorePage);
+    const check = sectionCheck(row, 'back-forward restore');
+    if (decides === 'url') recordCapabilityClaim(check, 'source:url', observed);
+    else recordCapabilityClaim(check, 'source:stored', observed);
     await collectPolicyDiagnostics(restorePage, diagnostics);
     await restorePage.close();
     return restores ? 'restored' : 'dispatched';
   } finally {
     await restoreBrowser?.close();
   }
+}
+
+/**
+ * Which source decides a visit in this engine, arranged as the consumer stage arranges it: each
+ * visit lands in a locale only one source could have named. The context's locale is the visitor's
+ * languages, which the engine states both in `navigator.languages` and in the Accept-Language header
+ * of every request, so the server and the client hear the same preference.
+ *
+ * The address decides at the exercise sheet's Arabic address. The others can decide only where an
+ * address names no locale, which is the root under a policy that sends it on to a locale and under
+ * one that renders it in any locale.
+ */
+async function verifyLocaleSources(row, diagnostics) {
+  const entry =
+    addresses.entryRedirects || !addresses.localeInAddress ? '/' : undefined;
+  const visits = [
+    {
+      source: 'url',
+      url: siteUrl(addresses.path('exercise', 'ar-EG'), 'ar-EG'),
+      languages: 'en-US',
+      cookie: 'en-US',
+      lands: 'ar-EG',
+    },
+    ...(entry === undefined
+      ? []
+      : [
+          {
+            source: 'stored',
+            languages: 'en-US',
+            cookie: 'ar-EG',
+            lands: 'ar-EG',
+          },
+          { source: 'browser', languages: 'ar-EG', lands: 'ar-EG' },
+          // A language this consumer does not support, so the visitor's languages decline too.
+          { source: 'default', languages: 'ja', lands: 'en-US' },
+        ].map((visit) => ({ ...visit, url: siteUrl(entry) }))),
+  ];
+  const observed = new Map();
+  for (const { source, url, languages, cookie, lands } of visits) {
+    const visitContext = boundCalls(
+      await browser.newContext({ locale: languages }),
+      'context',
+    );
+    try {
+      await recordPolicyViolations(visitContext);
+      if (cookie !== undefined) {
+        await visitContext.addCookies([
+          { name: 'equator-locale', value: cookie, url: new URL(url).origin },
+        ]);
+      }
+      const visitPage = boundCalls(await visitContext.newPage(), 'page');
+      attachBrowserDiagnostics(visitPage, diagnostics);
+      visitPage.setDefaultTimeout(15_000);
+      visitPage.setDefaultNavigationTimeout(20_000);
+      await visitPage.goto(url);
+      const context = await measuredContext(visitPage);
+      assert.equal(
+        await visitPage.evaluate(() => document.documentElement.lang),
+        lands,
+        `${row.label}: the ${source} source did not decide ${lands} at ${url}, visited in ${languages} with ${cookie === undefined ? 'nothing' : cookie} stored`,
+      );
+      await collectPolicyDiagnostics(visitPage, diagnostics);
+      observed.set(source, context);
+    } finally {
+      await visitContext.close();
+    }
+  }
+  const check = sectionCheck(row, 'locale sources');
+  recordCapabilityClaim(check, 'source:url', observed.get('url'));
+  if (entry === undefined) return;
+  recordCapabilityClaim(check, 'source:stored', observed.get('stored'));
+  recordCapabilityClaim(check, 'source:browser', observed.get('browser'));
+  recordCapabilityClaim(check, 'source:default', observed.get('default'));
 }
 
 /**
@@ -4225,6 +4303,9 @@ async function verifyBrowserRow(row) {
 
   enterStage(`${row.id}-exercise-sheets`);
   await verifyExerciseSheets(row, context, diagnostics);
+
+  enterStage(`${row.id}-locale-sources`);
+  await verifyLocaleSources(row, diagnostics);
 
   enterStage(`${row.id}-switch-endurance`);
   await verifySwitchEndurance(page, row);

@@ -1389,6 +1389,101 @@ function verifyServerAnswers() {
 verifyServerAnswers();
 
 /**
+ * Which source decides a visit, in the order `specs/03-locale-identity-and-resolution.spec.md`
+ * section 7 gives them when none is declared: the address, the stored locale, the visitor's
+ * languages, the default. Each visit is arranged so the locale it lands in can have come from one
+ * source only: every source ahead of it declines, and every source after it names another locale.
+ *
+ * The address decides at the exercise sheet's Arabic address, which states its locale under every
+ * policy. The other three can decide only where an address names no locale, which is the root under
+ * a policy that sends it on to a locale and under one that renders it in any locale. Every other
+ * policy states a locale in every address, so no visit reaches them there.
+ */
+function verifyLocaleSources() {
+  const { defaultLocale, locales } = INIT_REQUEST;
+  const other = locales.find((locale) => locale !== defaultLocale);
+  // The cookie src/app/locale-cookie.ts declares, which the server reads as the stored locale.
+  const stored = (locale) => ({ cookie: `equator-locale=${locale}` });
+  const unsupported = 'ja';
+  assert.ok(
+    !locales.some((locale) => new Intl.Locale(locale).language === unsupported),
+    `The visit that leaves the default to decide asks for ${unsupported}, which this consumer supports.`,
+  );
+  const entry =
+    addresses.entryRedirects || !addresses.localeInAddress ? '/' : undefined;
+  const visits = [
+    {
+      source: 'url',
+      origin: addresses.origin(other),
+      path: addresses.path('exercise', other),
+      headers: { ...stored(defaultLocale), 'accept-language': defaultLocale },
+      lands: other,
+    },
+    ...(entry === undefined
+      ? []
+      : [
+          {
+            source: 'stored',
+            headers: { ...stored(other), 'accept-language': defaultLocale },
+            lands: other,
+          },
+          {
+            source: 'browser',
+            headers: { 'accept-language': other },
+            lands: other,
+          },
+          {
+            source: 'default',
+            headers: { 'accept-language': unsupported },
+            lands: defaultLocale,
+          },
+        ].map((visit) => ({
+          ...visit,
+          origin: addresses.origin(defaultLocale),
+          path: entry,
+        }))),
+  ];
+  const answers = serverAnswers(
+    visits.map(({ origin, path, headers }) => ({ origin, path, headers })),
+  );
+  visits.forEach(({ source, path, headers, lands }, index) => {
+    const answer = answers[index];
+    const where = `The ${source} source, at ${path} with ${JSON.stringify(headers)},`;
+    if (path === entry && addresses.entryRedirects) {
+      assert.equal(answer.status, 307, `${where} was not sent on`);
+      assert.equal(
+        answer.headers['location'],
+        addresses.path('home', lands),
+        `${where} did not send the visitor to ${lands}`,
+      );
+    } else {
+      assert.equal(answer.status, 200, `${where} was not answered`);
+      assert.equal(
+        answer.headers['content-language'],
+        lands,
+        `${where} did not decide ${lands}`,
+      );
+    }
+  });
+  // The sheet names the policy the server runs. The root has no sheet, and is answered by the same
+  // server in the same run.
+  const { policy } = sheetInDocument(answers[0].body);
+  const observed = new Map(
+    visits.map(({ source }, index) => [
+      source,
+      { document: answers[index].body, policy },
+    ]),
+  );
+  const check = `${consumerName}: locale sources`;
+  recordCapabilityClaim(check, 'source:url', observed.get('url'));
+  if (entry === undefined) return;
+  recordCapabilityClaim(check, 'source:stored', observed.get('stored'));
+  recordCapabilityClaim(check, 'source:browser', observed.get('browser'));
+  recordCapabilityClaim(check, 'source:default', observed.get('default'));
+}
+verifyLocaleSources();
+
+/**
  * The exercise sheet, as these servers answer it and as these builds wrote it, in every locale
  * they serve. Each line is held to what this Node's own formatters write for the same input, on
  * the Node the server and the build ran on.
