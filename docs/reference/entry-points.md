@@ -15,7 +15,7 @@ Composable from here: `provideLocalizationSetup`, `withExtensions`, `withFormatt
 
 ## `@neolorn/equator/core`
 
-The value builders, the contracts and the address helpers, with no Angular injector involved. This is what a library or a test helper imports.
+The contracts, the locale profiles, and the route and address helpers, with no Angular in the graph. This is what a library or a test helper imports.
 
 Publishes 234 name(s).
 
