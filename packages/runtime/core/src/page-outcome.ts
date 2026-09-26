@@ -108,8 +108,22 @@ interface PageOutcomeChannel {
  * Angular withdrew as `REQUEST_CONTEXT`: wiring documented nowhere and silent when omitted. A key
  * that is the request answers both, and it answers a third: a `Request` is created per request and
  * unreachable from the next one, so a declaration cannot outlive the render that made it.
+ *
+ * Held under a key in the global symbol registry rather than in this module, because a server
+ * loads this module twice. Angular's builder bundles the server entry, where the handler opens and
+ * takes, apart from the application, where the page declares, and each bundle carries its own
+ * copy. A map in module scope would be two maps, and every declaration would land in the one the
+ * handler never reads.
  */
-const channels = new WeakMap<Request, PageOutcomeChannel>();
+const CHANNELS = Symbol.for('@neolorn/equator/page-outcome-channels');
+const registry = globalThis as unknown as Record<
+  symbol,
+  WeakMap<Request, PageOutcomeChannel> | undefined
+>;
+const channels = (registry[CHANNELS] ??= new WeakMap<
+  Request,
+  PageOutcomeChannel
+>());
 
 /**
  * Opens the channel for one render, which is also what makes a missing one detectable.

@@ -111,6 +111,21 @@ describe('the channel a declaration travels over', () => {
     expect(ɵtakePageOutcome(request)).toEqual({ outcome: 'gone' });
   });
 
+  it('carries a declaration made by another copy of the core entry point', async () => {
+    // A server holds two copies: Angular's builder bundles the server entry, where the handler
+    // opens and takes, apart from the application, where the page declares. The query gives this
+    // import a module instance of its own, as the second bundle does.
+    const otherCopy = '../core/src/page-outcome.js?application-bundle';
+    const application = (await import(
+      /* @vite-ignore */ otherCopy
+    )) as typeof import('../core/src/page-outcome.js');
+    const request = new Request('https://site.example/en-us/second');
+    ɵopenPageOutcomeChannel(request);
+
+    expect(application.ɵrememberPageOutcome(request, pageAbsent())).toBe(true);
+    expect(ɵtakePageOutcome(request)).toEqual({ outcome: 'absent' });
+  });
+
   it('gives the declaration to one read and closes', () => {
     const request = new Request('https://site.example/en-us/second');
     ɵopenPageOutcomeChannel(request);
