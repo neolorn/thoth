@@ -2155,7 +2155,7 @@ export interface LocalizedPlainDateInputPattern {
   readonly order: 'day-month-year' | 'month-day-year' | 'year-month-day';
   /** What goes between them. */
   readonly separator: string;
-  /** Which calendar the fields are counted in. Defaults to the context's. */
+  /** Which calendar the fields are counted in. Defaults to `iso8601`, as `plainDate` does. */
   readonly calendar?: string;
   /** The earliest date accepted. Anything before it parses and is reported out of range. */
   readonly minimum?: PlainDateValue;
