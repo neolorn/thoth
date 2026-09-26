@@ -453,13 +453,45 @@ describe('localizedRouteTable', () => {
       expect(table.problems).toEqual([]);
     });
 
-    it('says nothing when the projection carries per-locale spellings, because the strategies translate them', () => {
-      // A spelling that varies by locale reaches the canonical layer through the strategies under
-      // these kinds as under a prefix, so it is not a problem in the table.
+    /**
+     * Navigation needs no branch here: the strategies translate a spelling to the canonical layer
+     * before the Router matches. The build does. `localizedServerRoutes` emits a route at each
+     * spelling a locale has of its own, and `@angular/ssr` fails the build for a server route no
+     * entry in `Router.config` matches, which is what a locale-neutral or host application with
+     * one translated path met.
+     */
+    it('names each spelling that differs from the canonical path in one branch at the root', () => {
       const table = localizedRouteTable(CANONICAL, NEUTRAL, PROJECTION);
-      expect(table.branches).toEqual([]);
-      expect(table.routes).toBe(table.canonical);
+      expect(table.branches).toHaveLength(1);
+      const root = branchFor(table, '');
+      expect(root.children?.map((child) => child.path)).toEqual([
+        'الثاني',
+        'مقالات/:slug',
+        'قسم',
+      ]);
+      // The canonical loaders, by reference, so the bundler emits one chunk for both.
+      expect(root.children?.[1]?.loadComponent).toBe(ARTICLE);
+      expect(root.children?.[2]?.loadChildren).toBe(SECTION);
+      expect(table.routes).toEqual([...table.canonical, root]);
       expect(kinds(table.problems)).toEqual([]);
+    });
+
+    it('lets the root branch match nothing, as every branch does', () => {
+      const root = branchFor(
+        localizedRouteTable(CANONICAL, NEUTRAL, PROJECTION),
+        '',
+      );
+      expect(root.canMatch).toHaveLength(1);
+      expect((root.canMatch?.[0] as () => boolean)()).toBe(false);
+    });
+
+    it('reports a translated spelling that renames a parameter, as under a prefix', () => {
+      const table = localizedRouteTable(CANONICAL, NEUTRAL, {
+        ...PROJECTION,
+        localizedPaths: { article: { 'ar-EG': 'مقالات/:id' } },
+      });
+      expect(kinds(table.problems)).toEqual(['parameter-mismatch']);
+      expect(table.branches).toEqual([]);
     });
 
     it('treats a host policy the same way', () => {
@@ -480,7 +512,9 @@ describe('localizedRouteTable', () => {
         },
         PROJECTION,
       );
-      expect(table.branches).toEqual([]);
+      expect(branchFor(table, '').children?.map((child) => child.path)).toEqual(
+        ['الثاني', 'مقالات/:slug', 'قسم'],
+      );
       expect(kinds(table.problems)).toEqual([]);
     });
   });

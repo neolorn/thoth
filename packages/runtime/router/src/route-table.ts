@@ -78,7 +78,9 @@ export interface LocalizedRouteTable {
   /** The authored routes, unchanged. This is the branch the Router actually matches. */
   readonly canonical: Routes;
   /**
-   * One branch per locale, carrying that locale's spelling of every projected address.
+   * One branch per locale, carrying that locale's spelling of every projected address. Under a
+   * policy that carries no locale in the path, one branch at the root instead, carrying each
+   * spelling a locale has of its own, and none where every route is spelled alike.
    *
    * Matched by nothing, ever. `@angular/ssr` computes a prerenderable address by walking the
    * client route config and joining `path` segments, and `@angular/build` writes the file at
@@ -220,6 +222,38 @@ function parameterNames(path: string): string[] {
 }
 
 /**
+ * One locale's spelling of a projection route, as a branch entry, or nothing where it cannot be one.
+ */
+function spelledEntry(
+  entry: RouteRuntimeProjection['generated']['routes'][number],
+  source: FlattenedRoute,
+  path: string,
+  locale: string,
+  problems: LocalizedRouteTableProblem[],
+): Route | undefined {
+  const declared = [...entry.parameterNames].sort();
+  const spelled = parameterNames(path).sort();
+  if (
+    declared.length !== spelled.length ||
+    declared.some((name, index) => name !== spelled[index])
+  ) {
+    // A localized spelling that renames or drops a parameter produces an address the codec
+    // cannot round-trip, and the failure surfaces as a page rendered in the wrong locale
+    // rather than as an error. Caught here, where both spellings are in hand.
+    problems.push({
+      kind: 'parameter-mismatch',
+      message: `Route ${JSON.stringify(entry.id)} declares parameters [${declared.join(', ')}] but its ${JSON.stringify(locale)} spelling ${JSON.stringify(`/${path}`)} carries [${spelled.join(', ')}].`,
+      routeId: entry.id,
+      locale,
+    });
+    return undefined;
+  }
+  return path === ''
+    ? { path: '', pathMatch: 'full', ...source.target }
+    : { path, ...source.target };
+}
+
+/**
  * Build the two-layer table.
  *
  * Pure, and takes the authored routes rather than reading them from anywhere, so the branches
@@ -242,13 +276,42 @@ export function localizedRouteTable(
   );
 
   if (policy.kind !== 'path-prefix') {
-    // No branches. A branch is one locale's prefix over that locale's spellings, and these kinds
-    // carry no locale in the path. Navigation needs no branch under any kind: the strategies
-    // translate every spelling to the canonical layer before the Router matches.
+    // No locale branches, because these kinds carry no locale in the path, and navigation needs
+    // none: the strategies translate every spelling to the canonical layer before the Router
+    // matches. The build does need an entry for a spelling a locale has of its own.
+    // `localizedServerRoutes` emits a server route at it, and `@angular/ssr` fails the build for a
+    // server route no entry in `Router.config` matches. One branch at the root names each such
+    // spelling once, and declines like every other branch.
+    const spellings = new Map<string, Route>();
+    for (const entry of projection.generated.routes) {
+      const source = flattened.get(entry.path);
+      if (source === undefined) continue;
+      for (const locale of Object.keys(policy.locales)) {
+        const path = projection.localizedPaths?.[entry.id]?.[locale];
+        if (path === undefined || path === entry.path || spellings.has(path)) {
+          continue;
+        }
+        const spelled = spelledEntry(entry, source, path, locale, problems);
+        if (spelled !== undefined) spellings.set(path, spelled);
+      }
+    }
+    const branches: Routes =
+      spellings.size === 0
+        ? []
+        : [
+            {
+              path: '',
+              children: [...spellings.values()],
+              canMatch: [declines],
+            },
+          ];
     return Object.freeze({
       canonical,
-      branches: Object.freeze([]),
-      routes: canonical,
+      branches: Object.freeze(branches),
+      routes:
+        branches.length === 0
+          ? canonical
+          : Object.freeze([...canonical, ...branches]),
       problems: Object.freeze(problems),
     });
   }
@@ -304,28 +367,8 @@ export function localizedRouteTable(
       }
       const path =
         projection.localizedPaths?.[entry.id]?.[locale] ?? entry.path;
-      const declared = [...entry.parameterNames].sort();
-      const spelled = parameterNames(path).sort();
-      if (
-        declared.length !== spelled.length ||
-        declared.some((name, index) => name !== spelled[index])
-      ) {
-        // A localized spelling that renames or drops a parameter produces an address the codec
-        // cannot round-trip, and the failure surfaces as a page rendered in the wrong locale
-        // rather than as an error. Caught here, where both spellings are in hand.
-        problems.push({
-          kind: 'parameter-mismatch',
-          message: `Route ${JSON.stringify(entry.id)} declares parameters [${declared.join(', ')}] but its ${JSON.stringify(locale)} spelling ${JSON.stringify(`/${path}`)} carries [${spelled.join(', ')}].`,
-          routeId: entry.id,
-          locale,
-        });
-        continue;
-      }
-      children.push(
-        path === ''
-          ? { path: '', pathMatch: 'full', ...source.target }
-          : { path, ...source.target },
-      );
+      const spelled = spelledEntry(entry, source, path, locale, problems);
+      if (spelled !== undefined) children.push(spelled);
     }
     branches.push({ path: prefix, children, canMatch: [declines] });
   }
