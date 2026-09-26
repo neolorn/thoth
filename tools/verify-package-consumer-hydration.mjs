@@ -2520,7 +2520,7 @@ async function exerciseLocaleContinuity(page, row) {
       .then((value) => JSON.stringify(value))
       .catch((error) => `unreadable: ${String(error)}`);
     assert.fail(
-      `The locale switch was not remembered. ` +
+      `The locale switch was not remembered by withPersistence(cookieStore(localeCookie)). ` +
         `The switch itself landed, everything asserted above this is about the page after it committed, so what is missing is the cookie meant to outlive it. ` +
         `The lab writes it from script, as \`equator-locale=ar-EG; Path=/; Max-Age=31536000; SameSite=Lax\` with no \`Secure\`, over ${browserOrigin}. ` +
         `What the document reports: ${documentCookie}. ` +
@@ -2530,6 +2530,10 @@ async function exerciseLocaleContinuity(page, row) {
         `In both, under another name or value, is Equator writing something other than what it documents.`,
     );
   }
+  const remembered = await measuredContext(page);
+  const rememberedCheck = sectionCheck(row, 'remembered switch');
+  recordCapabilityClaim(rememberedCheck, 'feature:withPersistence', remembered);
+  recordCapabilityClaim(rememberedCheck, 'store:cookieStore', remembered);
   // Only an address that names no locale has anywhere to send the visitor, and a policy that
   // prefixes every locale has one at the root.
   if (addresses.entryRedirects) {
@@ -3519,7 +3523,7 @@ async function verifyBackForwardRestore(row, context, diagnostics) {
     assert.equal(
       await restorePage.evaluate(() => document.documentElement.lang),
       expected,
-      `${row.label} showed a restored page in the wrong locale after the stored one moved to ar-EG`,
+      `${row.label} showed a restored page in the wrong locale after the one withPersistence reads from its cookieStore moved to ar-EG`,
     );
     assert.deepEqual(
       (await restoreContext.cookies(storedAt))
@@ -3530,8 +3534,13 @@ async function verifyBackForwardRestore(row, context, diagnostics) {
     );
     const observed = await measuredContext(restorePage);
     const check = sectionCheck(row, 'back-forward restore');
-    if (decides === 'url') recordCapabilityClaim(check, 'source:url', observed);
-    else recordCapabilityClaim(check, 'source:stored', observed);
+    if (decides === 'url') {
+      recordCapabilityClaim(check, 'source:url', observed);
+    } else {
+      recordCapabilityClaim(check, 'source:stored', observed);
+      recordCapabilityClaim(check, 'feature:withPersistence', observed);
+      recordCapabilityClaim(check, 'store:cookieStore', observed);
+    }
     await collectPolicyDiagnostics(restorePage, diagnostics);
     await restorePage.close();
     return restores ? 'restored' : 'dispatched';
