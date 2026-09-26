@@ -1836,6 +1836,92 @@ function verifyAddressDeclarations() {
 verifyAddressDeclarations();
 
 /**
+ * The sitemap each deployment serves, read off its server: the pages it publishes, the alternates
+ * each entry carries, and what each route's sitemap declaration says about it.
+ *
+ * `app.config.ts` maps the route data field `section` to a changefreq and a priority, and names
+ * `updated` as the lastmod field. `home` is `landing`, daily at 1.0; `second` is `reference`,
+ * monthly at 0.5, and declares its own date; the article's class is not in the map, so its entry
+ * claims none of the three. `item` is non-indexable and `lazy` is not published, so neither is
+ * listed.
+ */
+function verifySitemap() {
+  const locale = INIT_REQUEST.defaultLocale;
+  // A sitemap lists the addresses of the origin serving it, so each origin is asked for its own.
+  const deployments = [
+    ...new Set(INIT_REQUEST.locales.map((each) => addresses.origin(each))),
+  ].map((origin) => ({
+    origin,
+    locales: INIT_REQUEST.locales.filter(
+      (each) => addresses.origin(each) === origin,
+    ),
+  }));
+  const answers = serverAnswers([
+    {
+      origin: addresses.origin(locale),
+      path: addresses.path('exercise', locale),
+    },
+    ...deployments.map(({ origin }) => ({ origin, path: '/sitemap.xml' })),
+  ]);
+  const { policy } = sheetInDocument(answers[0].body);
+  const published = ['second', 'article', 'home'];
+  const declared = {
+    second: { lastmod: '2026-09-01', changefreq: 'monthly', priority: '0.5' },
+    article: { lastmod: undefined, changefreq: undefined, priority: undefined },
+    home: { lastmod: undefined, changefreq: 'daily', priority: '1.0' },
+  };
+  for (const [index, { origin, locales }] of deployments.entries()) {
+    const answer = answers[index + 1];
+    const check = `${consumerName}: the sitemap at ${origin}`;
+    assert.equal(answer.status, 200, `${check}: not served`);
+    assert.match(
+      answer.headers['content-type'] ?? '',
+      /^application\/xml/u,
+      `${check}: not served as XML`,
+    );
+    const { document } = new JSDOM(answer.body, { contentType: 'text/xml' })
+      .window;
+    const entries = [...document.querySelectorAll('url')].map((entry) => ({
+      loc: entry.querySelector('loc')?.textContent,
+      lastmod: entry.querySelector('lastmod')?.textContent,
+      changefreq: entry.querySelector('changefreq')?.textContent,
+      priority: entry.querySelector('priority')?.textContent,
+      alternates: [...entry.getElementsByTagName('xhtml:link')].map((link) => [
+        link.getAttribute('hreflang'),
+        link.getAttribute('href'),
+      ]),
+    }));
+    const expected = published.flatMap((page) =>
+      locales
+        .filter((each) => addresses.has(page, each))
+        .map((each) => ({
+          loc: addresses.url(page, each),
+          ...declared[page],
+          // Every locale the page is in, wherever it is served from, and where x-default points.
+          alternates: [
+            ...INIT_REQUEST.locales
+              .filter((other) => addresses.has(page, other))
+              .map((other) => [other, addresses.url(page, other)]),
+            ...(addresses.xDefault === undefined
+              ? []
+              : [['x-default', addresses.xDefault]]),
+          ],
+        })),
+    );
+    assert.deepEqual(
+      entries,
+      expected,
+      `${check}: its entries are not the published pages, with their alternates and what each route's sitemap declaration gives changefreq, priority and lastmod`,
+    );
+    recordCapabilityClaim(check, 'capability:sitemap', { policy });
+    recordCapabilityClaim(check, 'declaration:route-sitemap-entry', {
+      policy,
+    });
+  }
+}
+verifySitemap();
+
+/**
  * The exercise sheet, as these servers answer it and as these builds wrote it, in every locale
  * they serve. Each line is held to what this Node's own formatters write for the same input, on
  * the Node the server and the build ran on.
