@@ -7,7 +7,6 @@ import { fileURLToPath } from 'node:url';
 
 import {
   FETCH_BAD_PORTS,
-  PORT_ATTEMPTS,
   listenForBrowsers,
 } from './browser-reachable-port.mjs';
 
@@ -219,6 +218,24 @@ assert.equal(
   `A server handed port ${blockedPort} first asked for ${asked.length} port(s) rather than passing over it once.`,
 );
 
+// The system hands out ports in sequence from inside the list, and the server has to walk past the
+// five that 6665 to 6669 put in a row.
+const sequential = answering();
+const walkedTo = await listenForBrowsers(
+  sequential,
+  '127.0.0.1',
+  (attempt) => 6665 + attempt,
+).then(
+  (listened) => listened,
+  (error) => error,
+);
+await closing(sequential);
+assert.equal(
+  walkedTo,
+  6670,
+  `A server handed 6665, 6666 and on in turn stopped at ${walkedTo} rather than listening on 6670.`,
+);
+
 // The system hands out nothing else, and the server has to stop and say why.
 let tries = 0;
 const cornered = answering();
@@ -234,7 +251,7 @@ assert.ok(
   `A server offered only port ${blockedPort} ${stopped}, so a system that keeps handing out a listed port is not caught.`,
 );
 assert.match(stopped.message, /Fetch, section 2\.9/u);
-assert.equal(tries, PORT_ATTEMPTS);
+assert.equal(tries, 2);
 assert.equal(cornered.listening, false);
 
 // And every server a tool starts goes through it. The helper itself is the proof the search finds a

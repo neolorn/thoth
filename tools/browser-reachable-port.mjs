@@ -23,11 +23,13 @@ export const FETCH_BAD_PORTS = Object.freeze([
 ]);
 
 /**
- * How many ports are asked for before the run stops. From a dynamic range of 1024 to 15000, a draw
- * lands on a listed port about once in seven hundred, so five in a row is a system that keeps
- * handing them out, and asking again would not end.
+ * The most ports asked for before the run stops: one more than the list is long, since a system
+ * that never repeats itself can hand out each listed port once and then has to hand out another. A
+ * system that hands out ports in sequence gives 6665 to 6669 five in a row, so a smaller count
+ * stops a run the next ask would have finished. A system that gives back a port it already gave
+ * will keep doing so, and that is what stops the run early.
  */
-export const PORT_ATTEMPTS = 5;
+export const PORT_ATTEMPTS = FETCH_BAD_PORTS.length + 1;
 
 /**
  * Listens on `host` at a port no browser refuses, and returns it.
@@ -47,10 +49,12 @@ export async function listenForBrowsers(server, host, requested = () => 0) {
     });
     const { port } = server.address();
     if (!FETCH_BAD_PORTS.includes(port)) return port;
+    const repeated = refused.includes(port);
     refused.push(port);
     await new Promise((resolveClose) => server.close(() => resolveClose()));
+    if (repeated) break;
   }
   throw new Error(
-    `The system gave ${host} the ports ${refused.join(', ')} in ${PORT_ATTEMPTS} attempts, and browsers and Node's fetch refuse each one (Fetch, section 2.9). Move the system's dynamic port range above them; on Windows, "netsh int ipv4 show dynamicport tcp" shows it.`,
+    `The system gave ${host} the ports ${refused.join(', ')} in ${refused.length} attempts, and browsers and Node's fetch refuse each one (Fetch, section 2.9). Move the system's dynamic port range above them; on Windows, "netsh int ipv4 show dynamicport tcp" shows it.`,
   );
 }
