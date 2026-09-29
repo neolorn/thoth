@@ -8,16 +8,20 @@
  * wired to the workspace would resolve the sources instead of the published files.
  */
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import {
+  cp,
   lstat,
   readFile,
   readdir,
   realpath,
   rm,
+  symlink,
+  unlink,
   writeFile,
 } from 'node:fs/promises';
-import { isBuiltin } from 'node:module';
+import { createRequire, isBuiltin } from 'node:module';
 import {
   dirname,
   extname,
@@ -2153,6 +2157,527 @@ function verifySitemap() {
   }
 }
 verifySitemap();
+
+/**
+ * The command line as an application's author meets it, on every row this stage runs: each
+ * command against this seat, held to what `specs/10-compiler-and-tooling.spec.md` section 11 says
+ * it does. Here rather than beside the first generation because a claim for the three commands that
+ * analyze the application carries the URL policy it runs, and the policy is read from a page the
+ * server drew, which needs the builds above.
+ */
+async function verifyCommandLine() {
+  const [answer] = serverAnswers([
+    {
+      origin: addresses.origin(INIT_REQUEST.defaultLocale),
+      path: addresses.path('exercise', INIT_REQUEST.defaultLocale),
+    },
+  ]);
+  const { policy } = sheetInDocument(answer.body);
+  const cliPath = resolve(
+    consumerRoot,
+    'node_modules/@neolorn/equator-toolkit/cli.js',
+  );
+  const equator = (cwd, args, expectedStatus = 0) => {
+    const result = spawnSync(process.execPath, [cliPath, ...args], {
+      cwd,
+      encoding: 'utf8',
+      env: { ...process.env, CI: 'true' },
+    });
+    assert.equal(
+      result.status,
+      expectedStatus,
+      [
+        `equator ${args.join(' ')}`,
+        result.error?.message,
+        result.stdout,
+        result.stderr,
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    );
+    return result;
+  };
+  const machine = (cwd, args, expectedStatus = 0) =>
+    parseMachineResult(equator(cwd, [...args, '--json'], expectedStatus));
+  const catalogPath = 'i18n/shell/en-US.yaml';
+  const catalogFile = resolve(consumerRoot, catalogPath);
+  const catalog = await readFile(catalogFile, 'utf8');
+  const plainLine = '  source-only: Source fallback remains truthful.\n';
+  assert.ok(
+    catalog.includes(plainLine),
+    `${catalogPath} no longer holds the line these steps edit`,
+  );
+  const withCatalog = async (text, step) => {
+    await writeFile(catalogFile, text, 'utf8');
+    try {
+      await step();
+    } finally {
+      await writeFile(catalogFile, catalog, 'utf8');
+    }
+  };
+
+  const toolkitVersion = (
+    await readJson(
+      resolve(
+        consumerRoot,
+        'node_modules/@neolorn/equator-toolkit/package.json',
+      ),
+    )
+  ).version;
+  assert.equal(
+    equator(consumerRoot, ['--version']).stdout.trim(),
+    toolkitVersion,
+    'equator --version does not print the installed toolkit version',
+  );
+
+  await verifyUninstall(equator, machine);
+
+  // A comment, because it changes no message and so leaves every later check reading what it read
+  // before, while still being a change the migration has to carry, preview and apply.
+  const planPath = resolve(consumerRoot, 'tmp/migration.json');
+  const tamperedPath = resolve(consumerRoot, 'tmp/migration-tampered.json');
+  const { createMigrationPlan } = await import(
+    pathToFileURL(
+      resolve(consumerRoot, 'node_modules/@neolorn/equator-toolkit/index.js'),
+    ).href
+  );
+  const migratedCatalog = `# The source messages of the application shell.\n${catalog}`;
+  const planned = createMigrationPlan({
+    id: 'annotate-shell',
+    domain: 'catalog',
+    fromVersion: '1',
+    toVersion: '2',
+    changes: [{ path: catalogPath, before: catalog, after: migratedCatalog }],
+  });
+  assert.equal(planned.ok, true, JSON.stringify(planned.diagnostics));
+  await writeFile(planPath, JSON.stringify(planned.value), 'utf8');
+  await writeFile(
+    tamperedPath,
+    JSON.stringify({
+      ...planned.value,
+      changes: [
+        { ...planned.value.changes[0], after: `# Edited.\n${catalog}` },
+      ],
+    }),
+    'utf8',
+  );
+  const migrate = (plan, extra = [], expectedStatus = 0) =>
+    machine(
+      consumerRoot,
+      ['migrate', '--plan', plan, '--project', '.', ...extra],
+      expectedStatus,
+    );
+  const beforeMigration = await treeDigest(consumerRoot);
+  const tampered = migrate(tamperedPath, [], 2);
+  assert.equal(tampered.diagnostics[0]?.code, 'EQ1805');
+  assert.deepEqual(
+    await treeDigest(consumerRoot),
+    beforeMigration,
+    'equator migrate wrote to the project under a plan whose content does not match its digest',
+  );
+  const previewed = migrate(planPath, ['--dry-run']);
+  assert.equal(previewed.result.changed, true);
+  assert.deepEqual(previewed.result.files, [catalogPath]);
+  assert.deepEqual(
+    await treeDigest(consumerRoot),
+    beforeMigration,
+    'equator migrate --dry-run wrote to the project',
+  );
+  const migrated = migrate(planPath);
+  assert.deepEqual(migrated.result.files, [catalogPath]);
+  assert.equal(await readFile(catalogFile, 'utf8'), migratedCatalog);
+  assert.deepEqual(
+    await treeDigest(consumerRoot),
+    { ...beforeMigration, [catalogPath]: digestOf(migratedCatalog) },
+    'equator migrate changed a file its plan does not name',
+  );
+  const reapplied = migrate(planPath);
+  assert.equal(reapplied.result.changed, false, 'the migration applied twice');
+  assert.deepEqual(reapplied.result.files, []);
+  const afterMigration = machine(consumerRoot, ['generate']);
+  assert.equal(afterMigration.status, 'success');
+  recordCapabilityClaim(
+    `${consumerName}: equator generate after a migration`,
+    'cli:generate',
+    { policy },
+  );
+  assert.equal(machine(consumerRoot, ['check']).result.fresh, true);
+  recordCapabilityClaim(
+    `${consumerName}: equator migrate over the seat's catalog`,
+    'cli:migrate',
+    {},
+  );
+  await writeFile(catalogFile, catalog, 'utf8');
+  machine(consumerRoot, ['generate']);
+
+  // Written the way a person might: a comment of their own, and quotes the value does not need.
+  const quotedLine = '  source-only: "Source fallback remains truthful."\n';
+  const handWritten = `# Kept by hand.\n${catalog.replace(plainLine, quotedLine)}`;
+  await withCatalog(handWritten, async () => {
+    const preview = machine(consumerRoot, ['format', '--dry-run']);
+    assert.equal(preview.result.changed, true);
+    assert.deepEqual(preview.result.files, [catalogPath]);
+    assert.equal(await readFile(catalogFile, 'utf8'), handWritten);
+    const formatted = machine(consumerRoot, ['format']);
+    assert.deepEqual(formatted.result.files, [catalogPath]);
+    assert.equal(
+      await readFile(catalogFile, 'utf8'),
+      `# Kept by hand.\n${catalog}`,
+      'equator format did not keep the comment and the order and drop only the quotes',
+    );
+    assert.equal(machine(consumerRoot, ['format']).result.changed, false);
+    recordCapabilityClaim(
+      `${consumerName}: equator format over a catalog written by hand`,
+      'cli:format',
+      {},
+    );
+  });
+
+  await withCatalog(catalog.replace(plainLine, quotedLine), async () => {
+    const fixed = machine(consumerRoot, ['check', '--fix']);
+    assert.equal(fixed.status, 'success');
+    assert.deepEqual(
+      fixed.result.fixedFiles,
+      [catalogPath],
+      'equator check --fix did not report the catalog it rewrote',
+    );
+    assert.equal(
+      await readFile(catalogFile, 'utf8'),
+      catalog,
+      'equator check --fix did not rewrite the catalog to its canonical form',
+    );
+    recordCapabilityClaim(`${consumerName}: equator check --fix`, 'cli:check', {
+      policy,
+    });
+  });
+
+  const editedLine = '  source-only: Source fallback remains current.\n';
+  await withCatalog(catalog.replace(plainLine, editedLine), async () => {
+    const stale = machine(consumerRoot, ['check', '--require-fresh'], 1);
+    assert.equal(stale.result.fresh, false);
+    machine(consumerRoot, ['generate']);
+    const fresh = machine(consumerRoot, ['check', '--require-fresh']);
+    assert.equal(fresh.result.fresh, true);
+    recordCapabilityClaim(
+      `${consumerName}: equator check --require-fresh`,
+      'cli:check',
+      { policy },
+    );
+  });
+  machine(consumerRoot, ['generate']);
+  assert.equal(
+    machine(consumerRoot, ['check', '--require-fresh']).result.fresh,
+    true,
+  );
+
+  await verifyWatchEvents(cliPath, catalogFile, catalog, policy);
+}
+
+/** A file's content as `treeDigest` records it. */
+function digestOf(contents) {
+  return createHash('sha256').update(contents).digest('base64');
+}
+
+/**
+ * Every file under a seat and its content, so a command that was to write nothing, or one file,
+ * can be held to exactly that. What installs, builds and the stage's own scratch write is left out.
+ */
+async function treeDigest(root) {
+  const skipped = new Set([
+    'node_modules',
+    'dist',
+    'tmp',
+    '.angular',
+    'embedded',
+  ]);
+  const digests = [];
+  const walk = async (directory) => {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      if (directory === root && skipped.has(entry.name)) continue;
+      const path = resolve(directory, entry.name);
+      if (entry.isDirectory()) await walk(path);
+      else {
+        digests.push([
+          relative(root, path).split(sep).join('/'),
+          digestOf(await readFile(path)),
+        ]);
+      }
+    }
+  };
+  await walk(root);
+  return Object.fromEntries(digests.sort(([a], [b]) => (a < b ? -1 : 1)));
+}
+
+/**
+ * `equator clean` and `equator uninstall` on a copy of this seat, because every step after this one
+ * reads the seat. The copy reaches the seat's packages through a junction, so `init` and
+ * `generate` can put it back.
+ */
+async function verifyUninstall(equator, machine) {
+  // Beside the seat rather than inside it: an owner inside another finds the outer configuration
+  // once its own is gone, and answers for that one.
+  const copy = resolve(consumerRoot, '..', `${consumerName}-uninstall`);
+  const packages = resolve(copy, 'node_modules');
+  const removeCopy = async () => {
+    // The link first and by itself, so removing the copy cannot reach the seat's packages.
+    if ((await lstat(packages).catch(() => undefined))?.isSymbolicLink()) {
+      await unlink(packages);
+    }
+    await rm(copy, { recursive: true, force: true });
+  };
+  await removeCopy();
+  for (const entry of await readdir(consumerRoot)) {
+    if (['node_modules', 'dist', 'tmp', '.angular', 'embedded'].includes(entry))
+      continue;
+    await cp(resolve(consumerRoot, entry), resolve(copy, entry), {
+      recursive: true,
+    });
+  }
+  await symlink(resolve(consumerRoot, 'node_modules'), packages, 'junction');
+  try {
+    const dryClean = machine(copy, ['clean', '--dry-run']);
+    assert.ok(dryClean.result.removed.length > 0);
+    assert.deepEqual(
+      machine(copy, ['clean']).result.removed,
+      dryClean.result.removed,
+    );
+    await assert.rejects(
+      lstat(resolve(copy, 'src/generated/i18n')),
+      { code: 'ENOENT' },
+      'equator clean left the generated files',
+    );
+    machine(copy, ['generate']);
+
+    const editedScript = `${PACKAGE_SCRIPTS['equator:check']} --json`;
+    const manifestPath = resolve(copy, 'package.json');
+    const manifest = await readJson(manifestPath);
+    manifest.scripts['equator:check'] = editedScript;
+    await writeFile(
+      manifestPath,
+      `${JSON.stringify(manifest, null, 2)}\n`,
+      'utf8',
+    );
+    const catalogs = Object.entries(await treeDigest(copy)).filter(([path]) =>
+      path.startsWith('i18n/'),
+    );
+    assert.ok(catalogs.length > 0);
+
+    const configuration = await readJson(resolve(copy, 'equator.config.json'));
+    const before = await treeDigest(copy);
+    const preview = machine(copy, ['uninstall', '--dry-run']);
+    assert.equal(preview.result.changed, true);
+    assert.deepEqual(
+      await treeDigest(copy),
+      before,
+      'equator uninstall --dry-run wrote to the project',
+    );
+    const uninstalled = machine(copy, ['uninstall']);
+    assert.deepEqual(uninstalled.result.removed, preview.result.removed);
+    assert.deepEqual(uninstalled.result.retained, ['scripts.equator:check']);
+    assert.deepEqual(uninstalled.result.catalogs, []);
+    for (const gone of [
+      'equator.config.json',
+      'src/generated/i18n',
+      '.equator',
+    ]) {
+      await assert.rejects(
+        lstat(resolve(copy, gone)),
+        { code: 'ENOENT' },
+        `equator uninstall left ${gone}`,
+      );
+    }
+    const left = await readJson(manifestPath);
+    assert.deepEqual(
+      Object.keys(left.imports ?? {}).filter((specifier) =>
+        specifier.startsWith('#i18n'),
+      ),
+      [],
+      'equator uninstall left a #i18n import mapping',
+    );
+    for (const name of Object.keys(PACKAGE_SCRIPTS)) {
+      assert.equal(
+        left.scripts?.[name],
+        name === 'equator:check' ? editedScript : undefined,
+        `equator uninstall did not take back ${name}, or did not keep it once edited`,
+      );
+    }
+    const after = await treeDigest(copy);
+    for (const [path, digest] of catalogs) {
+      assert.equal(after[path], digest, `equator uninstall changed ${path}`);
+    }
+    // With its configuration gone the owner is no longer an Equator project, so a second run is
+    // refused as one, and writes nothing.
+    const again = machine(copy, ['uninstall'], 2);
+    assert.equal(again.diagnostics[0]?.code, 'EQ1702');
+    assert.deepEqual(
+      await treeDigest(copy),
+      after,
+      'a second equator uninstall wrote to the project',
+    );
+
+    // The edited script is its author's to settle before Equator is set up again.
+    delete left.scripts['equator:check'];
+    await writeFile(manifestPath, `${JSON.stringify(left, null, 2)}\n`, 'utf8');
+    // Every field the configuration held, as flags, which is how a person sets each one.
+    const optionFlags = (flag, table) =>
+      Object.entries(table).flatMap(([locale, options]) =>
+        Object.entries(options).flatMap(([option, value]) => [
+          flag,
+          `${locale}.${option}=${value}`,
+        ]),
+      );
+    equator(copy, [
+      'init',
+      ...initArguments.slice(3),
+      ...optionFlags('--pseudo-locale', PSEUDO_LOCALES),
+      ...optionFlags('--formatting', LOCALE_FORMATTING),
+    ]);
+    assert.deepEqual(
+      await readJson(resolve(copy, 'equator.config.json')),
+      configuration,
+      'equator init did not write back the configuration equator uninstall removed',
+    );
+    assert.equal(machine(copy, ['generate']).status, 'success');
+    await lstat(resolve(copy, 'src/generated/i18n/index.ts'));
+    recordCapabilityClaim(
+      `${consumerName}: equator clean on a copy of the seat`,
+      'cli:clean',
+      {},
+    );
+    recordCapabilityClaim(
+      `${consumerName}: equator uninstall on a copy of the seat`,
+      'cli:uninstall',
+      {},
+    );
+    recordCapabilityClaim(
+      `${consumerName}: equator init after equator uninstall`,
+      'cli:init',
+      {},
+    );
+  } finally {
+    await removeCopy();
+  }
+}
+
+/**
+ * `equator watch --json`: every event it prints is one the published schema accepts, a catalog
+ * that stops parsing is reported as an event rather than ending the watch, and the next good
+ * version is generated.
+ */
+async function verifyWatchEvents(cliPath, catalogFile, catalog, policy) {
+  const toolkitRoot = resolve(
+    consumerRoot,
+    'node_modules/@neolorn/equator-toolkit',
+  );
+  // From the package's real location, which pnpm links into `node_modules`: its own dependencies
+  // sit beside the target, not beside the link.
+  const { default: Ajv2020 } = createRequire(
+    resolve(await realpath(toolkitRoot), 'package.json'),
+  )('ajv/dist/2020.js');
+  const validate = new Ajv2020({ allErrors: true, strict: true }).compile(
+    await readJson(
+      resolve(toolkitRoot, 'schemas', 'cli-watch-event.v1.schema.json'),
+    ),
+  );
+  const child = spawn(process.execPath, [cliPath, 'watch', '--json'], {
+    cwd: consumerRoot,
+    env: { ...process.env, CI: 'true' },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  const events = [];
+  let pending = '';
+  let stderr = '';
+  let aliveAfterFailure = false;
+  const completed = new Promise((resolvePromise, rejectPromise) => {
+    // One bound on silence and one on the whole, as `verifyWatchCommand` has, for its reason.
+    const IDLE_MILLISECONDS = 30_000;
+    const CEILING_MILLISECONDS = 300_000;
+    let idleTimer;
+    let ceilingTimer;
+    const fail = (why) => {
+      clearTimeout(idleTimer);
+      clearTimeout(ceilingTimer);
+      child.kill('SIGTERM');
+      rejectPromise(
+        new Error(
+          `equator watch --json ${why}.\n${JSON.stringify(events)}\n${pending}\n${stderr}`,
+        ),
+      );
+    };
+    const progressed = () => {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(
+        () => fail(`produced no output for ${IDLE_MILLISECONDS / 1000}s`),
+        IDLE_MILLISECONDS,
+      );
+    };
+    ceilingTimer = setTimeout(
+      () => fail(`ran past its ${CEILING_MILLISECONDS / 1000}s ceiling`),
+      CEILING_MILLISECONDS,
+    );
+    progressed();
+    child.stdout.on('data', (chunk) => {
+      progressed();
+      const lines = `${pending}${chunk.toString()}`.split('\n');
+      pending = lines.pop();
+      for (const line of lines.filter((each) => each.trim() !== '')) {
+        events.push(JSON.parse(line));
+        if (events.length === 1) {
+          setTimeout(() => {
+            void writeFile(
+              catalogFile,
+              `${catalog}  broken: "unterminated\n`,
+              'utf8',
+            );
+          }, 100);
+        } else if (events.length === 2) {
+          aliveAfterFailure = child.exitCode === null;
+          setTimeout(() => {
+            void writeFile(catalogFile, catalog, 'utf8');
+          }, 100);
+        } else if (events.length === 3) {
+          child.kill('SIGTERM');
+        }
+      }
+    });
+    child.stderr.on('data', (chunk) => {
+      progressed();
+      stderr += chunk.toString();
+    });
+    child.once('error', rejectPromise);
+    child.once('close', () => {
+      clearTimeout(idleTimer);
+      clearTimeout(ceilingTimer);
+      resolvePromise(undefined);
+    });
+  });
+  try {
+    await completed;
+  } finally {
+    await writeFile(catalogFile, catalog, 'utf8');
+  }
+  for (const event of events) {
+    assert.equal(
+      validate(event),
+      true,
+      `equator watch --json printed an event its schema refuses: ${JSON.stringify(validate.errors)}\n${JSON.stringify(event)}`,
+    );
+  }
+  assert.deepEqual(
+    events.map(({ status }) => status),
+    ['success', 'diagnostic-failure', 'success'],
+    `${JSON.stringify(events)}\n${stderr}`,
+  );
+  assert.ok(
+    aliveAfterFailure,
+    'equator watch stopped when a catalog stopped parsing',
+  );
+  recordCapabilityClaim(`${consumerName}: equator watch --json`, 'cli:watch', {
+    policy,
+  });
+}
+
+await verifyCommandLine();
 
 /**
  * The exercise sheet, as these servers answer it and as these builds wrote it, in every locale

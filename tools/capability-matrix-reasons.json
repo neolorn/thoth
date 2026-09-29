@@ -8,9 +8,15 @@
     },
     {
       "id": "cli-without-policy",
-      "rows": ["cli:format", "cli:clean", "cli:uninstall", "cli:migrate"],
+      "rows": [
+        "cli:init",
+        "cli:format",
+        "cli:clean",
+        "cli:uninstall",
+        "cli:migrate"
+      ],
       "columns": ["policy:*"],
-      "reason": "These commands change catalogs, generated files and imports; they never reach the compiler, which is the only place a URL policy is read."
+      "reason": "These commands write the configuration, catalogs, generated files and package metadata; they never reach the compiler, which is the only place a URL policy is read, and the configuration has no field for one."
     },
     {
       "id": "xliff-outside-pages",
