@@ -1506,6 +1506,16 @@ function verifyLocaleSources() {
 }
 verifyLocaleSources();
 
+// The installed core, which the request handler composes a declaring page's response with.
+const installedCore = await import(
+  pathToFileURL(
+    resolve(
+      consumerRoot,
+      'node_modules/@neolorn/equator/fesm2022/neolorn-equator-core.mjs',
+    ),
+  ).href
+);
+
 /**
  * What the routes declare, read off the server's answers in the default locale: the indexing and
  * caching classes a route's data names, the floor a deployment puts under every page, what became
@@ -1516,6 +1526,7 @@ function verifyRouteDeclarations() {
   const locale = INIT_REQUEST.defaultLocale;
   const asked = [
     ['exercise', ''],
+    ['topic', ''],
     ['home', ''],
     ['second', ''],
     ['item', ''],
@@ -1634,6 +1645,43 @@ function verifyRouteDeclarations() {
     'outcome:pageOperationalFailure',
     observed('unavailable topic'),
   );
+  // What the installed function says each declaration makes of the address's own response, which
+  // is the filed topic's, is what the server answered: the handler composes the response with it.
+  const {
+    pageAbsent,
+    pageGone,
+    pageOperationalFailure,
+    pageOutcomeHttpDescriptor,
+  } = installedCore;
+  assert.equal(status('topic'), 200, 'the filed topic was not answered');
+  for (const [page, declaration] of [
+    ['unfiled topic', pageAbsent()],
+    ['retired topic', pageGone()],
+    ['unavailable topic', pageOperationalFailure(503)],
+  ]) {
+    const described = pageOutcomeHttpDescriptor(declaration, {
+      status: status('topic'),
+      contentLanguage: header('topic', 'content-language'),
+    });
+    assert.deepEqual(
+      {
+        status: status(page),
+        contentLanguage: header(page, 'content-language'),
+        robots: header(page, 'x-robots-tag'),
+      },
+      {
+        status: described.status,
+        contentLanguage: described.contentLanguage,
+        robots: described.robots,
+      },
+      `The server's answer for the ${page} is not the response pageOutcomeHttpDescriptor describes for what the page declared`,
+    );
+    recordCapabilityClaim(
+      check,
+      'outcome:pageOutcomeHttpDescriptor',
+      observed(page),
+    );
+  }
 
   // The server settles a dossier before it renders, and declares what it found.
   assert.equal(

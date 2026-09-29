@@ -33,7 +33,11 @@
     },
     {
       "id": "http-server-only",
-      "rows": ["entry:@neolorn/equator/http"],
+      "rows": [
+        "entry:@neolorn/equator/http",
+        "outcome:declarePageOutcome",
+        "outcome:declareOperationalFailure"
+      ],
       "columns": [
         "render:prerender",
         "render:client-navigation",
@@ -83,6 +87,26 @@
       "rows": ["declaration:route-caching-class"],
       "columns": ["render:prerender"],
       "reason": "A prerendered page has no response to carry a caching header; what the class does to a build is refuse a per-visitor or not-stored route and write no page for it (spec 07 section 9), which verify:consumer requires of the lazy route."
+    },
+    {
+      "id": "renderer-declares-without-a-page",
+      "rows": [
+        "outcome:declarePageOutcome",
+        "outcome:declareOperationalFailure"
+      ],
+      "columns": ["render:server"],
+      "reason": "A renderer states what it decided with no page rendered at all (spec 07 section 5), so its answer is never a server-rendered page; verify:consumer claims both from the server's answers for the withdrawn and the unreachable dossier."
+    },
+    {
+      "id": "descriptor-describes-a-response",
+      "rows": ["outcome:pageOutcomeHttpDescriptor"],
+      "columns": [
+        "render:prerender",
+        "render:client-navigation",
+        "render:hydration",
+        "engine:*"
+      ],
+      "reason": "It describes the response a declaration produces. A build writes no page for a declared outcome (spec 07 section 5, checked by verify:consumer for the topic page), and a client navigation or a hydrated page has no response, which a release must not synthesize, so no build and no browser has a response for it to describe."
     },
     {
       "id": "outcome-refused-when-prerendered",
