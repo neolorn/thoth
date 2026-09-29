@@ -4120,6 +4120,173 @@ async function verifyRouteDeferredScope(row, context, diagnostics) {
   }
 }
 
+/**
+ * A switch to Arabic on a page the server did not draw for the client: the prerendered second page,
+ * adopted, and the same page drawn by the router after a link from home. Every effect of a change
+ * that a page carries is held here, because each runs over what the page shows, and a page the
+ * build wrote or the client drew is a different page to run over from the one the server answered.
+ */
+async function verifySwitchOnDrawnPages(row, context, diagnostics) {
+  const before = (await context.cookies()).filter(
+    ({ name }) => name === 'equator-locale',
+  );
+  const visit = async (label, open) => {
+    const page = boundCalls(await context.newPage(), 'page');
+    attachBrowserDiagnostics(page, diagnostics);
+    page.setDefaultTimeout(15_000);
+    page.setDefaultNavigationTimeout(20_000);
+    const events = logOf(page);
+    const observed = await open(page);
+    await switchOnPage(
+      page,
+      sectionCheck(row, `locale switch on the second page, ${label}`),
+      observed,
+      events,
+    );
+    await collectPolicyDiagnostics(page, diagnostics);
+    await page.close();
+  };
+  try {
+    // Under a policy that leaves the locale out of the address the second page is spelled the same in
+    // every locale, so it is answered on request and never prerendered.
+    if (addresses.prerendered.includes('second')) {
+      await visit('prerendered', async (page) => {
+        await visitFor(context, 'second', 'en-US', (url) =>
+          navigateWithScriptGate(page, url, async () => {
+            await page.waitForSelector('[data-route-view="second"]', {
+              state: 'attached',
+            });
+            await holdServerElements(page);
+          }),
+        );
+        const observed = await measuredContext(page);
+        assert.match(
+          observed.document,
+          /\bng-server-context=["'][^"']*\bssg\b/u,
+          `${row.label} answered the second page with a document the build did not write`,
+        );
+        assert.ok(
+          observed.adoptedElements > 0,
+          `${row.label} kept none of the prerendered second page's elements`,
+        );
+        return observed;
+      });
+    }
+    await visit('drawn by a client navigation', async (page) => {
+      await visitFor(context, 'home', 'en-US', (url) => page.goto(url));
+      await page.waitForFunction(
+        () => document.documentElement.dataset['clientReady'] === 'true',
+      );
+      await page.locator('[data-route-link="second"]').click();
+      await page.waitForURL((url) => isShown(url, 'second', 'en-US'));
+      await page.waitForSelector('[data-route-view="second"]');
+      // Only what the navigation measured. The document is still the home page's, which the server
+      // wrote, and the second page in it is not.
+      const { engine, policy, clientNavigations } = await measuredContext(page);
+      assert.ok(
+        clientNavigations > 0,
+        `${row.label} reached the second page without a client navigation`,
+      );
+      return { engine, policy, clientNavigations };
+    });
+  } finally {
+    await context.clearCookies({ name: 'equator-locale' });
+    await context.addCookies(before);
+  }
+}
+
+/** The switch to Arabic and back on the page `page` shows, held and claimed under `observed`. */
+async function switchOnPage(page, check, observed, events) {
+  await localeChoice(page, 'ar-EG').click();
+  await page
+    .waitForURL((url) => isShown(url, 'second', 'ar-EG'))
+    .catch(() => undefined);
+  assert.ok(
+    isShown(new URL(page.url()), 'second', 'ar-EG'),
+    `${check}: withRouting did not move the address to the Arabic second page; it is at ${page.url()}`,
+  );
+  await page.waitForFunction(
+    () =>
+      document.documentElement.lang === 'ar-EG' &&
+      document.documentElement.dir === 'rtl',
+  );
+  const title = await readCatalogMessage(
+    consumerRoot,
+    'ar-EG',
+    'document.second.title',
+  );
+  // An answer that never comes is a wrong answer, so the wait's end is read and the assertion says
+  // what was there instead.
+  const settled = (predicate, argument) =>
+    page
+      .waitForFunction(predicate, argument, { timeout: 5_000 })
+      .catch(() => undefined);
+  await settled((expected) => document.title === expected, title);
+  assert.equal(
+    await page.title(),
+    title,
+    `${check}: the head does not carry the Arabic title documentMetadata declares for the second page`,
+  );
+  await settled(
+    (expected) =>
+      document.querySelector('[data-equator-announcer]')?.textContent ===
+      expected,
+    title,
+  );
+  assert.equal(
+    await page.locator('[data-equator-announcer]').textContent(),
+    title,
+    `${check}: the change was not announced in the page's Arabic title that withLocaleAnnouncement gives as the wording`,
+  );
+  assert.deepEqual(
+    await overlayRoot(page),
+    { lang: 'ar-EG', dir: 'rtl' },
+    `${check}: the LocalizationOverlayAdapter installed with withOverlayLocale did not move the overlay root to Arabic`,
+  );
+  await settled(() =>
+    document
+      .querySelector('[data-dynamic-title]')
+      ?.textContent?.includes('دليل Equator للترجمة'),
+  );
+  assert.match(
+    (await page.locator('[data-dynamic-title]').textContent()) ?? '',
+    /دليل Equator للترجمة/u,
+    `${check}: the dynamic content's LocalizationParticipant did not bring its Arabic article`,
+  );
+  assert.deepEqual(
+    (await page.context().cookies(new URL(page.url()).origin))
+      .filter(({ name }) => name === 'equator-locale')
+      .map(({ value }) => value),
+    ['ar-EG'],
+    `${check}: withPersistence did not remember the choice in its cookieStore`,
+  );
+  assert.equal(
+    await localeChoice(page, 'ar-EG').getAttribute('aria-current'),
+    'true',
+    `${check}: the LocaleChoice option for ar-EG is not the current one`,
+  );
+  claimLoggedChange(
+    check,
+    loggedEvents(events.join('\n')),
+    'ar-EG',
+    'succeeded',
+    observed,
+  );
+  recordCapabilityClaim(check, 'directive:LocaleChoice', observed);
+  recordCapabilityClaim(check, 'feature:withRouting', observed);
+  recordCapabilityClaim(check, 'declaration:document-metadata', observed);
+  recordCapabilityClaim(check, 'feature:withLocaleAnnouncement', observed);
+  recordCapabilityClaim(check, 'feature:withOverlayLocale', observed);
+  recordCapabilityClaim(check, 'extension:overlay-adapter', observed);
+  recordCapabilityClaim(check, 'extension:locale-participant', observed);
+  recordCapabilityClaim(check, 'feature:withPersistence', observed);
+  recordCapabilityClaim(check, 'store:cookieStore', observed);
+
+  await localeChoice(page, 'en-US').click();
+  await page.waitForURL((url) => isShown(url, 'second', 'en-US'));
+  await page.waitForFunction(() => document.documentElement.lang === 'en-US');
+}
+
 /** The language and direction of the root the application attaches overlays to. */
 function overlayRoot(page) {
   return page.locator('[data-overlay-root]').evaluate((root) => ({
@@ -4431,6 +4598,12 @@ async function verifyBrowserRow(row) {
 
   enterStage(`${row.id}-recovery`);
   await verifyRecovery(row, context);
+
+  // Where the change is a document navigation there is no switch in a page to hold.
+  if (addresses.switchInDocument) {
+    enterStage(`${row.id}-switch-on-drawn-pages`);
+    await verifySwitchOnDrawnPages(row, context, diagnostics);
+  }
 
   enterStage(`${row.id}-incremental-hydration-after-locale-change`);
   {
