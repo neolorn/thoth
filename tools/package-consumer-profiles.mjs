@@ -161,3 +161,22 @@ export const resolveAngularVersion = (consumerProfile, packageName) =>
   angularToolingPackages.has(packageName)
     ? (consumerProfile.angularTooling ?? consumerProfile.angular)
     : consumerProfile.angular;
+
+/**
+ * The version a row installs of one package, or `undefined` where the row names no such package.
+ *
+ * The profile decides where it names the package and the consumer template's manifest decides
+ * otherwise, because those are the two sources the materializer writes a row's manifest from and
+ * the row's lock is resolved against. Anything proven "on a row" has to read the same two.
+ */
+export const resolveRowVersion = (consumerProfile, templateManifest, name) => {
+  if (name.startsWith('@angular/')) {
+    return resolveAngularVersion(consumerProfile, name);
+  }
+  if (name === 'rxjs') return consumerProfile.rxjs;
+  if (name === 'typescript') return consumerProfile.typescript;
+  return (
+    templateManifest.dependencies?.[name] ??
+    templateManifest.devDependencies?.[name]
+  );
+};

@@ -21,7 +21,7 @@ import { spawnSync } from 'node:child_process';
 
 import {
   consumerProfiles,
-  resolveAngularVersion,
+  resolveRowVersion,
 } from './package-consumer-profiles.mjs';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -165,22 +165,35 @@ await refreshTemplateLock(
 );
 
 // The document gate proves the documents on the development row, so the scaffold carries that
-// row's Angular versions rather than whatever `ng new` resolved on the day it was made.
+// row's version of every package it installs rather than whatever `ng new` resolved on the day it
+// was made. Equator's own two are the build under test.
 const scaffoldManifestPath = resolve(documentScaffoldRoot, 'package.json');
 const scaffoldManifest = JSON.parse(
   await readFile(scaffoldManifestPath, 'utf8'),
+);
+const templateManifest = JSON.parse(
+  await readFile(
+    resolve(workspaceRoot, 'fixtures/package-consumer-template/package.json'),
+    'utf8',
+  ),
 );
 for (const dependencySet of [
   scaffoldManifest.dependencies,
   scaffoldManifest.devDependencies,
 ]) {
   for (const dependency of Object.keys(dependencySet)) {
-    if (dependency.startsWith('@angular/')) {
-      dependencySet[dependency] = resolveAngularVersion(
-        consumerProfiles.get('package-consumer'),
-        dependency,
+    if (dependency.startsWith('@neolorn/')) continue;
+    const version = resolveRowVersion(
+      consumerProfiles.get('package-consumer'),
+      templateManifest,
+      dependency,
+    );
+    if (version === undefined) {
+      throw new Error(
+        `The document scaffold installs ${dependency}, which the development row does not. Add it to fixtures/package-consumer-template or remove it from the scaffold.`,
       );
     }
+    dependencySet[dependency] = version;
   }
 }
 await writeFile(

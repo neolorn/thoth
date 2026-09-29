@@ -37,8 +37,8 @@
  * selected. Two guides may therefore write one path differently. Two blocks on one guide may not.
  *
  * **The tutorial authors the base.** The scaffold is what `ng new` produced with `src/app/` and
- * `i18n/` removed, and its Angular packages held to the development row's versions, which is the
- * row the rest of the gate proves; what `ng new` resolves on a given day is not a row. The tutorial
+ * `i18n/` removed, and every package it installs held to the development row's version, which is
+ * the row the rest of the gate proves; what `ng new` resolves on a given day is not a row. The tutorial
  * runs on it from `equator init` onward, so everything the application is comes from the one
  * document that claims to build it: the catalogs in both locales, the providers, the route table,
  * the switcher, the rich content, and the spec. It ends at that spec, so what this proves is a
@@ -57,13 +57,17 @@ import { fileURLToPath } from 'node:url';
 
 import {
   consumerProfiles,
-  resolveAngularVersion,
+  resolveRowVersion,
 } from './package-consumer-profiles.mjs';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const scaffoldRoot = resolve(
   workspaceRoot,
   'fixtures/document-consumer-scaffold',
+);
+const templateManifestPath = resolve(
+  workspaceRoot,
+  'fixtures/package-consumer-template/package.json',
 );
 const groundRoot = resolve(workspaceRoot, 'tmp/document-blocks');
 const baseRoot = resolve(groundRoot, 'base');
@@ -309,18 +313,29 @@ async function pointAtTheDistributables(root) {
 }
 
 /**
- * Every Angular package the base installed, against the development row's version of it.
+ * Every package the base installed, against the development row's version of it.
  *
  * Read from what installed rather than from the manifest, because a lockfile refreshed against
- * another manifest installs what it recorded whatever the manifest says.
+ * another manifest installs what it recorded whatever the manifest says. Equator's own two packages
+ * are the ones under test and come from the build; a package the row does not install is refused,
+ * because nothing else in the gate runs it.
  */
 async function checkDevelopmentRow(root, manifest) {
   const row = consumerProfiles.get('package-consumer');
+  const template = JSON.parse(await readFile(templateManifestPath, 'utf8'));
   const names = [manifest.dependencies, manifest.devDependencies]
     .flatMap((set) => Object.keys(set))
-    .filter((name) => name.startsWith('@angular/'));
-  assert.ok(names.length > 0, 'The scaffold names no Angular package.');
+    .filter((name) => !name.startsWith('@neolorn/'));
+  assert.ok(
+    names.includes('@angular/core') && names.includes('jsdom'),
+    `The scaffold's package list is not the one this check was written against: ${names.join(', ')}`,
+  );
   for (const name of names) {
+    const expected = resolveRowVersion(row, template, name);
+    assert.ok(
+      expected !== undefined,
+      `The scaffold installs ${name}, which the development row does not, so the documents would be proven on a package no other stage runs.`,
+    );
     const installed = JSON.parse(
       await readFile(
         resolve(root, 'node_modules', name, 'package.json'),
@@ -329,8 +344,8 @@ async function checkDevelopmentRow(root, manifest) {
     );
     assert.equal(
       installed.version,
-      resolveAngularVersion(row, name),
-      `The scaffold installed ${name} ${installed.version}, not the development row's version. Run "pnpm run refresh:consumer-locks".`,
+      expected,
+      `The scaffold installed ${name} ${installed.version}, not the development row's ${expected}. Run "pnpm run refresh:consumer-locks".`,
     );
   }
 }
