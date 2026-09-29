@@ -114,8 +114,8 @@ const git = (...args) =>
  *
  * This is also what lets the run happen somewhere else. A commit can be checked out into as many
  * worktrees as there are stages that need one, so editing continues in the tree the engineer is
- * sitting in while the gate proves the commit they made, and the three stages that mutate tracked
- * source mutate a copy nothing else can see.
+ * sitting in while the gate proves the commit they made, and the stages that mutate tracked source
+ * mutate a copy nothing else can see.
  */
 const requireCommittedTree = () => {
   const changes = git('status', '--porcelain');

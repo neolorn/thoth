@@ -152,17 +152,31 @@ const declared = Object.freeze([
     writes: ['cache:vitest:runtime'],
     claims: true,
   },
-  // The first of three stages that mutate tracked source in place and restore it. Each gets a tree
-  // of its own, so the mutation has no reader to be protected from and the barrier these three used
-  // to be is not there to derive: they still write `source:packages`, but not the copy anything else
+  // The stages that mutate tracked source in place and restore it. Each gets a tree of its own, so
+  // the mutation has no reader to be protected from and the barrier these stages used to be is not
+  // there to derive: they still write `source:packages`, but not the copy anything else
   // is reading. Restoring on the way out, including when it throws, remains the stage's own contract
   // and is checked there rather than here: a private tree makes a failure to restore harmless to
   // everyone else, which is not the same as making it correct.
+  // Plants a real injection, an inert one, one whose module cannot load and one naming a test that
+  // does not exist, and requires the runner to tell a catch from the three that only exit like one.
+  {
+    id: 'verify:assurance:self-test',
+    processors: 4,
+    privateTree: true,
+    writes: ['cache:vitest:unnamed', 'source:packages'],
+  },
   {
     id: 'verify:assurance',
     processors: 4,
     privateTree: true,
     writes: ['cache:vitest:unnamed', 'source:packages'],
+    needs: [
+      {
+        on: 'verify:assurance:self-test',
+        why: 'A runner nobody has seen refuse a false catch would report a guard that never ran as caught.',
+      },
+    ],
   },
   {
     id: 'build',

@@ -78,6 +78,7 @@
     "verify:message-format-conformance": "node ./tools/verify-message-format-conformance.mjs",
     "verify:message-function-space": "node ./tools/verify-message-function-space.mjs",
     "verify:assurance": "node ./tools/verify-assurance.mjs",
+    "verify:assurance:self-test": "node ./tools/verify-assurance-self-test.mjs",
     "verify:assurance:runtime": "node ./tools/verify-assurance-runtime.mjs",
     "verify:browser-assurance:self-test": "node ./tools/verify-browser-assurance-self-test.mjs",
     "verify:browser-assurance": "node ./tools/verify-package-consumer-hydration.mjs",
