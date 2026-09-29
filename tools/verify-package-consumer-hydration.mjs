@@ -4161,7 +4161,7 @@ async function verifyLocalizedNotFound(row, context, diagnostics) {
   // Where the address states the locale, the reader's stored choice is English. An answer that
   // settles no locale writes no cookie, so that choice is still there when the page has hydrated
   // and the stores are read again, and only the address keeps the page in Arabic.
-  const statesLocale = addresses.localeInAddress;
+  const decides = addresses.localeInAddress ? 'url' : undefined;
   const missing = boundCalls(await context.newPage(), 'page');
   attachBrowserDiagnostics(missing, diagnostics);
   missing.setDefaultTimeout(15_000);
@@ -4173,7 +4173,7 @@ async function verifyLocalizedNotFound(row, context, diagnostics) {
     async (missingUrl) => {
       expectedErrorDocuments.add(missingUrl);
       missingOrigin = new URL(missingUrl).origin;
-      if (!statesLocale) {
+      if (decides !== 'url') {
         return missing.goto(missingUrl, { waitUntil: 'networkidle' });
       }
       await context.clearCookies({ name: 'equator-locale' });
@@ -4219,7 +4219,7 @@ async function verifyLocalizedNotFound(row, context, diagnostics) {
   await collectPolicyDiagnostics(missing, diagnostics);
   const notFound = sectionCheck(row, 'not found');
   claimRunningPolicy(notFound, missingContext);
-  if (statesLocale) {
+  if (decides === 'url') {
     assert.ok(
       missingContext.adoptedElements > 0,
       `${row.label}: the not-found page kept none of the server's elements`,
