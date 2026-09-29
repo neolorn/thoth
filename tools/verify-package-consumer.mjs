@@ -2561,11 +2561,11 @@ assert.deepEqual(
  * default decides shows a message the fallback chain supplied.
  */
 const embeddedRoot = resolve(consumerRoot, 'embedded');
-const runEmbedded = (entry, args, label) => {
+const runEmbedded = (entry, args, label, env = {}) => {
   const result = spawnSync(process.execPath, [entry, ...args], {
     cwd: embeddedRoot,
     encoding: 'utf8',
-    env: { ...process.env, CI: 'true' },
+    env: { ...process.env, CI: 'true', ...env },
   });
   assert.equal(
     result.status,
@@ -2584,6 +2584,36 @@ runEmbedded(
   resolve(consumerRoot, 'node_modules/@angular/cli/bin/ng.js'),
   ['build'],
   'build',
+);
+// Its specs, with Node's own Web Storage turned off for the reason feature-lab's are, and counted
+// from its sources the same way, so a spec that is not collected fails here.
+const embeddedTested = runEmbedded(
+  resolve(consumerRoot, 'node_modules/@angular/cli/bin/ng.js'),
+  ['test'],
+  'unit tests',
+  'localStorage' in globalThis
+    ? {
+        NODE_OPTIONS: [process.env.NODE_OPTIONS, '--no-experimental-webstorage']
+          .filter(Boolean)
+          .join(' '),
+      }
+    : {},
+);
+const embeddedSpecFiles = (
+  await readdir(resolve(embeddedRoot, 'src'), { recursive: true })
+).filter((entry) => entry.endsWith('.spec.ts'));
+const embeddedTestedOutput =
+  `${embeddedTested.stdout}\n${embeddedTested.stderr}`.replaceAll(
+    /\u001B\[[0-9;]*m/gu,
+    '',
+  );
+assert.match(
+  embeddedTestedOutput,
+  new RegExp(
+    `Test Files\\s+${embeddedSpecFiles.length} passed\\s+\\(${embeddedSpecFiles.length}\\)`,
+    'u',
+  ),
+  `The embedded application carries ${embeddedSpecFiles.length} spec files, and its run did not collect and pass them all:\n${embeddedTestedOutput}`,
 );
 const embeddedBuild = resolve(embeddedRoot, 'dist/embedded');
 // The chain the generated configuration declares, which is the one the pages below must show.

@@ -50,7 +50,12 @@ export class CapabilityClaimsReporter {
   }
 
   onInit(vitest) {
-    this.root = vitest.config.root;
+    // An application nested in the consumer names its checks from the consumer's root, so two
+    // applications with a spec at the same path still make two checks.
+    this.root =
+      typeof this.consumer === 'string'
+        ? resolve(vitest.config.root, this.consumer)
+        : vitest.config.root;
     if (this.consumer) this.angularRow = consumerRow(this.root);
     opened(this.file, 'vitest');
   }
@@ -80,7 +85,8 @@ export class CapabilityClaimsReporter {
  * claims. Outside the gate a suite reports exactly as it did before claims existed.
  *
  * `consumer` is for a suite running inside a materialized consumer, whose claims also carry the
- * consumer row it was built as.
+ * consumer row it was built as: `true` when the suite runs at the consumer's root, or the path from
+ * the suite's root to the consumer's when it belongs to an application nested inside it.
  */
 export function capabilityClaimsReporters({ consumer = false } = {}) {
   const file = claimsFile();
