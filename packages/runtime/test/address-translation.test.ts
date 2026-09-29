@@ -457,10 +457,26 @@ describe('policies that carry no locale in the path', () => {
 
   it('reads a host-keyed path at the origin the build answers at', () => {
     expect(toInternalPath(`/${SECOND_ENC}`, HOST)).toBe('/second');
-    // The control: at the other origin the same path names no route, so it is handed back.
-    expect(toInternalPath(`/${SECOND_ENC}`, HOST_DEFAULT)).toBe(
-      `/${SECOND_ENC}`,
-    );
+    expect(
+      resolveLocalizedRoute(
+        `https://example.eg/${SECOND_ENC}`,
+        HOST_POLICY,
+        WITH_HISTORY,
+      ),
+    ).toMatchObject({ status: 'success', routeId: 'route:second' });
+    // The control: at the other origin the same path is Arabic's spelling rather than that origin's
+    // own, so it is corrected to the English one instead of being served where it stands.
+    expect(
+      resolveLocalizedRoute(
+        `https://example.com/${SECOND_ENC}`,
+        HOST_POLICY,
+        WITH_HISTORY,
+      ),
+    ).toMatchObject({
+      status: 'redirect',
+      reason: 'canonical-correction',
+      location: 'https://example.com/second',
+    });
     claimCapability('policy:locale-host', { policy: HOST_POLICY });
   });
 

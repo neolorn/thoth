@@ -2287,6 +2287,63 @@ function historicalResolution(
 }
 
 /**
+ * An address this locale does not spell, read in the spellings of the others.
+ *
+ * Consulted only after this locale and its historical spellings have both missed, so a spelling of
+ * this locale's own always wins. Section 6 of `specs/07-routing-rendering-and-seo.spec.md` answers
+ * with 308 only where the request is a variant of one canonical URL, so the correction stands only
+ * where every locale that reads the address names the same address in this one; two spellings that
+ * name two routes leave it a variant of neither, and it is not found. The location is computed from
+ * the address alone, which keeps the answer the same for every requester.
+ */
+function anotherLocaleSpelling(
+  routeSegments: readonly string[],
+  locale: string,
+  parsed: ParsedTarget,
+  policy: PathPrefixLocalePolicy | HostLocalePolicy,
+  projection: RouteRuntimeProjection,
+): RouteResolution | undefined {
+  const corrections = new Map<string, string>();
+  for (const other of Object.keys(policy.locales)) {
+    if (other === locale) continue;
+    const match = matchRoute(routeSegments, projection, other);
+    if (match === undefined) continue;
+    const built = localizedRouteSegments(
+      projection,
+      match.route,
+      locale,
+      match.parameters,
+    );
+    if (!built.ok) continue;
+    const segments = built.segments;
+    if (
+      emittedLocalePrefix(policy, locale) === undefined &&
+      segments[0] !== undefined &&
+      claimedLeadingSegment(policy, segments[0]) !== undefined
+    ) {
+      continue;
+    }
+    const routeText = encodedSegments(segments);
+    const path =
+      policy.kind === 'path-prefix'
+        ? pathPrefixCanonicalPath(policy, locale, segments)
+        : `${policy.locales[locale]}${routeText.length === 0 ? '/' : `/${routeText}`}`;
+    corrections.set(`${path}${parsed.canonicalSuffix}`, match.route.id);
+  }
+  if (corrections.size !== 1) return undefined;
+  const [[location, routeId]] = [...corrections] as [[string, string]];
+  return Object.freeze({
+    status: 'redirect',
+    reason: 'canonical-correction',
+    httpStatus: 308,
+    cache: 'consumer-defined-permanent',
+    locale,
+    routeId,
+    location,
+  });
+}
+
+/**
  * The locale prefix this policy puts in front of a route's own segments, or nothing.
  *
  * Nothing is two different situations and the callers separate them: the default locale under
@@ -2650,6 +2707,14 @@ function resolvePathPrefixRoute(
       projection,
     );
     if (historical !== undefined) return historical;
+    const spelled = anotherLocaleSpelling(
+      routeSegments,
+      locale,
+      parsed,
+      policy,
+      projection,
+    );
+    if (spelled !== undefined) return spelled;
   }
   if (locale === undefined || match === undefined) {
     // The address stated a locale and the projection has no route at it. Those are two different
@@ -3009,6 +3074,14 @@ function resolveHostRoute(
       projection,
     );
     if (historical !== undefined) return historical;
+    const spelled = anotherLocaleSpelling(
+      parsed.segments,
+      locale,
+      parsed,
+      policy,
+      projection,
+    );
+    if (spelled !== undefined) return spelled;
     // Same as the prefix policy above: the origin named the locale, and only the page is unknown.
     return Object.freeze({
       status: 'not-found',

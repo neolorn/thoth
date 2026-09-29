@@ -166,14 +166,23 @@ describe('a localized path under a policy with no locale in the path', () => {
     );
     expect(location.path()).toBe('/second');
 
-    // The control: a build for the default origin reads the same path as no route of its own and
-    // hands it through, so the answer above is the configured origin's.
-    const control = await entrances(
+    // A build for the default origin reads the same path as Arabic's spelling rather than its own,
+    // and reaches the route through the correction to the English one.
+    const corrected = await entrances(
       HOST,
       'https://site.example',
       ARABIC_SECOND,
     );
-    expect(control.location.path()).toBe(ARABIC_SECOND);
+    expect(corrected.location.path()).toBe('/second');
+
+    // The control: a path no locale spells names no route at either origin and is handed through,
+    // so the two answers above are the resolver's rather than the strategy passing paths along.
+    const control = await entrances(
+      HOST,
+      'https://ar.site.example',
+      '/nothing-spells-this',
+    );
+    expect(control.location.path()).toBe('/nothing-spells-this');
     claimCapability('policy:locale-host', { policy: HOST });
   });
 

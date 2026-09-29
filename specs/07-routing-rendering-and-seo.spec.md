@@ -342,6 +342,12 @@ locale is in the host, with a not-found. A client navigation to such a variant M
 canonical address in place of the variant's history entry, so the page reads the parameters a
 document request for the same address reads.
 
+An address whose locale is stated, by its prefix or its origin, and whose path is spelled the way
+another locale spells a route is such a variant where it matches nothing in its own locale and every
+locale that reads it names the same address in the stated one. A release MUST answer it with a 308
+to that address, keeping the query, and MUST answer it as not found where two locales' spellings
+name two different addresses.
+
 A same-route locale switch preserves safely parsed bounded query parameters and the fragment by
 default. A release MUST NOT copy raw URL text, and MUST NOT let a query or fragment value
 choose an origin, an executable destination, a catalog identity, or a trust decision.
