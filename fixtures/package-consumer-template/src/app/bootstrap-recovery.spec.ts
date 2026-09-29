@@ -3,8 +3,10 @@ import { describe, expect, it, afterEach, vi } from 'vitest';
 import { PlatformLocation } from '@angular/common';
 import { MOCK_PLATFORM_LOCATION_CONFIG } from '@angular/common/testing';
 import {
+  ApplicationInitStatus,
   Component,
   EnvironmentInjector,
+  PLATFORM_ID,
   inject,
   provideEnvironmentInitializer,
 } from '@angular/core';
@@ -307,6 +309,39 @@ describe('bootstrap when a catalog cannot load', () => {
     expect(document.querySelector('[data-equator-announcer]')).toBeNull();
     claimCapability('feature:provideLocalizationSetup');
     claimCapability('entry:@neolorn/equator');
+  });
+});
+
+describe('a server render when a catalog cannot load', () => {
+  it('fails, rather than answering with the recovery', async () => {
+    // What a server bootstrap waits on before it renders anything. A retry in a server response is
+    // a control nothing can act on, and the response would be cached, or written by a prerender,
+    // as the address's own page.
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: PLATFORM_ID, useValue: 'server' },
+        provideLocalizationSetup(
+          {
+            configuration,
+            catalogSet,
+            catalogLoaders: failingLoaders(),
+            recoveryPayload,
+            extensions: runtimeExtensions,
+          },
+          withRecoveryMessage({
+            message: messages.recovery.unavailable,
+            retryLabel: messages.control.retry,
+          }),
+        ),
+      ],
+    });
+
+    await expect(
+      TestBed.inject(ApplicationInitStatus).donePromise,
+      'a server bootstrap went on to draw the LocalizationRecovery withRecoveryMessage configures',
+    ).rejects.toThrow('A generated local catalog module could not be loaded.');
+    expect(TestBed.inject(Localization).lifecycle()).toBe('failed');
   });
 });
 

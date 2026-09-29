@@ -121,6 +121,11 @@ MUST hold the navigation to that address until a retry succeeds and then complet
 brings the reader to the page they asked for, in the locale its address states. A server render has
 no retry to wait for, and a release MUST NOT hold one.
 
+A server render or prerender whose initial snapshot cannot be built MUST fail rather than render
+the recovery payload, so the deployment answers with its own error and a build stops. The recovery
+offers a retry that no response can act on, and a response carrying it would be cached, or written
+by the build, and served afterwards as the address's own representation.
+
 ## 6. Contexts and request isolation
 
 One context per application root, or per server request, is the ordinary case. A child context may

@@ -2469,6 +2469,84 @@ if (addresses.policy === 'locale-neutral') {
   });
 }
 
+/**
+ * A build whose catalogs cannot load, which has to stop rather than write the recovery.
+ *
+ * `specs/06-runtime-and-angular.spec.md` section 5. A page written from a render that could not
+ * start is served afterwards as the address's own, with no status left to say otherwise. Every
+ * locale's shell is broken so no page can render, and the modules are put back afterwards for the
+ * same reason the published routes are.
+ */
+const loadersPath = resolve(
+  consumerRoot,
+  'src/generated/i18n/catalog-loaders.ts',
+);
+// The specifier names the emitted file, and the source beside the loaders is TypeScript.
+const shellModules = [
+  ...(await readFile(loadersPath, 'utf8')).matchAll(
+    /"[^"]+:shell:[^"]+": \(\) => import\("(\.\/catalogs\/[^"]+\.js)"\)/gu,
+  ),
+].map(([, path]) =>
+  resolve(dirname(loadersPath), path.replace(/\.js$/u, '.ts')),
+);
+assert.equal(
+  shellModules.length,
+  INIT_REQUEST.locales.length,
+  'The generated loaders no longer name one shell module per locale in the form this check reads',
+);
+const shellSources = await Promise.all(
+  shellModules.map((path) => readFile(path, 'utf8')),
+);
+const unloadableRoot = resolve(consumerRoot, 'dist/feature-lab-unloadable');
+await rm(unloadableRoot, { force: true, recursive: true });
+let unloadableBuild;
+try {
+  await Promise.all(
+    shellModules.map((path, index) =>
+      writeFile(
+        path,
+        `throw new Error('This catalog module was made unloadable.');\n${shellSources[index]}`,
+        'utf8',
+      ),
+    ),
+  );
+  unloadableBuild = spawnPnpm([
+    'exec',
+    'ng',
+    'build',
+    '--output-path',
+    'dist/feature-lab-unloadable',
+  ]);
+} finally {
+  await Promise.all(
+    shellModules.map((path, index) =>
+      writeFile(path, shellSources[index], 'utf8'),
+    ),
+  );
+}
+const unloadableOutput = [unloadableBuild.stdout, unloadableBuild.stderr].join(
+  '\n',
+);
+const unloadablePages = await readdir(unloadableRoot).then(
+  () => collectPrerendered(unloadableRoot),
+  () => [],
+);
+assert.deepEqual(
+  [
+    ...unloadablePages.map((path) => `it wrote ${path}`),
+    ...(unloadableBuild.status === 1
+      ? []
+      : [`it exited ${String(unloadableBuild.status)}`]),
+    ...(unloadableOutput.includes(
+      'A generated local catalog module could not be loaded.',
+    )
+      ? []
+      : ['its output does not name the catalog that could not load']),
+  ],
+  [],
+  `The build went on with catalogs it could not load:\n${unloadableOutput}`,
+);
+
 process.stdout.write(
   `Equator package consumer verified: ${consumerProfile.label}, Angular ${consumerProfile.angular}, TypeScript ${consumerProfile.typescript}, RxJS ${consumerProfile.rxjs}, ${collectedFiles[2]} spec file(s) and ${collectedCases[1]} case(s) passing.\n`,
 );

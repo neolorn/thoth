@@ -2127,7 +2127,15 @@ export function provideLocalizationSetup(
           // Recovery is only reachable if the consumer configured one. Without it there is nothing
           // to show, and booting into an application whose every message throws is worse than the
           // hard failure, so that case still rejects.
-          if (localization.recovery() === undefined) throw error;
+          //
+          // A server render rejects either way. Its retry is a control no response can act on, and
+          // a page carrying it would be cached or written by a prerender and served afterwards as
+          // the address's own, so the deployment answers with its error and a build stops.
+          if (
+            isPlatformServer(platformId) ||
+            localization.recovery() === undefined
+          )
+            throw error;
         });
     }),
   ]);
