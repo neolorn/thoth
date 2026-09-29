@@ -59,6 +59,7 @@ import {
   consumerProfiles,
   resolveRowVersion,
 } from './package-consumer-profiles.mjs';
+import { runnerEnvironment, stageProcessorShare } from './gate-resources.mjs';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const scaffoldRoot = resolve(
@@ -95,8 +96,13 @@ const README_GROUP = [
  */
 const BASE_DOCUMENT = ['docs/tutorial.md', 'docs/tutorial.md'];
 
-/** How many consumers are installed and driven at once. */
-const SLOTS = 4;
+/**
+ * How many consumers are installed and driven at once: four, or fewer when the gate hands this stage
+ * a smaller share of the machine. Each slot's own runners then get one worker, so the slots together
+ * stay within the share.
+ */
+const SLOTS = stageProcessorShare(4);
+const SLOT_RUNNERS = runnerEnvironment(1);
 
 /**
  * What a slot keeps from one document to the next.
@@ -243,7 +249,7 @@ const runIn = (root, line, what) =>
     const child = spawn(
       shellCommand,
       process.platform === 'win32' ? ['/d', '/s', '/c', line] : ['-c', line],
-      { cwd: root, env: { ...process.env, CI: 'true' } },
+      { cwd: root, env: { ...process.env, ...SLOT_RUNNERS, CI: 'true' } },
     );
     let stdout = '';
     let stderr = '';

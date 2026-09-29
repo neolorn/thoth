@@ -29,6 +29,12 @@ import { nodeConsumerProfiles } from './package-consumer-profiles.mjs';
  * `typecheck` runs after `lint`: the two read the same program and cost about the same, and
  * the linter's finding is the more specific of the two.
  *
+ * `processors` is how many logical processors a stage occupies at once, counting the workers its
+ * runners start, and is one when a stage says nothing. The scheduler keeps the stages running within
+ * the gate's budget by it, and the stage's runners are handed it as their worker count
+ * (`gate-resources.mjs`). The heavy stages are handed four, which is the Angular build's own
+ * default ceiling on its workers.
+ *
  * `claims: true` marks a stage whose checks record the capabilities they assert, and gives it the
  * artefact its claims go to. `readsClaims: true` marks the stage that reads all of them. Both are
  * expanded below rather than written out, so a stage that starts recording claims is one line
@@ -112,6 +118,15 @@ const declared = Object.freeze([
     id: 'verify:doc-links',
     reads: ['source:docs', 'source:packages', 'source:specs', 'source:tools'],
   },
+  // Drives the scheduler this gate runs on over a planted graph and requires it to keep the
+  // processor budget, the memory floor and exclusivity at every start, and to start everything in
+  // the end. It proves the limits of a run that has already begun, so it cannot hold that run back;
+  // what it holds back is the next change that loosens them. `source:packages` because the stage
+  // list it drives reads the runtime's manifest for the supported versions.
+  {
+    id: 'verify:gate-limits:self-test',
+    reads: ['source:packages', 'source:tools'],
+  },
   { id: 'verify:person-names', reads: ['source:packages'] },
   // The two suites run at the same time, which is what made their shared vitest results cache worth
   // finding: both hashed the empty project name and overwrote each other's record. Each now has its
@@ -119,6 +134,7 @@ const declared = Object.freeze([
   // `source:tools` because a test that claims a capability imports the claim from there.
   {
     id: 'test:toolkit',
+    processors: 4,
     reads: ['source:packages', 'source:tools'],
     writes: ['cache:vitest:toolkit'],
     claims: true,
@@ -131,6 +147,7 @@ const declared = Object.freeze([
   // files the two packages each keep a copy of, which the mutation configuration reads too.
   {
     id: 'test:runtime',
+    processors: 4,
     reads: ['source:packages', 'source:tools'],
     writes: ['cache:vitest:runtime'],
     claims: true,
@@ -143,11 +160,13 @@ const declared = Object.freeze([
   // everyone else, which is not the same as making it correct.
   {
     id: 'verify:assurance',
+    processors: 4,
     privateTree: true,
     writes: ['cache:vitest:unnamed', 'source:packages'],
   },
   {
     id: 'build',
+    processors: 2,
     reads: ['source:packages'],
     writes: ['cache:build', 'dist:other', 'dist:runtime', 'dist:toolkit'],
   },
@@ -216,6 +235,7 @@ const declared = Object.freeze([
   },
   {
     id: 'verify:handler-derivation',
+    processors: 4,
     privateTree: true,
     writes: ['cache:vitest:unnamed', 'source:packages'],
   },
@@ -232,23 +252,27 @@ const declared = Object.freeze([
   // recorder into each consumer, whose specs claim what they assert.
   {
     id: 'verify:consumer',
+    processors: 4,
     reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
     writes: ['consumer:package'],
     claims: true,
   },
   {
     id: 'verify:focused-consumers',
+    processors: 4,
     reads: ['dist:runtime', 'dist:toolkit'],
     writes: ['consumer:focused'],
   },
   {
     id: 'verify:angular-22.0.4',
+    processors: 4,
     reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
     writes: ['consumer:angular-22.0.4'],
     claims: true,
   },
   {
     id: 'verify:lower-bounds',
+    processors: 4,
     reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
     writes: ['consumer:lower-bounds'],
     claims: true,
@@ -258,6 +282,7 @@ const declared = Object.freeze([
   // route table from application source, which is the shape none of the others performs.
   {
     id: 'verify:strict-consumer',
+    processors: 4,
     reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
     writes: ['consumer:strict'],
     claims: true,
@@ -267,18 +292,21 @@ const declared = Object.freeze([
   // differs from `verify:consumer`. The host row builds once for each origin.
   {
     id: 'verify:default-locale-prefix-consumer',
+    processors: 4,
     reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
     writes: ['consumer:default-locale-prefix'],
     claims: true,
   },
   {
     id: 'verify:locale-neutral-consumer',
+    processors: 4,
     reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
     writes: ['consumer:locale-neutral'],
     claims: true,
   },
   {
     id: 'verify:locale-host-consumer',
+    processors: 4,
     reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
     writes: ['consumer:locale-host'],
     claims: true,
@@ -287,6 +315,7 @@ const declared = Object.freeze([
   // the specs, the build and prerender, and the server bundle's answers, all on that line's Node.
   ...[...nodeConsumerProfiles.keys()].map((name) => ({
     id: `verify:${name}`,
+    processors: 4,
     reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
     writes: [`consumer:${name.replace(/-consumer$/u, '')}`],
     claims: true,
@@ -296,6 +325,7 @@ const declared = Object.freeze([
   // list was true only because it happened to be written here.
   {
     id: 'verify:edit-cost',
+    processors: 4,
     writes: ['consumer:package'],
   },
   { id: 'verify:cost-budget', reads: ['consumer:package', 'dist:runtime'] },
@@ -323,6 +353,7 @@ const declared = Object.freeze([
   // so it is not an artefact any other stage can see.
   {
     id: 'verify:document-blocks',
+    processors: 4,
     reads: ['dist:runtime', 'dist:toolkit', 'source:docs', 'source:packages'],
   },
   // The one check in this list whose cases Equator did not write. It compiles each of the working
@@ -470,6 +501,7 @@ const declared = Object.freeze([
   // written second to last; the three writes below are why that placement was load-bearing.
   {
     id: 'verify:consumer-refresh',
+    processors: 2,
     writes: ['consumer:package', 'dist:runtime', 'dist:toolkit'],
   },
   // Last, and now derivably so: it writes source, `dist` and the consumer, so every stage above
@@ -478,6 +510,7 @@ const declared = Object.freeze([
   // half.
   {
     id: 'verify:assurance:runtime',
+    processors: 4,
     privateTree: true,
     reads: ['cache:build'],
     writes: [

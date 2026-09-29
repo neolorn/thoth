@@ -67,7 +67,9 @@ The full verification suite builds both packages, installs them into consumer ap
 pnpm run verify
 ```
 
-It takes about fifteen minutes. Run it on the finished change before opening a pull request. If a stage cannot run in your environment, say so in the pull request.
+It takes about three hours on a machine with 32 logical processors, most of it in `verify:assurance:runtime`, which rebuilds the runtime once for each behavior it removes. Run it on the finished change before opening a pull request. If a stage cannot run in your environment, say so in the pull request.
+
+The suite runs below normal priority and uses at most half of the machine's logical processors, counting its stages and the workers their test runners start. Set `EQUATOR_VERIFY_PROCESSORS` to a number of logical processors to give it a different share. It does not start a stage while less than a quarter of the machine's memory is free, and only one run goes at a time.
 
 Three commands are maintenance rather than checks:
 

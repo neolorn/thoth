@@ -8,11 +8,31 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { availableParallelism } from 'node:os';
+import {
+  constants,
+  freemem,
+  getPriority,
+  setPriority,
+  totalmem,
+} from 'node:os';
 import { basename, dirname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { CLAIMS_FILE_VARIABLE } from './capability-claims.mjs';
+import {
+  createScheduler,
+  MEMORY_FLOOR,
+  processorBudget,
+  PROCESSORS_VARIABLE,
+  runnerEnvironment,
+} from './gate-resources.mjs';
+import {
+  aboveRoot,
+  descendantsOf,
+  holdDown,
+  processorsBetween,
+  readProcesses,
+} from './process-tree.mjs';
 import { readTrace, traceDrift } from './trace-drift.mjs';
 import { claimsFile, safeName, steps } from './verify-stages.mjs';
 import { attemptLedgerPath, workingRoot } from './working-state.mjs';
@@ -403,7 +423,7 @@ const releaseTrees = (paths) => {
   git('worktree', 'prune');
 };
 
-const runStep = (id, timeoutSeconds, root) =>
+const runStep = (id, timeoutSeconds, root, processors) =>
   new Promise((settle) => {
     // A claiming stage is handed the one file its claims go to, and only a claiming stage is. The
     // stages that rerun the same checks under an injected defect are never handed one, so nothing
@@ -430,6 +450,8 @@ const runStep = (id, timeoutSeconds, root) =>
         // the stage gave three stages an undeclared read of `source:packages` on the runs where
         // pnpm happened not to skip that scan.
         EQUATOR_TRACE_LAUNCHER: '1',
+        // The stage's share of the processor budget, in the settings its runners size themselves by.
+        ...runnerEnvironment(processors),
         // The trace goes to the repository, because the tree it describes is about to be removed.
         EQUATOR_TRACE_FILE: resolve(runDirectory, `${safeName(id)}.jsonl`),
         // Traced against the tree the stage actually ran in, so a path resolves to the same
@@ -450,6 +472,8 @@ const runStep = (id, timeoutSeconds, root) =>
         EQUATOR_ASSURANCE_TRACE_CALLS: '1',
       },
     });
+
+    checkInherited(id, child.pid);
 
     let output = '';
     let timedOut = false;
@@ -486,8 +510,76 @@ const runStep = (id, timeoutSeconds, root) =>
 // ---------------------------------------------------------------------------------------------
 
 // Sized from what the machine reports rather than from a constant, so a smaller machine narrows the
-// run instead of thrashing it.
-const concurrency = serial ? 1 : Math.max(1, availableParallelism());
+// run instead of thrashing it, and to half of it by default (`gate-resources.mjs`), because the
+// machine is usually someone's working machine while the gate runs.
+const budget = processorBudget();
+
+/**
+ * One gate run at a time on a machine.
+ *
+ * Two runs would each take the whole budget, which is the overload the budget exists to prevent,
+ * and they would share `tmp/verify-run` and the ledger besides. The lock names the process holding
+ * it, so a run that died is not mistaken for one still going.
+ */
+const lockPath = resolve(workingRoot, 'verify.lock');
+const alive = (pid) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error.code === 'EPERM';
+  }
+};
+if (existsSync(lockPath)) {
+  const holder = JSON.parse(readFileSync(lockPath, 'utf8'));
+  if (holder.pid !== process.pid && alive(holder.pid)) {
+    throw new Error(
+      `Another gate run is going: process ${holder.pid}, started ${holder.startedAt}. One run at a time; wait for it, or end it.`,
+    );
+  }
+}
+mkdirSync(workingRoot, { recursive: true });
+writeFileSync(
+  lockPath,
+  `${JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() })}\n`,
+);
+process.on('exit', () => {
+  rmSync(lockPath, { force: true });
+});
+
+/**
+ * Below normal, for the gate and everything it starts.
+ *
+ * Set on the gate's own process, because a child created without a priority class of its own
+ * receives its parent's when that is below normal or idle (`CreateProcess`, `dwCreationFlags`), and
+ * Linux carries a nice value across `fork` and `execve` (`setpriority(2)`). What each stage's first process received is
+ * read back as it starts, and the whole tree is read while the run goes, so a process that raises
+ * its own priority is lowered again rather than assumed not to exist.
+ */
+const PRIORITY = constants.priority.PRIORITY_BELOW_NORMAL;
+setPriority(PRIORITY);
+const gatePriority = getPriority();
+if (gatePriority !== PRIORITY) {
+  throw new Error(
+    `The gate asked for priority ${PRIORITY} and has ${gatePriority}, so nothing it starts would run below normal.`,
+  );
+}
+const priorityFindings = [];
+const checkInherited = (id, pid) => {
+  if (pid === undefined) return;
+  let priority;
+  try {
+    priority = getPriority(pid);
+  } catch {
+    // Gone before it could be read. The tree reading below still covers what it started.
+    return;
+  }
+  if (priority !== gatePriority) {
+    priorityFindings.push(
+      `${id}: its first process ${pid} runs at priority ${priority}, not the gate's ${gatePriority}.`,
+    );
+  }
+};
 
 const commit = requireCommittedTree();
 const summaryPath = resolve(runDirectory, 'summary.json');
@@ -583,81 +675,53 @@ resume would re-run ${rerun.size} of ${steps.length} stages:
 mkdirSync(runDirectory, { recursive: true });
 
 const results = new Map(carried);
-const running = new Set();
 const startedAt = new Map();
-let peakConcurrency = 0;
 let wake = () => {};
-
-const start = (step) => {
-  running.add(step.id);
-  peakConcurrency = Math.max(peakConcurrency, running.size);
-  startedAt.set(step.id, Date.now());
-  process.stdout.write(`=== RUN  ${step.id}\n`);
-  runStep(
-    step.id,
-    step.timeoutSeconds ?? DEFAULT_STEP_TIMEOUT_SECONDS,
-    treesInUse.get(treeOf(step)),
-  ).then(({ code, output }) => {
-    const seconds = Math.round((Date.now() - startedAt.get(step.id)) / 1000);
-    writeFileSync(resolve(runDirectory, `${safeName(step.id)}.log`), output);
-    results.set(step.id, {
-      status: code === 0 ? 'pass' : 'fail',
-      seconds,
-      output,
-    });
-    running.delete(step.id);
-    process.stdout.write(
-      `=== ${code === 0 ? 'PASS' : 'FAIL'} ${step.id} (${seconds}s)\n`,
-    );
-    advance();
-    wake();
-  });
-};
 
 /**
  * A failing stage stops the stages that read what it was going to write, and nothing else. Its
  * siblings finish, every failure is reported, and the run exits 1 at the end rather than at the
  * first red, which is the difference between one answer per run and one answer per failure.
+ *
+ * Which stage starts when, within the processor budget and the memory floor, is decided in
+ * `gate-resources.mjs`, so the scheduler this runs on is the one its self-test drives.
  */
-const advance = () => {
-  let changed = true;
-  while (changed) {
-    changed = false;
-    let reserved = [...running].some(
-      (id) => stepById.get(id).exclusive === true,
+const scheduler = createScheduler({
+  steps,
+  dependencies,
+  results,
+  budget,
+  maxStages: serial ? 1 : Number.POSITIVE_INFINITY,
+  readMemory: () => ({ free: freemem(), total: totalmem() }),
+  onSkip: (step, blockedBy) => {
+    process.stdout.write(
+      `=== SKIP ${step.id} (requires ${blockedBy.join(', ')})\n`,
     );
-    for (const step of steps) {
-      if (results.has(step.id) || running.has(step.id)) continue;
-      const required = [...dependencies.get(step.id)];
-      const blockedBy = required.filter((id) => {
-        const result = results.get(id);
-        return result !== undefined && result.status !== 'pass';
+  },
+  launch: (step, processors) => {
+    startedAt.set(step.id, Date.now());
+    process.stdout.write(`=== RUN  ${step.id} (${processors} of ${budget})\n`);
+    runStep(
+      step.id,
+      step.timeoutSeconds ?? DEFAULT_STEP_TIMEOUT_SECONDS,
+      treesInUse.get(treeOf(step)),
+      processors,
+    ).then(({ code, output }) => {
+      const seconds = Math.round((Date.now() - startedAt.get(step.id)) / 1000);
+      writeFileSync(resolve(runDirectory, `${safeName(step.id)}.log`), output);
+      results.set(step.id, {
+        status: code === 0 ? 'pass' : 'fail',
+        seconds,
+        output,
       });
-      if (blockedBy.length > 0) {
-        process.stdout.write(
-          `=== SKIP ${step.id} (requires ${blockedBy.join(', ')})\n`,
-        );
-        results.set(step.id, { status: 'skip', blockedBy, seconds: 0 });
-        changed = true;
-        continue;
-      }
-      if (required.some((id) => !results.has(id))) continue;
-      if (reserved) continue;
-      if (step.exclusive === true) {
-        // Reserved from the moment it is ready, not from the moment it starts. Waiting for an idle
-        // machine while later stages keep starting in front of it is a stage that never runs.
-        reserved = true;
-        if (running.size > 0) continue;
-        start(step);
-        changed = true;
-        continue;
-      }
-      if (running.size >= concurrency) continue;
-      start(step);
-      changed = true;
-    }
-  }
-};
+      process.stdout.write(
+        `=== ${code === 0 ? 'PASS' : 'FAIL'} ${step.id} (${seconds}s)\n`,
+      );
+      scheduler.finished(step.id);
+      wake();
+    });
+  },
+});
 
 // Provisioned before the clock starts, and reported separately, because a run's wall time is what
 // the stages cost and folding setup into it would make two different runs incomparable.
@@ -699,13 +763,107 @@ process.stdout.write(
   `=== ${treesInUse.size} worktrees at ${commit.slice(0, 7)} in ${provisionSeconds}s\n`,
 );
 
+/**
+ * The whole tree, read while the run goes.
+ *
+ * Every process under the gate found above the gate's priority is lowered to it (`holdDown`), and
+ * every window is checked for more processors in use than the budget. A process that cannot be
+ * held down, and a window over budget, are findings that turn the run red, because a run that took
+ * more of the machine than it was allowed was not run within its limits, whatever its stages said.
+ * The reader's own process is left out of both.
+ */
+const SAMPLE_SECONDS = 15;
+const overBudget = [];
+const lowered = new Set();
+let peakMeasured = 0;
+let samples = 0;
+let sampling = true;
+let stopSampling = () => {};
+const runningNow = () => [...scheduler.running.keys()].join(', ') || 'no stage';
+const sampler = (async () => {
+  let previous;
+  let previousAt;
+  while (sampling) {
+    const readAt = Date.now();
+    let reading;
+    try {
+      reading = await readProcesses();
+    } catch (error) {
+      priorityFindings.push(
+        `the process tree could not be read: ${error.message}`,
+      );
+      return;
+    }
+    const tree = descendantsOf(
+      reading.processes,
+      process.pid,
+      new Set([reading.reader]),
+    );
+    samples += 1;
+    const above = aboveRoot(
+      reading.processes,
+      process.pid,
+      new Set([reading.reader]),
+    );
+    if (above === undefined) {
+      priorityFindings.push(
+        'the gate was missing from its own process reading, so the tree under it was not checked.',
+      );
+      return;
+    }
+    for (const finding of holdDown(above, gatePriority, lowered, setPriority)) {
+      priorityFindings.push(`${finding}, while ${runningNow()} ran.`);
+    }
+    if (previous !== undefined) {
+      const seconds = (readAt - previousAt) / 1000;
+      const used = processorsBetween(previous, tree, seconds);
+      peakMeasured = Math.max(peakMeasured, used);
+      if (used > budget) {
+        overBudget.push(
+          `${used.toFixed(1)} processors in use over ${Math.round(seconds)}s against a budget of ${budget}, while ${runningNow()} ran.`,
+        );
+      }
+    }
+    previous = tree;
+    previousAt = readAt;
+    await new Promise((resolve_) => {
+      stopSampling = resolve_;
+      setTimeout(resolve_, SAMPLE_SECONDS * 1000);
+    });
+  }
+})();
+
+// Waiting on memory has a bound of its own. With nothing of the gate's running, what holds the
+// memory is something else on the machine, and a gate that waits on it forever is a hang.
+const MEMORY_WAIT_SECONDS = 600;
 const runStartedAt = Date.now();
-advance();
-while (running.size > 0) {
+scheduler.advance();
+let memoryWaitSince;
+while (scheduler.running.size > 0 || scheduler.waitingOnMemory) {
+  if (scheduler.waitingOnMemory && scheduler.running.size === 0) {
+    memoryWaitSince ??= Date.now();
+    const waited = Math.round((Date.now() - memoryWaitSince) / 1000);
+    process.stdout.write(
+      `=== WAIT free memory ${Math.round(freemem() / 2 ** 20)} MiB of ${Math.round(totalmem() / 2 ** 20)} MiB is under ${MEMORY_FLOOR * 100}% (${waited}s)\n`,
+    );
+    if (waited >= MEMORY_WAIT_SECONDS) {
+      throw new Error(
+        `Free memory stayed under ${MEMORY_FLOOR * 100}% of the total for ${MEMORY_WAIT_SECONDS}s with no stage of the gate running, so something else on this machine holds it. Free it and run the gate again.`,
+      );
+    }
+  } else {
+    memoryWaitSince = undefined;
+  }
   await new Promise((resolve_) => {
     wake = resolve_;
+    // A memory wait has no stage to end it, so it is read again on a timer.
+    if (scheduler.waitingOnMemory) setTimeout(resolve_, 5_000);
   });
+  if (scheduler.waitingOnMemory) scheduler.advance();
 }
+sampling = false;
+stopSampling();
+await sampler;
 const wallSeconds = Math.round((Date.now() - runStartedAt) / 1000);
 
 if (results.size !== steps.length) {
@@ -815,6 +973,24 @@ if (drift.length > 0) {
   for (const line of drift) process.stdout.write(`  ${line}\n`);
 }
 
+if (priorityFindings.length > 0) {
+  process.stdout.write(
+    `\n=== PRIORITY (${priorityFindings.length})\n` +
+      'The gate runs below normal so the machine stays usable, and these processes could not be held\n' +
+      "there. Find what sets their priority and keep it at the gate's.\n",
+  );
+  for (const line of priorityFindings) process.stdout.write(`  ${line}\n`);
+}
+
+if (overBudget.length > 0) {
+  process.stdout.write(
+    `\n=== OVER BUDGET (${overBudget.length})\n` +
+      `The gate may occupy ${budget} logical processors (${PROCESSORS_VARIABLE}) and these windows used more.\n` +
+      "A stage's declared processors, or a runner that ignores the setting it was handed, is wrong.\n",
+  );
+  for (const line of overBudget) process.stdout.write(`  ${line}\n`);
+}
+
 const counts = { pass: 0, fail: 0, skip: 0 };
 for (const { id } of steps) counts[results.get(id).status] += 1;
 
@@ -825,7 +1001,8 @@ const serialSeconds = steps.reduce(
 process.stdout.write(
   `\n${resuming ? `resumed run (attempt ${attempt})` : serial ? 'serial run' : 'graph run'}: ` +
     `${wallSeconds}s wall, ${serialSeconds}s of stage time, ` +
-    `peak ${peakConcurrency} of ${concurrency} concurrent\n` +
+    `peak ${scheduler.peakStages} stages and ${scheduler.peakProcessors} of ${budget} processors scheduled, ` +
+    `${peakMeasured.toFixed(1)} measured over ${samples} readings, ${lowered.size} process(es) lowered to the gate's priority\n` +
     `logs and traces: ${runDirectory}\n`,
 );
 
@@ -840,8 +1017,14 @@ writeFileSync(
       originalFailures,
       wallSeconds,
       stageSeconds: serialSeconds,
-      peakConcurrency,
-      concurrency,
+      peakStages: scheduler.peakStages,
+      peakProcessors: scheduler.peakProcessors,
+      peakMeasuredProcessors: peakMeasured,
+      processorBudget: budget,
+      processorBudgetVariable: PROCESSORS_VARIABLE,
+      priorityFindings,
+      loweredProcesses: lowered.size,
+      overBudget,
       drift,
       untraced,
       stages: steps.map(({ id }) => ({
@@ -856,7 +1039,12 @@ writeFileSync(
 );
 
 const red =
-  counts.fail > 0 || counts.skip > 0 || drift.length > 0 || untraced.length > 0;
+  counts.fail > 0 ||
+  counts.skip > 0 ||
+  drift.length > 0 ||
+  untraced.length > 0 ||
+  priorityFindings.length > 0 ||
+  overBudget.length > 0;
 
 // A green run has nothing left to say and its trees are 4 GiB of it, so they go. A red run keeps
 // them: the failure is reproducible in the tree it happened in, and a resume needs the artefacts the
