@@ -1,15 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { Component, PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { BrowserPlatformLocation, PlatformLocation } from '@angular/common';
+import { NavigationEnd, Router, provideRouter } from '@angular/router';
 import {
   Localization,
   createHostLocalePolicy,
   createLocaleNeutralPolicy,
   memoryStore,
   provideLocalizationSetup,
+  withLocaleSources,
   withPersistence,
   withRouting,
   type LocaleUrlPolicy,
+  type LocalizationLocaleSource,
   type LocalizationPersistenceStore,
 } from '@neolorn/equator';
 import { configuration } from '#i18n';
@@ -21,6 +26,8 @@ import { routeProjection } from '#i18n/routes';
 import { runtimeExtensions } from './runtime-extensions';
 import { routePolicy, appRouteProjection } from './localization.routes';
 import { localeInPath, pagePath } from './addresses';
+
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
 /**
  * A page the browser restores from its back-forward cache, after the visitor chose another language.
@@ -189,6 +196,160 @@ describe('a page restored from the back-forward cache', () => {
     } finally {
       added.mockRestore();
       removed.mockRestore();
+    }
+  });
+});
+
+@Component({ template: '' })
+class Page {}
+
+interface RoutedSeat {
+  readonly localization: Localization;
+  readonly shared: LocalizationPersistenceStore;
+  readonly reads: () => number;
+}
+
+/**
+ * An application whose addresses state no locale, moved by Angular's own router, with an order
+ * that ranks another source over the stored choice.
+ *
+ * The browser's own history stands in for the testing module's, so a navigation moves the address
+ * a restore reads, as it does on a page.
+ */
+function routedSetup(sources: readonly LocalizationLocaleSource[]): RoutedSeat {
+  const shared = memoryStore()();
+  let reads = 0;
+  TestBed.resetTestingModule();
+  TestBed.configureTestingModule({
+    providers: [
+      { provide: PlatformLocation, useClass: BrowserPlatformLocation },
+      provideRouter([{ path: '**', component: Page }]),
+      provideLocalizationSetup(
+        {
+          configuration,
+          catalogSet,
+          catalogLoaders,
+          recoveryPayload,
+          extensions: runtimeExtensions,
+          routeProjection,
+        },
+        withLocaleSources(...sources),
+        withPersistence(() => ({
+          id: 'shared',
+          read: () => {
+            reads += 1;
+            return shared.read();
+          },
+          write: (locale: string) => shared.write(locale),
+        })),
+      ),
+    ],
+  });
+  return {
+    localization: TestBed.inject(Localization),
+    shared,
+    reads: () => reads,
+  };
+}
+
+/** Two router navigations, and how many of them completed after the first. */
+async function clientNavigations(): Promise<number> {
+  const router = TestBed.inject(Router);
+  let completed = 0;
+  const counting = router.events.subscribe((event) => {
+    if (event instanceof NavigationEnd) completed += 1;
+  });
+  try {
+    await router.navigateByUrl('/first');
+    await router.navigateByUrl('/second');
+  } finally {
+    counting.unsubscribe();
+  }
+  expect(location.pathname, 'the address the router moved to').toBe('/second');
+  return completed - 1;
+}
+
+/**
+ * A restore applies a stored choice only where the declared order would choose it now
+ * (`specs/03-locale-identity-and-resolution.spec.md` section 7). So a source ranked over `stored`
+ * decides a restore after a client navigation: a choice it does not name leaves the page where it
+ * is, and one it names moves the page.
+ */
+describe('a restore after a client navigation, under an order that ranks a source first', () => {
+  it("is decided by the reader's languages where the order puts them first", async () => {
+    const seat = routedSetup(['browser', 'stored', 'default']);
+    try {
+      // The test document's languages, `navigator.languages`, name English first.
+      expect(
+        (await seat.localization.initialize()).primaryLocale,
+        "the reader's languages",
+      ).toBe('en-US');
+      const navigations = await clientNavigations();
+
+      await seat.shared.write('ar-EG');
+      const before = seat.reads();
+      restore(true);
+      await new Promise((done) => setTimeout(done, 0));
+      expect(seat.reads()).toBeGreaterThan(before);
+      expect(
+        seat.localization.snapshot()?.primaryLocale,
+        "a stored choice the reader's languages outrank",
+      ).toBe('en-US');
+
+      await seat.localization.changeLocale('ar-EG', { remember: false });
+      await seat.shared.write('en-US');
+      restore(true);
+      await vi.waitFor(() =>
+        expect(
+          seat.localization.snapshot()?.primaryLocale,
+          "a stored choice the reader's languages name",
+        ).toBe('en-US'),
+      );
+      const observed = {
+        platform: TestBed.inject(PLATFORM_ID) as string,
+        clientNavigations: navigations,
+      };
+      claimCapability('source:browser', observed);
+    } finally {
+      history.replaceState(null, '', '/');
+    }
+  });
+
+  it('is decided by the default where the order puts it first', async () => {
+    const seat = routedSetup(['default', 'stored']);
+    try {
+      expect(
+        (await seat.localization.initialize()).primaryLocale,
+        'the configured default',
+      ).toBe('en-US');
+      const navigations = await clientNavigations();
+
+      await seat.shared.write('ar-EG');
+      const before = seat.reads();
+      restore(true);
+      await new Promise((done) => setTimeout(done, 0));
+      expect(seat.reads()).toBeGreaterThan(before);
+      expect(
+        seat.localization.snapshot()?.primaryLocale,
+        'a stored choice the default outranks',
+      ).toBe('en-US');
+
+      await seat.localization.changeLocale('ar-EG', { remember: false });
+      await seat.shared.write('en-US');
+      restore(true);
+      await vi.waitFor(() =>
+        expect(
+          seat.localization.snapshot()?.primaryLocale,
+          'a stored choice the default names',
+        ).toBe('en-US'),
+      );
+      const observed = {
+        platform: TestBed.inject(PLATFORM_ID) as string,
+        clientNavigations: navigations,
+      };
+      claimCapability('source:default', observed);
+    } finally {
+      history.replaceState(null, '', '/');
     }
   });
 });
