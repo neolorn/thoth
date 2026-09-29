@@ -14,14 +14,17 @@ import { TestBed } from '@angular/core/testing';
 import {
   Localization,
   provideLocalizationSetup,
+  withRouting,
   withoutDocumentLocale,
 } from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
+import { routeProjection } from '#i18n/routes';
 
 import { runtimeExtensions } from './runtime-extensions';
+import { appRouteProjection, routePolicy } from './localization.routes';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
@@ -64,7 +67,7 @@ const ANNOUNCER = '[data-equator-announcer]';
 const HOST_LANGUAGE = 'fr-CA';
 const HOST_DIRECTION = 'ltr';
 
-function setup(withdrawn: boolean) {
+function setup(withdrawn: boolean, routed = false) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -75,8 +78,17 @@ function setup(withdrawn: boolean) {
           catalogLoaders,
           recoveryPayload,
           extensions: runtimeExtensions,
+          ...(routed ? { routeProjection } : {}),
         },
         ...(withdrawn ? [withoutDocumentLocale()] : []),
+        ...(routed
+          ? [
+              withRouting({
+                policy: routePolicy,
+                projection: appRouteProjection,
+              }),
+            ]
+          : []),
       ),
     ],
   });
@@ -142,6 +154,32 @@ describe('withoutDocumentLocale withdraws every document effect and nothing else
       'withoutDocumentLocale appended an announcer',
     ).toBeNull();
     claimCapability('feature:withoutDocumentLocale', {
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
+  });
+
+  // A locale the address decides is committed by the same path, and a policy that rewrites the
+  // address on a change could reach the document by another; each URL policy row runs this once.
+  it('leaves the host document alone under the URL policy that decides the locale', async () => {
+    const localization = setup(true, true);
+    await localization.initialize();
+
+    expect(document.documentElement.getAttribute('lang')).toBe(HOST_LANGUAGE);
+    expect(document.documentElement.getAttribute('dir')).toBe(HOST_DIRECTION);
+
+    const result = await localization.changeLocale('ar-EG');
+
+    expect(result.status).toBe('committed');
+    expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
+    expect(document.documentElement.getAttribute('lang')).toBe(HOST_LANGUAGE);
+    expect(document.documentElement.getAttribute('dir')).toBe(HOST_DIRECTION);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(
+      document.querySelector(ANNOUNCER),
+      'withoutDocumentLocale appended an announcer',
+    ).toBeNull();
+    claimCapability('feature:withoutDocumentLocale', {
+      policy: routePolicy,
       platform: TestBed.inject(PLATFORM_ID) as string,
     });
   });
