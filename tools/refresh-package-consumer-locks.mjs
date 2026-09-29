@@ -19,7 +19,10 @@ import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
-import { consumerProfiles } from './package-consumer-profiles.mjs';
+import {
+  consumerProfiles,
+  resolveAngularVersion,
+} from './package-consumer-profiles.mjs';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const temporaryRoot = resolve(workspaceRoot, 'tmp');
@@ -159,6 +162,32 @@ await refreshTemplateLock(
     'minimal-runtime-consumer',
   ),
   'minimal-runtime-consumer',
+);
+
+// The document gate proves the documents on the development row, so the scaffold carries that
+// row's Angular versions rather than whatever `ng new` resolved on the day it was made.
+const scaffoldManifestPath = resolve(documentScaffoldRoot, 'package.json');
+const scaffoldManifest = JSON.parse(
+  await readFile(scaffoldManifestPath, 'utf8'),
+);
+for (const dependencySet of [
+  scaffoldManifest.dependencies,
+  scaffoldManifest.devDependencies,
+]) {
+  for (const dependency of Object.keys(dependencySet)) {
+    if (dependency.startsWith('@angular/')) {
+      dependencySet[dependency] = resolveAngularVersion(
+        consumerProfiles.get('package-consumer'),
+        dependency,
+      );
+    }
+  }
+}
+await writeFile(
+  scaffoldManifestPath,
+  `${JSON.stringify(scaffoldManifest, null, 2)}
+`,
+  'utf8',
 );
 
 await refreshTemplateLock(

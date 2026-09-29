@@ -37,10 +37,12 @@
  * selected. Two guides may therefore write one path differently. Two blocks on one guide may not.
  *
  * **The tutorial authors the base.** The scaffold is what `ng new` produced with `src/app/` and
- * `i18n/` removed, and the tutorial runs on it from `equator init` onward, so everything the
- * application is comes from the one document that claims to build it: the catalogs in both locales,
- * the providers, the route table, the switcher, the rich content, and the spec. It ends at that
- * spec, so what this proves is a working application rather than only a build.
+ * `i18n/` removed, and its Angular packages held to the development row's versions, which is the
+ * row the rest of the gate proves; what `ng new` resolves on a given day is not a row. The tutorial
+ * runs on it from `equator init` onward, so everything the application is comes from the one
+ * document that claims to build it: the catalogs in both locales, the providers, the route table,
+ * the switcher, the rich content, and the spec. It ends at that spec, so what this proves is a
+ * working application rather than only a build.
  *
  * Every other consumer is built and tested on a copy of that base, which is what a reader who has
  * followed the tutorial already has. A consumer that writes a file has to carry a spec that passes,
@@ -52,6 +54,11 @@ import { spawn } from 'node:child_process';
 import { cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import {
+  consumerProfiles,
+  resolveAngularVersion,
+} from './package-consumer-profiles.mjs';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const scaffoldRoot = resolve(
@@ -302,6 +309,33 @@ async function pointAtTheDistributables(root) {
 }
 
 /**
+ * Every Angular package the base installed, against the development row's version of it.
+ *
+ * Read from what installed rather than from the manifest, because a lockfile refreshed against
+ * another manifest installs what it recorded whatever the manifest says.
+ */
+async function checkDevelopmentRow(root, manifest) {
+  const row = consumerProfiles.get('package-consumer');
+  const names = [manifest.dependencies, manifest.devDependencies]
+    .flatMap((set) => Object.keys(set))
+    .filter((name) => name.startsWith('@angular/'));
+  assert.ok(names.length > 0, 'The scaffold names no Angular package.');
+  for (const name of names) {
+    const installed = JSON.parse(
+      await readFile(
+        resolve(root, 'node_modules', name, 'package.json'),
+        'utf8',
+      ),
+    );
+    assert.equal(
+      installed.version,
+      resolveAngularVersion(row, name),
+      `The scaffold installed ${name} ${installed.version}, not the development row's version. Run "pnpm run refresh:consumer-locks".`,
+    );
+  }
+}
+
+/**
  * What the install block claims, against what the manifest declares.
  *
  * The block is not run, because the two packages it names are the ones being verified rather than
@@ -486,6 +520,7 @@ const manifest = await pointAtTheDistributables(baseRoot);
 // this depth, because a `file:` locator recorded at another one would not match what installs
 // here.
 await runIn(baseRoot, 'pnpm install --frozen-lockfile', 'installing the base');
+await checkDevelopmentRow(baseRoot, manifest);
 
 // Copied before the run, so a slot installs the manifest the lockfile was resolved against.
 const installedTree = resolve(groundRoot, 'installed-tree');
