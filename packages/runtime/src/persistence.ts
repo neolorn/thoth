@@ -240,12 +240,12 @@ function assertStorableCookie(
 }
 
 /**
- * The only store that can fix the language of the first render.
+ * The store that fixes the language of the first render with nothing to build.
  *
- * A server render happens before any script runs, so `localStorage` and an authenticated profile
- * fetch are both unavailable to it; a cookie arrives with the request. That is the whole reason
- * this store exists separately, and the reason a server-rendered application needs it: without it
- * the server renders the default language and the browser corrects it after hydration, which is a
+ * A server render happens before any script runs in the browser, so `localStorage` is unavailable
+ * to it; a cookie arrives with the request. That is the reason a server-rendered application needs
+ * a store the server can read, this one or a profile the server can reach: without one the server
+ * renders what the other sources decide and the browser corrects it after hydration, which is a
  * visible flash of the wrong language on every visit.
  *
  * Writing happens only in the browser. Setting a cookie on the server means setting a response
@@ -316,7 +316,8 @@ export interface LocalStorageStoreOptions {
  *
  * Correct for an application that renders in the browser, wrong on its own for one that renders on
  * the server: nothing here reaches the first response, so the server picks a language and the
- * browser changes it afterwards. Pair it with the cookie store, or use the cookie store instead.
+ * browser changes it once the page has hydrated. Pair it with the cookie store, or use the cookie
+ * store instead.
  */
 export function localStorageStore(
   options: LocalStorageStoreOptions = {},
@@ -384,8 +385,10 @@ export interface LocalizationProfileTransport {
  * preference is then subject to the same ordering, validation and failure handling as the cookie
  * beside it.
  *
- * Reading is asynchronous, so this store cannot fix the language of a server-rendered first
- * response. Pair it with the cookie store where that matters.
+ * A server render waits for the read, so a transport that can reach the reader's account from the
+ * server fixes the language of the first response. One that can only ask from the browser answers
+ * once the page has hydrated, and the page moves then; pair it with the cookie store where that
+ * matters.
  */
 export function profileStore(
   transport: LocalizationProfileTransport,

@@ -1035,25 +1035,19 @@ function requestFor(page, locale) {
 
 // The same for a browser, where the choice is the cookie it sends. Where no address names a locale
 // a choice an earlier stage made would answer instead of the address, so the cookie says exactly
-// what this visit states, and is put back afterwards because every stage shares the context.
+// what this visit states. It stays that way after the visit: the page reads the stores again once
+// it has hydrated (specs/03-locale-identity-and-resolution.spec.md section 8), so a cookie put back
+// under it is a choice made elsewhere, and the page follows it. Every visit sets its own.
 async function visitFor(browserContext, page, locale, visit) {
   const { path, headers } = requestFor(page, locale);
   if (addresses.localeInAddress) return visit(siteUrl(path, locale));
-  const before = await browserContext.cookies(browserOrigin);
   await browserContext.clearCookies({ name: 'equator-locale' });
   if (headers.cookie !== undefined) {
     await browserContext.addCookies([
       { name: 'equator-locale', value: locale, url: browserOrigin },
     ]);
   }
-  try {
-    return await visit(siteUrl(path, locale));
-  } finally {
-    await browserContext.clearCookies({ name: 'equator-locale' });
-    await browserContext.addCookies(
-      before.filter((cookie) => cookie.name === 'equator-locale'),
-    );
-  }
+  return visit(siteUrl(path, locale));
 }
 
 async function render(label, locale = 'en-US', page = 'home') {
@@ -4597,6 +4591,54 @@ async function verifyEmbeddedPanel(row, languages) {
       }
       await account(null);
     }
+
+    // A choice kept on this device reaches no server, so the page is drawn or written without it,
+    // and the stores are read again once the page is adopted: the choice corrects it then, and
+    // is written nowhere else by doing so (specs/03-locale-identity-and-resolution.spec.md
+    // section 8).
+    await page.evaluate(() => localStorage.setItem('embedded-locale', 'ar'));
+    for (const [path, view, rendered] of [
+      ['/', 'panel', 'ssr'],
+      ['/about', 'about', 'ssg'],
+    ]) {
+      const check = at(
+        `a device choice corrects the ${rendered} page after hydration`,
+      );
+      const source = 'stored';
+      // From a blank page, because a page showing the same view would answer the capture below
+      // with its own elements rather than the ones the new document was given.
+      await page.goto('about:blank');
+      await navigateWithScriptGate(
+        page,
+        `${embedded.origin}${path}`,
+        async () => {
+          await page.waitForSelector(`[data-route-view="${view}"]`, {
+            state: 'attached',
+          });
+          await holdServerElements(page);
+        },
+      );
+      const observed = await measuredEmbeddedContext(page);
+      assert.match(
+        observed.document,
+        new RegExp(`\\bng-server-context=["'][^"']*\\b${rendered}\\b`, 'u'),
+        `${check}: the page did not come from the ${rendered} render`,
+      );
+      assert.ok(
+        observed.adoptedElements > 0,
+        `${check} kept none of the elements it was given`,
+      );
+      await shows('ar', check);
+      assert.deepEqual(
+        await embeddedStores(page),
+        { tab: null, device: 'ar', account: null },
+        `${check}: the ${source} locale localStorageStore resolved was written back`,
+      );
+      recordCapabilityClaim(check, 'source:stored', observed);
+      recordCapabilityClaim(check, 'store:localStorageStore', observed);
+    }
+    await page.evaluate(() => localStorage.removeItem('embedded-locale'));
+    await page.goto('about:blank');
 
     await navigateWithScriptGate(page, `${embedded.origin}/about`, async () => {
       await page.waitForSelector('[data-route-view="about"]', {

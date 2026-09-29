@@ -89,11 +89,12 @@ the request, so the first response is already in the right language.
 
 `localStorageStore` is browser-only and is read after the page exists, so the first paint is whatever
 the address and the headers decided. On a client-rendered application that is invisible. On a
-server-rendered one it is a flash of the wrong language.
+server-rendered one the page moves once it has hydrated, which is a flash of the wrong language.
 
 `profileStore` is an interface rather than a store with a different name. Implement it when the
 choice belongs in your account record, and the value follows the visitor across devices instead of
-across tabs.
+across tabs. The server waits for it, so a transport that can reach the account from the server
+fixes the first response as a cookie does.
 
 The cookie store validates its own configuration where you write it rather than leaving a browser to
 drop the cookie later. `SameSite=None` without `Secure`, a `__Secure-` name without `Secure`, and a

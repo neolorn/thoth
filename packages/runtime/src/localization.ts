@@ -463,12 +463,15 @@ export abstract class Localization {
   abstract ɵclaimRoutingCommit(steps: RoutingCommitSteps | undefined): void;
 
   /**
-   * Bring a page restored from the back-forward cache into the stored locale, where that has moved.
+   * Bring a page into the stored locale where it was shown without reading the stores: restored
+   * from the back-forward cache, or drawn by a server that cannot read them.
    *
-   * Called by the browser integration on `pageshow` with the address the page is at, its origin
-   * included, because under a host policy the origin is what states the locale. Changes nothing,
-   * and resolves to `undefined`, unless the stored locale differs from the one on screen and the
-   * configured sources would choose it for that address. The change records nothing, because
+   * Called by the browser integration on `pageshow`, and once a page the server drew has hydrated,
+   * with the address the page is at, its origin included, because under a host policy the origin
+   * is what states the locale. Changes nothing, and resolves to `undefined`, unless the stored
+   * locale differs from the one on screen, the configured sources would choose it for that
+   * address, and the reader asked for no change or removal while the stores were read, since that
+   * request is the newer decision. The change records nothing, because
    * `specs/03-locale-identity-and-resolution.spec.md` section 8 writes only a deliberate change.
    */
   abstract ɵrestoreLocale(address: {
@@ -987,6 +990,9 @@ class LocalizationInternal {
     () => this.activeValue()?.publicSnapshot,
   );
   private readonly targetLocaleValue = signal<string | undefined>(undefined);
+  // Counted rather than compared by snapshot, because a change to the locale already shown commits
+  // nothing new and is still the reader's decision.
+  private requestedChanges = 0;
   private readonly recoveryValue = signal<LocalizedText | undefined>(undefined);
   private readonly recoveryRetryLabelValue = signal<LocalizedText | undefined>(
     undefined,
@@ -2125,6 +2131,7 @@ class LocalizationInternal {
     options: LocaleChangeOptions = {},
   ): Promise<LocaleChangeResult> {
     this.assertActive();
+    this.requestedChanges += 1;
     const mode = options.mode ?? 'coordinated';
     let locale: string;
     try {
@@ -2583,6 +2590,7 @@ class LocalizationInternal {
 
   forgetRememberedLocale(): Promise<LocaleRemovalReport> {
     this.assertActive();
+    this.requestedChanges += 1;
     return this.localeResolution.forgetPersistedLocale();
   }
 
@@ -2593,15 +2601,20 @@ class LocalizationInternal {
     // Nothing committed means nothing on screen to restore: not yet initialized, or disposed, which
     // clears what is current. Answered rather than refused, because a browser event is the caller.
     const committed = this.active?.publicSnapshot.primaryLocale;
-    if (committed === undefined) return undefined;
+    if (committed === undefined || this.targetLocaleValue() !== undefined)
+      return undefined;
+    const requested = this.requestedChanges;
     const target = await this.localeResolution.restoredLocale(
       committed,
       address,
       this.lifetimeController.signal,
     );
-    return target === undefined
-      ? undefined
-      : this.changeLocale(target, { remember: false });
+    // The stores were read while the reader could still act. A change or a removal asked for since
+    // is a newer decision than what they said, and a restore run over it would undo it
+    // (`specs/03-locale-identity-and-resolution.spec.md` section 8).
+    if (target === undefined || this.requestedChanges !== requested)
+      return undefined;
+    return this.changeLocale(target, { remember: false });
   }
 
   /**

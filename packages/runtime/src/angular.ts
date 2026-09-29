@@ -6,6 +6,8 @@ import {
   isPlatformServer,
 } from '@angular/common';
 import {
+  APP_BOOTSTRAP_LISTENER,
+  ApplicationRef,
   DestroyRef,
   Injectable,
   InjectionToken,
@@ -2138,6 +2140,29 @@ export function provideLocalizationSetup(
             throw error;
         });
     }),
+    {
+      // A page the server drew or the build wrote was decided without the stores only the browser
+      // can read, and hydration adopts that decision rather than renegotiating it. Once hydration
+      // is over, which Angular marks by the application becoming stable, the stores are read
+      // again, and a choice the declared order puts first moves the page.
+      provide: APP_BOOTSTRAP_LISTENER,
+      multi: true,
+      useFactory: () => {
+        const localization = inject(Localization);
+        const applicationRef = inject(ApplicationRef);
+        const baseHref = applicationBaseHref();
+        const browser = isPlatformBrowser(inject(PLATFORM_ID));
+        return () => {
+          if (!browser || localization.renderedLocale() === undefined) return;
+          void applicationRef.whenStable().then(() => {
+            if (applicationRef.destroyed) return;
+            void localization.ɵrestoreLocale(
+              locationAddress(document.location, baseHref),
+            );
+          });
+        };
+      },
+    },
   ]);
 }
 

@@ -285,13 +285,14 @@ export class LocaleResolution {
   }
 
   /**
-   * The stored locale, where a page restored from the back-forward cache should now be in it.
+   * The stored locale, where a page shown without reading the stores should now be in it.
    *
    * A restored page comes back from memory without asking the server, so it shows the language it
-   * had when the visitor left, whatever was chosen since. The stored choice is the one thing that can
-   * have moved. It applies only where the configured sources, run against the address the page is
-   * at, would choose it now: an address that states its locale still decides, so only a page whose
-   * address states none moves.
+   * had when the visitor left, whatever was chosen since. A page the server drew was decided
+   * without the stores only the browser can read. Either way the stored choice is the one thing
+   * that can differ. It applies only where the configured sources, run against the address the
+   * page is at, would choose it now: an address that states its locale still decides, so only a
+   * page whose address states none moves.
    */
   async restoredLocale(
     committed: string,

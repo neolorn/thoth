@@ -53,7 +53,11 @@ interface Seat {
   readonly written: readonly string[];
 }
 
-function setup(policy: LocaleUrlPolicy): Seat {
+/**
+ * `hold`, where given, keeps each read out until it settles, answering with the value the store had
+ * when the read was asked, as a slow store would.
+ */
+function setup(policy: LocaleUrlPolicy, hold?: () => Promise<void>): Seat {
   const shared = memoryStore()();
   let reads = 0;
   const written: string[] = [];
@@ -72,9 +76,11 @@ function setup(policy: LocaleUrlPolicy): Seat {
         withRouting({ policy, projection: appRouteProjection }),
         withPersistence(() => ({
           id: 'shared',
-          read: () => {
+          read: async () => {
             reads += 1;
-            return shared.read();
+            const value = shared.read();
+            await hold?.();
+            return value;
           },
           write: (locale: string) => {
             written.push(locale);
@@ -160,6 +166,33 @@ describe('a page restored from the back-forward cache', () => {
     expect(seat.reads()).toBeGreaterThan(before);
     expect(seat.localization.targetLocale()).toBeUndefined();
     expect(seat.localization.snapshot()?.primaryLocale).toBe('ar-EG');
+  });
+
+  it('gives way to a choice the reader makes while the stores are read', async () => {
+    let holding: Promise<void> | undefined;
+    let release!: () => void;
+    const seat = setup(NEUTRAL, () => holding ?? Promise.resolve());
+    expect((await seat.localization.initialize()).primaryLocale).toBe('en-US');
+
+    // Chosen in another tab, and read by a store slow enough for the reader to act first.
+    await seat.shared.write('ar-EG');
+    holding = new Promise((resolve) => {
+      release = resolve;
+    });
+    const before = seat.reads();
+    restore(true);
+    await vi.waitFor(() => expect(seat.reads()).toBeGreaterThan(before));
+
+    // The language already on screen, chosen again, which commits nothing new.
+    await seat.localization.changeLocale('en-US');
+    release();
+    await new Promise((done) => setTimeout(done, 0));
+
+    expect(seat.localization.targetLocale()).toBeUndefined();
+    expect(
+      seat.localization.snapshot()?.primaryLocale,
+      'the choice made while the stores were read',
+    ).toBe('en-US');
   });
 
   it('does nothing on a first showing', async () => {

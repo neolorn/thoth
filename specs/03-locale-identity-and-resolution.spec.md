@@ -172,9 +172,16 @@ would stop every store written against the previous one from compiling.
 A persistence failure MUST NOT corrupt active state, and a write for an older decision MUST NOT
 supersede a newer one.
 
-Only the cookie store is readable while the server renders, so it is the only one that can fix the
-language of the first response. The others can correct the language after hydration, which the
-visitor sees. Cookie writing is done in the browser, because the response headers belong to the
+While the server renders, a store answers only from what the request carries or what the server
+can reach: the cookie store reads the request, and a profile store reads whatever its transport
+reaches from there. Only a store that answers there can fix the language of the first response.
+Browser storage cannot. A page the server drew or a build wrote is adopted as it was decided, as
+`06-runtime-and-angular.spec.md` section 10 requires, and once hydration is complete a release MUST
+read the stores again, so that a stored choice the declared sources would choose for the address
+moves the page. The visitor sees the move, and it is not written back. A value read this way, or
+when a page returns from the browser's back-forward cache, MUST NOT move the page if the visitor
+asked for a locale change or a removal while it was being read: that request is the newer
+decision. Cookie writing is done in the browser, because the response headers belong to the
 consumer's server.
 
 Persistence state is created per injector rather than per configuration, so a store declared in a
