@@ -2310,6 +2310,44 @@ async function verifyCommandLine() {
   await writeFile(catalogFile, catalog, 'utf8');
   machine(consumerRoot, ['generate']);
 
+  // The compile verb of the programmatic API, over the same project. It writes nothing, and the
+  // route policy its analysis read is the one the application runs, which the page above reports.
+  // The served policy is narrowed to the built locales, so its locales are held to be among the
+  // declared ones rather than equal to them.
+  const { compileProjectFromDisk } = await import(
+    pathToFileURL(
+      resolve(consumerRoot, 'node_modules/@neolorn/equator-toolkit/index.js'),
+    ).href
+  );
+  const beforeCompile = await treeDigest(consumerRoot);
+  const compiled = await compileProjectFromDisk({ cwd: consumerRoot });
+  assert.equal(compiled.ok, true, JSON.stringify(compiled.diagnostics));
+  assert.deepEqual(
+    await treeDigest(consumerRoot),
+    beforeCompile,
+    'compileProjectFromDisk wrote to the project',
+  );
+  const analyzedPolicy = compiled.value.compilation.analysis?.routePolicy;
+  assert.deepEqual(
+    {
+      kind: analyzedPolicy?.kind,
+      omitDefaultPrefix: analyzedPolicy?.omitDefaultPrefix,
+    },
+    { kind: policy.kind, omitDefaultPrefix: policy.omitDefaultPrefix === true },
+    'compileProjectFromDisk read another route policy than the one the application runs',
+  );
+  const servedLocales = Object.keys(policy.locales ?? {});
+  assert.ok(
+    servedLocales.length > 0 &&
+      servedLocales.every((locale) => analyzedPolicy.locales.includes(locale)),
+    `compileProjectFromDisk read the locales ${analyzedPolicy.locales.join(', ')}, and the application serves ${servedLocales.join(', ')}`,
+  );
+  recordCapabilityClaim(
+    `${consumerName}: compileProjectFromDisk over the seat`,
+    'entry:@neolorn/equator-toolkit',
+    { policy },
+  );
+
   // Written the way a person might: a comment of their own, and quotes the value does not need.
   const quotedLine = '  source-only: "Source fallback remains truthful."\n';
   const handWritten = `# Kept by hand.\n${catalog.replace(plainLine, quotedLine)}`;

@@ -41,8 +41,8 @@ const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
  * a freed slot under a ceiling. An entry that stops being a candidate must be removed, and the gate
  * says so rather than letting the list rot into a second copy of the surface.
  *
- * Two names, each published on purpose and each invisible to this corpus for a reason stated here
- * rather than deferred. A name reached through a signature a consumer binds, such as
+ * One name, published on purpose and invisible to this corpus for a reason stated here rather
+ * than deferred. A name reached through a signature a consumer binds, such as
  * `LabelAttribute` or `LocaleUrlResolutionSetup`, does not belong on this list: an occurrence
  * proxy cannot see that use, and the answer is a gate that can rather than an entry admitting it
  * cannot.
@@ -56,12 +56,6 @@ const BASELINE = Object.freeze({
   // rather than the builder.
   extensionDescriptor:
     'toolkit API; the plugin surface the extension guide documents',
-  // The project-host compile, beside the seven other verbs the programmatic API publishes. Those
-  // seven are reached and this one is not, because Equator's own gates drive compilation through
-  // the command line rather than through the host API. The programmatic API mirrors the command
-  // line, so publishing every verb but one would be a surface a caller cannot predict.
-  compileProjectFromDisk:
-    'toolkit API; the compile verb, beside the seven the corpus reaches',
 });
 
 const CORPUS = Object.freeze([
