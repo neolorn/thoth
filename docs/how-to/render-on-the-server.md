@@ -18,6 +18,13 @@ It goes in your server configuration, beside Angular's own server providers. It 
 work: negotiating the locale for the request, preparing the scopes that request needs, and making
 the result available to the render.
 
+On the server, `provideLocalizedRouter` needs the origin your pages are published at, because the
+canonical link and the `hreflang` alternates are composed from it. It refuses to start without one:
+
+```text
+provideLocalizedRouter(routes, { origin: 'https://example.com' }),
+```
+
 The localization a request renders under is scoped to that request, so two concurrent renders never
 share a committed locale. Catalogs are admitted once per process rather than once per request:
 verifying a catalog does not depend on who asked for it.

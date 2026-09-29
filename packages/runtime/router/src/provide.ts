@@ -343,6 +343,7 @@ export function provideLocalizedRouter(
     provideEnvironmentInitializer(() => {
       // First, and unconditionally. Everything below reports; this one decides.
       refusePolicyAtConfiguration(declaredAddressContext(), options);
+      refuseServerWithoutOrigin(options);
       reportTableProblems(inject(LOCALIZED_ROUTE_TABLE));
 
       // Reported, not prevented. A consumer who wants their own ROUTER_CONFIGURATION is making a
@@ -520,6 +521,29 @@ function refuseHostOriginMismatch(
     code: 'invalid-configuration',
     outcome: 'operational-failure',
     message: `provideLocalizedRouter() was given {origin: ${JSON.stringify(declared)}}, which the "locale-host" policy does not name. Its origins are ${list}. Equator resolves every address at the configured origin, so an origin the policy does not know means no address resolves at all: at runtime every request answers 400, and a prerender writes no files while the build still reports success. The scheme is part of an origin: "https://example.com" and "http://example.com" are two different ones.`,
+  });
+}
+
+/**
+ * A page rendered on the server is published at an origin, and Equator must be told which.
+ *
+ * Every published URL is composed from the configured origin, which section 10 of
+ * `specs/07-routing-rendering-and-seo.spec.md` takes from configuration and section 16 forbids
+ * reading from the request. With none, a server render writes the page with no canonical link and
+ * no `hreflang` alternates, and a prerender writes that page to disk while the build succeeds.
+ * The page is what a crawler reads, and nothing on it says anything is missing. In the browser the
+ * same application still has a switcher, which needs no origin, so only a server render refuses.
+ * A host policy is refused for a missing origin before this, under every platform.
+ */
+function refuseServerWithoutOrigin(options: RouteLocalizationOptions): void {
+  if (options.origin !== undefined || !isPlatformServer(inject(PLATFORM_ID))) {
+    return;
+  }
+  throw new LocalizationError({
+    code: 'invalid-configuration',
+    outcome: 'operational-failure',
+    message:
+      'provideLocalizedRouter() is rendering on the server with no {origin}, so every page it writes has no canonical link and no hreflang alternates, and a prerender writes those pages while the build succeeds. Pass {origin: "https://example.com"}, the origin this build is served at, with no path.',
   });
 }
 

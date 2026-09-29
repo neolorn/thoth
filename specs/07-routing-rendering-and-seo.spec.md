@@ -516,6 +516,12 @@ it publishes or writes into a document from those three and nothing else, so the
 is given and the address this build resolves are two readings of one fact. An address that is
 already absolute keeps its own origin and is mounted on its own path.
 
+A page rendered on the server is the one a crawler reads, and without an origin it carries no
+canonical and no alternate while its build succeeds. A release MUST therefore refuse at
+configuration a server render that has not been told its origin, under every policy. An application
+rendered only in the browser has a switcher without one, and publishes no canonical or alternate
+until it names one.
+
 Eligible locale variants of one route identity form a reciprocal complete alternate cluster with
 canonical language tags. A variant is eligible when three things hold: the policy addresses it, the
 build generated it, and the address serves it. A release MUST require all three, because

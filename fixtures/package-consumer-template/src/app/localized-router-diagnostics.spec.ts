@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { LocationStrategy, PathLocationStrategy } from '@angular/common';
-import { Injectable } from '@angular/core';
+import { Injectable, PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import * as angularRouter from '@angular/router';
 import {
@@ -497,6 +497,32 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
       policy: PATH_PREFIX,
       options: { origin: 'https://nothing-in-any-policy.example' },
     });
+    expect(TestBed.inject(LocationStrategy).constructor.name).toBe(
+      'LocalizedLocationStrategy',
+    );
+  });
+
+  /**
+   * A server render publishes the page a crawler reads, and a page with no origin to compose its
+   * links from would go out with no canonical link and no alternates, saying nothing. The browser
+   * case is the control: a switcher needs no origin, so an application rendered only there starts.
+   */
+  it('refuses a server render configured with no origin', async () => {
+    await expect(
+      bootstrap(
+        [],
+        [{ provide: PLATFORM_ID, useValue: 'server' }],
+        'installed',
+        {
+          policy: PATH_PREFIX,
+          options: {},
+        },
+      ),
+    ).rejects.toThrow(/rendering on the server with no \{origin\}/u);
+  });
+
+  it('starts in the browser with no origin', async () => {
+    await bootstrap([], [], 'installed', { policy: PATH_PREFIX, options: {} });
     expect(TestBed.inject(LocationStrategy).constructor.name).toBe(
       'LocalizedLocationStrategy',
     );
