@@ -57,3 +57,36 @@ describe.runIf(expectedPageCaching !== undefined)(
     });
   },
 );
+
+/**
+ * A floor declared here for every row, whatever its deployment declares.
+ *
+ * `not-stored`, the higher of the two levels, so a page every policy classifies differently on its
+ * own is raised to the same answer by each, and a redirect still keeps the one routing gave it.
+ */
+describe('a floor declared for every page, under any policy', () => {
+  const answer = createLocaleRequestHandler({
+    policy: routePolicy,
+    projection: appRouteProjection,
+    configuration,
+    cache: { ...responseCaching, pageCaching: 'not-stored' },
+    cookie: localeCookie,
+    render: () =>
+      new Response('<!doctype html>', {
+        headers: { 'content-type': 'text/html' },
+      }),
+  });
+
+  it('raises a page and leaves a redirect as routing classified it', async () => {
+    const page = await answer(new Request(pageUrl('second', 'en-US')));
+    const replaced = await answer(
+      new Request(`${pageUrl('legacy', 'en-US')}?tab=one`),
+    );
+
+    expect(page.status).toBe(200);
+    expect(page.headers.get('cache-control')).toBe('private, no-store');
+    expect(replaced.status).toBe(308);
+    expect(replaced.headers.get('cache-control')).toBe('public, max-age=86400');
+    claimCapability('declaration:host-page-floor', { policy: routePolicy });
+  });
+});

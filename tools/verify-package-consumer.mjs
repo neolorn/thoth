@@ -1584,8 +1584,23 @@ function verifyRouteDeclarations() {
     observed('lazy'),
   );
 
-  // Only a deployment whose table says it declares a floor has one to hold.
+  // Only a deployment whose table says it declares a floor has one to hold. Home is drawn by the
+  // server on request and second is written by the build, and neither declares a class.
   if (addresses.pageCaching !== undefined) {
+    const floorHeader =
+      addresses.pageCaching === 'not-stored'
+        ? 'private, no-store'
+        : 'private, no-cache';
+    assert.equal(
+      header('home', 'cache-control'),
+      floorHeader,
+      `home declares no caching class and was not raised to the ${addresses.pageCaching} pageCaching floor`,
+    );
+    recordCapabilityClaim(
+      check,
+      'declaration:host-page-floor',
+      observed('home'),
+    );
     assert.equal(
       header('second', 'cache-control'),
       addresses.pageCaching === 'not-stored'
