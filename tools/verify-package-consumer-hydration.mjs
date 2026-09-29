@@ -3989,6 +3989,123 @@ async function verifyRecovery(row, context) {
   await page.close();
 }
 
+/**
+ * The recovery on a page the server drew, which a browser reaches when it can neither adopt what
+ * the server transferred nor load a catalog itself. The transfer is edited on the way, so it is
+ * refused whole under `specs/05-compiled-artifacts-and-trust.spec.md` section 2, and the catalog
+ * modules are out as above. The server's elements are held before any script runs, so the
+ * recovery is read in a page that kept them.
+ */
+async function verifyRecoveryOnDrawnPage(row, context) {
+  const locale = 'en-US';
+  const page = boundCalls(await context.newPage(), 'page');
+  page.setDefaultTimeout(15_000);
+  page.setDefaultNavigationTimeout(20_000);
+  // A stored choice would decide the locale once the transfer is refused, and the stages before
+  // this one leave one behind. It stays away until the recovery has been read: the page reads
+  // the store only once its scripts run, which is after the visit returns.
+  const before = (await context.cookies()).filter(
+    ({ name }) => name === 'equator-locale',
+  );
+  await context.clearCookies({ name: 'equator-locale' });
+  try {
+    await verifyRecoveryOverRefusedTransfer(row, context, page, locale);
+  } finally {
+    await context.clearCookies({ name: 'equator-locale' });
+    await context.addCookies(before);
+  }
+}
+
+async function verifyRecoveryOverRefusedTransfer(row, context, page, locale) {
+  const catalogModules = await catalogModulesOf(
+    deploymentOf(locale).browserRoot,
+  );
+  const pageErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  let edited = false;
+  let releaseScripts;
+  const scripts = new Promise((release) => {
+    releaseScripts = release;
+  });
+  const refused = new Set();
+  await page.route('**/*.js', async (route) => {
+    await scripts;
+    const url = route.request().url();
+    if (catalogModules.has(new URL(url).pathname)) {
+      refused.add(url);
+      await route.fulfill({ status: 503, body: '' });
+      return;
+    }
+    await route.continue();
+  });
+  try {
+    await visitFor(context, 'second', locale, async (url) => {
+      const navigation = page.goto(url, { waitUntil: 'commit' });
+      navigation.catch(() => {});
+      await navigation;
+      await page.waitForSelector('[data-route-view="second"]', {
+        state: 'attached',
+      });
+      await page.waitForSelector(
+        'script[type="application/json"][id$="-state"]',
+        {
+          state: 'attached',
+        },
+      );
+      await holdServerElements(page);
+      // Edited where Angular reads it, before any script runs. Angular writes the transfer with its
+      // slashes escaped, and either spelling is the profile.
+      edited = await page.evaluate(() => {
+        const transfer = document.querySelector(
+          'script[type="application/json"][id$="-state"]',
+        );
+        // The text node rather than the element: a script's text is a Trusted Types sink, and a
+        // JSON block is never run for the policy to be asked about.
+        const text = transfer?.firstChild;
+        if (!(text instanceof Text)) return false;
+        const refused = text.data.replace(
+          /("profile":"equator-transfer-state(?:\/|\\u002F))1"/u,
+          '$10"',
+        );
+        if (refused === text.data) return false;
+        text.data = refused;
+        return true;
+      });
+    });
+  } finally {
+    releaseScripts();
+  }
+  assert.ok(
+    edited,
+    'The second page carried no transfer to edit, so nothing was refused',
+  );
+  const recovery = page.locator('localization-recovery [role="alert"]');
+  await recovery.waitFor().catch(() => {
+    assert.fail(
+      'No LocalizationRecovery showed over the refused transfer, so the page had no withRecoveryMessage to fall back on',
+    );
+  });
+  assert.ok(
+    refused.size > 0,
+    'The page asked for no catalog module, so it adopted what the server sent after all',
+  );
+  assert.equal(
+    (await recovery.locator('p').textContent()).trim(),
+    await readCatalogMessage(consumerRoot, locale, 'recovery.unavailable'),
+    `LocalizationRecovery did not show the ${locale} sentence withRecoveryMessage selects over the server's page`,
+  );
+  const observed = await measuredContext(page);
+  assert.ok(
+    observed.adoptedElements > 0,
+    `${row.label} kept none of the second page's server elements, so the recovery was not read in a page the server drew`,
+  );
+  assert.deepEqual(pageErrors, [], 'The refused transfer threw in the page');
+  const check = sectionCheck(row, 'recovery on a page the server drew');
+  recordCapabilityClaim(check, 'feature:withRecoveryMessage', observed);
+  recordCapabilityClaim(check, 'directive:LocalizationRecovery', observed);
+  await page.close();
+}
+
 async function verifyLocalizedNotFound(row, context, diagnostics) {
   // An address this application does not serve, under a locale it does. The locale resolved
   // perfectly well; only the page is unknown, and the application's own not-found route is what
@@ -4598,6 +4715,9 @@ async function verifyBrowserRow(row) {
 
   enterStage(`${row.id}-recovery`);
   await verifyRecovery(row, context);
+
+  enterStage(`${row.id}-recovery-on-drawn-page`);
+  await verifyRecoveryOnDrawnPage(row, context);
 
   // Where the change is a document navigation there is no switch in a page to hold.
   if (addresses.switchInDocument) {
