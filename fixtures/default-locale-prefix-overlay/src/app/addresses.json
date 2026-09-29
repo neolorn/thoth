@@ -96,12 +96,12 @@
     },
     "exercise": {
       "en-US": "/exercise/live",
-      "ar-EG": "/ar-eg/exercise/مباشر",
+      "ar-EG": "/ar-eg/تمرين/مباشر",
       "en-Arab-XB": "/en-arab-xb/exercise/live"
     },
     "exercise values": {
       "en-US": "/exercise/values",
-      "ar-EG": "/ar-eg/exercise/قيم",
+      "ar-EG": "/ar-eg/تمرين/قيم",
       "en-Arab-XB": "/en-arab-xb/exercise/values"
     },
     "missing": {

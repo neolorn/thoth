@@ -67,11 +67,11 @@
     },
     "exercise": {
       "en-US": "/exercise/live",
-      "ar-EG": "/exercise/مباشر"
+      "ar-EG": "/تمرين/مباشر"
     },
     "exercise values": {
       "en-US": "/exercise/values",
-      "ar-EG": "/exercise/قيم"
+      "ar-EG": "/تمرين/قيم"
     },
     "missing": {
       "en-US": "/nothing-is-mounted-here"

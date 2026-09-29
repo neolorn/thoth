@@ -8,7 +8,7 @@
  * wired to the workspace would resolve the sources instead of the published files.
  */
 import assert from 'node:assert/strict';
-import { mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import {
   lstat,
   readFile,
@@ -1873,6 +1873,9 @@ function verifyAddressDeclarations() {
   const items = INIT_REQUEST.locales.filter((each) =>
     addresses.has('item', each),
   );
+  const sheets = INIT_REQUEST.locales.filter((each) =>
+    addresses.has('exercise', each),
+  );
   const aliased = addresses.locales('second under an alias');
   const asked = [
     {
@@ -1886,6 +1889,10 @@ function verifyAddressDeclarations() {
     ...items.map((each) => ({
       origin: addresses.origin(each),
       path: addresses.path('item', each),
+    })),
+    ...sheets.map((each) => ({
+      origin: addresses.origin(each),
+      path: addresses.path('exercise', each),
     })),
     ...aliased.map((each) => ({
       origin: addresses.origin(each),
@@ -1962,6 +1969,51 @@ function verifyAddressDeclarations() {
     assert.equal(answer.headers['content-language'], each);
     recordCapabilityClaim(check, 'declaration:localized-paths', {
       document: answer.body,
+      policy,
+    });
+  }
+
+  // So is the exercise sheet, which the server draws on request and the build writes.
+  for (const each of sheets) {
+    const answer = answers[next++];
+    const check = `${consumerName}: the exercise sheet in ${each}`;
+    assert.equal(
+      answer.status,
+      200,
+      `${check}: the path localizedPaths spells it with was not served`,
+    );
+    assert.equal(answer.headers['content-language'], each);
+    assert.equal(
+      sheetInDocument(answer.body).locale,
+      each,
+      `${check}: the server did not draw the sheet in the locale its address spells`,
+    );
+    recordCapabilityClaim(check, 'declaration:localized-paths', {
+      document: answer.body,
+      policy,
+    });
+  }
+  for (const each of INIT_REQUEST.locales) {
+    if (!addresses.has('exercise values', each)) continue;
+    const check = `${consumerName}: the exercise sheet in ${each}, prerendered`;
+    const written = resolve(
+      consumerRoot,
+      builds.output(addresses.origin(each)),
+      'browser',
+      addresses.file('exercise values', each),
+    );
+    assert.ok(
+      existsSync(written),
+      `${check}: the build did not write it at the path localizedPaths spells it with`,
+    );
+    const document = readFileSync(written, 'utf8');
+    assert.equal(
+      sheetInDocument(document).locale,
+      each,
+      `${check}: the build did not write the sheet in the locale its address spells`,
+    );
+    recordCapabilityClaim(check, 'declaration:localized-paths', {
+      document,
       policy,
     });
   }

@@ -94,12 +94,12 @@
     },
     "exercise": {
       "en-US": "http://en-us.localhost/exercise/live",
-      "ar-EG": "http://ar-eg.localhost/exercise/مباشر",
+      "ar-EG": "http://ar-eg.localhost/تمرين/مباشر",
       "en-Arab-XB": "http://en-arab-xb.localhost/exercise/live"
     },
     "exercise values": {
       "en-US": "http://en-us.localhost/exercise/values",
-      "ar-EG": "http://ar-eg.localhost/exercise/قيم",
+      "ar-EG": "http://ar-eg.localhost/تمرين/قيم",
       "en-Arab-XB": "http://en-arab-xb.localhost/exercise/values"
     },
     "missing": {
