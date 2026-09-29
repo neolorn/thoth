@@ -34,8 +34,13 @@
     {
       "id": "http-server-only",
       "rows": ["entry:@neolorn/equator/http"],
-      "columns": ["render:client-navigation", "render:hydration", "engine:*"],
-      "reason": "The request handler answers requests on the server; a client navigation sends it no document request, and no browser runs it."
+      "columns": [
+        "render:prerender",
+        "render:client-navigation",
+        "render:hydration",
+        "engine:*"
+      ],
+      "reason": "The request handler answers requests on the server: a build has no request for it to answer and fails on a declaration made while prerendering (spec 07 section 5), a client navigation sends it no document request, and no browser runs it."
     },
     {
       "id": "ssr-server-only",
@@ -61,8 +66,8 @@
     {
       "id": "sitemap-for-crawlers",
       "rows": ["capability:sitemap"],
-      "columns": ["render:client-navigation", "render:hydration", "engine:*"],
-      "reason": "The sitemap is a document the server answers for crawlers; no page boots from it."
+      "columns": ["render:*", "engine:*"],
+      "reason": "Equator produces the sitemap files as data, and the deployment writes or serves them to crawlers as they are (spec 07 section 11); no render of the application produces them and no page boots from them."
     },
     {
       "id": "caching-is-a-response-header",
@@ -78,6 +83,12 @@
       "rows": ["declaration:locale-aliases"],
       "columns": ["policy:locale-neutral", "policy:locale-host"],
       "reason": "An alias is a second prefix a path-prefix policy accepts; the neutral and host policies have no prefix to alias."
+    },
+    {
+      "id": "no-duration-formatter-on-node-22",
+      "rows": ["format:formatDuration", "pipe:localizedDuration"],
+      "columns": ["node:22"],
+      "reason": "Node 22 has no Intl.DurationFormat, so no duration can be formatted there; the exercise sheet holds Equator to the typed result spec 08 section 3 requires instead."
     }
   ]
 }

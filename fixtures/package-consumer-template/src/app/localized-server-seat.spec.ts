@@ -207,8 +207,19 @@ describe('an address answered through the server seat', () => {
     const answered = await seat().request(pageUrl('missing', 'en-US'));
 
     expect(answered.status).toBe(404);
-    expect(answered.head.title).toBe('Page not found');
+    expect(
+      answered.head.title,
+      'the title answeredHead read off the answer createLocalizedServerSeat gave',
+    ).toBe('Page not found');
     expect(answered.head.canonical).toBeUndefined();
+    claimCapability('testing:createLocalizedServerSeat', {
+      policy: routePolicy,
+      document: answered.body,
+    });
+    claimCapability('testing:answeredHead', {
+      policy: routePolicy,
+      document: answered.body,
+    });
   });
 
   it('carries an outcome the renderer declared, and says that it carried', async () => {

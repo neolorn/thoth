@@ -9,6 +9,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   Localization,
@@ -21,6 +22,8 @@ import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 
 import { runtimeExtensions } from './runtime-extensions';
+
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
 /**
  * `withoutDocumentLocale()`, which withdraws the one Equator default that touches a document
@@ -134,6 +137,12 @@ describe('withoutDocumentLocale withdraws every document effect and nothing else
     // Past the frame the announcement would have used, so this is "never appended" rather than
     // "not appended yet".
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(document.querySelector(ANNOUNCER)).toBeNull();
+    expect(
+      document.querySelector(ANNOUNCER),
+      'withoutDocumentLocale appended an announcer',
+    ).toBeNull();
+    claimCapability('feature:withoutDocumentLocale', {
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 });

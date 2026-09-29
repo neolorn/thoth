@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { describe, expect, it, beforeEach } from 'vitest';
@@ -129,7 +129,10 @@ describe('a page rendered under a pseudo-locale', () => {
 
     for (const selector of LOCALIZED) {
       const after = textOf(element, selector);
-      expect(after).toContain(MARKER_START);
+      expect(
+        after,
+        `${selector} as renderedText read it, from the catalog equator generate --pseudo wrote`,
+      ).toContain(MARKER_START);
       expect(after).toContain(MARKER_END);
       expect(after).not.toBe(before.get(selector));
     }
@@ -144,8 +147,21 @@ describe('a page rendered under a pseudo-locale', () => {
     // beside three neighbours that all changed, which is what makes it visible on the page rather
     // than merely detectable in an assertion.
     expect(textOf(element, 'data-hardcoded')).toBe(hardcodedBefore);
-    expect(textOf(element, 'data-hardcoded')).toBe(HARDCODED);
+    expect(
+      textOf(element, 'data-hardcoded'),
+      'the page provideLocalizationTesting composed',
+    ).toBe(HARDCODED);
     claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    const platform = TestBed.inject(PLATFORM_ID) as string;
+    claimCapability('capability:pseudo-locale', {
+      policy: routePolicy,
+      platform,
+    });
+    claimCapability('testing:provideLocalizationTesting', {
+      policy: routePolicy,
+      platform,
+    });
+    claimCapability('testing:renderedText', { policy: routePolicy, platform });
   });
 
   it('resolves right-to-left from the tag, with no pseudo-locale branch to read', async () => {

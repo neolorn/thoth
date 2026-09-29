@@ -16,6 +16,10 @@ import {
   provideLocalizationSetup,
   withLocaleSources,
   withPersistence,
+  cookieStore,
+  localStorageStore,
+  memoryStore,
+  profileStore,
   type LocaleUrlPolicy,
   type LocalizationLocaleSource,
   type LocalizationPersistenceStoreFactory,
@@ -57,6 +61,8 @@ interface Environment {
   /** An absolute URL, because under locale-host the origin is what states the locale. */
   readonly url?: string;
   readonly acceptLanguage?: string;
+  /** The request's cookie header, where a store reads one. */
+  readonly cookie?: string;
   readonly withPolicy?: boolean;
   /** A policy of the test's own, where the row's cannot say what the test needs said. */
   readonly policy?: LocaleUrlPolicy;
@@ -78,10 +84,14 @@ function setup(environment: Environment): Localization {
             {
               provide: REQUEST,
               useValue: new Request(environment.url ?? unstatedAddress, {
-                headers:
-                  environment.acceptLanguage === undefined
+                headers: {
+                  ...(environment.acceptLanguage === undefined
                     ? {}
-                    : { 'accept-language': environment.acceptLanguage },
+                    : { 'accept-language': environment.acceptLanguage }),
+                  ...(environment.cookie === undefined
+                    ? {}
+                    : { cookie: environment.cookie }),
+                },
               }),
             },
           ]),
@@ -291,7 +301,7 @@ describe('the declared order', () => {
     },
   );
 
-  it('honours the order, not Equator s opinion of it', async () => {
+  it("honours the order, not Equator's opinion of it", async () => {
     // Storage ahead of the URL is unusual and legitimate: an application that deliberately pins a
     // signed-in user's language regardless of the link they followed.
     const localization = setup({
@@ -300,8 +310,164 @@ describe('the declared order', () => {
       url: pageUrl('second', 'en-US'),
     });
 
-    expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
-    claimCapability('source:stored', { policy: routePolicy });
+    expect(
+      (await localization.initialize()).primaryLocale,
+      'withLocaleSources put the LocalizationPersistenceStore of withPersistence first',
+    ).toBe('ar-EG');
+    const platform = TestBed.inject(PLATFORM_ID) as string;
+    claimCapability('source:stored', { policy: routePolicy, platform });
+    claimCapability('feature:withLocaleSources', {
+      policy: routePolicy,
+      platform,
+    });
+    claimCapability('feature:withPersistence', {
+      policy: routePolicy,
+      platform,
+    });
+    claimCapability('extension:persistence-store', {
+      policy: routePolicy,
+      platform,
+    });
+  });
+
+  it("asks for the reader's languages where the order puts them first", async () => {
+    // Under every policy, including those where every address states a locale: the order is the
+    // application's, and one that ranks the reader's languages over a link is honoured as written.
+    const localization = setup({
+      sources: ['browser', 'url', 'default'],
+      url: pageUrl('second', 'en-US'),
+      acceptLanguage: 'ar-SA,en;q=0.5',
+    });
+
+    expect(
+      (await localization.initialize()).primaryLocale,
+      'the order withLocaleSources declared',
+    ).toBe('ar-EG');
+    claimCapability('source:browser', {
+      policy: routePolicy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
+  });
+
+  it('reaches the default when the only source before it declines', async () => {
+    const localization = setup({
+      sources: ['stored', 'default'],
+      stores: [storeReturning(undefined)],
+      url: localeInAddress ? pageUrl('second', 'ar-EG') : unstatedAddress,
+      acceptLanguage: 'ar-EG',
+    });
+
+    // The reader says Arabic, and so does the address where one can, and neither is a source this
+    // order asks.
+    expect(
+      (await localization.initialize()).primaryLocale,
+      'the order withLocaleSources declared',
+    ).toBe('en-US');
+    claimCapability('source:default', {
+      policy: routePolicy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
+  });
+
+  it('reads the cookie a cookieStore names from the request', async () => {
+    const localization = setup({
+      sources: ['stored', 'url', 'default'],
+      stores: [cookieStore()],
+      url: pageUrl('second', 'en-US'),
+      cookie: 'equator-locale=ar-EG',
+    });
+
+    expect(
+      (await localization.initialize()).primaryLocale,
+      'the cookie cookieStore reads for withPersistence',
+    ).toBe('ar-EG');
+    const platform = TestBed.inject(PLATFORM_ID) as string;
+    claimCapability('store:cookieStore', { policy: routePolicy, platform });
+    claimCapability('feature:withPersistence', {
+      policy: routePolicy,
+      platform,
+    });
+  });
+
+  it('waits for a profileStore transport before the server renders', async () => {
+    // A transport that can answer while the server renders, such as one that reads the signed-in
+    // account behind the request, decides the language of the first response like a cookie does.
+    const localization = setup({
+      sources: ['stored', 'url', 'default'],
+      stores: [
+        profileStore({ read: async () => 'ar-EG', write: () => undefined }),
+      ],
+      url: pageUrl('second', 'en-US'),
+    });
+
+    expect(
+      (await localization.initialize()).primaryLocale,
+      'the profileStore transport withPersistence installed',
+    ).toBe('ar-EG');
+    const platform = TestBed.inject(PLATFORM_ID) as string;
+    claimCapability('store:profileStore', { policy: routePolicy, platform });
+    claimCapability('feature:withPersistence', {
+      policy: routePolicy,
+      platform,
+    });
+  });
+
+  it('keeps a memoryStore choice to the request that made it', async () => {
+    // Memory is built per injector and a server builds one per request, so a store declared once in
+    // shared configuration cannot hand one request's choice to the next.
+    const declared = memoryStore();
+    const thisRequest = declared();
+    const first = setup({
+      sources: ['stored', 'default'],
+      stores: [() => thisRequest],
+      url: pageUrl('second', 'en-US'),
+    });
+    await first.initialize();
+    await first.changeLocale('ar-EG');
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(
+      await thisRequest.read(),
+      'what the memoryStore withPersistence installed kept',
+    ).toBe('ar-EG');
+
+    const next = setup({
+      sources: ['stored', 'default'],
+      stores: [declared],
+      url: pageUrl('second', 'en-US'),
+    });
+    expect((await next.initialize()).primaryLocale).toBe('en-US');
+    claimCapability('store:memoryStore', {
+      policy: routePolicy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
+  });
+
+  it('finds nothing in a localStorageStore while the server renders', async () => {
+    // The test's process has a storage holding a choice, as a browser would. A server render
+    // belongs to no reader, so the store must not read the process's storage as though it were
+    // theirs, and the choice the request carries in a cookie is not this store's to read either.
+    localStorage.setItem('equator-locale', 'ar-EG');
+    try {
+      const localization = setup({
+        sources: ['stored', 'default'],
+        stores: [localStorageStore()],
+        url: pageUrl('second', 'en-US'),
+        cookie: 'equator-locale=ar-EG',
+      });
+
+      expect(
+        (await localization.initialize()).primaryLocale,
+        'the localStorageStore withPersistence installed declined',
+      ).toBe('en-US');
+      claimCapability('store:localStorageStore', {
+        policy: routePolicy,
+        platform: TestBed.inject(PLATFORM_ID) as string,
+      });
+    } finally {
+      localStorage.removeItem('equator-locale');
+    }
   });
 
   it('disables a source by leaving it out', async () => {

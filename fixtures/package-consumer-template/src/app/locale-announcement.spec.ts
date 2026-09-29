@@ -12,20 +12,26 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   Localization,
   provideLocalizationSetup,
   withLocaleAnnouncement,
+  withRouting,
   type LocalizationSnapshot,
 } from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
+import { routeProjection } from '#i18n/routes';
 import { messages } from '#i18n/shell';
 
 import { runtimeExtensions } from './runtime-extensions';
+import { routePolicy, appRouteProjection } from './localization.routes';
+
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
 const ANNOUNCER = '[data-equator-announcer]';
 
@@ -51,7 +57,11 @@ function setup(
           catalogLoaders,
           recoveryPayload,
           extensions: runtimeExtensions,
+          routeProjection,
         },
+        // The row's policy, because what is announced must not depend on how addresses carry the
+        // locale. Without the localized router a change under locale-host commits in this document.
+        withRouting({ policy: routePolicy, projection: appRouteProjection }),
         ...(format === undefined ? [] : [withLocaleAnnouncement(format)]),
       ),
     ],
@@ -90,7 +100,13 @@ describe('what a locale change is announced as', () => {
     await localization.changeLocale('ar-EG');
 
     await vi.waitFor(() => {
-      expect(announced()).toBe('now ar-EG');
+      expect(announced(), 'the wording withLocaleAnnouncement supplied').toBe(
+        'now ar-EG',
+      );
+    });
+    claimCapability('feature:withLocaleAnnouncement', {
+      policy: routePolicy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
     });
   });
 
