@@ -1,11 +1,13 @@
 import { isPlatformBrowser } from '@angular/common';
 import {
+  ApplicationRef,
   Component,
   DOCUMENT,
   PLATFORM_ID,
   TransferState,
   afterNextRender,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -494,6 +496,21 @@ export class App {
       root.dataset['clientReady'] = 'true';
       root.dataset['transferSource'] = adoptedSource;
       root.dataset['urlPolicy'] = JSON.stringify(policy);
+    });
+
+    // The runtime reads the stores again once the application is stable, which is where hydration
+    // ends, and a check that the page stayed where its address put it has to look after that read.
+    // The read, and any change it starts, is under way before the next task, so the page has
+    // settled once that task has come and no change is in flight.
+    const applicationRef = inject(ApplicationRef);
+    const stable = signal(false);
+    void applicationRef.whenStable().then(() => {
+      setTimeout(() => stable.set(true));
+    });
+    effect(() => {
+      if (stable() && this.localization.targetLocale() === undefined) {
+        root.dataset['settled'] = 'true';
+      }
     });
   }
 

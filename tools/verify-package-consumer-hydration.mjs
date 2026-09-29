@@ -3566,6 +3566,14 @@ async function verifyBackForwardRestore(row, context, diagnostics) {
     await restorePage.waitForFunction(
       () => document.documentElement.dataset['clientReady'] === 'true',
     );
+    // Moved by the router first, so the address the page comes back to is one the client wrote,
+    // which is the one a reader leaves from once they have used the page. The second page, because
+    // every policy here spells it in a way that states a locale exactly where the home page's does.
+    await restorePage.locator('[data-route-link="second"]').click();
+    await restorePage.waitForURL((url) => isShown(url, 'second', 'en-US'));
+    await restorePage.waitForFunction(
+      () => document.documentElement.dataset['clientNavigations'] === '1',
+    );
     // Marks the document, so a reload cannot pass for the page coming back from memory.
     await restorePage.evaluate(() => {
       globalThis.__equatorLeft = true;
@@ -3574,7 +3582,8 @@ async function verifyBackForwardRestore(row, context, diagnostics) {
       });
     });
     if (restores) {
-      await visitFor(restoreContext, 'second', 'en-US', (url) =>
+      // Left for a document at another address, so the history entry the page is at stays its own.
+      await visitFor(restoreContext, 'home', 'en-US', (url) =>
         restorePage.goto(url),
       );
       await restorePage.waitForFunction(
@@ -3716,6 +3725,11 @@ async function verifyLocaleSources(row, diagnostics) {
       visitPage.setDefaultNavigationTimeout(20_000);
       await visitPage.goto(url);
       const context = await measuredContext(visitPage);
+      // Past the second reading of the stores, which could otherwise move the page after this
+      // looked.
+      await visitPage.waitForFunction(
+        () => document.documentElement.dataset['settled'] === 'true',
+      );
       assert.equal(
         await visitPage.evaluate(() => document.documentElement.lang),
         lands,
@@ -4143,16 +4157,41 @@ async function verifyLocalizedNotFound(row, context, diagnostics) {
   // perfectly well; only the page is unknown, and the application's own not-found route is what
   // answers. Treating that as a localization failure abandoned the navigation and rendered
   // nothing at all.
+  //
+  // Where the address states the locale, the reader's stored choice is English. An answer that
+  // settles no locale writes no cookie, so that choice is still there when the page has hydrated
+  // and the stores are read again, and only the address keeps the page in Arabic.
+  const statesLocale = addresses.localeInAddress;
   const missing = boundCalls(await context.newPage(), 'page');
   attachBrowserDiagnostics(missing, diagnostics);
   missing.setDefaultTimeout(15_000);
+  let missingOrigin;
   const missingResponse = await visitFor(
     context,
     'missing',
     'ar-EG',
-    (missingUrl) => {
+    async (missingUrl) => {
       expectedErrorDocuments.add(missingUrl);
-      return missing.goto(missingUrl, { waitUntil: 'networkidle' });
+      missingOrigin = new URL(missingUrl).origin;
+      if (!statesLocale) {
+        return missing.goto(missingUrl, { waitUntil: 'networkidle' });
+      }
+      await context.clearCookies({ name: 'equator-locale' });
+      await context.addCookies([
+        { name: 'equator-locale', value: 'en-US', url: missingOrigin },
+      ]);
+      const response = await navigateWithScriptGate(
+        missing,
+        missingUrl,
+        async () => {
+          await missing.waitForSelector('[ng-server-context]', {
+            state: 'attached',
+          });
+          await holdServerElements(missing);
+        },
+      );
+      await missing.waitForLoadState('networkidle');
+      return response;
     },
   );
   // The status is Equator's, and the page is the application's: a not-found page answered 200
@@ -4167,16 +4206,33 @@ async function verifyLocalizedNotFound(row, context, diagnostics) {
     undefined,
     { timeout: 10_000 },
   );
+  const missingContext = await measuredContext(missing);
+  // Past the second reading of the stores, which would move the page after this looked.
+  await missing.waitForFunction(
+    () => document.documentElement.dataset['settled'] === 'true',
+  );
   assert.equal(
     await missing.evaluate(() => document.documentElement.lang),
     'ar-EG',
     'A not-found in Arabic did not answer in Arabic',
   );
   await collectPolicyDiagnostics(missing, diagnostics);
-  claimRunningPolicy(
-    sectionCheck(row, 'not found'),
-    await measuredContext(missing),
-  );
+  const notFound = sectionCheck(row, 'not found');
+  claimRunningPolicy(notFound, missingContext);
+  if (statesLocale) {
+    assert.ok(
+      missingContext.adoptedElements > 0,
+      `${row.label}: the not-found page kept none of the server's elements`,
+    );
+    assert.deepEqual(
+      (await context.cookies(missingOrigin))
+        .filter(({ name }) => name === 'equator-locale')
+        .map(({ value }) => value),
+      ['en-US'],
+      `${row.label}: the stored choice under the not-found page is no longer en-US, so nothing here had the address outrank it`,
+    );
+    recordCapabilityClaim(notFound, 'source:url', missingContext);
+  }
   await missing.close();
 
   // The same address without a prefix, which is what an ordinary hand-written `href` produces.
