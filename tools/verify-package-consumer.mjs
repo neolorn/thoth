@@ -2077,6 +2077,14 @@ async function verifyExerciseSheets() {
       observed,
     );
     recordCapabilityClaim(check, 'entry:@neolorn/equator/ssr', observed);
+    assert.equal(
+      new JSDOM(document).window.document
+        .querySelector('meta[name="robots"]')
+        ?.getAttribute('content'),
+      'noindex',
+      `${check}: the exercise route declares equatorIndexing non-indexable, and its head does not keep it out of an index`,
+    );
+    recordCapabilityClaim(check, 'declaration:route-indexing-class', observed);
     // A build has no request, so no stored choice and no language to read, and the default would
     // have written the sheet in the default locale. A sheet the build wrote in another locale was
     // written in the one its address states.
