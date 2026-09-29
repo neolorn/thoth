@@ -168,10 +168,11 @@ describe('participant contracts and transactions', () => {
       }),
     ];
     for (const [index, report] of reports.entries()) {
-      runtime.registerParticipant({
+      const participant: LocalizationParticipant = {
         id: `representation-${index}`,
         prepare: () => report,
-      });
+      };
+      runtime.registerParticipant(participant);
     }
     await runtime.initialize();
 
@@ -199,6 +200,7 @@ describe('participant contracts and transactions', () => {
       }
     }
     runtime.dispose();
+    claimCapability('extension:locale-participant');
   });
 
   it('waits for required participants and preserves the prior coherent view on unavailability', async () => {
