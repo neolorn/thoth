@@ -5073,9 +5073,16 @@ export function toExternalPath(
   const [pathOnly, suffix] = splitSuffix(internal);
   const prefix = defaultPrefix(policy);
   // Read with nothing said, because the internal address is the default locale's spelling, and
-  // with nothing said every policy reads an address in the default locale.
-  const resolution = resolveLocalizedRoute(
-    `${prefix}${pathOnly === '/' && prefix !== '' ? '' : pathOnly}`,
+  // with nothing said every policy reads an address in the default locale. A permanent correction
+  // is followed, as `toInternalPath` follows it: an internal address spelled with another locale's
+  // parameter names the route, and writing it as it was would write an address the server
+  // corrects, or under a host policy answers 404.
+  const resolution = followPermanentRedirect(
+    resolveLocalizedRoute(
+      `${prefix}${pathOnly === '/' && prefix !== '' ? '' : pathOnly}`,
+      policy,
+      projection,
+    ),
     policy,
     projection,
   );

@@ -14,11 +14,12 @@ import {
 } from '@angular/core';
 import {
   ROUTES,
+  RedirectCommand,
+  Router,
   TitleStrategy,
   UrlHandlingStrategy,
   provideRouter,
   withRouterConfig,
-  type RedirectCommand,
   type ResolveFn,
   type Route,
   type RouterFeatures,
@@ -30,6 +31,7 @@ import {
   LocalizationError,
   resolveLocalizedRoute,
   toExternalPath,
+  toInternalPath,
   type LocaleUrlPolicy,
   type LocalizedAddressContext,
 } from '@neolorn/equator';
@@ -168,6 +170,7 @@ function resolveCanonicalRouteLocalization(
     const context = servedAddressContext(options);
     const localization = inject(Localization);
     const routeLocalization = inject(RouteLocalization);
+    const router = inject(Router);
     await startedRuntime(
       localization,
       inject(Injector),
@@ -177,9 +180,15 @@ function resolveCanonicalRouteLocalization(
     // committed. Read before it, a held navigation completed in the default locale.
     const active =
       localization.snapshot()?.primaryLocale ?? context.policy.defaultLocale;
-    return routeLocalization.prepare(
-      toExternalPath(state.url, active, context),
-    );
+    const external = toExternalPath(state.url, active, context);
+    // An internal address spelled with another locale's parameter names this route, and the page
+    // would read that spelling where a document request for the same address reads the canonical
+    // one. The navigation moves to the canonical address in place, as the server's correction does.
+    const canonical = router.parseUrl(toInternalPath(external, context));
+    if (router.serializeUrl(canonical) !== state.url) {
+      return new RedirectCommand(canonical, { replaceUrl: true });
+    }
+    return routeLocalization.prepare(external);
   };
 }
 

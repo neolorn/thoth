@@ -232,3 +232,20 @@ describe.runIf(localeInAddress)(
     );
   },
 );
+
+describe('an internal address spelled with another locale’s parameter', () => {
+  it('arrives at the canonical address, as a document request for it does', async () => {
+    // The home page links the Arabic sheet by its Arabic spelling. A server reads that address as
+    // the canonical one and says so with a correction; a navigation that kept the spelling would
+    // show the page a parameter no document request for it can produce.
+    const router = await configure();
+    await router.navigateByUrl('/exercise/مباشر');
+    await settle();
+
+    expect(router.url).toBe('/exercise/live');
+    expect(
+      TestBed.inject(RouteLocalization).context()?.resolution.parameters,
+    ).toEqual({ sheet: 'live' });
+    claimCapability('entry:@neolorn/equator/router', { policy: routePolicy });
+  });
+});

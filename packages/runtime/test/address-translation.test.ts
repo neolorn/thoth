@@ -518,6 +518,51 @@ describe('policies that carry no locale in the path', () => {
     claimCapability('policy:locale-neutral', { policy: NEUTRAL.policy });
     claimCapability('policy:locale-host', { policy: HOST_POLICY });
   });
+
+  it('writes the canonical address for an internal one spelled with another locale parameter', () => {
+    // A codec that spells the value in each locale reads every spelling, so an internal address
+    // written with the Arabic one names the route; the resolver answers it with a permanent
+    // correction to the default spelling. Declining that correction wrote the internal address
+    // as it was, which at the Arabic origin is an address the server answers 404.
+    const sheets: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+      live: { 'en-US': 'live', 'ar-EG': 'مباشر' },
+    };
+    const sheetCodec: RouteParameterCodec<string> = {
+      parse: (spelled: string) => {
+        const sheet = Object.entries(sheets).find(([, spellings]) =>
+          Object.values(spellings).includes(spelled),
+        )?.[0];
+        return sheet === undefined ? { ok: false } : { ok: true, value: sheet };
+      },
+      serialize: (sheet: string, context) =>
+        sheets[sheet]?.[context?.locale ?? 'en-US'] ?? sheets[sheet]?.['en-US'],
+    };
+    const spelled: RouteRuntimeProjection = {
+      generated: {
+        ...PROJECTION.generated,
+        routes: [
+          { id: 'route:_index', path: '', parameterNames: [] },
+          { id: 'sheet', path: 'sheets/:sheet', parameterNames: ['sheet'] },
+        ],
+      },
+      localizedPaths: { sheet: { 'ar-EG': 'أوراق/:sheet' } },
+      parameters: { sheet: { sheet: sheetCodec } },
+    };
+    const arabic = `/${encodeURIComponent('أوراق')}/${encodeURIComponent('مباشر')}`;
+    expect(
+      toExternalPath(`/sheets/${encodeURIComponent('مباشر')}`, 'ar-EG', {
+        ...HOST,
+        projection: spelled,
+      }),
+    ).toBe(arabic);
+    expect(
+      toExternalPath(`/sheets/${encodeURIComponent('مباشر')}`, 'ar-EG', {
+        policy: PREFIXED,
+        projection: spelled,
+      }),
+    ).toBe(`/ar-eg${arabic}`);
+    claimCapability('policy:locale-host', { policy: HOST_POLICY });
+  });
 });
 
 /**

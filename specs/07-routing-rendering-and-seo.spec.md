@@ -334,6 +334,14 @@ user-independent one-to-one variant of one final canonical URL, and MUST combine
 locale, static-segment, slash, alias, and query corrections into a single hop. A release MUST
 NOT case-fold or rewrite a dynamic identity except through its codec or a declared mapping.
 
+An address a release writes, for a link or for the address bar, is the canonical one. Where the
+internal address it is handed is such a variant, a parameter spelled as another locale spells it
+among them, a release MUST write the canonical address the correction names rather than the
+variant, because the variant is an address the release then answers with a correction or, where the
+locale is in the host, with a not-found. A client navigation to such a variant MUST arrive at the
+canonical address in place of the variant's history entry, so the page reads the parameters a
+document request for the same address reads.
+
 A same-route locale switch preserves safely parsed bounded query parameters and the fragment by
 default. A release MUST NOT copy raw URL text, and MUST NOT let a query or fragment value
 choose an origin, an executable destination, a catalog identity, or a trust decision.
