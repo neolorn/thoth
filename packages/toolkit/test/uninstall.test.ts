@@ -225,6 +225,43 @@ describe('uninstalling Equator', () => {
     claimCapability('cli:uninstall');
   });
 
+  it('leaves a manifest that holds nothing of Equator untouched', async () => {
+    // Reachable through `--project`, which takes any directory: nothing of Equator's is here, so
+    // the application's own file keeps every byte, spacing included.
+    const root = await mkdtemp(resolve(tmpdir(), 'uninstall-'));
+    temporaryRoots.push(root);
+    const compact = '{"name":"@example/plain","scripts":{"build":"ng build"}}';
+    await write(root, 'package.json', compact);
+
+    const result = await uninstallProject({ project: root });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.changed).toBe(false);
+    expect(result.value.removed).toEqual([]);
+    expect(await readFile(resolve(root, 'package.json'), 'utf8')).toBe(compact);
+    claimCapability('cli:uninstall');
+  });
+
+  it("writes the manifest back in the application's own indentation and line endings", async () => {
+    const root = await project({ ownScript: true });
+    const tabbed =
+      `${JSON.stringify(await manifest(root), null, '\t')}\n`.replaceAll(
+        '\n',
+        '\r\n',
+      );
+    await write(root, 'package.json', tabbed);
+
+    const result = await uninstallProject({ project: root });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(await readFile(resolve(root, 'package.json'), 'utf8')).toBe(
+      '{\r\n\t"name": "@example/uninstall",\r\n\t"version": "0.0.0",\r\n\t"private": true,\r\n\t"type": "module",\r\n\t"scripts": {\r\n\t\t"build": "ng build"\r\n\t}\r\n}\r\n',
+    );
+    claimCapability('cli:uninstall');
+  });
+
   it('is not what clean does', async () => {
     // The distinction the two commands exist to keep. `clean` removes build output; project
     // configuration is not build output.

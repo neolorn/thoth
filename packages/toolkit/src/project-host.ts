@@ -2431,6 +2431,30 @@ function requestedConfiguration(
   return parseConfiguration(source, { sourcePath: CONFIGURATION_NAME });
 }
 
+/**
+ * A package manifest written back in the style it was read in.
+ *
+ * `package.json` is the application's file, and Equator's part of it is a few entries. Rewriting the
+ * rest in another style would put a change nobody made into the application's history, so the file
+ * is left exactly as it is when its entries are what they already were, and otherwise keeps its
+ * indentation and line endings. The style is read the way npm reads a manifest
+ * (`json-parse-even-better-errors`): what follows the opening brace, and no indentation when the
+ * first entry sits on the brace's own line.
+ */
+function manifestSource(
+  value: Readonly<Record<string, unknown>>,
+  source: string,
+): string {
+  if (JSON.stringify(JSON.parse(source)) === JSON.stringify(value)) {
+    return source;
+  }
+  const style = /^\s*\{((?:\r?\n)+)([ \t]*)/u.exec(source);
+  const newline = style?.[1]?.startsWith('\r\n') === true ? '\r\n' : '\n';
+  const indent =
+    style !== null ? (style[2] ?? '') : source.trim() === '{}' ? '  ' : '';
+  return `${JSON.stringify(value, null, indent)}\n`.replaceAll('\n', newline);
+}
+
 function updatedPackageSource(
   source: string,
   manifest: Readonly<Record<string, unknown>>,
@@ -2494,8 +2518,7 @@ function updatedPackageSource(
     scripts[name] = command;
   }
   mutable['scripts'] = scripts;
-  const formatted = `${JSON.stringify(mutable, null, 2)}\n`;
-  return toolkitSuccess(formatted === source ? source : formatted);
+  return toolkitSuccess(manifestSource(mutable, source));
 }
 
 /**
@@ -2717,7 +2740,7 @@ export async function uninstallProject(
     if (Object.keys(entries).length === 0) delete mutable['scripts'];
   }
 
-  const packageContents = `${JSON.stringify(mutable, null, 2)}\n`;
+  const packageContents = manifestSource(mutable, manifest.value.source);
   const changes: TextFileChange[] = [];
   if (packageContents !== manifest.value.source) {
     changes.push({

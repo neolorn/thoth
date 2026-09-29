@@ -326,6 +326,10 @@ a script that has been changed since the toolkit wrote it. These are two command
 command with a flag, because a flag that turns removing build output into removing the tool
 eventually runs in a pipeline by accident.
 
+The owner's `package.json` is the application's file. Where initialization or uninstalling writes
+it, a release MUST keep the file's indentation and line endings, and MUST NOT write it when none of
+its entries changed.
+
 A release MUST offer a dry run wherever one is meaningful, MUST put every mutating command
 through the output transaction, and MUST NOT prompt for a semantic choice in a noninteractive run.
 

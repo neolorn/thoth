@@ -144,6 +144,30 @@ describe('the option set is the configuration schema', () => {
     expect(refusal?.summary).not.toContain('--source-locale');
     claimCapability('cli:init');
   });
+
+  it("adds its entries to package.json in the application's own indentation", async () => {
+    const root = await mkdtemp(resolve(tmpdir(), 'init-options-'));
+    await writeFile(
+      resolve(root, 'package.json'),
+      `${JSON.stringify({ name: 'init-options-lab', private: true }, null, 4)}\n`,
+      'utf8',
+    );
+    const initialized = await initializeProject({
+      project: root,
+      configuration: {
+        sourceLocale: 'en-US',
+        defaultLocale: 'en-US',
+        locales: ['en-US'],
+      },
+    });
+    expect(initialized.ok, JSON.stringify(initialized, null, 2)).toBe(true);
+
+    const written = await readFile(resolve(root, 'package.json'), 'utf8');
+    expect(written).toMatch(/^\{\n {4}"name": "init-options-lab",\n/u);
+    expect(written).toMatch(/^ {8}"#i18n": /mu);
+    expect(written).not.toMatch(/^ {2}"/mu);
+    claimCapability('cli:init');
+  });
 });
 
 describe('one convention, at every depth a value has', () => {
