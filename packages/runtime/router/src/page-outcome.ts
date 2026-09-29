@@ -40,8 +40,9 @@ import {
  * On the server the declaration reaches the response: an absence is answered 404 and a removal 410,
  * both from section 5's own table, and a declared operational failure is answered with the status
  * the application named. In the browser there is no response to reach and Equator does not invent
- * one; what the declaration governs there is the document, which stops claiming a canonical address
- * and stops being offered for indexing.
+ * one; what the declaration governs there is the document. After an absence or a removal it stops
+ * claiming a canonical address and stops being offered for indexing; after an operational failure
+ * it keeps both, because the address is still the page's and only this attempt to serve it failed.
  *
  * **A declaration belongs to one navigation and cannot be read by another.** It is stamped with the
  * navigation that made it, a commit replaces the committed declaration outright including when the

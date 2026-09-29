@@ -141,6 +141,30 @@
       "rows": ["format:formatDuration", "pipe:localizedDuration"],
       "columns": ["node:22"],
       "reason": "Node 22 has no Intl.DurationFormat, so no duration can be formatted there; the exercise sheet holds Equator to the typed result spec 08 section 3 requires instead."
+    },
+    {
+      "id": "no-page-for-an-outcome-to-prerender",
+      "rows": ["declaration:outcome-documents"],
+      "columns": ["render:prerender"],
+      "reason": "An outcome document is the head of an address answered with a status and no page of its own, and a prerendered file carries no status. A build writes files only for the routes its render table names, each by a route id checked against the projection; the not-found page is the wildcard, which is never prerendered, and a page that declares an absence or a removal while prerendering fails the build (spec 07 sections 5 and 9)."
+    },
+    {
+      "id": "alias-answered-before-a-render",
+      "rows": ["declaration:locale-aliases"],
+      "columns": ["render:server", "render:prerender", "render:hydration"],
+      "reason": "An address under an alias is answered with a correction before anything renders: the server draws no page for it, a build writes none, and the page a browser adopts afterwards is the address the correction names."
+    },
+    {
+      "id": "locale-neutral-roots-left-to-their-owner",
+      "rows": ["declaration:locale-neutral-roots"],
+      "columns": ["render:*", "engine:*"],
+      "reason": "An address under a locale-neutral root is left to whatever serves it (spec 07 sections 3 and 4): Equator renders no page there, writes none, and has none for a browser to adopt or its router to draw, so what can be observed is the server declining it."
+    },
+    {
+      "id": "browser-source-absent-at-build",
+      "rows": ["source:browser"],
+      "columns": ["render:prerender"],
+      "reason": "A build has no request, so no language preference reaches it, and the page it writes is adopted as it was decided; once hydrated only the stores are read again (spec 03 section 8), so the browser's languages never decide a prerendered page."
     }
   ]
 }

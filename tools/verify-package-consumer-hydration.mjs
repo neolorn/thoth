@@ -57,9 +57,14 @@ openCapabilityEvidence('browser-assurance', { consumer: consumerRoot });
 // Where each page lives, read from the address table the consumer's own specs read.
 const addresses = await readConsumerAddresses(consumerRoot);
 // The locales this build generated, which are the ones it prerenders.
-const builtLocales = JSON.parse(
+const consumerConfiguration = JSON.parse(
   await readFile(resolve(consumerRoot, 'equator.config.json'), 'utf8'),
-).locales;
+);
+const builtLocales = consumerConfiguration.locales;
+// The source locale, whose addresses a pseudo-locale spells where no address names a locale, and
+// the formatting the consumer declares for each locale that departs from CLDR.
+const { sourceLocale, formatting: configuredFormatting = {} } =
+  consumerConfiguration;
 // What is deployed: one build, or under a policy that puts each locale on an origin of its own, one
 // build for each of those origins, which is how the consumer stage built them. A request reaches
 // the build its Host names, as it would behind a real deployment's routing.
@@ -86,6 +91,27 @@ const deployments = await Promise.all(
     });
   }),
 );
+// The pseudo build the consumer stage made beside the production one, for the origin that serves
+// the pseudo-locale. A request that names it by this header is answered by it in place of the
+// production build, so its pages sit at the same addresses and pass the same edge.
+const PSEUDO_BUILD_HEADER = 'x-equator-build';
+const pseudoDeployment = await (async () => {
+  const pseudoOrigin = addresses.localeInOrigin
+    ? addresses.origin('en-Arab-XB')
+    : builds.siteOrigin;
+  const root = resolve(
+    consumerRoot,
+    builds.output(pseudoOrigin, 'dist/feature-lab-pseudo'),
+  );
+  return Object.freeze({
+    origin: pseudoOrigin,
+    host: new URL(pseudoOrigin).host,
+    browserRoot: resolve(root, 'browser'),
+    reqHandler: (
+      await import(pathToFileURL(resolve(root, 'server/server.mjs')).href)
+    ).reqHandler,
+  });
+})();
 function deploymentFor(host) {
   return addresses.localeInOrigin
     ? deployments.find((deployment) => deployment.host === host)
@@ -578,7 +604,10 @@ async function serveBrowserAsset(request, response, browserRoot) {
 const edgeFailures = [];
 
 const server = createServer((request, response) => {
-  const deployment = deploymentFor(request.headers.host);
+  const deployment =
+    request.headers[PSEUDO_BUILD_HEADER] === 'pseudo'
+      ? pseudoDeployment
+      : deploymentFor(request.headers.host);
   if (deployment === undefined) {
     edgeFailures.push(
       `${request.method} ${request.url}: no deployment answers at ${request.headers.host}`,
@@ -3082,6 +3111,428 @@ async function verifyExerciseSheets(row, context, diagnostics) {
 }
 
 /**
+ * A navigation the router makes from a history entry, which is how a reader returns to a page: the
+ * entry is added and the browser's own event for moving to it is raised.
+ */
+function throughHistory(page, path) {
+  return page.evaluate((target) => {
+    history.pushState(null, '', target);
+    dispatchEvent(new PopStateEvent('popstate', { state: null }));
+  }, path);
+}
+
+/**
+ * An address under one of the aliases the policy declares, in this engine: requested as a document,
+ * which the server sends on, and reached by the router, which sends it on too, with the query kept.
+ */
+async function verifyLocaleAliases(row, context, diagnostics) {
+  for (const locale of builtLocales) {
+    if (!addresses.has('second under an alias', locale)) continue;
+    const page = boundCalls(await context.newPage(), 'page');
+    attachBrowserDiagnostics(page, diagnostics);
+    page.setDefaultTimeout(15_000);
+    page.setDefaultNavigationTimeout(20_000);
+    const aliased = `${addresses.path('second under an alias', locale)}?tab=one`;
+    const sentOn = (url) =>
+      isShown(url, 'second', locale) && url.searchParams.get('tab') === 'one';
+    await page.goto(siteUrl(aliased, locale));
+    assert.ok(
+      sentOn(new URL(page.url())),
+      `${row.label}: ${aliased}, under one of the aliases the policy declares, left the browser at ${page.url()} rather than at the ${locale} second page`,
+    );
+    await page.waitForSelector('[data-route-view="second"]');
+    const requested = await measuredContext(page);
+    recordCapabilityClaim(
+      sectionCheck(row, `the ${locale} alias, requested`),
+      'declaration:locale-aliases',
+      { engine: requested.engine, policy: requested.policy },
+    );
+    await throughHistory(page, addresses.shownPath('home', locale));
+    await page.waitForSelector('[data-route-view="home"]');
+    await throughHistory(page, aliased);
+    await page.waitForURL(sentOn);
+    await page.waitForSelector('[data-route-view="second"]');
+    const { engine, policy, clientNavigations } = await measuredContext(page);
+    assert.ok(
+      clientNavigations > 1,
+      `${row.label} followed the ${locale} alias without a client navigation`,
+    );
+    recordCapabilityClaim(
+      sectionCheck(row, `the ${locale} alias, reached through history`),
+      'declaration:locale-aliases',
+      { engine, policy, clientNavigations },
+    );
+    await collectPolicyDiagnostics(page, diagnostics);
+    await page.close();
+  }
+}
+
+/**
+ * The pseudo-locale in this engine, from the pseudo build the consumer stage made beside the
+ * production one: its exercise sheet rendered on request and adopted, and drawn by a client
+ * navigation from home. Every message on it is one `equator generate --pseudo` transformed, and
+ * its number is written in the digits the formatting declaration gives the locale.
+ */
+async function verifyPseudoLocale(row, diagnostics) {
+  const locale = 'en-Arab-XB';
+  const { numberingSystem } = configuredFormatting[locale];
+  // Under a policy that leaves the locale out of the address the pseudo-locale spells every address
+  // as the source locale does, and the reader's stored choice is what shows it.
+  const pathOf = (page) =>
+    addresses.shownPath(
+      page,
+      addresses.has(page, locale) ? locale : sourceLocale,
+    );
+  const pseudoContext = boundCalls(
+    await browser.newContext({
+      extraHTTPHeaders: { [PSEUDO_BUILD_HEADER]: 'pseudo' },
+    }),
+    'context',
+  );
+  await recordPolicyViolations(pseudoContext);
+  if (!addresses.localeInAddress) {
+    await pseudoContext.addCookies([
+      { name: 'equator-locale', value: locale, url: browserOrigin },
+    ]);
+  }
+  const open = async () => {
+    const page = boundCalls(await pseudoContext.newPage(), 'page');
+    attachBrowserDiagnostics(page, diagnostics);
+    page.setDefaultTimeout(15_000);
+    page.setDefaultNavigationTimeout(20_000);
+    return page;
+  };
+  const holdSheet = async (page, check, observed) => {
+    const sheet = await exerciseSheetOn(page);
+    assert.equal(sheet.locale, locale, `${check} shows ${sheet.locale}`);
+    assert.ok(
+      await page.evaluate(
+        () =>
+          document
+            .querySelector('[data-route-view="exercise"]')
+            ?.textContent?.includes('⟦') ?? false,
+      ),
+      `${check} carries no message that equator generate --pseudo transformed`,
+    );
+    const { decimal } = exerciseInputs;
+    assert.equal(
+      sheet.lines.get('formatNumber'),
+      await page.evaluate(
+        ({ value, options, tag, digits }) =>
+          new Intl.NumberFormat(tag, {
+            ...options,
+            numberingSystem: digits,
+          }).format(Number(value)),
+        {
+          value: decimal.value,
+          options: decimal.options,
+          tag: locale,
+          digits: numberingSystem,
+        },
+      ),
+      `${check}: its number is not written in the ${numberingSystem} digits the formatting declaration gives ${locale}`,
+    );
+    recordCapabilityClaim(check, 'capability:pseudo-locale', observed);
+    recordCapabilityClaim(check, 'declaration:locale-formatting', observed);
+  };
+  try {
+    const adoptedPage = await open();
+    await navigateWithScriptGate(
+      adoptedPage,
+      siteUrl(pathOf('exercise'), locale),
+      async () => {
+        await adoptedPage.waitForSelector('[data-route-view="exercise"]', {
+          state: 'attached',
+        });
+        await holdServerElements(adoptedPage);
+      },
+    );
+    const adopted = await measuredContext(adoptedPage);
+    assert.ok(
+      adopted.adoptedElements > 0,
+      `${row.label} kept none of the ${locale} sheet's server elements`,
+    );
+    await holdSheet(
+      adoptedPage,
+      sectionCheck(row, `exercise sheet in ${locale}, rendered on request`),
+      adopted,
+    );
+    await collectPolicyDiagnostics(adoptedPage, diagnostics);
+    await adoptedPage.close();
+
+    const drawnPage = await open();
+    await drawnPage.goto(siteUrl(pathOf('home'), locale));
+    await drawnPage.waitForFunction(
+      () => document.documentElement.dataset['clientReady'] === 'true',
+    );
+    await drawnPage.locator('[data-route-link="exercise"]').click();
+    await drawnPage.waitForURL((url) => url.pathname === pathOf('exercise'));
+    await drawnPage.waitForSelector(
+      '[data-route-view="exercise"] [data-exercise="formatNumber"]',
+    );
+    const { engine, policy, clientNavigations } =
+      await measuredContext(drawnPage);
+    assert.ok(
+      clientNavigations > 0,
+      `${row.label} reached the ${locale} sheet without a client navigation`,
+    );
+    await holdSheet(
+      drawnPage,
+      sectionCheck(row, `exercise sheet in ${locale}, by client navigation`),
+      { engine, policy, clientNavigations },
+    );
+    await collectPolicyDiagnostics(drawnPage, diagnostics);
+    await drawnPage.close();
+  } finally {
+    await pseudoContext.close();
+  }
+}
+
+/**
+ * What a page declared it turned out to be, and what a historical route answers, in this engine:
+ * each page adopted from the document the server answered with, then reached again by the router
+ * through history. An absence and a removal withdraw the canonical address and keep the page out of
+ * an index; an operational failure keeps both, because the address is still the page's
+ * (`specs/07-routing-rendering-and-seo.spec.md` section 12).
+ */
+async function verifyDeclaredOutcomes(row, context, diagnostics) {
+  const locale = 'en-US';
+  const message = (key) => readCatalogMessage(consumerRoot, locale, key);
+  const outcomes = [
+    {
+      page: 'unfiled topic',
+      status: 404,
+      view: 'topic',
+      declared: 'pageAbsent()',
+      head: {
+        title: await message('document.topic-absent.title'),
+        canonical: null,
+        robots: 'noindex',
+      },
+    },
+    {
+      page: 'retired topic',
+      status: 410,
+      view: 'topic',
+      // The route's own title stays: outcomeDocuments is for an address that reached no route.
+      declared: 'pageGone()',
+      head: {
+        canonical: null,
+        robots: 'noindex',
+      },
+    },
+    {
+      page: 'unavailable topic',
+      status: 503,
+      view: 'topic',
+      declared: 'pageOperationalFailure(503)',
+      head: {
+        canonical: addresses.url('unavailable topic', locale),
+        robots: null,
+      },
+    },
+    {
+      page: 'removed',
+      status: 410,
+      view: 'not-found',
+      declared:
+        'a historical route declared gone, whose head outcomeDocuments gives',
+      head: {
+        title: await message('document.gone.title'),
+        canonical: null,
+        robots: 'noindex',
+      },
+    },
+  ];
+  // The head is read once it says what the declaration makes of it, which for a declaration a page
+  // makes after its lookup is a moment after the page itself; then read once more and compared, so
+  // a head that never gets there is reported as what it is.
+  const settledHead = async (page, expected) => {
+    // Written out in each callback, because each runs in the page, where nothing here is in scope.
+    await page
+      .waitForFunction((wanted) => {
+        const head = {
+          title: document.title,
+          canonical:
+            document
+              .querySelector('link[rel="canonical"]')
+              ?.getAttribute('href') ?? null,
+          robots:
+            document
+              .querySelector('meta[name="robots"]')
+              ?.getAttribute('content') ?? null,
+        };
+        return Object.keys(wanted).every(
+          (field) => head[field] === wanted[field],
+        );
+      }, expected)
+      .catch(() => undefined);
+    return page.evaluate((fields) => {
+      const head = {
+        title: document.title,
+        canonical:
+          document
+            .querySelector('link[rel="canonical"]')
+            ?.getAttribute('href') ?? null,
+        robots:
+          document
+            .querySelector('meta[name="robots"]')
+            ?.getAttribute('content') ?? null,
+      };
+      return Object.fromEntries(fields.map((field) => [field, head[field]]));
+    }, Object.keys(expected));
+  };
+  const open = async () => {
+    const page = boundCalls(await context.newPage(), 'page');
+    attachBrowserDiagnostics(page, diagnostics);
+    page.setDefaultTimeout(15_000);
+    page.setDefaultNavigationTimeout(20_000);
+    return page;
+  };
+
+  for (const { page: outcomePage, status, view, declared, head } of outcomes) {
+    const page = await open();
+    const reach = [
+      [
+        'adopted',
+        async () => {
+          const response = await visitFor(
+            context,
+            outcomePage,
+            locale,
+            (url) => {
+              expectedErrorDocuments.add(url);
+              return navigateWithScriptGate(page, url, async () => {
+                await page.waitForSelector(`[data-route-view="${view}"]`, {
+                  state: 'attached',
+                });
+                await holdServerElements(page);
+              });
+            },
+          );
+          assert.equal(
+            response?.status(),
+            status,
+            `${row.label}: the ${outcomePage} was not answered ${status}`,
+          );
+          const adopted = await measuredContext(page);
+          assert.ok(
+            adopted.adoptedElements > 0,
+            `${row.label} kept none of the ${outcomePage}'s server elements`,
+          );
+          return adopted;
+        },
+      ],
+      [
+        'reached through history',
+        async () => {
+          await throughHistory(page, addresses.shownPath('home', locale));
+          await page.waitForSelector('[data-route-view="home"]');
+          await page.goBack();
+          await page.waitForURL((url) => isShown(url, outcomePage, locale));
+          await page.waitForSelector(`[data-route-view="${view}"]`);
+          const { engine, policy, clientNavigations } =
+            await measuredContext(page);
+          assert.ok(
+            clientNavigations > 1,
+            `${row.label} returned to the ${outcomePage} without a client navigation`,
+          );
+          return { engine, policy, clientNavigations };
+        },
+      ],
+    ];
+    for (const [how, reached] of reach) {
+      const observed = await reached();
+      const check = sectionCheck(row, `${outcomePage}, ${how}`);
+      assert.deepEqual(
+        await settledHead(page, head),
+        head,
+        `${check}: the head is not what ${declared} makes of it`,
+      );
+      // Only the removed route reached no route, so only its head is the one outcomeDocuments gives
+      // a removal; the unfiled topic's is the application's own wording for an absence.
+      switch (outcomePage) {
+        case 'unfiled topic':
+          recordCapabilityClaim(check, 'outcome:pageAbsent', observed);
+          break;
+        case 'retired topic':
+          recordCapabilityClaim(check, 'outcome:pageGone', observed);
+          break;
+        case 'unavailable topic':
+          recordCapabilityClaim(
+            check,
+            'outcome:pageOperationalFailure',
+            observed,
+          );
+          break;
+        case 'removed':
+          recordCapabilityClaim(
+            check,
+            'declaration:historical-route-outcome',
+            observed,
+          );
+          recordCapabilityClaim(
+            check,
+            'declaration:outcome-documents',
+            observed,
+          );
+          break;
+      }
+    }
+    await collectPolicyDiagnostics(page, diagnostics);
+    await page.close();
+  }
+
+  // A route declared historical and replaced: the server sends the reader on, and so does the
+  // router, with the query the address carried.
+  const page = await open();
+  const legacy = `${addresses.shownPath('legacy', locale)}?tab=one`;
+  const replaced = (url) =>
+    isShown(url, 'second', locale) && url.searchParams.get('tab') === 'one';
+  await visitFor(context, 'legacy', locale, (url) =>
+    navigateWithScriptGate(page, `${url}?tab=one`, async () => {
+      await page.waitForSelector('[data-route-view="second"]', {
+        state: 'attached',
+      });
+      await holdServerElements(page);
+    }),
+  );
+  assert.ok(
+    replaced(new URL(page.url())),
+    `${row.label}: the legacy route, declared historical and replaced by second, left the browser at ${page.url()}`,
+  );
+  const adopted = await measuredContext(page);
+  assert.ok(
+    adopted.adoptedElements > 0,
+    `${row.label} kept none of the second page's server elements after the legacy route`,
+  );
+  recordCapabilityClaim(
+    sectionCheck(row, 'legacy route, adopted'),
+    'declaration:historical-route-outcome',
+    adopted,
+  );
+  // From home, because the router ignores a navigation to the address it is already showing, and
+  // the legacy route's replacement is the page the server sent the browser to.
+  await throughHistory(page, addresses.shownPath('home', locale));
+  await page.waitForSelector('[data-route-view="home"]');
+  await throughHistory(page, legacy);
+  await page.waitForURL(replaced);
+  await page.waitForSelector('[data-route-view="second"]');
+  const { engine, policy, clientNavigations } = await measuredContext(page);
+  assert.ok(
+    clientNavigations > 1,
+    `${row.label} reached the legacy route without a client navigation`,
+  );
+  recordCapabilityClaim(
+    sectionCheck(row, 'legacy route, reached through history'),
+    'declaration:historical-route-outcome',
+    { engine, policy, clientNavigations },
+  );
+  await collectPolicyDiagnostics(page, diagnostics);
+  await page.close();
+}
+
+/**
  * Every field kind as a reader meets it in this engine: the field shows its value as the engine's
  * own formatters write it, refuses an empty entry, and reads that text back as the value.
  *
@@ -5458,6 +5909,15 @@ async function verifyBrowserRow(row) {
 
   enterStage(`${row.id}-exercise-sheets`);
   await verifyExerciseSheets(row, context, diagnostics);
+
+  enterStage(`${row.id}-declared-outcomes`);
+  await verifyDeclaredOutcomes(row, context, diagnostics);
+
+  enterStage(`${row.id}-locale-aliases`);
+  await verifyLocaleAliases(row, context, diagnostics);
+
+  enterStage(`${row.id}-pseudo-locale`);
+  await verifyPseudoLocale(row, diagnostics);
 
   enterStage(`${row.id}-locale-sources`);
   await verifyLocaleSources(row, diagnostics);
