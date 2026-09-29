@@ -44,6 +44,7 @@ function context() {
       extensions: runtimeExtensions,
     },
     bootstrapScopes: [shellScope],
+    formattingContext: { timeZone: 'UTC' },
   });
 }
 
@@ -116,6 +117,7 @@ describe('a localization context built without Angular', () => {
       // The framework-neutral equivalent of `withRecoveryMessage`. Selecting it here is the whole
       // point: a 500 handler has no provider array to declare it in.
       recoveryMessage: messages.recovery.unavailable,
+      formattingContext: { timeZone: 'UTC' },
     });
 
     await expect(localization.initialize()).rejects.toThrow();

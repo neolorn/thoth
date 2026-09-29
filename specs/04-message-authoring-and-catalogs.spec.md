@@ -145,7 +145,7 @@ does not take that permission, because a localization defect would otherwise sur
 reader, in a language the people who shipped it usually cannot read. A behavior the standard fixes
 is implemented as the standard fixes it; this governs only what the standard leaves open.
 
-Five refusals follow from that rather than standing as separate rules:
+Six refusals follow from that rather than standing as separate rules:
 
 - a literal operand that cannot be the type its function requires is refused where it is written;
 - a `select` option that reaches an expression from its operand rather than being written there as a
@@ -161,7 +161,12 @@ Five refusals follow from that rather than standing as separate rules:
 - `timeZone=input` on a date function, where nothing in the message gives the operand a zone, is
   refused where it is written. The option names the operand's own zone, and the only operand that can
   answer is one whose declaration wrote one. The alternative is a rendered fallback in whatever zone
-  the consumer's context happens to hold, which near midnight is a different day on the screen.
+  the consumer's context happens to hold, which near midnight is a different day on the screen;
+- a date function whose zone neither the message nor its operand writes takes the formatting
+  context's, and an application whose context names none is refused when its catalogs are admitted,
+  before anything renders, naming where the zone is set. The zone is not known when a catalog is
+  compiled, so the compiled catalog states that it needs one as a required feature
+  (`05-compiled-artifacts-and-trust.spec.md` section 4), and the application supplies it.
 
 A registered function speaks MessageFormat's vocabulary rather than a release's. Its option names
 follow MessageFormat's `name` production, bounded in length and without that production's optional

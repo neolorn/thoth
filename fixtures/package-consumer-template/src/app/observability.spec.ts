@@ -12,6 +12,7 @@ import {
   withOverlayLocale,
   type LocalizationObservabilityEvent,
   type LocalizationObservabilitySink,
+  withFormattingContext,
 } from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
@@ -38,6 +39,7 @@ function context(observability?: LocalizationObservabilitySink) {
     setup: setup(),
     bootstrapScopes: [scope],
     ...(observability === undefined ? {} : { observability }),
+    formattingContext: { timeZone: 'UTC' },
   });
 }
 
@@ -210,6 +212,7 @@ describe('Angular observability boundaries', () => {
         provideLocalizationSetup(
           setup(),
           withObservability(collectingSink(events)),
+          withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
     }).compileComponents();
@@ -253,6 +256,7 @@ describe('Angular observability boundaries', () => {
               if (fail) throw new Error('secret integration payload');
             },
           })),
+          withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
     }).compileComponents();

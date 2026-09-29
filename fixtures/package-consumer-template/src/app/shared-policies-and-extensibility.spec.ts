@@ -191,6 +191,7 @@ describe('application-local extensibility', () => {
         extensions: runtimeExtensions,
       },
       bootstrapScopes: [{ providerId, scopeId }],
+      formattingContext: { timeZone: 'UTC' },
     });
     await localization.initialize();
 
@@ -242,6 +243,7 @@ describe('application-local extensibility', () => {
           catalogLoaders,
         },
         bootstrapScopes: [{ providerId, scopeId }],
+        formattingContext: { timeZone: 'UTC' },
       }),
     ).toThrow(/Required runtime extension/u);
     claimCapability('entry:@neolorn/equator');
@@ -258,6 +260,7 @@ describe('localized assets', () => {
         extensions: runtimeExtensions,
       },
       bootstrapScopes: [{ providerId, scopeId }],
+      formattingContext: { timeZone: 'UTC' },
     });
     await localization.initialize();
     await localization.changeLocale('ar-EG');

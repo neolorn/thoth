@@ -4,7 +4,11 @@ import { LocationStrategy } from '@angular/common';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, type Routes } from '@angular/router';
-import { Localization, withRouting } from '@neolorn/equator';
+import {
+  Localization,
+  withRouting,
+  withFormattingContext,
+} from '@neolorn/equator';
 import {
   RouteLocalization,
   provideLocalizedRouter,
@@ -90,6 +94,7 @@ describe('Equator Router transaction integration', () => {
             policy: routePolicy,
             projection: appRouteProjection,
           }),
+          withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
     }).compileComponents();
@@ -146,6 +151,7 @@ describe('Equator Router transaction integration', () => {
               policy: routePolicy,
               projection: appRouteProjection,
             }),
+            withFormattingContext({ timeZone: 'UTC' }),
           ),
         ],
       }).compileComponents();

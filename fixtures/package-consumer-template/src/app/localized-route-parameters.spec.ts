@@ -8,6 +8,7 @@ import {
   Localization,
   buildLocalizedRoute,
   withRouting,
+  withFormattingContext,
 } from '@neolorn/equator';
 import {
   LocalizedTitleStrategy,
@@ -84,6 +85,7 @@ async function configure(): Promise<Router> {
           routeProjection,
         },
         withRouting({ policy: routePolicy, projection: appRouteProjection }),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
       { provide: TitleStrategy, useClass: LocalizedTitleStrategy },
       // The article route's component needs it. This file renders pages rather than only reading

@@ -4,6 +4,7 @@ import {
   Localization,
   createLocalizationContext,
   provideLocalizationSetup,
+  withFormattingContext,
 } from '@neolorn/equator';
 import {
   createInMemoryCatalogLoaders,
@@ -76,6 +77,7 @@ describe('createInMemoryCatalogLoaders', () => {
       },
       bootstrapScopes: [shellScope],
       initialLocale: 'en-US',
+      formattingContext: { timeZone: 'UTC' },
     });
 
     await localization.initialize();
@@ -99,10 +101,13 @@ describe('provideLocalizationTesting', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
-        provideLocalizationTesting({
-          ...localizationSetup,
-          extensions: runtimeExtensions,
-        }),
+        provideLocalizationTesting(
+          {
+            ...localizationSetup,
+            extensions: runtimeExtensions,
+          },
+          withFormattingContext({ timeZone: 'UTC' }),
+        ),
       ],
     });
 

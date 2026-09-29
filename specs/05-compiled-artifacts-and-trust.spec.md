@@ -92,7 +92,9 @@ A release MUST establish, before it accepts a generated set, that:
   fingerprint match the generated configuration;
 - every artifact names a configured scope and a configured locale;
 - every artifact's compiled profile, schema, standards profile, and generated ABI are ones this
-  release supports, and its required features are all supported;
+  release supports, and its required features are all supported, where a feature that depends on
+  the application, such as a formatting context that names a time zone, is supported only when the
+  application supplies it;
 - every artifact's fingerprints and required extension descriptors match its scope's;
 - every artifact's content digest is well formed and its resource summary is within the fixed
   ceilings;

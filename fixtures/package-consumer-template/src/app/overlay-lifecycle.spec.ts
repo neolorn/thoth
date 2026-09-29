@@ -8,6 +8,7 @@ import {
   withOverlayLocale,
   type LocalizationOverlayAdapter,
   type LocalizationSnapshot,
+  withFormattingContext,
 } from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
@@ -74,6 +75,7 @@ function serverRequest(create: () => LocalizationOverlayAdapter): Localization {
           extensions: runtimeExtensions,
         },
         withOverlayLocale(create),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
     ],
   });

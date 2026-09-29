@@ -249,6 +249,11 @@ the time zone, the currency display, and the rest of what a locale can be writte
 in. It is one setting for the application, and what that means for a project shipping both `ar-EG`
 and `fa-IR` is [About canonical values](../explanation/about-values.md).
 
+A message that formats a date or a time and names no zone, such as `{$when :date}`, is written in
+this one. If any catalog has such a message and the context names no `timeZone`, the application
+refuses to start and says so, rather than failing the first time a reader is shown a date. Name the
+zone here, or write `timeZone` on the expression.
+
 ## Choose relative time thresholds
 
 `withRelativeTimePolicy` sets which unit a distance between two moments is said in.

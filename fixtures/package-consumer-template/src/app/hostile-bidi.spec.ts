@@ -8,6 +8,7 @@ import {
   LocalizePipe,
   LocalizedMessage,
   provideLocalizationSetup,
+  withFormattingContext,
 } from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
@@ -71,13 +72,16 @@ class HostileHost {
 function setup(): Localization {
   TestBed.configureTestingModule({
     providers: [
-      provideLocalizationSetup({
-        configuration,
-        catalogSet,
-        catalogLoaders,
-        recoveryPayload,
-        extensions: runtimeExtensions,
-      }),
+      provideLocalizationSetup(
+        {
+          configuration,
+          catalogSet,
+          catalogLoaders,
+          recoveryPayload,
+          extensions: runtimeExtensions,
+        },
+        withFormattingContext({ timeZone: 'UTC' }),
+      ),
     ],
   });
   return TestBed.inject(Localization);

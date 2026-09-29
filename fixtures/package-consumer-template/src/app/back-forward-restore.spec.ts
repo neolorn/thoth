@@ -16,6 +16,7 @@ import {
   type LocaleUrlPolicy,
   type LocalizationLocaleSource,
   type LocalizationPersistenceStore,
+  withFormattingContext,
 } from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
@@ -87,6 +88,7 @@ function setup(policy: LocaleUrlPolicy, hold?: () => Promise<void>): Seat {
             return shared.write(locale);
           },
         })),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
     ],
   });
@@ -275,6 +277,7 @@ function routedSetup(sources: readonly LocalizationLocaleSource[]): RoutedSeat {
           },
           write: (locale: string) => shared.write(locale),
         })),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
     ],
   });

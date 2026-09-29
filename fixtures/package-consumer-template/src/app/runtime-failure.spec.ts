@@ -41,6 +41,7 @@ describe('Equator runtime failure and recovery contracts', () => {
       },
       bootstrapScopes: [scope],
       recoveryMessage: messages.recovery.unavailable,
+      formattingContext: { timeZone: 'UTC' },
     });
     await expect(localization.initialize()).rejects.toBeDefined();
     expect(localization.lifecycle()).toBe('failed');
@@ -97,6 +98,7 @@ describe('Equator runtime failure and recovery contracts', () => {
       },
       bootstrapScopes: [scope],
       recoveryMessage: messages.recovery.unavailable,
+      formattingContext: { timeZone: 'UTC' },
     });
     await localization.initialize();
     await expect(localization.changeLocale('ar-EG')).resolves.toMatchObject({
@@ -120,6 +122,7 @@ describe('Equator runtime failure and recovery contracts', () => {
         extensions: runtimeExtensions,
       },
       bootstrapScopes: [scope],
+      formattingContext: { timeZone: 'UTC' },
     });
     await localization.initialize();
     const delayed = controller.deferNext(scope, 'ar-EG');

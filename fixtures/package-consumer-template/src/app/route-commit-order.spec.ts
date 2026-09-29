@@ -14,7 +14,11 @@ import {
   type Routes,
 } from '@angular/router';
 import { filter, firstValueFrom } from 'rxjs';
-import { Localization, withRouting } from '@neolorn/equator';
+import {
+  Localization,
+  withRouting,
+  withFormattingContext,
+} from '@neolorn/equator';
 import {
   RouteLocalization,
   provideLocalizedRouter,
@@ -139,6 +143,7 @@ async function setup(): Promise<{
           policy: routePolicy,
           projection: appRouteProjection,
         }),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
     ],
   });
@@ -326,6 +331,7 @@ describe('a Router configuration the adapter cannot make coherent', () => {
             policy: routePolicy,
             projection: appRouteProjection,
           }),
+          withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
     });
@@ -408,6 +414,7 @@ describe.runIf(localeInPath)(
               policy: routePolicy,
               projection: appRouteProjection,
             }),
+            withFormattingContext({ timeZone: 'UTC' }),
           ),
         ],
       });

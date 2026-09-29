@@ -9,6 +9,7 @@ import {
   decimal,
   provideLocalizationSetup,
   type LocalizedInputProfile,
+  withFormattingContext,
 } from '@neolorn/equator';
 import { LocalizedInput } from '@neolorn/equator/forms';
 import { configuration } from '#i18n';
@@ -66,13 +67,16 @@ async function configure(): Promise<Localization> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
-      provideLocalizationSetup({
-        configuration,
-        catalogSet,
-        catalogLoaders,
-        recoveryPayload,
-        extensions: runtimeExtensions,
-      }),
+      provideLocalizationSetup(
+        {
+          configuration,
+          catalogSet,
+          catalogLoaders,
+          recoveryPayload,
+          extensions: runtimeExtensions,
+        },
+        withFormattingContext({ timeZone: 'UTC' }),
+      ),
     ],
   });
   const localization = TestBed.inject(Localization);

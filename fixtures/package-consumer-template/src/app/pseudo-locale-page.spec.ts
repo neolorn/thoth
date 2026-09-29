@@ -9,6 +9,7 @@ import {
   LocalizedMessage,
   LocalizePipe,
   withRouting,
+  withFormattingContext,
 } from '@neolorn/equator';
 import {
   provideLocalizationTesting,
@@ -94,6 +95,7 @@ describe('a page rendered under a pseudo-locale', () => {
             routeProjection,
           },
           withRouting({ policy: routePolicy, projection: appRouteProjection }),
+          withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
     }).compileComponents();

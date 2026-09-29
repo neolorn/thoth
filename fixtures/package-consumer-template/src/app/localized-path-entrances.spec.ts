@@ -22,6 +22,7 @@ import {
   Localization,
   withRouting,
   type LocaleUrlPolicy,
+  withFormattingContext,
 } from '@neolorn/equator';
 import { provideLocalizedRouter } from '@neolorn/equator/router';
 import { provideLocalizationTesting } from '@neolorn/equator/testing';
@@ -132,6 +133,7 @@ async function entrances(
           routeProjection,
         },
         withRouting({ policy, projection }),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
     ],
   });
@@ -236,6 +238,7 @@ async function arrive(
           routeProjection,
         },
         withRouting({ policy, projection }),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
     ],
   });

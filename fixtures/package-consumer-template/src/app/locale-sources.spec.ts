@@ -23,6 +23,7 @@ import {
   type LocaleUrlPolicy,
   type LocalizationLocaleSource,
   type LocalizationPersistenceStoreFactory,
+  withFormattingContext,
 } from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
@@ -138,6 +139,7 @@ function setup(environment: Environment): Localization {
         ...(environment.stores === undefined
           ? []
           : [withPersistence(...environment.stores)]),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
     ],
   });

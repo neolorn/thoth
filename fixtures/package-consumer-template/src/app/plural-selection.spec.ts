@@ -1,7 +1,11 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 
 import { TestBed } from '@angular/core/testing';
-import { Localization, provideLocalizationSetup } from '@neolorn/equator';
+import {
+  Localization,
+  provideLocalizationSetup,
+  withFormattingContext,
+} from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -30,13 +34,16 @@ import { runtimeExtensions } from './runtime-extensions';
 function context(): Localization {
   TestBed.configureTestingModule({
     providers: [
-      provideLocalizationSetup({
-        configuration,
-        catalogSet,
-        catalogLoaders,
-        recoveryPayload,
-        extensions: runtimeExtensions,
-      }),
+      provideLocalizationSetup(
+        {
+          configuration,
+          catalogSet,
+          catalogLoaders,
+          recoveryPayload,
+          extensions: runtimeExtensions,
+        },
+        withFormattingContext({ timeZone: 'UTC' }),
+      ),
     ],
   });
   return TestBed.inject(Localization);

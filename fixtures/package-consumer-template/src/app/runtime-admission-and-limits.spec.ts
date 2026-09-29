@@ -26,6 +26,7 @@ import {
   type LocalizationFeature,
   type RuntimeExtensionBinding,
   type RuntimeFormattingAdapterDescriptor,
+  withFormattingContext,
 } from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
@@ -62,6 +63,7 @@ function context(loaders: CatalogLoaders = catalogLoaders) {
   return createLocalizationContext({
     setup: setup(loaders),
     bootstrapScopes: [scope],
+    formattingContext: { timeZone: 'UTC' },
   });
 }
 
@@ -145,6 +147,7 @@ describe('closed configuration admission', () => {
       createLocalizationContext({
         setup: setup(),
         bootstrapScopes: [scope, { ...scope }],
+        formattingContext: { timeZone: 'UTC' },
       }),
     ).toThrow(/duplicate generated scope/u);
     claimCapability('entry:@neolorn/equator');
@@ -342,6 +345,7 @@ describe('hostile transfer state', () => {
           provideLocalizationSetup(
             { ...setup(), routeProjection },
             ...features,
+            withFormattingContext({ timeZone: 'UTC' }),
           ),
         ],
       }).compileComponents();

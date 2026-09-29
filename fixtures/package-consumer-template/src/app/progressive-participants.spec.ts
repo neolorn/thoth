@@ -9,6 +9,7 @@ import {
   type LocalizationParticipant,
   type LocalizationParticipantContext,
   type LocalizationParticipantRegistration,
+  withFormattingContext,
 } from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
@@ -85,13 +86,16 @@ function setup(region: IndependentRegion) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
-      provideLocalizationSetup({
-        configuration,
-        catalogSet,
-        catalogLoaders,
-        recoveryPayload,
-        extensions: runtimeExtensions,
-      }),
+      provideLocalizationSetup(
+        {
+          configuration,
+          catalogSet,
+          catalogLoaders,
+          recoveryPayload,
+          extensions: runtimeExtensions,
+        },
+        withFormattingContext({ timeZone: 'UTC' }),
+      ),
       // From a provider, which is where an application registers a participant and is the reason
       // this reaches the path it does. Registering imperatively after `TestBed.inject` looks
       // equivalent and is not: by then Equator's app initializer has already started, so the

@@ -68,9 +68,10 @@ async function rendered(
           recoveryPayload,
           extensions: runtimeExtensions,
         },
-        ...(declaration.applicationWide === undefined
-          ? []
-          : [withFormattingContext(declaration.applicationWide)]),
+        withFormattingContext({
+          timeZone: 'UTC',
+          ...declaration.applicationWide,
+        }),
       ),
     ],
   });

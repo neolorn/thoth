@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, RouterOutlet, TitleStrategy } from '@angular/router';
-import { Localization, withRouting } from '@neolorn/equator';
+import {
+  Localization,
+  withRouting,
+  withFormattingContext,
+} from '@neolorn/equator';
 import {
   LocalizedTitleStrategy,
   provideLocalizedRouter,
@@ -107,6 +111,7 @@ async function configure(): Promise<Router> {
           routeProjection,
         },
         withRouting({ policy: routePolicy, projection: appRouteProjection }),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
       { provide: TitleStrategy, useClass: LocalizedTitleStrategy },
       provideDynamicContent(),

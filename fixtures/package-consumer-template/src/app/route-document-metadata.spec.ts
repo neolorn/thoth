@@ -2,7 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TestBed } from '@angular/core/testing';
 import { Router, TitleStrategy } from '@angular/router';
-import { Localization, withRouting } from '@neolorn/equator';
+import {
+  Localization,
+  withRouting,
+  withFormattingContext,
+} from '@neolorn/equator';
 import {
   LocalizedTitleStrategy,
   documentMessage,
@@ -69,6 +73,7 @@ async function configure(
           routeProjection,
         },
         withRouting({ policy: routePolicy, projection: appRouteProjection }),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
       // The application's own configuration. Without it Angular's `DefaultTitleStrategy` writes the
       // English `title` that `app.routes.ts` declares on `second` over everything asserted here,

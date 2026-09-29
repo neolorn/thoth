@@ -82,6 +82,7 @@ interface CachedCatalog {
 }
 
 const supportedArtifactFeatures = new Set([
+  'context-time-zone',
   'explicit-empty',
   'selection',
   'structured-output',
@@ -354,6 +355,7 @@ function assertDescriptor(
   configuration: AsReceived<GeneratedConfiguration, 'generatedAbi'>,
   descriptor: ReceivedCatalogSetDescriptor,
   loaders: CatalogLoaders,
+  contextTimeZone: boolean,
 ): ReadonlyMap<string, CatalogSetArtifact> {
   if (
     configuration.generatedAbi !== GENERATED_ABI ||
@@ -396,6 +398,23 @@ function assertDescriptor(
         address.key.scopeId,
         address.key.catalogLocale,
       );
+      // The one feature an application supplies rather than the runtime. A message that writes no
+      // zone formats in the context's, and a context without one is a behavior the standard leaves
+      // open, which `specs/04-message-authoring-and-catalogs.spec.md` section 6 refuses before
+      // render rather than at the first date a reader is shown.
+      if (
+        !contextTimeZone &&
+        Array.isArray(address.requiredFeatures) &&
+        address.requiredFeatures.includes('context-time-zone')
+      ) {
+        throw new LocalizationError(
+          operationalDiagnostic(
+            'invalid-configuration',
+            `Catalog ${key} formats a date or a time in the formatting context's time zone, and this application configured no time zone. Name one with withFormattingContext({ timeZone: 'UTC' }), or write timeZone on each date expression.`,
+            artifact,
+          ),
+        );
+      }
       if (
         scope === undefined ||
         provider.providerId !== address.key.providerId ||
@@ -985,6 +1004,7 @@ export class LocalCatalogStore {
     descriptor: CatalogSetDescriptor,
     loaders: CatalogLoaders,
     maximumEntries?: number,
+    contextTimeZone = false,
   ) {
     const admittedConfiguration = snapshotInertJson(configuration, {
       maximumDepth: 32,
@@ -1001,6 +1021,7 @@ export class LocalCatalogStore {
       admittedConfiguration,
       admittedDescriptor,
       this.loaders,
+      contextTimeZone,
     );
     // Everything the stamps claim has been compared against what the bytes hold, which is what
     // makes the declared type true of this value rather than asserted over it.

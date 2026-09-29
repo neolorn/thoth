@@ -17,7 +17,11 @@ import {
   type Routes,
 } from '@angular/router';
 import { filter, firstValueFrom } from 'rxjs';
-import { Localization, withRouting } from '@neolorn/equator';
+import {
+  Localization,
+  withRouting,
+  withFormattingContext,
+} from '@neolorn/equator';
 import {
   localizedRouteTable,
   provideLocalizedRouter,
@@ -313,6 +317,7 @@ async function arriveAtSecond(
           routeProjection,
         },
         withRouting({ policy: routePolicy, projection: appRouteProjection }),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
     ],
   });

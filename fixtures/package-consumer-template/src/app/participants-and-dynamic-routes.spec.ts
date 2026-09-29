@@ -51,6 +51,7 @@ function localization(): Localization {
       extensions: runtimeExtensions,
     },
     bootstrapScopes: [scope],
+    formattingContext: { timeZone: 'UTC' },
   });
 }
 

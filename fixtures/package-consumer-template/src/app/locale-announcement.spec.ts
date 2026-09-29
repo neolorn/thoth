@@ -20,6 +20,7 @@ import {
   withLocaleAnnouncement,
   withRouting,
   type LocalizationSnapshot,
+  withFormattingContext,
 } from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
@@ -63,6 +64,7 @@ function setup(
         // locale. Without the localized router a change under locale-host commits in this document.
         withRouting({ policy: routePolicy, projection: appRouteProjection }),
         ...(format === undefined ? [] : [withLocaleAnnouncement(format)]),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
     ],
   });

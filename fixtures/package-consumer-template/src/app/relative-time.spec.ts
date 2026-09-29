@@ -208,13 +208,16 @@ describe('the service call', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
-        provideLocalizationSetup({
-          configuration,
-          catalogSet,
-          catalogLoaders,
-          recoveryPayload,
-          extensions: runtimeExtensions,
-        }),
+        provideLocalizationSetup(
+          {
+            configuration,
+            catalogSet,
+            catalogLoaders,
+            recoveryPayload,
+            extensions: runtimeExtensions,
+          },
+          withFormattingContext({ timeZone: 'UTC' }),
+        ),
       ],
     });
     const unclocked = TestBed.inject(Localization);

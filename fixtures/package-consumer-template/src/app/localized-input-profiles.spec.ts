@@ -18,6 +18,7 @@ import {
   provideLocalizationSetup,
   timeZone,
   type LocalizedInputProfile,
+  withFormattingContext,
 } from '@neolorn/equator';
 import { LocalizedInput } from '@neolorn/equator/forms';
 import { configuration } from '#i18n';
@@ -201,13 +202,16 @@ async function mount(profileCase: ProfileCase) {
   TestBed.configureTestingModule({
     providers: [
       { provide: PROFILE_CASE, useValue: profileCase },
-      provideLocalizationSetup({
-        configuration,
-        catalogSet,
-        catalogLoaders,
-        recoveryPayload,
-        extensions: runtimeExtensions,
-      }),
+      provideLocalizationSetup(
+        {
+          configuration,
+          catalogSet,
+          catalogLoaders,
+          recoveryPayload,
+          extensions: runtimeExtensions,
+        },
+        withFormattingContext({ timeZone: 'UTC' }),
+      ),
     ],
   });
   const localization = TestBed.inject(Localization);

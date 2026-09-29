@@ -11,6 +11,7 @@ import {
   withRouting,
   type LocaleSelectorChoice,
   type LocaleUrlPolicy,
+  withFormattingContext,
 } from '@neolorn/equator';
 import { provideLocalizedRouter } from '@neolorn/equator/router';
 import { provideLocalizationTesting } from '@neolorn/equator/testing';
@@ -154,6 +155,7 @@ async function configure(policy: LocaleUrlPolicy): Promise<Router> {
           routeProjection,
         },
         withRouting({ policy, projection: appRouteProjection }),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
     ],
   }).compileComponents();

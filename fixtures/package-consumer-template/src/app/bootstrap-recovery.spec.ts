@@ -29,6 +29,7 @@ import {
   withPersistence,
   withRecoveryMessage,
   withRouting,
+  withFormattingContext,
 } from '@neolorn/equator';
 import { provideLocalizedRouter } from '@neolorn/equator/router';
 import { configuration } from '#i18n';
@@ -147,6 +148,7 @@ describe('bootstrap when a catalog cannot load', () => {
             message: messages.recovery.unavailable,
             retryLabel: messages.control.retry,
           }),
+          withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
     });
@@ -189,6 +191,7 @@ describe('bootstrap when a catalog cannot load', () => {
             message: messages.recovery.unavailable,
             retryLabel: messages.control.retry,
           }),
+          withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
     });
@@ -222,6 +225,7 @@ describe('bootstrap when a catalog cannot load', () => {
             message: messages.recovery.unavailable,
             retryLabel: messages.control.retry,
           }),
+          withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
     });
@@ -255,6 +259,7 @@ describe('bootstrap when a catalog cannot load', () => {
             message: messages.recovery.unavailable,
             retryLabel: messages.control.retry,
           }),
+          withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
     });
@@ -292,12 +297,15 @@ describe('bootstrap when a catalog cannot load', () => {
           provideEnvironmentInitializer(() => {
             injector = inject(EnvironmentInjector);
           }),
-          provideLocalizationSetup({
-            configuration,
-            catalogSet,
-            catalogLoaders: failingLoaders(),
-            extensions: runtimeExtensions,
-          }),
+          provideLocalizationSetup(
+            {
+              configuration,
+              catalogSet,
+              catalogLoaders: failingLoaders(),
+              extensions: runtimeExtensions,
+            },
+            withFormattingContext({ timeZone: 'UTC' }),
+          ),
         ],
       }),
     ).rejects.toBeDefined();
@@ -333,6 +341,7 @@ describe('a server render when a catalog cannot load', () => {
             message: messages.recovery.unavailable,
             retryLabel: messages.control.retry,
           }),
+          withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
     });
@@ -392,6 +401,7 @@ describe('the first navigation when a catalog cannot load', () => {
             message: messages.recovery.unavailable,
             retryLabel: messages.control.retry,
           }),
+          withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
     });

@@ -19,6 +19,7 @@ import {
   createPathPrefixLocalePolicy,
   withRouting,
   type LocaleUrlPolicy,
+  withFormattingContext,
 } from '@neolorn/equator';
 import {
   LocalizedTitleStrategy,
@@ -151,6 +152,7 @@ async function bootstrap(
           policy: routing.policy ?? routePolicy,
           projection: routing.projection ?? appRouteProjection,
         }),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
       ...(extraProviders as never[]),
     ],

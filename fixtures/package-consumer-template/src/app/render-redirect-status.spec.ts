@@ -17,6 +17,7 @@ import {
   createPathPrefixLocalePolicy,
   withRouting,
   type LocaleUrlPolicy,
+  withFormattingContext,
 } from '@neolorn/equator';
 import { provideLocalizedRouter } from '@neolorn/equator/router';
 import { provideLocalizationTesting } from '@neolorn/equator/testing';
@@ -96,6 +97,7 @@ async function rendered(
           routeProjection,
         },
         withRouting({ policy, projection: appRouteProjection }),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
     ],
   });

@@ -20,7 +20,18 @@ import {
   type ToolkitResult,
 } from './diagnostics.js';
 import type { GeneratedContractFile } from './generated-contracts.js';
-import type { MessageSemanticModel } from './message-format.js';
+import type {
+  MessageDeclaration,
+  MessageExpression,
+  MessagePattern,
+  MessageSemanticModel,
+  MessageVariant,
+} from './message-format.js';
+import {
+  MESSAGE_FUNCTION_OPTIONS,
+  inheritedOptions,
+  resolvedDateOptions,
+} from './message-function-options.js';
 import { createOutputPlan, type OutputPlan } from './output-plan.js';
 import {
   personNameProfilesFor,
@@ -616,6 +627,84 @@ function compileCatalog(
   return Object.freeze({ ...base, resources });
 }
 
+/**
+ * What one expression resolves to, as far as a time zone goes.
+ *
+ * `variableZone` is a zone the caller supplies at render through an option variable, which the
+ * literal options cannot show and which no formatting context is asked for.
+ */
+interface ResolvedZone {
+  readonly options: Readonly<Record<string, string>>;
+  readonly variableZone: boolean;
+}
+
+/**
+ * Whether a message formats a date or a time in the formatting context's zone rather than one it
+ * names.
+ *
+ * A date expression's zone is the one it writes, the one its operand's declaration wrote, which it
+ * inherits as an override option, or, with neither, the formatting context's. A context without one
+ * is a behavior the standard leaves open, and `specs/04-message-authoring-and-catalogs.spec.md`
+ * section 6 resolves it as a refusal before render, so the catalog says it needs a zone and an
+ * application that configured none is refused when the catalog set is admitted.
+ *
+ * Every date expression counts, a declaration's included, whether or not a pattern places it, so the
+ * answer can only err towards requiring a zone that a message turns out not to use.
+ */
+function formatsInContextZone(
+  body: Readonly<Record<string, CanonicalJsonValue>>,
+): boolean {
+  const zones = new Map<string, ResolvedZone>();
+  let contextZone = false;
+  const resolve = (expression: MessageExpression): ResolvedZone => {
+    const from =
+      expression.operand?.kind === 'variable'
+        ? zones.get(expression.operand.name)
+        : undefined;
+    const reference = expression.function;
+    if (reference === undefined) {
+      return from ?? { options: {}, variableZone: false };
+    }
+    const written: Record<string, string> = {};
+    for (const [name, value] of Object.entries(reference.options)) {
+      if (value.kind === 'literal') written[name] = value.value;
+    }
+    const profile = MESSAGE_FUNCTION_OPTIONS[reference.name];
+    if (profile?.operand !== 'date-time') {
+      return {
+        options: inheritedOptions(from?.options, written, profile),
+        variableZone: from?.variableZone ?? false,
+      };
+    }
+    const options = resolvedDateOptions(from?.options, written, profile);
+    const variableZone =
+      reference.options['timeZone']?.kind === 'variable' ||
+      (written['timeZone'] === undefined && (from?.variableZone ?? false));
+    if (options['timeZone'] === undefined && !variableZone) contextZone = true;
+    return { options, variableZone };
+  };
+  const visit = (pattern: MessagePattern): void => {
+    for (const part of pattern) {
+      if (typeof part !== 'string' && part.kind === 'expression') resolve(part);
+    }
+  };
+  for (const declaration of (body['declarations'] ??
+    []) as unknown as readonly MessageDeclaration[]) {
+    zones.set(declaration.name, resolve(declaration.value));
+  }
+  if (body['kind'] === 'pattern') {
+    visit(body['pattern'] as unknown as MessagePattern);
+  }
+  if (body['kind'] === 'select') {
+    for (const variant of body[
+      'variants'
+    ] as unknown as readonly MessageVariant[]) {
+      visit(variant.pattern);
+    }
+  }
+  return contextZone;
+}
+
 function requiredFeatures(catalog: CompiledCatalog): readonly string[] {
   const features = new Set<string>();
   for (const message of catalog.messages) {
@@ -623,6 +712,9 @@ function requiredFeatures(catalog: CompiledCatalog): readonly string[] {
     if (message.resultKind === 'structured') features.add('structured-output');
     const body = message.body as Readonly<Record<string, CanonicalJsonValue>>;
     if (body['kind'] === 'select') features.add('selection');
+    if (message.kind !== 'empty' && formatsInContextZone(body)) {
+      features.add('context-time-zone');
+    }
   }
   return Object.freeze([...features].sort(compareCodePoint));
 }

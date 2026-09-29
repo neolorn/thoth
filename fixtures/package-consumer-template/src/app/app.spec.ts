@@ -21,6 +21,7 @@ import {
   withRouting,
   withOverlayLocale,
   withRecoveryMessage,
+  withFormattingContext,
 } from '@neolorn/equator';
 import {
   LocalizationTestingController,
@@ -102,6 +103,7 @@ describe('Equator feature-lab package consumer', () => {
             policy: routePolicy,
             projection: appRouteProjection,
           }),
+          withFormattingContext({ timeZone: 'UTC' }),
         ),
         provideDynamicContent(),
       ],
@@ -340,9 +342,6 @@ describe('Equator feature-lab package consumer', () => {
       day: '2-digit',
       timeZone: 'UTC',
     });
-    const ambientInstant = localization.formatInstant(instant('0'), {
-      year: 'numeric',
-    });
 
     expect(fractional.ok && fractional.value.text).toBe('25%');
     expect(percentUnit.ok && percentUnit.value.text).toBe('25%');
@@ -358,10 +357,6 @@ describe('Equator feature-lab package consumer', () => {
       diagnostic: { code: 'unsupported-formatting-capability' },
     });
     expect(deterministicInstant).toMatchObject({ ok: true });
-    expect(ambientInstant).toMatchObject({
-      ok: false,
-      diagnostic: { code: 'unsupported-formatting-capability' },
-    });
     claimCapability('format:formatPercent', { policy: routePolicy });
     claimCapability('format:formatPercentagePoints', { policy: routePolicy });
     claimCapability('format:formatNumber', { policy: routePolicy });
@@ -589,6 +584,7 @@ describe('Equator feature-lab package consumer', () => {
             extensions: runtimeExtensions,
           },
           withOverlayLocale(() => adapter),
+          withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
     }).compileComponents();

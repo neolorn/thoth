@@ -1158,6 +1158,7 @@ class LocalizationInternal {
       options.setup.catalogSet,
       options.setup.catalogLoaders,
       options.setup.maximumCachedCatalogs,
+      options.formattingContext?.timeZone !== undefined,
     );
     const formatterCapacity = Math.min(
       RUNTIME_LIMITS.formatterCacheEntries,

@@ -13,6 +13,7 @@ import {
   withPersistence,
   type LocalizationObservabilityEvent,
   type LocalizationPersistenceStoreFactory,
+  withFormattingContext,
 } from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
@@ -65,6 +66,7 @@ function setup(
                 },
               }),
             ]),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
     ],
   });

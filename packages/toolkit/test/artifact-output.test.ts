@@ -402,3 +402,74 @@ describe('Equator owned output publication', () => {
     await expect(stat(workRoot)).rejects.toMatchObject({ code: 'ENOENT' });
   });
 });
+
+/**
+ * One message, compiled in both locales, and the features its catalogs say they need.
+ *
+ * A zone neither the message nor its operand writes is the formatting context's, which only the
+ * application can supply. `specs/04-message-authoring-and-catalogs.spec.md` section 6 refuses a
+ * context without one before render, so the catalog has to say it needs one.
+ */
+function requiredFeaturesOf(message: string): readonly string[] {
+  const contents = [
+    'messages:',
+    `  when: ${JSON.stringify(message)}`,
+    '  recovery.unavailable: Localization is temporarily unavailable.',
+    '',
+  ].join('\n');
+  const source = catalog('source', 'en-US', contents);
+  const target = catalog('target', 'ar-EG', contents);
+  const graph = analyzeCatalogSet({
+    configuration: configuration(),
+    catalogs: [source, target],
+  });
+  if (!graph.ok) throw new Error(JSON.stringify(graph.diagnostics));
+  const recovery = '@neolorn/artifact-lab:shell:recovery.unavailable';
+  const contracts = generateContracts(graph.value, {
+    recoveryMessageIdentities: [recovery],
+  });
+  if (!contracts.ok) throw new Error(JSON.stringify(contracts.diagnostics));
+  const compiled = compileLocalArtifacts({
+    owner: {
+      providerId: '@example/test-owner',
+      generatedRootPath: 'src/generated/i18n',
+    },
+    graph: graph.value,
+    catalogs: [target, source],
+    contractFiles: contracts.value,
+    recoveryMessageIdentities: [recovery],
+  });
+  if (!compiled.ok) throw new Error(JSON.stringify(compiled.diagnostics));
+  const features = new Set(
+    compiled.value.descriptor.providers.flatMap(({ artifacts }) =>
+      artifacts.flatMap(({ address }) => address.requiredFeatures),
+    ),
+  );
+  return [...features].sort();
+}
+
+describe('a catalog that needs the application to name a time zone', () => {
+  it('says so for a date whose zone nothing in the message writes', () => {
+    expect(requiredFeaturesOf('On {$v :date}')).toContain('context-time-zone');
+    expect(
+      requiredFeaturesOf('.input {$v :datetime}\n{{At {$v :time}}}'),
+    ).toContain('context-time-zone');
+  });
+
+  it('does not for a zone the expression or its operand writes, or the caller supplies', () => {
+    expect(
+      requiredFeaturesOf('On {$v :date timeZone=|Europe/Paris|}'),
+    ).not.toContain('context-time-zone');
+    expect(
+      requiredFeaturesOf(
+        '.local $d = {$v :datetime timeZone=|UTC|}\n{{On {$d :date} at {$d :time}}}',
+      ),
+    ).not.toContain('context-time-zone');
+    expect(requiredFeaturesOf('On {$v :date timeZone=$zone}')).not.toContain(
+      'context-time-zone',
+    );
+    expect(requiredFeaturesOf('{$n :number} items')).not.toContain(
+      'context-time-zone',
+    );
+  });
+});

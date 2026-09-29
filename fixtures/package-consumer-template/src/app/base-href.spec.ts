@@ -19,6 +19,7 @@ import {
   applicationBaseHref,
   withRouting,
   type LocaleSelectorChoice,
+  withFormattingContext,
 } from '@neolorn/equator';
 import { provideLocalizedRouter } from '@neolorn/equator/router';
 import { provideLocalizationTesting } from '@neolorn/equator/testing';
@@ -122,6 +123,7 @@ async function arriveAt(
           routeProjection,
         },
         withRouting({ policy: routePolicy, projection: appRouteProjection }),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
     ],
   });

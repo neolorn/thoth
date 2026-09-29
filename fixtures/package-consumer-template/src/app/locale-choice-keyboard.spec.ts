@@ -10,6 +10,7 @@ import {
   createPathPrefixLocalePolicy,
   withRouting,
   type LocaleUrlPolicy,
+  withFormattingContext,
 } from '@neolorn/equator';
 import { provideLocalizedRouter } from '@neolorn/equator/router';
 import { provideLocalizationTesting } from '@neolorn/equator/testing';
@@ -105,7 +106,12 @@ const bundle = {
 /** Unrouted, so no option has an address: the case every application without routing is in. */
 async function unrouted(): Promise<ComponentFixture<Switcher>> {
   await TestBed.configureTestingModule({
-    providers: [provideLocalizationTesting(bundle)],
+    providers: [
+      provideLocalizationTesting(
+        bundle,
+        withFormattingContext({ timeZone: 'UTC' }),
+      ),
+    ],
   }).compileComponents();
   await TestBed.inject(Localization).initialize();
   return rendered();
@@ -120,6 +126,7 @@ async function routed(
       provideLocalizationTesting(
         bundle,
         withRouting({ policy, projection: appRouteProjection }),
+        withFormattingContext({ timeZone: 'UTC' }),
       ),
     ],
   }).compileComponents();

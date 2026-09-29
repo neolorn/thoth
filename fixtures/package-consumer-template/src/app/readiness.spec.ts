@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Localization, withRouting } from '@neolorn/equator';
+import {
+  Localization,
+  withRouting,
+  withFormattingContext,
+} from '@neolorn/equator';
 import { provideLocalizationTesting } from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
@@ -51,6 +55,7 @@ describe('the readiness panel exercises what the published surface kept', () => 
             policy: routePolicy,
             projection: appRouteProjection,
           }),
+          withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
     }).compileComponents();
