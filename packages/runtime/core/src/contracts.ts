@@ -654,17 +654,16 @@ export interface RuntimeMessageFunctionBinding {
   evaluate(invocation: MessageFunctionInvocation): MessageFunctionResult;
 }
 
-/** An installed segment type: the declaration it answers for, and the code that normalizes it. */
+/**
+ * An installed segment type: the declaration it answers for, and nothing else.
+ *
+ * A family checks a segment value against the syntax and the bound its descriptor declares, and
+ * refuses a spelling rather than correcting it, so there is no code for a binding to supply. The
+ * binding still has to be installed, because a catalog that names the type requires it.
+ */
 export interface RuntimeIdentifierSegmentBinding {
   /** The declaration this implements. */
   readonly descriptor: RuntimeIdentifierSegmentDescriptor;
-  /**
-   * Puts a segment value into its canonical spelling, or returns `undefined` for one it refuses.
-   *
-   * Refusing is how an unknown member is kept from reaching a lookup, so return `undefined` rather
-   * than guessing.
-   */
-  canonicalize(value: string): string | undefined;
 }
 
 /** An installed slot kind: the declaration it answers for, and how its words read as plain text. */

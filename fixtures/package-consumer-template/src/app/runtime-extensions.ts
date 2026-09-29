@@ -97,12 +97,6 @@ export const runtimeExtensions = defineRuntimeExtensions([
   } satisfies RuntimeMessageFunctionBinding),
   Object.freeze({
     descriptor: state,
-    canonicalize: (value: string) => {
-      const canonical = value.normalize('NFC').toLowerCase();
-      return /^[a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*$/u.test(canonical)
-        ? canonical
-        : undefined;
-    },
   } satisfies RuntimeIdentifierSegmentBinding),
   Object.freeze({
     descriptor: badge,

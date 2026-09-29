@@ -293,16 +293,20 @@ function normalizeBinding(candidate: unknown): RuntimeExtensionBinding {
     return invalid('Runtime extension binding descriptor must be inert.');
   }
   const descriptor = normalizeDescriptor(descriptorProperty.value);
+  if (descriptor.kind === 'identifier-segment') {
+    if (!hasExactKeys(candidate, ['descriptor'])) {
+      return invalid('Runtime extension binding shape is invalid.');
+    }
+    return Object.freeze({ descriptor }) as RuntimeExtensionBinding;
+  }
   const handlerName =
     descriptor.kind === 'message-function'
       ? 'evaluate'
-      : descriptor.kind === 'identifier-segment'
-        ? 'canonicalize'
-        : descriptor.kind === 'rich-slot-kind'
-          ? 'projectText'
-          : descriptor.kind === 'formatting-adapter'
-            ? 'format'
-            : 'parse';
+      : descriptor.kind === 'rich-slot-kind'
+        ? 'projectText'
+        : descriptor.kind === 'formatting-adapter'
+          ? 'format'
+          : 'parse';
   if (!hasExactKeys(candidate, ['descriptor', handlerName])) {
     return invalid('Runtime extension binding shape is invalid.');
   }
