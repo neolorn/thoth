@@ -454,10 +454,13 @@ describe('Equator feature-lab package consumer', () => {
       element.querySelector('[data-percent-model]')?.textContent,
     ).toContain('0.5');
     // Equator owns this region and puts it on the document, so it is found there rather than inside
-    // the component under test, which is the point: nothing in the application renders it.
-    expect(
-      document.querySelector('[data-equator-announcer]')?.textContent,
-    ).toContain('locale:ar-EG');
+    // the component under test, which is the point: nothing in the application renders it. It is
+    // filled on the frame after the commit, which nothing the fixture waits for includes.
+    await vi.waitFor(() => {
+      expect(
+        document.querySelector('[data-equator-announcer]')?.textContent,
+      ).toContain('locale:ar-EG');
+    });
 
     input.value = 'composition in progress';
     input.dispatchEvent(new Event('compositionstart'));
