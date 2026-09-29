@@ -534,8 +534,9 @@ const declared = Object.freeze([
       'dist:toolkit',
       'source:packages',
     ],
-    // Measured at 564s, so the bound is a little over three times that.
-    timeoutSeconds: 1800,
+    // Measured at 934s with the consumer prepared and all 21 injections measured, so the bound is a
+    // little over three times that.
+    timeoutSeconds: 3000,
   },
 ]);
 

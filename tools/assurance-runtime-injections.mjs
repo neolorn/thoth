@@ -91,13 +91,8 @@ export const injections = Object.freeze([
     id: 'interaction-not-preserved',
     invariant:
       'Focus, selection and scroll survive a locale transition without being asked to.',
-    // Named to the browser gate, because no other suite can see it. A locale switch has to happen
-    // in an engine that actually scrolls, against an application that asked the Router to restore
-    // scroll position: otherwise nothing moves, the hook restores what was never lost, and the
-    // assertion passes whether Equator acts or not. That is what this injection reported as an
-    // unguarded gap until the feature lab enabled `scrollPositionRestoration` and the restore
-    // moved behind `NavigationEnd`.
-    suite: 'browser',
+    // The consumer's route-localization spec restores the reader after a locale change that no
+    // navigation follows, and fails when nothing scrolls them back.
     source: 'packages/runtime/src/angular.ts',
     find: `          new InteractionPreservationCommitHook(
             document,

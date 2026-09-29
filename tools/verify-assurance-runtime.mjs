@@ -19,7 +19,7 @@
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { rmSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -30,6 +30,7 @@ import {
   refreshConsumerPackages,
 } from './refresh-consumer-packages.mjs';
 
+import { browserVerdict, verdictOf } from './assurance-runner.mjs';
 import { injections } from './assurance-runtime-injections.mjs';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -53,18 +54,12 @@ function run(command, args, cwd) {
   );
 }
 
-function shell(command, args, cwd) {
-  return run(command, args, cwd).status === 0;
-}
-
 /**
  * A step this gate depends on rather than measures, asserted with what the child actually said.
  *
- * `shell` answers with a boolean because most of what it runs is a suite that is *expected* to
- * fail, and the failing is the measurement. These are the other kind (a build, an install, a
- * materialization) where a non-zero exit ends the run and the only useful thing left on the
- * screen is the reason. The boolean threw that away: the first Linux run failed on the refresh
- * below and reported one sentence of this file's own prose, with nothing from pnpm.
+ * A suite is *expected* to fail, and the failing is the measurement. These are the other kind (a
+ * build, an install, a materialization) where a non-zero exit ends the run and the only useful
+ * thing left on the screen is the reason, so it is printed with what the child said.
  */
 function required(command, args, cwd, why) {
   requireOk(run(command, args, cwd), `${command} ${args.join(' ')}`, cwd, why);
@@ -104,11 +99,12 @@ function refreshConsumer(why) {
 /**
  * The suite that can observe the invariant, which is not always the same suite.
  *
- * Most of these are visible to the consumer's own tests. Scroll and focus are not: they need a
- * real browser moving a real page, so that injection names the browser gate instead. It costs a
- * browser run per injection, which is why it is named rather than assumed.
+ * Most of these are visible to the consumer's own tests. One the consumer's tests cannot see needs
+ * a real browser moving a real page, names the browser gate as its suite, and names the assertion
+ * there that fails without it. It costs a browser run per injection, which is why it is named
+ * rather than assumed.
  */
-function suitePasses(suite) {
+function suiteVerdict(suite, caughtWhen) {
   required(
     'pnpm',
     ['run', 'build'],
@@ -123,7 +119,21 @@ function suitePasses(suite) {
   refreshConsumer(
     'The materialized consumer did not take the rebuilt package.',
   );
-  if (suite !== 'browser') return shell('pnpm', ['test'], consumerRoot);
+  if (suite !== 'browser') {
+    // Read from the suite's own report rather than its exit status: a consumer that no longer
+    // compiles against the injected package fails exactly as a caught one does, and ran nothing.
+    const reportPath = resolve(
+      consumerRoot,
+      'node_modules/.vite/assurance-report.json',
+    );
+    rmSync(reportPath, { force: true });
+    const result = run(
+      'pnpm',
+      ['test', '--reporters=json', `--output-file=${reportPath}`],
+      consumerRoot,
+    );
+    return verdictOf({ reportPath, status: result.status });
+  }
 
   // The browser gate serves the consumer's already-built Angular bundle. Refreshing the package in
   // `node_modules` does not rebuild that bundle, so without this the browser would run the old
@@ -145,10 +155,29 @@ function suitePasses(suite) {
     workspaceRoot,
     'Materializing the consumer failed. That is an infrastructure failure, not a caught mutation, and it must stop the run rather than be counted as coverage.',
   );
-  return (
-    shell('node', ['./tools/verify-package-consumer.mjs'], workspaceRoot) &&
-    shell('pnpm', ['run', 'verify:browser-assurance'], workspaceRoot)
+  // The consumer gate initializes and builds what the browser serves. A browser-named injection is
+  // one its suite cannot see, so a failure here is a consumer that could not be prepared.
+  const prepared = run(
+    'node',
+    ['./tools/verify-package-consumer.mjs'],
+    workspaceRoot,
   );
+  if (prepared.status !== 0) {
+    return {
+      verdict: 'unmeasured',
+      why: `The consumer could not be prepared for the browser (exit ${prepared.status ?? 'null'}):\n${`${prepared.stdout}${prepared.stderr}`.trim().split('\n').slice(-6).join('\n')}`,
+    };
+  }
+  const browsed = run(
+    'pnpm',
+    ['run', 'verify:browser-assurance'],
+    workspaceRoot,
+  );
+  return browserVerdict({
+    status: browsed.status,
+    output: `${browsed.stdout}${browsed.stderr}`,
+    caughtWhen,
+  });
 }
 
 /**
@@ -158,29 +187,33 @@ function suitePasses(suite) {
  * Sharing a tree with `verify:consumer` makes it sure by accident, on the gate graph happening to
  * order them. Running in a tree of its own means nothing is here that this file did not put here,
  * which is the property that makes mutating tracked source safe, and it cuts both ways. So the
- * preparation is explicit: build, materialize, once, before the first injection rather than per
- * injection.
- *
- * Guarded by `existsSync` rather than run unconditionally, because the same file still has to work
- * when someone runs it by hand in a tree that already has a consumer, and that is the ~80s case.
+ * preparation is explicit: build, then the consumer gate itself, once, before the first injection
+ * rather than per injection. It runs unconditionally, because a consumer already in the tree may be
+ * one nobody initialized.
  */
-if (!existsSync(consumerRoot)) {
-  process.stdout.write(
-    'No materialized consumer in this tree; building and materializing one.\n',
-  );
-  required(
-    'pnpm',
-    ['run', 'build'],
-    workspaceRoot,
-    'The workspace did not build, so there is nothing to hand a consumer.',
-  );
-  required(
-    'pnpm',
-    ['run', 'materialize:consumer'],
-    workspaceRoot,
-    'Materializing the consumer failed before any injection was applied. That is an infrastructure failure and it must stop the run rather than be reported as coverage.',
-  );
-}
+required(
+  'pnpm',
+  ['run', 'build'],
+  workspaceRoot,
+  'The workspace did not build, so there is nothing to hand a consumer.',
+);
+// Prepared the way `verify:consumer` prepares it, by running it: a materialized consumer has no
+// configuration until `equator init` writes one, and its suite fails on every injection without
+// one, for a reason that has nothing to do with the injection.
+required(
+  'pnpm',
+  ['run', 'verify:consumer'],
+  workspaceRoot,
+  'The consumer could not be prepared before any injection was applied. That is an infrastructure failure and it must stop the run rather than be reported as coverage.',
+);
+// And the suite must pass with nothing injected. A suite that fails already fails with every
+// injection too, which is no catch.
+const baseline = suiteVerdict(undefined);
+assert.equal(
+  baseline.verdict,
+  'passed',
+  `The consumer suite does not pass with nothing injected (${baseline.verdict}${baseline.why === undefined ? '' : `: ${baseline.why}`}), so no injection could be measured against it.`,
+);
 
 /** Guarded by nothing and not known to be: the failure this gate exists to report. */
 const missed = [];
@@ -188,7 +221,21 @@ const missed = [];
 const known = [];
 /** Recorded as a gap and no longer one, which means the record is what needs correcting. */
 const closed = [];
-for (const injection of injections) {
+/** The suite did not run to a verdict, so nothing was learned either way. */
+const unmeasured = [];
+// Browser-named injections last. Each re-materializes the consumer, and whatever state that leaves
+// is what every later injection's suite would run in.
+for (const { id, suite, caughtWhen } of injections) {
+  assert.ok(
+    suite !== 'browser' || caughtWhen instanceof RegExp,
+    `Injection ${id} names the browser gate and no \`caughtWhen\`, so no failure of that gate could count as its catch.`,
+  );
+}
+const ordered = [
+  ...injections.filter(({ suite }) => suite !== 'browser'),
+  ...injections.filter(({ suite }) => suite === 'browser'),
+];
+for (const injection of ordered) {
   const path = resolve(workspaceRoot, injection.source);
   const original = await readFile(path, 'utf8');
   const occurrences = original.split(injection.find).length - 1;
@@ -203,7 +250,15 @@ for (const injection of injections) {
       original.split(injection.find).join(injection.replace),
       'utf8',
     );
-    const caught = !suitePasses(injection.suite);
+    const outcome = suiteVerdict(injection.suite, injection.caughtWhen);
+    if (outcome.verdict === 'unmeasured') {
+      process.stdout.write(
+        `NOT RUN ${injection.id}\n          ${injection.invariant}\n          ${outcome.why}\n`,
+      );
+      unmeasured.push({ ...injection, why: outcome.why });
+      continue;
+    }
+    const caught = outcome.verdict === 'caught';
     const label = caught
       ? injection.knownGap === undefined
         ? 'caught '
@@ -261,6 +316,15 @@ if (closed.length > 0) {
   process.exitCode = 1;
 }
 
+if (unmeasured.length > 0) {
+  process.stderr.write(
+    `\n${unmeasured.length} runtime invariant(s) could not be measured, because the suite did not run to a failure:\n${unmeasured
+      .map(({ id, why }) => `  ${id}\n    ${why}\n`)
+      .join('')}`,
+  );
+  process.exitCode = 1;
+}
+
 if (missed.length > 0) {
   process.stderr.write(
     `\n${missed.length} runtime invariant(s) are guarded by nothing:\n${missed
@@ -271,7 +335,7 @@ if (missed.length > 0) {
       .join('')}`,
   );
   process.exitCode = 1;
-} else if (closed.length === 0) {
+} else if (closed.length === 0 && unmeasured.length === 0) {
   process.stdout.write(
     `\n${injections.length - known.length} of ${injections.length} runtime invariants are guarded by a suite that notices when they stop holding.\n`,
   );
