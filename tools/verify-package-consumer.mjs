@@ -1887,6 +1887,37 @@ function verifyAddressDeclarations() {
   const { policy } = sheetInDocument(answers[0].body);
   let next = 1;
 
+  // The build writes the head of every page it prerenders with the same policy, so the pages it
+  // offers to an index carry the same x-default. The exercise sheet is not one of them.
+  for (const page of addresses.prerendered.filter(
+    (each) => each !== 'exercise values',
+  )) {
+    for (const each of INIT_REQUEST.locales) {
+      if (!addresses.has(page, each)) continue;
+      const check = `${consumerName}: x-default on ${page} in ${each}, prerendered`;
+      const written = readFileSync(
+        resolve(
+          consumerRoot,
+          builds.output(addresses.origin(each)),
+          'browser',
+          addresses.file(page, each),
+        ),
+        'utf8',
+      );
+      assert.equal(
+        new JSDOM(written).window.document
+          .querySelector('link[rel="alternate"][hreflang="x-default"]')
+          ?.getAttribute('href'),
+        addresses.xDefault,
+        `${check}: not where xDefaultPath or xDefaultUrl declares it`,
+      );
+      recordCapabilityClaim(check, 'declaration:x-default', {
+        document: written,
+        policy,
+      });
+    }
+  }
+
   for (const each of homes) {
     const answer = answers[next++];
     const check = `${consumerName}: x-default on home in ${each}`;
