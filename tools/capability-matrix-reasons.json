@@ -109,6 +109,12 @@
       "reason": "It describes the response a declaration produces. A build writes no page for a declared outcome (spec 07 section 5, checked by verify:consumer for the topic page), and a client navigation or a hydrated page has no response, which a release must not synthesize, so no build and no browser has a response for it to describe."
     },
     {
+      "id": "sitemap-entry-read-by-projection",
+      "rows": ["declaration:route-sitemap-entry"],
+      "columns": ["render:*", "engine:*"],
+      "reason": "A route's sitemap entry is read only when the sitemap is projected (projectSitemap, spec 07 section 11), and the files that projection produces are served to crawlers as data; no render of a page reads it."
+    },
+    {
       "id": "outcome-refused-when-prerendered",
       "rows": [
         "outcome:pageAbsent",
