@@ -765,6 +765,42 @@ edge.on('connect', (request, socket) => {
 });
 
 await listenForBrowsers(edge, '127.0.0.1');
+
+/**
+ * The embedded application in the seat, served as a deployment of its own. The consumer stage builds
+ * it on every row, and nothing it does reads a URL policy, so the development row alone opens it.
+ */
+async function serveEmbedded() {
+  const buildRoot = resolve(consumerRoot, 'embedded/dist/embedded');
+  const { reqHandler } = await import(
+    pathToFileURL(resolve(buildRoot, 'server/server.mjs')).href
+  );
+  const browserRoot = resolve(buildRoot, 'browser');
+  const embeddedServer = createServer((request, response) => {
+    const next = (error) => {
+      if (response.writableEnded) return;
+      if (error === undefined) {
+        void serveBrowserAsset(request, response, browserRoot);
+        return;
+      }
+      response.statusCode = 500;
+      response.end(String(error));
+    };
+    try {
+      Promise.resolve(reqHandler(request, response, next)).catch(next);
+    } catch (error) {
+      next(error);
+    }
+  });
+  await listenForBrowsers(embeddedServer, '127.0.0.1');
+  return Object.freeze({
+    server: embeddedServer,
+    origin: `http://127.0.0.1:${embeddedServer.address().port}`,
+    browserRoot,
+  });
+}
+const embedded =
+  consumerName === 'package-consumer' ? await serveEmbedded() : undefined;
 const edgeAddress = edge.address();
 assert.equal(
   typeof edgeAddress,
@@ -776,19 +812,21 @@ const browserOrigin = `http://127.0.0.1:${edgeAddress.port}`;
 async function closeServer() {
   await Promise.race([
     Promise.all(
-      [edge, server].map((each) => {
-        each.closeIdleConnections?.();
-        each.closeAllConnections?.();
-        return new Promise((resolveClose, rejectClose) => {
-          each.close((error) => {
-            if (error === undefined) {
-              resolveClose();
-            } else {
-              rejectClose(error);
-            }
+      [edge, server, ...(embedded === undefined ? [] : [embedded.server])].map(
+        (each) => {
+          each.closeIdleConnections?.();
+          each.closeAllConnections?.();
+          return new Promise((resolveClose, rejectClose) => {
+            each.close((error) => {
+              if (error === undefined) {
+                resolveClose();
+              } else {
+                rejectClose(error);
+              }
+            });
           });
-        });
-      }),
+        },
+      ),
     ),
     new Promise((resolveClose) => setTimeout(resolveClose, 5_000)),
   ]);
@@ -4404,6 +4442,395 @@ async function switchOnPage(page, check, observed, events) {
   await page.waitForFunction(() => document.documentElement.lang === 'en-US');
 }
 
+/** Where an embedded page's claims were asserted: the engine, the document, adoption and navigation. */
+async function measuredEmbeddedContext(page) {
+  await page.waitForFunction(
+    () => document.documentElement.dataset['clientReady'] === 'true',
+  );
+  const reported = await page.evaluate(() => ({
+    clientNavigations: document.documentElement.dataset['clientNavigations'],
+    adoptedElements: (globalThis.__equatorServerElements ?? []).filter(
+      (element) => element.isConnected,
+    ).length,
+  }));
+  return {
+    engine: page.context().browser(),
+    document: await page.content(),
+    adoptedElements: reported.adoptedElements,
+    clientNavigations: Number(reported.clientNavigations),
+  };
+}
+
+/** What the embedded panel shows, and what the page around it says about its own language. */
+function embeddedPanel(page) {
+  return page.evaluate(() => {
+    const panel = document.querySelector('[data-panel]');
+    return {
+      document: [
+        document.documentElement.getAttribute('lang'),
+        document.documentElement.getAttribute('dir'),
+      ],
+      locale: panel?.getAttribute('lang'),
+      direction: panel?.getAttribute('dir'),
+      heading: document
+        .querySelector('[data-heading]')
+        ?.getAttribute('data-supplying'),
+      greeting: document
+        .querySelector('[data-greeting]')
+        ?.getAttribute('data-supplying'),
+    };
+  });
+}
+
+/** Where the embedded panel keeps a choice, read from outside the page. */
+async function embeddedStores(page) {
+  const kept = await page.evaluate(() => ({
+    tab: sessionStorage.getItem('embedded-tab-locale'),
+    device: localStorage.getItem('embedded-locale'),
+  }));
+  const account = (await page.context().cookies(embedded.origin)).find(
+    ({ name }) => name === 'embedded-account-locale',
+  );
+  return { ...kept, account: account?.value ?? null };
+}
+
+/**
+ * The panel opened from the file the build wrote, reached from there by a client navigation, and
+ * moved between locales by a choice and by five restores, each arranged so the page can only land
+ * where one store or one source puts it.
+ *
+ * A restore is the one time a page already on screen asks its sources again (`pageshow` with
+ * `persisted`, dispatched here as the engine dispatches it), so it is where a source or a store is
+ * seen deciding after a client navigation. It resolves a locale rather than choosing one, so it
+ * writes nothing, and the stores are read after each to hold it to that. The stores are asked in
+ * the order `app.config.ts` lists them: this tab, this device, the account, then this page's
+ * memory.
+ */
+async function verifyEmbeddedPanel(row, languages) {
+  const context = boundCalls(
+    await browser.newContext({ locale: languages }),
+    'context',
+  );
+  const page = boundCalls(await context.newPage(), 'page');
+  page.setDefaultTimeout(15_000);
+  page.setDefaultNavigationTimeout(20_000);
+  const faults = [];
+  page.on('pageerror', (error) => faults.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') faults.push(message.text());
+  });
+  const at = (label) =>
+    sectionCheck(row, `embedded panel under ${languages}, ${label}`);
+  const shows = async (locale, check) => {
+    await page
+      .waitForFunction(
+        (expected) =>
+          document.querySelector('[data-panel]')?.getAttribute('lang') ===
+          expected,
+        locale,
+        { timeout: 10_000 },
+      )
+      .catch(() => undefined);
+    const shown = await embeddedPanel(page);
+    assert.deepEqual(
+      [shown.document, shown.locale],
+      [['en', 'ltr'], locale],
+      `${check}: the panel is not in ${locale}, or withoutDocumentLocale did not leave the host page's lang alone`,
+    );
+    return shown;
+  };
+  const restore = (arrange) =>
+    page.evaluate((steps) => {
+      for (const [where, key, value] of steps) {
+        const storage = where === 'tab' ? sessionStorage : localStorage;
+        if (value === null) storage.removeItem(key);
+        else storage.setItem(key, value);
+      }
+      globalThis.dispatchEvent(
+        new PageTransitionEvent('pageshow', { persisted: true }),
+      );
+    }, arrange);
+  const account = async (value) => {
+    await context.clearCookies({ name: 'embedded-account-locale' });
+    if (value !== null) {
+      await context.addCookies([
+        {
+          name: 'embedded-account-locale',
+          value,
+          url: embedded.origin,
+          httpOnly: true,
+        },
+      ]);
+    }
+  };
+  try {
+    // The panel drawn for the request and adopted as it was drawn. Under en-US the reader's
+    // languages name a locale the panel offers; under fr-FR only the account's choice does.
+    for (const [source, locale] of languages === 'en-US'
+      ? [['browser', 'en-US']]
+      : [['stored', 'en-US']]) {
+      const check = at(`the server's ${source} decision, adopted`);
+      await account(source === 'stored' ? locale : null);
+      await navigateWithScriptGate(page, `${embedded.origin}/`, async () => {
+        await page.waitForSelector('[data-route-view="panel"]', {
+          state: 'attached',
+        });
+        await holdServerElements(page);
+      });
+      const observed = await measuredEmbeddedContext(page);
+      assert.match(
+        observed.document,
+        /\bng-server-context=["'][^"']*\bssr\b/u,
+        `${check} was not drawn for the request`,
+      );
+      assert.ok(
+        observed.adoptedElements > 0,
+        `${check} kept none of the server's elements`,
+      );
+      await shows(locale, check);
+      recordCapabilityClaim(check, 'feature:withLocaleSources', observed);
+      if (source === 'stored') {
+        recordCapabilityClaim(check, 'source:stored', observed);
+        recordCapabilityClaim(check, 'store:profileStore', observed);
+      } else {
+        recordCapabilityClaim(check, 'source:browser', observed);
+      }
+      await account(null);
+    }
+
+    await navigateWithScriptGate(page, `${embedded.origin}/about`, async () => {
+      await page.waitForSelector('[data-route-view="about"]', {
+        state: 'attached',
+      });
+      await holdServerElements(page);
+    });
+    {
+      const check = at('the prerendered page');
+      const observed = await measuredEmbeddedContext(page);
+      assert.match(
+        observed.document,
+        /\bng-server-context=["'][^"']*\bssg\b/u,
+        `${check} was not the file the build wrote`,
+      );
+      assert.ok(
+        observed.adoptedElements > 0,
+        `${check} kept none of the build's elements`,
+      );
+      const source = 'default';
+      const shown = await shows('ar-EG', check);
+      assert.deepEqual(
+        [shown.heading, shown.greeting],
+        ['ar-EG', 'ar'],
+        `${check}: the greeting the ar-EG catalog leaves out did not come from ar, the next locale in localeFallbacks, on the page the ${source} source withLocaleSources lists last decided`,
+      );
+      recordCapabilityClaim(check, 'feature:withoutDocumentLocale', observed);
+      recordCapabilityClaim(check, 'feature:withLocaleSources', observed);
+      recordCapabilityClaim(check, 'source:default', observed);
+      recordCapabilityClaim(check, 'capability:fallback-chain', observed);
+    }
+
+    await page.locator('[data-link="panel"]').click();
+    await page.waitForSelector('[data-route-view="panel"]', {
+      state: 'attached',
+    });
+
+    {
+      const check = at('a choice after a client navigation');
+      await page.locator('[data-choose="ar"]').click();
+      await shows('ar', check);
+      const observed = await measuredEmbeddedContext(page);
+      assert.ok(
+        observed.clientNavigations > 0,
+        `${check}: the panel was not reached by a client navigation`,
+      );
+      assert.deepEqual(
+        await embeddedStores(page),
+        { tab: 'ar', device: 'ar', account: 'ar' },
+        `${check}: withPersistence did not write the choice to the tab's store written against LocalizationPersistenceStore, the localStorageStore and the profileStore`,
+      );
+      recordCapabilityClaim(check, 'feature:withPersistence', observed);
+      recordCapabilityClaim(check, 'feature:withoutDocumentLocale', observed);
+      recordCapabilityClaim(check, 'store:localStorageStore', observed);
+      recordCapabilityClaim(check, 'store:profileStore', observed);
+      recordCapabilityClaim(check, 'extension:persistence-store', observed);
+    }
+
+    {
+      const check = at('a restore the device decides');
+      const source = 'stored';
+      await restore([
+        ['tab', 'embedded-tab-locale', null],
+        ['device', 'embedded-locale', 'en-US'],
+      ]);
+      await shows('en-US', check);
+      assert.deepEqual(
+        await embeddedStores(page),
+        { tab: null, device: 'en-US', account: 'ar' },
+        `${check}: the ${source} source read the localStorageStore ahead of the account, and the restore wrote nothing`,
+      );
+      const observed = await measuredEmbeddedContext(page);
+      recordCapabilityClaim(check, 'source:stored', observed);
+      recordCapabilityClaim(check, 'store:localStorageStore', observed);
+      recordCapabilityClaim(check, 'feature:withLocaleSources', observed);
+    }
+
+    {
+      // Nothing durable holds a choice now, and the page is in English: only the choice this page
+      // made, which its memory kept and the restore above did not overwrite, can bring it back to ar.
+      const check = at('a restore the page memory decides');
+      await account(null);
+      await restore([['device', 'embedded-locale', null]]);
+      await shows('ar', check);
+      const observed = await measuredEmbeddedContext(page);
+      assert.deepEqual(
+        await embeddedStores(page),
+        { tab: null, device: null, account: null },
+        `${check}: the memoryStore listed last did not keep the choice the page made`,
+      );
+      recordCapabilityClaim(check, 'store:memoryStore', observed);
+    }
+
+    {
+      const check = at('a restore the account decides');
+      await account('en-US');
+      await restore([]);
+      await shows('en-US', check);
+      const observed = await measuredEmbeddedContext(page);
+      assert.deepEqual(
+        await embeddedStores(page),
+        { tab: null, device: null, account: 'en-US' },
+        `${check}: the profileStore's transport did not answer with the account's choice`,
+      );
+      recordCapabilityClaim(check, 'store:profileStore', observed);
+    }
+
+    {
+      const check = at("a restore the tab's store decides");
+      await restore([['tab', 'embedded-tab-locale', 'ar-EG']]);
+      const shown = await shows('ar-EG', check);
+      const observed = await measuredEmbeddedContext(page);
+      assert.deepEqual(
+        await embeddedStores(page),
+        { tab: 'ar-EG', device: null, account: 'en-US' },
+        `${check}: the store the application wrote against LocalizationPersistenceStore was not read first`,
+      );
+      recordCapabilityClaim(check, 'extension:persistence-store', observed);
+      assert.equal(
+        shown.greeting,
+        'ar',
+        `${check}: the greeting the ar-EG catalog leaves out did not come from the localeFallbacks chain after a client navigation`,
+      );
+      recordCapabilityClaim(check, 'capability:fallback-chain', observed);
+    }
+
+    {
+      // Forgetting drops the choice from every store and moves nothing, so the page stays in the
+      // locale it was in (specs/03-locale-identity-and-resolution.spec.md section 8).
+      const check = at('the choice forgotten');
+      await page.locator('[data-forget]').click();
+      // The account forgets over a request, so the stores are read until they are empty or the
+      // bound passes, and then asserted.
+      const forgetting = Date.now() + 10_000;
+      let kept = await embeddedStores(page);
+      while (
+        Date.now() < forgetting &&
+        (kept.tab ?? kept.device ?? kept.account) !== null
+      ) {
+        await page.waitForTimeout(100);
+        kept = await embeddedStores(page);
+      }
+      assert.deepEqual(
+        kept,
+        { tab: null, device: null, account: null },
+        `${check}: forgetRememberedLocale did not reach every store withPersistence lists`,
+      );
+      await shows('ar-EG', check);
+      const observed = await measuredEmbeddedContext(page);
+      recordCapabilityClaim(check, 'feature:withPersistence', observed);
+    }
+
+    assert.deepEqual(
+      faults,
+      [],
+      `${row.label} reported errors on the embedded panel`,
+    );
+  } finally {
+    await context.close();
+  }
+}
+
+/**
+ * The recovery in an application whose router Equator does not hold: the page around the panel
+ * moves its history while the panel cannot start, and the recovery stays in place across that
+ * client navigation. The panel's settings page is rendered in the browser only, so its start is the
+ * one that loads catalogs, and every catalog module is refused.
+ */
+async function verifyEmbeddedRecovery(row) {
+  const catalogModules = await catalogModulesOf(embedded.browserRoot);
+  assert.ok(
+    catalogModules.size > 0,
+    'No script in the embedded build exports a compiled catalog',
+  );
+  const context = boundCalls(
+    await browser.newContext({ locale: 'fr-FR' }),
+    'context',
+  );
+  const page = boundCalls(await context.newPage(), 'page');
+  page.setDefaultTimeout(15_000);
+  page.setDefaultNavigationTimeout(20_000);
+  const refused = new Set();
+  await page.route('**/*.js', async (route) => {
+    const url = route.request().url();
+    if (catalogModules.has(new URL(url).pathname)) {
+      refused.add(url);
+      await route.fulfill({ status: 503, body: '' });
+      return;
+    }
+    await route.continue();
+  });
+  try {
+    const check = sectionCheck(
+      row,
+      'embedded recovery across a client navigation',
+    );
+    await page.goto(`${embedded.origin}/settings`);
+    const recovery = page.locator('localization-recovery [role="alert"]');
+    await recovery.waitFor().catch(() => {
+      assert.fail(
+        `${check}: no LocalizationRecovery showed when every catalog was refused, so the panel had no withRecoveryMessage to fall back on`,
+      );
+    });
+    const expected = /recovery\.unavailable: (.+)\n/u.exec(
+      await readFile(
+        resolve(consumerRoot, 'embedded/i18n/shell/ar-EG.yaml'),
+        'utf8',
+      ),
+    )?.[1];
+    await page.evaluate(() => {
+      globalThis.history.pushState(null, '', '/about');
+      globalThis.dispatchEvent(new PopStateEvent('popstate', { state: null }));
+    });
+    await page.waitForFunction(
+      () => document.documentElement.dataset['clientNavigations'] === '1',
+    );
+    const observed = await measuredEmbeddedContext(page);
+    assert.deepEqual(
+      {
+        shown: (await recovery.textContent())?.trim(),
+        lang: await recovery.getAttribute('lang'),
+        at: new URL(page.url()).pathname,
+        refused: refused.size > 0,
+      },
+      { shown: expected, lang: 'ar', at: '/about', refused: true },
+      `${check}: the ar-EG sentence withRecoveryMessage selects did not stay in place after the router moved`,
+    );
+    recordCapabilityClaim(check, 'feature:withRecoveryMessage', observed);
+    recordCapabilityClaim(check, 'directive:LocalizationRecovery', observed);
+  } finally {
+    await context.close();
+  }
+}
+
 /** The language and direction of the root the application attaches overlays to. */
 function overlayRoot(page) {
   return page.locator('[data-overlay-root]').evaluate((root) => ({
@@ -4886,6 +5313,16 @@ async function verifyBrowserRow(row) {
 
   enterStage(`${row.id}-back-forward-restore`);
   const backForward = await verifyBackForwardRestore(row, context, diagnostics);
+
+  if (embedded !== undefined) {
+    // Once where the reader's languages name no locale the panel offers, and once where they do.
+    for (const languages of ['fr-FR', 'en-US']) {
+      enterStage(`${row.id}-embedded-panel-${languages}`);
+      await verifyEmbeddedPanel(row, languages);
+    }
+    enterStage(`${row.id}-embedded-recovery`);
+    await verifyEmbeddedRecovery(row);
+  }
 
   assertBrowserDiagnostics(diagnostics, `${row.label} ${evidence.version}`);
   Object.assign(evidence, { outcome: 'verified', trustedTypes, backForward });

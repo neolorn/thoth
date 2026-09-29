@@ -12,6 +12,9 @@
  * names. A file rather than stdout, because the application may write to stdout while it renders. A
  * request reaches the build its origin is served from, as it would behind a real deployment's
  * routing.
+ *
+ * A third argument names one build's output directory instead, for an application in the seat that
+ * is not the one the address table describes. Every request then reaches that build over loopback.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createServer, request as httpRequest } from 'node:http';
@@ -24,7 +27,7 @@ import {
   readConsumerBuilds,
 } from './consumer-addresses.mjs';
 
-const [consumerRoot, answersFile] = process.argv.slice(2);
+const [consumerRoot, answersFile, buildRoot] = process.argv.slice(2);
 if (consumerRoot === undefined || answersFile === undefined) {
   throw new Error(
     'Name the consumer whose server to ask, and the file its answers go to.',
@@ -32,18 +35,29 @@ if (consumerRoot === undefined || answersFile === undefined) {
 }
 const requests = JSON.parse(readFileSync(0, 'utf8'));
 
-const addresses = await readConsumerAddresses(consumerRoot);
-const builds = await readConsumerBuilds(consumerRoot);
+const addresses =
+  buildRoot === undefined
+    ? await readConsumerAddresses(consumerRoot)
+    : { localeInOrigin: false };
 
 const deployments = new Map();
-for (const origin of new Set(requests.map((request) => request.origin))) {
-  const bundle = resolve(
-    consumerRoot,
-    builds.output(origin),
-    'server/server.mjs',
-  );
+if (buildRoot === undefined) {
+  const builds = await readConsumerBuilds(consumerRoot);
+  for (const origin of new Set(requests.map((request) => request.origin))) {
+    const bundle = resolve(
+      consumerRoot,
+      builds.output(origin),
+      'server/server.mjs',
+    );
+    deployments.set(
+      new URL(origin).host,
+      (await import(pathToFileURL(bundle).href)).reqHandler,
+    );
+  }
+} else {
+  const bundle = resolve(buildRoot, 'server/server.mjs');
   deployments.set(
-    new URL(origin).host,
+    'loopback',
     (await import(pathToFileURL(bundle).href)).reqHandler,
   );
 }

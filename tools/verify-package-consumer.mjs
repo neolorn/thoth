@@ -1335,13 +1335,16 @@ for (const origin of originsOf(INIT_REQUEST.locales)) {
 // server and never start it.
 openCapabilityEvidence('consumer-stage', { consumer: consumerRoot });
 
-/** The answers of the builds above to these requests, in order: `[{ origin, path, headers }]`. */
-function serverAnswers(requests) {
-  return loggedServerAnswers(requests).answers;
+/**
+ * The answers of the builds above to these requests, in order: `[{ origin, path, headers }]`. With
+ * `buildRoot`, the answers of that one build instead.
+ */
+function serverAnswers(requests, buildRoot) {
+  return loggedServerAnswers(requests, buildRoot).answers;
 }
 
 /** The answers, as above, and what the servers wrote while they answered. */
-function loggedServerAnswers(requests) {
+function loggedServerAnswers(requests, buildRoot) {
   const answersFile = resolve(consumerRoot, 'tmp/server-answers.json');
   mkdirSync(dirname(answersFile), { recursive: true });
   const asked = spawnSync(
@@ -1350,6 +1353,7 @@ function loggedServerAnswers(requests) {
       resolve(workspaceRoot, 'tools/consumer-server-answers.mjs'),
       consumerRoot,
       answersFile,
+      ...(buildRoot === undefined ? [] : [buildRoot]),
     ],
     {
       input: JSON.stringify(requests),
@@ -2546,6 +2550,177 @@ assert.deepEqual(
   [],
   `The build went on with catalogs it could not load:\n${unloadableOutput}`,
 );
+
+/**
+ * An application built the other way from feature-lab: Angular's own router, addresses that state
+ * no locale, a page around it that owns the document's language, and a remembered choice in four
+ * stores. It sits in the seat as a package of its own, so it installs nothing and is an owner of
+ * its own to the toolkit, and it rides every row feature-lab does.
+ *
+ * Its default is `ar-EG`, whose catalog leaves out the greeting that `ar` has, so every page the
+ * default decides shows a message the fallback chain supplied.
+ */
+const embeddedRoot = resolve(consumerRoot, 'embedded');
+const runEmbedded = (entry, args, label) => {
+  const result = spawnSync(process.execPath, [entry, ...args], {
+    cwd: embeddedRoot,
+    encoding: 'utf8',
+    env: { ...process.env, CI: 'true' },
+  });
+  assert.equal(
+    result.status,
+    0,
+    `The embedded application's ${label} failed:\n${[result.error?.message, result.stdout, result.stderr].filter(Boolean).join('\n')}`,
+  );
+  return result;
+};
+const equatorEntry = resolve(
+  consumerRoot,
+  'node_modules/@neolorn/equator-toolkit/cli.js',
+);
+runEmbedded(equatorEntry, ['generate'], 'equator generate');
+runEmbedded(equatorEntry, ['check'], 'equator check');
+runEmbedded(
+  resolve(consumerRoot, 'node_modules/@angular/cli/bin/ng.js'),
+  ['build'],
+  'build',
+);
+const embeddedBuild = resolve(embeddedRoot, 'dist/embedded');
+// The chain the generated configuration declares, which is the one the pages below must show.
+const embeddedFallbacks = JSON.parse(
+  /localeFallbacks: Object\.freeze\((\{.*?\}) as const\)/u.exec(
+    await readFile(
+      resolve(embeddedRoot, 'src/generated/i18n/index.ts'),
+      'utf8',
+    ),
+  )?.[1] ?? 'null',
+);
+assert.deepEqual(
+  embeddedFallbacks,
+  { 'ar-EG': ['ar'] },
+  'The embedded application no longer generates the localeFallbacks entry this check reads',
+);
+
+/** What an embedded page shows, read from its markup. */
+function embeddedPage(html, where) {
+  const panel = /<section data-panel lang="([^"]+)" dir="([^"]+)"/u.exec(html);
+  const supplied = (name) =>
+    new RegExp(
+      `<[a-z0-9]+[^>]*\\bdata-${name}\\b[^>]*data-supplying="([^"]+)"`,
+      'u',
+    ).exec(html)?.[1];
+  assert.notEqual(panel, null, `${where}: the panel was not rendered`);
+  return {
+    document: /<html[^>]*>/u.exec(html)?.[0],
+    locale: panel[1],
+    direction: panel[2],
+    heading: supplied('heading'),
+    greeting: supplied('greeting'),
+  };
+}
+
+/**
+ * Holds a page the default decided to the fallback chain and to the host page's language, and
+ * claims the three under the context the page was produced in.
+ */
+function holdDefaultPage(html, check, observed) {
+  const source = 'default';
+  const shown = embeddedPage(html, check);
+  assert.deepEqual(
+    shown,
+    {
+      document: '<html lang="en" dir="ltr">',
+      locale: 'ar-EG',
+      direction: 'rtl',
+      heading: 'ar-EG',
+      greeting: embeddedFallbacks['ar-EG'][0],
+    },
+    `${check}: withoutDocumentLocale left the host page's lang alone, the ${source} source withLocaleSources lists last named ar-EG, and the greeting ar-EG leaves out came from the localeFallbacks chain`,
+  );
+  recordCapabilityClaim(check, 'feature:withoutDocumentLocale', observed);
+  recordCapabilityClaim(check, 'feature:withLocaleSources', observed);
+  recordCapabilityClaim(check, 'source:default', observed);
+  recordCapabilityClaim(check, 'capability:fallback-chain', observed);
+}
+
+{
+  // A build has no request, so neither a stored choice nor the reader's languages can reach it,
+  // and the page it writes is the default's.
+  const check = `${consumerName}: the embedded application's prerendered page`;
+  const html = (
+    await readFile(resolve(embeddedBuild, 'browser/about/index.html'), 'utf8')
+  ).replace(' data-beasties-container', '');
+  assert.match(
+    html,
+    /\bng-server-context="ssg"/u,
+    `${check} was not prerendered`,
+  );
+  holdDefaultPage(html, check, { document: html });
+}
+
+{
+  // Each request arranged so one source only can name the locale it is answered in. The account's
+  // choice arrives in a cookie only its store reads, and outranks the reader's languages, which ask
+  // for Arabic.
+  const asked = [
+    {
+      source: 'stored',
+      headers: {
+        cookie: 'embedded-account-locale=en-US',
+        'accept-language': 'ar',
+      },
+      locale: 'en-US',
+    },
+    {
+      source: 'browser',
+      headers: { 'accept-language': 'en-US,en;q=0.8' },
+      locale: 'en-US',
+    },
+    { source: 'default', headers: { 'accept-language': 'fr-FR' } },
+  ];
+  const answers = serverAnswers(
+    asked.map(({ headers }) => ({ path: '/', headers })),
+    embeddedBuild,
+  );
+  asked.forEach(({ source, locale }, index) => {
+    const { status, body } = answers[index];
+    const check = `${consumerName}: the embedded application answered by its ${source} source`;
+    assert.equal(status, 200, check);
+    const html = body.replace(' data-beasties-container', '');
+    assert.match(
+      html,
+      /\bng-server-context="ssr"/u,
+      `${check} was not rendered for the request`,
+    );
+    const observed = { document: html };
+    if (source === 'default') {
+      holdDefaultPage(html, check, observed);
+      return;
+    }
+    const shown = embeddedPage(html, check);
+    const named =
+      source === 'stored'
+        ? 'the profileStore withPersistence asks after the two browser stores'
+        : "the reader's languages";
+    assert.deepEqual(
+      [shown.document, shown.locale, shown.greeting],
+      ['<html lang="en" dir="ltr">', locale, locale],
+      `${check}: withoutDocumentLocale left the host page's lang alone while ${named}, through the ${source} source withLocaleSources lists, named ${locale}`,
+    );
+    recordCapabilityClaim(check, 'feature:withoutDocumentLocale', observed);
+    recordCapabilityClaim(check, 'feature:withLocaleSources', observed);
+    if (source === 'stored') {
+      recordCapabilityClaim(check, 'source:stored', observed);
+      // The account's store is the third of four. The two before it are not there on a server and
+      // the memory after it is new for each request, so the choice the account names is the one
+      // that decides.
+      recordCapabilityClaim(check, 'store:profileStore', observed);
+      recordCapabilityClaim(check, 'feature:withPersistence', observed);
+    } else if (source === 'browser') {
+      recordCapabilityClaim(check, 'source:browser', observed);
+    }
+  });
+}
 
 process.stdout.write(
   `Equator package consumer verified: ${consumerProfile.label}, Angular ${consumerProfile.angular}, TypeScript ${consumerProfile.typescript}, RxJS ${consumerProfile.rxjs}, ${collectedFiles[2]} spec file(s) and ${collectedCases[1]} case(s) passing.\n`,
