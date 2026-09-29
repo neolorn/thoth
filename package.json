@@ -89,6 +89,7 @@
     "verify:browser-assurance:default-locale-prefix": "node ./tools/verify-package-consumer-hydration.mjs default-locale-prefix-consumer",
     "verify:browser-assurance:locale-neutral": "node ./tools/verify-package-consumer-hydration.mjs locale-neutral-consumer",
     "verify:browser-assurance:locale-host": "node ./tools/verify-package-consumer-hydration.mjs locale-host-consumer",
+    "verify:browser-specs": "node ./tools/verify-package-consumer-browser-specs.mjs",
     "verify:edit-cost": "node ./tools/verify-consumer-edit-cost.mjs"
   },
   "devDependencies": {

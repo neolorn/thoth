@@ -47,10 +47,9 @@
       "columns": [
         "render:prerender",
         "render:client-navigation",
-        "render:hydration",
-        "engine:*"
+        "render:hydration"
       ],
-      "reason": "The request handler answers requests on the server: a build has no request for it to answer and fails on a declaration made while prerendering (spec 07 section 5), a client navigation sends it no document request, and no browser runs it."
+      "reason": "The request handler answers a request, on a server or in a test through the server seat: a build has no request for it to answer and fails on a declaration made while prerendering (spec 07 section 5), and a client navigation sends it no document request."
     },
     {
       "id": "ssr-server-only",
@@ -68,10 +67,33 @@
       "reason": "The server seat renders one response and reads it; nothing boots on a client after it."
     },
     {
-      "id": "testing-outside-builds",
-      "rows": ["testing:*", "entry:@neolorn/equator/testing"],
-      "columns": ["render:prerender"],
-      "reason": "Testing helpers run in a test runner; a build's prerender never loads them."
+      "id": "testing-in-a-test-host",
+      "rows": [
+        "testing:ControllableLocalizationParticipant",
+        "testing:LocalizationTestingController",
+        "testing:createInMemoryCatalogLoaders",
+        "testing:provideLocalizationTesting",
+        "testing:renderedText",
+        "testing:resetLocalizationTestEnvironment"
+      ],
+      "columns": ["render:*"],
+      "reason": "These helpers run in a test host: TestBed, which Angular's unit-test builder starts on the browser platform before any setup file runs, creating components into a fixture. No reader reaches that page by a server render, a prerender, a hydration or a navigation after a document, which are what the render columns name; the engines a test host runs in are the engine columns."
+    },
+    {
+      "id": "testing-entry-without-a-client",
+      "rows": ["entry:@neolorn/equator/testing"],
+      "columns": ["render:client-navigation", "render:hydration"],
+      "reason": "The entry point's helpers run in a test host or, in the server seat, answer one response and read it; nothing boots on a client after either, and nothing adopts markup a server drew."
+    },
+    {
+      "id": "testing-helpers-without-policy",
+      "rows": [
+        "testing:ControllableLocalizationParticipant",
+        "testing:createInMemoryCatalogLoaders",
+        "testing:resetLocalizationTestEnvironment"
+      ],
+      "columns": ["policy:*"],
+      "reason": "A controllable participant, an in-memory loader map and the environment reset are handed no URL policy and read none: a participant is driven by the test, a loader by a catalog key, and the reset clears the address, cookies and storages whatever policy wrote them."
     },
     {
       "id": "sitemap-for-crawlers",

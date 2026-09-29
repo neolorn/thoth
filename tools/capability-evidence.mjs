@@ -67,10 +67,19 @@ export class CapabilityClaimsReporter {
     const module = relative(this.root, testCase.module.moduleId)
       .split(sep)
       .join('/');
+    // A test in browser mode cannot ask its own engine what it is, and its user agent is a string
+    // an engine chooses. The project it ran in holds the browser the provider launched, which
+    // reports its own name and version the way a browser stage's driver does.
+    const browser = testCase.project.browser?.provider?.browser;
     for (const claim of claims) {
       if (!(claim.assertions > 0)) continue;
       append(this.file, {
         ...claim,
+        ...(browser == null
+          ? {}
+          : {
+              engine: claimRecord(claim.capability, { engine: browser }).engine,
+            }),
         ...(this.angularRow === undefined
           ? {}
           : { angularRow: this.angularRow }),

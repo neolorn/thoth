@@ -8,6 +8,7 @@ import {
 import {
   createInMemoryCatalogLoaders,
   provideLocalizationTesting,
+  resetLocalizationTestEnvironment,
 } from '@neolorn/equator/testing';
 import { TestBed } from '@angular/core/testing';
 import { localizationSetup } from '#i18n';
@@ -119,5 +120,25 @@ describe('provideLocalizationTesting', () => {
   it('is a different entry point from the application provider, not a different runtime', () => {
     expect(typeof provideLocalizationSetup).toBe('function');
     expect(typeof provideLocalizationTesting).toBe('function');
+  });
+});
+
+describe('resetLocalizationTestEnvironment', () => {
+  it('puts back the address, the cookies and the storages a test moved', () => {
+    // What a spec that switches locale leaves behind: an address in another locale, the cookie a
+    // persisted choice writes, and both web storages.
+    history.pushState(null, '', '/ar-eg/second');
+    document.cookie = 'equator-locale=ar-EG; Path=/';
+    localStorage.setItem('equator-locale', 'ar-EG');
+    sessionStorage.setItem('equator-locale', 'ar-EG');
+
+    resetLocalizationTestEnvironment();
+
+    expect(location.pathname).toBe('/');
+    expect(document.cookie).not.toContain('equator-locale');
+    expect(localStorage.getItem('equator-locale')).toBeNull();
+    expect(sessionStorage.getItem('equator-locale')).toBeNull();
+    claimCapability('testing:resetLocalizationTestEnvironment');
+    claimCapability('entry:@neolorn/equator/testing');
   });
 });

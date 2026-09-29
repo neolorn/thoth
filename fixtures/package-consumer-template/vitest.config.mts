@@ -20,5 +20,9 @@ export default {
     // The builder keeps a runner configuration's reporters only while its own `reporters` option
     // is unset, which `angular.json` leaves it.
     reporters: capabilityClaimsReporters({ consumer: true }),
+    // A browser run writes a failed test's screenshot beside its spec by default, which puts a
+    // directory named after the spec among the application's sources. The failure's own report
+    // says what failed.
+    browser: { screenshotFailures: false },
   },
 };

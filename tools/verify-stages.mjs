@@ -430,6 +430,16 @@ const declared = Object.freeze([
       ],
     }),
   ),
+  // The specs that claim a testing helper, run in each engine through the test builder's browser
+  // mode. Alone for the reason the browser rows are. A writer of the development seat, because the
+  // pseudo-locale spec reads what `equator generate --pseudo` writes there, and the stage generates
+  // the production output again after the run.
+  {
+    id: 'verify:browser-specs',
+    writes: ['consumer:package'],
+    exclusive: true,
+    claims: true,
+  },
   // Before `verify:matrix` for the reason `verify:browser-assurance:self-test` is before the browser
   // rows. It plants each thing the matrix must refuse (a claim taken away, a reason over an
   // exercised cell, a claim for a capability its check never names, a stage's evidence missing, a

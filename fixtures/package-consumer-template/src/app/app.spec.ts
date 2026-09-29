@@ -835,7 +835,12 @@ describe('Equator feature-lab package consumer', () => {
     claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
-  it('resolves the built toolkit and its installed parser dependencies', () => {
+  // The toolkit is Node tooling (specs/02-packages-and-platform.spec.md), so a run of this suite
+  // in a browser has no Node to resolve it in.
+  it.runIf(
+    typeof (globalThis as { process?: { versions?: { node?: unknown } } })
+      .process?.versions?.node === 'string',
+  )('resolves the built toolkit and its installed parser dependencies', () => {
     const result = parseConfiguration(
       JSON.stringify({
         schemaVersion: 1,
