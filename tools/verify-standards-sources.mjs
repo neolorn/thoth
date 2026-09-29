@@ -22,6 +22,9 @@
  * A manifest digest rather than 767 entries for the person-name release: any single byte anywhere
  * moves it, so it is exactly as strong and it is one value to read.
  *
+ * Each vendored source also names the notice its license requires on copies, and that notice is
+ * verified by digest the same way; everything in `standards/data/` belongs to some source.
+ *
  * Sources with no `projectSnapshot` are archives and packages that are not in this repository.
  * They are listed as counted and skipped rather than passed over silently, because "verified"
  * over a set that quietly excluded most of it is the kind of claim this gate exists to prevent.
@@ -167,6 +170,57 @@ for (const [id, source] of Object.entries(lock.dataSources ?? {})) {
   }
 }
 
+/**
+ * The notice each vendored source's license asks to travel with its copies.
+ *
+ * Unicode-3.0, the W3C license, the OASIS notices and CC BY-SA 2.5 each grant the right to copy on
+ * the condition that a notice goes with the copy, and most of the files here carry none of their
+ * own. So each vendored source names the file that carries its notice, recorded by digest like the
+ * data, or says why its license asks for none. A source with neither is a copy made without the
+ * condition it was granted on.
+ */
+const noticePaths = new Set();
+for (const [id, source] of Object.entries(lock.dataSources ?? {})) {
+  if (source.projectSnapshot === undefined) continue;
+  const { noticeFile, noticeNotRequired } = source.license ?? {};
+  if ((noticeFile === undefined) === (noticeNotRequired === undefined)) {
+    failures.push(
+      `${id}: its license records ${noticeFile === undefined ? 'neither a noticeFile nor' : 'both a noticeFile and'} a noticeNotRequired reason, and a vendored source needs exactly one`,
+    );
+    continue;
+  }
+  if (noticeFile === undefined) continue;
+  const path = resolve(standardsRoot, noticeFile.path);
+  noticePaths.add(path);
+  const contents = await readFile(path).catch(() => undefined);
+  if (contents === undefined) {
+    failures.push(`${id}: its notice ${noticeFile.path} does not exist`);
+    continue;
+  }
+  if (contents.byteLength !== noticeFile.bytes) {
+    failures.push(
+      `${id}: its notice ${noticeFile.path} is ${contents.byteLength} bytes, the lock says ${noticeFile.bytes}`,
+    );
+  }
+  const digest = sha256(contents);
+  if (digest !== noticeFile.digest?.value) {
+    failures.push(
+      `${id}: its notice ${noticeFile.path} hashes to ${digest}, the lock says ${noticeFile.digest?.value}`,
+    );
+  }
+}
+
+// Everything in the data directory belongs to a source or is a source's notice. A file nobody
+// records is outside every digest above, so nothing would notice it change or appear.
+const dataRoot = resolve(standardsRoot, 'data');
+for (const entry of await readdir(dataRoot)) {
+  const path = resolve(dataRoot, entry);
+  if (nestedSnapshots.has(path) || noticePaths.has(path)) continue;
+  failures.push(
+    `data/${entry} is present, and no source records it as its data or its notice`,
+  );
+}
+
 for (const line of verified) console.log(`verified  ${line}`);
 for (const line of skipped) console.log(`not here  ${line}`);
 
@@ -174,8 +228,8 @@ if (failures.length > 0) {
   console.error('');
   for (const failure of failures) console.error(`FAIL  ${failure}`);
   console.error(
-    `\n${failures.length} vendored normative source${failures.length === 1 ? '' : 's'} ` +
-      'no longer match standards/sources.lock.json.',
+    `\n${failures.length} finding${failures.length === 1 ? '' : 's'}: the vendored normative ` +
+      'sources and their notices do not match standards/sources.lock.json.',
   );
   process.exitCode = 1;
 } else {

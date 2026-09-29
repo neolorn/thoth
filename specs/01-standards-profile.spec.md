@@ -89,6 +89,10 @@ A vendored source MUST match its recorded digest byte for byte. A source that is
 record the digest of the artifact that was acquired, and where that artifact is an installed
 package, that digest MUST be the one the package manager recorded for the same version.
 
+A vendored source MUST carry beside it the notice its license requires on copies, recorded in the
+lock with its digest, or the lock MUST record why its license requires none. Every file under
+`standards/data/` MUST belong to a recorded source as its data or its notice.
+
 The locked sources are the CLDR `core.zip` release, the `cldr-core`, `cldr-localenames-full`, and
 `cldr-person-names-full` packages, the MessageFormat conformance suite for the pinned edition, the
 IANA Language Subtag Registry snapshot, the Unicode `DerivedBidiClass` file, the IANA Time Zone

@@ -85,7 +85,16 @@
       "license": {
         "name": "Unicode-3.0",
         "url": "https://www.unicode.org/license.txt",
-        "notice": "The package's own LICENSE is vendored alongside the data and is covered by the manifest digest."
+        "notice": "The package's own LICENSE is vendored alongside the data and is covered by the manifest digest.",
+        "noticeFile": {
+          "path": "data/cldr-person-names-48.2.0/LICENSE",
+          "bytes": 2033,
+          "digest": {
+            "algorithm": "SHA-256",
+            "encoding": "hex",
+            "value": "b49d0e9f8ead51ca8b7df6fec89cc3ae6809198b4b9d43c74216da0118f23f5b"
+          }
+        }
       }
     },
     "messageFormatConformance": {
@@ -115,7 +124,16 @@
       "whyThisTag": "The lock already pins the MessageFormat profile as `LDML 48.2`, and this is the release tagged for that same version. A conformance suite from a different revision of the specification tests a different specification, and would report differences as defects.",
       "license": {
         "name": "Unicode-3.0",
-        "url": "https://www.unicode.org/license.txt"
+        "url": "https://www.unicode.org/license.txt",
+        "noticeFile": {
+          "path": "data/message-format-tests-48.2/LICENSE",
+          "bytes": 2033,
+          "digest": {
+            "algorithm": "SHA-256",
+            "encoding": "hex",
+            "value": "5dde1004a6504168448185c6dba364b824dedf20791e0a4c3cf6c874120f4fe1"
+          }
+        }
       }
     },
     "ianaLanguageSubtagRegistry": {
@@ -129,8 +147,9 @@
         "value": "be1fad86a99e3a932d07b80c9b3c271ec2381a5909ce22420144e5077ab0a43a"
       },
       "license": {
-        "name": "IANA/IETF Protocol Registries public-domain dedication",
-        "url": "https://www.iana.org/help/licensing-terms"
+        "name": "CC0-1.0",
+        "url": "https://www.iana.org/help/licensing-terms",
+        "noticeNotRequired": "IANA and the IETF place the protocol registries under the CC0 1.0 dedication, which asks for no notice on copies."
       }
     },
     "unicodeDerivedBidiClass": {
@@ -160,7 +179,16 @@
       "license": {
         "name": "Unicode-3.0",
         "url": "https://www.unicode.org/license.txt",
-        "notice": "© 2025 Unicode®, Inc."
+        "notice": "© 2025 Unicode®, Inc.",
+        "noticeFile": {
+          "path": "data/DerivedBidiClass-17.0.0.LICENSE.txt",
+          "bytes": 1995,
+          "digest": {
+            "algorithm": "SHA-256",
+            "encoding": "hex",
+            "value": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96"
+          }
+        }
       }
     },
     "ianaTimeZoneDatabase": {
@@ -198,7 +226,16 @@
       "license": {
         "name": "OASIS IPR Policy",
         "url": "https://www.oasis-open.org/policies-guidelines/ipr/",
-        "notice": "Copyright © OASIS Open 2025. All Rights Reserved."
+        "notice": "Copyright © OASIS Open 2025. All Rights Reserved.",
+        "noticeFile": {
+          "path": "data/xliff-2.2-cs01-schemas.NOTICE.txt",
+          "bytes": 4792,
+          "digest": {
+            "algorithm": "SHA-256",
+            "encoding": "hex",
+            "value": "7b80adc6731ca44be436f6d699585b4b6a23095dcaf7e51d42e21b54029323ac"
+          }
+        }
       },
       "files": {
         "catalog.xml": {
@@ -312,7 +349,16 @@
       },
       "license": {
         "name": "W3C Software and Document Notice and License",
-        "url": "https://www.w3.org/copyright/software-license/"
+        "url": "https://www.w3.org/copyright/software-license/",
+        "noticeFile": {
+          "path": "data/w3c-schemas.NOTICE.txt",
+          "bytes": 2807,
+          "digest": {
+            "algorithm": "SHA-256",
+            "encoding": "hex",
+            "value": "aeb6fbc1e575c587852c03e1612ed6136531cb669b4eceb17ca1541cd2eab5ce"
+          }
+        }
       }
     },
     "sitemapsOrg09Schemas": {
@@ -322,8 +368,18 @@
       "projectSnapshot": "data/sitemaps-0.9-schemas",
       "role": "Normative schemas for the sitemap protocol Equator writes. Runtime gate input: Equator validates its own emitted sitemaps and sitemap index against them. Never shipped.",
       "license": {
-        "name": "sitemaps.org, unversioned publication",
-        "url": "https://www.sitemaps.org/terms.html"
+        "name": "CC-BY-SA-2.5",
+        "url": "https://creativecommons.org/licenses/by-sa/2.5/legalcode",
+        "terms": "https://www.sitemaps.org/terms.html",
+        "noticeFile": {
+          "path": "data/sitemaps-0.9-schemas.NOTICE.txt",
+          "bytes": 563,
+          "digest": {
+            "algorithm": "SHA-256",
+            "encoding": "hex",
+            "value": "c319a7cdc625228c0829808c8ad91386dfdcaa7eaa16019820409a6a8fa2ba62"
+          }
+        }
       },
       "files": {
         "siteindex.xsd": {
@@ -357,7 +413,16 @@
       },
       "license": {
         "name": "W3C Software and Document Notice and License",
-        "url": "https://www.w3.org/copyright/software-license/"
+        "url": "https://www.w3.org/copyright/software-license/",
+        "noticeFile": {
+          "path": "data/w3c-schemas.NOTICE.txt",
+          "bytes": 2807,
+          "digest": {
+            "algorithm": "SHA-256",
+            "encoding": "hex",
+            "value": "aeb6fbc1e575c587852c03e1612ed6136531cb669b4eceb17ca1541cd2eab5ce"
+          }
+        }
       }
     },
     "sitemapHreflangImport": {
@@ -371,7 +436,8 @@
         "value": "5e5467e571f0aa4ec510813f66455380aa2d1197486c4cacc94d8f6dbadfb55b"
       },
       "license": {
-        "name": "Part of Equator, under the repository license"
+        "name": "Part of Equator, under the repository license",
+        "noticeNotRequired": "Equator's own file, under the repository license."
       }
     }
   },
