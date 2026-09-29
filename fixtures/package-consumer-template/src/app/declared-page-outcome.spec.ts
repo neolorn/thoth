@@ -222,6 +222,8 @@ describe('a response that reached no route at all', () => {
       'This address does not name a page in this application.',
     );
     expect(canonical()).toBeNull();
+    // Kept out of an index by the head as well as by the header the server sends with it.
+    expect(robots()).toBe('noindex');
   });
 
   // Where the path can name a locale for the Router to be handed.
@@ -262,5 +264,6 @@ describe('a response that reached no route at all', () => {
 
     expect(document.title).toBe('Page removed');
     expect(canonical()).toBeNull();
+    expect(robots()).toBe('noindex');
   });
 });

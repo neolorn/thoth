@@ -339,12 +339,18 @@ function withdrawnForOutcome(
   if (outcome === undefined || outcome.outcome === 'operational-failure') {
     return seo;
   }
-  return Object.freeze({
-    indexing: 'non-indexable',
-    alternates: Object.freeze([]),
-    robots: 'noindex',
-  });
+  return WITHDRAWN_SEO;
 }
+
+/**
+ * What the head says of an address that has no page: no canonical, no alternates, and not to be
+ * indexed, which section 14 requires in the metadata as well as in the header the server sends.
+ */
+const WITHDRAWN_SEO: RouteSeoProjection = Object.freeze({
+  indexing: 'non-indexable',
+  alternates: Object.freeze([]),
+  robots: 'noindex',
+});
 
 /**
  * Thrown when a navigation reached an address that did not resolve to a route in that locale.
@@ -1265,9 +1271,9 @@ export class RouteLocalization {
    *
    * Section 12 of `specs/07-routing-rendering-and-seo.spec.md` gives these three their own
    * declarations, because there is no route identity to look a title up by and the head is
-   * otherwise whatever the previous page left in it. No SEO block is projected: section 15 already
+   * otherwise whatever the previous page left in it. The SEO block is the withdrawn one: section 15
    * refuses a canonical or an alternate relationship for an address this application does not
-   * serve.
+   * serve, and section 14 requires the response's noindex in the metadata as well as the header.
    */
   private applyOutcomeDocument(outcomeClass: LocalizedOutcomeClass): void {
     this.outcomeDocument = outcomeClass;
@@ -1286,6 +1292,7 @@ export class RouteLocalization {
         locale:
           this.localization.snapshot()?.primaryLocale ??
           this.options.policy.defaultLocale,
+        seo: WITHDRAWN_SEO,
       });
     } catch {
       // The page is on screen and the status is the host's, already sent from the same resolution.
