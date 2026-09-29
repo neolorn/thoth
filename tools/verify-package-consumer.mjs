@@ -1338,14 +1338,15 @@ openCapabilityEvidence('consumer-stage', { consumer: consumerRoot });
 
 /**
  * The answers of the builds above to these requests, in order: `[{ origin, path, headers }]`. With
- * `buildRoot`, the answers of that one build instead.
+ * `{ root }`, the answers of that one build instead, and with `{ output }`, of this application's
+ * builds written under that name, one for each origin as above.
  */
-function serverAnswers(requests, buildRoot) {
-  return loggedServerAnswers(requests, buildRoot).answers;
+function serverAnswers(requests, build) {
+  return loggedServerAnswers(requests, build).answers;
 }
 
 /** The answers, as above, and what the servers wrote while they answered. */
-function loggedServerAnswers(requests, buildRoot) {
+function loggedServerAnswers(requests, { root, output } = {}) {
   const answersFile = resolve(consumerRoot, 'tmp/server-answers.json');
   mkdirSync(dirname(answersFile), { recursive: true });
   const asked = spawnSync(
@@ -1354,7 +1355,8 @@ function loggedServerAnswers(requests, buildRoot) {
       resolve(workspaceRoot, 'tools/consumer-server-answers.mjs'),
       consumerRoot,
       answersFile,
-      ...(buildRoot === undefined ? [] : [buildRoot]),
+      ...(root === undefined ? [] : [root]),
+      ...(output === undefined ? [] : ['--output', output]),
     ],
     {
       input: JSON.stringify(requests),
@@ -2317,6 +2319,52 @@ for (const origin of originsOf([INIT_REQUEST.sourceLocale, 'en-Arab-XB'])) {
 const pseudoRootOf = (locale) => pseudoRoots.get(addresses.origin(locale));
 
 /**
+ * The pseudo build answering on request, which is how a development server shows the pseudo-locale:
+ * its sheet drawn by the server, every message on it transformed, and its number written in the
+ * digits the formatting declaration gives it.
+ */
+async function verifyPseudoServed() {
+  const locale = 'en-Arab-XB';
+  const { decimal } = await readExerciseInputs(consumerRoot);
+  const check = `${consumerName}: the pseudo build's ${locale} sheet, rendered on request`;
+  const [answer] = serverAnswers(
+    [
+      {
+        origin: addresses.origin(locale),
+        path: addresses.path('exercise', locale),
+      },
+    ],
+    { output: 'dist/feature-lab-pseudo' },
+  );
+  assert.equal(answer.status, 200, `${check} was not answered`);
+  assert.ok(
+    answer.body.includes('ng-server-context="ssr"'),
+    `${check} was not drawn by the server`,
+  );
+  const sheet = sheetInDocument(answer.body);
+  assert.equal(sheet.locale, locale, `${check} shows ${sheet.locale}`);
+  assert.ok(
+    answer.body.includes('⟦'),
+    `${check} carries no message that equator generate --pseudo transformed`,
+  );
+  const { numberingSystem } = LOCALE_FORMATTING[locale];
+  assert.equal(
+    sheet.lines.get('formatNumber'),
+    new Intl.NumberFormat(locale, {
+      ...decimal.options,
+      numberingSystem,
+    }).format(Number(decimal.value)),
+    `${check}: its number is not written in the digits the formatting declaration gives it`,
+  );
+  const observed = { document: answer.body, policy: sheet.policy };
+  recordCapabilityClaim(check, 'capability:pseudo-locale', observed);
+  recordCapabilityClaim(check, 'declaration:locale-formatting', observed);
+}
+if (addresses.has('exercise', 'en-Arab-XB')) {
+  await verifyPseudoServed();
+}
+
+/**
  * The pseudo-locale's prerendered pages, where the policy gives it addresses of its own. Under a
  * locale-neutral policy it has none, because it spells every address the way English does, and the
  * set above has already held its builds to writing no page for it.
@@ -2362,7 +2410,7 @@ async function verifyPseudoPages() {
   const englishText = routeViewText(englishPage, 'second');
   assert.ok(
     pseudoText.startsWith('⟦') && pseudoText.endsWith('⟧'),
-    `The prerendered pseudo-locale page carried untransformed text: ${JSON.stringify(pseudoText)}`,
+    `The prerendered pseudo-locale page carried text that equator generate --pseudo did not transform: ${JSON.stringify(pseudoText)}`,
   );
   assert.notEqual(
     pseudoText,
@@ -2374,6 +2422,11 @@ async function verifyPseudoPages() {
   assert.ok(
     !englishText.includes('⟦'),
     `A pseudo build transformed the English page: ${JSON.stringify(englishText)}`,
+  );
+  recordCapabilityClaim(
+    `${consumerName}: the second page in en-Arab-XB, prerendered`,
+    'capability:pseudo-locale',
+    { document: pseudoPage },
   );
 
   /*
@@ -2916,7 +2969,7 @@ function holdDefaultPage(html, check, observed) {
   ];
   const answers = serverAnswers(
     asked.map(({ headers }) => ({ path: '/', headers })),
-    embeddedBuild,
+    { root: embeddedBuild },
   );
   asked.forEach(({ source, locale }, index) => {
     const { status, body } = answers[index];

@@ -15,6 +15,10 @@
  *
  * A third argument names one build's output directory instead, for an application in the seat that
  * is not the one the address table describes. Every request then reaches that build over loopback.
+ *
+ * `--output <name>` in its place names another set of builds of the application the table
+ * describes, such as its pseudo build. They are served as the table says, by origin, because a
+ * build under a policy that puts each locale on an origin of its own refuses any other host.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createServer, request as httpRequest } from 'node:http';
@@ -27,7 +31,9 @@ import {
   readConsumerBuilds,
 } from './consumer-addresses.mjs';
 
-const [consumerRoot, answersFile, buildRoot] = process.argv.slice(2);
+const [consumerRoot, answersFile, ...named] = process.argv.slice(2);
+const output = named[0] === '--output' ? named[1] : undefined;
+const buildRoot = named[0] === '--output' ? undefined : named[0];
 if (consumerRoot === undefined || answersFile === undefined) {
   throw new Error(
     'Name the consumer whose server to ask, and the file its answers go to.',
@@ -46,7 +52,7 @@ if (buildRoot === undefined) {
   for (const origin of new Set(requests.map((request) => request.origin))) {
     const bundle = resolve(
       consumerRoot,
-      builds.output(origin),
+      builds.output(origin, output),
       'server/server.mjs',
     );
     deployments.set(
