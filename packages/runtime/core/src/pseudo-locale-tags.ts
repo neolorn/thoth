@@ -16,25 +16,25 @@
  */
 
 /**
- * The expanded pseudo-locale: Latin script, left-to-right, modelling a language longer than English.
+ * The Pseudo-Accents locale: English with accents, lengthened, in Latin script, left to right.
  *
- * `XA` is what UTS #35 names English with accents, lengthened, and it is the established convention,
- * Chrome and Android use `en-XA` for exactly this, so a developer who sees it in a locale switcher
- * recognises what it is. A configuration that declares it gives it a positive `lengthFactor`.
+ * Named for what UTS #35 calls `XA`. It is also the established convention, since Chrome and
+ * Android use `en-XA` for exactly this, so a developer who sees it in a locale switcher recognises
+ * what it is. A configuration that declares it gives it a positive `lengthFactor`.
  *
  * The script subtag is written out rather than left to be inferred, because the script is what
  * carries direction and pseudo-localization rests on direction being a property of the tag.
  * `en-XA` maximizes to `en-Latn-XA` and resolves the same way; stating `Latn` means the reader does
  * not have to know that.
  */
-export const PSEUDO_LOCALE_EXPANDED = 'en-Latn-XA';
+export const PSEUDO_LOCALE_ACCENTED = 'en-Latn-XA';
 
 /**
- * The contracted pseudo-locale: Arabic script, right-to-left, modelling a language shorter than
- * English, which Arabic is, and which is the case that finds containers sized to English copy.
+ * The Pseudo-Bidi locale: English forced right to left, in Arabic script.
  *
- * `XB` is what UTS #35 names English forced right to left, and says nothing about length, so the
- * contraction is this locale's own.
+ * Named for what UTS #35 calls `XB`, which says nothing about length, so a configuration sets any
+ * length change itself. A negative `lengthFactor` models a language shorter than English, which is
+ * the case that finds containers sized to English copy.
  *
  * **The base language is `en`, deliberately, and this is the part worth not changing.** A developer
  * reading their own screens must still be able to read them; the point is to see *their* layout
@@ -56,7 +56,7 @@ export const PSEUDO_LOCALE_EXPANDED = 'en-Latn-XA';
  * a private-use subtag carries no application semantics, so admitting one into a catalog identity
  * would let two catalogs differ only in a part that no lookup reads.
  */
-export const PSEUDO_LOCALE_CONTRACTED = 'en-Arab-XB';
+export const PSEUDO_LOCALE_BIDI = 'en-Arab-XB';
 
 /** What a pseudo-locale is, as far as its region can speak for it. */
 export interface PseudoLocaleFacts {
@@ -69,7 +69,7 @@ export interface PseudoLocaleFacts {
 
 /** The sentence every refusal ends with, naming what each region is for. */
 const REGION_RULE =
-  'A pseudo-locale takes XA when it is English lengthened left to right, as PSEUDO_LOCALE_EXPANDED is, XB when it is English right to left, as PSEUDO_LOCALE_CONTRACTED is, and otherwise one of XC to XJ or XL to XZ, which UTS #35 leaves free.';
+  'A pseudo-locale takes XA when it is English lengthened left to right, as PSEUDO_LOCALE_ACCENTED is, XB when it is English right to left, as PSEUDO_LOCALE_BIDI is, and otherwise one of XC to XJ or XL to XZ, which UTS #35 leaves free.';
 
 /** What the region claims that the locale is not, or nothing where the claim holds. */
 export function pseudoLocaleRegionProblem(

@@ -18,7 +18,7 @@ import {
 } from '@neolorn/equator';
 import {
   createMigrationPlan,
-  PSEUDO_LOCALE_EXPANDED,
+  PSEUDO_LOCALE_ACCENTED,
   createPseudoCatalog,
   diffCatalogSets,
   exportXliff22,
@@ -421,7 +421,7 @@ describe('built-toolkit lifecycle', () => {
     expect(formatCatalog(imported.value)).toBe(formatCatalog(target));
 
     const pseudo = createPseudoCatalog(source, {
-      locale: PSEUDO_LOCALE_EXPANDED,
+      locale: PSEUDO_LOCALE_ACCENTED,
       lengthFactor: 0.35,
       markers: true,
     });

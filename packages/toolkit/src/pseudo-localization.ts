@@ -22,8 +22,8 @@ import {
   type MessageCustomFunction,
 } from './message-format.js';
 import {
-  PSEUDO_LOCALE_CONTRACTED,
-  PSEUDO_LOCALE_EXPANDED,
+  PSEUDO_LOCALE_BIDI,
+  PSEUDO_LOCALE_ACCENTED,
   pseudoLocaleRegionProblem,
 } from './pseudo-locale-tags.js';
 import { RTL_SCRIPTS } from './rtl-scripts.generated.js';
@@ -43,7 +43,7 @@ export function pseudoLocaleTagProblem(
 ): string | undefined {
   const locale = new Intl.Locale(tag);
   if (locale.script === undefined) {
-    return `Pseudo-locale ${JSON.stringify(tag)} names no script. A pseudo-locale carries its text direction in its own script subtag, as ${PSEUDO_LOCALE_EXPANDED} and ${PSEUDO_LOCALE_CONTRACTED} do.`;
+    return `Pseudo-locale ${JSON.stringify(tag)} names no script. A pseudo-locale carries its text direction in its own script subtag, as ${PSEUDO_LOCALE_ACCENTED} and ${PSEUDO_LOCALE_BIDI} do.`;
   }
   const source = new Intl.Locale(sourceLocale).language;
   if (locale.language !== source) {
@@ -70,7 +70,7 @@ export function pseudoLocaleTagProblem(
  *
  * **Direction is deliberately absent from this interface.** It is carried by the locale tag, not by
  * the transform: direction is derived from the script subtag through the generated `RTL_SCRIPTS`
- * table, so `PSEUDO_LOCALE_CONTRACTED` resolves RTL because `Arab` is an RTL script, through
+ * table, so `PSEUDO_LOCALE_BIDI` resolves RTL because `Arab` is an RTL script, through
  * machinery that already exists and needs no pseudo-locale special case. A direction flag here
  * would mean a runtime branch that reads it, which is a shipped code path the build-time design
  * exists to avoid.

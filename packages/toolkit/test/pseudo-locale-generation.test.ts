@@ -31,8 +31,8 @@ import { resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
-  PSEUDO_LOCALE_CONTRACTED,
-  PSEUDO_LOCALE_EXPANDED,
+  PSEUDO_LOCALE_BIDI,
+  PSEUDO_LOCALE_ACCENTED,
   generateProject,
   parseConfiguration,
   type PseudoLocaleTransform,
@@ -217,8 +217,8 @@ async function declarePseudoLocales(root: string): Promise<void> {
       {
         ...existing,
         pseudoLocales: {
-          [PSEUDO_LOCALE_EXPANDED]: { lengthFactor: 0.4, markers: true },
-          [PSEUDO_LOCALE_CONTRACTED]: {
+          [PSEUDO_LOCALE_ACCENTED]: { lengthFactor: 0.4, markers: true },
+          [PSEUDO_LOCALE_BIDI]: {
             lengthFactor: -0.4,
             markers: true,
           },
@@ -247,8 +247,8 @@ describe('pseudo-locales are generated rather than authored', () => {
     if (!generated.ok) return;
 
     const output = await generatedText(root);
-    expect(output).toContain(PSEUDO_LOCALE_EXPANDED);
-    expect(output).toContain(PSEUDO_LOCALE_CONTRACTED);
+    expect(output).toContain(PSEUDO_LOCALE_ACCENTED);
+    expect(output).toContain(PSEUDO_LOCALE_BIDI);
 
     // What "ordinary catalog" has to mean, checked rather than asserted in prose: the derived
     // catalog compiles to the same contract as the authored one. Same messages, same message ids,
@@ -256,7 +256,7 @@ describe('pseudo-locales are generated rather than authored', () => {
     // can resolve, not text that happened to survive. A transform that accented the inside of
     // `{$name}` would produce a different input list here and fail this.
     const source = await compiledCatalog(root, 'en-US');
-    for (const locale of [PSEUDO_LOCALE_EXPANDED, PSEUDO_LOCALE_CONTRACTED]) {
+    for (const locale of [PSEUDO_LOCALE_ACCENTED, PSEUDO_LOCALE_BIDI]) {
       const pseudo = await compiledCatalog(root, locale);
       expect(pseudo.key.catalogLocale).toBe(locale);
       expect(pseudo.applicationContractFingerprint).toBe(
@@ -272,7 +272,7 @@ describe('pseudo-locales are generated rather than authored', () => {
 
     // And the text did change, which is the other half: identical structure with identical text
     // would mean the transform never ran.
-    const expanded = await compiledCatalog(root, PSEUDO_LOCALE_EXPANDED);
+    const expanded = await compiledCatalog(root, PSEUDO_LOCALE_ACCENTED);
     expect(JSON.stringify(expanded.messages)).toContain('⟦');
     expect(JSON.stringify(expanded.messages)).not.toBe(
       JSON.stringify(source.messages),
@@ -294,7 +294,7 @@ describe('pseudo-locales are generated rather than authored', () => {
 
     // In the order the locale table lists them.
     expect(await generatedText(root)).toContain(
-      `  pseudoLocales: Object.freeze([${JSON.stringify(PSEUDO_LOCALE_CONTRACTED)}, ${JSON.stringify(PSEUDO_LOCALE_EXPANDED)}]),`,
+      `  pseudoLocales: Object.freeze([${JSON.stringify(PSEUDO_LOCALE_BIDI)}, ${JSON.stringify(PSEUDO_LOCALE_ACCENTED)}]),`,
     );
     claimCapability('cli:generate');
     claimCapability('capability:pseudo-locale');
@@ -310,8 +310,8 @@ describe('pseudo-locales are generated rather than authored', () => {
     if (!generated.ok) return;
 
     const output = await generatedText(root);
-    expect(output).not.toContain(PSEUDO_LOCALE_EXPANDED);
-    expect(output).not.toContain(PSEUDO_LOCALE_CONTRACTED);
+    expect(output).not.toContain(PSEUDO_LOCALE_ACCENTED);
+    expect(output).not.toContain(PSEUDO_LOCALE_BIDI);
     expect(output).not.toContain('⟦');
     // No list at all rather than an empty one, which the runtime refuses as one no build writes.
     expect(output).not.toContain('pseudoLocales');
@@ -358,7 +358,7 @@ describe('pseudo-locales are generated rather than authored', () => {
         defaultLocale: 'en-US',
         locales: ['en-US'],
         pseudoLocales: {
-          [PSEUDO_LOCALE_CONTRACTED]: { lengthFactor: -0.4 },
+          [PSEUDO_LOCALE_BIDI]: { lengthFactor: -0.4 },
         },
       }),
     );
@@ -416,7 +416,7 @@ describe('pseudo-locales are generated rather than authored', () => {
       expect(rest).toEqual([]);
       expect(refusal?.path).toEqual(['pseudoLocales', tag]);
       expect(refusal?.summary).toContain('XC to XJ or XL to XZ');
-      expect(refusal?.summary).toContain('PSEUDO_LOCALE_EXPANDED');
+      expect(refusal?.summary).toContain('PSEUDO_LOCALE_ACCENTED');
     }
     claimCapability('capability:pseudo-locale');
   });
@@ -441,11 +441,11 @@ describe('pseudo-locales are generated rather than authored', () => {
   it('refuses XA where the text is not lengthened', () => {
     for (const transform of [{ markers: true }, { lengthFactor: -0.4 }]) {
       const [refusal, ...rest] = pseudoLocaleRefusal(
-        PSEUDO_LOCALE_EXPANDED,
+        PSEUDO_LOCALE_ACCENTED,
         transform,
       );
       expect(rest).toEqual([]);
-      expect(refusal?.path).toEqual(['pseudoLocales', PSEUDO_LOCALE_EXPANDED]);
+      expect(refusal?.path).toEqual(['pseudoLocales', PSEUDO_LOCALE_ACCENTED]);
       expect(refusal?.summary).toMatch(/lengthFactor does not lengthen it/u);
     }
     claimCapability('capability:pseudo-locale');
@@ -498,13 +498,13 @@ describe('pseudo-locales are generated rather than authored', () => {
         defaultLocale: 'en-US',
         locales: ['en-US'],
         pseudoLocales: {
-          [PSEUDO_LOCALE_EXPANDED]: { lengthFactor: 0.4, markers: true },
+          [PSEUDO_LOCALE_ACCENTED]: { lengthFactor: 0.4, markers: true },
         },
       }),
     );
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    expect(parsed.value.pseudoLocales[PSEUDO_LOCALE_EXPANDED]).toEqual({
+    expect(parsed.value.pseudoLocales[PSEUDO_LOCALE_ACCENTED]).toEqual({
       lengthFactor: 0.4,
       markers: true,
     });

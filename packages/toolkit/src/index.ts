@@ -92,8 +92,8 @@ export type {
 export type { MessageOperandKind } from './message-function-options.js';
 export type { CanonicalLocale } from './locales.js';
 export {
-  PSEUDO_LOCALE_CONTRACTED,
-  PSEUDO_LOCALE_EXPANDED,
+  PSEUDO_LOCALE_BIDI,
+  PSEUDO_LOCALE_ACCENTED,
 } from './pseudo-locale-tags.js';
 export { createPseudoCatalog } from './pseudo-localization.js';
 export type {

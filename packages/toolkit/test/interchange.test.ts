@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  PSEUDO_LOCALE_CONTRACTED,
-  PSEUDO_LOCALE_EXPANDED,
+  PSEUDO_LOCALE_BIDI,
+  PSEUDO_LOCALE_ACCENTED,
   createPseudoCatalog,
   exportXliff22,
   formatCatalog,
@@ -183,20 +183,20 @@ describe('Equator pseudo-locales', () => {
 
   it('creates an ordinary target catalog under the tag it is given', () => {
     const expanded = createPseudoCatalog(source, {
-      locale: PSEUDO_LOCALE_EXPANDED,
+      locale: PSEUDO_LOCALE_ACCENTED,
       lengthFactor: 0.35,
       markers: true,
     });
     const contracted = createPseudoCatalog(source, {
-      locale: PSEUDO_LOCALE_CONTRACTED,
+      locale: PSEUDO_LOCALE_BIDI,
       lengthFactor: -0.35,
       markers: true,
     });
     expect(expanded.ok).toBe(true);
     expect(contracted.ok).toBe(true);
     if (!expanded.ok || !contracted.ok) return;
-    expect(expanded.value.locale).toBe(PSEUDO_LOCALE_EXPANDED);
-    expect(contracted.value.locale).toBe(PSEUDO_LOCALE_CONTRACTED);
+    expect(expanded.value.locale).toBe(PSEUDO_LOCALE_ACCENTED);
+    expect(contracted.value.locale).toBe(PSEUDO_LOCALE_BIDI);
     expect(expanded.value.role).toBe('target');
     expect(expanded.value.messages['greeting']?.inputs).toEqual({});
     expect(expanded.value.messages['spacer']?.kind).toBe('empty');
@@ -252,7 +252,7 @@ describe('Equator pseudo-locales', () => {
     // The control: the same call under the shipped tag succeeds, so the refusal above is the
     // private-use subtag and not something else about the source catalog or the settings.
     const accepted = createPseudoCatalog(source, {
-      locale: PSEUDO_LOCALE_CONTRACTED,
+      locale: PSEUDO_LOCALE_BIDI,
       lengthFactor: -0.35,
     });
     expect(accepted.ok).toBe(true);
