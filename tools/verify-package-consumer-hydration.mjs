@@ -2966,6 +2966,35 @@ async function verifyExerciseSheets(row, context, diagnostics) {
   const verifySheet = async (page, check, locale, observed, sheetPage) => {
     const sheet = await exerciseSheetOn(page);
     assert.equal(sheet.locale, locale, `${check} shows ${sheet.locale}`);
+    assert.equal(
+      new URL(page.url()).pathname,
+      addresses.shownPath(sheetPage, locale),
+      `${check}: not shown at the path localizedPaths gives it`,
+    );
+    recordCapabilityClaim(check, 'declaration:localized-paths', observed);
+    // After a client navigation the head follows the page that arrived, which can be a moment
+    // behind the sheet itself.
+    await page
+      .waitForFunction(
+        () =>
+          document
+            .querySelector('meta[name="robots"]')
+            ?.getAttribute('content') === 'noindex',
+      )
+      .catch(() => undefined);
+    // Read once, not through a locator, which would wait for a tag that is missing and report the
+    // wait instead of the declaration.
+    assert.equal(
+      await page.evaluate(
+        () =>
+          document
+            .querySelector('meta[name="robots"]')
+            ?.getAttribute('content') ?? null,
+      ),
+      'noindex',
+      `${check}: the exercise route declares equatorIndexing non-indexable, and the head does not keep it out of an index`,
+    );
+    recordCapabilityClaim(check, 'declaration:route-indexing-class', observed);
     claimSheetParameter(
       check,
       sheet,
@@ -5061,6 +5090,24 @@ async function verifyClientNavigation(row, page) {
     await page.locator('[data-route-view="home"]').textContent(),
     'Home route',
   );
+  // Read once, as the indexing class is on the exercise sheet, so a missing link fails here by name.
+  const xDefault = () =>
+    page.evaluate(
+      () =>
+        document
+          .querySelector('link[rel="alternate"][hreflang="x-default"]')
+          ?.getAttribute('href') ?? null,
+    );
+  assert.equal(
+    await xDefault(),
+    addresses.xDefault,
+    'the home page the browser adopted does not carry the x-default xDefaultPath or xDefaultUrl declares',
+  );
+  recordCapabilityClaim(
+    sectionCheck(row, 'x-default on the adopted home page'),
+    'declaration:x-default',
+    await measuredContext(page),
+  );
   enterStage(`${row.id}-child-route-navigation`);
   await page.locator('[data-route-link="second"]').click();
   await page.waitForURL((url) => isShown(url, 'second', 'en-US'));
@@ -5081,6 +5128,16 @@ async function verifyClientNavigation(row, page) {
     await page.locator('link[rel="canonical"]').getAttribute('href'),
     addresses.url('second', 'en-US'),
     'withRouting did not move the canonical to the second page on a client navigation',
+  );
+  assert.equal(
+    await xDefault(),
+    addresses.xDefault,
+    'the second page the router reached does not carry the x-default xDefaultPath or xDefaultUrl declares',
+  );
+  recordCapabilityClaim(
+    sectionCheck(row, 'x-default after a client navigation'),
+    'declaration:x-default',
+    await measuredContext(page),
   );
   const secondUrl = page.url();
 
