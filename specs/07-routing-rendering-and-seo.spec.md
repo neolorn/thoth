@@ -267,7 +267,11 @@ build cannot write: an absence states that a page the build was told to render d
 an operational failure states that the render meant to produce it did not succeed. A release
 MUST fail the build for either and MUST NOT write the page. Section 9 already forbids prerendering
 a route whose existence cannot be proven at build time, and a file written from a failed render is
-served afterwards as a successful one, with no status left to say otherwise.
+served afterwards as a successful one, with no status left to say otherwise. A page declares once
+its own work settles, after the application has started, so a release MUST end that render as one
+that failed rather than only refuse the call that declared: the render otherwise goes on to write
+whatever is on screen. A build tool that finishes a build in which a route failed to render still
+writes no page for it, and the build's status is then that tool's.
 
 A release MUST build a locale-entry redirect's destination in the locale it resolved to, so the
 redirect lands on a canonical URL in one hop. An address that already states its locale is

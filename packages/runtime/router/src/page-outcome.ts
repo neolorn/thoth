@@ -1,4 +1,5 @@
 import {
+  ApplicationRef,
   Injectable,
   PLATFORM_ID,
   REQUEST,
@@ -63,6 +64,7 @@ export class LocalizedPageOutcome {
    */
   private readonly request = inject(REQUEST, { optional: true }) ?? null;
   private readonly onServer = isPlatformServer(inject(PLATFORM_ID));
+  private readonly applicationRef = inject(ApplicationRef);
   /** Declared while a navigation is in flight, keyed by that navigation's id. */
   private readonly staged = new Map<number, PageOutcomeDeclaration>();
   /**
@@ -122,9 +124,17 @@ export class LocalizedPageOutcome {
    * does not exist, and an operational failure says the render meant to produce it did not
    * succeed. A file written from either is served afterwards as a successful page with no status
    * left to say otherwise, so section 5 requires the build to fail instead.
+   *
+   * The throw alone does not stop the build. A page declares once its lookup settles, after the
+   * application has started, and an error thrown there reaches only the code that declared, while
+   * the render goes on to serialize whatever is on screen. Destroying the application is what ends
+   * the render without a page: the server renderer reads a destroyed application as a render that
+   * failed, and the build reports the route as not prerendered.
    */
   declare(declaration: PageOutcomeDeclaration): void {
     if (this.onServer && this.request === null) {
+      // A second declaration in the same render finds the application already destroyed.
+      if (!this.applicationRef.destroyed) this.applicationRef.destroy();
       throw new LocalizationError({
         code: 'route-unavailable',
         outcome: 'operational-failure',

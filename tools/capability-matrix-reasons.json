@@ -79,6 +79,22 @@
       "reason": "A caching declaration becomes a response header the server writes; no browser runs it, and a client navigation or hydration makes no document request."
     },
     {
+      "id": "caching-refused-when-prerendered",
+      "rows": ["declaration:route-caching-class"],
+      "columns": ["render:prerender"],
+      "reason": "A prerendered page has no response to carry a caching header; what the class does to a build is refuse a per-visitor or not-stored route and write no page for it (spec 07 section 9), which verify:consumer requires of the lazy route."
+    },
+    {
+      "id": "outcome-refused-when-prerendered",
+      "rows": [
+        "outcome:pageAbsent",
+        "outcome:pageGone",
+        "outcome:pageOperationalFailure"
+      ],
+      "columns": ["render:prerender"],
+      "reason": "A page that declares its outcome while prerendering has no request to answer, so its render fails and no page is written (spec 07 section 5); verify:consumer lists the topic page for prerender with a value for each outcome and requires the refusal."
+    },
+    {
       "id": "aliases-are-path-prefixes",
       "rows": ["declaration:locale-aliases"],
       "columns": ["policy:locale-neutral", "policy:locale-host"],

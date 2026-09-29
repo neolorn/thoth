@@ -59,6 +59,7 @@ import {
   sheetInDocument,
 } from './exercise-sheet.mjs';
 import { locateNode, withNodeFirst } from './node-runtimes.mjs';
+import { compareVersions } from './supported-versions.mjs';
 import { withOfflineStoreRemedy } from './offline-store.mjs';
 
 import {
@@ -2370,22 +2371,29 @@ assert.ok(
 /**
  * A route listed for prerender that the build has to refuse.
  *
- * `specs/07-routing-rendering-and-seo.spec.md` section 9. The route is listed where an application
- * lists it, in its own published routes, so the refusal is met the way a release meets it. The three
- * answers are gathered before any is asserted, so a build that lets the page through reports every
- * way it did. `@angular/build` before 22.1.7 drops a page whose navigation fails and still
- * succeeds, which is why the written files are read as well as the status. Built to its own output
- * path and put back afterwards, because the steps after this one read the production build and its
- * source.
+ * `specs/07-routing-rendering-and-seo.spec.md` sections 5 and 9. The route is listed where an
+ * application lists it, in its own published routes, so the refusal is met the way a release meets
+ * it. The three answers are gathered before any is asserted, so a build that lets the page through
+ * reports every way it did. `@angular/build` before 22.1.7 drops a page whose render fails and
+ * still succeeds, which is why the written files are read as well as the status, and why a refusal
+ * met after the application has started, which reaches the build as such a page, expects the status
+ * the installed tooling gives it. Built to its own output path and put back afterwards, because the
+ * steps after this one read the production build and its source.
  */
 const serverRoutesPath = resolve(consumerRoot, 'src/app/published-routes.ts');
 const serverRoutes = await readFile(serverRoutesPath, 'utf8');
+const buildTooling = (
+  await readJson(
+    resolve(consumerRoot, 'node_modules/@angular/build/package.json'),
+  )
+).version;
 async function verifyRefusedPrerender({
-  page,
   routeId,
   listed,
   listing,
-  refusal,
+  written,
+  refused,
+  status = 1,
 }) {
   assert.equal(
     serverRoutes.split(listed).length,
@@ -2412,32 +2420,21 @@ async function verifyRefusedPrerender({
     await writeFile(serverRoutesPath, serverRoutes, 'utf8');
   }
   const refusedOutput = [refusedBuild.stdout, refusedBuild.stderr].join('\n');
-  const refusedFile = new RegExp(`(?:^|/)${page}/index\\.html$`, 'u');
   const refusedPages = (
     await readdir(refusedRoot).then(
       () => collectPrerendered(refusedRoot),
       () => [],
     )
-  ).filter((path) => refusedFile.test(path));
-  // The refusal names the address it met, which is one of the page's, as a path.
-  const pageAddresses = INIT_REQUEST.locales
-    .filter((locale) => addresses.has(page, locale))
-    .map((locale) => addresses.path(page, locale));
-  const namesTheRefusal = new RegExp(
-    `Route ${routeId} at "(?:${pageAddresses
-      .map((address) => address.replaceAll(/[.*+?^${}()|[\]\\]/gu, '\\$&'))
-      .join('|')})" ${refusal}`,
-    'u',
-  );
+  ).filter((path) => written.test(path));
   assert.deepEqual(
     [
       ...refusedPages.map((path) => `it wrote ${path}`),
-      ...(refusedBuild.status === 1
+      ...(refusedBuild.status === status
         ? []
         : [`it exited ${String(refusedBuild.status)}`]),
-      ...(namesTheRefusal.test(refusedOutput)
-        ? []
-        : ['its output does not name the route and the refusal']),
+      ...refused
+        .filter((refusal) => !refusal.test(refusedOutput))
+        .map((refusal) => `its output does not carry ${String(refusal)}`),
     ],
     [],
     `The build prerendered ${routeId}, which it has to refuse:\n${refusedOutput}`,
@@ -2449,14 +2446,35 @@ async function verifyRefusedPrerender({
   );
 }
 
+/** A page's files, and the refusal its route meets, which names the address as a path. */
+function routeRefusal(page, routeId, refusal) {
+  const pageAddresses = INIT_REQUEST.locales
+    .filter((locale) => addresses.has(page, locale))
+    .map((locale) => addresses.path(page, locale));
+  return {
+    written: new RegExp(`(?:^|/)${page}/index\\.html$`, 'u'),
+    refused: [
+      new RegExp(
+        `Route ${routeId} at "(?:${pageAddresses
+          .map((address) => address.replaceAll(/[.*+?^${}()|[\]\\]/gu, '\\$&'))
+          .join('|')})" ${refusal}`,
+        'u',
+      ),
+    ],
+  };
+}
+
 // `route:lazy` is per visitor, which its route declares.
 const listedBefore = "  { routeId: 'item', renderMode: RenderMode.Client },\n";
 await verifyRefusedPrerender({
-  page: 'lazy',
   routeId: 'route:lazy',
   listed: listedBefore,
   listing: `${listedBefore}  { routeId: 'route:lazy', renderMode: RenderMode.Prerender },\n`,
-  refusal: 'is per-visitor, and it is being rendered ahead of a request',
+  ...routeRefusal(
+    'lazy',
+    'route:lazy',
+    'is per-visitor, and it is being rendered ahead of a request',
+  ),
 });
 // Under a locale-neutral policy `/second` is spelled alike in every locale, so it is per visitor
 // whatever its route declares, and the application lists it for rendering on request.
@@ -2464,12 +2482,46 @@ if (addresses.policy === 'locale-neutral') {
   const onRequest =
     "  { routeId: 'route:second', renderMode: RenderMode.Server },\n";
   await verifyRefusedPrerender({
-    page: 'second',
     routeId: 'route:second',
     listed: onRequest,
     listing: onRequest.replace('RenderMode.Server', 'RenderMode.Prerender'),
-    refusal:
+    ...routeRefusal(
+      'second',
+      'route:second',
       'is spelled alike in more than one locale, so which locale it is in depends on the visitor, and it is being rendered ahead of a request',
+    ),
+  });
+}
+// The topic page declares what each of these topics turned out to be, which a build has no request
+// to answer for (section 5). Under a locale-neutral policy the address is refused before the page
+// can declare anything, which the case above covers.
+if (addresses.policy !== 'locale-neutral') {
+  const declared = new Map([
+    ['unfiled-topic', 'an absent entity'],
+    ['retired-topic', 'a permanent removal'],
+    ['unavailable-topic', 'an operational failure with status 503'],
+  ]);
+  await verifyRefusedPrerender({
+    routeId: 'topic',
+    listed: listedBefore,
+    listing: `${listedBefore}  {\n    routeId: 'topic',\n    renderMode: RenderMode.Prerender,\n    prerender: [${[
+      ...declared.keys(),
+    ]
+      .map((topic) => `{ topic: '${topic}' }`)
+      .join(', ')}],\n  },\n`,
+    written: new RegExp(
+      `(?:^|/)topics/(?:${[...declared.keys()].join('|')})/index\\.html$`,
+      'u',
+    ),
+    refused: [...declared.values()].map(
+      (outcome) =>
+        new RegExp(
+          `A page declared ${outcome} while rendering ahead of a request`,
+          'u',
+        ),
+    ),
+    // angular/angular-cli#33965, released in 22.1.7.
+    status: compareVersions(buildTooling, '22.1.7') >= 0 ? 1 : 0,
   });
 }
 
