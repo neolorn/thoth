@@ -77,6 +77,18 @@ nothing else by default. `allowedLocaleHosts(routePolicy)` derives the list, so 
 policy rather than a second copy of it. It returns an empty list for the policies that serve one
 origin, so the line is the same whichever policy you end up with.
 
+## Know what a redirect carries
+
+A render whose address moves answers with the status routing gives the move. An address that names
+no locale is sent to the one the request preferred with `307`, and a correction to the canonical
+spelling is `308`. The first also carries `Cache-Control: private, no-cache` and
+`Vary: Accept-Language`, because neither depends on your deployment. A page at an address more than
+one locale spells, which only a locale-neutral policy has, carries the same `Vary`.
+
+How long a correction or a page may be kept does depend on your deployment, so a render leaves that
+out. The handler in `@neolorn/equator/http` writes it from the numbers you give it, which is
+[How to control how your pages are cached](control-caching.md).
+
 ## Related
 
 - [How to negotiate a locale on your own server](negotiate-on-your-own-server.md)

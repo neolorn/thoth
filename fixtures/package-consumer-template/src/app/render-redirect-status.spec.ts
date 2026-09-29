@@ -30,7 +30,13 @@ import { routeProjection } from '#i18n/routes';
 import { runtimeExtensions } from './runtime-extensions';
 import { routes } from './app.routes';
 import { routePolicy, appRouteProjection } from './localization.routes';
-import { localeInPath, pagePath, pageUrl } from './addresses';
+import {
+  entryRedirects,
+  localeInPath,
+  pagePath,
+  pageUrl,
+  unstatedAddress,
+} from './addresses';
 
 /**
  * The status of a redirect the runtime makes while a request is rendered on the server.
@@ -68,6 +74,8 @@ interface Rendered {
   readonly status: number | undefined;
   /** Where the address ended, which is where the engine's redirect points. */
   readonly address: string;
+  /** The headers the render left for the engine to send with it. */
+  readonly headers: Headers;
 }
 
 async function rendered(
@@ -126,6 +134,7 @@ async function rendered(
   return Object.freeze({
     status: init.status,
     address: platform.pathname + platform.search + platform.hash,
+    headers: new Headers(init.headers),
   });
 }
 
@@ -157,6 +166,31 @@ describe('a redirect the runtime makes during a server render', () => {
     },
   );
 
+  // The root states no locale, so the render spells it in the one it chose from the request. That is
+  // locale entry, which the routing specification answers differently from a correction: 307, kept
+  // by nobody but the browser, and never reused without asking.
+  it.runIf(entryRedirects)(
+    'states 307, private and revalidated, naming the language field, for locale entry',
+    async () => {
+      const answer = await rendered(unstatedAddress, routePolicy);
+
+      expect(answer.address).not.toBe('/');
+      expect(answer.status).toBe(307);
+      expect(answer.headers.get('cache-control')).toBe('private, no-cache');
+      expect(answer.headers.get('vary')).toBe('Accept-Language');
+    },
+  );
+
+  it.runIf(routePolicy.kind === 'locale-neutral')(
+    'names the language field on a page more than one locale spells',
+    async () => {
+      const answer = await rendered(unstatedAddress, routePolicy);
+
+      expect(answer.status).toBeUndefined();
+      expect(answer.headers.get('vary')).toBe('Accept-Language');
+    },
+  );
+
   it('states nothing where the address is already the page', async () => {
     // The control. A status set on every render would satisfy the cases above and send every page
     // as a redirect.
@@ -164,5 +198,6 @@ describe('a redirect the runtime makes during a server render', () => {
 
     expect(answer.address).toBe(pagePath('second', 'en-US'));
     expect(answer.status).toBeUndefined();
+    expect(answer.headers.get('cache-control')).toBeNull();
   });
 });

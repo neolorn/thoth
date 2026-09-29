@@ -67,6 +67,7 @@ import {
   type RouteDocumentField,
 } from './document-messages.js';
 import { LocalizedPageOutcome } from './page-outcome.js';
+import { LANGUAGE_FIELD, addVaryField, setHeader } from './response-headers.js';
 import { LocalizedRouteParameters } from './route-parameters.js';
 
 /** Which route was reached, and on which navigation, for the metadata callback to read. */
@@ -665,6 +666,13 @@ export class RouteLocalization {
       // engine's default for a redirect it finds.
       if (this.responseInit !== null) {
         this.responseInit.status = resolution.httpStatus;
+        // Entry is private and revalidated whatever the deployment chose, so its directives are
+        // Equator's to write, and the render read the language field that chose it. A correction's
+        // lifetime is the deployment's, and section 16 leaves it to the host.
+        if (resolution.reason === 'locale-entry') {
+          setHeader(this.responseInit, 'cache-control', 'private, no-cache');
+          addVaryField(this.responseInit, LANGUAGE_FIELD);
+        }
       }
       return new RedirectCommand(this.router.parseUrl(resolution.location), {
         replaceUrl: resolution.reason === 'canonical-correction',
@@ -726,6 +734,14 @@ export class RouteLocalization {
         this.localization.preloadScope(scope, resolution.locale),
       ),
     );
+    // An address more than one locale spells was answered in the locale the request preferred, so
+    // the response names the field it read. How long it may be shared is the deployment's.
+    if (
+      this.responseInit !== null &&
+      resolution.variesBy === 'locale-preference'
+    ) {
+      addVaryField(this.responseInit, LANGUAGE_FIELD);
+    }
     const context = Object.freeze({
       resolution,
       navigationId: navigation.id,
