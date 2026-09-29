@@ -65,19 +65,18 @@ describe.runIf(expectedPageCaching !== undefined)(
  * own is raised to the same answer by each, and a redirect still keeps the one routing gave it.
  */
 describe('a floor declared for every page, under any policy', () => {
-  const answer = createLocaleRequestHandler({
-    policy: routePolicy,
-    projection: appRouteProjection,
-    configuration,
-    cache: { ...responseCaching, pageCaching: 'not-stored' },
-    cookie: localeCookie,
-    render: () =>
-      new Response('<!doctype html>', {
-        headers: { 'content-type': 'text/html' },
-      }),
-  });
-
   it('raises a page and leaves a redirect as routing classified it', async () => {
+    const answer = createLocaleRequestHandler({
+      policy: routePolicy,
+      projection: appRouteProjection,
+      configuration,
+      cache: { ...responseCaching, pageCaching: 'not-stored' },
+      cookie: localeCookie,
+      render: () =>
+        new Response('<!doctype html>', {
+          headers: { 'content-type': 'text/html' },
+        }),
+    });
     const page = await answer(new Request(pageUrl('second', 'en-US')));
     const replaced = await answer(
       new Request(`${pageUrl('legacy', 'en-US')}?tab=one`),
