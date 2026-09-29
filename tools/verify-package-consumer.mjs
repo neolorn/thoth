@@ -2024,6 +2024,20 @@ async function verifyExerciseSheets() {
       observed,
     );
     recordCapabilityClaim(check, 'entry:@neolorn/equator/ssr', observed);
+    // A build has no request, so no stored choice and no language to read, and the default would
+    // have written the sheet in the default locale. A sheet the build wrote in another locale was
+    // written in the one its address states.
+    if (rendered === 'ssg' && locale !== INIT_REQUEST.defaultLocale) {
+      const source = 'url';
+      const address = (at) =>
+        `${addresses.origin(at)}${addresses.path(page, at)}`;
+      assert.notEqual(
+        address(locale),
+        address(INIT_REQUEST.defaultLocale),
+        `${check}: the ${source} source can name the locale of a prerendered sheet only where its address differs from the default locale's`,
+      );
+      recordCapabilityClaim(check, 'source:url', observed);
+    }
     claimSheetParameter(
       check,
       sheet,
