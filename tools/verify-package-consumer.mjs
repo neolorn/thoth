@@ -1414,6 +1414,23 @@ function verifyServerAnswers() {
       { document: body },
     );
   });
+
+  // A Host the application's engine does not allow. The engine answers it with an error page of
+  // its own, which the request handler composes like any render, and section 5 of
+  // `specs/07-routing-rendering-and-seo.spec.md` keeps that error's status: an error answered as
+  // the address's 200 is a page a shared cache would keep for the address.
+  const home = {
+    origin: addresses.origin(INIT_REQUEST.sourceLocale),
+    path: addresses.path('home', INIT_REQUEST.sourceLocale),
+  };
+  const [refused] = serverAnswers([{ ...home, host: 'refused.invalid' }]);
+  const where = `home at ${home.path} asked with a Host the engine refuses`;
+  assert.ok(
+    refused.status >= 400 && refused.status < 500,
+    `${where}: answered ${refused.status}`,
+  );
+  assert.equal(refused.headers['cache-control'], 'private, no-store', where);
+  assert.equal(refused.headers['x-robots-tag'], 'noindex', where);
 }
 verifyServerAnswers();
 

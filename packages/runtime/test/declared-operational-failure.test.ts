@@ -139,15 +139,18 @@ describe('a renderer that declares nothing', () => {
     );
   });
 
-  it('does not have an accidental status read as a statement', async () => {
+  it('keeps an accidental status without reading it as a statement', async () => {
     // The case the specification names: an accidental failure and a deliberate one arriving as
-    // the same value cannot be told apart, so an ordinary response's status is not consulted.
+    // the same value cannot be told apart, so an ordinary response's status declares nothing. It
+    // is still an error, and sent as the address's 200 it would be a page a cache keeps.
     const response = await get(
       handlerWith(() => new Response('<!doctype html>', { status: 500 })),
       '/en-us/second',
     );
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(500);
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(response.headers.get('x-robots-tag')).toBe('noindex');
   });
 });
 

@@ -28,6 +28,7 @@ import {
   type PageOutcomeOperationalFailure,
   type RouteCacheDurations,
   type RouteCacheHeaders,
+  type RouteHttpDescriptor,
   type RouteResolution,
   type RouteRuntimeProjection,
 } from '@neolorn/equator/core';
@@ -520,12 +521,24 @@ export function createLocaleRequestHandler(
       descriptor.status === 200 &&
       rendered.body === null;
     if (drewNothing) reportEmptyRender(reported, url.pathname);
+    // A render asked for a page that answered with an error status did not produce the page, and
+    // did not say so either. Sent as the address's 200 it is an error page a shared cache keeps for
+    // the address and a crawler indexes as the address's content. It is not read as a declaration:
+    // nothing the page would have declared, its outcome document included, applies to it.
+    const failedUndeclared =
+      !carriesDeclaration &&
+      !answeredWithoutContent &&
+      !drewNothing &&
+      descriptor.status === 200 &&
+      rendered.status >= 400;
     const effective: DeclaredPageOutcomeDescriptor =
       carriesDeclaration && declared !== undefined
         ? pageOutcomeHttpDescriptor(declared, descriptor)
         : drewNothing
           ? pageOutcomeHttpDescriptor(RENDER_FAILED, descriptor)
-          : descriptor;
+          : failedUndeclared
+            ? undeclaredFailureDescriptor(rendered.status, descriptor)
+            : descriptor;
 
     options.ɵobserve?.({
       request,
@@ -581,6 +594,26 @@ const RENDER_FAILED: PageOutcomeOperationalFailure = Object.freeze({
   outcome: 'operational-failure',
   status: 500,
 });
+
+/**
+ * What an error status a renderer sent without declaring it is answered with: that status, kept
+ * out of every cache, and not indexed. Unlike a declared operational failure it does not keep the
+ * address's indexing, because nothing was declared that could say the address is still what it was.
+ */
+function undeclaredFailureDescriptor(
+  status: number,
+  resolved: RouteHttpDescriptor,
+): DeclaredPageOutcomeDescriptor {
+  return Object.freeze({
+    status,
+    ...(resolved.contentLanguage === undefined
+      ? {}
+      : { contentLanguage: resolved.contentLanguage }),
+    ...(resolved.variesBy === undefined ? {} : { variesBy: resolved.variesBy }),
+    robots: 'noindex',
+    cache: 'private-no-store',
+  });
+}
 
 function withoutPreconditions(request: Request): Request {
   if (!PRECONDITIONS.some((name) => request.headers.has(name))) return request;

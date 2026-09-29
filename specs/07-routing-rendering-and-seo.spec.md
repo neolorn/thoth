@@ -187,6 +187,13 @@ release MUST NOT answer 200 for a render that carried no content, because a cach
 answer holds an empty page for the address, and one classified as shared gives that page to every
 later reader.
 
+A render asked for a page at an address that resolved to a route it serves, which answers with a
+status of 400 or above and declares nothing, did not produce the page either. A release MUST send
+that status, MUST classify the response as private and not stored, and MUST mark it not to be
+indexed, whatever the address's own classification and indexing class are, because sent as the
+address's 200 an error page is one a shared cache keeps for the address and a crawler indexes as its
+content. That status is still not a declaration, and a release MUST NOT treat it as one.
+
 A server evaluates a precondition only where its answer without it would have been successful
 (RFC 9110 section 13.2.1), so a release MUST NOT hand a renderer the request's preconditions where
 the address resolved to any other outcome. A redirect the runtime issues during a render, such as

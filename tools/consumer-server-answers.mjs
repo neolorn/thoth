@@ -7,11 +7,12 @@
  * handled is printed and the process exits 0. The stage's own failures have to keep ending it
  * non-zero, so the bundle is never imported there.
  *
- * Reads the requests from stdin as JSON, `[{ origin, path, headers }]`, and writes one answer per
+ * Reads the requests from stdin as JSON, `[{ origin, path, headers, host }]`, and writes one answer per
  * request, `[{ status, headers, body }]`, in the same order, as JSON to the file its second argument
  * names. A file rather than stdout, because the application may write to stdout while it renders. A
  * request reaches the build its origin is served from, as it would behind a real deployment's
- * routing.
+ * routing. `host`, where a request carries one, is the Host it is sent with in place of the one the
+ * deployment answers at, for a request the deployment is meant to refuse.
  *
  * A third argument names one build's output directory instead, for an application in the seat that
  * is not the one the address table describes. Every request then reaches that build over loopback.
@@ -81,10 +82,15 @@ process.on('unhandledRejection', failEscaped);
 
 // Under a policy whose locales share one origin the server admits loopback and nothing else, so
 // every request is sent as loopback and reaches the one build. Under a policy that puts each locale
-// on an origin of its own the Host is that origin, which the server admits and routes by.
+// on an origin of its own the Host is that origin, which the server admits. Either way the build is
+// chosen by the origin the request names, carried beside the Host rather than read from it, so a
+// request sent with another Host still reaches the build that is to refuse it.
+const DEPLOYMENT_HEADER = 'x-consumer-server-answers-origin';
 const server = createServer((request, response) => {
+  const origin = request.headers[DEPLOYMENT_HEADER];
+  delete request.headers[DEPLOYMENT_HEADER];
   const handler = addresses.localeInOrigin
-    ? deployments.get(request.headers.host)
+    ? deployments.get(origin)
     : [...deployments.values()][0];
   const next = (error) => {
     if (response.writableEnded) return;
@@ -93,7 +99,7 @@ const server = createServer((request, response) => {
   };
   if (handler === undefined) {
     response.statusCode = 421;
-    response.end(`No build answers at ${request.headers.host}.`);
+    response.end(`No build answers at ${origin}.`);
     return;
   }
   try {
@@ -104,14 +110,19 @@ const server = createServer((request, response) => {
 });
 const loopback = `127.0.0.1:${await listenForBrowsers(server, '127.0.0.1')}`;
 
-const ask = ({ origin, path, headers = {} }) =>
+const ask = ({ origin, path, headers = {}, host }) =>
   new Promise((answered, failed) => {
     const asked = httpRequest(
       `http://${loopback}${path}`,
       {
         headers: {
           ...headers,
-          host: addresses.localeInOrigin ? new URL(origin).host : loopback,
+          host:
+            host ??
+            (addresses.localeInOrigin ? new URL(origin).host : loopback),
+          ...(origin === undefined
+            ? {}
+            : { [DEPLOYMENT_HEADER]: new URL(origin).host }),
         },
       },
       (answer) => {

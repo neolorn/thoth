@@ -95,12 +95,16 @@ objects and the web ones, for a server that speaks the former.
 A rendered response carries the status Equator resolved for its address. Two answers from your
 renderer keep their own status, because neither is about the address: a `304 Not Modified`, and a
 redirect your router made. Both are sent without content. Any other render that returns no content
-is sent as a 500, because an empty `200` is a blank page a cache would keep.
+is sent as a 500, because an empty `200` is a blank page a cache would keep. A render that returns
+an error status of its own, such as the 400 Angular's server engine answers for a host it does not
+allow, keeps that status and is sent private, not stored and marked `noindex`, because as a `200` it
+would be an error page cached and indexed as the address's content.
 
 Serving maintenance, or reporting a render that failed, is your application's answer about its own
 condition rather than something about the address, so you state it. `declareOperationalFailure`
 wraps the response you were going to return, and the wrapper is what makes the status a statement: a
-500 nobody meant and a 503 somebody chose arrive as the same number otherwise.
+500 nobody meant and a 503 somebody chose arrive as the same number otherwise. A declared failure
+leaves the address's indexing as it is, because you have said the address is still what it was.
 
 ```ts src/app/maintenance.spec.ts
 import { describe, expect, it } from 'vitest';

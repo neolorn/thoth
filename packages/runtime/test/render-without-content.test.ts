@@ -173,6 +173,53 @@ describe('a render that answers without content', () => {
   });
 });
 
+describe('a render that answers with an error it did not declare', () => {
+  // What an application's server engine does with a request it refuses, such as a Host it does not
+  // allow: an error page of its own, with nothing declared.
+  const refusing = (status: number) => () =>
+    new Response('<!doctype html><title>Bad Request</title>', {
+      status,
+      headers: { 'content-type': 'text/html' },
+    });
+
+  it('keeps its status, out of every cache and not indexed, and is not a declaration', async () => {
+    for (const status of [400, 403, 404, 500, 503]) {
+      const observed: { declared: unknown; carried: boolean }[] = [];
+      const answered = await summary(
+        await createLocaleRequestHandler({
+          policy: POLICY,
+          projection: PROJECTION,
+          cache: CACHE,
+          cookie: { name: 'equator-locale' },
+          render: refusing(status),
+          ɵobserve: ({ declared, carried }) =>
+            observed.push({ declared, carried }),
+        })(new Request('https://site.example/ar-eg/second')),
+      );
+      expect(answered).toMatchObject({
+        status,
+        content: '<!doctype html><title>Bad Request</title>',
+        cacheControl: 'private, no-store',
+        robots: 'noindex',
+        contentLanguage: 'ar-EG',
+      });
+      expect(observed).toStrictEqual([{ declared: undefined, carried: false }]);
+    }
+  });
+
+  it('leaves the status the table gives an address that resolved to anything else', async () => {
+    const answered = await summary(
+      await createLocaleRequestHandler({
+        policy: POLICY,
+        projection: PROJECTION,
+        cache: CACHE,
+        render: refusing(400),
+      })(new Request('https://site.example/ar-eg/nothing-here')),
+    );
+    expect(answered.status).toBe(404);
+  });
+});
+
 describe('the preconditions a renderer is handed', () => {
   const PRECONDITIONS = {
     'if-match': '"page-1"',
