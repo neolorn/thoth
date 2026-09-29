@@ -14,6 +14,7 @@ import {
   createLocaleRequestHandler,
   declareOperationalFailure,
   declarePageOutcome,
+  type LocaleRequestHandlerOptions,
   toWebRequest,
   writeNodeResponse,
 } from '@neolorn/equator/http';
@@ -105,7 +106,11 @@ function shortDocument(locale: string, init?: ResponseInit): Response {
 
 const dossiers = new DossierStore();
 
-const localeRequests = createLocaleRequestHandler({
+/**
+ * Exported because the server seat takes the same options: a test that builds its seat from this
+ * object asserts what this deployment answers rather than what a copy of its configuration would.
+ */
+export const localeRequestOptions: LocaleRequestHandlerOptions = {
   policy: servedPolicy,
   projection: appRouteProjection,
   cache: responseCaching,
@@ -160,7 +165,9 @@ const localeRequests = createLocaleRequestHandler({
     }
     return shortDocument(resolution.presentationLocale);
   },
-});
+};
+
+const localeRequests = createLocaleRequestHandler(localeRequestOptions);
 
 function createProbeContext(request: Request) {
   const url = new URL(request.url);

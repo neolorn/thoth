@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import { createServer, request as httpRequest } from 'node:http';
+import { createRequire } from 'node:module';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 
@@ -85,9 +86,15 @@ const deployments = await Promise.all(
       ),
       browserRoot: resolve(root, 'browser'),
       prerenderManifestPath: resolve(root, 'prerendered-routes.json'),
-      reqHandler: (
-        await import(pathToFileURL(resolve(root, 'server/server.mjs')).href)
-      ).reqHandler,
+      ...(await (async () => {
+        const server = await import(
+          pathToFileURL(resolve(root, 'server/server.mjs')).href
+        );
+        return {
+          reqHandler: server.reqHandler,
+          localeRequestOptions: server.localeRequestOptions,
+        };
+      })()),
     });
   }),
 );
@@ -1049,6 +1056,106 @@ async function answer(path, { locale = 'en-US', headers = {}, redirect } = {}) {
     requestPath = `${target.pathname}${target.search}`;
   }
   assert.fail(`${path} redirected more than four times`);
+}
+
+/**
+ * The server seat given the options this deployment's server builds, its renderer included, which
+ * is the seat `docs/how-to/test-localized-output.md` describes. Each address is asked of the seat
+ * and of the deployment, and the two must answer alike: the status, the fields a cache and a
+ * crawler read, and the head, which is read off the deployment's document here without the seat's
+ * own reader, so the seat's reading is held to something it did not produce.
+ *
+ * The seat is imported from the consumer's installed `@neolorn/equator/testing` after
+ * `@angular/compiler`, as a test runner loads a partially compiled library in Node.
+ */
+async function verifySeatAgainstDeployments() {
+  const requireFromConsumer = createRequire(
+    resolve(consumerRoot, 'package.json'),
+  );
+  const load = (specifier) =>
+    import(pathToFileURL(requireFromConsumer.resolve(specifier)).href);
+  await load('@angular/compiler');
+  const { createLocalizedServerSeat } = await load('@neolorn/equator/testing');
+  for (const deployment of deployments) {
+    const options = deployment.localeRequestOptions;
+    assert.ok(
+      options !== undefined && typeof options.render === 'function',
+      `${consumerName}: the server bundle for ${deployment.origin} exports no localeRequestOptions to build a seat from`,
+    );
+    // Asked on a host the deployment's server accepts: loopback where one origin serves every
+    // locale, and the locale's own origin where each has one.
+    const seat = createLocalizedServerSeat({
+      ...options,
+      origin: addresses.localeInOrigin ? deployment.origin : 'http://localhost',
+    });
+    const [firstLocale] = deployment.locales;
+    const asked = [
+      ...deployment.locales.map((locale) => ['second', locale]),
+      ['missing', firstLocale],
+      ['removed', firstLocale],
+      ['legacy', firstLocale],
+    ].filter(([name, locale]) => addresses.has(name, locale));
+    for (const [name, locale] of asked) {
+      const path = addresses.path(name, locale);
+      const check = `${consumerName}: the server seat, ${name} in ${locale}`;
+      const seated = await seat.request(path);
+      const served = await answer(path, { locale, redirect: 'manual' });
+      assert.equal(
+        seated.status,
+        served.status,
+        `${check}: the seat answered ${seated.status} where the deployment answered ${served.status}`,
+      );
+      for (const field of [
+        'content-language',
+        'cache-control',
+        'vary',
+        'x-robots-tag',
+        'location',
+      ]) {
+        assert.equal(
+          seated.headers.get(field),
+          served.headers.get(field),
+          `${check}: the seat's ${field} is not the deployment's`,
+        );
+      }
+      const servedBody = await served.text();
+      if (served.status >= 300 && served.status < 400) continue;
+      const servedDocument = new JSDOM(servedBody).window.document;
+      assert.deepEqual(
+        {
+          lang: seated.head.lang,
+          title: seated.head.title,
+          canonical: seated.head.canonical,
+          robots: seated.head.robots,
+        },
+        {
+          lang: servedDocument.documentElement.lang,
+          title: servedDocument.title,
+          canonical:
+            servedDocument
+              .querySelector('link[rel="canonical"]')
+              ?.getAttribute('href') ?? undefined,
+          robots:
+            servedDocument
+              .querySelector('meta[name="robots"]')
+              ?.getAttribute('content') ?? undefined,
+        },
+        `${check}: the head answeredHead read off the seat's answer is not the deployment's`,
+      );
+      recordCapabilityClaim(check, 'testing:createLocalizedServerSeat', {
+        policy: options.policy,
+        document: seated.body,
+      });
+      recordCapabilityClaim(check, 'testing:answeredHead', {
+        policy: options.policy,
+        document: seated.body,
+      });
+      recordCapabilityClaim(check, 'entry:@neolorn/equator/testing', {
+        policy: options.policy,
+        document: seated.body,
+      });
+    }
+  }
 }
 
 // A reader who chose a locale the page has no address in reaches the one address it has and states
@@ -6437,6 +6544,9 @@ try {
       `${published} is published in the sitemap and refused to crawlers`,
     );
   }
+
+  enterStage('server-seat');
+  await verifySeatAgainstDeployments();
 
   enterStage('parallel-ssr');
   const [alphaHtml, bravoHtml, titledHtml, dossierHtml] = await Promise.all([

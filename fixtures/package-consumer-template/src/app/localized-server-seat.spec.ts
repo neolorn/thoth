@@ -6,6 +6,7 @@ import { Router, RouterOutlet, TitleStrategy } from '@angular/router';
 import { Localization, withRouting } from '@neolorn/equator';
 import { pageGone } from '@neolorn/equator/core';
 import {
+  declareOperationalFailure,
   declarePageOutcome,
   type LocaleRenderer,
   type LocaleRequestOutcome,
@@ -244,6 +245,27 @@ describe('an address answered through the server seat', () => {
       document: answered.body,
     });
     claimCapability('entry:@neolorn/equator/core', {
+      policy: routePolicy,
+      document: answered.body,
+    });
+  });
+
+  it('carries an operational failure the renderer declared, with its own status', async () => {
+    const answered = await seat(() =>
+      declareOperationalFailure(
+        new Response('<!doctype html><title>Down for maintenance</title>', {
+          status: 503,
+          headers: { 'retry-after': '600', 'content-type': 'text/html' },
+        }),
+      ),
+    ).request(pageUrl('second', 'en-US'));
+
+    expect(answered.status).toBe(503);
+    expect(answered.headers.get('retry-after')).toBe('600');
+    expect(answered.pageOutcome?.declared.outcome).toBe('operational-failure');
+    expect(answered.pageOutcome?.carried).toBe(true);
+    expect(answered.headers.get('cache-control')).toBe('private, no-store');
+    claimCapability('outcome:declareOperationalFailure', {
       policy: routePolicy,
       document: answered.body,
     });
