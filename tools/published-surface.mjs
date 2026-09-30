@@ -143,9 +143,13 @@ export function isComposable(text, name) {
   return COMPOSABLE_RETURNS.has(returnTypeOf(text, name));
 }
 
-export function composableExports() {
+/**
+ * Takes the declarations as a parameter so a self-test can hand it a planted export and require the
+ * export to be found, which a reader of the build alone cannot show.
+ */
+export function composableExports(declarations = runtimeDeclarations()) {
   const composables = new Map();
-  for (const { entryPoint, text } of runtimeDeclarations()) {
+  for (const { entryPoint, text } of declarations) {
     for (const name of publishedNames(text)) {
       if (!isComposable(text, name)) continue;
       if (!composables.has(name)) composables.set(name, entryPoint);

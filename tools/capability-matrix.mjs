@@ -246,7 +246,7 @@ function nodeColumns(ranges, developmentVersion) {
 }
 
 /** The engines are the browsers Playwright drives, asked of Playwright rather than listed. */
-function engineColumns() {
+function playwrightEngines() {
   const names = Object.values(playwright)
     .filter(
       (value) =>
@@ -262,7 +262,11 @@ function engineColumns() {
       `Playwright reports no ${anchor}, so the scan for its browser types has stopped matching.`,
     );
   }
-  return names.map((name) => ({
+  return names;
+}
+
+function engineColumns(engines) {
+  return engines.map((name) => ({
     id: `engine:${name}`,
     group: 'Engine',
     name,
@@ -271,8 +275,8 @@ function engineColumns() {
 }
 
 /** The Angular rows are the consumer profiles the gate materializes. */
-function angularColumns() {
-  return [...consumerProfiles].map(([id, profile]) => ({
+function angularColumns(profiles) {
+  return [...profiles].map(([id, profile]) => ({
     id: `angular:${id}`,
     group: 'Angular row',
     name: profile.label,
@@ -487,10 +491,34 @@ function cliCommands() {
   }
 }
 
-/** Every row, derived from the built packages, with the one registry above. */
-export function deriveRows() {
-  const runtime = runtimeDeclarations();
-  const toolkit = toolkitDeclaration();
+const readManifest = (path) =>
+  JSON.parse(readFileSync(resolve(workspaceRoot, path), 'utf8'));
+
+/** What the rows are derived from, read from the built packages. */
+export function readPublished() {
+  return {
+    runtime: runtimeDeclarations(),
+    toolkit: toolkitDeclaration(),
+    runtimeManifest: readManifest('dist/runtime/package.json'),
+    toolkitManifest: readManifest('dist/toolkit/package.json'),
+    commands: cliCommands(),
+  };
+}
+
+/**
+ * Every row, derived from what `readPublished` read, with the one registry above.
+ *
+ * Nothing here reads the disk, so the self-test can hand it a publication with one more export and
+ * require one more row, which is the only way to show the rows follow what is published rather
+ * than a list that happens to agree with it today.
+ */
+export function rowsFrom({
+  runtime,
+  toolkit,
+  runtimeManifest,
+  toolkitManifest,
+  commands,
+}) {
   const text = (entryPoint) =>
     runtime.find((entry) => entry.entryPoint === entryPoint)?.text ?? '';
   const primary = text('neolorn-equator');
@@ -508,12 +536,6 @@ export function deriveRows() {
     rows.push({ id: `${category}:${name}`, category, name, binding, ...extra });
 
   // Entry points, from the manifests' own export maps.
-  const runtimeManifest = JSON.parse(
-    readFileSync(resolve(workspaceRoot, 'dist/runtime/package.json'), 'utf8'),
-  );
-  const toolkitManifest = JSON.parse(
-    readFileSync(resolve(workspaceRoot, 'dist/toolkit/package.json'), 'utf8'),
-  );
   for (const [manifest, keep] of [
     [runtimeManifest, (key) => key !== './package.json'],
     [toolkitManifest, (key) => key === '.'],
@@ -527,7 +549,7 @@ export function deriveRows() {
 
   // What a consumer composes, except the testing entry point's, which are testing helpers.
   const testingValues = valueNames(testing);
-  for (const name of composableExports().keys()) {
+  for (const name of composableExports(runtime).keys()) {
     if (!testingValues.has(name)) add('feature', name, [named(name)]);
   }
 
@@ -618,7 +640,7 @@ export function deriveRows() {
   for (const name of testingValues) add('testing', name, [named(name)]);
 
   const toolkitValues = [...valueNames(toolkit)];
-  for (const command of cliCommands()) {
+  for (const command of commands) {
     add('cli', command, [
       [
         ...literal(command),
@@ -674,19 +696,39 @@ export function deriveRows() {
   return { rows: [...unique.values()], resolveFailures };
 }
 
-/** Every column, derived from the gate's own declarations. */
-export function deriveColumns() {
+/** Every row, from the built packages. */
+export function deriveRows() {
+  return rowsFrom(readPublished());
+}
+
+/** What the columns are derived from: the built packages and the gate's own declarations. */
+export function readDeclared() {
+  return {
+    runtime: runtimeDeclarations(),
+    runtimeManifest: readManifest('dist/runtime/package.json'),
+    developmentVersion: readFileSync(
+      resolve(workspaceRoot, '.node-version'),
+      'utf8',
+    ).trim(),
+    engines: playwrightEngines(),
+    profiles: consumerProfiles,
+  };
+}
+
+/**
+ * Every column, derived from what `readDeclared` read. It reads nothing itself, for the reason
+ * `rowsFrom` does not: a planted consumer profile has to be able to reach it.
+ */
+export function columnsFrom({
+  runtime,
+  runtimeManifest,
+  developmentVersion,
+  engines,
+  profiles,
+}) {
   const core =
-    runtimeDeclarations().find(
-      (entry) => entry.entryPoint === 'neolorn-equator-core',
-    )?.text ?? '';
-  const manifest = JSON.parse(
-    readFileSync(resolve(workspaceRoot, 'dist/runtime/package.json'), 'utf8'),
-  );
-  const developmentVersion = readFileSync(
-    resolve(workspaceRoot, '.node-version'),
-    'utf8',
-  ).trim();
+    runtime.find((entry) => entry.entryPoint === 'neolorn-equator-core')
+      ?.text ?? '';
   return [
     ...RENDER_CONTEXTS.map((column) => ({ ...column, group: 'Render' })),
     ...policyColumns(core).map(({ id, group, name, matches }) => ({
@@ -695,10 +737,15 @@ export function deriveColumns() {
       name,
       matches,
     })),
-    ...engineColumns(),
-    ...nodeColumns(manifest.engines.node, developmentVersion),
-    ...angularColumns(),
+    ...engineColumns(engines),
+    ...nodeColumns(runtimeManifest.engines.node, developmentVersion),
+    ...angularColumns(profiles),
   ];
+}
+
+/** Every column, from the built packages and the gate's own declarations. */
+export function deriveColumns() {
+  return columnsFrom(readDeclared());
 }
 
 // ---------------------------------------------------------------------------------------------

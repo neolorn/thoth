@@ -12,6 +12,8 @@
  * - a reason placed over an exercised cell, and a reason over no cell at all;
  * - a claim for a capability its test never names, an entry point its test names only through a
  *   type, and a route class claimed through a field the application declared for another class;
+ * - a composable export the packages did not publish and a consumer profile the gate did not
+ *   declare, each of which must open a row or a column whose cells are red;
  * - a stage whose evidence is missing, and evidence no writer opened;
  * - a claim that no check's source makes;
  * - a run handed no claims path, which must write nothing.
@@ -35,9 +37,11 @@ import { CLAIMS_FILE_VARIABLE } from './capability-claims.mjs';
 import { readEvidence } from './capability-evidence.mjs';
 import {
   claimSitesIn,
-  deriveColumns,
-  deriveRows,
+  columnsFrom,
   evaluateMatrix,
+  readDeclared,
+  readPublished,
+  rowsFrom,
 } from './capability-matrix.mjs';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -201,8 +205,10 @@ try {
     'The evidence kept a claim it must drop, or dropped one it must keep.',
   );
 
-  const { rows } = deriveRows();
-  const columns = deriveColumns();
+  const published = readPublished();
+  const declared = readDeclared();
+  const { rows } = rowsFrom(published);
+  const columns = columnsFrom(declared);
   const sites = claimSitesIn(
     'tmp/matrix-self-test/planted.test.mjs',
     readFileSync(resolve(planted, 'planted.test.mjs'), 'utf8'),
@@ -378,6 +384,59 @@ try {
     assert.ok(
       finding(result, 'unsited-claim', 'pipe:localizedMoney'),
       'A claim no check source makes was accepted.',
+    );
+  });
+
+  // One export and one consumer row that exist nowhere but here. A derivation that consulted a list
+  // of its own, or read the build again instead of what it was handed, gives neither, and the cell
+  // the new capability or context opens would never be red.
+  expectRed('a composable export added to what is published', () => {
+    const exported = 'withPlantedCapability';
+    const runtime = published.runtime.map((entry) =>
+      entry.entryPoint === 'neolorn-equator'
+        ? {
+            ...entry,
+            text: `${entry.text}\ndeclare function ${exported}(): LocalizationFeature;\nexport { ${exported} };\n`,
+          }
+        : entry,
+    );
+    const row = `feature:${exported}`;
+    assert.ok(
+      !rows.some(({ id }) => id === row),
+      `${row} is a row before it was planted.`,
+    );
+    const grown = rowsFrom({ ...published, runtime }).rows;
+    assert.ok(
+      grown.some(({ id }) => id === row),
+      `A composable export added to what is published has no row ${row}.`,
+    );
+    assert.ok(
+      isRed(evaluate({ rows: grown }), row, 'node:24'),
+      `The row ${row} was derived and its cell was not red.`,
+    );
+  });
+
+  expectRed('a consumer profile added to what the gate declares', () => {
+    const profile = 'planted-consumer';
+    const column = `angular:${profile}`;
+    assert.ok(
+      !columns.some(({ id }) => id === column),
+      `${column} is a column before it was planted.`,
+    );
+    const grown = columnsFrom({
+      ...declared,
+      profiles: new Map([
+        ...declared.profiles,
+        [profile, { label: 'Planted consumer row' }],
+      ]),
+    });
+    assert.ok(
+      grown.some(({ id }) => id === column),
+      `A consumer profile added to what the gate declares has no column ${column}.`,
+    );
+    assert.ok(
+      isRed(evaluate({ columns: grown }), 'format:formatMoney', column),
+      `The column ${column} was derived and format:formatMoney @ ${column} was not red.`,
     );
   });
 
