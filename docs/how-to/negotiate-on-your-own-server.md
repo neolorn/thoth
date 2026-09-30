@@ -90,6 +90,12 @@ It also writes what a shared cache may do with each answer, from the same classi
 `toNodeListener`, `toWebRequest` and `writeNodeResponse` adapt between Node's request and response
 objects and the web ones, for a server that speaks the former.
 
+A `Request` carries a parsed URL, and parsing has already resolved dot segments and turned a
+backslash into a slash. `toWebRequest`, and `toNodeListener` through it, records the target as it
+arrived, so the handler answers `/en-us/%2e%2e/admin` with `400` rather than as `/admin`. A request
+your platform hands you, or one you build yourself, is read by its parsed URL, so refuse a
+structurally unsafe target before it is parsed, where your server still has it as it arrived.
+
 ## Declare a status of your own
 
 A rendered response carries the status Equator resolved for its address. Two answers from your
