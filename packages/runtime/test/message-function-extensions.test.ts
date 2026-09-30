@@ -457,3 +457,42 @@ describe('what a declaration carries when the declaring function is an extension
     ).toBe('N: 1,234.50');
   });
 });
+
+/**
+ * What a handler may hand back, whatever it computed.
+ *
+ * `specs/01-standards-profile.spec.md` section 9 requires a handler to be synchronous and bounded.
+ * Its code is the application's, so the runtime cannot read that off the function; it reads it off
+ * the result, and refuses one that is a promise in all but name or longer than its descriptor
+ * allows. Determinism and safety under server rendering are properties of the author's code that
+ * no result shows.
+ */
+describe('the result of an extension handler', () => {
+  const format = (evaluate: () => MessageFunctionResult): string =>
+    select('{{{1 :test:select}}}', evaluate, 'none');
+
+  it('renders a result inside its bound', () => {
+    expect(format(() => ({ text: 'x'.repeat(32), value: 'x' }))).toBe(
+      'x'.repeat(32),
+    );
+  });
+
+  it('refuses a result that is a thenable', () => {
+    expect(() =>
+      format(
+        () =>
+          ({
+            text: 'later',
+            value: 'later',
+            then: (resolve: (value: unknown) => void) => resolve('later'),
+          }) as unknown as MessageFunctionResult,
+      ),
+    ).toThrow(/invalid or unbounded result/);
+  });
+
+  it('refuses a result longer than its descriptor allows', () => {
+    expect(() => format(() => ({ text: 'x'.repeat(33), value: 'x' }))).toThrow(
+      /invalid or unbounded result/,
+    );
+  });
+});

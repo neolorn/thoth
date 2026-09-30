@@ -2821,4 +2821,410 @@ export const injections = Object.freeze([
       "    return resolution.locale;\n  }\n  return 'presentationLocale' in resolution\n    ? resolution.presentationLocale\n    : undefined;\n}",
     caughtBy: 'packages/runtime/test/http-cookie-sync.test.ts',
   },
+  {
+    id: 'artifact-address-carries-the-application-fingerprint',
+    invariant:
+      "An artifact's address carries its own scope's contract fingerprint, so a contract change confined to another scope leaves it unchanged.",
+    source: 'packages/toolkit/src/compiled-artifacts.ts',
+    find: '    applicationContractFingerprint: scope.applicationContractFingerprint,',
+    replace:
+      '    applicationContractFingerprint: graph.applicationContractFingerprint,',
+    caughtBy: 'packages/toolkit/test/artifact-identity-boundaries.test.ts',
+  },
+  {
+    id: 'artifact-for-an-unconfigured-locale-admitted',
+    invariant:
+      'A generated set with an artifact for a locale the configuration does not ship is refused before anything is loaded.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '        !configuration.locales.includes(address.key.catalogLocale) ||',
+    replace: '        false ||',
+    caughtBy: 'packages/runtime/test/generated-set-admission.test.ts',
+  },
+  {
+    id: 'artifact-without-a-loader-admitted',
+    invariant:
+      'A generated set with no loader for one of its artifacts is refused at construction rather than at the first load.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: "        !hasOwn(loaders, key) ||\n        typeof loaders[key] !== 'function'",
+    replace: '        false',
+    caughtBy: 'packages/runtime/test/generated-set-admission.test.ts',
+  },
+  {
+    id: 'blocking-decided-on-wording',
+    invariant:
+      'Whether diagnostics block a run is decided on severity alone; rewording a summary never changes it.',
+    source: 'packages/toolkit/src/diagnostics.ts',
+    find: "  return diagnostics.some(({ severity }) => severity === 'error');",
+    replace:
+      "  return diagnostics.some(({ severity, summary }) => severity === 'error' || /fatal/iu.test(summary));",
+    caughtBy: 'packages/toolkit/test/gate-exit-code.test.ts',
+  },
+  {
+    id: 'catalog-admitted-under-another-standards-profile',
+    invariant:
+      'A loaded catalog whose standards profile differs from its address is refused as malformed before its digest is computed.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '      received.standardsProfile !== artifact.address.standardsProfile ||',
+    replace: '      false ||',
+    caughtBy: 'packages/runtime/test/artifact-standards-profile.test.ts',
+  },
+  {
+    id: 'catalog-digest-not-recomputed',
+    invariant:
+      'A catalog edited after compilation is refused by its content digest even when its measured size is unchanged.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '      (await digestCanonicalCatalog(catalog)) !== artifact.address.contentDigest',
+    replace: '      false',
+    caughtBy: 'packages/runtime/test/catalog-identity-over-the-value.test.ts',
+  },
+  {
+    id: 'catalog-load-failure-miscoded',
+    invariant:
+      'A catalog loader that rejects is reported as catalog-load-failed with reason module-load-failed.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: "            'catalog-load-failed',\n            'A generated local catalog module could not be loaded.',",
+    replace:
+      "            'catalog-admission-failed',\n            'A generated local catalog module could not be loaded.',",
+    caughtBy: 'packages/runtime/test/failed-load-is-not-retried.test.ts',
+  },
+  {
+    id: 'catalog-load-reaches-the-network',
+    invariant:
+      'Loading a catalog calls the generated loader and nothing else: no network request, no persistent store.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '      .then(() => (this.loaders[key] as () => unknown)())',
+    replace:
+      '      .then(() => globalThis.fetch(artifact.modulePath))\n      .then(() => (this.loaders[key] as () => unknown)())',
+    caughtBy: 'packages/runtime/test/loader-needs-no-service.test.ts',
+  },
+  {
+    id: 'catalog-message-record-open',
+    invariant:
+      'A catalog message record is closed, so a field that could carry a handler or an import is refused where it is written.',
+    source: 'packages/toolkit/src/schemas.ts',
+    find: "const messageRecordSchema = {\n  type: 'object',\n  additionalProperties: false,",
+    replace: "const messageRecordSchema = {\n  type: 'object',",
+    caughtBy: 'packages/toolkit/test/catalog-carries-no-code.test.ts',
+  },
+  {
+    id: 'catalog-set-identity-spans-providers',
+    invariant:
+      "Each provider's catalog-set identity is taken over that provider's own artifact addresses, so a change to another provider leaves it unchanged.",
+    source: 'packages/toolkit/src/compiled-artifacts.ts',
+    find: '        artifacts.map(({ address }) => addressIdentityJson(address)),',
+    replace:
+      '        catalogs.map((catalog) => addressIdentityJson(artifactAddress(catalog))),',
+    caughtBy: 'packages/toolkit/test/artifact-identity-boundaries.test.ts',
+  },
+  {
+    id: 'catalog-top-level-not-exact',
+    invariant:
+      'A loaded catalog whose top level is not exactly the fields its schema names is refused as malformed, before its digest is computed.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '      !hasExactKeys(received as unknown',
+    replace: '      false && !hasExactKeys(received as unknown',
+    caughtBy: 'packages/runtime/test/catalog-top-level-fields.test.ts',
+  },
+  {
+    id: 'descriptor-admits-another-standards-profile',
+    invariant:
+      'A generated set whose descriptor names a standards profile other than equator-1 is refused when the catalog store is built.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: "        address.standardsProfile !== 'equator-1' ||",
+    replace: '        false ||',
+    caughtBy: 'packages/runtime/test/artifact-standards-profile.test.ts',
+  },
+  {
+    id: 'descriptor-array-read-through-accessors',
+    invariant:
+      "An extension descriptor array's entries are read from their property descriptors, so a getter in one is refused without running.",
+    source: 'packages/toolkit/src/extensions.ts',
+    find: "        if (descriptor === undefined || !('value' in descriptor)) {\n          throw new TypeError(\n            'Extension descriptor arrays cannot contain accessors.',\n          );\n        }\n        return portableSnapshot(descriptor.value, seen, depth + 1, budget);",
+    replace:
+      '        void descriptor;\n        return portableSnapshot(\n          (value as unknown[])[Number(key)],\n          seen,\n          depth + 1,\n          budget,\n        );',
+    caughtBy: 'packages/toolkit/test/descriptor-read-as-data.test.ts',
+  },
+  {
+    id: 'descriptor-record-read-through-accessors',
+    invariant:
+      "An extension descriptor's fields are read from their property descriptors, so a getter in one is refused without running.",
+    source: 'packages/toolkit/src/extensions.ts',
+    find: "    if (!descriptor.enumerable || !('value' in descriptor)) {\n      throw new TypeError(\n        'Extension descriptor records cannot contain hidden fields or accessors.',\n      );\n    }\n    Object.defineProperty(output, key, {\n      configurable: false,\n      enumerable: true,\n      value: portableSnapshot(descriptor.value, seen, depth + 1, budget),",
+    replace:
+      '    void descriptor;\n    Object.defineProperty(output, key, {\n      configurable: false,\n      enumerable: true,\n      value: portableSnapshot(\n        (value as Record<string, unknown>)[key],\n        seen,\n        depth + 1,\n        budget,\n      ),',
+    caughtBy: 'packages/toolkit/test/descriptor-read-as-data.test.ts',
+  },
+  {
+    id: 'descriptor-registry-fingerprint-unchecked',
+    invariant:
+      "A descriptor whose semantic-registry fingerprint differs from the generated configuration's is refused.",
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '    descriptor.semanticRegistryFingerprint !==\n      configuration.semanticRegistryFingerprint',
+    replace: '    false',
+    caughtBy: 'packages/runtime/test/generated-set-admission.test.ts',
+  },
+  {
+    id: 'diagnostic-identifier-controls-kept',
+    invariant:
+      'A control or bidirectional-override character in an identifier that reaches a diagnostic is replaced with U+FFFD.',
+    source: 'packages/runtime/src/runtime-safety.ts',
+    find: "      ? '\\ufffd'\n      : character;",
+    replace: '      ? character\n      : character;',
+    caughtBy: 'packages/runtime/test/diagnostic-identifier-bounds.test.ts',
+  },
+  {
+    id: 'diagnostic-identifier-unbounded',
+    invariant:
+      'An identifier that reaches a diagnostic is cut at diagnosticIdentifierCodePoints and marked with an ellipsis.',
+    source: 'packages/runtime/src/runtime-safety.ts',
+    find: '    if (count >= maximum) {',
+    replace: '    if (count >= Infinity) {',
+    caughtBy: 'packages/runtime/test/diagnostic-identifier-bounds.test.ts',
+  },
+  {
+    id: 'extension-id-without-a-namespace',
+    invariant:
+      'An extension function identity without a provider namespace is refused by the registry schema.',
+    source: 'packages/toolkit/src/schemas.ts',
+    find: "  pattern: '^[a-z][a-z0-9-]{0,31}:[a-z][a-z0-9-]{0,63}$',",
+    replace: "  pattern: '^(?:[a-z][a-z0-9-]{0,31}:)?[a-z][a-z0-9-]{0,63}$',",
+    caughtBy: 'packages/toolkit/test/extension-namespace.test.ts',
+  },
+  {
+    id: 'failed-catalog-load-retried',
+    invariant:
+      'A loader that fails is reported after one call; the store has no retry behind the loader contract.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: "      .catch((cause: unknown) => {\n        throw new LocalizationError(\n          operationalDiagnostic(\n            'catalog-load-failed',",
+    replace:
+      "      .catch(() => (this.loaders[key] as () => unknown)())\n      .catch((cause: unknown) => {\n        throw new LocalizationError(\n          operationalDiagnostic(\n            'catalog-load-failed',",
+    caughtBy: 'packages/runtime/test/failed-load-is-not-retried.test.ts',
+  },
+  {
+    id: 'function-from-another-edition-admitted',
+    invariant:
+      'The message function profile is exactly the ten functions LDML 48.2 defines, so a function from another edition is refused at authoring.',
+    source: 'packages/toolkit/src/message-format.ts',
+    find: "      ['time', 'draft', 'none'],\n    ].map(",
+    replace:
+      "      ['time', 'draft', 'none'],\n      ['relativetime', 'draft', 'none'],\n    ].map(",
+    caughtBy: 'packages/toolkit/test/pinned-function-profile.test.ts',
+  },
+  {
+    id: 'in-flight-catalog-load-not-joined',
+    invariant:
+      'A second request for a catalog already loading joins the first load instead of starting another.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '    if (existing !== undefined) return existing;',
+    replace: '    void existing;',
+    caughtBy: 'packages/runtime/test/in-flight-load-is-joined.test.ts',
+  },
+  {
+    id: 'inert-snapshot-admits-a-function',
+    invariant:
+      'The inert snapshot refuses a function wherever it appears, so an artifact cannot supply an implementation.',
+    source: 'packages/runtime/src/runtime-safety.ts',
+    find: "    if (typeof value !== 'object') {\n      throw new TypeError('Only inert JSON data is admitted.');",
+    replace:
+      "    if (typeof value === 'function') return value;\n    if (typeof value !== 'object') {\n      throw new TypeError('Only inert JSON data is admitted.');",
+    caughtBy: 'packages/runtime/test/catalog-carries-no-code.test.ts',
+  },
+  {
+    id: 'loader-accessor-admitted',
+    invariant:
+      'A loader-map entry that is an accessor is refused, and its getter is never called.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: "      property.get !== undefined ||\n      property.set !== undefined ||\n      !hasOwn(property, 'value') ||\n      typeof property.value !== 'function'\n    ) {\n      throw new LocalizationError(\n        operationalDiagnostic(\n          'invalid-configuration',\n          'Generated catalog loaders must contain only data functions.',\n        ),\n      );\n    }\n    copied[identity] = property.value as () => unknown;",
+    replace:
+      "      typeof candidate[identity] !== 'function'\n    ) {\n      throw new LocalizationError(\n        operationalDiagnostic(\n          'invalid-configuration',\n          'Generated catalog loaders must contain only data functions.',\n        ),\n      );\n    }\n    void property;\n    copied[identity] = candidate[identity] as () => unknown;",
+    caughtBy: 'packages/runtime/test/loader-map-copy.test.ts',
+  },
+  {
+    id: 'loader-map-held-by-reference',
+    invariant:
+      'The store keeps its own copy of the loader map, so an entry replaced after construction does not run.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '  return Object.freeze(copied);',
+    replace: '  void copied;\n  return candidate;',
+    caughtBy: 'packages/runtime/test/loader-map-copy.test.ts',
+  },
+  {
+    id: 'malformed-content-digest-admitted',
+    invariant:
+      'An artifact whose content digest is not sha256- and 43 base64url characters is refused.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '        !/^sha256-[A-Za-z0-9_-]{43}$/u.test(address.contentDigest) ||',
+    replace: '        false ||',
+    caughtBy: 'packages/runtime/test/generated-set-admission.test.ts',
+  },
+  {
+    id: 'matching-digest-admits-without-structure',
+    invariant:
+      'A candidate whose digest matches its address is still refused when its structure is invalid, because a digest proves byte identity and nothing more.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '    const received = snapshot.value as unknown as AsReceived<',
+    replace:
+      '    if (\n      (await digestCanonicalCatalog(snapshot.value)) ===\n      artifact.address.contentDigest\n    ) {\n      return snapshot.value as unknown as CompiledCatalog;\n    }\n    const received = snapshot.value as unknown as AsReceived<',
+    caughtBy: 'packages/runtime/test/digest-proves-only-identity.test.ts',
+  },
+  {
+    id: 'owner-identity-follows-the-scopes',
+    invariant:
+      'The owner identity a compilation records depends on the provider and generated root only, so adding a scope does not change it.',
+    source: 'packages/toolkit/src/compiled-artifacts.ts',
+    find: '  const ownerId = generatedOwnerId(request.owner);',
+    replace:
+      '  const ownerId = generatedOwnerId({\n    ...request.owner,\n    generatedRootPath: `${request.owner.generatedRootPath}#${request.catalogs.length}`,\n  });',
+    caughtBy: 'packages/toolkit/test/no-second-record.test.ts',
+  },
+  {
+    id: 'percent-scale-guessed-from-magnitude',
+    invariant:
+      'A percentage is converted by the scale its value declares, never by how large the amount is.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: "    value.scale === 'fractional' ? value.amount : divideByHundred(value.amount);",
+    replace:
+      '    Number(value.amount.value) > 1\n      ? divideByHundred(value.amount)\n      : value.amount;',
+    caughtBy: 'packages/runtime/test/percent-scale.test.ts',
+  },
+  {
+    id: 'percentage-points-coerced-into-percent',
+    invariant:
+      'A percentage-points value handed to a :percent placeholder is refused, never read as a proportion.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '    const value = record[contract.name];\n    if (!isValidInput(value, contract)) {',
+    replace:
+      "    const given = record[contract.name];\n    const value =\n      isRecord(given) && given['kind'] === 'percentage-points'\n        ? Number((given['amount'] as { readonly value: string }).value)\n        : given;\n    if (!isValidInput(value, contract)) {",
+    caughtBy: 'packages/runtime/test/percentage-points-are-not-percent.test.ts',
+  },
+  {
+    id: 'repeated-catalog-identity-admitted',
+    invariant:
+      'Two artifacts claiming one catalog identity are refused rather than one replacing the other.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '        artifacts.has(key) ||',
+    replace: '        false ||',
+    caughtBy: 'packages/runtime/test/generated-set-admission.test.ts',
+  },
+  {
+    id: 'thenable-extension-result-admitted',
+    invariant:
+      'An extension handler result that is a thenable is refused as an invalid or unbounded result.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: "        typeof (result as { readonly then?: unknown }).then === 'function'",
+    replace: '        false',
+    caughtBy: 'packages/runtime/test/message-function-extensions.test.ts',
+  },
+  {
+    id: 'toolkit-import-installs-a-hook',
+    invariant: 'Importing the toolkit API installs no process listener.',
+    source: 'packages/toolkit/src/index.ts',
+    find: "export { formatCatalog, parseCatalog } from './catalog.js';",
+    replace:
+      "process.once('exit', () => undefined);\nexport { formatCatalog, parseCatalog } from './catalog.js';",
+    caughtBy: 'packages/toolkit/test/import-is-inert.test.ts',
+  },
+  {
+    id: 'toolkit-import-sets-exit-code',
+    invariant: 'Importing the toolkit API leaves process.exitCode as it was.',
+    source: 'packages/toolkit/src/index.ts',
+    find: "export { formatCatalog, parseCatalog } from './catalog.js';",
+    replace:
+      "process.exitCode = 0;\nexport { formatCatalog, parseCatalog } from './catalog.js';",
+    caughtBy: 'packages/toolkit/test/import-is-inert.test.ts',
+  },
+  {
+    id: 'toolkit-imports-a-private-compiler-symbol',
+    invariant:
+      'The toolkit imports no ɵ-prefixed name from @angular/compiler or typescript.',
+    source: 'packages/toolkit/src/host-compatibility.ts',
+    find: "import { VERSION as angularCompilerVersion } from '@angular/compiler';",
+    replace:
+      "import { VERSION as angularCompilerVersion, ɵgetDOM } from '@angular/compiler';\nvoid ɵgetDOM;",
+    caughtBy: 'packages/toolkit/test/compiler-host-public-api.test.ts',
+  },
+  {
+    id: 'toolkit-imports-below-a-compiler-root',
+    invariant:
+      'The toolkit imports @angular/compiler and typescript only at their package roots.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: "import ts from 'typescript';",
+    replace:
+      "import ts from 'typescript';\nimport 'typescript/lib/tsserverlibrary.js';",
+    caughtBy: 'packages/toolkit/test/compiler-host-public-api.test.ts',
+  },
+  {
+    id: 'unbounded-extension-result-admitted',
+    invariant:
+      "An extension handler result longer than its descriptor's maximumOutputLength is refused.",
+    source: 'packages/runtime/src/evaluator.ts',
+    find: "        codePointLengthAtMost(\n          result['text'],\n          binding.descriptor.maximumOutputLength,\n        ) === undefined ||",
+    replace: '        false ||',
+    caughtBy: 'packages/runtime/test/message-function-extensions.test.ts',
+  },
+  {
+    id: 'unsupported-artifact-feature-admitted',
+    invariant:
+      'A generated set whose artifact requires a feature this release does not support is refused.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '        address.requiredFeatures.some(\n          (feature) => !supportedArtifactFeatures.has(feature),\n        ) ||',
+    replace: '        false ||',
+    caughtBy: 'packages/runtime/test/generated-set-admission.test.ts',
+  },
+  {
+    id: 'untranslated-scope-reported-as-load-failure',
+    invariant:
+      'A scope with no artifact in a locale is reported unavailable, never as a catalog that failed to load.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: "    code: 'scope-unavailable',\n    outcome: 'localized-representation-unavailable',",
+    replace:
+      "    code: 'catalog-load-failed',\n    outcome: 'operational-failure',",
+    caughtBy:
+      'packages/runtime/test/untranslated-scope-is-not-a-failure.test.ts',
+  },
+  {
+    id: 'xliff-depth-ceiling-lifted',
+    invariant:
+      'An XLIFF document nested past xliffDepth is refused at the depth ceiling.',
+    source: 'packages/toolkit/src/xliff.ts',
+    find: '      if (stack.length + 1 > RESOURCE_LIMITS.xliffDepth)',
+    replace: '      if (false)',
+    caughtBy: 'packages/toolkit/test/bounded-inputs-and-parser-safety.test.ts',
+  },
+  {
+    id: 'xliff-dtd-admitted',
+    invariant:
+      'An XLIFF document carrying a DTD or entity declaration is refused by the DTD rule, not merely by a later element-name rule.',
+    source: 'packages/toolkit/src/xliff.ts',
+    find: "    if (document.startsWith('<!', index) || document.startsWith('<?', index)) {",
+    replace: "    if (document.startsWith('<?', index)) {",
+    caughtBy: 'packages/toolkit/test/interchange.test.ts',
+  },
+  {
+    id: 'xliff-node-ceiling-lifted',
+    invariant:
+      'An XLIFF document with more than xliffNodes nodes is refused at the node ceiling.',
+    source: 'packages/toolkit/src/resource-limits.ts',
+    find: '  xliffNodes: 250_000,',
+    replace: '  xliffNodes: Number.POSITIVE_INFINITY,',
+    caughtBy: 'packages/toolkit/test/bounded-inputs-and-parser-safety.test.ts',
+  },
+  {
+    id: 'xliff-undeclared-entity-admitted',
+    invariant:
+      'An entity reference outside the XML predefined set and character references is refused rather than passed through.',
+    source: 'packages/toolkit/src/xliff.ts',
+    find: '  if (/&(?!#x[0-9A-Fa-f]+;|#[0-9]+;|amp;|lt;|gt;|quot;|apos;)/u.test(value)) {',
+    replace: '  if (false) {',
+    caughtBy: 'packages/toolkit/test/interchange.test.ts',
+  },
+  {
+    id: 'xliff-unit-identity-trusted',
+    invariant:
+      "An XLIFF unit whose contract carries an identity other than the source catalog's for that message is reported with EQ1803 and not imported.",
+    source: 'packages/toolkit/src/xliff.ts',
+    find: '      contract.identity !== messageIdentity(request.source, contract.messageId)',
+    replace: '      false',
+    caughtBy: 'packages/toolkit/test/interchange.test.ts',
+  },
 ]);

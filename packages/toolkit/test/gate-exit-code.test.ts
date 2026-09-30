@@ -60,3 +60,35 @@ describe('a blocking diagnostic is decided by severity, never by a code list', (
     ).toBe(true);
   });
 });
+
+/**
+ * `specs/11-diagnostics-and-observability.spec.md` section 2: wording is not a compatibility
+ * surface, so the decision that fails a run cannot change when a summary is reworded. The summaries
+ * below are the ones a wording rule would most plausibly key on, each on a diagnostic whose
+ * severity says the opposite.
+ */
+describe('a blocking diagnostic is decided without reading its wording', () => {
+  const WORDINGS = [
+    '',
+    'error',
+    'Error: the catalog is invalid.',
+    'fatal',
+    'blocking',
+    'failed',
+    'ok',
+    'passed',
+  ];
+
+  it.each(WORDINGS)(
+    'decides the same whatever the summary says: %j',
+    (summary) => {
+      const base = {
+        code: 'EQ1310',
+        summary,
+        path: ['messages', 'cart.items'],
+      } as const;
+      expect(diagnosticsBlock([{ ...base, severity: 'warning' }])).toBe(false);
+      expect(diagnosticsBlock([{ ...base, severity: 'error' }])).toBe(true);
+    },
+  );
+});

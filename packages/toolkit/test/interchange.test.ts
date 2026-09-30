@@ -602,3 +602,92 @@ describe('an XLIFF unit whose id is not an xs:NMTOKEN', () => {
     }
   });
 });
+
+/**
+ * `specs/01-standards-profile.spec.md` section 10: XLIFF is never a source of message identity. The
+ * source catalog decides which messages exist and what each is called, so a unit naming anything
+ * else is reported rather than imported, whether the message is missing or the identity the unit
+ * carries was rewritten while the message id stayed.
+ */
+describe('an XLIFF unit that does not belong to the source catalog', () => {
+  const wider = catalog(
+    `${formatCatalog(source)}  farewell: "Goodbye."\n`,
+    sourceOptions,
+  );
+  const widerTarget = catalog(
+    `${formatCatalog(target)}  farewell: "مع السلامة."\n`,
+    targetOptions,
+  );
+
+  function refusals(result: ReturnType<typeof importXliff22>) {
+    return result.diagnostics.filter(
+      ({ code, severity }) => code === 'EQ1803' && severity === 'error',
+    );
+  }
+
+  it('is reported when it names a message the source lacks', () => {
+    const exported = exportXliff22({ source: wider, target: widerTarget });
+    if (!exported.ok) throw new Error('export failed');
+    const imported = importXliff22({ document: exported.value, source });
+    expect(refusals(imported)).toHaveLength(1);
+    if (imported.ok)
+      expect(imported.value.messages['farewell']).toBeUndefined();
+  });
+
+  it('is reported when it carries another identity for a message the source has', () => {
+    const exported = exportXliff22({ source, target });
+    if (!exported.ok) throw new Error('export failed');
+    const rewritten = exported.value.split('@example/app:shell:greeting');
+    expect(rewritten).toHaveLength(2);
+    const imported = importXliff22({
+      document: rewritten.join('@example/other:shell:greeting'),
+      source,
+    });
+    expect(refusals(imported)).toHaveLength(1);
+    if (imported.ok)
+      expect(imported.value.messages['greeting']).toBeUndefined();
+  });
+});
+
+/**
+ * `specs/01-standards-profile.spec.md` section 10: XLIFF processing never fetches a DTD or an
+ * entity. A declaration is refused where it appears, by the rule written for it, and an entity
+ * reference the XML predefined set does not name is refused rather than left for something
+ * downstream to resolve. A document with a DOCTYPE is also refused by the element-name rule, so the
+ * case asks for the summary that names the rule it is about.
+ */
+describe('an XLIFF document reaching for an external resource', () => {
+  function exported(): string {
+    const result = exportXliff22({ source, target });
+    if (!result.ok) throw new Error('export failed');
+    return result.value;
+  }
+
+  function summaries(document: string) {
+    const imported = importXliff22({ document, source });
+    return {
+      ok: imported.ok,
+      summaries: imported.diagnostics.map(({ summary }) => summary),
+    };
+  }
+
+  it('is refused at a DOCTYPE declaring an external entity, by the DTD rule', () => {
+    const document = exported().replace(
+      '<xliff',
+      '<!DOCTYPE xliff [<!ENTITY xxe SYSTEM "file:///secret">]><xliff',
+    );
+    const result = summaries(document);
+    expect(result.ok).toBe(false);
+    expect(result.summaries.join('\n')).toMatch(/DTDs, entities/u);
+  });
+
+  it('is refused at an entity reference the document never declared', () => {
+    const document = exported().split('مرحبًا');
+    expect(document).toHaveLength(2);
+    expect(summaries(document.join('&xxe; مرحبًا')).ok).toBe(false);
+  });
+
+  it('imports the same document without the reference', () => {
+    expect(summaries(exported()).ok).toBe(true);
+  });
+});

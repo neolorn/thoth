@@ -242,4 +242,26 @@ describe('XLIFF parser safety', () => {
     ).toBe(false);
     claimCapability('capability:xliff');
   });
+
+  // `specs/12-verification.spec.md` section 4 asks for exhaustion of parsing to be refused, and
+  // either document below is also refused later for elements XLIFF does not define, so each case
+  // asks for the ceiling by name.
+  it.each([
+    ['depth', '<a>'.repeat(100) + '</a>'.repeat(100)],
+    ['node', '<a/>'.repeat(250_001)],
+  ])(
+    'refuses a document past the %s ceiling at that ceiling',
+    (ceiling, inner) => {
+      const exported = exportXliff22({ source, target });
+      if (!exported.ok) throw new Error('XLIFF fixture export failed.');
+      const document = exported.value.split('روك &amp; رول');
+      expect(document).toHaveLength(2);
+      const imported = importXliff22({
+        document: document.join(inner),
+        source,
+      });
+      expect(imported.ok).toBe(false);
+      expect(imported.diagnostics[0]?.summary).toContain(`${ceiling} ceiling`);
+    },
+  );
 });
