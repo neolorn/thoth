@@ -3028,22 +3028,23 @@ export async function cleanProject(
   });
 }
 
+/**
+ * Whether an event names something the watch itself or a build writes, or something outside the
+ * owner. The roots are absolute and are the project's own: an application with a root of its own
+ * generates under that root, and a build writes wherever its configuration says.
+ */
 function watchIgnored(
   ownerRoot: string,
+  ignoredRoots: readonly string[],
   fileName: string | Buffer | null,
 ): boolean {
   if (fileName === null) return false;
-  const path = fileName.toString().replaceAll('\\', '/');
+  const segments = fileName.toString().replaceAll('\\', '/').split('/');
+  const path = resolve(ownerRoot, ...segments);
   return (
-    path === '.equator' ||
-    path.startsWith('.equator/') ||
-    path === GENERATED_ROOT ||
-    path.startsWith(`${GENERATED_ROOT}/`) ||
-    path === 'dist' ||
-    path.startsWith('dist/') ||
-    path === 'node_modules' ||
-    path.startsWith('node_modules/') ||
-    !containedPath(resolve(ownerRoot, ...path.split('/')), ownerRoot)
+    segments.includes('node_modules') ||
+    ignoredRoots.some((root) => containedPath(path, root)) ||
+    !containedPath(path, ownerRoot)
   );
 }
 
@@ -3060,6 +3061,13 @@ export async function watchProject(
 ): Promise<ToolkitResult<WatchProjectResult>> {
   const location = await discoverProject(options);
   if (!location.ok) return location;
+  const application = await selectAngularApplication(location.value.ownerRoot);
+  const ignoredRoots = Object.freeze([
+    location.value.workRoot,
+    location.value.generatedRoot,
+    (application.ok ? application.value?.outputPath : undefined) ??
+      resolve(location.value.ownerRoot, 'dist'),
+  ]);
   const debounce = Math.max(
     10,
     Math.min(options.debounceMilliseconds ?? 75, 2000),
@@ -3139,7 +3147,9 @@ export async function watchProject(
       location.value.ownerRoot,
       { recursive: true },
       (_event, fileName) => {
-        if (watchIgnored(location.value.ownerRoot, fileName)) return;
+        if (watchIgnored(location.value.ownerRoot, ignoredRoots, fileName)) {
+          return;
+        }
         if (timer !== undefined) clearTimeout(timer);
         timer = setTimeout(() => {
           timer = undefined;

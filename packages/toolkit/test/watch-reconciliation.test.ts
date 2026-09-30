@@ -273,6 +273,73 @@ describe('watch', () => {
     }
   });
 
+  it('ignores what an application with a root of its own generates and builds', async () => {
+    const root = await project();
+    // The same application moved under a root of its own, building to a folder of its choosing.
+    await rm(resolve(root, 'tsconfig.app.json'));
+    await rm(resolve(root, 'src'), { recursive: true });
+    await write(
+      root,
+      'angular.json',
+      `${JSON.stringify({ version: 1, projects: { app: { root: 'projects/app', projectType: 'application', architect: { build: { options: { tsConfig: 'projects/app/tsconfig.app.json', outputPath: 'build/app' } } } } } }, null, 2)}\n`,
+    );
+    await write(
+      root,
+      'projects/app/tsconfig.app.json',
+      `${JSON.stringify({ compilerOptions: { strict: true, target: 'ES2022', module: 'preserve', moduleResolution: 'bundler', resolvePackageJsonImports: true }, include: ['src/**/*.ts'] }, null, 2)}\n`,
+    );
+    await write(
+      root,
+      'projects/app/src/app.ts',
+      "import { messages } from '#i18n/shell';\n\nexport const title = messages.appTitle.messageId;\n",
+    );
+    const { readFile } =
+      await vi.importActual<typeof import('node:fs/promises')>(
+        'node:fs/promises',
+      );
+    const manifest = JSON.parse(
+      await readFile(resolve(root, 'package.json'), 'utf8'),
+    ) as Record<string, unknown>;
+    manifest['imports'] = {
+      '#i18n': './projects/app/src/generated/i18n/index.ts',
+      '#i18n/*': './projects/app/src/generated/i18n/*.ts',
+    };
+    await write(root, 'package.json', `${JSON.stringify(manifest, null, 2)}\n`);
+    const { results, finish } = start(root, 20);
+    try {
+      expect(await until(() => results.length >= 1, 15_000)).toBe(true);
+      expect(results[0]?.ok, JSON.stringify(results[0]?.diagnostics)).toBe(
+        true,
+      );
+
+      // A cycle is seen as it starts, by the files it opens, rather than when it reports.
+      const opened: string[] = [];
+      control.onRead = (path) => {
+        opened.push(path);
+        return Promise.resolve();
+      };
+      for (const path of [
+        'projects/app/src/generated/i18n/shell.ts',
+        'build/app/browser/main.js',
+        'projects/app/node_modules/some-package/index.js',
+      ]) {
+        fire(path);
+        expect(
+          await until(() => opened.length > 0, 1_000),
+          `an event for ${path} started a generation: ${opened.join(', ')}`,
+        ).toBe(false);
+      }
+
+      // The same watch still answers an edit, so the quiet above is the rule and not a dead watch.
+      await write(root, 'i18n/shell/en-US.yaml', catalog('Nested'));
+      fire('i18n/shell/en-US.yaml');
+      expect(await until(() => opened.length > 0, 15_000)).toBe(true);
+      expect(await until(() => results.length >= 2, 15_000)).toBe(true);
+    } finally {
+      await finish();
+    }
+  });
+
   it('returns only after the platform watcher reports that it closed', async () => {
     const root = await project();
     let emitClose: (() => void) | undefined;
