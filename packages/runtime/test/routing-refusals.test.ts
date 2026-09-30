@@ -383,6 +383,36 @@ describe('what an address is refused for before any route sees it', () => {
     expect(statusOf('/en-us\\second')).toBe('malformed');
   });
 
+  it('refuses a C1 control or an invisible mark in a segment, escaped or not', () => {
+    for (const character of [
+      '\u0085',
+      '\u009b',
+      '\u061c',
+      '\u200b',
+      '\u200e',
+      '\u200f',
+      '\u202e',
+      '\u2060',
+      '\u2066',
+      '\u2069',
+      '\ufeff',
+    ]) {
+      const escaped = encodeURIComponent(character);
+      expect(statusOf(`/en-us/se${escaped}cond`), escaped).toBe('malformed');
+      expect(statusOf(`/en-us/se${character}cond`), escaped).toBe('malformed');
+    }
+    // A query carries what a reader typed, so a directional mark in it is text and a control is not.
+    expect(statusOf('/en-us/second?q=%E2%80%8F')).toBe('success');
+    expect(statusOf('/en-us/second?q=%C2%85')).toBe('malformed');
+  });
+
+  it('lets a segment carry the joiners words are spelled with', () => {
+    // Persian writes a zero width non-joiner inside words, so refusing it would refuse the language.
+    expect(statusOf(`/en-us/se${encodeURIComponent('\u200c')}cond`)).not.toBe(
+      'malformed',
+    );
+  });
+
   it('refuses an escape that hides a separator, in either case', () => {
     // `%2f` decodes to `/`. Accepting it would let one segment become two after decoding, which is
     // the shape of a path traversal: the resolver matches one segment and the host walks two.

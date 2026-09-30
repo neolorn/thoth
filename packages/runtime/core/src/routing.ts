@@ -1495,7 +1495,8 @@ function trustedXDefaultPath(value: string | undefined): string | undefined {
   if (
     !value.startsWith('/') ||
     value.startsWith('//') ||
-    /[\\\u0000-\u001f\u007f]/u.test(value)
+    value.includes('\\') ||
+    INVISIBLE_IN_ADDRESS.test(value)
   ) {
     routeError('x-default must be an origin-relative trusted path.');
   }
@@ -1758,7 +1759,8 @@ function safeParameterSegment(value: unknown): value is string {
     value.normalize('NFC') === value &&
     value !== '.' &&
     value !== '..' &&
-    !/[\u0000-\u001f\u007f\\/]/u.test(value)
+    !/[\\/]/u.test(value) &&
+    !INVISIBLE_IN_ADDRESS.test(value)
   );
 }
 
@@ -2058,6 +2060,17 @@ export function validateRouteProjection(
   return prepareRouteProjection(projection).projection;
 }
 
+/**
+ * What changes how a path reads without showing in it: every control, the bidirectional controls
+ * Unicode 17.0.0 lists as `Bidi_Control`, and the invisible space, word joiner and byte-order mark.
+ * A right-to-left override lets `/en-us/` followed by U+202E and `txt.exe` read in the address bar
+ * as a page it is not. The joiners U+200C and U+200D stay out, because Persian and the Indic scripts
+ * spell words with them. A query and a fragment are refused a control only, because they carry what
+ * a reader typed, where a directional mark is text.
+ */
+const INVISIBLE_IN_ADDRESS =
+  /[\p{Cc}\u061c\u200b\u200e\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/u;
+
 interface ParsedTarget {
   readonly segments: readonly string[];
   readonly trailingSlash: boolean;
@@ -2071,7 +2084,7 @@ function decodeBounded(value: string, maximum: number): string | undefined {
     return undefined;
   try {
     const decoded = decodeURIComponent(value).normalize('NFC');
-    return /[\u0000-\u001f\u007f\\/]/u.test(decoded) ? undefined : decoded;
+    return /[\p{Cc}\\/]/u.test(decoded) ? undefined : decoded;
   } catch {
     return undefined;
   }
@@ -2083,7 +2096,7 @@ function parseTarget(target: string): ParsedTarget | undefined {
     target.length > 8192 ||
     !target.startsWith('/') ||
     target.startsWith('//') ||
-    /[\\\u0000-\u001f\u007f]/u.test(target)
+    /[\\\p{Cc}]/u.test(target)
   ) {
     return undefined;
   }
@@ -2102,7 +2115,12 @@ function parseTarget(target: string): ParsedTarget | undefined {
   for (const raw of rawSegments) {
     if (raw.length === 0 && rawSegments.length === 1) continue;
     const decoded = decodeBounded(raw, 1024);
-    if (decoded === undefined || decoded === '.' || decoded === '..')
+    if (
+      decoded === undefined ||
+      decoded === '.' ||
+      decoded === '..' ||
+      INVISIBLE_IN_ADDRESS.test(decoded)
+    )
       return undefined;
     segments.push(decoded);
   }

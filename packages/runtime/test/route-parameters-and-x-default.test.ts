@@ -169,8 +169,11 @@ describe('an x-default address on a locale-neutral policy', () => {
     expect(codeOf(() => withDefault('/\\elsewhere.example'))).toBe(
       'invalid-configuration',
     );
-    // Control characters, at both ends of the range the check names and in the middle.
-    for (const code of [0x00, 0x0a, 0x0d, 0x1f, 0x7f]) {
+    // Control characters at both ends of both ranges and in the middle, and the directional
+    // controls that make a path read as another one.
+    for (const code of [
+      0x00, 0x0a, 0x0d, 0x1f, 0x7f, 0x80, 0x85, 0x9f, 0x202e, 0x2066,
+    ]) {
       expect(codeOf(() => withDefault(`/a${String.fromCharCode(code)}b`))).toBe(
         'invalid-configuration',
       );

@@ -188,6 +188,27 @@ describe('a declared route parameter spelling', () => {
     ).toThrow(/unsafe parameter/u);
   });
 
+  it('refuses a declared spelling that carries a C1 control or a directional control', () => {
+    // An editor pasting from another tool brings these along unseen, and the address they would
+    // write reads in the address bar as a different one.
+    for (const code of [0x85, 0x202e, 0x2066]) {
+      expect(
+        () =>
+          buildLocalizedRoute(
+            POLICY,
+            PROJECTION,
+            'dossier',
+            'ar-EG',
+            { slug: 'dossier' },
+            [],
+            undefined,
+            { slug: { 'ar-EG': `dos${String.fromCharCode(code)}sier` } },
+          ),
+        code.toString(16),
+      ).toThrow(/unsafe parameter/u);
+    }
+  });
+
   it('spells the canonical and the alternates from one declaration', () => {
     const resolution = resolveLocalizedRoute(
       '/en-us/dossiers/dossier',
