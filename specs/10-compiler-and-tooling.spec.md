@@ -80,6 +80,11 @@ override contracts, and the explicit legacy or interchange inputs of a declared 
 MUST let each input class contribute only its own declared facts, and MUST NOT let one redefine
 catalog wording or message identity.
 
+Every authored input is UTF-8 text, and a release MUST NOT decode one with replacement. A release
+MUST refuse an authored input that is not UTF-8, or that exceeds its byte ceiling, with the code
+that input's other refusals carry and its path relative to the owner, and MUST NOT report either as
+an environment failure.
+
 An extension input is application-local inert data. A release MUST NOT import or execute a
 handler, renderer, adapter, or application module to discover anything, and MUST validate a
 descriptor's schema, identity, namespace, profile, and fingerprint before it contributes a generated

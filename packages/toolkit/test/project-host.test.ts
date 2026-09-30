@@ -21,6 +21,7 @@ import {
   type ToolkitObservabilityEvent,
 } from '../src/index.js';
 import { COMPILER_CACHE_PATH } from '../src/output-host.js';
+import { RESOURCE_LIMITS } from '../src/resource-limits.js';
 import {
   cleanProject,
   formatProject,
@@ -579,3 +580,72 @@ async function pathMetadataForTest(path: string) {
     throw error;
   }
 }
+
+describe('an authored file that is not UTF-8 text, or is over its ceiling', () => {
+  // 0xC3 opens a two-byte sequence and 0x28 cannot continue it, so no decoder reads it as UTF-8.
+  // It is placed inside a string, so decoded with replacement the file is still well formed and the
+  // encoding is its only fault.
+  const NOT_UTF8 = Buffer.from([0xc3, 0x28]);
+
+  const withBytes = (text: string, at: string, bytes: Buffer): Buffer => {
+    const index = text.indexOf(at);
+    expect(index, at).toBeGreaterThanOrEqual(0);
+    return Buffer.concat([
+      Buffer.from(text.slice(0, index)),
+      bytes,
+      Buffer.from(text.slice(index + at.length)),
+    ]);
+  };
+
+  const refusal = async (root: string) => {
+    const checked = await checkProject({ project: root });
+    expect(checked.ok).toBe(false);
+    if (checked.ok) return undefined;
+    return checked.diagnostics.find(({ severity }) => severity === 'error');
+  };
+
+  it('is refused with the code of the file it is, naming it from the owner', async () => {
+    for (const [file, code] of [
+      ['equator.config.json', 'EQ1001'],
+      ['package.json', 'EQ1702'],
+      ['i18n/shell/en-US.yaml', 'EQ1101'],
+      ['angular.json', 'EQ1702'],
+      ['equator.extensions.json', 'EQ1805'],
+    ] as const) {
+      const root = await temporaryProject('not-utf8-');
+      await createInitializedProject(root);
+      const path = resolve(root, ...file.split('/'));
+      const text = await readFile(path, 'utf8').catch(() => undefined);
+      await writeFile(
+        path,
+        file.endsWith('.yaml')
+          ? withBytes(text ?? '', 'host fixture', NOT_UTF8)
+          : withBytes(
+              text?.replace('{', '{"x": "@",') ?? '{"x": "@"}\n',
+              '@',
+              NOT_UTF8,
+            ),
+      );
+      const diagnostic = await refusal(root);
+      expect(diagnostic, file).toMatchObject({ code });
+      expect(diagnostic?.summary, file).toContain(
+        `${JSON.stringify(file)} because it is not UTF-8 text`,
+      );
+    }
+  });
+
+  it('is refused over its ceiling with its own code rather than as an environment failure', async () => {
+    const root = await temporaryProject('over-ceiling-');
+    await createInitializedProject(root);
+    await writeFile(
+      resolve(root, 'i18n/shell/en-US.yaml'),
+      Buffer.alloc(RESOURCE_LIMITS.catalogBytes + 1, 0x20),
+    );
+    const diagnostic = await refusal(root);
+    expect(diagnostic).toMatchObject({ code: 'EQ1101' });
+    expect(diagnostic?.summary).toContain(
+      `"i18n/shell/en-US.yaml" because it exceeds the ${RESOURCE_LIMITS.catalogBytes}-byte`,
+    );
+    expect(diagnostic?.summary).not.toContain(root);
+  });
+});

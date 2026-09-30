@@ -43,7 +43,7 @@ import type { ToolkitDiagnosticCode } from './diagnostics.js';
  */
 const REFERENCE = {
   EQ1001:
-    '`equator.config.json` is not one readable JSON value: a syntax error, a repeated key, more than one value, or the configuration byte ceiling.',
+    '`equator.config.json` is not one readable JSON value: a syntax error, a repeated key, more than one value, text that is not UTF-8, or the configuration byte ceiling.',
   EQ1002:
     '`equator.config.json` is readable JSON, and one of its values is not what the configuration schema allows.',
   EQ1003:
@@ -147,7 +147,7 @@ const REFERENCE = {
   EQ1701:
     'The command cannot act on how it was invoked: an unknown or malformed argument, or a noninteractive `equator init` with a required option missing.',
   EQ1702:
-    'The project could not be selected or read: no Equator configuration inside the package boundary, a selection that is a symbolic link or not a directory, or an owner `package.json` that is missing, unreadable or not an object.',
+    'The project could not be selected or read: no Equator configuration inside the package boundary, a selection that is a symbolic link or not a directory, an owner `package.json` that is missing, unreadable or not an object, or an owner `angular.json` that is unreadable.',
   EQ1703:
     'An environment operation failed, or a disposable one was skipped: a corrupt or incompatible incremental cache, a cache that could not be persisted, a formatting refused because semantic equality was not proven, or a watcher that could not start or reconcile.',
   EQ1704:

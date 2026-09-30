@@ -61,6 +61,7 @@ import {
   spanAt,
   toolkitSuccess,
   type ToolkitDiagnostic,
+  type ToolkitDiagnosticCode,
   type ToolkitDiagnosticSeverity,
   type ToolkitResult,
 } from './diagnostics.js';
@@ -466,6 +467,74 @@ async function readUtf8(path: string, maximumBytes: number): Promise<string> {
   return contents.toString('utf8');
 }
 
+// A leading byte-order mark is kept in the text, because whether one is allowed is each parser's
+// rule and not the decoder's.
+const STRICT_UTF8 = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
+
+/**
+ * An authored file's text, or the refusal that file's own parser gives it.
+ *
+ * Every authored input is UTF-8 by its own definition (RFC 8259 section 8.1 for the JSON files,
+ * `specs/04-message-authoring-and-catalogs.spec.md` section 2 for a catalog). Decoded with
+ * replacement, a sequence that is not UTF-8 became U+FFFD and the file was accepted with text
+ * nobody wrote in it. An oversized file threw, and ended the run as an environment failure naming
+ * an absolute path, when the file is the application's input and its code says so.
+ *
+ * TypeScript sources are the exception to strict decoding: the compiler reads them with
+ * replacement, and analysis sees the program the compiler builds.
+ */
+async function readAuthoredText(
+  ownerRoot: string,
+  path: string,
+  input: {
+    readonly code: ToolkitDiagnosticCode;
+    readonly name: string;
+    readonly maximumBytes: number;
+    readonly decoding?: 'strict' | 'replacement';
+  },
+): Promise<ToolkitResult<string>> {
+  const named = `${input.name} ${JSON.stringify(portablePath(ownerRoot, path))}`;
+  const oversized = () =>
+    toolkitFailure([
+      toolkitDiagnostic(
+        input.code,
+        `Equator refuses ${named} because it exceeds the ${input.maximumBytes}-byte implementation ceiling.`,
+      ),
+    ]);
+  // Read through one handle and no further than one byte past the ceiling, as the migration plan
+  // is, so a file far past it is refused without being held in memory.
+  const handle = await open(path, 'r');
+  const chunks: Buffer[] = [];
+  let position = 0;
+  try {
+    while (position <= input.maximumBytes) {
+      const capacity = Math.min(64 * 1024, input.maximumBytes + 1 - position);
+      const chunk = Buffer.allocUnsafe(capacity);
+      const { bytesRead } = await handle.read(chunk, 0, capacity, position);
+      if (bytesRead === 0) break;
+      chunks.push(chunk.subarray(0, bytesRead));
+      position += bytesRead;
+    }
+  } finally {
+    await handle.close();
+  }
+  if (position > input.maximumBytes) return oversized();
+  const contents = Buffer.concat(chunks, position);
+  if (input.decoding === 'replacement') {
+    return toolkitSuccess(contents.toString('utf8'));
+  }
+  try {
+    return toolkitSuccess(STRICT_UTF8.decode(contents));
+  } catch {
+    return toolkitFailure([
+      toolkitDiagnostic(
+        input.code,
+        `Equator refuses ${named} because it is not UTF-8 text.`,
+      ),
+    ]);
+  }
+}
+
 function projectDiagnostic(
   summary: string,
   severity: ToolkitDiagnosticSeverity = 'error',
@@ -707,7 +776,17 @@ async function readPackageManifest(
       }),
     );
   }
-  const source = await readUtf8(location.packagePath, 1024 * 1024);
+  const read = await readAuthoredText(
+    location.ownerRoot,
+    location.packagePath,
+    {
+      code: 'EQ1702',
+      name: 'the owner package.json',
+      maximumBytes: 1024 * 1024,
+    },
+  );
+  if (!read.ok) return read;
+  const source = read.value;
   let value: unknown;
   try {
     value = JSON.parse(source);
@@ -823,7 +902,17 @@ async function readConfiguration(location: ProjectLocation): Promise<
       ),
     ]);
   }
-  const source = await readUtf8(location.configurationPath, 1024 * 1024);
+  const read = await readAuthoredText(
+    location.ownerRoot,
+    location.configurationPath,
+    {
+      code: 'EQ1001',
+      name: 'the configuration',
+      maximumBytes: RESOURCE_LIMITS.configurationBytes,
+    },
+  );
+  if (!read.ok) return read;
+  const source = read.value;
   const parsed = parseConfiguration(source, {
     sourcePath: CONFIGURATION_NAME,
   });
@@ -855,7 +944,13 @@ async function readExtensionRegistry(location: ProjectLocation): Promise<
     ]);
   }
   await assertOrdinaryContainedPath(location.ownerRoot, path);
-  const source = await readUtf8(path, 1024 * 1024);
+  const read = await readAuthoredText(location.ownerRoot, path, {
+    code: 'EQ1805',
+    name: 'the extension registry',
+    maximumBytes: RESOURCE_LIMITS.configurationBytes,
+  });
+  if (!read.ok) return read;
+  const source = read.value;
   const parsed = parseExtensionRegistry(source, {
     sourcePath: EXTENSION_REGISTRY_NAME,
   });
@@ -975,11 +1070,20 @@ async function discoverCatalogs(
       }
       const absolutePath = resolve(scopeRoot, localeEntry.name);
       await assertOrdinaryContainedPath(location.ownerRoot, absolutePath);
-      const source = await readUtf8(absolutePath, 16 * 1024 * 1024);
       const portable = portablePath(location.ownerRoot, absolutePath);
       // Counted where the file is read rather than where it is accepted, because the difference
       // between the two is the whole of the diagnostic below.
       unreadable.push(portable);
+      const read = await readAuthoredText(location.ownerRoot, absolutePath, {
+        code: 'EQ1101',
+        name: 'the catalog',
+        maximumBytes: RESOURCE_LIMITS.catalogBytes,
+      });
+      if (!read.ok) {
+        diagnostics.push(...read.diagnostics);
+        continue;
+      }
+      const source = read.value;
       const parsed = parseCatalog(source, {
         role:
           canonicalLocale.value === configuration.sourceLocale
@@ -1155,9 +1259,15 @@ async function selectAngularApplication(
 ): Promise<ToolkitResult<AngularApplication | undefined>> {
   const angularPath = resolve(ownerRoot, 'angular.json');
   if (await pathExists(angularPath)) {
+    const read = await readAuthoredText(ownerRoot, angularPath, {
+      code: 'EQ1702',
+      name: 'the owner angular.json',
+      maximumBytes: 4 * 1024 * 1024,
+    });
+    if (!read.ok) return read;
     let angular: unknown;
     try {
-      angular = JSON.parse(await readUtf8(angularPath, 4 * 1024 * 1024));
+      angular = JSON.parse(read.value);
     } catch {
       return toolkitFailure([
         projectDiagnostic('The selected owner angular.json is not valid JSON.'),
@@ -1366,7 +1476,14 @@ async function loadAnalysisGraph(
   };
   for (const path of rootNames) {
     await assertOrdinaryContainedPath(location.ownerRoot, path);
-    const source = await readUtf8(path, 4 * 1024 * 1024);
+    const read = await readAuthoredText(location.ownerRoot, path, {
+      code: 'EQ1403',
+      name: 'the analysis source',
+      maximumBytes: 4 * 1024 * 1024,
+      decoding: 'replacement',
+    });
+    if (!read.ok) return read;
+    const source = read.value;
     if (!addSource(path, source)) {
       return toolkitFailure([
         toolkitDiagnostic(
@@ -1396,12 +1513,18 @@ async function loadAnalysisGraph(
         metadata.isFile() &&
         !metadata.isSymbolicLink()
       ) {
-        if (
-          !addSource(
-            templatePath,
-            await readUtf8(templatePath, 4 * 1024 * 1024),
-          )
-        ) {
+        const template = await readAuthoredText(
+          location.ownerRoot,
+          templatePath,
+          {
+            code: 'EQ1403',
+            name: 'the Angular template',
+            maximumBytes: 4 * 1024 * 1024,
+            decoding: 'replacement',
+          },
+        );
+        if (!template.ok) return template;
+        if (!addSource(templatePath, template.value)) {
           return toolkitFailure([
             toolkitDiagnostic(
               'EQ1403',

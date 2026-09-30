@@ -18,7 +18,7 @@ which one it carries.
 
 ### EQ1001
 
-`equator.config.json` is not one readable JSON value: a syntax error, a repeated key, more than one value, or the configuration byte ceiling.
+`equator.config.json` is not one readable JSON value: a syntax error, a repeated key, more than one value, text that is not UTF-8, or the configuration byte ceiling.
 
 ### EQ1002
 
@@ -244,7 +244,7 @@ The command cannot act on how it was invoked: an unknown or malformed argument, 
 
 ### EQ1702
 
-The project could not be selected or read: no Equator configuration inside the package boundary, a selection that is a symbolic link or not a directory, or an owner `package.json` that is missing, unreadable or not an object.
+The project could not be selected or read: no Equator configuration inside the package boundary, a selection that is a symbolic link or not a directory, an owner `package.json` that is missing, unreadable or not an object, or an owner `angular.json` that is unreadable.
 
 ### EQ1703
 
