@@ -1754,7 +1754,21 @@ function importXliff22Core(
     null,
   ) as Record<string, CatalogMessage>;
   const seen = new Set<string>();
-  for (const unit of childElements(catalogFile, XLIFF_NAMESPACE, 'unit')) {
+  const units = childElements(catalogFile, XLIFF_NAMESPACE, 'unit');
+  // Checked before any unit is read, because a document breaking the Core grammar is not one this
+  // import can be performed on. The id is the translator's file's, not a value to repeat.
+  const unconforming = units.findIndex(
+    (unit) => !XML_NMTOKEN.test(unit.attributes['id'] ?? ''),
+  );
+  if (unconforming >= 0) {
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1802',
+        `XLIFF unit ${unconforming + 1} of its file has an id that is not an xs:NMTOKEN, which XLIFF 2.2 Core requires.`,
+      ),
+    ]);
+  }
+  for (const unit of units) {
     const contract = parseContract(unit);
     const unitId = unit.attributes['id'];
     if (

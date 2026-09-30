@@ -544,3 +544,37 @@ describe('an XLIFF document that is not text', () => {
     }
   });
 });
+
+describe('an XLIFF unit whose id is not an xs:NMTOKEN', () => {
+  const plainSource = catalog(
+    'messages:\n  greeting: "Hello"\n',
+    sourceOptions,
+  );
+  const plainTarget = catalog(
+    'messages:\n  greeting: "Ahlan"\n',
+    targetOptions,
+  );
+  const exported = exportXliff22({ source: plainSource, target: plainTarget });
+  const document = exported.ok ? exported.value : '';
+
+  it('makes the document one Equator cannot import, and does not repeat the id', () => {
+    expect(document).toContain('<unit id="greeting" name="greeting">');
+    for (const id of ['../../greeting', 'greeting/..', 'a b']) {
+      const imported = importXliff22({
+        document: document.replace(
+          '<unit id="greeting" name="greeting">',
+          `<unit id="${id}" name="greeting">`,
+        ),
+        source: plainSource,
+      });
+      expect(imported.ok, id).toBe(false);
+      expect(
+        imported.diagnostics.map(({ code }) => code),
+        id,
+      ).toContain('EQ1802');
+      for (const { summary } of imported.diagnostics) {
+        expect(summary, id).not.toContain(id);
+      }
+    }
+  });
+});
