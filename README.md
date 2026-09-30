@@ -33,7 +33,7 @@ For a detailed description of the architecture and the contracts between the two
   - Locale display names from pinned CLDR data, identical across engines and between server and client.
   - Language and direction handling for consumer-supplied content, including undetermined and multilingual content.
 - **Routing**
-  - Localized URLs under three policies: a locale prefix in the path, a domain per locale, or a single address space.
+  - Localized URLs with the locale in a path prefix, in the domain, or kept out of the address.
   - Per-locale route and parameter spellings, with canonicalization and permanent redirects for legacy addresses.
   - Locale-neutral roots and aliases for addresses that do not belong to one locale.
   - Canonical and `hreflang` metadata derived from the route projection, and sitemaps per [sitemaps.org](https://www.sitemaps.org/protocol.html) with the `hreflang` extension.

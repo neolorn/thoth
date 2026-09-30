@@ -22,7 +22,7 @@ Catalogs are compiled by [`@neolorn/equator-toolkit`](https://www.npmjs.com/pack
   - Resolution from the URL, a persisted preference, `Accept-Language`, or a configured default, in a declared order.
   - Persistence through cookies, browser storage, or an authenticated profile.
 - **Routing and rendering**
-  - Localized URLs under three policies, with canonical and `hreflang` metadata and sitemaps per [sitemaps.org](https://www.sitemaps.org/protocol.html), all derived from one route projection.
+  - Localized URLs with the locale in a path prefix, in the domain, or kept out of the address, with canonical and `hreflang` metadata and sitemaps per [sitemaps.org](https://www.sitemaps.org/protocol.html), all derived from one route projection.
   - Server-side rendering, prerendering, and hydration with the first response in the visitor's locale.
   - Locale switching as a transaction: catalogs load first, then the document, the routes, focus, and scroll position move together.
   - A locale switcher directive that keeps the visitor on the current page, with `lang`, `dir`, `aria-current`, and `href` handled.
