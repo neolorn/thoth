@@ -228,7 +228,7 @@ The output plan or the completion manifest is invalid: a malformed or colliding 
 
 ### EQ1601
 
-The generated root is not Equator's to write: no completion and ownership manifest, an unowned file inside it, or an owner identity that is not this one.
+The generated root is not Equator's to write: no completion and ownership manifest, an unowned file inside it, an owner identity that is not this one, or a root inside a dependency directory or the build output.
 
 ### EQ1602
 

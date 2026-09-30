@@ -1368,8 +1368,8 @@ export const injections = Object.freeze([
     invariant:
       'An owner at a workspace root generates into the nested Angular application it analysed, not into a source directory of its own.',
     source: 'packages/toolkit/src/project-host.ts',
-    find: "  return root === '' ? GENERATED_ROOT : `${root}/${GENERATED_ROOT}`;",
-    replace: '  return GENERATED_ROOT;',
+    find: "  const path = root === '' ? GENERATED_ROOT : `${root}/${GENERATED_ROOT}`;",
+    replace: '  const path = GENERATED_ROOT;',
     caughtBy: 'packages/toolkit/test/multi-owner-workspace.test.ts',
   },
   {
@@ -4208,5 +4208,23 @@ export const injections = Object.freeze([
     replace:
       "    ...(scope.families.length === 0\n      ? ['export const families = Object.freeze({});', '']\n      : [`export const families = ${renderFamilies(scope)};`, '']),",
     caughtBy: 'packages/toolkit/test/empty-family-registry.test.ts',
+  },
+  {
+    id: 'generated-root-inside-a-dependency-accepted',
+    invariant:
+      'A generated root inside a dependency directory is refused at configuration (EQ1601), since a package manager replaces that directory on install.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: "path.split('/').includes('node_modules')",
+    replace: 'false',
+    caughtBy: 'packages/toolkit/test/generated-root-separation.test.ts',
+  },
+  {
+    id: 'generated-root-inside-the-build-output-accepted',
+    invariant:
+      "A generated root inside the application's build output is refused at configuration (EQ1601), since the build empties that directory.",
+    source: 'packages/toolkit/src/project-host.ts',
+    find: 'outputPath !== undefined && containedPath(absolute, outputPath)',
+    replace: 'false',
+    caughtBy: 'packages/toolkit/test/generated-root-separation.test.ts',
   },
 ]);

@@ -3661,7 +3661,11 @@
       "spec": "10-compiler-and-tooling.spec.md",
       "section": "8. Generated roots and the translation state",
       "statement": "A release MUST keep the generated root and the work root separate from the authored catalogs, from each other, from dependencies, and from ordinary build output.",
-      "checks": ["assurance:nested-generated-and-work-roots-accepted"]
+      "checks": [
+        "assurance:nested-generated-and-work-roots-accepted",
+        "assurance:generated-root-inside-a-dependency-accepted",
+        "assurance:generated-root-inside-the-build-output-accepted"
+      ]
     },
     {
       "spec": "10-compiler-and-tooling.spec.md",

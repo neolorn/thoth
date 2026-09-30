@@ -716,13 +716,14 @@ export async function discoverProject(
     ]);
   }
   const generatedRoot = await generatedRootPath(ownerRoot);
+  if (!generatedRoot.ok) return generatedRoot;
   return toolkitSuccess(
     Object.freeze({
       ownerRoot,
       configurationPath: resolve(ownerRoot, CONFIGURATION_NAME),
       packagePath: resolve(ownerRoot, 'package.json'),
-      generatedRoot: resolve(ownerRoot, ...generatedRoot.split('/')),
-      generatedRootPath: generatedRoot,
+      generatedRoot: resolve(ownerRoot, ...generatedRoot.value.split('/')),
+      generatedRootPath: generatedRoot.value,
       workRoot: resolve(ownerRoot, WORK_ROOT),
     }),
   );
@@ -1188,6 +1189,8 @@ interface AngularApplication {
   /** Portable path of the application root, relative to the owner. Empty at the owner root. */
   readonly root: string;
   readonly tsConfig: string;
+  /** Where the build writes, absolute: its `outputPath`, or Angular's `dist/<project>` default. */
+  readonly outputPath?: string;
 }
 
 function angularApplication(
@@ -1203,7 +1206,7 @@ function angularApplication(
     return toolkitSuccess(undefined);
   }
   const candidates: AngularApplication[] = [];
-  for (const [, rawProject] of Object.entries(projects).sort(
+  for (const [projectName, rawProject] of Object.entries(projects).sort(
     ([left], [right]) => compareCodePoint(left, right),
   )) {
     if (
@@ -1241,12 +1244,28 @@ function angularApplication(
     const tsConfig = (options as Readonly<Record<string, unknown>>)['tsConfig'];
     if (typeof tsConfig === 'string') {
       const root = portablePath(ownerRoot, absoluteProjectRoot);
+      const outputPath = (options as Readonly<Record<string, unknown>>)[
+        'outputPath'
+      ];
+      const outputBase =
+        typeof outputPath === 'string'
+          ? outputPath
+          : typeof outputPath === 'object' &&
+              outputPath !== null &&
+              typeof (outputPath as Readonly<Record<string, unknown>>)[
+                'base'
+              ] === 'string'
+            ? ((outputPath as Readonly<Record<string, unknown>>)[
+                'base'
+              ] as string)
+            : `dist/${projectName}`;
       candidates.push(
         Object.freeze({
           // portablePath answers '.' for the owner root itself; an application at the owner root
           // has no prefix at all, and carrying one would put './' into every generated path.
           root: root === '.' ? '' : root,
           tsConfig: resolve(ownerRoot, tsConfig),
+          outputPath: resolve(ownerRoot, outputBase),
         }),
       );
     }
@@ -1317,10 +1336,31 @@ async function selectAngularApplication(
  * create a source directory belonging to no Angular project and sitting outside the tsconfig of
  * the application just analyzed.
  */
-async function generatedRootPath(ownerRoot: string): Promise<string> {
+async function generatedRootPath(
+  ownerRoot: string,
+): Promise<ToolkitResult<string>> {
   const application = await selectAngularApplication(ownerRoot);
   const root = application.ok ? (application.value?.root ?? '') : '';
-  return root === '' ? GENERATED_ROOT : `${root}/${GENERATED_ROOT}`;
+  const path = root === '' ? GENERATED_ROOT : `${root}/${GENERATED_ROOT}`;
+  // Not inside a tree something else rewrites. A package manager replaces a dependency's directory
+  // on install and a build empties its output, so generated source placed in either is lost the
+  // next time one runs, and whatever was there is Equator's to overwrite no more than it is ours.
+  const absolute = resolve(ownerRoot, ...path.split('/'));
+  const outputPath = application.ok ? application.value?.outputPath : undefined;
+  const foreign = path.split('/').includes('node_modules')
+    ? 'a dependency directory, which a package manager replaces on install'
+    : outputPath !== undefined && containedPath(absolute, outputPath)
+      ? 'the build output, which the build empties'
+      : undefined;
+  if (foreign !== undefined) {
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1601',
+        `The generated root ${JSON.stringify(path)} lies inside ${foreign}. Place the Angular application outside it.`,
+      ),
+    ]);
+  }
+  return toolkitSuccess(path);
 }
 
 function externalTemplatePaths(
@@ -2522,13 +2562,14 @@ async function initOwner(
     ]);
   }
   const generatedRoot = await generatedRootPath(ownerRoot);
+  if (!generatedRoot.ok) return generatedRoot;
   return toolkitSuccess(
     Object.freeze({
       ownerRoot,
       configurationPath: resolve(ownerRoot, CONFIGURATION_NAME),
       packagePath: resolve(ownerRoot, 'package.json'),
-      generatedRoot: resolve(ownerRoot, ...generatedRoot.split('/')),
-      generatedRootPath: generatedRoot,
+      generatedRoot: resolve(ownerRoot, ...generatedRoot.value.split('/')),
+      generatedRootPath: generatedRoot.value,
       workRoot: resolve(ownerRoot, WORK_ROOT),
     }),
   );

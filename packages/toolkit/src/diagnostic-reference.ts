@@ -137,7 +137,7 @@ const REFERENCE = {
   EQ1503:
     'The output plan or the completion manifest is invalid: a malformed or colliding output path, an attempt to replace the reserved completion marker, or a manifest whose header, entries or plan digest do not hold.',
   EQ1601:
-    "The generated root is not Equator's to write: no completion and ownership manifest, an unowned file inside it, or an owner identity that is not this one.",
+    "The generated root is not Equator's to write: no completion and ownership manifest, an unowned file inside it, an owner identity that is not this one, or a root inside a dependency directory or the build output.",
   EQ1602:
     'An output or authoring transaction did not complete. The message says whether the prior state was restored, because a failure that rolled back and one that could not are different situations.',
   EQ1603:
