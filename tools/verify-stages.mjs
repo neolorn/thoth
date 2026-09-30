@@ -288,14 +288,14 @@ const declared = Object.freeze([
   // of its own under `tmp`, which is not an artefact any other stage can see.
   {
     id: 'verify:diagnostics-reference:self-test',
-    reads: ['dist:toolkit', 'source:docs', 'source:packages'],
+    reads: ['dist:runtime', 'dist:toolkit', 'source:docs', 'source:packages'],
   },
   // Same shape and the same reason: the built table is the input, and the two checked-in copies
   // are what it re-renders. It also reads every `src` under `packages/`, to fail a documented code
   // that nothing raises.
   {
     id: 'verify:diagnostics-reference',
-    reads: ['dist:toolkit', 'source:docs', 'source:packages'],
+    reads: ['dist:runtime', 'dist:toolkit', 'source:docs', 'source:packages'],
     needs: [
       {
         on: 'verify:diagnostics-reference:self-test',

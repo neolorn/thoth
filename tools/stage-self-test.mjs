@@ -9,10 +9,21 @@
  * The unchanged copy must pass first, so every red after it is a change from a green this run saw.
  * A plant must change what it plants into, and must be refused with the words it names. A refusal
  * pattern the unchanged run already prints proves nothing, so each is required to be absent there.
+ *
+ * No run may change what it reads. `specs/12-verification.spec.md` section 9 forbids a failing run
+ * rewriting the baseline it fails against, and a refusal read from the output cannot see that: a
+ * stage that records its baseline while refusing prints the same words as one that does not. So
+ * every file of the copy is compared with its bytes before each run, and every file of the
+ * repository the copy was taken from is compared across the whole self-test, since a stage that
+ * resolves its baseline without `inputsRoot()` writes there instead. A plant that declares
+ * `rewrites` makes the stage rewrite that input, and is refused only when the comparison names it,
+ * which is how the comparison is shown able to fail.
  */
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const repositoryRoot = resolve(
@@ -47,6 +58,32 @@ export const editJson = (path, edit) => (root) =>
     edit(value);
     return `${JSON.stringify(value, null, 2)}\n`;
   });
+
+/** The bytes of every file under `paths` in `root`, by path relative to `root`. */
+export function inputDigests(root, paths) {
+  const digests = new Map();
+  // A plant may remove an input outright, and a run may; either reads as its files going missing.
+  const visit = (path) => {
+    if (!existsSync(path)) return;
+    if (statSync(path).isDirectory()) {
+      for (const entry of readdirSync(path)) visit(join(path, entry));
+      return;
+    }
+    digests.set(
+      relative(root, path).replaceAll('\\', '/'),
+      createHash('sha256').update(readFileSync(path)).digest('hex'),
+    );
+  };
+  for (const path of paths) visit(resolve(root, path));
+  return digests;
+}
+
+/** The paths whose bytes differ between two readings, including any added or removed. */
+export function changedInputs(before, after) {
+  return [...new Set([...before.keys(), ...after.keys()])]
+    .filter((path) => before.get(path) !== after.get(path))
+    .sort();
+}
 
 /**
  * Runs `script` with `args` over a fresh copy of `inputs` once unchanged and once per plant, and
@@ -85,7 +122,18 @@ export async function verifyStagePlants({
   };
 
   const failures = [];
-  try {
+  const repositoryBefore = inputDigests(repositoryRoot, inputs);
+  // Read after the plant rather than from the pristine copy, so what a plant edits is not taken
+  // for something the run wrote.
+  const runComparing = () => {
+    const before = inputDigests(work, inputs);
+    const result = run();
+    return {
+      ...result,
+      changed: changedInputs(before, inputDigests(work, inputs)),
+    };
+  };
+  const exercise = async () => {
     await rm(base, { recursive: true, force: true });
     for (const path of inputs) {
       await mkdir(dirname(resolve(pristine, path)), { recursive: true });
@@ -95,26 +143,56 @@ export async function verifyStagePlants({
     }
 
     await fresh();
-    const control = run();
+    const control = runComparing();
     out(`control: status ${control.status} in ${control.ms} ms`);
+    if (control.changed.length > 0) {
+      failures.push(
+        `The unchanged run changed what it reads: ${control.changed.join(', ')}.`,
+      );
+    }
     if (control.error !== undefined || control.status !== 0) {
       failures.push(
         `The unchanged copy does not pass, so no refusal would mean anything:\n${control.stdout}${control.stderr}${control.error ?? ''}`,
       );
-      return failures.length;
+      return;
     }
     const controlText = `${control.stdout}${control.stderr}`;
 
-    for (const { id, plant, refusal } of plants) {
+    for (const { id, plant, refusal, rewrites } of plants) {
+      if (rewrites !== undefined) {
+        await fresh();
+        await plant(work);
+        const result = runComparing();
+        out(`${id}: status ${result.status} in ${result.ms} ms`);
+        if (result.error !== undefined) {
+          failures.push(
+            `${id}: the stage did not finish: ${String(result.error)}`,
+          );
+        } else if (result.status === 0) {
+          failures.push(
+            `${id}: the stage passed; the plant is a failing run that rewrites ${rewrites}.`,
+          );
+        } else if (!result.changed.includes(rewrites)) {
+          failures.push(
+            `${id}: the failing run rewrote ${rewrites} and the comparison of what it reads did not name it (it named ${result.changed.join(', ') || 'nothing'}).`,
+          );
+        }
+        continue;
+      }
       if (refusal.test(controlText)) {
         failures.push(`${id}: the unchanged run already prints ${refusal}.`);
         continue;
       }
       await fresh();
       await plant(work);
-      const result = run();
+      const result = runComparing();
       out(`${id}: status ${result.status} in ${result.ms} ms`);
       const printed = `${result.stdout}${result.stderr}`;
+      if (result.changed.length > 0) {
+        failures.push(
+          `${id}: the run changed what it reads: ${result.changed.join(', ')}.`,
+        );
+      }
       if (result.error !== undefined) {
         failures.push(
           `${id}: the stage did not finish: ${String(result.error)}`,
@@ -127,16 +205,29 @@ export async function verifyStagePlants({
         );
       }
     }
-    return failures.length;
+  };
+
+  try {
+    await exercise();
   } finally {
     await rm(base, { recursive: true, force: true });
+    const repositoryChanged = changedInputs(
+      repositoryBefore,
+      inputDigests(repositoryRoot, inputs),
+    );
+    if (repositoryChanged.length > 0) {
+      failures.push(
+        `The repository's own copy of what the stage reads changed during the self-test: ${repositoryChanged.join(', ')}.`,
+      );
+    }
     if (failures.length > 0) {
       out(`${stage}:self-test RED: ${failures.length} failures.`);
       for (const failure of failures) out(`  ${failure}`);
     } else {
       out(
-        `${stage}:self-test GREEN: the stage refused all ${plants.length} planted defects, each by name.`,
+        `${stage}:self-test GREEN: the stage refused all ${plants.length} planted defects, each by name, and no run changed what it reads except where a plant made it.`,
       );
     }
   }
+  return failures.length;
 }

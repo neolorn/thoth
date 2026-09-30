@@ -74,12 +74,99 @@ export const stageSelfTests = Object.freeze({
     args: ['--check'],
     inputs: [
       'dist/toolkit',
+      'dist/runtime/types',
       'packages/runtime/src',
       'packages/toolkit/src',
       'packages/toolkit/DIAGNOSTICS.md',
       'docs/reference/diagnostics.md',
+      'tools/code-record.json',
+      'tools/code-descriptions.json',
     ],
     plants: [
+      {
+        id: 'recorded-toolkit-code-renumbered',
+        plant: plantText(
+          'dist/toolkit/diagnostic-reference.js',
+          '    EQ1701: ',
+          '    EQ1799: ',
+        ),
+        refusal:
+          /EQ1701 is in tools\/code-record\.json and ToolkitDiagnosticCode no longer declares it/u,
+      },
+      {
+        id: 'recorded-failure-code-withdrawn',
+        plant: plantText(
+          'dist/runtime/types/neolorn-equator-core.d.ts',
+          "'participant-timeout' | ",
+          '',
+        ),
+        refusal:
+          /participant-timeout is in tools\/code-record\.json and LocalizationFailureCode no longer declares it/u,
+      },
+      {
+        id: 'runtime-event-code-moved-to-another-area',
+        plant: plantText(
+          'dist/runtime/types/neolorn-equator.d.ts',
+          'readonly transition: "EQ-E2003";\n    readonly formatting: "EQ-E2004";',
+          'readonly transition: "EQ-E2004";\n    readonly formatting: "EQ-E2003";',
+        ),
+        refusal:
+          /EQ-E2003 is recorded for transition and RUNTIME_EVENT_CODES now declares it for formatting/u,
+      },
+      {
+        id: 'toolkit-event-code-moved-to-another-area',
+        plant: plantText(
+          'dist/toolkit/observability.js',
+          "interchange: 'EQ-E1002',\n    migration: 'EQ-E1003',",
+          "interchange: 'EQ-E1003',\n    migration: 'EQ-E1002',",
+        ),
+        refusal:
+          /EQ-E1002 is recorded for interchange and TOOLKIT_EVENT_CODES now declares it for migration/u,
+      },
+      {
+        id: 'declared-code-not-recorded',
+        plant: editJson('tools/code-record.json', (record) => {
+          record.toolkitDiagnostics = record.toolkitDiagnostics.filter(
+            (code) => code !== 'EQ1416',
+          );
+        }),
+        refusal:
+          /Declared and not in tools\/code-record\.json: EQ1416 \(ToolkitDiagnosticCode\)/u,
+      },
+      // A failing run that moves its own baseline the way that hides the failure: the built table the
+      // stage imports renumbers a recorded code and rewrites the record to match. The stage still
+      // fails on the renumbered code being raised nowhere, and prints nothing about the record, so
+      // only the comparison of what the run reads can see it.
+      {
+        id: 'failing-run-rewrites-its-record',
+        rewrites: 'tools/code-record.json',
+        plant: (root) =>
+          editText(root, 'dist/toolkit/diagnostic-reference.js', (text) =>
+            [
+              "import { readFileSync, writeFileSync } from 'node:fs';",
+              "const recordUrl = new URL('../../tools/code-record.json', import.meta.url);",
+              "writeFileSync(recordUrl, readFileSync(recordUrl, 'utf8').replace('\"EQ1701\"', '\"EQ1799\"'));",
+              replaceOnce('    EQ1701: ', '    EQ1799: ')(text),
+            ].join('\n'),
+          ),
+      },
+      {
+        id: 'declared-code-without-a-description',
+        plant: editJson('tools/code-descriptions.json', (descriptions) => {
+          delete descriptions.runtimeFailures['participant-timeout'];
+        }),
+        refusal:
+          /participant-timeout is declared by LocalizationFailureCode and tools\/code-descriptions\.json has no description for it/u,
+      },
+      {
+        id: 'description-for-an-undeclared-code',
+        plant: editJson('tools/code-descriptions.json', (descriptions) => {
+          descriptions.runtimeEvents['EQ-E2009'] =
+            'An area the runtime does not declare.';
+        }),
+        refusal:
+          /tools\/code-descriptions\.json describes EQ-E2009, which RUNTIME_EVENT_CODES does not declare/u,
+      },
       {
         id: 'package-reference-kept-by-hand',
         plant: plantText(
