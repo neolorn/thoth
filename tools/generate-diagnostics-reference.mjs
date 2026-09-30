@@ -337,12 +337,19 @@ function sourceFiles(directory, found = []) {
   return found;
 }
 
-// Every `src` under `packages/`, so an entry point added later is covered the day it lands.
-const roots = readdirSync(resolve(workspaceRoot, 'packages'), {
-  withFileTypes: true,
-})
-  .filter((entry) => entry.isDirectory())
-  .map((entry) => resolve(workspaceRoot, 'packages', entry.name, 'src'));
+// Every `src` under `packages/` at any depth, because the runtime's secondary entry points each
+// keep theirs beside the primary one, and an entry point added later is covered the day it lands.
+const roots = [];
+const findRoots = (directory) => {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name === 'node_modules' || entry.name === 'dist') continue;
+    const path = join(directory, entry.name);
+    if (entry.name === 'src') roots.push(path);
+    else findRoots(path);
+  }
+};
+findRoots(resolve(workspaceRoot, 'packages'));
 assert.ok(roots.length > 0, 'No package source roots were found.');
 
 // The two files that name codes without raising them: the union that declares them, and the table
@@ -373,7 +380,7 @@ const unraised = codes.filter((code) => raised.get(code).length === 0);
 assert.deepEqual(
   unraised,
   [],
-  `Documented but raised nowhere in packages/*/src: ${unraised.join(', ')}. A code nothing emits is a promise with nothing behind it.`,
+  `Documented but raised nowhere in a src directory under packages/: ${unraised.join(', ')}. A code nothing emits is a promise with nothing behind it.`,
 );
 
 /* ------------------------------------------------------------------ *
@@ -530,7 +537,7 @@ if (recording) {
     );
   }
   process.stdout.write(
-    `Equator diagnostics reference verified: ${codes.length} code(s) across ${sections.length} section(s), each raised in packages/*/src; ${occurrences} code reference(s) over ${scanned} file(s); ${families.map(({ declaration, declared }) => `${declared.size} ${declaration}`).join(', ')}, every one recorded and every recorded one still declared where it was; every event and failure code described in ${descriptionsName} and every description declared.\n`,
+    `Equator diagnostics reference verified: ${codes.length} code(s) across ${sections.length} section(s), each raised in a src directory under packages/; ${occurrences} code reference(s) over ${scanned} file(s); ${families.map(({ declaration, declared }) => `${declared.size} ${declaration}`).join(', ')}, every one recorded and every recorded one still declared where it was; every event and failure code described in ${descriptionsName} and every description declared.\n`,
   );
 } else {
   await mkdir(dirname(webDocumentPath), { recursive: true });

@@ -5,16 +5,41 @@
  * `verify-stage-self-test.mjs <stage>` runs one entry. The normative map names a plant as
  * `plant:<stage>:<id>`, which is a check only while `<stage>:self-test` is in the gate.
  */
+import { readdirSync } from 'node:fs';
 import { rm, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 import { plants as packageStructurePlants } from './package-structure-plants.mjs';
-import { editJson, editText, replaceOnce } from './stage-self-test.mjs';
+import {
+  editJson,
+  editText,
+  replaceOnce,
+  repositoryRoot,
+} from './stage-self-test.mjs';
 
 const plantText = (path, find, replace) => (root) =>
   editText(root, path, replaceOnce(find, replace));
 
 const suiteRoot = 'standards/data/message-format-tests-48.2';
+
+// Every `src` under `packages/` at any depth, the directories the diagnostics scan reads, so the
+// copy holds each secondary entry point the scan would find in the repository.
+const packageSourceRoots = () => {
+  const roots = [];
+  const visit = (path) => {
+    for (const entry of readdirSync(resolve(repositoryRoot, path), {
+      withFileTypes: true,
+    })) {
+      if (!entry.isDirectory()) continue;
+      if (entry.name === 'node_modules' || entry.name === 'dist') continue;
+      const child = `${path}/${entry.name}`;
+      if (entry.name === 'src') roots.push(child);
+      else visit(child);
+    }
+  };
+  visit('packages');
+  return roots.sort();
+};
 
 // Made up per run, because the export gate reads this file as evidence of use, and a planted name
 // written here would be one this file already uses.
@@ -75,8 +100,7 @@ export const stageSelfTests = Object.freeze({
     inputs: [
       'dist/toolkit',
       'dist/runtime/types',
-      'packages/runtime/src',
-      'packages/toolkit/src',
+      ...packageSourceRoots(),
       'packages/toolkit/DIAGNOSTICS.md',
       'docs/reference/diagnostics.md',
       'tools/code-record.json',
