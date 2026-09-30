@@ -199,6 +199,13 @@ export const stageSelfTests = Object.freeze({
           writeFile(resolve(root, 'standards/data/unrecorded.txt'), 'planted'),
         refusal: /data\/unrecorded\.txt is present, and no source records it/u,
       },
+      {
+        id: 'source-recorded-without-a-role',
+        plant: editJson('standards/sources.lock.json', (lock) => {
+          delete lock.dataSources.cldrJsonCore.role;
+        }),
+        refusal: /cldrJsonCore: the lock records no role/u,
+      },
     ],
   },
   'verify:locale-profile': {

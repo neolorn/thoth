@@ -77,6 +77,37 @@ const nestedSnapshots = new Set(
     .map((snapshot) => resolve(standardsRoot, snapshot)),
 );
 
+/**
+ * The five facts section 4 of `specs/01-standards-profile.spec.md` requires of every record,
+ * vendored or not. A record without one of them cannot be re-acquired, attributed or checked, and
+ * the checks below would pass over it without saying so.
+ */
+for (const [id, source] of Object.entries(lock.dataSources ?? {})) {
+  // A file Equator wrote itself was never acquired, so it has no release or address to record;
+  // its role, license and digest are still what make it accountable.
+  const acquired = source.publisher !== 'Equator';
+  const missing = [
+    ['release', acquired ? (source.version ?? source.fileDate) : true],
+    ['acquisition url', acquired ? source.url : true],
+    ['role', source.role],
+    ['license', source.license],
+    [
+      'digest',
+      source.digest?.value ??
+        (source.files === undefined
+          ? undefined
+          : Object.values(source.files).every(
+              (entry) => entry.digest?.value !== undefined,
+            ) || undefined),
+    ],
+  ]
+    .filter(([, value]) => value === undefined || value === '')
+    .map(([fact]) => fact);
+  if (missing.length > 0) {
+    failures.push(`${id}: the lock records no ${missing.join(' and no ')}`);
+  }
+}
+
 for (const [id, source] of Object.entries(lock.dataSources ?? {})) {
   const snapshot = source.projectSnapshot;
   if (snapshot === undefined) {

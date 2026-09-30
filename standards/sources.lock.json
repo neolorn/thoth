@@ -13,6 +13,7 @@
     "cldrCore": {
       "version": "48.2",
       "url": "https://unicode.org/Public/cldr/48.2/core.zip",
+      "role": "The CLDR release the profile is pinned to, as the Unicode Consortium publishes it. Nothing is derived from the archive; the cldr-core, cldr-localenames-full and cldr-person-names-full packages are the same release in JSON, and those are what the generators read.",
       "checksumManifest": "https://unicode.org/Public/cldr/48.2/hashes/SHASUM512.txt",
       "bytes": 36044097,
       "digest": {
@@ -139,6 +140,7 @@
     "ianaLanguageSubtagRegistry": {
       "fileDate": "2026-06-14",
       "url": "https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry",
+      "role": "Development-only derivation input. tools/generate-locale-profile.mjs reads its Macrolanguage relations, beside cldr-core's matching data, to derive packages/runtime/src/encompassed-languages.generated.ts. Only the generated table reaches a published package.",
       "projectSnapshot": "data/language-subtag-registry-2026-06-14.txt",
       "bytes": 731605,
       "digest": {
@@ -194,6 +196,7 @@
     "ianaTimeZoneDatabase": {
       "version": "2026c",
       "url": "https://data.iana.org/time-zones/releases/tzdata2026c.tar.gz",
+      "role": "The time zone database release the profile is pinned to. Nothing is derived from it.",
       "bytes": 475694,
       "digest": {
         "algorithm": "SHA-512",
