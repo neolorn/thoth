@@ -209,6 +209,9 @@ const declared = Object.freeze([
         why: 'A runner nobody has seen refuse a false catch would report a guard that never ran as caught.',
       },
     ],
+    // The 435 injections took 1,702s between them when the stage was measured on its own, so the
+    // bound is a little over three times that.
+    timeoutSeconds: 5_400,
   },
   {
     id: 'build',
