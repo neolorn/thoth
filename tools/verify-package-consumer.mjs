@@ -62,6 +62,7 @@ import {
   readExerciseInputs,
   sheetInDocument,
 } from './exercise-sheet.mjs';
+import { expectations, unmetExpectations } from './negative-expectations.mjs';
 import { locateNode, withNodeFirst } from './node-runtimes.mjs';
 import { compareVersions } from './supported-versions.mjs';
 import { withOfflineStoreRemedy } from './offline-store.mjs';
@@ -759,11 +760,8 @@ for (const negativeFile of negativeFiles) {
     resolve(consumerRoot, 'src', negativeFile),
     'utf8',
   );
-  const expectedNegatives = [
-    ...negativeSource.matchAll(/^\/\/ EXPECT: (.+)$/gmu),
-  ].map(([, text]) => text.trim());
   assert.ok(
-    expectedNegatives.length > 0,
+    expectations(negativeSource).length > 0,
     `${negativeFile} declares no expected diagnostics`,
   );
   await writeFile(
@@ -783,10 +781,13 @@ for (const negativeFile of negativeFiles) {
   const negative = run(['exec', 'ngc', '-p', 'tsconfig.negative.json'], 1);
   const negativeOutput = `${negative.stdout}
 ${negative.stderr}`;
-  for (const expected of expectedNegatives) {
-    assert.ok(
-      negativeOutput.includes(expected),
-      `${negativeFile} did not report ${JSON.stringify(expected)}:
+  for (const { line, text } of unmetExpectations(
+    negativeSource,
+    negativeOutput,
+    `src/${negativeFile}`,
+  )) {
+    assert.fail(
+      `${negativeFile} did not report ${JSON.stringify(text)} under line ${line}:
 ${negativeOutput}`,
     );
   }

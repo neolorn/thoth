@@ -21,3 +21,9 @@ localization.text(chosen);
 // The inputs of one message leave the other without its own.
 // EXPECT: is missing in type '{ count: number; }'
 localization.text(chosen, { count: 1 });
+
+const optionallyInputs = greeting ? messages.appTitle : messages.welcome;
+
+// One message taking nothing does not make the other's input optional.
+// EXPECT: Expected 2 arguments, but got 1
+localization.text(optionallyInputs);

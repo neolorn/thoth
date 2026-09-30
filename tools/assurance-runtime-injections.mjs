@@ -1886,8 +1886,7 @@ export const injections = Object.freeze([
     replace:
       'keyof MessageInputs<Handle> extends never\n  ? readonly [inputs?: InputsOfEveryMember<Handle>]\n  : readonly [inputs: InputsOfEveryMember<Handle>];',
     suite: 'verify:consumer',
-    caughtWhen:
-      /negative-handle-choice(?:-optional)?\.negative\.ts did not report/u,
+    caughtWhen: /negative-handle-choice\.negative\.ts did not report/u,
   },
   {
     id: 'scroll-restore-clamped-to-the-range',
