@@ -74,9 +74,9 @@ export interface LocalizationState {
    * The configured locales, as switchable options.
    *
    * The only reason this is here rather than derived by the application: nothing else on this
-   * interface names a locale other than the current one, so a consumer had no way to build a
-   * switcher without writing its own list of locale literals, which both of this repository's
-   * fixtures did, and which is the mutation the template diagnostic now refuses.
+   * interface names a locale other than the current one, so without it a consumer could build a
+   * switcher only by writing its own list of locale literals, which is the mutation the template
+   * diagnostic refuses.
    */
   readonly localeChoices: Signal<readonly LocaleSelectorChoice[]>;
 }

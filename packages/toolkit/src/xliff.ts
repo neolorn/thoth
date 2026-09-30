@@ -1705,9 +1705,8 @@ function importXliff22Core(
     ]);
   }
   // XLIFF 2.2 Core declares `<file>` with `maxOccurs="unbounded"`, and a translation-management
-  // system that holds several catalogs in one document is conformant. Equator required exactly one,
-  // so a document it had not written itself could not be imported at all. It now selects the file
-  // belonging to the catalog being imported and leaves the rest of the document alone.
+  // system that holds several catalogs in one document is conformant, so the file belonging to the
+  // catalog being imported is selected and the rest of the document is left alone.
   const catalogIdentity = `${request.source.providerId}:${request.source.scopeId}`;
   const catalogFileId = xliffFileId(request.source);
   const files = childElements(root, XLIFF_NAMESPACE, 'file');

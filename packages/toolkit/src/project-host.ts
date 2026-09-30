@@ -476,9 +476,9 @@ const STRICT_UTF8 = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
  *
  * Every authored input is UTF-8 by its own definition (RFC 8259 section 8.1 for the JSON files,
  * `specs/04-message-authoring-and-catalogs.spec.md` section 2 for a catalog). Decoded with
- * replacement, a sequence that is not UTF-8 became U+FFFD and the file was accepted with text
- * nobody wrote in it. An oversized file threw, and ended the run as an environment failure naming
- * an absolute path, when the file is the application's input and its code says so.
+ * replacement, a sequence that is not UTF-8 would become U+FFFD and the file would be accepted with
+ * text nobody wrote in it. An oversized file is the application's input too, so it is refused with
+ * that input's code rather than thrown as an environment failure naming an absolute path.
  *
  * TypeScript sources are the exception to strict decoding: the compiler reads them with
  * replacement, and analysis sees the program the compiler builds.
@@ -541,7 +541,7 @@ const BYTE_ORDER_MARK = '\ufeff';
  * The JSON a file carries, without the one leading byte-order mark an editor may have saved.
  *
  * RFC 8259 section 8.1 lets a parser ignore it, and npm, TypeScript and the Angular CLI all do, so
- * refusing it refused a manifest every other tool in the project reads. The file's text keeps it,
+ * refusing it would refuse a manifest every other tool in the project reads. The file's text keeps it,
  * so a rewrite writes it back and the check that the file did not change underneath still compares
  * what is on disk.
  */

@@ -425,10 +425,8 @@ function declaredIn(symbol: ts.Symbol, fragment: string): boolean {
  * whole point of generating it. An application that has a reason to assemble the setup itself
  * calls `provideLocalizationSetup()` from the package.
  *
- * Matching only the package spelling was what this did after `provideLocalization` was renamed to
- * `provideLocalizationSetup` there, and it stopped recognizing every real consumer: they all call
- * the generated wrapper. Nothing noticed, because the test for it declared its own
- * `provideLocalization` in a `@neolorn/equator` stub: an API that no longer existed.
+ * Matching only the package spelling would recognize no real consumer, because they all call the
+ * generated wrapper.
  */
 function isLocalizationProviderCall(
   checker: ts.TypeChecker,

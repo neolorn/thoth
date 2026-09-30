@@ -1907,10 +1907,9 @@ export function mayReorder(text: string): boolean {
  * consumer writes. Isolating where isolation means nothing buys no safety and costs every
  * assertion.
  *
- * What this no longer does is decide isolation from the message's direction. "Every value in a
- * right-to-left message" and "any value with a right-to-left character" were two different rules
- * standing in for one missing fact, the direction of the value itself, and both are now that
- * fact, carried on the part.
+ * Isolation is decided from the direction of the value itself, carried on the part, and not from
+ * the message's direction. "Every value in a right-to-left message" and "any value with a
+ * right-to-left character" are two different rules standing in for that one fact.
  */
 function isolatedValueText(
   part: LocalizedValuePart,
