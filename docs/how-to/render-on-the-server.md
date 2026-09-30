@@ -8,6 +8,10 @@ hydration claims that HTML rather than rewriting it.
 `@neolorn/equator/ssr` is a separate entry point with `@angular/ssr` as an optional peer. A
 browser-only application installs neither the peer nor this code.
 
+This page starts from an application localized as the [tutorial](../tutorial.md) localizes one, with
+server rendering added by `ng add @angular/ssr` or chosen at `ng new`. The CLI's providers in
+`app.config.ts` stay beside the localization ones, `provideClientHydration()` among them.
+
 ## Compose the server providers
 
 ```text
