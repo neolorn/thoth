@@ -8,6 +8,7 @@ import { Component } from '@angular/core';
 import {
   LABEL_ATTRIBUTES,
   Localization,
+  LocalizationError,
   LocalizedLabel,
   decimal,
   fixedClock,
@@ -194,6 +195,55 @@ describe('Equator feature-lab package consumer', () => {
         ?.hasAttribute('aria-current'),
     ).toBe(false);
     claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+  });
+
+  // `specs/06-runtime-and-angular.spec.md` section 3: a release must not depend on a manual
+  // change-detection sweep. The test below sweeps by hand after the commit, which would hide a
+  // surface that only refreshes when asked, so this one asks for nothing and leaves the render to
+  // Angular's own scheduling.
+  it('reaches the page after a locale commit with no change detection asked for', async () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+
+    await TestBed.inject(Localization).changeLocale('ar-EG');
+    await fixture.whenStable();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('h1')?.textContent).toContain(
+      'مختبر ميزات Equator',
+    );
+    expect(element.querySelector('[data-pipe]')?.textContent).toContain(
+      'مختبر ميزات Equator',
+    );
+    expect(
+      element.querySelector('[data-label]')?.getAttribute('aria-label'),
+    ).toBe('مختبر ميزات Equator');
+    expect(element.querySelector('[data-rich-message]')?.textContent).toContain(
+      'اقرأ الدليل.',
+    );
+  });
+
+  // `specs/06-runtime-and-angular.spec.md` section 4: an application must not be able to change the
+  // committed state. Nothing in the public API takes a snapshot back, so the one way in would be
+  // writing to the snapshot every reader shares.
+  it('commits a snapshot the application cannot write to', async () => {
+    const localization = TestBed.inject(Localization);
+    await localization.changeLocale('ar-EG');
+    const snapshot = localization.snapshot();
+
+    expect(snapshot).toBeDefined();
+    expect(Object.isFrozen(snapshot)).toBe(true);
+    expect(Object.isFrozen(snapshot?.requiredScopes)).toBe(true);
+    expect(Object.isFrozen(snapshot?.loadedScopes)).toBe(true);
+    expect(Object.isFrozen(snapshot?.formatting)).toBe(true);
+    for (const scope of snapshot?.requiredScopes ?? []) {
+      expect(Object.isFrozen(scope)).toBe(true);
+    }
+    expect(() => {
+      (snapshot as { primaryLocale: string }).primaryLocale = 'en-US';
+    }).toThrow(TypeError);
+    expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
   });
 
   it('reacts zonelessly to a coherent local-catalog locale commit', async () => {
@@ -606,16 +656,23 @@ describe('Equator feature-lab package consumer', () => {
 
   it('isolates an explicitly owned child localization context', async () => {
     const parent = TestBed.inject(Localization);
+    const announcer = document.querySelector('[data-equator-announcer]');
+    expect(announcer).not.toBeNull();
     const child = parent.createChildContext({ initialLocale: 'ar-EG' });
     await child.initialize();
 
     expect(parent.snapshot()?.primaryLocale).toBe('en-US');
     expect(child.snapshot()?.primaryLocale).toBe('ar-EG');
     expect(child.text(messages.appTitle)).toContain('مختبر');
+    // The document and the announcer are the parent's. A child that ran the parent's commit hooks
+    // would write its own locale onto the page and, on disposal, take the parent's region with it.
+    expect(document.documentElement.lang).toBe('en-US');
+    expect(document.documentElement.dir).toBe('ltr');
 
     child.dispose();
     expect(() => child.text(messages.appTitle)).toThrow(/disposed/u);
     expect(parent.text(messages.appTitle)).toBe('Equator feature lab');
+    expect(announcer?.isConnected).toBe(true);
     claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
@@ -624,6 +681,25 @@ describe('Equator feature-lab package consumer', () => {
     expect(() => localization.text(lazyMessages.status)).toThrow(
       /not ready for synchronous evaluation/u,
     );
+    // The refusal is typed and names the scope in its diagnostic, so a caller can act on it without
+    // reading the sentence, and it started nothing: a macrotask later the catalog still has not been
+    // asked for.
+    let refusal: unknown;
+    try {
+      localization.text(lazyMessages.status);
+    } catch (error: unknown) {
+      refusal = error;
+    }
+    expect(refusal).toBeInstanceOf(LocalizationError);
+    expect((refusal as LocalizationError).diagnostic).toMatchObject({
+      code: 'scope-unavailable',
+      providerId: lazyProviderId,
+      scopeId: lazyScopeId,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const controller = TestBed.inject(LocalizationTestingController);
+    expect(controller.loadCount(lazyScope, 'en-US')).toBe(0);
+    expect(localization.scopeReadiness(lazyScope)().status).not.toBe('ready');
 
     await localization.preloadScope(lazyScope);
     expect(() => localization.text(lazyMessages.status)).toThrow(

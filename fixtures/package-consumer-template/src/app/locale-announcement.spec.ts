@@ -18,6 +18,7 @@ import {
   Localization,
   provideLocalizationSetup,
   withLocaleAnnouncement,
+  withOverlayLocale,
   withRouting,
   type LocalizationSnapshot,
   withFormattingContext,
@@ -185,4 +186,88 @@ describe('an application that announces the change itself', () => {
       expect(announced()).toBe('back in English');
     });
   });
+});
+
+/**
+ * A switch that fails says nothing.
+ *
+ * Section 11 rules out announcing a failed switch as a success: a reader told the page is now in
+ * Arabic, on a page that stayed in English, is given the wrong pronunciation rules for everything
+ * after it. Two failures, because they fail at different points of the commit: an overlay adapter
+ * fails before the announcement's own step has run, and a required participant fails after every
+ * document step has run, the announcement's included.
+ */
+describe('a locale change that fails', () => {
+  beforeEach(() => {
+    for (const region of document.querySelectorAll(ANNOUNCER)) region.remove();
+  });
+
+  afterEach(() => {
+    for (const region of document.querySelectorAll(ANNOUNCER)) region.remove();
+  });
+
+  function failingSetup(feature: 'overlay' | 'participant'): Localization {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideLocalizationSetup(
+          {
+            configuration,
+            catalogSet,
+            catalogLoaders,
+            recoveryPayload,
+            extensions: runtimeExtensions,
+          },
+          withLocaleAnnouncement((snapshot) => `now ${snapshot.primaryLocale}`),
+          ...(feature === 'overlay'
+            ? [
+                withOverlayLocale(() => ({
+                  apply: (snapshot: { readonly primaryLocale: string }) => {
+                    if (snapshot.primaryLocale === 'ar-EG') {
+                      throw new Error('intentional overlay failure');
+                    }
+                  },
+                })),
+              ]
+            : []),
+          withFormattingContext({ timeZone: 'UTC' }),
+        ),
+      ],
+    });
+    const localization = TestBed.inject(Localization);
+    if (feature === 'participant') {
+      localization.registerParticipant({
+        id: 'failing-commit',
+        prepare: (context) => ({
+          status: 'ready',
+          representation: {
+            kind: 'locale-bound',
+            supplyingLocale: context.targetLocale,
+            direction: context.targetLocale === 'ar-EG' ? 'rtl' : 'ltr',
+          },
+        }),
+        commit: (context) => {
+          if (context.targetLocale === 'ar-EG') {
+            throw new Error('intentional participant failure');
+          }
+        },
+      });
+    }
+    return localization;
+  }
+
+  for (const feature of ['overlay', 'participant'] as const) {
+    it(`is not announced when the ${feature} fails the commit`, async () => {
+      const localization = failingSetup(feature);
+      await localization.initialize();
+
+      const result = await localization.changeLocale('ar-EG');
+      await pastTheFrame();
+
+      expect(result.status).toBe('failed');
+      expect(localization.snapshot()?.primaryLocale).toBe('en-US');
+      expect(document.querySelector(ANNOUNCER)).not.toBeNull();
+      expect(announced()).toBe('');
+    });
+  }
 });

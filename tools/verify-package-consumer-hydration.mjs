@@ -5904,14 +5904,29 @@ async function verifyBrowserRow(row) {
       () => document.documentElement.lang === 'ar-EG',
     );
     await probe.locator('[data-incremental-action]').click();
-    await probe.waitForFunction(
-      () =>
-        document
-          .querySelector('[data-incremental-message]')
-          ?.textContent?.includes('حد الترجمة التدريجي جاهز.') === true,
-      undefined,
-      { timeout: 10_000 },
-    );
+    // The refusal names the text the block kept, because a timeout names only the wait, and a
+    // boundary left in the render locale is the one defect this stage exists to report: whether
+    // Angular stops writing over claimed DOM or the content stops following the commit, what the
+    // reader sees is the server's words inside a page in another language.
+    const expectedMessage = 'حد الترجمة التدريجي جاهز.';
+    await probe
+      .waitForFunction(
+        (expected) =>
+          document
+            .querySelector('[data-incremental-message]')
+            ?.textContent?.includes(expected) === true,
+        expectedMessage,
+        { timeout: 10_000 },
+      )
+      .catch(async () => {
+        const found = await probe
+          .locator('[data-incremental-message]')
+          .textContent()
+          .catch(() => 'ABSENT');
+        assert.fail(
+          `The deferred block, hydrated with ar-EG committed, kept ${JSON.stringify(found?.trim())} rather than ${JSON.stringify(expectedMessage)}: localized content inside a hydration boundary is not part of the committed representation`,
+        );
+      });
     // The click that triggered hydration is also a click on the button inside the block, and it
     // still lands. Rebuilding the content in the committed locale must not cost the interaction
     // that asked for it.

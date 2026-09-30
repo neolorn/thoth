@@ -38,6 +38,16 @@ localization.text(messages.welcome, { nmae: 'Equator' });
 // EXPECT: is not assignable to type 'PlainMessageHandle'
 const structuredAsPlain: PlainMessageHandle = messages.learnMore;
 
+// The catalog is the only author of a message's words, so a call site cannot carry wording of its
+// own beside the inputs for the runtime to fall back to.
+// EXPECT: Expected 2 arguments, but got 3
+localization.text(messages.welcome, { name: 'Equator' }, 'Welcome back');
+
+// A handle is what the runtime is passed, and a qualified string spelled to look like one is not
+// accepted in its place.
+// EXPECT: Argument of type 'string' is not assignable to parameter of type
+localization.text('shell:shell:welcome');
+
 // 2.2's *Fails when*: adding the generic but leaving the return `string`. The round trip compiles
 // either way, so the assertion that catches it is on the inferred literal type: a route identity
 // this projection does not declare must not be assignable to what the resolution returns.

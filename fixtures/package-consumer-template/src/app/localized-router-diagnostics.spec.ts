@@ -529,19 +529,52 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
   });
 
   /**
-   * A kind Equator has not decided about does not start. What refuses it is not the gate.
+   * One declaration of the policy, because everything that writes or reads an address reads it.
    *
-   * The gate's last arm assigns the narrowed policy to `never`, so a fourth member added to
-   * `LocaleUrlPolicy` is a type error there, which is the guarantee that matters and is not
-   * something a test can exercise. The runtime arm behind it was written for this case and
-   * **measured unreachable**: a policy object carrying an unknown `kind` dies in
-   * `builtLocalePolicy` before any router provider runs (`builtLocales`, reading a locale list the
-   * unknown kind does not have). Making the object structurally complete did not help, because
-   * what is missing is not a field, it is the branch.
+   * Two would leave the URL locale source, the canonical links, the alternates, the redirects and
+   * the Router adapter free to read different ones, and nothing downstream could tell which was
+   * meant.
+   */
+  it('refuses a second declaration of the routing policy', () => {
+    expect(() =>
+      provideLocalizationTesting(
+        {
+          configuration,
+          catalogSet,
+          catalogLoaders,
+          recoveryPayload,
+          extensions: runtimeExtensions,
+          routeProjection,
+        },
+        withRouting({ policy: PATH_PREFIX, projection: appRouteProjection }),
+        withRouting({ policy: NEUTRAL, projection: appRouteProjection }),
+        withFormattingContext({ timeZone: 'UTC' }),
+      ),
+    ).toThrow(/feature routing was installed more than once/u);
+    // The control: the same call with one declaration is accepted.
+    expect(() =>
+      provideLocalizationTesting(
+        {
+          configuration,
+          catalogSet,
+          catalogLoaders,
+          recoveryPayload,
+          extensions: runtimeExtensions,
+          routeProjection,
+        },
+        withRouting({ policy: PATH_PREFIX, projection: appRouteProjection }),
+        withFormattingContext({ timeZone: 'UTC' }),
+      ),
+    ).not.toThrow();
+  });
+
+  /**
+   * A kind Equator has not decided about does not start, and the refusal names the kinds it serves.
    *
-   * So this asserts the property rather than the message: **it does not boot**. Naming the thrower
-   * would pin an upstream implementation detail, and asserting the gate's own text would assert
-   * something that never runs.
+   * Section 3 of `specs/07-routing-rendering-and-seo.spec.md` asks for both: a refusal at
+   * configuration rather than a warning that lets the application run, and one that tells the
+   * reader what to write instead. The provider narrows the policy before any router provider runs,
+   * and the narrowing refuses the kind by name before it reads a table the kind does not have.
    */
   it('does not start on a policy kind it has not decided about', async () => {
     const unknown = {
@@ -551,6 +584,8 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
     } as unknown as LocaleUrlPolicy;
     await expect(
       bootstrap([], [], 'installed', { policy: unknown }),
-    ).rejects.toThrow();
+    ).rejects.toThrow(
+      /"locale-query".*serves "path-prefix", "locale-neutral" and "locale-host"/u,
+    );
   });
 });

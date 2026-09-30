@@ -352,6 +352,84 @@ describe('a server render when a catalog cannot load', () => {
     ).rejects.toThrow('A generated local catalog module could not be loaded.');
     expect(TestBed.inject(Localization).lifecycle()).toBe('failed');
   });
+
+  it('ends the first navigation in an error rather than holding it for a retry', async () => {
+    // `specs/06-runtime-and-angular.spec.md` section 5: a server render has no retry to wait for.
+    // The browser holds the navigation until one succeeds; on the server nothing will retry, so a
+    // held navigation is a response that never finishes.
+    const origin = localeOrigin('ar-EG');
+    const address = pagePath('item', 'ar-EG');
+    const shellLoaders = Object.fromEntries(
+      Object.entries(catalogLoaders)
+        .filter(([identity]) =>
+          identity.startsWith(`${providerId}:${scopeId}:`),
+        )
+        .map(([identity]) => [
+          identity,
+          () =>
+            Promise.reject(
+              new TypeError('Failed to fetch dynamically imported module'),
+            ),
+        ]),
+    );
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      // The router hands a failed initial navigation to the application's error handler as well as
+      // ending it in NavigationError. TestBed rethrows what that handler receives, which would turn
+      // the outcome this case expects into an unhandled rejection; an application only logs it.
+      rethrowApplicationErrors: false,
+      providers: [
+        { provide: PLATFORM_ID, useValue: 'server' },
+        {
+          provide: MOCK_PLATFORM_LOCATION_CONFIG,
+          useValue: { startUrl: `${origin}${address}` },
+        },
+        provideLocalizedRouter(appRoutes, { origin }),
+        provideLocalizationSetup(
+          {
+            configuration,
+            catalogSet,
+            catalogLoaders: { ...catalogLoaders, ...shellLoaders },
+            recoveryPayload,
+            extensions: runtimeExtensions,
+            routeProjection,
+          },
+          withRouting({ policy: routePolicy, projection: appRouteProjection }),
+          withRecoveryMessage({
+            message: messages.recovery.unavailable,
+            retryLabel: messages.control.retry,
+          }),
+          withFormattingContext({ timeZone: 'UTC' }),
+        ),
+      ],
+    });
+    await expect(
+      TestBed.inject(ApplicationInitStatus).donePromise,
+    ).rejects.toBeDefined();
+    const router = TestBed.inject(Router);
+    let outcome: RouterEvent | undefined;
+    void firstValueFrom(
+      router.events.pipe(
+        filter(
+          (event) =>
+            event instanceof NavigationEnd ||
+            event instanceof NavigationCancel ||
+            event instanceof NavigationError,
+        ),
+      ),
+    ).then((event) => (outcome = event));
+    router.initialNavigation();
+    await vi.waitFor(
+      () => {
+        TestBed.tick();
+        expect(outcome).toBeDefined();
+      },
+      { timeout: 2000 },
+    );
+
+    expect(outcome).toBeInstanceOf(NavigationError);
+    TestBed.resetTestingModule();
+  });
 });
 
 describe('the first navigation when a catalog cannot load', () => {

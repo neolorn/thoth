@@ -632,8 +632,7 @@ const declared = Object.freeze([
   },
   // Last, and now derivably so: it writes source, `dist` and the consumers, so every stage above
   // reads something it replaces. It rebuilds the package and re-hands it once per injection, which
-  // is 52% of the gate on its own and the reason the ceiling for this item is a fifth rather than a
-  // half. An injection that names a consumer stage runs that stage,
+  // makes it most of the gate on its own. An injection that names a consumer stage runs that stage,
   // so the consumers those stages write are written here too.
   {
     id: 'verify:assurance:runtime',
@@ -649,9 +648,9 @@ const declared = Object.freeze([
       'dist:toolkit',
       'source:packages',
     ],
-    // Measured at 934s with the consumer prepared and all 21 injections measured, so the bound is a
-    // little over three times that.
-    timeoutSeconds: 3000,
+    // The 202 injections took about 8,200s between them when each was measured on its own, so the
+    // bound is a little over three times that.
+    timeoutSeconds: 26_000,
   },
 ]);
 

@@ -84,6 +84,9 @@ messages:
   hostile.authored-invisible: "SKU\u200BA\u2060B"
   hostile.interpolated: 'Order {$reference} shipped'
   hostile.rich: 'Order {#strong}{$reference}{/strong} shipped'
+  hostile.markup: '<script>alert(1)</script> {#strong}<img src=x onerror=alert(1)>{/strong} remains inert text.'
+  hostile.link-options: 'Open {#link href=|javascript:alert(1)| target=|_blank| rel=|opener| onclick=|alert(1)|}help{/link}.'
+  hostile.styled: 'Read {#strong class=|catalog-class| style=|color:red| data-token=|brand-danger|}this{/strong}.'
   fmt.number: 'Count {$v :number}'
   fmt.integer: 'Items {$v :integer}'
   fmt.percent: 'Share {$v :percent}'

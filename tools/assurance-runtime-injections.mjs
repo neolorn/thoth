@@ -300,4 +300,1610 @@ export const injections = Object.freeze([
     find: '        pattern.test(value) ? { ok: true, value } : { ok: false },',
     replace: '        { ok: true, value },',
   },
+  {
+    id: 'deferred-block-keeps-the-render-locale',
+    invariant:
+      'Localized content inside a deferred hydration boundary, claimed after a locale commits, shows the committed locale.',
+    // In the consumer rather than the runtime, and that is where the behavior is. The runtime has
+    // no code path for a deferred block, and `specs/06-runtime-and-angular.spec.md` section 10
+    // forbids it one: Angular's update pass writes the committed value over the DOM hydration
+    // claims. What the browser stage guards is therefore a framework change that stops that
+    // write, and the observable one produces is a binding whose value already equals the server's
+    // text when the block is claimed. Freezing the one binding inside the block at construction
+    // produces exactly that, in the page opened in en-US, and leaves every binding outside the
+    // block following the commit. A staleness injected into the runtime instead would stop every
+    // text in the page, and an earlier stage would refuse it first.
+    //
+    // A browser row stops at its first failure, so the refusal below can only come from the stage
+    // that owns it.
+    source: 'fixtures/package-consumer-template/src/app/app.ts',
+    find: `  protected readonly incrementalText = this.localization.textSignal(
+    messages.incremental.ready,
+  );`,
+    replace: `  protected readonly incrementalText = signal(
+    this.localization.ready()
+      ? this.localization.text(messages.incremental.ready)
+      : '',
+  );`,
+    suite: 'browser',
+    caughtWhen:
+      /The deferred block, hydrated with ar-EG committed, kept "Incremental localization boundary ready\."/u,
+  },
+  {
+    id: 'navigation-declaration-kept-past-commit',
+    invariant:
+      'A committed navigation replaces the standing parameter-spelling declaration, including when the arriving page declares nothing.',
+    source: 'packages/runtime/router/src/route-parameters.ts',
+    find: '          spellings === undefined\n            ? undefined\n            : { navigationId: event.id, spellings },',
+    replace:
+      '          spellings === undefined\n            ? this.committed()\n            : { navigationId: event.id, spellings },',
+  },
+  {
+    id: 'late-parameter-declaration-not-projected',
+    invariant:
+      'A parameter-spelling declaration that arrives after its navigation committed moves the document head.',
+    source: 'packages/runtime/router/src/route-localization.ts',
+    find: '      this.localization.ɵrestateRoute(\n        this.routeRecord(active, this.projectDocument(active)),\n      );\n    } catch {\n      // Same judgement as a failed locale commit',
+    replace:
+      '      void active;\n    } catch {\n      // Same judgement as a failed locale commit',
+  },
+  {
+    id: 'router-origin-accepted-unnamed',
+    invariant:
+      'The router refuses an origin the locale-host policy does not name, scheme included.',
+    source: 'packages/runtime/router/src/provide.ts',
+    find: '  if (normalized !== undefined && policy.origins[normalized] !== undefined)\n    return;',
+    replace: '  if (normalized !== undefined)\n    return;',
+  },
+  {
+    id: 'handed-address-not-delocalized',
+    invariant:
+      'An address the application hands the router is delocalized through the same translation as one the browser supplies.',
+    source: 'packages/runtime/router/src/url-handling-strategy.ts',
+    find: '    const internal = toInternalPath(supplied, this.context);',
+    replace:
+      '    const internal = supplied || toInternalPath(supplied, this.context);',
+  },
+  {
+    id: 'entry-destination-built-in-default-locale',
+    invariant:
+      "A locale-entry redirect's destination is spelled in the locale it resolved to.",
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '          unprefixedMatch.route,\n          preferred,',
+    replace:
+      '          unprefixedMatch.route,\n          policy.defaultLocale,',
+  },
+  {
+    id: 'restored-page-never-checked',
+    invariant:
+      'A page shown again from the back-forward cache is checked against the remembered locale.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '          if (!event.persisted) return;',
+    replace: '          if (event.persisted || !event.persisted) return;',
+  },
+  {
+    id: 'programmatic-locale-address-unreported',
+    invariant:
+      'A navigation to a localized address is reported in development, naming the address as written, the canonical address and the operation that changes locale.',
+    source: 'packages/runtime/router/src/url-handling-strategy.ts',
+    find: '    if (!isDevMode()) return;',
+    replace: '    if (supplied.length >= 0 || !isDevMode()) return;',
+  },
+  {
+    id: 'unprojected-address-head-not-written',
+    invariant:
+      'The head of a response at an address the projection does not contain is written from its outcome class.',
+    source: 'packages/runtime/router/src/route-localization.ts',
+    find: '    this.outcomeDocument = outcomeClass;',
+    replace:
+      '    this.outcomeDocument = outcomeClass;\n    if (outcomeClass.length >= 0) return;',
+  },
+  {
+    id: 'canonical-correction-split-into-hops',
+    invariant:
+      'A prefix or alias correction is combined with every other correction the address needs into a single 308.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '    match.canonicalSegments,\n  );\n  if (\n    prefixCorrection ||',
+    replace:
+      '    prefixCorrection ? routeSegments : match.canonicalSegments,\n  );\n  if (\n    prefixCorrection ||',
+  },
+  {
+    id: 'variant-navigation-kept-as-written',
+    invariant:
+      'A client navigation to a variant arrives at the canonical address, and the page reads its canonical parameters.',
+    source: 'packages/runtime/router/src/provide.ts',
+    find: '    if (router.serializeUrl(canonical) !== state.url) {',
+    replace:
+      '    if (router.serializeUrl(canonical) !== state.url && canonical === undefined) {',
+  },
+  {
+    id: 'locale-switch-pushes-history',
+    invariant:
+      "A locale switch rewrites the current history entry's address rather than adding an entry.",
+    source: 'packages/runtime/router/src/address-sync.ts',
+    find: "    this.location.replaceState(this.router.url, '', this.location.getState());",
+    replace:
+      "    this.location.go(this.router.url, '', this.location.getState());",
+  },
+  {
+    id: 'address-bar-left-behind-by-switch',
+    invariant: 'The address bar follows a committed locale switch.',
+    source: 'packages/runtime/router/src/address-sync.ts',
+    find: '    if (expected === `${pathname}${search}${hash}`) return;',
+    replace:
+      '    if (expected !== `${pathname}${search}${hash}` || expected.length >= 0) return;',
+  },
+  {
+    id: 'scope-load-published-without-a-transaction',
+    invariant:
+      'A scope that finishes loading is published as its own transaction, with a new snapshot identity.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '      id: (this.nextSnapshotId += 1),\n      loadedScopes,',
+    replace: '      id: current.publicSnapshot.id,\n      loadedScopes,',
+  },
+  {
+    id: 'locale-choice-language-not-written',
+    invariant:
+      'A locale choice control carries the language of the option it is bound to.',
+    source: 'packages/runtime/src/locale-choice.ts',
+    find: "    '[attr.lang]': 'choice().language',",
+    replace: "    '[attr.lang]': 'null',",
+  },
+  {
+    id: 'locale-choice-link-has-no-address',
+    invariant:
+      'A locale choice on a link carries the address of the page in that locale as its href.',
+    source: 'packages/runtime/src/locale-choice.ts',
+    find: "    '[attr.href]': 'address()',",
+    replace: "    '[attr.href]': 'null',",
+  },
+  {
+    id: 'non-indexable-route-keeps-its-cluster',
+    invariant:
+      'A route that is not indexable carries no canonical and no alternates.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: "  if (indexing !== 'indexable') {",
+    replace: "  if (indexing !== 'indexable' && false) {",
+  },
+  {
+    id: 'declared-document-overrides-the-page',
+    invariant:
+      'A field the page supplies replaces the same field the route declared.',
+    source: 'packages/runtime/router/src/route-localization.ts',
+    find: '      ...declared,\n      ...(dynamic ?? {}),',
+    replace: '      ...(dynamic ?? {}),\n      ...declared,',
+  },
+  {
+    id: 'unbound-document-message-refused-only-when-visited',
+    invariant:
+      'An unbound document message is refused when the router is provided, before any page is visited.',
+    source: 'packages/runtime/router/src/provide.ts',
+    find: '  refuseUnboundDocumentMessages(options);',
+    replace: '  void refuseUnboundDocumentMessages;',
+  },
+  {
+    id: 'document-message-inputs-dropped',
+    invariant:
+      'A declared document message is resolved with the inputs declared beside it.',
+    source: 'packages/runtime/router/src/route-localization.ts',
+    find: '        ? this.localization.text(field.message, field.inputs)',
+    replace: '        ? this.localization.text(field.message)',
+  },
+  {
+    id: 'previous-document-head-left-standing',
+    invariant:
+      'Everything written into the head for the previous document is removed before the next is written.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '      for (const node of previousNodes) node.parentNode?.removeChild(node);',
+    replace: '      for (const node of previousNodes) void node;',
+  },
+  {
+    id: 'absent-page-keeps-its-cluster',
+    invariant:
+      'A page declared absent or removed carries no canonical and no alternates.',
+    source: 'packages/runtime/router/src/route-localization.ts',
+    find: '  return WITHDRAWN_SEO;',
+    replace: '  void WITHDRAWN_SEO;\n  return seo;',
+  },
+  {
+    id: 'social-block-without-an-image',
+    invariant: 'No Open Graph block is written until an image is supplied.',
+    source: 'packages/runtime/src/angular.ts',
+    find: "      if (social?.image !== undefined) {\n        // Order follows ogp.me's own listing of the four required properties, so a reader comparing\n        // the emitted head against the specification reads them in the same sequence.\n        if (projection.title !== undefined)\n          property('og:title', projection.title);\n        property('og:type', social.type ?? 'website');\n        property('og:image', social.image);",
+    replace:
+      "      if (social !== undefined) {\n        if (projection.title !== undefined)\n          property('og:title', projection.title);\n        property('og:type', social.type ?? 'website');\n        property('og:image', social.image ?? '');",
+  },
+  {
+    id: 'robots-meta-not-written',
+    invariant:
+      'A page that is not to be indexed carries a robots meta element in its head.',
+    source: 'packages/runtime/src/angular.ts',
+    find: "      if (seo?.robots !== undefined) meta('robots', seo.robots);",
+    replace: '      void seo?.robots;',
+  },
+  {
+    id: 'unbound-slot-rendered',
+    invariant:
+      'A structured message whose slot has no trusted binding of the right kind is refused rather than rendered.',
+    source: 'packages/runtime/src/message-template.ts',
+    find: '    requireBindings(\n      result.value,\n      this.slots() as Readonly<Record<string, TrustedSlotBinding>>,\n    );',
+    replace: '    void requireBindings;',
+  },
+  {
+    id: 'structured-value-rendered-without-an-isolating-element',
+    invariant:
+      'The structured surface isolates an interpolated value in its own element, as the plain-text surface isolates it with characters.',
+    source: 'packages/runtime/src/message-template.ts',
+    find: '            <bdi\n              [attr.lang]="part.language"\n              [attr.dir]="part.contentDirection"\n              >{{ part.value }}</bdi\n            >',
+    replace:
+      '            <span\n              [attr.lang]="part.language"\n              [attr.dir]="part.contentDirection"\n              >{{ part.value }}</span\n            >',
+  },
+  {
+    id: 'label-written-outside-its-attribute-set',
+    invariant:
+      'A localized label is written only into one of the attributes whose value is presented, never into href, src, formaction or an event attribute.',
+    source: 'packages/runtime/src/label.ts',
+    find: '      if (!isLabelAttribute(attribute)) {',
+    replace: '      if (!isLabelAttribute(attribute) && false) {',
+  },
+  {
+    id: 'label-clears-the-other-label-attributes',
+    invariant:
+      'Writing a localized label into one attribute leaves every other attribute on the element as the author wrote it.',
+    source: 'packages/runtime/src/label.ts',
+    find: '      this.renderer.setAttribute(this.element.nativeElement, attribute, value);',
+    replace:
+      '      for (const name of LABEL_ATTRIBUTES) {\n        if (name !== attribute) {\n          this.renderer.removeAttribute(this.element.nativeElement, name);\n        }\n      }\n      this.renderer.setAttribute(this.element.nativeElement, attribute, value);',
+  },
+  {
+    id: 'replaced-wording-withdraws-the-announcement',
+    invariant:
+      'Supplying announcement wording replaces the words and keeps the live region and the announcement.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '              isPlatformBrowser(platformId),\n              announcement?.format ?? defaultLocaleAnnouncement,',
+    replace:
+      '              isPlatformBrowser(platformId) && announcement === undefined,\n              announcement?.format ?? defaultLocaleAnnouncement,',
+  },
+  {
+    id: 'empty-announcement-wording-treated-as-a-mistake',
+    invariant:
+      'An announcement format that supplies no wording is accepted, and nothing is announced in its place.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '    if (wording === undefined) return undefined;',
+    replace:
+      "    if (wording === undefined) {\n      throw new LocalizationError({\n        code: 'effect-failed',\n        outcome: 'operational-failure',\n        message: 'The locale announcement is empty.',\n      });\n    }",
+  },
+  {
+    id: 'announcement-worded-before-publication',
+    invariant:
+      "The announcement wording is asked for after the change is published, so a wording read from the application's messages is in the arriving locale.",
+    source: 'packages/runtime/src/angular.ts',
+    find: "  apply(): void {\n    // Nothing is worded inside the transaction. `specs/06-runtime-and-angular.spec.md` section 11\n    // runs the announcement after the commit it belongs to, and the wording is the application's:\n    // asked here, the catalogs it reads and the head it describes are still the locale being left.\n  }\n\n  /**\n   * Worded once the change is published, and announced a frame after that.\n   *\n   * Worded here because this is the first moment the application's function can see the page it is\n   * describing: its messages answer in the arriving locale and the head has been re-projected, the\n   * routed steps being ahead of this hook. A wording that cannot be said is the application's\n   * failure and not the change's, so it is reported and the default is said instead, which keeps\n   * the decision to announce.\n   *\n   * Published a frame later still, because the message describes a locale the page has moved to,\n   * and a screen reader given it now reads it while the controls it describes may still show the\n   * previous locale. Waiting is also what keeps it truthful when a commit is abandoned: nothing was\n   * said yet, so there is nothing to retract.\n   */\n  committed(snapshot: LocalizationSnapshot): void {\n    const previous = this.previousLocale;\n    this.previousLocale = snapshot.primaryLocale;\n    if (previous === undefined || previous === snapshot.primaryLocale) return;\n    // Moved even when nothing is said, so an announcement queued for a locale this commit has\n    // already left is dropped rather than read out after it.\n    this.sequence += 1;\n    let message: string | undefined;\n    let failure: unknown;\n    try {\n      message = this.worded(this.format(snapshot));",
+    replace:
+      '  private early: string | undefined;\n\n  apply(snapshot: LocalizationSnapshot): void {\n    this.early = this.format(snapshot);\n  }\n\n  committed(snapshot: LocalizationSnapshot): void {\n    const previous = this.previousLocale;\n    this.previousLocale = snapshot.primaryLocale;\n    if (previous === undefined || previous === snapshot.primaryLocale) return;\n    this.sequence += 1;\n    let message: string | undefined;\n    let failure: unknown;\n    try {\n      message = this.worded(this.early);',
+  },
+  {
+    id: 'unannounceable-wording-silences-the-change',
+    invariant:
+      'Wording that cannot be announced is replaced by the default announcement rather than by silence.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '      message = defaultLocaleAnnouncement(snapshot);',
+    replace: '      message = undefined;',
+  },
+  {
+    id: 'active-composition-rewritten-by-a-locale-change',
+    invariant:
+      'A locale change does not rewrite a localized field while a text composition is active in it.',
+    source: 'packages/runtime/forms/src/public-api.ts',
+    find: '    if (this.composing) {\n      this.pendingRender = true;\n      return;\n    }',
+    replace: '    // An active composition is not waited for.',
+  },
+  {
+    id: 'overlay-adapter-created-where-the-feature-is-declared',
+    invariant:
+      'The overlay adapter is created inside the injector that owns each request, not once where the feature is declared.',
+    source: 'packages/runtime/src/angular.ts',
+    find: "  return freezeFeature<OverlayLocaleFeature>({\n    ɵkind: 'overlay-locale',\n    create,\n  });",
+    replace:
+      "  const adapter = create();\n  return freezeFeature<OverlayLocaleFeature>({\n    ɵkind: 'overlay-locale',\n    create: () => adapter,\n  });",
+  },
+  {
+    id: 'every-icon-mirrored-in-right-to-left',
+    invariant:
+      'Only an icon the application classified as direction-relative is mirrored in a right-to-left locale.',
+    source: 'packages/runtime/src/locale-presentation.ts',
+    find: "    mirror: classification === 'relative' && direction === 'rtl',",
+    replace: "    mirror: direction === 'rtl',",
+  },
+  {
+    id: 'asset-fallback-guessed-from-declared-variants',
+    invariant:
+      'Asset selection tries the target locale and the fallbacks the request lists, and nothing it was not given.',
+    source: 'packages/runtime/src/assets.ts',
+    find: '  for (const locale of attemptedLocales) {',
+    replace:
+      '  for (const locale of [...attemptedLocales, ...variants.keys()]) {',
+  },
+  {
+    id: 'fixed-language-asset-reported-as-a-fallback',
+    invariant:
+      'A fixed-language asset served to a reader of another language is reported as itself, not as a fallback for a missing translation.',
+    source: 'packages/runtime/src/assets.ts',
+    find: "      status: 'ready',\n      fallback: false,\n      representation: Object.freeze({\n        kind: 'fixed-language' as const,\n        source: descriptor.source,",
+    replace:
+      "      status: 'ready',\n      fallback: true,\n      representation: Object.freeze({\n        kind: 'fixed-language' as const,\n        source: descriptor.source,",
+  },
+  {
+    id: 'participant-report-carries-its-input',
+    invariant:
+      "A dynamic asset participant report is rebuilt from its bounded metadata and carries none of the input's other fields.",
+    source: 'packages/runtime/src/assets.ts',
+    find: "      return Object.freeze({\n        status: 'ready',\n        identity,\n        representation: participantRepresentation(input.representation),\n      });",
+    replace:
+      "      return Object.freeze({\n        ...input,\n        status: 'ready',\n        identity,\n        representation: participantRepresentation(input.representation),\n      });",
+  },
+  {
+    id: 'decimal-keeps-trailing-zeros',
+    invariant:
+      'Two spellings of one decimal normalize to one canonical string, so equality, caching and identity read the invariant value.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: '  const fraction = withoutTrailingZeros(fractionSource);',
+    replace: '  void withoutTrailingZeros;\n  const fraction = fractionSource;',
+  },
+  {
+    id: 'localized-text-committed-as-form-value',
+    invariant:
+      'A localized field hands the form the parsed invariant value, never the text the reader typed.',
+    source: 'packages/runtime/forms/src/public-api.ts',
+    find: '    this.change(result.value);',
+    replace: '    this.change(result.text as never);',
+  },
+  {
+    id: 'duration-sign-check-dropped',
+    invariant:
+      "The duration factory refuses a negative clock field, because a duration's direction is carried by its sign alone.",
+    source: 'packages/runtime/src/formatting.ts',
+    find: "  if (value.seconds.value.startsWith('-')) {",
+    replace: '  if (false) {',
+  },
+  {
+    id: 'sub-millisecond-instant-refused',
+    invariant:
+      'An instant carrying nanoseconds is formatted to the precision the options ask for, not refused for the precision it carries.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: '  const remainder = ((nanoseconds % 1_000_000n) + 1_000_000n) % 1_000_000n;',
+    replace:
+      "  const remainder = ((nanoseconds % 1_000_000n) + 1_000_000n) % 1_000_000n;\n  if (remainder !== 0n) {\n    return unsupported('Sub-millisecond instants are not formatted.', context);\n  }",
+  },
+  {
+    id: 'host-clock-used-over-installed-clock',
+    invariant:
+      "Relative time is measured against the clock the application installed, not the host's.",
+    source: 'packages/runtime/src/formatting-runtime.ts',
+    find: '      (this.context.clock ?? systemClock()).now(),',
+    replace: '      systemClock().now(),',
+  },
+  {
+    id: 'percent-scale-ignored-when-formatting',
+    invariant:
+      'A percent is formatted on the scale its value declares, so a percent-unit 25 and a fractional 0.25 both read 25%.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: "  const fractional =\n    value.scale === 'fractional' ? value.amount : divideByHundred(value.amount);",
+    replace: '  void divideByHundred;\n  const fractional = value.amount;',
+  },
+  {
+    id: 'locale-formatting-declaration-ignored',
+    invariant:
+      "A locale's own declaration of how it is written overrides the application-wide context for that locale.",
+    source: 'packages/runtime/src/localization.ts',
+    find: '      ...(this.localeFormatting[locale] ?? {}),',
+    replace:
+      '      ...(this.localeFormatting[locale] === undefined ? {} : {}),',
+  },
+  {
+    id: 'relative-time-rounds-instead-of-truncating',
+    invariant:
+      'Equator selects the relative-time unit by truncating toward zero, so a phrase never claims a span is larger than it is.',
+    source: 'packages/runtime/src/relative-time-policy.ts',
+    find: '      const truncated = Math.trunc(elapsed / size);',
+    replace: '      const truncated = Math.round(elapsed / size);',
+  },
+  {
+    id: 'relative-time-largest-unit-ignored',
+    invariant:
+      'The largest unit an application declares is honoured, and a span beyond it is handed back rather than named in a larger unit.',
+    source: 'packages/runtime/src/relative-time-policy.ts',
+    find: "  const largest = policy.largestUnit ?? 'year';",
+    replace: "  const largest: RelativeTimeUnit = 'year';",
+  },
+  {
+    id: 'out-of-range-span-reported-as-failure',
+    invariant:
+      'A span beyond the policy comes back as an absolute decision carrying the elapsed span, not as a formatting failure.',
+    source: 'packages/runtime/src/relative-time-policy.ts',
+    find: "      kind: 'absolute',\n      elapsedMilliseconds: decision.elapsedMilliseconds,",
+    replace:
+      "      kind: 'unavailable',\n      diagnostic: Object.freeze({\n        code: 'unsupported-formatting-capability',\n        outcome: 'operational-failure',\n        message: 'The span is outside the relative-time policy.',\n        targetLocale: context.locale,\n      }),",
+  },
+  {
+    id: 'ambiguous-zone-label-resolved-to-first',
+    invariant:
+      'A localized label that names more than one allowed zone is reported ambiguous, not resolved to the first zone that matches.',
+    source: 'packages/runtime/src/localized-input.ts',
+    find: '  if (exact.size === 1) {',
+    replace: '  if (exact.size >= 1) {',
+  },
+  {
+    id: 'percent-scale-ignored-when-parsing',
+    invariant:
+      'A percent field reverses its declared scale when read, so twenty-five percent under fractional semantics is a quarter.',
+    source: 'packages/runtime/src/localized-input.ts',
+    find: "      const scaled =\n        profile.scale === 'fractional' ? divideByHundred(amount) : amount;",
+    replace: '      void divideByHundred;\n      const scaled = amount;',
+  },
+  {
+    id: 'date-string-coerced-by-the-platform-parser',
+    invariant:
+      "A date-time message input is a Date or an epoch number; a string is refused rather than handed to the platform's date parser.",
+    source: 'packages/runtime/src/evaluator.ts',
+    find: "    return typeof value === 'string' && contract.enum.includes(value);\n  }\n  switch (contract.type) {\n    case 'boolean':\n      return typeof value === 'boolean';\n    case 'date-time':\n      return (\n",
+    replace:
+      "    return typeof value === 'string' && contract.enum.includes(value);\n  }\n  switch (contract.type) {\n    case 'boolean':\n      return typeof value === 'boolean';\n    case 'date-time':\n      return (\n        typeof value === 'string' ||\n",
+  },
+  {
+    id: 'unknown-issue-presented-as-known',
+    invariant:
+      'An issue code no message answers stays an explicit unknown, with the generic message and a diagnostic.',
+    source: 'packages/runtime/src/presentation.ts',
+    find: "    status: 'unknown',\n    code: issue.code,\n    localized: localization.evaluateText(source.unknown, {}),\n    diagnostic: unknownDiagnostic(),",
+    replace:
+      "    status: 'known' as never,\n    code: issue.code,\n    localized: localization.evaluateText(source.unknown, {}),\n    diagnostic: unknownDiagnostic(),",
+  },
+  {
+    id: 'early-form-write-not-held',
+    invariant:
+      "A form write that arrives before the field's profile is held and rendered once the profile lands, not rendered at once and failed.",
+    source: 'packages/runtime/forms/src/public-api.ts',
+    find: '    this.model = value;\n    this.result.set(undefined);\n    this.written.update((count) => count + 1);',
+    replace:
+      '    this.model = value;\n    this.result.set(undefined);\n    this.renderModel();',
+  },
+  {
+    id: 'locale-change-overwrites-unparsed-entry',
+    invariant:
+      'A locale change leaves an entry that did not parse, and its validation result, in the field rather than rewriting it from the last value.',
+    source: 'packages/runtime/forms/src/public-api.ts',
+    find: "    if (currentResult !== undefined && currentResult.status !== 'valid') return;",
+    replace: '    void currentResult;',
+  },
+  {
+    id: 'issue-code-camel-case-not-split',
+    invariant:
+      'A camel-case issue code splits into the same words as its upper-snake spelling and reaches the same message.',
+    source: 'packages/runtime/src/issue-convention.ts',
+    find: '    if (boundary) {',
+    replace: '    if (boundary && false) {',
+  },
+  {
+    id: 'issue-convention-not-consulted',
+    invariant:
+      'A code with no binding still reaches the message its name derives, with nothing written for it.',
+    source: 'packages/runtime/src/presentation.ts',
+    find: '  const paired = issueMessage(source.messages, issue.code);',
+    replace: '  const paired = issueMessage({}, issue.code);',
+  },
+  {
+    id: 'refused-entry-reported-as-valid',
+    invariant:
+      'An entry the field could not read is reported to the form as an error, never as a valid control.',
+    source: 'packages/runtime/forms/src/public-api.ts',
+    find: '    this.result.set(result);',
+    replace:
+      "    this.result.set(result.status === 'valid' ? result : undefined);",
+  },
+  {
+    id: 'participant-report-carries-consumer-payload',
+    invariant:
+      "A dynamic participant's report carries only safe identity and representation metadata, never the payload or URL it was built from.",
+    source: 'packages/runtime/src/assets.ts',
+    find: "        status: 'ready',\n        identity,",
+    replace: "        ...input,\n        status: 'ready',\n        identity,",
+  },
+  {
+    id: 'unavailable-representation-reported-as-failure',
+    invariant:
+      'Exhausting the approved representations is reported as a representation-unavailable outcome, not as an operational failure.',
+    source: 'packages/runtime/src/assets.ts',
+    find: "    status: 'unavailable',\n    outcome: 'localized-representation-unavailable',\n  });",
+    replace:
+      "    status: 'unavailable',\n    outcome: 'operational-failure' as never,\n  });",
+  },
+  {
+    id: 'fixed-language-asset-relabelled-as-fallback',
+    invariant:
+      "Content fixed in one language keeps that language and is not marked a fallback because the reader's locale differs.",
+    source: 'packages/runtime/src/assets.ts',
+    find: "      return invalidAsset('A fixed-language asset descriptor is invalid.');\n    }\n    return Object.freeze({\n      ...common,\n      status: 'ready',\n      fallback: false,",
+    replace:
+      "      return invalidAsset('A fixed-language asset descriptor is invalid.');\n    }\n    return Object.freeze({\n      ...common,\n      status: 'ready',\n      fallback: languageForLocale(request.targetLocale) !== descriptor.language,",
+  },
+  {
+    id: 'event-carries-unbounded-caller-text',
+    invariant:
+      'An observability event carries codes and bounded identities, and text a caller supplied is dropped rather than recorded.',
+    source: 'packages/runtime/src/observability.ts',
+    find: '  const targetLocale = boundedIdentity(input.targetLocale);',
+    replace: '  const targetLocale = input.targetLocale;',
+  },
+  {
+    id: 'source-fallback-reported-as-translated',
+    invariant:
+      'A message rendered from the source locale because its translation is missing says so, with the locale that supplied it and a message-unavailable diagnostic.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '  const fallback = supplyingLocale !== candidate.targetLocale;',
+    replace: '  const fallback = false;',
+  },
+  {
+    id: 'malformed-stored-locale-echoed-in-event',
+    invariant:
+      'A persisted locale value that does not parse is reported without the value, because it came from the client.',
+    source: 'packages/runtime/src/locale-resolution.ts',
+    find: "          reason: 'unsupported-locale',\n          correlationId: store.id,\n        });\n        continue;\n      }\n      if (!this.context.supportedLocales.has(canonical)) {",
+    replace:
+      "          reason: 'unsupported-locale',\n          targetLocale: stored,\n          correlationId: store.id,\n        });\n        continue;\n      }\n      if (!this.context.supportedLocales.has(canonical)) {",
+  },
+  {
+    id: 'absent-sink-replaced-with-a-no-op',
+    invariant:
+      'With no sink configured, no event emitter exists, so no event is built and no clock is read.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '    this.observability =\n      options.observability === undefined\n        ? undefined\n        : createLocalizationEventEmitter(options.observability);',
+    replace:
+      '    this.observability = createLocalizationEventEmitter(\n      options.observability ?? { emit: () => undefined },\n    );',
+  },
+  {
+    id: 'superseded-write-reported-as-failed',
+    invariant:
+      'A persistence write abandoned because a newer choice replaced it is reported as superseded, not as a failure.',
+    source: 'packages/runtime/src/locale-resolution.ts',
+    find: "            status: 'superseded',",
+    replace: "            status: 'failed',",
+  },
+  {
+    id: 'runtime-sink-exception-escapes',
+    invariant:
+      'A runtime sink that throws leaves initialization, locale changes, the snapshot and the lifecycle exactly as they are without it.',
+    source: 'packages/runtime/src/observability.ts',
+    find: '  try {\n    sink.emit(event);\n  } catch {\n    // Optional sinks cannot influence localization state or escape SSR requests.\n  }',
+    replace: '  sink.emit(event);',
+  },
+  {
+    id: 'event-identifier-keeps-control-characters',
+    invariant:
+      'An event identifier carrying a control or directional character is dropped from the event.',
+    source: 'packages/runtime/src/observability.ts',
+    find: '    /[\\u0000-\\u001f\\u007f-\\u009f\\u202a-\\u202e\\u2066-\\u2069]/u.test(value)',
+    replace: '    false',
+  },
+  {
+    id: 'runtime-repeated-failure-emitted-again',
+    invariant:
+      'The runtime reports an equivalent failure once within its window.',
+    source: 'packages/runtime/src/observability.ts',
+    find: '      return;\n    }\n    if (failures.size >= MAXIMUM_FAILURE_IDENTITIES) {',
+    replace: '    }\n    if (failures.size >= MAXIMUM_FAILURE_IDENTITIES) {',
+  },
+  {
+    id: 'stored-locale-echoed-in-a-diagnostic',
+    invariant:
+      'A stored locale that does not canonicalize is excluded with a diagnostic that carries none of its text.',
+    source: 'packages/runtime/src/locale-resolution.ts',
+    find: "          reason: 'unsupported-locale',\n          correlationId: store.id,",
+    replace:
+      "          reason: 'unsupported-locale',\n          targetLocale: stored,\n          correlationId: store.id,",
+  },
+  {
+    id: 'declining-url-source-answers-the-default',
+    invariant:
+      'An address that states no locale declines, so the next declared source answers rather than the default.',
+    source: 'packages/runtime/src/locale-resolution.ts',
+    find: '      if (stated === undefined) return undefined;',
+    replace:
+      '      if (stated === undefined) return this.context.defaultLocale;',
+  },
+  {
+    id: 'invalid-locale-change-throws',
+    invariant:
+      'An explicit change to an unsupported locale settles as a failed result rather than throwing.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '        targetLocale: localeValue,\n        transitionId: id,\n      });\n      return Promise.resolve(result);',
+    replace:
+      '        targetLocale: localeValue,\n        transitionId: id,\n      });\n      throw error;',
+  },
+  {
+    id: 'persistence-stores-read-in-reverse',
+    invariant:
+      'Stores are read in the order the application declared them, and the first believable answer wins.',
+    source: 'packages/runtime/src/locale-resolution.ts',
+    find: '    for (const store of this.context.persistence ?? []) {',
+    replace:
+      '    for (const store of [...(this.context.persistence ?? [])].reverse()) {',
+  },
+  {
+    id: 'initial-locale-written-back',
+    invariant:
+      'The locale initialization resolves is not written to the persistence stores; only a deliberate change is.',
+    source: 'packages/runtime/src/localization.ts',
+    find: "        const snapshot = this.commit(prepared);\n        this.lifecycleValue.set('ready');\n        this.targetLocaleValue.set(undefined);\n        this.startIndependentParticipants(\n          progressiveParticipants,",
+    replace:
+      "        const snapshot = this.commit(prepared);\n        this.localeResolution.persistLocale(snapshot, undefined);\n        this.lifecycleValue.set('ready');\n        this.targetLocaleValue.set(undefined);\n        this.startIndependentParticipants(\n          progressiveParticipants,",
+  },
+  {
+    id: 'unremembered-change-still-recorded',
+    invariant:
+      'A locale change made with remember set to false moves the page and writes nothing to the stores.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '        if (options.remember !== false) {',
+    replace: '        if (true as boolean) {',
+  },
+  {
+    id: 'restore-overrides-a-newer-choice',
+    invariant:
+      'A stored value read for a restored page does not move it when the reader chose or removed a locale while it was being read.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '    if (target === undefined || this.requestedChanges !== requested)',
+    replace: '    if (target === undefined || requested < 0)',
+  },
+  {
+    id: 'strict-policy-accepts-source-fallback',
+    invariant:
+      'Under the strict policy a message the source locale supplies is refused rather than rendered.',
+    source: 'packages/runtime/src/localization.ts',
+    find: "      this.options.setup.fallbackPolicy === 'strict' &&\n      !activation.inheritedLocales.has(candidate.catalog.key.catalogLocale)",
+    replace:
+      '      (false as boolean) &&\n      !activation.inheritedLocales.has(candidate.catalog.key.catalogLocale)',
+  },
+  {
+    id: 'language-independent-content-classified-as-known',
+    invariant:
+      'Content tagged as having no language is classified as language-independent, apart from known and unknown content.',
+    source: 'packages/runtime/src/locale-presentation.ts',
+    find: '  if (primary === LANGUAGE_INDEPENDENT) {',
+    replace: '  if (primary === LANGUAGE_INDEPENDENT && language.length < 0) {',
+  },
+  {
+    id: 'undetermined-content-assigned-a-direction',
+    invariant:
+      'Content of undetermined language with no script defers its direction to the renderer instead of being assigned one.',
+    source: 'packages/runtime/src/locale-presentation.ts',
+    find: '  if (primary === UNDETERMINED && !hasScriptSubtag(language)) {',
+    replace:
+      '  if (primary === UNDETERMINED && !hasScriptSubtag(language) && language.length < 0) {',
+  },
+  {
+    id: 'recovery-region-drops-its-language',
+    invariant:
+      'The recovery region carries the language and direction of the recovery message it renders.',
+    source: 'packages/runtime/src/recovery.ts',
+    find: '        [attr.lang]="recovery.language"\n        [attr.dir]="recovery.direction"\n',
+    replace: '',
+  },
+  {
+    id: 'result-reports-the-target-as-supplier',
+    invariant:
+      'A result names the locale whose catalog supplied it, which may differ from the locale asked for.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '    supplyingLocale,\n    language: languageForLocale(supplyingLocale),',
+    replace:
+      '    supplyingLocale: candidate.targetLocale,\n    language: languageForLocale(supplyingLocale),',
+  },
+  {
+    id: 'formatting-pipe-declared-pure',
+    invariant:
+      'A formatting pipe re-renders when the committed locale changes under an unchanged value.',
+    source: 'packages/runtime/src/formatting-pipes.ts',
+    find: "@Pipe({ name: 'localizedDecimal', standalone: true, pure: false })",
+    replace:
+      "@Pipe({ name: 'localizedDecimal', standalone: true, pure: true })",
+  },
+  {
+    id: 'formatting-pipe-failure-unreported',
+    invariant:
+      'A formatting pipe whose formatter refuses a value reports the diagnostic to the observability sink.',
+    source: 'packages/runtime/src/formatting-pipes.ts',
+    find: '    emitLocalizationRuntimeEvent(this.localization, {',
+    replace:
+      '    void emitLocalizationRuntimeEvent;\n    ((..._event: unknown[]) => undefined)(this.localization, {',
+  },
+  {
+    id: 'participant-payload-admitted',
+    invariant:
+      'A participant report carrying anything beyond its status, representation and identity is refused, and none of it reaches Equator state.',
+    source: 'packages/runtime/src/participant-runtime.ts',
+    find: "      if (!keysWithin(value, ['status', 'representation', 'identity'])) {\n        return undefined;\n      }\n      const representation = sanitizeRepresentation(value['representation']);\n      if (representation === undefined) return undefined;\n      return Object.freeze({\n        status: 'ready',",
+    replace:
+      "      const representation = sanitizeRepresentation(value['representation']);\n      if (representation === undefined) return undefined;\n      return Object.freeze({\n        ...value,\n        status: 'ready',",
+  },
+  {
+    id: 'target-locale-inferred-from-primary',
+    invariant:
+      'While a transition is prepared the target locale is the one requested, never the primary locale still committed.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '        this.targetLocaleValue.set(locale);\n        const participantsToPrepare =',
+    replace:
+      '        this.targetLocaleValue.set(\n          this.active?.publicSnapshot.primaryLocale ?? locale,\n        );\n        const participantsToPrepare =',
+  },
+  {
+    id: 'failed-required-scope-committed-anyway',
+    invariant:
+      'A snapshot is committed only when every required scope was acquired; one that failed to load stops the commit.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '    if (failure !== undefined) {\n      releaseActivations(activations);\n      throw failure.reason;\n    }\n    let participants: readonly PreparedParticipant[];',
+    replace:
+      '    void failure;\n    let participants: readonly PreparedParticipant[];',
+  },
+  {
+    id: 'first-navigation-fails-over-a-failed-start',
+    invariant:
+      'In a browser a navigation arriving after a failed start is held until a retry succeeds, rather than failing and moving the address.',
+    source: 'packages/runtime/router/src/provide.ts',
+    find: '  await new Promise<void>((settle) => {',
+    replace:
+      "  if (localization.snapshot() === undefined) {\n    throw new Error('The localization runtime has not started.');\n  }\n  await new Promise<void>((settle) => {",
+  },
+  {
+    id: 'server-render-answers-with-recovery',
+    invariant:
+      'A server bootstrap whose initial snapshot cannot be built rejects instead of rendering the recovery.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '            isPlatformServer(platformId) ||\n            localization.recovery() === undefined',
+    replace: '            localization.recovery() === undefined',
+  },
+  {
+    id: 'overlay-adapter-built-with-the-configuration',
+    invariant:
+      'The overlay adapter is built inside the injector of the context that owns it, not when the configuration is declared.',
+    source: 'packages/runtime/src/angular.ts',
+    find: "    ɵkind: 'overlay-locale',\n    create,\n  });",
+    replace:
+      "    ɵkind: 'overlay-locale',\n    create: ((adapter) => () => adapter)(create()),\n  });",
+  },
+  {
+    id: 'equivalent-transitions-not-coalesced',
+    invariant:
+      'A locale change equivalent to one already in flight returns that transition rather than starting a second.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '    if (this.pending?.key === key) return this.pending.promise;',
+    replace:
+      '    if (this.pending?.key === key && key.length < 0) return this.pending.promise;',
+  },
+  {
+    id: 'participant-handed-the-previous-locale',
+    invariant:
+      'A participant is handed the locale the transition is preparing, not the one it last supplied.',
+    source: 'packages/runtime/src/participant-runtime.ts',
+    find: '    const context: LocalizationParticipantContext = Object.freeze({\n      targetLocale,',
+    replace:
+      '    const context: LocalizationParticipantContext = Object.freeze({\n      targetLocale: previousState.current?.targetLocale ?? targetLocale,',
+  },
+  {
+    id: 'domain-outcome-read-as-unavailable',
+    invariant:
+      "A participant's domain outcome commits as that outcome and is never read as a missing translation.",
+    source: 'packages/runtime/src/participant-runtime.ts',
+    find: "      ({ report }) => report.status === 'unavailable',",
+    replace:
+      "      ({ report }) =>\n        report.status === 'unavailable' || report.status === 'domain-outcome',",
+  },
+  {
+    id: 'participant-deadline-authorizes-commit',
+    invariant:
+      'A required participant whose deadline expired fails the coordinated transition rather than being left out of it.',
+    source: 'packages/runtime/src/participant-runtime.ts',
+    find: "      (result): result is PromiseRejectedResult => result.status === 'rejected',",
+    replace:
+      "      (result): result is PromiseRejectedResult =>\n        result.status === 'rejected' &&\n        (result.reason as { readonly diagnostic?: { readonly code?: string } })\n          ?.diagnostic?.code !== 'participant-timeout',",
+  },
+  {
+    id: 'startup-scopes-left-out-of-a-switch',
+    invariant:
+      'A locale change loads the scopes the current view already requires in the target locale, startup scopes included, before it commits.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '        options.requiredScopes ??\n          this.active?.publicSnapshot.requiredScopes ??\n          this.bootstrapScopes,',
+    replace: '        options.requiredScopes ?? [],',
+  },
+  {
+    id: 'superseded-scope-load-published',
+    invariant:
+      'A scope loaded for a locale a later transaction replaced is discarded, not published into the current snapshot.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '      if (this.committedTransitionId !== requestedAgainst) {',
+    replace: '      if (requestedAgainst < 0) {',
+  },
+  {
+    id: 'bootstrap-does-not-wait-for-localization',
+    invariant:
+      'Application bootstrap waits for initialization, so nothing renders before the primary locale and startup scopes are ready.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '      return localization\n        .initialize()\n        .then(() => {\n          if (!isPlatformServer(platformId)) return;',
+    replace:
+      '      void localization\n        .initialize()\n        .then(() => {\n          if (!isPlatformServer(platformId)) return;',
+  },
+  {
+    id: 'transferred-locale-renegotiated',
+    invariant:
+      'A client adopts the primary locale the server transferred instead of resolving one again.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '          ...(transferred === undefined\n            ? {}\n            : { initialLocale: transferred.primaryLocale }),',
+    replace: '          ...{},',
+  },
+  {
+    id: 'persistence-failure-reported-as-success',
+    invariant:
+      'A store write that throws is reported to the observability sink as a failed persistence.',
+    source: 'packages/runtime/src/locale-resolution.ts',
+    find: "            status: 'failed',\n            reason: asDiagnostic(error).code,\n            targetLocale: locale,",
+    replace:
+      "            status: 'succeeded',\n            reason: asDiagnostic(error).code,\n            targetLocale: locale,",
+  },
+  {
+    id: 'disposal-clears-the-consumer-store',
+    invariant:
+      "Disposing a context leaves what the application's persistence stores hold untouched.",
+    source: 'packages/runtime/src/localization.ts',
+    find: '    this.store.dispose();',
+    replace:
+      '    this.store.dispose();\n    void this.localeResolution.forgetPersistedLocale();',
+  },
+  {
+    id: 'deferred-load-never-signals-start',
+    invariant:
+      'A load the testing controller holds says when it has started, so a test can act while it is held.',
+    source: 'packages/runtime/testing/src/public-api.ts',
+    find: '              plan.start();\n              await plan.gate;',
+    replace: '              await plan.gate;',
+  },
+  {
+    id: 'test-environment-reset-keeps-the-address',
+    invariant:
+      'The test environment reset puts the address back to the root as well as clearing cookies and storages.',
+    source: 'packages/runtime/testing/src/public-api.ts',
+    find: "    history.replaceState(null, '', '/');",
+    replace: '    void history;',
+  },
+  {
+    id: 'family-resolver-guesses-a-member',
+    invariant:
+      'A family resolves only segments that name a current member, and a well-formed segment that names none resolves to nothing.',
+    source: 'packages/toolkit/src/generated-contracts.ts',
+    find: '    `    return Object.prototype.hasOwnProperty.call(members, key)`,\n    `      ? members[key as keyof typeof members]`,\n    `      : undefined;`,',
+    replace:
+      '    `    return members[key as keyof typeof members] ?? Object.values(members)[0];`,',
+  },
+  {
+    id: 'inert-snapshot-reads-accessors',
+    invariant:
+      'Admission refuses a catalog property defined by a getter instead of running the getter to read it.',
+    source: 'packages/runtime/src/runtime-safety.ts',
+    find: "        const descriptor = descriptors[key];\n        if (\n          descriptor === undefined ||\n          !hasOwn(descriptor, 'value') ||\n          descriptor.get !== undefined ||\n          descriptor.set !== undefined ||\n          descriptor.enumerable !== true\n        ) {\n          throw new TypeError('Inert JSON objects cannot contain accessors.');\n        }\n        Object.defineProperty(result, key, {\n          value: copy(descriptor.value, depth + 1),",
+    replace:
+      '        const descriptor = descriptors[key];\n        void descriptor;\n        Object.defineProperty(result, key, {\n          value: copy(value[key], depth + 1),',
+  },
+  {
+    id: 'transfer-with-unknown-field-adopted',
+    invariant:
+      'A transfer carrying a key its profile does not declare is discarded whole, and the document renders from its generated defaults.',
+    source: 'packages/runtime/src/angular.ts',
+    find: "      !hasExactKeys(\n        admitted.value,\n        ['profile', 'primaryLocale', 'formatting', 'catalogs', 'participants'],\n        ['route'],\n      ) ||",
+    replace: '',
+  },
+  {
+    id: 'recorded-summary-not-compared',
+    invariant:
+      'A candidate whose resource summary differs from the one recorded for its address is refused at the comparison, before its content is measured.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '      !sameResources(received.resources, artifact.resources) ||',
+    replace: '',
+  },
+  {
+    id: 'admission-bypassed',
+    invariant:
+      'A loaded catalog is admitted before it is cached or committed, and a candidate that fails admission is never used.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '      .then((candidate) => admitCatalog(candidate, artifact))',
+    replace: '      .then((candidate) => candidate as CompiledCatalog)',
+  },
+  {
+    id: 'verified-address-stands-in-for-candidate',
+    invariant:
+      'A catalog admitted once for an address does not admit a different candidate later offered under the same address.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: "const admittedCatalogs = new WeakMap<\n  object,\n  { readonly key: string; readonly catalog: CompiledCatalog }\n>();\n\nfunction admissionKey(artifact: CatalogSetArtifact): string {\n  const { address } = artifact;\n  return [\n    address.contentDigest,\n    address.generatedAbi,\n    address.standardsProfile,\n    address.applicationContractFingerprint,\n    address.semanticRegistryFingerprint,\n    address.key.providerId,\n    address.key.scopeId,\n    address.key.catalogLocale,\n  ].join('\\u0000');\n}\n\n/**\n * The candidate, checked against the address it was offered for.\n *\n * `specs/05-compiled-artifacts-and-trust.spec.md` section 4 is the order: the inert snapshot first,\n * then the exact field set, then identity against the address, then the resource summary\n * re-measured from the content, then the digest. The cheap refusals come before the expensive ones,\n * and nothing that fails is remembered.\n */\nasync function admitCatalog(\n  candidate: unknown,\n  artifact: CatalogSetArtifact,\n): Promise<CompiledCatalog> {\n  const key = admissionKey(artifact);\n  const cacheable = typeof candidate === 'object' && candidate !== null;\n  if (cacheable) {\n    const admitted = admittedCatalogs.get(candidate as object);\n    // The address must match too: one object must never be admitted for a scope or locale other\n    // than the one it was verified against.\n    if (admitted !== undefined && admitted.key === key) return admitted.catalog;\n  }",
+    replace:
+      "const admittedCatalogs = new Map<\n  object,\n  { readonly key: string; readonly catalog: CompiledCatalog }\n>();\n\nfunction admissionKey(artifact: CatalogSetArtifact): string {\n  const { address } = artifact;\n  return [\n    address.contentDigest,\n    address.generatedAbi,\n    address.standardsProfile,\n    address.applicationContractFingerprint,\n    address.semanticRegistryFingerprint,\n    address.key.providerId,\n    address.key.scopeId,\n    address.key.catalogLocale,\n  ].join('\\u0000');\n}\n\nasync function admitCatalog(\n  candidate: unknown,\n  artifact: CatalogSetArtifact,\n): Promise<CompiledCatalog> {\n  const key = admissionKey(artifact);\n  const cacheable = typeof candidate === 'object' && candidate !== null;\n  if (cacheable) {\n    for (const admitted of admittedCatalogs.values()) {\n      if (admitted.key === key) return admitted.catalog;\n    }\n  }",
+  },
+  {
+    id: 'preload-activates-scope',
+    invariant:
+      'Preloading a scope loads its catalogs without making the scope ready for evaluation.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '      await Promise.all(requests);\n      this.assertActive();',
+    replace:
+      '      await Promise.all(requests);\n      this.assertActive();\n      await this.ensureScope(scope);',
+  },
+  {
+    id: 'unpinned-catalogs-never-evicted',
+    invariant:
+      'The memory cache evicts released catalogs on its own to stay within the configured bound.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '        .filter(([, entry]) => entry.pins === 0)',
+    replace: '        .filter(([, entry]) => entry.pins < 0)',
+  },
+  {
+    id: 'failed-load-remembered',
+    invariant:
+      'A catalog load that failed is forgotten, so a retry loads it again.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '      .finally(() => this.inFlight.delete(key));',
+    replace: '      .finally(() => undefined);',
+  },
+  {
+    id: 'catalog-chooses-link-destination',
+    invariant:
+      'A link slot goes where its trusted binding says, whatever the catalog wrote on the slot.',
+    source: 'packages/runtime/src/message-template.ts',
+    find: '                      [href]="address(trusted.destination)"',
+    replace:
+      '                      [href]="part.options[\'href\'] ?? address(trusted.destination)"',
+  },
+  {
+    id: 'catalog-chooses-slot-class',
+    invariant:
+      'A slot element carries only the language and direction the runtime writes, never a class, style or token a catalog wrote on the slot.',
+    source: 'packages/runtime/src/message-template.ts',
+    find: '<strong [attr.lang]="part.language" [attr.dir]="part.direction">',
+    replace:
+      '<strong [attr.lang]="part.language" [attr.dir]="part.direction" [attr.class]="part.options[\'class\']">',
+  },
+  {
+    id: 'catalog-text-rendered-as-html',
+    invariant:
+      'A text part of a structured message is written into the page as text, so markup a catalog carries never becomes an element.',
+    source: 'packages/runtime/src/message-template.ts',
+    find: '            <ng-container>{{ part.value }}</ng-container>',
+    replace: '            <span [innerHTML]="part.value"></span>',
+  },
+  {
+    id: 'child-inherits-commit-hooks',
+    invariant:
+      "A child context runs none of its parent's commit hooks, so it neither writes the parent's document nor disposes the parent's adapters.",
+    source: 'packages/runtime/src/localization.ts',
+    find: '      commitHooks: [],',
+    replace: '      commitHooks: this.options.commitHooks ?? [],',
+  },
+  {
+    id: 'client-declaration-synthesizes-a-not-found',
+    invariant:
+      'A declaration on a client navigation governs the document and nothing else: the route and the address stay where the reader put them.',
+    source: 'packages/runtime/router/src/page-outcome.ts',
+    find: '    this.stamp(declaration);\n    if (this.request === null) return;',
+    replace:
+      "    this.stamp(declaration);\n    if (!this.onServer && declaration.outcome === 'absent') {\n      void this.router.navigateByUrl('/not-found');\n    }\n    if (this.request === null) return;",
+  },
+  {
+    id: 'commit-waits-for-a-transition',
+    invariant:
+      'A locale change commits without waiting for any transition, so a page that animates nothing still changes language.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '        const previousLocale = this.active?.publicSnapshot.primaryLocale;\n        const snapshot = this.commit(prepared);',
+    replace:
+      "        const previousLocale = this.active?.publicSnapshot.primaryLocale;\n        if (globalThis.document !== undefined) {\n          await new Promise<void>((resolve) => {\n            globalThis.document.documentElement.addEventListener(\n              'transitionend',\n              () => resolve(),\n              { once: true },\n            );\n          });\n        }\n        const snapshot = this.commit(prepared);",
+  },
+  {
+    id: 'detached-page-outcome-unreported',
+    invariant:
+      'A declaration against a request the handler is not holding is reported during development, because its response is indistinguishable from one that declared nothing.',
+    source: 'packages/runtime/router/src/page-outcome.ts',
+    find: '    if (this.reportedDetachedRequest) return;',
+    replace: '    if (this.reportedDetachedRequest || isDevMode()) return;',
+  },
+  {
+    id: 'direction-change-moves-focus',
+    invariant:
+      'A commit that changes only the reading direction moves no focus.',
+    source: 'packages/runtime/src/angular.ts',
+    find: "      root.setAttribute('dir', snapshot.direction);",
+    replace:
+      "      root.setAttribute('dir', snapshot.direction);\n      if (previousDirection !== snapshot.direction) {\n        this.document.querySelector<HTMLElement>('button, input, [href]')?.focus();\n      }",
+  },
+  {
+    id: 'direction-written-as-a-style',
+    invariant:
+      "A locale commit states direction through the document's dir attribute and writes no style, class or rule of the application's.",
+    source: 'packages/runtime/src/angular.ts',
+    find: "      root.setAttribute('dir', snapshot.direction);",
+    replace:
+      "      root.setAttribute('dir', snapshot.direction);\n      root.style.setProperty('direction', snapshot.direction);",
+  },
+  {
+    id: 'evaluation-starts-a-catalog-load',
+    invariant:
+      'Evaluating a handle whose scope is not ready starts no catalog load; it refuses, and loading stays an explicit call.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '    if (activation === undefined) {\n      throw new LocalizationError(',
+    replace:
+      '    if (activation === undefined) {\n      void this.ensureScope({\n        providerId: handle.providerId,\n        scopeId: handle.scopeId,\n      }).catch(() => undefined);\n      throw new LocalizationError(',
+  },
+  {
+    id: 'failed-commit-announced-as-committed',
+    invariant:
+      'A locale change that fails its commit is never handed to the post-commit effects, so the announcer says nothing about a switch that did not happen.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '          hook.rollback?.(previous?.publicSnapshot);',
+    replace: '          hook.committed?.(prepared.active.publicSnapshot);',
+  },
+  {
+    id: 'handle-stand-in-evaluated',
+    invariant:
+      'A value without the generated ABI stamp is refused as an invalid configuration before the runtime reads anything it claims about itself.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '    if (handle.generatedAbi !== GENERATED_ABI) {',
+    replace: '    if (false as boolean) {',
+  },
+  {
+    id: 'language-independent-content-given-a-direction',
+    invariant:
+      'Content tagged as having no linguistic content is reported as language-independent and given no writing direction.',
+    source: 'packages/runtime/src/locale-presentation.ts',
+    find: '  if (primary === LANGUAGE_INDEPENDENT) {',
+    replace: '  if (primary === LANGUAGE_INDEPENDENT && language.length < 0) {',
+  },
+  {
+    id: 'late-page-outcome-never-reprojected',
+    invariant:
+      'A page outcome declared after the navigation committed re-projects the document.',
+    source: 'packages/runtime/router/src/route-localization.ts',
+    find: '    if (outcome === this.declaredOutcome) return;',
+    replace:
+      '    if (outcome === this.declaredOutcome || outcome !== undefined) return;',
+  },
+  {
+    id: 'outcome-document-read-under-another-class',
+    invariant:
+      'The head of a response that reached no route is read from the document declared for its own outcome class.',
+    source: 'packages/runtime/router/src/route-localization.ts',
+    find: '    const declared = this.options.outcomeDocuments?.[outcomeClass];',
+    replace:
+      "    const declared = this.options.outcomeDocuments?.['not-found'];",
+  },
+  {
+    id: 'page-outcome-survives-a-commit-that-declares-nothing',
+    invariant:
+      'A commit replaces the declared page outcome outright, including when the arriving page declares nothing.',
+    source: 'packages/runtime/router/src/page-outcome.ts',
+    find: '          declaration === undefined\n            ? undefined\n            : { navigationId: event.id, declaration },',
+    replace:
+      '          declaration === undefined\n            ? this.committed()\n            : { navigationId: event.id, declaration },',
+  },
+  {
+    id: 'participant-registry-shared',
+    invariant:
+      'Each context owns its participant registry; a participant registered on one context is never listed, prepared or disposed by another built from the same setup.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '    this.participantCoordinator = new ParticipantCoordinator(\n      options.transferredParticipants ?? [],\n    );',
+    replace:
+      '    this.participantCoordinator = ((\n      globalThis as { sharedCoordinator?: ParticipantCoordinator }\n    ).sharedCoordinator ??= new ParticipantCoordinator(\n      options.transferredParticipants ?? [],\n    ));',
+  },
+  {
+    id: 'participant-transfer-carries-a-function',
+    invariant:
+      "The transfer a server render writes is data only: its participant records carry no function of the participant's.",
+    source: 'packages/runtime/src/participant-runtime.ts',
+    find: "          profile: 'equator-participant-state/1' as const,",
+    replace:
+      "          profile: 'equator-participant-state/1' as const,\n          prepare: adapter.prepare,",
+  },
+  {
+    id: 'persisted-locale-is-its-display-name',
+    invariant:
+      'A remembered locale is written as its canonical tag, never as the name a reader is shown for it.',
+    source: 'packages/runtime/src/locale-resolution.ts',
+    find: '          await store.write(locale);',
+    replace:
+      "          await store.write(\n            new Intl.DisplayNames([locale], { type: 'language' }).of(locale) ??\n              locale,\n          );",
+  },
+  {
+    id: 'prerendered-declaration-accepted',
+    invariant:
+      'A page declaring an outcome while rendering ahead of a request fails the build rather than being written.',
+    source: 'packages/runtime/router/src/page-outcome.ts',
+    find: "      throw new LocalizationError({\n        code: 'route-unavailable',",
+    replace:
+      "      void new LocalizationError({\n        code: 'route-unavailable',",
+  },
+  {
+    id: 'prerendered-declaration-render-continues',
+    invariant:
+      'A prerender whose page declared an outcome ends as a failed render, rather than only refusing the call that declared.',
+    source: 'packages/runtime/router/src/page-outcome.ts',
+    find: '      if (!this.applicationRef.destroyed) this.applicationRef.destroy();',
+    replace: '      void this.applicationRef.destroyed;',
+  },
+  {
+    id: 'progressive-failure-rolls-back-commit',
+    invariant:
+      "A progressive region's failure leaves the commit it followed in place.",
+    source: 'packages/runtime/src/localization.ts',
+    find: '          controller.signal,\n        ),\n      ),\n    ).finally(() => this.progressiveControllers.delete(controller));',
+    replace:
+      "          controller.signal,\n        ),\n      ),\n    )\n      .then((results) => {\n        if (\n          results.some(\n            (settled) =>\n              settled.status === 'fulfilled' &&\n              settled.value.attempt.status === 'failed',\n          )\n        ) {\n          this.activeValue.set(undefined);\n        }\n      })\n      .finally(() => this.progressiveControllers.delete(controller));",
+  },
+  {
+    id: 'progressive-region-holds-the-change',
+    invariant:
+      "A progressive region's failure is confined to that region: the locale change it runs beside commits without it.",
+    source: 'packages/runtime/src/localization.ts',
+    find: '        ? this.participantCoordinator.required()',
+    replace: '        ? this.participantCoordinator.registrations()',
+  },
+  {
+    id: 'progressive-region-retried-by-runtime',
+    invariant:
+      "A progressive region that failed is prepared again only when the application calls its registration's retry.",
+    source: 'packages/runtime/src/participant-runtime.ts',
+    find: '    } catch {\n      // Independent regional outcomes are exposed through participant state.\n    }',
+    replace:
+      '    } catch {\n      if (!signalValue.aborted) {\n        setTimeout(() => {\n          void this.runIndependent(\n            registration,\n            targetLocale,\n            formatting,\n            transitionId,\n            signalValue,\n          );\n        }, 0);\n      }\n    }',
+  },
+  {
+    id: 'remembered-failures-never-evicted',
+    invariant:
+      'The set of remembered failure identities is capped and gives up the oldest first.',
+    source: 'packages/runtime/src/observability.ts',
+    find: '    if (failures.size >= MAXIMUM_FAILURE_IDENTITIES) {',
+    replace:
+      '    if (failures.size >= MAXIMUM_FAILURE_IDENTITIES && key.length < 0) {',
+  },
+  {
+    id: 'rendered-text-keeps-template-whitespace',
+    invariant:
+      "renderedText collapses whitespace runs and trims, so a template's line breaks and indentation do not reach an assertion.",
+    source: 'packages/runtime/testing/src/public-api.ts',
+    find: "  return element.textContent.replace(/\\s+/gu, ' ').trim();",
+    replace: '  return element.textContent;',
+  },
+  {
+    id: 'required-extension-admitted-without-binding',
+    invariant:
+      'A context whose catalogs require an extension refuses to start when the binding is absent or its descriptor differs.',
+    source: 'packages/runtime/src/extensions.ts',
+    find: '        invalid(\n          `Required runtime extension ${admitted.kind}',
+    replace:
+      '        if (admitted.id.length < 0) invalid(\n          `Required runtime extension ${admitted.kind}',
+  },
+  {
+    id: 'restore-takes-focus-the-visitor-moved',
+    invariant:
+      'A focus restore that lands after the visitor has moved focus leaves it where the visitor put it.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '      const focusWasLost =\n        holder === null ||',
+    replace: '      const focusWasLost =\n        true ||',
+  },
+  {
+    id: 'route-addresses-not-published',
+    invariant:
+      'The per-locale addresses of the resolved route are published on the snapshot for every navigation.',
+    source: 'packages/runtime/router/src/route-localization.ts',
+    find: '      ...(addresses === undefined ? {} : { addresses }),',
+    replace: '      ...(addresses === undefined ? {} : {}),',
+  },
+  {
+    id: 'routing-policy-declared-twice',
+    invariant:
+      'An application declares its locale URL policy once, and a second withRouting() is refused.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '  if (matches.length > 1) {',
+    replace: "  if (matches.length > 1 && kind !== 'routing') {",
+  },
+  {
+    id: 'scope-refusal-names-no-scope',
+    invariant:
+      'A synchronous evaluation refused for an unready scope raises a typed error whose diagnostic names the provider and the scope.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '          { providerId: handle.providerId, scopeId: handle.scopeId },',
+    replace: '          {},',
+  },
+  {
+    id: 'scroll-hold-ceiling-lifted',
+    invariant:
+      'The window holding a restored scroll position closes 150 milliseconds after it opened, whatever the frames are doing.',
+    source: 'packages/runtime/src/angular.ts',
+    find: 'const scrollHoldCeilingMs = 150;',
+    replace: 'const scrollHoldCeilingMs = 150_000;',
+  },
+  {
+    id: 'scroll-hold-frame-budget-lifted',
+    invariant:
+      'The window holding a restored scroll position re-applies it for six frames at most on a page that never settles.',
+    source: 'packages/runtime/src/angular.ts',
+    find: 'const scrollHoldFrames = 6;',
+    replace: 'const scrollHoldFrames = 60;',
+  },
+  {
+    id: 'scroll-hold-ignores-the-visitor',
+    invariant:
+      'The window holding a restored scroll position closes on the first wheel, touch, pointer or key event.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '      view.addEventListener(intent, close, listener);',
+    replace: '      void intent;',
+  },
+  {
+    id: 'scroll-hold-outlasts-settling',
+    invariant:
+      'The window holding a restored scroll position closes after two consecutive frames with nothing to correct.',
+    source: 'packages/runtime/src/angular.ts',
+    find: 'const scrollSettledFrames = 2;',
+    replace: 'const scrollSettledFrames = 20;',
+  },
+  {
+    id: 'scroll-hold-undoes-application-scrolling',
+    invariant:
+      'A position the application sets once a direction change has settled stands, because the window holding the restored one has closed.',
+    source: 'packages/runtime/src/angular.ts',
+    find: 'const scrollSettledFrames = 2;',
+    replace: 'const scrollSettledFrames = 7;',
+  },
+  {
+    id: 'server-localization-state-not-transferred',
+    invariant:
+      'A server render hands its localization state to the browser, which adopts it rather than preparing the page again from its own negotiation.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '  return internals.get(localization)?.transferSnapshot();',
+    replace: '  void localization;\n  return undefined;',
+  },
+  {
+    id: 'server-navigation-held-for-retry',
+    invariant:
+      'On the server a failed start fails the first navigation instead of holding it for a retry that nothing will make.',
+    source: 'packages/runtime/router/src/provide.ts',
+    find: '      if (server) throw error;',
+    replace: '      void server;',
+  },
+  {
+    id: 'server-render-without-origin-accepted',
+    invariant:
+      'A server render with no origin configured is refused rather than projecting addresses against a guessed host.',
+    source: 'packages/runtime/router/src/provide.ts',
+    find: '  if (options.origin !== undefined || !isPlatformServer(inject(PLATFORM_ID))) {',
+    replace:
+      '  if (options.origin !== undefined || isPlatformServer(inject(PLATFORM_ID)) || true) {',
+  },
+  {
+    id: 'snapshot-admits-participant-result',
+    invariant:
+      'The localization snapshot carries only the fields it names, never what a participant returned.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '      ...(route === undefined ? {} : { route: Object.freeze({ ...route }) }),',
+    replace:
+      '      ...(route === undefined ? {} : { route: Object.freeze({ ...route }) }),\n      ...Object.assign({}, ...participants.map(({ report }) => report)),',
+  },
+  {
+    id: 'snapshot-left-writable',
+    invariant:
+      'The committed snapshot is frozen, so an application cannot change the state every reader shares.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '    const publicSnapshot: LocalizationSnapshot = Object.freeze({\n      id: (this.nextSnapshotId += 1),',
+    replace:
+      '    const publicSnapshot: LocalizationSnapshot = ({\n      id: (this.nextSnapshotId += 1),',
+  },
+  {
+    id: 'stale-offsets-restored-into-a-rewritten-value',
+    invariant:
+      'Selection offsets are restored only into the text they were measured against, so an application that rewrote its value and placed the caret itself keeps its placement.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '          editable.value === selection.value',
+    replace: '          editable.value.length >= 0',
+  },
+  {
+    id: 'stores-not-read-after-hydration',
+    invariant:
+      'Once a server-rendered page has hydrated, the stores are read again, and a stored choice the declared order puts first moves the page.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '          void applicationRef.whenStable().then(() => {\n            if (applicationRef.destroyed) return;\n            void localization.ɵrestoreLocale(\n              locationAddress(document.location, baseHref),\n            );',
+    replace:
+      '          void applicationRef.whenStable().then(() => {\n            if (applicationRef.destroyed) return;\n            void locationAddress(document.location, baseHref);',
+  },
+  {
+    id: 'test-environment-keeps-local-storage',
+    invariant:
+      'resetLocalizationTestEnvironment clears the local storage a localized test wrote.',
+    source: 'packages/runtime/testing/src/public-api.ts',
+    find: '    localStorage.clear();',
+    replace: '    void 0;',
+  },
+  {
+    id: 'transferred-context-follows-every-locale',
+    invariant:
+      "The formatting context a server render transferred applies to the locale it rendered and becomes no other locale's default.",
+    source: 'packages/runtime/src/localization.ts',
+    find: '      ...(locale === this.options.initialLocale\n        ? (this.options.initialFormattingContext ?? {})\n        : {}),',
+    replace: '      ...(this.options.initialFormattingContext ?? {}),',
+  },
+  {
+    id: 'twitter-card-duplicates-open-graph',
+    invariant:
+      'The only card tag written is the one Open Graph has no equivalent for, because a card processor falls back to Open Graph for the rest.',
+    source: 'packages/runtime/src/angular.ts',
+    find: "        meta('twitter:card', social.card ?? 'summary');",
+    replace:
+      "        meta('twitter:card', social.card ?? 'summary');\n        if (projection.title !== undefined) meta('twitter:title', projection.title);",
+  },
+  {
+    id: 'unavailable-participant-answered-from-the-previous-locale',
+    invariant:
+      "A required participant that reports its content unavailable in the target locale fails the transition; its previous locale's representation is never committed in its place.",
+    source: 'packages/runtime/src/participant-runtime.ts',
+    find: "      .map(({ value }) => value);\n    const unavailable = prepared.find(\n      ({ report }) => report.status === 'unavailable',\n    );",
+    replace:
+      "      .map(({ value }) =>\n        value.report.status === 'unavailable' &&\n        value.previousState.current !== undefined\n          ? ({ ...value, report: value.previousState.current.report } as typeof value)\n          : value,\n      );\n    const unavailable = prepared.find(\n      ({ report }) => report.status === 'unavailable',\n    );",
+  },
+  {
+    id: 'undeclared-outcome-document-unreported',
+    invariant:
+      'A response of an outcome class with no declared document is reported during development, because it is otherwise served with no title.',
+    source: 'packages/runtime/router/src/route-localization.ts',
+    find: '    if (this.undeclaredOutcomes.has(outcomeClass)) return;',
+    replace:
+      '    if (this.undeclaredOutcomes.has(outcomeClass) || isDevMode()) return;',
+  },
+  {
+    id: 'undetermined-language-given-a-direction',
+    invariant:
+      'Content tagged undetermined with no script is reported as unknown and given no writing direction.',
+    source: 'packages/runtime/src/locale-presentation.ts',
+    find: '  if (primary === UNDETERMINED && !hasScriptSubtag(language)) {',
+    replace:
+      '  if (primary === UNDETERMINED && !hasScriptSubtag(language) && language.length < 0) {',
+  },
+  {
+    id: 'minimal-consumer-selects-testing',
+    invariant:
+      'The minimal consumer selects only what it uses, so an entry point it does not select stays out of its graph.',
+    source: 'fixtures/minimal-package-consumer-template/src/app.config.ts',
+    find: "import { withRecoveryMessage } from '@neolorn/equator';",
+    replace:
+      "import { withRecoveryMessage } from '@neolorn/equator';\nimport { resetLocalizationTestEnvironment } from '@neolorn/equator/testing';\n\nresetLocalizationTestEnvironment();",
+    suite: 'verify:focused-consumers',
+    caughtWhen:
+      /Minimal consumer retained the unused Equator \.\/testing entrypoint/u,
+  },
+  {
+    id: 'runtime-exports-every-file',
+    invariant:
+      'A consumer cannot import a module of the runtime package its export map does not name.',
+    source: 'packages/runtime/package.json',
+    find: '  "sideEffects": false,',
+    replace: '  "sideEffects": false,\n  "exports": {\n    "./*": "./*"\n  },',
+    suite: 'verify:focused-consumers',
+    caughtWhen: /ERR_PACKAGE_PATH_NOT_EXPORTED/u,
+  },
+  {
+    id: 'url-built-against-an-unknown-identity-compiles',
+    invariant:
+      'Building a URL for a route identity the projection does not declare fails compilation.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '  Id extends RouteIdOf<Projection>,',
+    replace: '  Id extends string,',
+    suite: 'verify:consumer',
+    caughtWhen: /\.negative\.ts did not report/u,
+  },
+  {
+    id: 'context-time-zone-feature-admitted-without-a-zone',
+    invariant:
+      'A catalog that formats in the context time zone is refused at admission when the application configured none.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '        !contextTimeZone &&\n        Array.isArray(address.requiredFeatures) &&',
+    replace:
+      '        !contextTimeZone &&\n        contextTimeZone &&\n        Array.isArray(address.requiredFeatures) &&',
+  },
+  {
+    id: 'declared-spelling-correction-status-unstated',
+    invariant:
+      'A redirect the runtime issues during a render, such as a parameter-spelling correction, is sent with 308.',
+    source: 'packages/runtime/router/src/location-strategy.ts',
+    find: '        init.status = entry ? 307 : 308;',
+    replace: '        init.status = entry ? 307 : 302;',
+  },
+  {
+    id: 'label-written-once',
+    invariant:
+      "An attribute label follows a locale commit through Angular's own scheduling, with no change detection asked for.",
+    source: 'packages/runtime/src/label.ts',
+    find: '    effect(() => {\n      const attribute = this.attribute();',
+    replace:
+      '    void effect;\n    queueMicrotask(() => {\n      const attribute = this.attribute();',
+  },
+  {
+    id: 'navigation-error-loses-its-resolution',
+    invariant:
+      "A navigation to an address the route table cannot read ends in a RouteLocalizationError carrying the resolution, so an application's handler reads why rather than parsing a message.",
+    source: 'packages/runtime/router/src/route-localization.ts',
+    find: '      throw new RouteLocalizationError(resolution);',
+    replace:
+      '      throw new Error(`Localized route resolution failed with ${resolution.status}.`);',
+  },
+  {
+    id: 'scroll-hold-survives-a-later-commit',
+    invariant:
+      'The window holding a restored scroll position closes when a later commit supersedes the one it restored.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '        !open ||\n        sequence !== this.sequence ||',
+    replace: '        !open ||\n        sequence < 0 ||',
+  },
+  {
+    id: 'generated-composition-accepts-anything',
+    invariant:
+      'The generated provideLocalization() takes feature providers, and nothing else.',
+    source: 'packages/toolkit/src/generated-contracts.ts',
+    find: "    '  ...features: readonly LocalizationFeature[]',\n    '): EnvironmentProviders {',\n    '  return provideLocalizationSetup(localizationSetup, ...features);',",
+    replace:
+      "    '  ...features: readonly unknown[]',\n    '): EnvironmentProviders {',\n    '  return provideLocalizationSetup(localizationSetup, ...(features as readonly LocalizationFeature[]));',",
+    suite: 'verify:consumer',
+    caughtWhen:
+      /did not report "Argument of type '\{ provide: string; useValue: number; \}\[\]' is not assignable/u,
+  },
+  {
+    id: 'per-visitor-route-prerendered',
+    invariant:
+      'A build refuses to prerender a route that is per visitor, not stored, or private, and writes no page for it.',
+    source: 'packages/runtime/router/src/provide.ts',
+    find: '    if (level !== undefined) {',
+    replace: "    if (level !== undefined && (level as string) === '') {",
+    suite: 'verify:consumer',
+    caughtWhen: /The build prerendered route:lazy, which it has to refuse/u,
+  },
+  {
+    id: 'primary-entry-imports-node',
+    invariant:
+      'A production graph that selects only the primary entry point reaches no Node built-in.',
+    source: 'packages/runtime/src/public-api.ts',
+    find: "export * from '@neolorn/equator/core';",
+    replace:
+      "// @ts-ignore\nimport 'node:fs';\nexport * from '@neolorn/equator/core';",
+    suite: 'verify:focused-consumers',
+    caughtWhen:
+      /Minimal browser (?:graph|output) imports Node built-in|"node:fs"/u,
+  },
+  {
+    id: 'primary-entry-loads-forms',
+    invariant:
+      'The primary entry point reaches nothing of Angular Forms, so an application without forms bundles none of it.',
+    source: 'packages/runtime/src/angular.ts',
+    find: "  const recovery = oneFeature(features, 'recovery-message') as\n",
+    replace:
+      "  void import('@angular/forms');\n  const recovery = oneFeature(features, 'recovery-message') as\n",
+    suite: 'verify:focused-consumers',
+    caughtWhen: /Minimal browser output contains unused @angular\/forms input/u,
+  },
+  {
+    id: 'server-table-accepts-a-free-route-identity',
+    invariant:
+      'A server table entry naming a route identity the projection does not declare fails compilation.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '  readonly routeId: RouteIdOf<Projection>;',
+    replace: '  readonly routeId: RouteIdOf<Projection> | string;',
+    suite: 'verify:consumer',
+    caughtWhen: /\.negative\.ts did not report/u,
+  },
+  {
+    id: 'setup-accepts-angular-providers',
+    invariant:
+      'provideLocalizationSetup() takes the setup and feature providers, and nothing else.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '  ...features: readonly LocalizationFeature[]\n): EnvironmentProviders {\n',
+    replace:
+      '  ...widened: readonly (LocalizationFeature | EnvironmentProviders)[]\n): EnvironmentProviders {\n  const features = widened as readonly LocalizationFeature[];\n',
+    suite: 'verify:consumer',
+    caughtWhen:
+      /did not report "Argument of type 'EnvironmentProviders' is not assignable/u,
+  },
+  {
+    id: 'inline-scroll-restored-unsigned',
+    invariant:
+      'The inline scroll distance is restored signed for the direction the document is in after the switch.',
+    source: 'packages/runtime/src/angular.ts',
+    find: "        snapshot.direction === 'rtl' ? -logicalInline : logicalInline;",
+    replace:
+      "        snapshot.direction === 'rtl' ? logicalInline : logicalInline;",
+    suite: 'browser',
+    caughtWhen:
+      /The RTL commit did not return the visitor to the position they left/u,
+  },
+  {
+    id: 'localized-input-limited-to-one-line-fields',
+    invariant:
+      'A localized field works on both text elements the form system binds a value accessor to.',
+    source: 'packages/runtime/forms/src/public-api.ts',
+    find: '  protected handleInput(): void {\n    if (this.composing) return;',
+    replace:
+      "  protected handleInput(): void {\n    if (this.composing || this.element.tagName === 'TEXTAREA') return;",
+  },
+  {
+    id: 'restored-scroll-not-held',
+    invariant:
+      'After a direction change with something focused, the restored scroll position is held against movement nobody asked for.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '      if (turnsAround && focusable !== undefined) {',
+    replace:
+      '      if (turnsAround && focusable !== undefined && (turnsAround as unknown) === 0) {',
+  },
+  {
+    id: 'browser-percent-differs-from-the-host',
+    invariant:
+      'Each engine renders the exercise sheet as its own Intl writes it, so a browser and a server show the same text.',
+    source: 'fixtures/package-consumer-template/src/app/exercise-route.ts',
+    find: 'text: written(formatPercent(values.percent, context, options.percent)),',
+    replace:
+      "text: written(formatPercent(values.percent, context, options.percent)) + '!',",
+    suite: 'verify:consumer',
+    caughtWhen:
+      /The exercise sheet's formatPercent line is not what the host writes for its input/u,
+  },
+  {
+    id: 'locale-neutral-shared-address-prerendered',
+    invariant:
+      'Under a locale-neutral policy, an address more than one locale spells is refused for prerendering.',
+    source: 'packages/runtime/router/src/provide.ts',
+    find: "    if (resolution.variesBy === 'locale-preference') {",
+    replace: "    if ((resolution.variesBy as string) === 'none of them') {",
+    suite: 'verify:locale-neutral-consumer',
+    caughtWhen: /The build prerendered route:second, which it has to refuse/u,
+  },
+  {
+    id: 'announcement-written-through-runtime-code-generation',
+    invariant:
+      'Nothing Equator runs in the browser generates code at run time, so a policy without unsafe-eval reports no violation.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '    if (this.region !== undefined) this.region.textContent = message;',
+    replace:
+      "    if (this.region !== undefined)\n      this.region.textContent = new Function('m', 'return m')(message) as string;",
+    suite: 'browser',
+    caughtWhen:
+      /Evaluating a string as JavaScript violates the following Content Security Policy directive/u,
+  },
+  {
+    id: 'announcer-styled-through-an-inline-attribute',
+    invariant:
+      'The live region Equator adds is styled through the CSSOM, so a policy that denies inline style attributes reports no violation.',
+    source: 'packages/runtime/src/angular.ts',
+    find: "    region.setAttribute('data-equator-announcer', 'true');",
+    replace:
+      "    region.setAttribute('data-equator-announcer', 'true');\n    region.setAttribute('style', 'position: fixed');",
+    suite: 'browser',
+    caughtWhen:
+      /Applying inline style violates the following Content Security Policy directive 'style-src-attr 'none''/u,
+  },
+  {
+    id: 'structured-path-creates-a-trusted-types-policy',
+    invariant:
+      'Rendering a structured message creates no Trusted Types policy, so an application that serves a strict policy naming only its own inherits no dependency from Equator.',
+    source: 'packages/runtime/src/message-template.ts',
+    find: '    requireBindings(\n      result.value,',
+    replace:
+      "    try {\n      (\n        globalThis as {\n          readonly trustedTypes?: {\n            createPolicy(name: string, rules: object): unknown;\n          };\n        }\n      ).trustedTypes?.createPolicy('equator', {});\n    } catch {\n      // Swallowed so that only the policy directive can report this.\n    }\n    requireBindings(\n      result.value,",
+    suite: 'browser',
+    caughtWhen: /Creating a TrustedTypePolicy named 'equator' violates/u,
+  },
+  {
+    id: 'text-accepts-wording-of-its-own',
+    invariant:
+      "A call site cannot hand the runtime wording of its own beside a message's inputs, because the catalog is the only author of a message's words.",
+    source: 'packages/runtime/core/src/contracts.ts',
+    find: '    : readonly [inputs: MessageInputs<Handle>];',
+    replace:
+      '    : readonly [inputs: MessageInputs<Handle>, fallback?: string];',
+    suite: 'verify:consumer',
+    caughtWhen:
+      /negative-message-handle\.negative\.ts did not report "Expected 2 arguments, but got [13]"/u,
+  },
 ]);

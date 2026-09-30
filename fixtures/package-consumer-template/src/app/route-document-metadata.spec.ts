@@ -275,5 +275,12 @@ describe('the Open Graph block and the image that decides it', () => {
 
     expect(openGraph()).toContain('og:image');
     expect(openGraph()).toContain('og:site_name');
+    // Section 13: a card processor falls back to Open Graph, so the only card tag is the one Open
+    // Graph has no equivalent for.
+    expect(
+      [...document.querySelectorAll('meta[name^="twitter:"]')].map((node) =>
+        node.getAttribute('name'),
+      ),
+    ).toEqual(['twitter:card']);
   });
 });

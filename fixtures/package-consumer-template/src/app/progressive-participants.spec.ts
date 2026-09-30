@@ -81,7 +81,7 @@ class IndependentRegion {
   });
 }
 
-function setup(region: IndependentRegion) {
+function setup(region: { readonly participant: LocalizationParticipant }) {
   let registration: LocalizationParticipantRegistration | undefined;
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -181,5 +181,142 @@ describe('a progressive participant does not hold up the primary UI', () => {
       expect(region.events).toContain('commit:ar-EG');
     });
     expect(registration.state().current?.targetLocale).toBe('ar-EG');
+  });
+});
+
+/** A region whose Arabic representation cannot be had, for however many times it is asked. */
+class FailingRegion {
+  readonly events: string[] = [];
+
+  readonly participant: LocalizationParticipant = Object.freeze({
+    id: 'failing-region',
+    prepare: (context: LocalizationParticipantContext) => {
+      this.events.push(`prepare:${context.targetLocale}`);
+      if (context.targetLocale === 'ar-EG') {
+        throw new Error('The region has no Arabic representation.');
+      }
+      return Object.freeze({
+        status: 'ready' as const,
+        representation: Object.freeze({
+          kind: 'locale-bound' as const,
+          supplyingLocale: context.targetLocale,
+          direction: languagePresentation(context.targetLocale).direction,
+        }),
+      });
+    },
+    commit: (context: LocalizationParticipantContext) => {
+      this.events.push(`commit:${context.targetLocale}`);
+    },
+  });
+
+  count(event: string): number {
+    return this.events.filter((entry) => entry === event).length;
+  }
+}
+
+function setupFailing(region: FailingRegion) {
+  let registration: LocalizationParticipantRegistration | undefined;
+  TestBed.resetTestingModule();
+  TestBed.configureTestingModule({
+    providers: [
+      provideLocalizationSetup(
+        {
+          configuration,
+          catalogSet,
+          catalogLoaders,
+          recoveryPayload,
+          extensions: runtimeExtensions,
+        },
+        withFormattingContext({ timeZone: 'UTC' }),
+      ),
+      provideEnvironmentInitializer(() => {
+        registration = inject(Localization).registerParticipant(
+          region.participant,
+          { coordination: 'progressive' },
+        );
+      }),
+    ],
+  });
+  return {
+    localization: TestBed.inject(Localization),
+    registration: registration as LocalizationParticipantRegistration,
+  };
+}
+
+describe('a progressive participant that fails', () => {
+  // `specs/06-runtime-and-angular.spec.md` section 7: in progressive mode a region's failure is
+  // the region's, and the commit it followed stands.
+  it('leaves the committed locale in place', async () => {
+    const region = new FailingRegion();
+    const { localization, registration } = setupFailing(region);
+    await localization.initialize();
+    await vi.waitFor(() => {
+      expect(region.events).toContain('commit:en-US');
+    });
+
+    const result = await localization.changeLocale('ar-EG');
+    expect(result.status).toBe('committed');
+    await vi.waitFor(() => {
+      expect(registration.state().attempt.status).toBe('failed');
+    });
+
+    expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
+    expect(localization.lifecycle()).toBe('ready');
+    expect(registration.state().current?.targetLocale).toBe('en-US');
+    expect(region.events).not.toContain('commit:ar-EG');
+  });
+
+  // The same section: what a failed region shows, and whether it tries again, is the application's
+  // to decide. A runtime that retried on its own would be deciding it.
+  it('is asked again only when the application retries it', async () => {
+    const region = new FailingRegion();
+    const { localization, registration } = setupFailing(region);
+    await localization.initialize();
+    await localization.changeLocale('ar-EG');
+    await vi.waitFor(() => {
+      expect(registration.state().attempt.status).toBe('failed');
+    });
+    await new Promise((settle) => setTimeout(settle, 50));
+
+    expect(region.count('prepare:ar-EG')).toBe(1);
+
+    await registration.retry();
+    await new Promise((settle) => setTimeout(settle, 50));
+
+    expect(region.count('prepare:ar-EG')).toBe(2);
+    expect(registration.state().attempt.status).toBe('failed');
+  });
+});
+
+describe('a progressive region that fails', () => {
+  it('fails alone: the locale still commits and the page is ready', async () => {
+    const region = new IndependentRegion();
+    const failing = {
+      participant: Object.freeze({
+        ...region.participant,
+        prepare: (context: LocalizationParticipantContext) =>
+          context.targetLocale === 'ar-EG'
+            ? Promise.reject(new Error('the region is down'))
+            : region.participant.prepare(context),
+      }),
+    };
+    const { localization, registration } = setup(failing);
+    await localization.initialize();
+    await vi.waitFor(() => {
+      expect(registration.state().current?.targetLocale).toBe('en-US');
+    });
+
+    const result = await localization.changeLocale('ar-EG', {
+      remember: false,
+    });
+
+    expect(result.status).toBe('committed');
+    expect(localization.lifecycle()).toBe('ready');
+    expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
+    await vi.waitFor(() => {
+      expect(registration.state().attempt.status).toBe('failed');
+    });
+    // What the region was showing stays on screen, labelled as what it is.
+    expect(registration.state().current?.targetLocale).toBe('en-US');
   });
 });

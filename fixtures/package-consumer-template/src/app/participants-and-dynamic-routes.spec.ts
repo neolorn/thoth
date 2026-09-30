@@ -204,6 +204,34 @@ describe('participant contracts and transactions', () => {
     claimCapability('extension:locale-participant');
   });
 
+  // `specs/06-runtime-and-angular.spec.md` section 6: contexts share nothing but validated catalog
+  // artifacts. Two contexts from one setup are what a server holds for two requests, and a
+  // participant one of them registered is that request's content.
+  it('keeps a participant in the context that registered it', async () => {
+    const first = localization();
+    const second = localization();
+    let prepared = 0;
+    first.registerParticipant({
+      id: 'first-only',
+      prepare: () => {
+        prepared += 1;
+        return ready('en-US');
+      },
+    });
+    await first.initialize();
+    await second.initialize();
+
+    expect(
+      first.participants().map(({ participantId }) => participantId),
+    ).toEqual(['first-only']);
+    expect(second.participants()).toEqual([]);
+    expect(prepared).toBe(1);
+    await second.changeLocale('ar-EG');
+    expect(prepared).toBe(1);
+    first.dispose();
+    second.dispose();
+  });
+
   it('waits for required participants and preserves the prior coherent view on unavailability', async () => {
     const runtime = localization();
     const participant = new ControllableLocalizationParticipant(

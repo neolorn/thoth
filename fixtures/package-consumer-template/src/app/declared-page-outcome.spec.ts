@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -9,6 +9,7 @@ import {
   withFormattingContext,
 } from '@neolorn/equator';
 import {
+  LocalizedPageOutcome,
   LocalizedTitleStrategy,
   provideLocalizedRouter,
 } from '@neolorn/equator/router';
@@ -78,13 +79,15 @@ const OUTCOME_DOCUMENTS = {
   },
 } as const;
 
-async function configure(): Promise<Router> {
+async function configure(
+  outcomeDocuments: Partial<typeof OUTCOME_DOCUMENTS> = OUTCOME_DOCUMENTS,
+): Promise<Router> {
   TestBed.resetTestingModule();
   await TestBed.configureTestingModule({
     providers: [
       provideLocalizedRouter(routes, {
         origin: localeOrigin('en-US'),
-        outcomeDocuments: OUTCOME_DOCUMENTS,
+        outcomeDocuments,
         documentMetadata: {
           topic: {
             title: messages.document.topic.title,
@@ -197,6 +200,21 @@ describe('a route whose entity turned out to be absent', () => {
     expect(document.title).toBe('Topic');
   });
 
+  it('answers a reader asking for the current outcome with the page on screen', async () => {
+    const router = await configure();
+    const outcome = TestBed.inject(LocalizedPageOutcome);
+    await router.navigateByUrl('/topics/nothing-filed-here');
+    await settle();
+    expect(outcome.current()).toEqual({ outcome: 'absent' });
+
+    // The arriving page declares nothing, and that replaces the declaration rather than leaving the
+    // previous page's standing for a reader who asks what is current rather than about a
+    // navigation.
+    await router.navigateByUrl('/topics/handbook');
+    await settle();
+    expect(outcome.current()).toBeUndefined();
+  });
+
   it('keeps the page on screen rather than inventing a response for it', async () => {
     const router = await configure();
     await router.navigateByUrl('/topics/nothing-filed-here');
@@ -270,5 +288,38 @@ describe('a response that reached no route at all', () => {
     expect(document.title).toBe('Page removed');
     expect(canonical()).toBeNull();
     expect(robots()).toBe('noindex');
+  });
+});
+
+describe('an outcome class with no document declared for it', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('is reported when a response of that class is answered', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const router = await configure({
+      'not-found': OUTCOME_DOCUMENTS['not-found'],
+      'unsupported-locale': OUTCOME_DOCUMENTS['unsupported-locale'],
+    });
+    await router.navigateByUrl('/removed');
+    await settle();
+
+    // Served with no title, the page keeps the previous one's, so the gap is named where a
+    // developer sees it rather than left to a reader.
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringMatching(/classed "gone" was answered with no title/u),
+    );
+  });
+
+  it('is not reported for a class that has one', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const router = await configure();
+    await router.navigateByUrl('/removed');
+    await settle();
+
+    expect(warn).not.toHaveBeenCalledWith(
+      expect.stringMatching(/was answered with no title/u),
+    );
   });
 });
