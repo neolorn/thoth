@@ -276,6 +276,25 @@ const declared = Object.freeze([
       'source:tools',
     ],
   },
+  // Runs the stage below over a copy of what it reads, once unchanged and once per defect
+  // `stage-plants.mjs` plants for it, and requires each to be refused by name. The copy is a folder
+  // of its own under `tmp`, which is not an artefact any other stage can see.
+  {
+    id: 'verify:format-shapes:self-test',
+    reads: ['dist:runtime', 'dist:toolkit'],
+  },
+  // The declarations a consumer of the built packages sees are the shapes a stamp promises, so the
+  // record is compared with them rather than with the source they were emitted from.
+  {
+    id: 'verify:format-shapes',
+    reads: ['dist:runtime', 'dist:toolkit'],
+    needs: [
+      {
+        on: 'verify:format-shapes:self-test',
+        why: 'A stage nobody has seen refuse the defects it exists for is indistinguishable from one that reads nothing.',
+      },
+    ],
+  },
   // A scan that counts a scratch directory as its corpus holds exports "used" on files that are
   // about to be cleaned away, so this one reads the built declaration files instead.
   {

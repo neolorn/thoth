@@ -177,9 +177,11 @@ const ROOT_NAMESPACE_SCOPE: NamespaceScope = Object.freeze(
  * MessageFormat or an inline pattern whose codes a translator deleted, and those two readings
  * differ by exactly the failure this profile is meant to catch.
  */
-type XliffRepresentation = 'inline' | 'flat';
+export type XliffRepresentation = 'inline' | 'flat';
 
-interface XliffUnitContract {
+// Exported so the built declarations carry the persisted format's shape, which its shape record in
+// `tools/format-shapes.json` is compared with. The package entry does not re-export it.
+export interface XliffUnitContract {
   readonly profile: typeof XLIFF_PROFILE;
   readonly identity: string;
   readonly messageId: string;

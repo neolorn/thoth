@@ -374,6 +374,81 @@ export const stageSelfTests = Object.freeze({
       },
     ],
   },
+  'verify:format-shapes': {
+    script: 'tools/generate-format-shapes.mjs',
+    args: ['--check'],
+    inputs: [
+      'dist/toolkit',
+      'dist/runtime/types',
+      'dist/runtime/fesm2022',
+      'tools/format-shapes.json',
+    ],
+    plants: [
+      {
+        id: 'field-removed-under-the-same-stamp',
+        plant: plantText(
+          'dist/toolkit/output-host.d.ts',
+          '    readonly ownerId: string;\n}\nexport interface ApplyOutputPlanRequest',
+          '}\nexport interface ApplyOutputPlanRequest',
+        ),
+        refusal:
+          /equator-work-owner\/1: \S+#WorkOwnerMarker\.ownerId: removed \(incompatible\)/u,
+      },
+      {
+        id: 'field-added-to-a-closed-format',
+        plant: plantText(
+          'dist/toolkit/project-host.d.ts',
+          '    readonly stateDigest: string;\n',
+          '    readonly stateDigest: string;\n    readonly planted?: string;\n',
+        ),
+        refusal:
+          /equator-compiler-cache\/1: \S+#CompilerCacheEnvelope\.planted: added as optional \(incompatible\)/u,
+      },
+      // Compatible, so it is not a reason to move the stamp, and still a difference the record does
+      // not hold: the check is red until the record is written again.
+      {
+        id: 'optional-field-added-to-an-open-format',
+        plant: plantText(
+          'dist/toolkit/output-host.d.ts',
+          '    readonly operations: readonly TransactionOperation[];\n',
+          '    readonly operations: readonly TransactionOperation[];\n    readonly planted?: string;\n',
+        ),
+        refusal:
+          /equator-output-transaction\/1: \S+#TransactionJournal\.planted: added as optional \(compatible\)/u,
+      },
+      {
+        id: 'runtime-reader-field-retyped',
+        plant: plantText(
+          'dist/runtime/types/neolorn-equator-core.d.ts',
+          '/** The stable name for this route, which is what every address is built from. */\n    readonly id: string;',
+          '/** The stable name for this route, which is what every address is built from. */\n    readonly id: number;',
+        ),
+        refusal:
+          /equator-route-projection\/1: \S+#GeneratedRouteProjection\.\S*\.id: type changed from "string" to "number" \(incompatible\)/u,
+      },
+      {
+        id: 'published-schema-admits-other-data',
+        plant: editJson(
+          'dist/toolkit/schemas/cli-result.v1.schema.json',
+          (schema) => {
+            schema.properties.planted = { type: 'string' };
+          },
+        ),
+        refusal:
+          /equator-cli-result\/1: dist\/toolkit\/schemas\/cli-result\.v1\.schema\.json: the published schema admits different data \(incompatible\)/u,
+      },
+      {
+        id: 'stamp-nothing-records',
+        plant: plantText(
+          'dist/toolkit/output-host.js',
+          "export const WORK_OWNER_PROFILE = 'equator-work-owner/1';",
+          "export const WORK_OWNER_PROFILE = 'equator-work-owner/1';\nexport const PLANTED_PROFILE = 'equator-planted-format/1';",
+        ),
+        refusal:
+          /equator-planted-format\/1 \(in dist\/toolkit\/output-host\.js\): not a recorded format, a same-build stamp, or a digest label/u,
+      },
+    ],
+  },
   'verify:export-surface': {
     script: 'tools/verify-export-surface.mjs',
     inputs: [

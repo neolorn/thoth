@@ -403,7 +403,9 @@ export interface WatchProjectResult {
   readonly cycles: number;
 }
 
-interface CompilerCacheEnvelope {
+// Exported so the built declarations carry the persisted format's shape, which its shape record in
+// `tools/format-shapes.json` is compared with. The package entry does not re-export it.
+export interface CompilerCacheEnvelope {
   readonly profile: typeof COMPILER_CACHE_PROFILE;
   readonly ownerId: string;
   readonly stateDigest: string;

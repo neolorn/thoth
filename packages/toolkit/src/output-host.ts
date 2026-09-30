@@ -81,7 +81,14 @@ const LOCK_PATH = 'generation.lock';
  * not a marker this version of Equator wrote, and the safe reading of it is "leave it alone".
  */
 export const WORK_OWNER_PROFILE = 'equator-work-owner/1' as const;
-const TRANSACTION_PROFILE = 'equator-output-transaction/1';
+export const TRANSACTION_PROFILE = 'equator-output-transaction/1' as const;
+
+// Exported so the built declarations carry the persisted format's shape, which its shape record in
+// `tools/format-shapes.json` is compared with. The package entry does not re-export it.
+export interface WorkOwnerMarker {
+  readonly profile: typeof WORK_OWNER_PROFILE;
+  readonly ownerId: string;
+}
 
 export interface ApplyOutputPlanRequest {
   readonly ownerRoot: string;
@@ -135,14 +142,16 @@ export interface CleanOutputResult {
   readonly removed: readonly string[];
 }
 
-interface TransactionOperation {
+// Exported so the built declarations carry the persisted format's shape, which its shape record in
+// `tools/format-shapes.json` is compared with. The package entry does not re-export it.
+export interface TransactionOperation {
   readonly path: string;
   readonly temporary?: string;
   readonly backup: string;
   readonly hadOriginal: boolean;
 }
 
-interface TransactionJournal {
+export interface TransactionJournal {
   readonly profile: typeof TRANSACTION_PROFILE;
   readonly ownerId: string;
   readonly operations: readonly TransactionOperation[];
@@ -353,7 +362,7 @@ async function ensureWorkOwner(
     await mkdir(workRoot, { recursive: true });
     await writeFile(
       markerPath,
-      `${JSON.stringify({ profile: WORK_OWNER_PROFILE, ownerId }, null, 2)}\n`,
+      `${JSON.stringify({ profile: WORK_OWNER_PROFILE, ownerId } satisfies WorkOwnerMarker, null, 2)}\n`,
       { encoding: 'utf8', flag: 'wx' },
     );
     return;

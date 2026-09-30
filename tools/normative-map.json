@@ -336,7 +336,22 @@
     {
       "spec": "01-standards-profile.spec.md",
       "section": "13. Generated serialization",
-      "statement": "An incompatible change to such a format increments its own major version, and a package version MUST NOT stand in for that declaration."
+      "statement": "An incompatible change to such a format increments its own major version, and a package version MUST NOT stand in for that declaration.",
+      "checks": [
+        "plant:verify:format-shapes:field-removed-under-the-same-stamp",
+        "plant:verify:format-shapes:field-added-to-a-closed-format",
+        "plant:verify:format-shapes:runtime-reader-field-retyped",
+        "plant:verify:format-shapes:published-schema-admits-other-data"
+      ]
+    },
+    {
+      "spec": "01-standards-profile.spec.md",
+      "section": "13. Generated serialization",
+      "statement": "The shape of each major version of such a format, and whether its readers refuse unknown fields, MUST be recorded in the repository and compared with the declarations the built packages publish.",
+      "checks": [
+        "plant:verify:format-shapes:optional-field-added-to-an-open-format",
+        "plant:verify:format-shapes:stamp-nothing-records"
+      ]
     },
     {
       "spec": "01-standards-profile.spec.md",

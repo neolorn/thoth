@@ -312,6 +312,20 @@ migration policy only where it is independently exchanged, persisted, deployed, 
 outlive the release that generated it. An incompatible change to such a format increments its own
 major version, and a package version MUST NOT stand in for that declaration.
 
+A change to such a format is incompatible when it lets a reader of one version refuse data that
+version's shape admits, or accept data whose meaning differs from what its writer meant. Removing
+or renaming a field, changing whether a field is required, changing a field's type or set of values,
+and changing what a field or a digest input means are incompatible for every reader. Adding a field
+is incompatible for a reader that refuses unknown fields, and for a reader that rewrites the data
+and so loses the field. For a reader that ignores unknown fields, adding an optional field that no
+reader needs to interpret is compatible.
+
+A stamp whose writer and every reader ship in one package at one version, on data that does not
+outlive the run or render that wrote it, names a shape and owes no compatibility.
+
+The shape of each major version of such a format, and whether its readers refuse unknown fields,
+MUST be recorded in the repository and compared with the declarations the built packages publish.
+
 ## 14. Dependency policy
 
 A release adds a third-party package, service, data set, parser, or polyfill only after an
