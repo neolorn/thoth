@@ -2635,7 +2635,10 @@
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "3. Formatting",
       "statement": "A release MUST NOT conflate the two.",
-      "checks": ["assurance:fallback-values-formatted-in-the-supplying-locale"]
+      "checks": [
+        "assurance:fallback-values-formatted-in-the-supplying-locale",
+        "assurance:fallback-variant-chosen-by-the-reader-locale"
+      ]
     },
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",

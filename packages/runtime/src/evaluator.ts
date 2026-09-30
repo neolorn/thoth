@@ -1060,10 +1060,12 @@ function numericResolved(
       if (sourceOptions['select'] === 'exact') return false;
       const pluralType =
         sourceOptions['select'] === 'ordinal' ? 'ordinal' : 'cardinal';
+      // The variants are written in the supplying catalog's language, so its plural rules choose
+      // among them, under fallback too; the value itself is still formatted for the reader.
       return (
         key ===
         environment.formatterCache
-          .plural(environment.formatting.locale, { type: pluralType })
+          .plural(environment.supplyingLocale, { type: pluralType })
           .select(selectionValue)
       );
     },

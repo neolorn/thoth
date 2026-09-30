@@ -4181,4 +4181,13 @@ export const injections = Object.freeze([
       'registry[CHANNELS] ??= new WeakMap<Request, PageOutcomeChannel>();\nconst channels = (): WeakMap<Request, PageOutcomeChannel> =>',
     caughtBy: 'packages/runtime/test/import-has-no-effects.test.ts',
   },
+  {
+    id: 'fallback-variant-chosen-by-the-reader-locale',
+    invariant:
+      "A variant of a message supplied by a fallback catalog is chosen by the supplying catalog's plural rules, not the formatting locale's.",
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '.plural(environment.supplyingLocale, { type: pluralType })',
+    replace: '.plural(environment.formatting.locale, { type: pluralType })',
+    caughtBy: 'packages/runtime/test/fallback-plural-selection.test.ts',
+  },
 ]);
