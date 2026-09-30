@@ -16,22 +16,63 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import ts from 'typescript';
+
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** The names one declaration file publishes, read from its own export statements. */
+/**
+ * The names one declaration file publishes, read from its own export statements.
+ *
+ * Parsed rather than matched, because the compiler writes an export in more than one form: a
+ * bundled declaration file ends in an `export { ... }` list, and a constant or a function exported
+ * from the toolkit's barrel itself is written `export declare const`, which a pattern for the list
+ * never sees. A star export from another entry point adds nothing here, since that entry point's
+ * own file is read for its names; one from a module inside the package would hide what it
+ * publishes, so it is refused rather than read as nothing.
+ */
 export function publishedNames(text) {
-  const names = new Set();
-  for (const [, group] of text.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}/gu)) {
-    for (const entry of group.split(',')) {
-      const name = entry
-        .trim()
-        .split(/\s+as\s+/u)
-        .at(-1)
-        ?.trim();
-      if (name && /^[A-Za-z_$][\w$]*$/u.test(name)) names.add(name);
+  const found = new Set();
+  const source = ts.createSourceFile(
+    'published.d.ts',
+    text,
+    ts.ScriptTarget.Latest,
+    false,
+    ts.ScriptKind.TS,
+  );
+  for (const statement of source.statements) {
+    if (ts.isExportDeclaration(statement)) {
+      const clause = statement.exportClause;
+      if (clause === undefined) {
+        const from = statement.moduleSpecifier?.text ?? '';
+        assert.ok(
+          !from.startsWith('.'),
+          `A declaration file re-exports everything from ${from}, so the names it publishes cannot be read from it.`,
+        );
+      } else if (ts.isNamedExports(clause)) {
+        for (const element of clause.elements) found.add(element.name.text);
+      } else {
+        found.add(clause.name.text);
+      }
+      continue;
+    }
+    const exported = ts
+      .getModifiers?.(statement)
+      ?.some(({ kind }) => kind === ts.SyntaxKind.ExportKeyword);
+    if (!exported) continue;
+    if (ts.isVariableStatement(statement)) {
+      for (const { name } of statement.declarationList.declarations) {
+        if (ts.isIdentifier(name)) found.add(name.text);
+      }
+    } else if (
+      statement.name !== undefined &&
+      ts.isIdentifier(statement.name)
+    ) {
+      found.add(statement.name.text);
     }
   }
-  return names;
+  // The `ɵ` prefix marks what one entry point hands another, which no question asked of this set is
+  // about.
+  return new Set([...found].filter((name) => /^[A-Za-z_$][\w$]*$/u.test(name)));
 }
 
 /**

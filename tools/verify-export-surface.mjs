@@ -403,7 +403,7 @@ for (const [pkg, declarations, published] of [
       RUNTIME_DECLARATIONS.flatMap(({ text }) => [...publishedNames(text)]),
     ),
   ],
-  ['toolkit', toolkitText, publishedNames(toolkitText)],
+  ['toolkit', toolkitText, publishedNames(declarationSets.at(-1).text)],
 ]) {
   const halves = signatureHalves(declarations);
   for (const name of nominalClasses(declarations)) {
