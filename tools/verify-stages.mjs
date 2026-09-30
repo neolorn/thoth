@@ -159,6 +159,10 @@ const declared = Object.freeze([
     id: 'verify:gate-limits:self-test',
     reads: ['source:packages', 'source:tools'],
   },
+  // Drives the browser rows' call bound and page teardown with objects of its own in place of a
+  // browser: a page whose close never settles is closed with its context and recorded where this
+  // gate reads occurrences, and a context that does not close either fails the row.
+  { id: 'verify:browser-teardown:self-test', reads: ['source:tools'] },
   // Plants a document and a map beside it and requires the reader to find each planted statement
   // and the map to refuse each planted defect, so the stage below cannot pass by reading nothing.
   { id: 'verify:normative-map:self-test', reads: ['source:tools'] },

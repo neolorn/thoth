@@ -28,6 +28,7 @@
     "verify:spec-links": "node ./tools/verify-spec-links.mjs",
     "verify:doc-links": "node ./tools/verify-doc-links.mjs",
     "verify:gate-limits:self-test": "node ./tools/verify-gate-limits-self-test.mjs",
+    "verify:browser-teardown:self-test": "node ./tools/verify-browser-teardown-self-test.mjs",
     "verify:normative-map:self-test": "node ./tools/verify-normative-map-self-test.mjs",
     "verify:normative-map": "node ./tools/verify-normative-map.mjs",
     "test:toolkit": "vitest run --config vitest.toolkit.config.ts packages/toolkit/test",

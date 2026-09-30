@@ -10,6 +10,11 @@ import { JSDOM } from 'jsdom';
 
 import { listenForBrowsers } from './browser-reachable-port.mjs';
 import {
+  closePageWithItsContext,
+  createCallBound,
+} from './browser-call-bound.mjs';
+import { recordOccurrence } from './gate-occurrences.mjs';
+import {
   openCapabilityEvidence,
   recordCapabilityClaim,
 } from './capability-evidence.mjs';
@@ -297,108 +302,10 @@ assert.ok(
   `EQUATOR_ASSURANCE_CALL_TIMEOUT_MS must be a positive whole number of milliseconds, not ${JSON.stringify(process.env.EQUATOR_ASSURANCE_CALL_TIMEOUT_MS)}`,
 );
 
-// The argument itself is the name. A line number would name this file, which is not where the wait
-// is, and a label per call site is a list that goes stale the first time one is added.
-const describeArgument = (target) =>
-  target === undefined
-    ? ''
-    : `: ${String(typeof target === 'function' ? target.toString() : target)
-        .replace(/\s+/gu, ' ')
-        .trim()
-        .slice(0, 160)}`;
-
-// The walk has to actually reach the calls this exists for. Asserting it means a Playwright release
-// that moves them fails loudly here, rather than going quiet in exactly the way the evaluate-only
-// bound went quiet on the occurrence that disproved it.
-const requireCoverage = (wrapped, kind) => {
-  if (kind !== 'page') return;
-  for (const required of ['close', 'evaluate']) {
-    assert.ok(
-      wrapped.has(required),
-      `the call bound did not reach page.${required}, so nothing is bounding it`,
-    );
-  }
-};
-
-// What was wrapped, per object, rather than merely whether it was. A page usually arrives here
-// already wrapped: it comes back from `context.newPage()`, which is itself a bounded call, so the
-// resolve path below wraps it on the way out and the explicit call at the site is the second one.
-// Recording the names means that second call can still check coverage rather than returning early,
-// which would leave this guard unreachable.
-const boundNames = new WeakMap();
-
-const boundCalls = (target, kind) => {
-  if (
-    target === null ||
-    (typeof target !== 'object' && typeof target !== 'function')
-  ) {
-    return target;
-  }
-  const already = boundNames.get(target);
-  if (already !== undefined) {
-    requireCoverage(already, kind);
-    return target;
-  }
-  const wrapped = new Set();
-  boundNames.set(target, wrapped);
-  for (
-    let level = Object.getPrototypeOf(target);
-    level !== null && level !== Object.prototype;
-    level = Object.getPrototypeOf(level)
-  ) {
-    for (const name of Object.getOwnPropertyNames(level)) {
-      if (name === 'constructor' || name.startsWith('_') || wrapped.has(name)) {
-        continue;
-      }
-      const descriptor = Object.getOwnPropertyDescriptor(level, name);
-      if (!descriptor || typeof descriptor.value !== 'function') continue;
-      wrapped.add(name);
-      const original = descriptor.value;
-      Object.defineProperty(target, name, {
-        configurable: true,
-        enumerable: false,
-        writable: true,
-        value: function boundCall(...args) {
-          const started = original.apply(this, args);
-          // Synchronous returns (`page.locator(...)`, `page.url()`, `page.on(...)`) are not
-          // waits and are handed back untouched.
-          if (started === null || typeof started?.then !== 'function') {
-            return started;
-          }
-          let timer;
-          return Promise.race([
-            started,
-            new Promise((_resolve, reject) => {
-              timer = setTimeout(() => {
-                reject(
-                  new Error(
-                    `${kind}.${name} did not settle within ${callTimeoutMs}ms${describeArgument(args[0])}\n` +
-                      `Playwright's own bound would have fired first had this call carried one, so this is a call it does not bound.\n` +
-                      `What the row was doing: ${JSON.stringify(describeActivity(), null, 2)}`,
-                  ),
-                );
-              }, callTimeoutMs);
-            }),
-          ]).then(
-            (value) => {
-              clearTimeout(timer);
-              // A handle carries the same unbounded `evaluate` the page does.
-              return typeof value?.evaluate === 'function'
-                ? boundCalls(value, 'handle')
-                : value;
-            },
-            (error) => {
-              clearTimeout(timer);
-              throw error;
-            },
-          );
-        },
-      });
-    }
-  }
-  requireCoverage(wrapped, kind);
-  return target;
-};
+const boundCalls = createCallBound({
+  timeoutMs: callTimeoutMs,
+  describe: () => describeActivity(),
+});
 
 // Heavy diagnostics, off unless asked for.
 //
@@ -4721,6 +4628,40 @@ async function verifyRecoveryOverRefusedTransfer(row, context, page, locale) {
   await page.close();
 }
 
+/**
+ * A context for pages a stage opens and closes itself: the row's cookies and storage, and the same
+ * policy-violation recording, in a context nothing else uses.
+ */
+async function isolatedContext(from) {
+  const isolated = boundCalls(
+    await browser.newContext({ storageState: await from.storageState() }),
+    'context',
+  );
+  await recordPolicyViolations(isolated);
+  return isolated;
+}
+
+/** The cookies a stage's own context ended with, handed back to the row's, which reads them next. */
+async function returnCookies(isolated, to) {
+  const cookies = await isolated.cookies();
+  await to.clearCookies();
+  if (cookies.length > 0) await to.addCookies(cookies);
+}
+
+/**
+ * Close a page and its own context. A close the browser never finishes is recorded as an
+ * occurrence and ended by closing the context; a context that does not close either fails the row.
+ */
+async function closeIsolated(isolatedPage, isolated) {
+  await closePageWithItsContext(isolatedPage, isolated, (error) =>
+    recordOccurrence({
+      kind: 'page-close-unsettled',
+      signature: `${verificationStage}: page.close did not settle within ${callTimeoutMs}ms, so its context was closed in its place`,
+      detail: error.message.split('\n')[0],
+    }),
+  );
+}
+
 async function verifyLocalizedNotFound(row, context, diagnostics) {
   // An address this application does not serve, under a locale it does. The locale resolved
   // perfectly well; only the page is unknown, and the application's own not-found route is what
@@ -4731,12 +4672,15 @@ async function verifyLocalizedNotFound(row, context, diagnostics) {
   // settles no locale writes no cookie, so that choice is still there when the page has hydrated
   // and the stores are read again, and only the address keeps the page in Arabic.
   const decides = addresses.localeInAddress ? 'url' : undefined;
-  const missing = boundCalls(await context.newPage(), 'page');
+  // Each page here has a context of its own, so a close the browser never finishes can be ended by
+  // closing that context, which the rest of the row does not use.
+  const missingBrowserContext = await isolatedContext(context);
+  const missing = boundCalls(await missingBrowserContext.newPage(), 'page');
   attachBrowserDiagnostics(missing, diagnostics);
   missing.setDefaultTimeout(15_000);
   let missingOrigin;
   const missingResponse = await visitFor(
-    context,
+    missingBrowserContext,
     'missing',
     'ar-EG',
     async (missingUrl) => {
@@ -4745,8 +4689,8 @@ async function verifyLocalizedNotFound(row, context, diagnostics) {
       if (decides !== 'url') {
         return missing.goto(missingUrl, { waitUntil: 'networkidle' });
       }
-      await context.clearCookies({ name: 'equator-locale' });
-      await context.addCookies([
+      await missingBrowserContext.clearCookies({ name: 'equator-locale' });
+      await missingBrowserContext.addCookies([
         { name: 'equator-locale', value: 'en-US', url: missingOrigin },
       ]);
       const response = await navigateWithScriptGate(
@@ -4794,7 +4738,7 @@ async function verifyLocalizedNotFound(row, context, diagnostics) {
       `${row.label}: the not-found page kept none of the server's elements`,
     );
     assert.deepEqual(
-      (await context.cookies(missingOrigin))
+      (await missingBrowserContext.cookies(missingOrigin))
         .filter(({ name }) => name === 'equator-locale')
         .map(({ value }) => value),
       ['en-US'],
@@ -4802,7 +4746,8 @@ async function verifyLocalizedNotFound(row, context, diagnostics) {
     );
     recordCapabilityClaim(notFound, 'source:url', missingContext);
   }
-  await missing.close();
+  await returnCookies(missingBrowserContext, context);
+  await closeIsolated(missing, missingBrowserContext);
 
   // The same address without a prefix, which is what an ordinary hand-written `href` produces.
   // Locale entry has to be offered for an address the projection does not know, exactly as it is
@@ -4813,7 +4758,11 @@ async function verifyLocalizedNotFound(row, context, diagnostics) {
   // not test this, because `no` is Norwegian and `no-such-page` parses as a language tag, so
   // Equator reads it as intent toward an unsupported locale and answers 404 where it stands.
   if (addresses.entryRedirects) {
-    const unprefixed = boundCalls(await context.newPage(), 'page');
+    const unprefixedBrowserContext = await isolatedContext(context);
+    const unprefixed = boundCalls(
+      await unprefixedBrowserContext.newPage(),
+      'page',
+    );
     attachBrowserDiagnostics(unprefixed, diagnostics);
     unprefixed.setDefaultTimeout(15_000);
     expectedErrorDocuments.add(
@@ -4843,7 +4792,8 @@ async function verifyLocalizedNotFound(row, context, diagnostics) {
       'The not-found page reached without a prefix has no document title',
     );
     await collectPolicyDiagnostics(unprefixed, diagnostics);
-    await unprefixed.close();
+    await returnCookies(unprefixedBrowserContext, context);
+    await closeIsolated(unprefixed, unprefixedBrowserContext);
   }
 }
 

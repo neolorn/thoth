@@ -33,6 +33,12 @@ import {
   processorsBetween,
   readProcesses,
 } from './process-tree.mjs';
+import {
+  OCCURRENCES_FILE_VARIABLE,
+  collectOccurrences,
+  ledgerOccurrences,
+  verdictOccurrences,
+} from './gate-occurrences.mjs';
 import { readTrace, traceDrift } from './trace-drift.mjs';
 import { claimsFile, safeName, steps } from './verify-stages.mjs';
 import { attemptLedgerPath, workingRoot } from './working-state.mjs';
@@ -87,6 +93,8 @@ const tracerPath = resolve(workspaceRoot, 'tools/trace-artefacts.cjs')
   .split(sep)
   .join('/');
 const runDirectory = resolve(workingRoot, 'verify-run');
+const occurrencesFile = (id) =>
+  resolve(runDirectory, `${safeName(id)}.occurrences.jsonl`);
 // Logs, traces and the summary stay in the repository the engineer is sitting in, not in the
 // worktrees, because the worktrees are removed at the end of the run and the evidence is the part
 // worth keeping.
@@ -429,6 +437,7 @@ const runStep = (id, timeoutSeconds, root, processors) =>
     // attempt recorded and never what an earlier attempt in a reused tree left behind.
     const claims = stepById.get(id).claims === true;
     if (claims) rmSync(claimsFile(root, id), { force: true });
+    rmSync(occurrencesFile(id), { force: true });
     const args = ['run', id];
     const commandArguments =
       process.platform === 'win32' ? ['/d', '/s', '/c', 'pnpm', ...args] : args;
@@ -459,6 +468,8 @@ const runStep = (id, timeoutSeconds, root, processors) =>
         EQUATOR_NODE_COMPATIBILITY_ROOT: nodeRuntimesRoot,
         // Set to undefined rather than left out, so one set in the caller's shell reaches no stage.
         [CLAIMS_FILE_VARIABLE]: claims ? claimsFile(root, id) : undefined,
+        // In the repository beside the trace, for the same reason.
+        [OCCURRENCES_FILE_VARIABLE]: occurrencesFile(id),
         // Temporary, and a deliberate trade against an instrument's own cost rather than a lapse.
         //
         // The five page-side wrappers behind this switch cover the hot paths (element scrolling,
@@ -660,6 +671,7 @@ resume would re-run ${rerun.size} of ${steps.length} stages:
   for (const id of rerun) {
     rmSync(resolve(runDirectory, `${safeName(id)}.jsonl`), { force: true });
     rmSync(resolve(runDirectory, `${safeName(id)}.log`), { force: true });
+    rmSync(occurrencesFile(id), { force: true });
   }
   process.stdout.write(
     `=== RESUME attempt ${attempt}, re-running ${rerun.size} of ${steps.length} stages\n`,
@@ -917,6 +929,13 @@ const failures = failed.map(({ id }) => ({
 }));
 if (originalFailures.length === 0) originalFailures = failures;
 
+// A stage that passed by working around something outside Equator says so here. A resume keeps the
+// files of the stages it carries forward, so their occurrences are counted with their passes.
+const occurrences = collectOccurrences(
+  steps.map(({ id }) => id),
+  occurrencesFile,
+);
+
 // Every attempt is an occurrence. A resume that passes does not erase the failure it resumed from,
 // and a recurring failure is only measurable if each of its occurrences was written down.
 appendFileSync(
@@ -927,6 +946,7 @@ appendFileSync(
     attempt,
     commit,
     failures,
+    occurrences: ledgerOccurrences(occurrences),
   })}\n`,
 );
 
@@ -989,6 +1009,17 @@ if (overBudget.length > 0) {
   for (const line of overBudget) process.stdout.write(`  ${line}\n`);
 }
 
+if (occurrences.length > 0) {
+  process.stdout.write(
+    `\n=== OCCURRENCES (${occurrences.length})\n` +
+      'These stages worked around a failure outside Equator, which each one names. An occurrence does\n' +
+      'not make the run red; the attempt ledger counts them, so a rising rate shows there.\n',
+  );
+  for (const { stage, signature } of occurrences) {
+    process.stdout.write(`  ${stage}: ${signature}\n`);
+  }
+}
+
 const counts = { pass: 0, fail: 0, skip: 0 };
 for (const { id } of steps) counts[results.get(id).status] += 1;
 
@@ -1022,6 +1053,7 @@ writeFileSync(
       processorBudgetVariable: PROCESSORS_VARIABLE,
       priorityFindings,
       loweredProcesses: lowered.size,
+      occurrences,
       overBudget,
       drift,
       untraced,
@@ -1107,11 +1139,12 @@ if (keepTrees || red) {
  * already know that untraced and drift are verdicts too. So counts appear only inside a verdict,
  * every reason is on the same line as the word RED, and nothing prints after it.
  */
+const recorded = verdictOccurrences(occurrences);
 process.stdout.write(
   red
     ? `=== RED  ${counts.pass} passed, ${counts.fail} failed, ${counts.skip} skipped, ` +
-        `${untraced.length} untraced, ${drift.length} drifted\n`
-    : `=== GREEN  ${counts.pass} passed, ${counts.fail} failed, ${counts.skip} skipped\n`,
+        `${untraced.length} untraced, ${drift.length} drifted${recorded}\n`
+    : `=== GREEN  ${counts.pass} passed, ${counts.fail} failed, ${counts.skip} skipped${recorded}\n`,
 );
 
 process.exitCode = red ? 1 : 0;
