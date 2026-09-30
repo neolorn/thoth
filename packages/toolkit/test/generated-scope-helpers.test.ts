@@ -98,7 +98,7 @@ describe('a generated scope module for a scope with no message family', () => {
     const contents = scopeModule(withoutFamilies);
 
     expect(contents).toContain('function defineMessageHandle<');
-    expect(contents).toContain('export const families = Object.freeze({});');
+    expect(contents).not.toMatch(/\bexport const families\b/u);
   });
 
   it('carries none of the family runtime it does not use', () => {

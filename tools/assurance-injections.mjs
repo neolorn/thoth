@@ -4199,4 +4199,14 @@ export const injections = Object.freeze([
     replace: "'noindex',",
     caughtBy: 'packages/runtime/test/declared-page-outcome.test.ts',
   },
+  {
+    id: 'empty-family-registry-generated',
+    invariant:
+      'A scope with no message family is generated with no family registry, empty or otherwise.',
+    source: 'packages/toolkit/src/generated-contracts.ts',
+    find: "    ...(scope.families.length === 0\n      ? []\n      : [`export const families = ${renderFamilies(scope)};`, '']),",
+    replace:
+      "    ...(scope.families.length === 0\n      ? ['export const families = Object.freeze({});', '']\n      : [`export const families = ${renderFamilies(scope)};`, '']),",
+    caughtBy: 'packages/toolkit/test/empty-family-registry.test.ts',
+  },
 ]);

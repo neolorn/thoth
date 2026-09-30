@@ -807,7 +807,8 @@
     {
       "spec": "04-message-authoring-and-catalogs.spec.md",
       "section": "3. Catalog composition",
-      "statement": "An empty provider, scope, or typed registry MUST NOT be generated as scaffolding for something that does not exist yet."
+      "statement": "An empty provider, scope, or typed registry MUST NOT be generated as scaffolding for something that does not exist yet.",
+      "checks": ["assurance:empty-family-registry-generated"]
     },
     {
       "spec": "04-message-authoring-and-catalogs.spec.md",
