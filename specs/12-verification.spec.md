@@ -97,6 +97,22 @@ depend on, covering at least a right to left language, plural categories beyond 
 non-Latin digits, a script written without spaces, complex shaping, a supplying language different
 from the target, content whose language is unknown or deliberately fixed, and a pseudo-locale.
 
+A locale covers a kind because the pinned CLDR release says so, and a kind counts as covered where
+a fixture configures such a locale:
+
+| Kind                                   | Decided by                                                                                |
+| -------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Right to left                          | `rtl` is `YES` in the script metadata of the locale's script                              |
+| Plural categories beyond one and other | a cardinal category other than `one` and `other` in the locale's plural rules             |
+| Non-Latin digits                       | a numbering system the locale declares whose digits are not those of `latn`               |
+| A script written without spaces        | `lbLetters` is `YES`: the script's major languages allow line breaks between letters      |
+| Complex shaping                        | `shapingReq` is `YES` in the script metadata                                              |
+| A supplying language                   | a locale whose language is not that of the source locale that supplies what it leaves out |
+| Unknown or fixed content language      | content a fixture presents under `und` and under `zxx`                                    |
+| A pseudo-locale                        | a locale the configuration declares under `pseudoLocales`                                 |
+
+A locale's script is its own script subtag, or the one the likely subtags data gives it.
+
 A release MUST take a locale's categories, endonyms, and formats from the locale data it
 pins rather than from the host, so an answer does not change with whichever runtime a build happens
 to use. A fixture matrix verifies mechanisms, and a release MUST NOT turn one into a

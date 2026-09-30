@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Localization } from '@neolorn/equator';
+import { Localization, segmentText } from '@neolorn/equator';
 import { configuration } from '#i18n';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { messages } from '#i18n/shell';
@@ -49,8 +49,8 @@ describe('Equator minimal built-package consumer', () => {
       lang: configuration.defaultLocale,
       dir: 'ltr',
     });
-    // One per configured locale, and there are three of them.
-    expect(recoveryPayload).toHaveLength(3);
+    // One per configured locale, and there are four of them.
+    expect(recoveryPayload).toHaveLength(4);
 
     // The switcher, and the whole of what this fixture writes by hand to have one. There is no
     // locale in its template and no label for a locale in its catalogs: the endonyms below are the
@@ -62,11 +62,13 @@ describe('Equator minimal built-package consumer', () => {
       'en-US',
       'ar',
       'ar-EG',
+      'th',
     ]);
     expect(choices.map((choice) => choice.textContent?.trim())).toEqual([
       'American English',
       'العربية',
       'العربية (مصر)',
+      'ไทย',
     ]);
     expect(
       choices.map((choice) => [
@@ -78,6 +80,7 @@ describe('Equator minimal built-package consumer', () => {
       ['en', 'ltr', 'true'],
       ['ar', 'rtl', null],
       ['ar', 'rtl', null],
+      ['th', 'ltr', null],
     ]);
 
     await fixture.componentInstance.selectLocale('ar-EG');
@@ -132,5 +135,42 @@ describe('Equator minimal built-package consumer', () => {
     expect(element.querySelector('[data-inherited]')?.textContent).toContain(
       'هذه الجملة مكتوبة بالعربية العامة.',
     );
+  });
+
+  // Thai is written without spaces between words, so a word boundary is something the platform
+  // finds from a dictionary rather than from the text. It also leaves out the one message Arabic
+  // inherits within Arabic, so here the source locale supplies it in another language.
+  it('renders Thai, supplies its missing message from English, and finds its words', async () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await fixture.componentInstance.selectLocale('th');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('[data-title]')?.textContent).toContain(
+      'ตัวอย่าง Equator ขนาดเล็ก',
+    );
+    expect(element.querySelector('[data-inherited]')?.textContent).toContain(
+      'This sentence is written in the source locale.',
+    );
+    expect(element.querySelector('[data-minimal]')).toMatchObject({
+      lang: 'th',
+      dir: 'ltr',
+    });
+
+    const sentence = 'ภาษาไทยเขียนติดกัน';
+    const segmented = segmentText(
+      sentence,
+      { locale: 'th' },
+      { granularity: 'word' },
+    );
+    expect(segmented.ok).toBe(true);
+    const words = segmented.ok
+      ? segmented.value.filter(({ wordLike }) => wordLike === true)
+      : [];
+    expect(words.length).toBeGreaterThan(1);
+    expect(words.map(({ segment }) => segment).join('')).toBe(sentence);
   });
 });

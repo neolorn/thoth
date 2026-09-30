@@ -19,6 +19,12 @@ import {
   evaluateMatrix,
   loadReasons,
 } from './capability-matrix.mjs';
+import {
+  fixtureContentLanguages,
+  fixtureLocales,
+  localeKindCoverage,
+  pinnedLocaleData,
+} from './locale-kinds.mjs';
 import { claimsFile, steps } from './verify-stages.mjs';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -43,6 +49,24 @@ const result = evaluateMatrix({
   siteProblems: problems,
   resolveFailures,
 });
+
+// The contexts are also the locales the fixtures run in: section 5 of
+// `specs/12-verification.spec.md` names the kinds of locale the checks must meet, and a kind no
+// fixture configures is one no check met.
+const localeKinds = localeKindCoverage({
+  locales: fixtureLocales(workspaceRoot),
+  contentLanguages: fixtureContentLanguages(workspaceRoot),
+  data: pinnedLocaleData(workspaceRoot),
+});
+const findings = [
+  ...result.findings,
+  ...localeKinds
+    .filter(({ covering }) => covering.length === 0)
+    .map(({ name }) => ({
+      kind: 'locale-kind',
+      message: `No fixture locale or content language covers ${name}.`,
+    })),
+];
 
 const out = (line = '') => process.stdout.write(`${line}\n`);
 const claimCount = evidence.reduce(
@@ -83,14 +107,20 @@ for (const row of rows) {
 }
 out();
 
-const others = result.findings.filter(({ kind }) => kind !== 'unreasoned');
-out(`Findings (${result.findings.length}):`);
-for (const { kind, message } of result.findings) out(`  [${kind}] ${message}`);
+out('Locale kinds:');
+for (const { name, covering } of localeKinds) {
+  out(`  ${name}: ${covering.length === 0 ? 'none' : covering.join(', ')}`);
+}
 out();
 
-if (result.findings.length === 0) {
+const others = findings.filter(({ kind }) => kind !== 'unreasoned');
+out(`Findings (${findings.length}):`);
+for (const { kind, message } of findings) out(`  [${kind}] ${message}`);
+out();
+
+if (findings.length === 0) {
   out(
-    'verify:matrix GREEN: every cell is exercised by a claim or carries a reason.',
+    'verify:matrix GREEN: every cell is exercised by a claim or carries a reason, and a fixture covers every locale kind.',
   );
 } else {
   out(

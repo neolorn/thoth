@@ -4427,7 +4427,8 @@
     {
       "spec": "12-verification.spec.md",
       "section": "5. Representative locales",
-      "statement": "A release MUST verify its mechanisms against locales that differ in the ways those mechanisms depend on, covering at least a right to left language, plural categories beyond one and other, non-Latin digits, a script written without spaces, complex shaping, a supplying language different from the target, content whose language is unknown or deliberately fixed, and a pseudo-locale."
+      "statement": "A release MUST verify its mechanisms against locales that differ in the ways those mechanisms depend on, covering at least a right to left language, plural categories beyond one and other, non-Latin digits, a script written without spaces, complex shaping, a supplying language different from the target, content whose language is unknown or deliberately fixed, and a pseudo-locale.",
+      "checks": ["self-test:verify:matrix:self-test"]
     },
     {
       "spec": "12-verification.spec.md",

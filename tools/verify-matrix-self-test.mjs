@@ -43,6 +43,12 @@ import {
   readPublished,
   rowsFrom,
 } from './capability-matrix.mjs';
+import {
+  fixtureContentLanguages,
+  fixtureLocales,
+  localeKindCoverage,
+  pinnedLocaleData,
+} from './locale-kinds.mjs';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Nested under `tmp`, so it is no artefact another stage can see, and inside the workspace, so the
@@ -474,6 +480,64 @@ try {
         'planted-unopened left evidence with no writer',
       ),
       'Evidence no writer opened was accepted.',
+    );
+  });
+  // The locale kinds, read from the real fixtures and then with one kind's only cover taken away.
+  // Each removal is the smallest edit that leaves the kind uncovered, so a classification that
+  // counted a locale for the wrong reason would stay green here.
+  const localeData = pinnedLocaleData(workspaceRoot);
+  const locales = fixtureLocales(workspaceRoot);
+  const contentLanguages = fixtureContentLanguages(workspaceRoot);
+  const uncovered = (coverage) =>
+    coverage
+      .filter(({ covering }) => covering.length === 0)
+      .map(({ id }) => id);
+  assert.deepEqual(
+    uncovered(
+      localeKindCoverage({ locales, contentLanguages, data: localeData }),
+    ),
+    [],
+    'The fixtures as they stand leave a locale kind uncovered.',
+  );
+  expectRed(
+    'a script written without spaces that no fixture configures',
+    () => {
+      assert.deepEqual(
+        uncovered(
+          localeKindCoverage({
+            locales: locales.filter(({ locale }) => locale !== 'th'),
+            contentLanguages,
+            data: localeData,
+          }),
+        ),
+        ['without-spaces'],
+      );
+    },
+  );
+  expectRed('non-Latin digits no locale declares', () => {
+    assert.deepEqual(
+      uncovered(
+        localeKindCoverage({
+          locales: locales.map(({ numberingSystem, ...entry }) => entry),
+          contentLanguages,
+          data: localeData,
+        }),
+      ),
+      ['non-latin-digits'],
+    );
+  });
+  expectRed('content of a fixed language that no fixture presents', () => {
+    assert.deepEqual(
+      uncovered(
+        localeKindCoverage({
+          locales,
+          contentLanguages: new Set(
+            [...contentLanguages].filter((tag) => tag !== 'zxx'),
+          ),
+          data: localeData,
+        }),
+      ),
+      ['unknown-or-fixed-content'],
     );
   });
 } finally {

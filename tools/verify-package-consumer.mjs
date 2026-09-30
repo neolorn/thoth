@@ -64,6 +64,11 @@ import {
 } from './exercise-sheet.mjs';
 import { expectations, unmetExpectations } from './negative-expectations.mjs';
 import { locateNode, withNodeFirst } from './node-runtimes.mjs';
+import {
+  INIT_REQUEST,
+  LOCALE_FORMATTING,
+  PSEUDO_LOCALES,
+} from './package-consumer-locales.mjs';
 import { compareVersions } from './supported-versions.mjs';
 import { withOfflineStoreRemedy } from './offline-store.mjs';
 
@@ -261,16 +266,6 @@ assert.equal(invalidInvocation.diagnostics[0]?.code, 'EQ1701');
 // Invoked directly rather than through a consumer script. Running `pnpm run equator:init` would
 // prove that a human had typed that script into the fixture manifest, because Equator writes no
 // such entry.
-//
-// One statement of what init is asked for, used both to invoke it and to say what it must produce.
-// Comparing Equator's file against a literal copied from the fixture's own equator.config.json
-// detects drift and locks no contract; the template ships no such file, so what is asserted is what
-// init authored from these flags.
-const INIT_REQUEST = Object.freeze({
-  sourceLocale: 'en-US',
-  defaultLocale: 'en-US',
-  locales: ['en-US', 'ar-EG'],
-});
 const initArguments = [
   'exec',
   'equator',
@@ -309,27 +304,8 @@ assert.deepEqual(await readJson(resolve(consumerRoot, 'equator.config.json')), {
   locales: [...INIT_REQUEST.locales],
 });
 
-// Two consumer edits to the configuration, and the only ones this gate makes. First the two
-// pseudo-locales the toolkit generates. Declaring them changes no build, because
-// `pnpm run build` still runs a plain `equator generate` and produces neither, and the fixture's
-// `test` script runs
-// `equator generate --pseudo`, so the page spec has a real generated catalog to render.
-const PSEUDO_LOCALES = Object.freeze({
-  'en-Latn-XA': { lengthFactor: 0.4, markers: true },
-  'en-Arab-XB': { lengthFactor: -0.4, markers: true },
-});
-// Second, how one locale is written: declared for a pseudo-locale, and that is the case worth
-// gating. `pseudoLocales` is part of the configuration whether or not `--pseudo` asked for one, so
-// a production build's generated locale table does not list them; a formatting entry that survived
-// into that table would name a locale the runtime does not have and would be refused on arrival.
-// The fixture builds both ways, so both are proved here.
-//
-// Not `en-US` or `ar-EG`: nine specs in the lab assert digits in those two, and a declaration here
-// would have made every one of them pass or fail for a reason it was not written for. What the
-// runtime does with the table is asserted in `locale-formatting.spec.ts`, which builds its own.
-const LOCALE_FORMATTING = Object.freeze({
-  'en-Arab-XB': { numberingSystem: 'arab' },
-});
+// Two consumer edits to the configuration, and the only ones this gate makes: the pseudo-locales
+// and how one locale is written, both from `package-consumer-locales.mjs`.
 await writeFile(
   resolve(consumerRoot, 'equator.config.json'),
   `${JSON.stringify(
