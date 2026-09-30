@@ -121,7 +121,10 @@ export interface InvalidationDecision {
   readonly kind: 'initial' | 'none' | 'inputs-changed';
   /** Which inputs differ from the previous state. Empty when nothing did. */
   readonly changedInputs: readonly string[];
-  /** Which generated files those inputs reach, which is what a watch reports as rebuilt. */
+  /**
+   * Every generated file the output plan holds when any input changed, and none when nothing did.
+   * Any input can reach any of them through the complete graph, so none is left out.
+   */
   readonly affectedOutputs: readonly string[];
 }
 
@@ -990,8 +993,9 @@ function compileProjectCore(
  * bodies, and produces the artifacts and an output plan that would write them. Returns all of it, or the
  * reasons it could not.
  *
- * Incremental when handed the previous run's state: what did not change is not recompiled, and the
- * result says which inputs moved and which outputs they reach.
+ * Every call compiles from the complete semantic graph, because reachability and the catalog-set
+ * descriptor depend on all of it. Handed the previous run's state, the result also says which inputs
+ * moved since then; the output transaction is what leaves a file whose bytes did not change alone.
  *
  * The verb to reach for when the input is not a directory: a test, an editor, a script that
  * assembles catalogs itself. `compileProjectFromDisk` is the one that reads a project.
