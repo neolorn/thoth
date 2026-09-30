@@ -52,12 +52,8 @@ const UNDETERMINED = 'und';
  *
  * `specs/03-locale-identity-and-resolution.spec.md` section 10 says user-authored, multilingual and
  * language-independent values keep their own known language and direction, or an explicit unknown
- * state. The unknown state had no
- * representation: `languagePresentation('und')` answered `ltr`, so content explicitly marked
- * undetermined was assigned a direction Equator had no basis for. A customer name typed in Arabic
- * and stored without a tag rendered left-to-right.
- *
- * Now:
+ * state. Answering `ltr` for content marked undetermined would assign a direction there is no basis
+ * for, and a customer name typed in Arabic and stored without a tag would render left-to-right. So:
  *
  * - a tag that resolves to a script keeps its direction, including `und-Arab`, where the language
  *   is undetermined but the script is not;
@@ -83,8 +79,7 @@ export function contentPresentation(language?: string): ContentPresentation {
   }
 
   if (primary === UNDETERMINED && !hasScriptSubtag(language)) {
-    // Undetermined with nothing to resolve a script from. Answering 'ltr' here is the defect this
-    // exists to remove: it is a guess wearing the shape of a fact.
+    // Undetermined with nothing to resolve a script from, so any direction would be a guess.
     return Object.freeze({
       language,
       direction: 'auto',
