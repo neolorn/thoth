@@ -523,3 +523,24 @@ describe('an XLIFF translation carrying a directional control', () => {
     expect(imported.diagnostics.map(({ code }) => code)).toContain('EQ1103');
   });
 });
+
+describe('an XLIFF document that is not text', () => {
+  // Specification 10 section 2: a document arrives from a build script, where no declared type
+  // holds, so a value that is not text is a diagnostic naming its type and never the value.
+  it('is refused with EQ1801 naming the type it was', () => {
+    for (const [document, type] of [
+      [42, 'number'],
+      [Buffer.from('<xliff/>'), 'object'],
+      [undefined, 'undefined'],
+    ] as const) {
+      const imported = importXliff22({
+        document: document as unknown as string,
+        source,
+      });
+      expect(imported.ok, type).toBe(false);
+      expect(imported.diagnostics[0]?.code).toBe('EQ1801');
+      expect(imported.diagnostics[0]?.summary).toContain(type);
+      expect(imported.diagnostics[0]?.summary).not.toContain('xliff/');
+    }
+  });
+});

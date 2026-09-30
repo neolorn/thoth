@@ -34,6 +34,7 @@ import {
   type ToolkitObservabilityOptions,
 } from './observability.js';
 import { RESOURCE_LIMITS } from './resource-limits.js';
+import { untrustedText } from './untrusted-text.js';
 import {
   BIDI_VIOLATION_SUMMARY,
   inspectAuthoredBidi,
@@ -1661,7 +1662,14 @@ function importXliff22Core(
       ),
     ]);
   }
-  const parsed = parseXml(request.document);
+  const document = untrustedText(
+    request.document,
+    'EQ1801',
+    'XLIFF document',
+    RESOURCE_LIMITS.xliffBytes,
+  );
+  if (!document.ok) return document;
+  const parsed = parseXml(document.value);
   if (!parsed.ok) return parsed;
   const root = parsed.value;
   // The root is identified by namespace, version and source locale, and by nothing else.
