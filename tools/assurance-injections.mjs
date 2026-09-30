@@ -4134,4 +4134,14 @@ export const injections = Object.freeze([
       "      refinement?.shape ?? inferredShape ?? builtInShape ?? customKind?.shape ?? ('paired' as const);",
     caughtBy: 'packages/toolkit/test/slot-refinements.test.ts',
   },
+  {
+    id: 'instant-formatted-in-the-host-zone',
+    invariant:
+      "An instant with no time zone from the context or the options is refused, rather than read against the host's zone.",
+    source: 'packages/runtime/src/formatting.ts',
+    find: "  if (context.timeZone === undefined && options.timeZone === undefined) {\n    return unsupported(\n      'Instant formatting requires an explicit deterministic time zone.',",
+    replace:
+      "  if (context.locale.length < 0) {\n    return unsupported(\n      'Instant formatting requires an explicit deterministic time zone.',",
+    caughtBy: 'packages/runtime/test/instant-time-zone.test.ts',
+  },
 ]);
