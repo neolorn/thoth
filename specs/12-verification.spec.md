@@ -53,6 +53,13 @@ merely unfilled has no reason; it is the gap the gate reports. The gate MUST als
 that covers an exercised cell or covers none, because a reason that outlives its cause hides the
 next gap in the same place.
 
+The same holds one level down, for the statements these documents make. A release MUST map every
+normative statement to the checks that prove it, each one a check the gate proves able to fail as
+section 9 requires, or to a reason no check can prove it. The gate MUST fail on a statement with
+neither, on an entry that names a check the gate does not prove, and on an entry whose statement
+the documents no longer make, because an edited requirement is read against its proof before it
+counts as proven again.
+
 A release MAY verify direction, document language, isolation, and its live region as attributes and
 computed styles rather than by comparing images, because those are the properties the runtime owns
 and an image comparison also fails on a consumer application's unrelated redesign.

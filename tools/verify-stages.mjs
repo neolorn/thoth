@@ -159,6 +159,22 @@ const declared = Object.freeze([
     id: 'verify:gate-limits:self-test',
     reads: ['source:packages', 'source:tools'],
   },
+  // Plants a document and a map beside it and requires the reader to find each planted statement
+  // and the map to refuse each planted defect, so the stage below cannot pass by reading nothing.
+  { id: 'verify:normative-map:self-test', reads: ['source:tools'] },
+  // Reads the specifications and the injection lists, and holds nothing behind it: a statement
+  // without its proof is a gap in the evidence, not a broken build. The injections it names are
+  // proven able to fail by the assurance stages in the same run.
+  {
+    id: 'verify:normative-map',
+    reads: ['source:specs', 'source:tools'],
+    needs: [
+      {
+        on: 'verify:normative-map:self-test',
+        why: 'A map nobody has seen refuse an unmapped statement is indistinguishable from one that reads no statements at all.',
+      },
+    ],
+  },
   { id: 'verify:person-names', reads: ['source:packages'] },
   // The two suites run at the same time, which is what made their shared vitest results cache worth
   // finding: both hashed the empty project name and overwrote each other's record. Each now has its
