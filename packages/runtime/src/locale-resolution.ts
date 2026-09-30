@@ -22,7 +22,7 @@ import {
   type LocalizationSnapshot,
   type RouteRuntimeProjection,
 } from '@neolorn/equator/core';
-import { negotiateLocale } from './locale-negotiation';
+import { negotiateLocale } from '@neolorn/equator/core';
 import {
   type LocalizationEventEmitter,
   RUNTIME_EVENT_CODES,

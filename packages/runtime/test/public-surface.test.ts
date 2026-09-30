@@ -23,8 +23,12 @@ import { describe, expect, it } from 'vitest';
  */
 
 const sourceRoot = new URL('../src/', import.meta.url);
-const read = (file: string): string =>
-  readFileSync(fileURLToPath(new URL(file, sourceRoot)), 'utf8');
+// The primary re-exports the core entry point whole, so what the core publishes is published by
+// the primary as well.
+const coreRoot = new URL('../core/src/', import.meta.url);
+const readFrom = (root: URL, file: string): string =>
+  readFileSync(fileURLToPath(new URL(file, root)), 'utf8');
+const read = (file: string): string => readFrom(sourceRoot, file);
 
 const publicApi = read('public-api.ts');
 
@@ -58,11 +62,18 @@ function publishedNames(): ReadonlySet<string> {
     }
   };
 
-  collect(publicApi);
-  for (const [, module] of publicApi.matchAll(
-    /export\s+\*\s+from\s+'\.\/([\w.-]+)'/gu,
-  )) {
-    collect(read(`${module}.ts`));
+  const collectBarrel = (root: URL, barrel: string): void => {
+    collect(barrel);
+    for (const [, module] of barrel.matchAll(
+      /export\s+\*\s+from\s+'\.\/([\w.-]+)'/gu,
+    )) {
+      collect(readFrom(root, `${module}.ts`));
+    }
+  };
+
+  collectBarrel(sourceRoot, publicApi);
+  if (publicApi.includes("export * from '@neolorn/equator/core';")) {
+    collectBarrel(coreRoot, readFrom(coreRoot, 'public-api.ts'));
   }
   return names;
 }

@@ -14,7 +14,9 @@
 // layering the right way up: the base does not depend on the integration.
 import {
   builtLocalePolicy,
+  negotiateLocale,
   pageOutcomeHttpDescriptor,
+  parseAcceptLanguage,
   resolveLocalizedRoute,
   routeCacheHeaders,
   routeHttpDescriptor,
@@ -365,9 +367,10 @@ export function createLocaleRequestHandler(
     // exists into a 404, and a visitor whose first language is not served still has a second.
     const preferred =
       servedLocale(policy, carried) ??
-      preferredFromAcceptLanguage(
-        request.headers.get('accept-language'),
-        (tag) => servedLocale(policy, tag),
+      negotiateLocale(
+        parseAcceptLanguage(request.headers.get('accept-language') ?? ''),
+        Object.keys(policy.locales),
+        canonicalTag,
       );
 
     // The target as it arrived, when this entry point's own adapter built the request. A `Request`
@@ -797,55 +800,25 @@ function readCookie(header: string | null, name: string): string | undefined {
   return undefined;
 }
 
-/**
- * The first acceptable language, in the order the client ranked them.
- *
- * Deliberately shallow: this hands a candidate to `resolveLocalizedRoute`, which is the function
- * that decides whether Equator supports it, so nothing here needs to know the locale set. An
- * unsupported value is ignored there rather than being an error here.
- */
+/** A tag in canonical form, or `undefined` for one that is not well formed. */
+function canonicalTag(tag: string): string | undefined {
+  try {
+    return Intl.getCanonicalLocales(tag)[0];
+  } catch {
+    return undefined;
+  }
+}
+
 /** The locale a signal names, where this build serves it. */
 function servedLocale(
   policy: LocaleUrlPolicy,
   tag: string | undefined,
 ): string | undefined {
   if (tag === undefined) return undefined;
-  try {
-    const locale = Intl.getCanonicalLocales(tag)[0];
-    return locale !== undefined && policy.locales[locale] !== undefined
-      ? locale
-      : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-/** The most preferred language the header names that this build serves. */
-function preferredFromAcceptLanguage(
-  header: string | null,
-  served: (tag: string) => string | undefined,
-): string | undefined {
-  if (header === null) return undefined;
-  const ranked = header
-    .split(',')
-    .map((part) => {
-      const [tag, ...parameters] = part.split(';');
-      const quality = parameters
-        .map((parameter) => /^\s*q=([0-9.]+)\s*$/iu.exec(parameter))
-        .find((match) => match !== null);
-      return {
-        tag: (tag ?? '').trim(),
-        quality: quality === undefined ? 1 : Number(quality[1] ?? 1),
-      };
-    })
-    .filter((entry) => entry.tag.length > 0 && entry.tag !== '*')
-    .filter((entry) => Number.isFinite(entry.quality) && entry.quality > 0)
-    .sort((left, right) => right.quality - left.quality);
-  for (const { tag } of ranked) {
-    const locale = served(tag);
-    if (locale !== undefined) return locale;
-  }
-  return undefined;
+  const locale = canonicalTag(tag);
+  return locale !== undefined && policy.locales[locale] !== undefined
+    ? locale
+    : undefined;
 }
 
 function serializeCookie(

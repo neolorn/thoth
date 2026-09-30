@@ -32,7 +32,7 @@ entry point, no dependency, and no compatibility obligation until it exists.
 | Entry point                | Carries                                                                                  | Exists because                           |
 | -------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `@neolorn/equator`         | The runtime and its Angular integration.                                                 | It is the package.                       |
-| `@neolorn/equator/core`    | The runtime's vocabulary, locale profiles, and route classification.                     | It loads without Angular.                |
+| `@neolorn/equator/core`    | The runtime's vocabulary, locale profiles and negotiation, and route classification.     | It loads without Angular.                |
 | `@neolorn/equator/http`    | The locale request handler and its Node adapter.                                         | It loads without Angular.                |
 | `@neolorn/equator/router`  | Localized routing and `provideLocalizedRouter(...)`.                                     | It carries an optional peer.             |
 | `@neolorn/equator/forms`   | The localized input control.                                                             | It carries an optional peer.             |

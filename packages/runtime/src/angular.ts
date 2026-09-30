@@ -61,7 +61,7 @@ import {
   type ParticipantTransferRecord,
 } from './participant-runtime';
 import type { RelativeTimePolicy } from './relative-time-policy';
-import { parseAcceptLanguage } from './locale-negotiation';
+import { parseAcceptLanguage } from '@neolorn/equator/core';
 import type { LocalizationPersistenceStoreFactory } from './persistence';
 import {
   RUNTIME_LIMITS,

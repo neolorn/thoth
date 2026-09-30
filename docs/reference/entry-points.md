@@ -9,15 +9,15 @@ This page is generated from the packages and is not edited by hand.
 
 Everything an application component and its bootstrap need.
 
-Publishes 217 name(s).
+Publishes 215 name(s).
 
 Composable from here: `provideLocalizationSetup`, `withExtensions`, `withFormattingContext`, `withLocaleAnnouncement`, `withLocaleSources`, `withLocalizationClock`, `withObservability`, `withOverlayLocale`, `withPersistence`, `withRecoveryMessage`, `withRelativeTimePolicy`, `withRouting`, `withoutDocumentLocale`.
 
 ## `@neolorn/equator/core`
 
-The contracts, the locale profiles, and the route and address helpers, with no Angular in the graph. This is what a library or a test helper imports.
+The contracts, the locale profiles and negotiation, and the route and address helpers, with no Angular in the graph. This is what a library or a test helper imports.
 
-Publishes 234 name(s).
+Publishes 236 name(s).
 
 ## `@neolorn/equator/forms`
 

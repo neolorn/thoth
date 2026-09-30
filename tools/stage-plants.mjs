@@ -327,7 +327,7 @@ export const stageSelfTests = Object.freeze({
       'standards/data/language-subtag-registry-2026-06-14.txt',
       'standards/data/DerivedBidiClass-17.0.0.txt',
       'packages/runtime/core/src/locale-profile.generated.ts',
-      'packages/runtime/src/encompassed-languages.generated.ts',
+      'packages/runtime/core/src/encompassed-languages.generated.ts',
       'packages/toolkit/src/plural-categories.generated.ts',
       'packages/toolkit/src/endonyms.generated.ts',
       'packages/toolkit/src/parent-locales.generated.ts',
@@ -355,7 +355,7 @@ export const stageSelfTests = Object.freeze({
       {
         id: 'script-distance-read-as-encompassing',
         plant: plantText(
-          'packages/runtime/src/encompassed-languages.generated.ts',
+          'packages/runtime/core/src/encompassed-languages.generated.ts',
           '"zh":{"cdo":10',
           '"zh-Hant":{"zh-Hans":50},"zh":{"cdo":10',
         ),

@@ -139,7 +139,6 @@ export * from './locale-presentation';
 export * from './relative-time-policy';
 export * from './persistence';
 export * from './issue-convention';
-export * from './locale-negotiation';
 // Published because it is enforced. A consumer that trips a ceiling gets an error naming a limit it
 // had no way to read, while the toolkit has published its own equivalent all along.
 export { RUNTIME_LIMITS } from './runtime-safety';

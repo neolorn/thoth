@@ -107,7 +107,8 @@
     {
       "spec": "01-standards-profile.spec.md",
       "section": "6. Cross-runtime determinism",
-      "statement": "Correctness-bearing localization behavior MUST NOT vary between supported toolkit, server, and browser combinations."
+      "statement": "Correctness-bearing localization behavior MUST NOT vary between supported toolkit, server, and browser combinations.",
+      "checks": ["assurance:handler-reads-accept-language-by-exact-tag"]
     },
     {
       "spec": "01-standards-profile.spec.md",
@@ -649,7 +650,8 @@
       "checks": [
         "assurance-runtime:stored-locale-echoed-in-a-diagnostic",
         "assurance:accept-language-weights-ignored",
-        "assurance:same-language-match-ignores-script"
+        "assurance:same-language-match-ignores-script",
+        "assurance:handler-reads-accept-language-by-exact-tag"
       ]
     },
     {

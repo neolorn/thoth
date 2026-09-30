@@ -850,7 +850,7 @@ const toolkitRtlOutputPath = resolve(
 
 const encompassedOutputPath = resolve(
   workspaceRoot,
-  'packages/runtime/src/encompassed-languages.generated.ts',
+  'packages/runtime/core/src/encompassed-languages.generated.ts',
 );
 
 const pluralOutputPath = resolve(

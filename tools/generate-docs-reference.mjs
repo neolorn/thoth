@@ -241,7 +241,7 @@ const PURPOSE = Object.freeze({
   '@neolorn/equator':
     'Everything an application component and its bootstrap need.',
   '@neolorn/equator/core':
-    'The contracts, the locale profiles, and the route and address helpers, with no Angular in the graph. This is what a library or a test helper imports.',
+    'The contracts, the locale profiles and negotiation, and the route and address helpers, with no Angular in the graph. This is what a library or a test helper imports.',
   '@neolorn/equator/forms':
     'Localized input parsing and the directive that binds it to a form control.',
   '@neolorn/equator/http':

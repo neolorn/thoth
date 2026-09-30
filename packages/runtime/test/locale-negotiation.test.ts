@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { ENCOMPASSED_LANGUAGE_PROFILE } from '../src/encompassed-languages.generated.js';
+import { ENCOMPASSED_LANGUAGE_PROFILE } from '../core/src/encompassed-languages.generated.js';
 import {
   negotiateLocale,
   parseAcceptLanguage,
-} from '../src/locale-negotiation.js';
+} from '../core/src/locale-negotiation.js';
 
 /**
  * Negotiating a locale from a request header.
@@ -171,7 +171,7 @@ describe('same-language fallback compares script', () => {
  * step a site shipping `nb-NO` answers it with nothing, and the only repair is writing
  * `"no": "nb-NO"` into `aliases` by hand, for a relation two standards already publish.
  *
- * The table under it is `packages/runtime/src/encompassed-languages.generated.ts`: membership from
+ * The table under it is `packages/runtime/core/src/encompassed-languages.generated.ts`: membership from
  * the vendored IANA registry's `Macrolanguage` field, ordering from CLDR's language matching data,
  * both pinned and both regenerated under `verify:locale-profile`. The last two cases here are the
  * ones that must not move, and the two after them are the narrowness: this is not CLDR matching in

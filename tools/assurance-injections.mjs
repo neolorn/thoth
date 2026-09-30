@@ -1838,7 +1838,7 @@ export const injections = Object.freeze([
     id: 'script-difference-matched-as-same-language',
     invariant:
       'A request is answered with a same-language locale only when both are written in the same script, so a script difference is never bridged as a near match.',
-    source: 'packages/runtime/src/locale-negotiation.ts',
+    source: 'packages/runtime/core/src/locale-negotiation.ts',
     find: '      (profile) => profile.language === language && profile.script === script,',
     replace: '      (profile) => profile.language === language,',
     caughtBy: 'packages/runtime/test/locale-negotiation.test.ts',
@@ -2082,7 +2082,7 @@ export const injections = Object.freeze([
     id: 'negotiation-answers-the-maximized-tag',
     invariant:
       'Negotiation compares maximized scripts but answers with the supported locale exactly as declared.',
-    source: 'packages/runtime/src/locale-negotiation.ts',
+    source: 'packages/runtime/core/src/locale-negotiation.ts',
     find: '    if (related !== undefined) return related.locale;',
     replace:
       '    if (related !== undefined)\n      return new Intl.Locale(related.locale).maximize().toString();',
@@ -2120,7 +2120,7 @@ export const injections = Object.freeze([
     id: 'same-language-match-ignores-script',
     invariant:
       'The same-language step matches a supported locale only when its maximized script is the one the request is written in.',
-    source: 'packages/runtime/src/locale-negotiation.ts',
+    source: 'packages/runtime/core/src/locale-negotiation.ts',
     find: '      (profile) => profile.language === language && profile.script === script,',
     replace: '      (profile) => profile.language === language,',
     caughtBy: 'packages/runtime/test/locale-negotiation.test.ts',
@@ -2129,7 +2129,7 @@ export const injections = Object.freeze([
     id: 'accept-language-weights-ignored',
     invariant:
       'Language ranges are tried in the order of their quality values, with header order breaking a tie.',
-    source: 'packages/runtime/src/locale-negotiation.ts',
+    source: 'packages/runtime/core/src/locale-negotiation.ts',
     find: '          : right.quality - left.quality,',
     replace: '          : left.index - right.index,',
     caughtBy: 'packages/runtime/test/locale-negotiation.test.ts',
@@ -4314,5 +4314,15 @@ export const injections = Object.freeze([
     replace:
       "        // unchanged.\n        if (!policy.omitDefaultPrefix) {\n          const entryLocale =\n            preferredEntryLocale(policy, context) ?? policy.defaultLocale;\n          return Object.freeze({\n            status: 'redirect',\n            reason: 'locale-entry',\n            httpStatus: 307,\n            cache: 'private-no-cache',\n            locale: entryLocale,\n            location: `/${policy.locales[entryLocale]}/${encodedSegments(parsed.segments)}`,\n          });\n        }\n        return Object.freeze({\n          status: 'not-found',\n          httpStatus: 404,\n          presentationLocale: policy.defaultLocale,\n        });",
     caughtBy: 'packages/runtime/test/locale-of-an-unprojected-address.test.ts',
+  },
+  {
+    id: 'handler-reads-accept-language-by-exact-tag',
+    invariant:
+      "The request handler negotiates Accept-Language through the runtime's own negotiation, so a regional variant reaches its language's served locale and a weight above 1 counts as 1.",
+    source: 'packages/runtime/http/src/handler.ts',
+    find: "      negotiateLocale(\n        parseAcceptLanguage(request.headers.get('accept-language') ?? ''),\n        Object.keys(policy.locales),\n        canonicalTag,\n      );",
+    replace:
+      "      (request.headers.get('accept-language') ?? '')\n        .split(',')\n        .map((part) => ({ tag: (part.split(';')[0] ?? '').trim(), q: Number(/q=([0-9.]+)/u.exec(part)?.[1] ?? 1) }))\n        .sort((left, right) => right.q - left.q)\n        .map(({ tag }) => servedLocale(policy, tag))\n        .find((locale) => locale !== undefined) ?? (negotiateLocale.length + parseAcceptLanguage.length < 0 ? undefined : undefined);",
+    caughtBy: 'packages/runtime/test/handler-language-negotiation.test.ts',
   },
 ]);

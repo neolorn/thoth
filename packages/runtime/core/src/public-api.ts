@@ -1,5 +1,6 @@
 /**
- * The Angular-free core: Equator's vocabulary, its locale profiles, and its route classification.
+ * The Angular-free core: Equator's vocabulary, its locale profiles and negotiation, and its route
+ * classification.
  *
  * This entry point exists for an *environment* boundary, which is the second of the three reasons
  * `specs/02-packages-and-platform.spec.md` section 2 allows, rather than the optional-peer reason
@@ -27,6 +28,7 @@
 
 export * from './contracts';
 export * from './routing';
+export * from './locale-negotiation';
 
 export {
   ɵassertStorableCookie,
