@@ -28,7 +28,7 @@ const resolutionOver = (stores: readonly LocalizationPersistenceStore[]) =>
     initialLocale: undefined,
     requestContext: undefined,
     preferredLanguages: undefined,
-    localeUrl: undefined,
+    localeFromAddress: undefined,
     localeSources: undefined,
     defaultLocale: 'en-US',
     localeList: Object.freeze(['en-US', 'ar-EG']),

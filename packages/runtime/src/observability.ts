@@ -252,9 +252,8 @@ function emitLocalizationEvent(
 }
 
 export function createLocalizationEventEmitter(
-  sink: LocalizationObservabilitySink | undefined,
-): LocalizationEventEmitter | undefined {
-  if (sink === undefined) return undefined;
+  sink: LocalizationObservabilitySink,
+): LocalizationEventEmitter {
   const failures = new Map<string, number>();
   return Object.freeze({
     emit: (input: LocalizationEventInput): void => {

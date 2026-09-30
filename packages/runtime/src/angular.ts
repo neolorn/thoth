@@ -19,10 +19,12 @@ import {
   makeStateKey,
   provideAppInitializer,
   type EnvironmentProviders,
+  type Provider,
 } from '@angular/core';
 
 import {
   builtLocalePolicy,
+  localeFromRoute,
   LocalizationError,
   openGraphAlternates,
   openGraphLocale,
@@ -48,12 +50,15 @@ import {
   createLocalizationRuntime,
   emitLocalizationRuntimeEvent,
   localizationTransferSnapshot,
+  type LocaleFromAddress,
   type LocalizationCommitHook,
   type LocalizationLocaleSource,
   type LocalizationRuntimeOptions,
 } from './localization';
 import {
   RUNTIME_EVENT_CODES,
+  createLocalizationEventEmitter,
+  type LocalizationEventEmitter,
   type LocalizationObservabilitySink,
 } from './observability';
 import {
@@ -280,6 +285,10 @@ export interface RoutingOptions {
 
 interface RoutingFeature extends LocalizationFeature<'routing'> {
   readonly options: RoutingOptions;
+  // Carried by the feature rather than written into `provideLocalizationSetup`, so the policy
+  // narrowing, the projection check and route resolution are reachable only from
+  // `withRouting()`, and an application that does not call it does not ship them.
+  readonly ɵproviders: (setup: LocalizationSetup) => readonly Provider[];
 }
 
 interface ExtensionsFeature extends LocalizationFeature<'extensions'> {
@@ -330,6 +339,9 @@ interface OverlayLocaleFeature extends LocalizationFeature<'overlay-locale'> {
 
 interface ObservabilityFeature extends LocalizationFeature<'observability'> {
   readonly sink: LocalizationObservabilitySink;
+  // Built by the feature, so the code that shapes and bounds events is reachable only from
+  // `withObservability()`.
+  readonly ɵemitter: () => LocalizationEventEmitter;
 }
 
 /**
@@ -635,10 +647,76 @@ export function withRouting(
       message: 'withRouting() requires a locale URL policy.',
     });
   }
+  const frozen = Object.freeze({ ...options });
   return freezeFeature<RoutingFeature>({
     ɵkind: 'routing',
-    options: Object.freeze({ ...options }),
+    options: frozen,
+    ɵproviders: (setup) => routingProviders(frozen, setup),
   });
+}
+
+/**
+ * The locale an address states, read by the `url` locale source.
+ *
+ * Not exported: it is how `withRouting()` hands the runtime a reader without the runtime importing
+ * route resolution, and `LOCALE_URL_POLICY` is the public statement of the same policy.
+ */
+const LOCALE_FROM_ADDRESS = new InjectionToken<LocaleFromAddress>(
+  'LOCALE_FROM_ADDRESS',
+);
+
+/** What `withRouting()` provides, refused here when its projection is not this owner's. */
+function routingProviders(
+  options: RoutingOptions,
+  setup: LocalizationSetup,
+): readonly Provider[] {
+  if (setup.routeProjection === undefined) {
+    throw new LocalizationError({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      message:
+        'withRouting() requires a generated route projection. Regenerate this owner so that provideLocalization() carries one.',
+    });
+  }
+  // The two halves have to be the same generated projection, and this says so when they are not.
+  //
+  // `setup.routeProjection` is what the generator emitted for this owner; `options.projection
+  // .generated` is what the consumer built their codecs and historical outcomes around. It is
+  // worth asking: a projection imported from a stale generated file, or from another owner in the
+  // same workspace, produces route ids that resolve against nothing, and the symptom is routes
+  // silently failing to localize rather than an error.
+  if (
+    options.projection.generated.identity !== setup.routeProjection.identity
+  ) {
+    throw new LocalizationError({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      message: `withRouting() was given a route projection generated for something else. This owner generated ${JSON.stringify(setup.routeProjection.identity)} and the projection passed carries ${JSON.stringify(options.projection.generated.identity)}. Regenerate, or pass the projection built from this owner's generated routes.`,
+    });
+  }
+  return [
+    {
+      provide: LOCALE_URL_POLICY,
+      useValue: Object.freeze({
+        // Narrowed here, once, rather than at each place that reads it. What this token provides
+        // is the policy this build can serve: the declared one with any locale the generated
+        // configuration does not list removed from every table. So the resolver, the client route
+        // table and anything a consumer writes against this token address only locales that
+        // exist, without any of them having to remember to ask.
+        policy: builtLocalePolicy(options.policy, setup.configuration),
+        projection: validateRouteProjection(options.projection),
+        configuration: setup.configuration,
+      }),
+    },
+    {
+      provide: LOCALE_FROM_ADDRESS,
+      useFactory: (): LocaleFromAddress => {
+        const { policy, projection } = inject(LOCALE_URL_POLICY);
+        return (requestContext) =>
+          localeFromRoute(requestContext, policy, projection);
+      },
+    },
+  ];
 }
 
 /**
@@ -718,6 +796,7 @@ export function withObservability(
   return freezeFeature<ObservabilityFeature>({
     ɵkind: 'observability',
     sink,
+    ɵemitter: () => createLocalizationEventEmitter(sink),
   });
 }
 
@@ -1783,57 +1862,12 @@ export function provideLocalizationSetup(
     | ExtensionsFeature
     | undefined;
   const routing = oneFeature(features, 'routing') as RoutingFeature | undefined;
-  if (routing !== undefined && setup.routeProjection === undefined) {
-    throw new LocalizationError({
-      code: 'invalid-configuration',
-      outcome: 'operational-failure',
-      message:
-        'withRouting() requires a generated route projection. Regenerate this owner so that provideLocalization() carries one.',
-    });
-  }
-  // The two halves have to be the same generated projection, and this says so when they are not.
-  //
-  // `setup.routeProjection` is what the generator emitted for this owner; `routing.options
-  // .projection.generated` is what the consumer built their codecs and historical outcomes around.
-  // It is worth asking: a projection imported from a stale generated file, or from another owner in
-  // the same workspace, produces route ids that resolve against nothing, and the symptom is routes
-  // silently failing to localize rather than an error.
-  if (
-    routing !== undefined &&
-    setup.routeProjection !== undefined &&
-    routing.options.projection.generated.identity !==
-      setup.routeProjection.identity
-  ) {
-    throw new LocalizationError({
-      code: 'invalid-configuration',
-      outcome: 'operational-failure',
-      message: `withRouting() was given a route projection generated for something else. This owner generated ${JSON.stringify(setup.routeProjection.identity)} and the projection passed carries ${JSON.stringify(routing.options.projection.generated.identity)}. Regenerate, or pass the projection built from this owner's generated routes.`,
-    });
-  }
-  const routeProjection: RouteRuntimeProjection | undefined =
-    routing === undefined ? undefined : routing.options.projection;
+  // Built before anything else, so a projection that is not this owner's is refused here, at
+  // the call, rather than when something first injects what it provides.
+  const routed = routing === undefined ? [] : routing.ɵproviders(setup);
 
   return makeEnvironmentProviders([
-    ...(routing === undefined || routeProjection === undefined
-      ? []
-      : [
-          {
-            provide: LOCALE_URL_POLICY,
-            useValue: Object.freeze({
-              // Narrowed here, once, rather than at each place that reads it. What this token
-              // provides is the policy this build can serve: the declared one with any locale the
-              // generated configuration does not list removed from every table. So the resolver,
-              // the client route table and anything a consumer writes against this token address
-              // only locales that exist, without any of them having to remember to ask.
-              policy: builtLocalePolicy(
-                routing.options.policy,
-                setup.configuration,
-              ),
-              projection: validateRouteProjection(routeProjection),
-              configuration: setup.configuration,
-            }),
-          },
-        ]),
+    ...routed,
     ...(documentLocale === undefined ? [DocumentLocalization] : []),
     LocalizationInteractionRestore,
     {
@@ -1846,6 +1880,9 @@ export function provideLocalizationSetup(
           null,
         );
         const localeUrl = inject(LOCALE_URL_POLICY, { optional: true });
+        const localeFromAddress = inject(LOCALE_FROM_ADDRESS, {
+          optional: true,
+        });
         // A host build writes each locale's address at that locale's origin, and the build's own
         // policy is the one list of those origins that the transfer cannot have edited.
         const transferred = sanitizeTransferSnapshot(
@@ -2039,7 +2076,7 @@ export function provideLocalizationSetup(
             : { transferredParticipants }),
           ...(observability === undefined
             ? {}
-            : { observability: observability.sink }),
+            : { observability: observability.ɵemitter() }),
           ...(clock === undefined ? {} : { clock: clock.clock }),
           ...(relativeTimePolicy === undefined
             ? {}
@@ -2057,7 +2094,7 @@ export function provideLocalizationSetup(
           ...(localeSources === undefined
             ? {}
             : { localeSources: localeSources.sources }),
-          ...(localeUrl === null ? {} : { localeUrl }),
+          ...(localeFromAddress === null ? {} : { localeFromAddress }),
           ...(preferredLanguages.length === 0 ? {} : { preferredLanguages }),
         };
         localization = createLocalizationRuntime(options);

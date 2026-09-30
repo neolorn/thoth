@@ -15,6 +15,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createHostLocalePolicy,
   createLocaleNeutralPolicy,
+  localeFromRoute,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
 } from '@neolorn/equator/core';
@@ -77,10 +78,12 @@ function resolutionIn(environment: Environment) {
     initialLocale: undefined,
     requestContext: undefined,
     preferredLanguages: environment.preferredLanguages,
-    localeUrl: {
-      policy: environment.policy ?? NEUTRAL,
-      projection: PROJECTION,
-    },
+    localeFromAddress: (requestContext) =>
+      localeFromRoute(
+        requestContext,
+        environment.policy ?? NEUTRAL,
+        PROJECTION,
+      ),
     localeSources: environment.sources,
     defaultLocale: 'en-US',
     localeList: Object.freeze(['en-US', 'ar-EG']),

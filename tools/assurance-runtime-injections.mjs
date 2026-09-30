@@ -844,9 +844,9 @@ export const injections = Object.freeze([
     invariant:
       'With no sink configured, no event emitter exists, so no event is built and no clock is read.',
     source: 'packages/runtime/src/localization.ts',
-    find: '    this.observability =\n      options.observability === undefined\n        ? undefined\n        : createLocalizationEventEmitter(options.observability);',
+    find: '    ...(options.observability === undefined\n      ? {}\n      : {\n          observability: createLocalizationEventEmitter(options.observability),\n        }),\n',
     replace:
-      '    this.observability = createLocalizationEventEmitter(\n      options.observability ?? { emit: () => undefined },\n    );',
+      '    observability: createLocalizationEventEmitter(\n      options.observability ?? { emit: () => undefined },\n    ),\n',
   },
   {
     id: 'superseded-write-reported-as-failed',

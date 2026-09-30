@@ -29,6 +29,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 import { withOfflineStoreRemedy } from './offline-store.mjs';
+import { unselectedCapabilitiesIn } from './unselected-capabilities.mjs';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const temporaryRoot = resolve(
@@ -322,6 +323,23 @@ for (const mapPath of maps) {
   const map = JSON.parse(await readFile(resolve(browserRoot, mapPath), 'utf8'));
   assert.ok(Array.isArray(map.sources), `${mapPath} has no source list.`);
 }
+
+// The entry points above are separate modules, so their absence reads off the build's inputs. A
+// capability a feature selects inside the primary entry point is not, and is recognized by its own
+// text instead, as `unselected-capabilities.mjs` describes.
+const browserText = (
+  await Promise.all(
+    outputFiles
+      .filter((path) => path.endsWith('.js'))
+      .map((path) => readFile(resolve(browserRoot, path), 'utf8')),
+  )
+).join('\n');
+assert.ok(browserText.length > 0, 'Minimal consumer emitted no JavaScript.');
+assert.deepEqual(
+  unselectedCapabilitiesIn(browserText),
+  [],
+  'Minimal consumer ships a capability it did not select.',
+);
 
 const publicImport = run(process.execPath, [
   '--input-type=module',

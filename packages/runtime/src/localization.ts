@@ -102,6 +102,7 @@ import {
 } from './runtime-safety';
 import {
   LocaleResolution,
+  type LocaleFromAddress,
   type LocaleUrlResolutionSetup,
   type LocalizationLocaleSource,
 } from './locale-resolution';
@@ -111,7 +112,6 @@ import {
   type LocalizationEventEmitter,
   type LocalizationEventInput,
   type LocalizationObservabilityOptions,
-  type LocalizationObservabilitySink,
 } from './observability';
 import {
   ParticipantCoordinator,
@@ -238,16 +238,22 @@ export interface LocalizationRuntimeOptions {
   readonly claimRoutingCommit?: (steps: RoutingCommitSteps | undefined) => void;
   readonly transferredCatalogs?: readonly unknown[];
   readonly transferredParticipants?: readonly ParticipantTransferRecord[];
-  readonly observability?: LocalizationObservabilitySink;
+  // The emitter rather than the sink, so the runtime reaches no event-building code of its own:
+  // whoever holds a sink builds one, and an application without one ships none.
+  readonly observability?: LocalizationEventEmitter;
   readonly clock?: LocalizationClock;
   readonly relativeTimePolicy?: RelativeTimePolicy;
   readonly persistence?: readonly LocalizationPersistenceStore[];
   readonly localeSources?: readonly LocalizationLocaleSource[];
-  readonly localeUrl?: LocaleUrlResolutionSetup;
+  readonly localeFromAddress?: LocaleFromAddress;
   readonly preferredLanguages?: readonly string[];
 }
 
-export type { LocaleUrlResolutionSetup, LocalizationLocaleSource };
+export type {
+  LocaleFromAddress,
+  LocaleUrlResolutionSetup,
+  LocalizationLocaleSource,
+};
 
 /**
  * The argument list that follows a handle where the inputs may also be a signal of them.
@@ -1054,10 +1060,7 @@ class LocalizationInternal {
     readonly facade: Localization,
     readonly options: LocalizationRuntimeOptions,
   ) {
-    this.observability =
-      options.observability === undefined
-        ? undefined
-        : createLocalizationEventEmitter(options.observability);
+    this.observability = options.observability;
     const configuration = snapshotInertJson(options.setup.configuration, {
       maximumDepth: 32,
       maximumNodes: 250_000,
@@ -1200,7 +1203,7 @@ class LocalizationInternal {
       initialLocale: options.initialLocale,
       requestContext: options.requestContext,
       preferredLanguages: options.preferredLanguages,
-      localeUrl: options.localeUrl,
+      localeFromAddress: options.localeFromAddress,
       localeSources: options.localeSources,
       defaultLocale: this.defaultLocale,
       localeList: this.localeList,
@@ -3356,7 +3359,9 @@ export function createLocalizationContext(
       : { initialRoute: options.initialRoute }),
     ...(options.observability === undefined
       ? {}
-      : { observability: options.observability }),
+      : {
+          observability: createLocalizationEventEmitter(options.observability),
+        }),
   });
 }
 

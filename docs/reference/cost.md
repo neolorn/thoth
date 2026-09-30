@@ -19,11 +19,11 @@ The bytes of each entry point's own module in each build, before compression, as
 
 | Entry point                | Minimal consumer, initial | Minimal consumer, lazy | Minimal consumer, server | Full consumer, initial | Full consumer, lazy | Full consumer, server |
 | -------------------------- | ------------------------: | ---------------------: | -----------------------: | ---------------------: | ------------------: | --------------------: |
-| `@neolorn/equator`         |                   207,302 |                      0 |                        0 |                263,870 |                   0 |               219,634 |
-| `@neolorn/equator/core`    |                    55,902 |                      0 |                        0 |                 65,010 |                   0 |               112,348 |
-| `@neolorn/equator/forms`   |                         0 |                      0 |                        0 |                  4,423 |                   0 |                 3,582 |
+| `@neolorn/equator`         |                   204,462 |                      0 |                        0 |                263,958 |                   0 |               219,730 |
+| `@neolorn/equator/core`    |                    28,847 |                      0 |                        0 |                 65,002 |                   0 |               112,348 |
+| `@neolorn/equator/forms`   |                         0 |                      0 |                        0 |                  4,424 |                   0 |                 3,582 |
 | `@neolorn/equator/http`    |                         0 |                      0 |                        0 |                      0 |                   0 |                 6,191 |
-| `@neolorn/equator/router`  |                         0 |                      0 |                        0 |                 38,586 |                   0 |                31,978 |
+| `@neolorn/equator/router`  |                         0 |                      0 |                        0 |                 38,566 |                   0 |                31,978 |
 | `@neolorn/equator/ssr`     |                         0 |                      0 |                        0 |                      0 |                   0 |                   157 |
 | `@neolorn/equator/testing` |                         0 |                      0 |                        0 |                      0 |                   0 |                     0 |
 
@@ -33,12 +33,12 @@ Everything each build emits, including Angular and the application itself.
 
 | Application      | Part    | Files |     Bytes |    gzip |  Brotli |
 | ---------------- | ------- | ----: | --------: | ------: | ------: |
-| Minimal consumer | initial |     1 |   351,957 | 105,499 |  90,671 |
+| Minimal consumer | initial |     1 |   327,554 |  98,883 |  85,028 |
 | Minimal consumer | lazy    |     4 |     8,758 |   4,299 |   3,521 |
 | Minimal consumer | server  |     0 |         0 |       0 |       0 |
-| Full consumer    | initial |     1 |   704,102 | 201,863 | 169,114 |
-| Full consumer    | lazy    |     6 |    63,192 |  17,529 |  15,344 |
-| Full consumer    | server  |    20 | 1,660,985 | 496,161 | 427,967 |
+| Full consumer    | initial |     1 |   704,100 | 201,916 | 169,082 |
+| Full consumer    | lazy    |     6 |    63,191 |  17,533 |  15,364 |
+| Full consumer    | server  |    20 | 1,661,081 | 496,256 | 428,044 |
 
 ## Generated contracts
 
@@ -46,7 +46,7 @@ The generated code in the initial files, and each lazily loaded catalog: one sco
 
 ### Minimal consumer
 
-Generated code in the initial files: 13,862 bytes.
+Generated code in the initial files: 13,871 bytes.
 
 | Scope | Locale | Bytes |  gzip | Brotli |
 | ----- | ------ | ----: | ----: | -----: |
@@ -57,7 +57,7 @@ Generated code in the initial files: 13,862 bytes.
 
 ### Full consumer
 
-Generated code in the initial files: 50,476 bytes.
+Generated code in the initial files: 50,479 bytes.
 
 | Scope | Locale |  Bytes |  gzip | Brotli |
 | ----- | ------ | -----: | ----: | -----: |
@@ -81,7 +81,7 @@ Each entry point as published, unminified, and each package as installed, source
 
 | Entry point                |   Bytes |    gzip |  Brotli |
 | -------------------------- | ------: | ------: | ------: |
-| `@neolorn/equator`         | 682,601 | 159,746 | 127,160 |
+| `@neolorn/equator`         | 683,351 | 160,032 | 127,408 |
 | `@neolorn/equator/core`    | 229,804 |  65,722 |  53,832 |
 | `@neolorn/equator/forms`   |  18,180 |   5,708 |   4,847 |
 | `@neolorn/equator/http`    |  31,904 |   9,876 |   8,478 |
@@ -91,5 +91,5 @@ Each entry point as published, unminified, and each package as installed, source
 
 | Package                    | Files |     Bytes |
 | -------------------------- | ----: | --------: |
-| `@neolorn/equator`         |    38 | 3,801,810 |
+| `@neolorn/equator`         |    38 | 3,804,777 |
 | `@neolorn/equator-toolkit` |   214 | 3,729,031 |

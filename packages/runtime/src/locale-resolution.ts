@@ -17,7 +17,6 @@
  */
 
 import {
-  localeFromRoute,
   type LocaleUrlPolicy,
   type LocalizationSnapshot,
   type RouteRuntimeProjection,
@@ -73,13 +72,18 @@ export interface LocaleUrlResolutionSetup {
 const DEFAULT_LOCALE_SOURCES: readonly LocalizationLocaleSource[] =
   Object.freeze(['url', 'stored', 'browser', 'default']);
 
+/** The locale an address states, or nothing when it states none. */
+export type LocaleFromAddress = (requestContext: unknown) => string | undefined;
+
 /** Everything locale resolution consults, and nothing else. */
 export interface LocaleResolutionContext {
   readonly persistence: readonly LocalizationPersistenceStore[] | undefined;
   readonly initialLocale: string | undefined;
   readonly requestContext: unknown;
   readonly preferredLanguages: readonly string[] | undefined;
-  readonly localeUrl: LocaleUrlResolutionSetup | undefined;
+  // A function rather than the policy and projection, so this module reaches no route resolution
+  // code: `withRouting()` supplies it, and an application without routing ships none.
+  readonly localeFromAddress: LocaleFromAddress | undefined;
   readonly localeSources: readonly LocalizationLocaleSource[] | undefined;
   readonly defaultLocale: string;
   readonly localeList: readonly string[];
@@ -353,13 +357,9 @@ export class LocaleResolution {
     if (source === 'default') return this.context.defaultLocale;
     if (source === 'stored') return this.readPersistedLocale(signal);
     if (source === 'url') {
-      const setup = this.context.localeUrl;
-      if (setup === undefined) return undefined;
-      const stated = localeFromRoute(
-        requestContext,
-        setup.policy,
-        setup.projection,
-      );
+      const read = this.context.localeFromAddress;
+      if (read === undefined) return undefined;
+      const stated = read(requestContext);
       if (stated === undefined) return undefined;
       // A URL is a statement, not a preference, so an unsupported one is not quietly replaced
       // here; route resolution has already rejected it, and anything that reaches this point is a
