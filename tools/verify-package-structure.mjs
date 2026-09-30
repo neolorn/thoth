@@ -1322,6 +1322,42 @@ const packageSurfaces = [
   },
 ];
 
+// Specification 09 section 14: a release neither ships a font nor fetches one. A font file is
+// looked for among every built file rather than only the ones read as text below, and a font the
+// code would load at run time is looked for in the code, where the file itself never appears.
+// Reading document.fonts to wait for the application's own fonts loads nothing, so only adding or
+// loading a face counts.
+const fontExtensions = new Set([
+  '.eot',
+  '.otf',
+  '.ttc',
+  '.ttf',
+  '.woff',
+  '.woff2',
+]);
+const fontLoading = /@font-face|\bnew FontFace\b|\bfonts\.(?:add|load)\(/u;
+const everyFile = async (root) =>
+  (await readdir(root, { recursive: true, withFileTypes: true }))
+    .filter((entry) => entry.isFile())
+    .map((entry) => resolve(entry.parentPath, entry.name));
+for (const { outputRoot } of packageSurfaces) {
+  for (const path of await everyFile(outputRoot)) {
+    assert.equal(
+      fontExtensions.has(extname(path).toLowerCase()),
+      false,
+      `${path} is a font, and a package ships none`,
+    );
+    if (/\.[cm]?js$/u.test(path)) {
+      const loads = fontLoading.exec(await readFile(path, 'utf8'));
+      assert.equal(
+        loads,
+        null,
+        `${path} loads a font through ${loads?.[0]}, and a package fetches none`,
+      );
+    }
+  }
+}
+
 for (const surface of packageSurfaces) {
   const approvedSourceRoots = await Promise.all(
     surface.sourceRoots.map((root) => realpath(root)),

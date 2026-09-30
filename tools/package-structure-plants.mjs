@@ -6,7 +6,7 @@
  * `verify-stage-self-test.mjs` runs the stage over each one; the normative map names
  * a plant as `plant:verify:packages:<id>`.
  */
-import { rm } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 import { editJson, editText, replaceOnce } from './stage-self-test.mjs';
@@ -165,6 +165,25 @@ export const plants = Object.freeze([
         (text) => `${text}\nconst plantedMarker = '\\u27E6';\n`,
       ),
     refusal: /pseudo-localization marker "\u27e6"/u,
+  },
+  {
+    id: 'runtime-ships-a-font',
+    plant: async (root) => {
+      await mkdir(resolve(root, 'dist/runtime/fonts'), { recursive: true });
+      await writeFile(resolve(root, 'dist/runtime/fonts/plant.woff2'), 'wOF2');
+    },
+    refusal: /plant\.woff2 is a font/u,
+  },
+  {
+    id: 'runtime-fetches-a-font',
+    plant: (root) =>
+      editText(
+        root,
+        'dist/runtime/fesm2022/neolorn-equator.mjs',
+        (text) =>
+          `${text}\nconst plantedFace = () => new FontFace('Planted', 'url(planted.woff2)');\n`,
+      ),
+    refusal: /neolorn-equator\.mjs loads a font through new FontFace/u,
   },
   {
     id: 'runtime-compiled-in-full',
