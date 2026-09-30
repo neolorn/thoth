@@ -4144,4 +4144,14 @@ export const injections = Object.freeze([
       "  if (context.locale.length < 0) {\n    return unsupported(\n      'Instant formatting requires an explicit deterministic time zone.',",
     caughtBy: 'packages/runtime/test/instant-time-zone.test.ts',
   },
+  {
+    id: 'cancelled-load-failure-left-unobserved',
+    invariant:
+      'A shared load whose caller had already cancelled still has its failure observed, so it never surfaces as an unhandled rejection.',
+    source: 'packages/runtime/src/runtime-safety.ts',
+    find: '    promise.catch(() => undefined);\n',
+    replace: '',
+    caughtBy:
+      'packages/runtime/test/cancelled-load-failure-is-observed.test.ts',
+  },
 ]);

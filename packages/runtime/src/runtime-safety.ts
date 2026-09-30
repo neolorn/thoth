@@ -433,6 +433,9 @@ export function waitForSignal<Value>(
   signal: AbortSignal,
 ): Promise<Value> {
   if (signal.aborted) {
+    // The work may be shared and outlive this caller, and a failure nobody observes ends a Node
+    // process; anyone else waiting on it still receives the failure through their own handler.
+    promise.catch(() => undefined);
     return Promise.reject(
       signal.reason ?? new DOMException('Aborted', 'AbortError'),
     );

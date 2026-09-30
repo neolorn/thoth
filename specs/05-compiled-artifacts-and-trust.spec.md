@@ -195,6 +195,9 @@ Preloading is the same load without a lease. It shares the in-flight request for
 identity and it is cancellable, and a release MUST NOT let it commit a locale or any other
 state.
 
+Because a load is shared, it can outlive every caller that cancelled it. A release MUST still
+observe its failure, and MUST NOT leave it as a rejection nobody handles.
+
 A release defines no network retry, persistent store, offline mode, service-worker cache, or remote
 source discovery, and a release MUST NOT introduce one behind this contract.
 
