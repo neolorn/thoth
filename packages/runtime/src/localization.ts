@@ -249,6 +249,21 @@ export interface LocalizationRuntimeOptions {
 export type { LocaleUrlResolutionSetup, LocalizationLocaleSource };
 
 /**
+ * The argument list that follows a handle where the inputs may also be a signal of them.
+ *
+ * The same requiredness as `MessageInputArguments`, so a signal of a message needing inputs cannot
+ * be made without them any more than the text can.
+ */
+type MessageInputSignalArguments<Handle> =
+  MessageInputArguments<Handle> extends readonly [inputs: infer Inputs]
+    ? readonly [inputs: Inputs | Signal<Inputs>]
+    : readonly [
+        inputs?:
+          | MessageInputArguments<Handle>[0]
+          | Signal<MessageInputArguments<Handle>[0]>,
+      ];
+
+/**
  * The one thing an application injects: what locale is committed, and everything read in it.
  *
  * Every member reads the committed snapshot rather than taking a locale, so a component asks for
@@ -515,9 +530,7 @@ export abstract class Localization {
     Handle extends MessageHandle & { readonly resultKind: 'plain' },
   >(
     handle: Handle,
-    inputs?:
-      | MessageInputArguments<Handle>[0]
-      | Signal<MessageInputArguments<Handle>[0]>,
+    ...inputs: MessageInputSignalArguments<Handle>
   ): Signal<string>;
   /**
    * Resolves a structured message into its parts, for a sentence with markup inside it.
@@ -534,9 +547,7 @@ export abstract class Localization {
     Handle extends MessageHandle & { readonly resultKind: 'structured' },
   >(
     handle: Handle,
-    inputs?:
-      | MessageInputArguments<Handle>[0]
-      | Signal<MessageInputArguments<Handle>[0]>,
+    ...inputs: MessageInputSignalArguments<Handle>
   ): Signal<LocalizedParts>;
   /** Writes a decimal in the committed locale, with its numbering system and conventions. */
   abstract formatNumber(
@@ -3057,9 +3068,7 @@ class RuntimeLocalization implements Localization {
 
   textSignal<Handle extends MessageHandle & { readonly resultKind: 'plain' }>(
     handle: Handle,
-    inputs?:
-      | MessageInputArguments<Handle>[0]
-      | Signal<MessageInputArguments<Handle>[0]>,
+    ...[inputs]: MessageInputSignalArguments<Handle>
   ): Signal<string> {
     const inputKey =
       (typeof inputs === 'object' && inputs !== null) ||
@@ -3097,9 +3106,7 @@ class RuntimeLocalization implements Localization {
     Handle extends MessageHandle & { readonly resultKind: 'structured' },
   >(
     handle: Handle,
-    inputs?:
-      | MessageInputArguments<Handle>[0]
-      | Signal<MessageInputArguments<Handle>[0]>,
+    ...[inputs]: MessageInputSignalArguments<Handle>
   ): Signal<LocalizedParts> {
     const inputKey =
       (typeof inputs === 'object' && inputs !== null) ||

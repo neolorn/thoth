@@ -43,6 +43,14 @@ const structuredAsPlain: PlainMessageHandle = messages.learnMore;
 // EXPECT: Expected 2 arguments, but got 3
 localization.text(messages.welcome, { name: 'Equator' }, 'Welcome back');
 
+// A signal of a message is evaluated as the message is, so it needs the same inputs, whether they
+// are given as values or as a signal of them.
+// EXPECT: Expected 2 arguments, but got 1
+localization.textSignal(messages.welcome);
+
+// EXPECT: Expected 2 arguments, but got 1
+localization.partsSignal(messages.hostile.rich);
+
 // A handle is what the runtime is passed, and a qualified string spelled to look like one is not
 // accepted in its place.
 // EXPECT: Argument of type 'string' is not assignable to parameter of type

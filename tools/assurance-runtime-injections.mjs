@@ -1889,6 +1889,17 @@ export const injections = Object.freeze([
     caughtWhen: /negative-handle-choice\.negative\.ts did not report/u,
   },
   {
+    id: 'message-signal-without-its-inputs',
+    invariant:
+      'A signal of a message that needs inputs cannot be made without them, given as values or as a signal.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '    ? readonly [inputs: Inputs | Signal<Inputs>]',
+    replace: '    ? readonly [inputs?: Inputs | Signal<Inputs>]',
+    suite: 'verify:consumer',
+    caughtWhen:
+      /negative-message-handle\.negative\.ts did not report "Expected 2 arguments, but got 1" under line (?:48|51)/u,
+  },
+  {
     id: 'scroll-restore-clamped-to-the-range',
     invariant:
       "The inline position restored across a direction change is the captured distance, not one clamped to the document's scroll range read at restore.",
