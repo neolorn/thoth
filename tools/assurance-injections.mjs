@@ -2530,4 +2530,144 @@ export const injections = Object.freeze([
     replace: '      void features;',
     caughtBy: 'packages/toolkit/test/artifact-output.test.ts',
   },
+  {
+    id: 'asset-source-copied',
+    invariant:
+      'A resolved asset carries the very source value the application declared, unread and uncopied.',
+    source: 'packages/runtime/src/assets.ts',
+    find: "        kind: 'language-independent' as const,\n        source: descriptor.source,",
+    replace:
+      "        kind: 'language-independent' as const,\n        source: structuredClone(descriptor.source),",
+    caughtBy: 'packages/runtime/test/asset-source-opaque.test.ts',
+  },
+  {
+    id: 'container-slot-children-dropped-from-projection',
+    invariant:
+      'The text projection of a structured message keeps the children of a container slot, formatted values included.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '            visit(part.children, depth + 1);',
+    replace: '            void depth;',
+    caughtBy: 'packages/runtime/test/rich-text-projection.test.ts',
+  },
+  {
+    id: 'diagnostic-spoofing-control-passed-through',
+    invariant:
+      'A directional override or control character reaching diagnostic text is replaced, so the input a diagnostic reports on cannot reorder what the reader sees.',
+    source: 'packages/toolkit/src/diagnostics.ts',
+    find: "    result += unsafeDiagnosticControl.test(character) ? '\\ufffd' : character;",
+    replace:
+      '    result += unsafeDiagnosticControl.test(character) ? character : character;',
+    caughtBy: 'packages/toolkit/test/bounded-inputs-and-parser-safety.test.ts',
+  },
+  {
+    id: 'extension-shape-left-open',
+    invariant:
+      'A runtime extension descriptor and binding admit exactly the fields their kind declares, so there is no field an extension could use to opt out of the rules.',
+    source: 'packages/runtime/src/runtime-safety.ts',
+    find: '    keys.every((key) => allowed.has(key)) &&',
+    replace: '    keys.length >= 0 &&',
+    caughtBy: 'packages/runtime/test/extension-opt-out.test.ts',
+  },
+  {
+    id: 'isolates-written-into-the-value-part',
+    invariant:
+      'The value a structured part carries is the formatted value alone; the isolates belong to the rendered projection.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '    value: value.text,',
+    replace: '    value: `\\u2067${value.text}\\u2069`,',
+    caughtBy: 'packages/runtime/test/bidi-isolation.test.ts',
+  },
+  {
+    id: 'markup-name-read-as-a-kind',
+    invariant:
+      'A markup name a catalog writes that is not a built-in kind becomes a message-local slot, never a kind looked up by that name.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: "      inherited?.kind ??\n      (builtInSlotKinds.has(name) ? name : 'message-local');",
+    replace: '      inherited?.kind ??\n      name;',
+    caughtBy: 'packages/toolkit/test/no-component-registry.test.ts',
+  },
+  {
+    id: 'neutral-asset-bound-to-the-target-locale',
+    invariant:
+      'An asset declared neutral resolves to the same language-independent representation in every locale, so a locale change has nothing of it to move.',
+    source: 'packages/runtime/src/assets.ts',
+    find: "        kind: 'language-independent' as const,\n        source: descriptor.source,",
+    replace:
+      "        kind: 'locale-bound' as const,\n        source: descriptor.source,\n        supplyingLocale: request.targetLocale,\n        language: languageForLocale(request.targetLocale),\n        direction: directionForLocale(request.targetLocale),",
+    caughtBy: 'packages/runtime/test/neutral-asset-locale.test.ts',
+  },
+  {
+    id: 'seat-answers-its-own-status',
+    invariant:
+      'The server seat answers every address exactly as the request handler a deployment installs does: same status, headers and body.',
+    source: 'packages/runtime/testing/src/server-seat.ts',
+    find: '      status: response.status,',
+    replace: '      status: response.status === 308 ? 301 : response.status,',
+    caughtBy: 'packages/runtime/test/server-seat.test.ts',
+  },
+  {
+    id: 'slot-options-projected-as-text',
+    invariant:
+      'Nothing a catalog writes on a slot reaches the text projection of the message.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '            visit(part.children, depth + 1);',
+    replace:
+      "            append(Object.values(part.options).join(' '));\n            visit(part.children, depth + 1);",
+    caughtBy: 'packages/runtime/test/rich-text-projection.test.ts',
+  },
+  {
+    id: 'structural-key-control-admitted',
+    invariant:
+      'A catalog key carrying an invisible or bidirectional control is refused as such, not only when some other grammar happens to refuse the key.',
+    source: 'packages/toolkit/src/catalog.ts',
+    find: '      if (!isSafeStructuralText(key)) {',
+    replace: '      if (!isSafeStructuralText(key) && false) {',
+    caughtBy: 'packages/toolkit/test/bounded-inputs-and-parser-safety.test.ts',
+  },
+  {
+    id: 'structured-message-trusts-markup',
+    invariant:
+      'No runtime source hands the browser a string to parse as HTML or tells Angular to stop sanitizing one.',
+    source: 'packages/runtime/src/message-template.ts',
+    find: '  protected binding(name: string): TrustedSlotBinding | undefined {',
+    replace:
+      "  protected trustedMarkup(html: string): unknown {\n    const holder = document.createElement('template');\n    holder.innerHTML = html;\n    return holder.content;\n  }\n\n  protected binding(name: string): TrustedSlotBinding | undefined {",
+    caughtBy: 'packages/runtime/test/no-trusted-markup.test.ts',
+  },
+  {
+    id: 'target-drops-a-required-slot',
+    invariant:
+      'A target message that omits a required link or action slot is refused, so a translation cannot take an action away from a reader.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '    if (!source.optional && !targetSlotMap.has(source.name)) {',
+    replace: '    if (false) {',
+    caughtBy: 'packages/toolkit/test/required-slot-in-target.test.ts',
+  },
+  {
+    id: 'unregistered-message-function-admitted',
+    invariant:
+      'A catalog that calls a message function the application never registered is refused when it is parsed.',
+    source: 'packages/toolkit/src/message-format.ts',
+    find: '        !customFunctionNames.has(name),',
+    replace: '        false,',
+    caughtBy: 'packages/toolkit/test/catalog-authority.test.ts',
+  },
+  {
+    id: 'unregistered-slot-kind-admitted',
+    invariant:
+      'A catalog that declares a slot kind the application never registered is refused, so a catalog cannot name trusted rendering code into existence.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: "      kind !== 'message-local' &&",
+    replace: '      false &&',
+    caughtBy: 'packages/toolkit/test/catalog-authority.test.ts',
+  },
+  {
+    id: 'unvalidated-catalog-compiled',
+    invariant:
+      'A catalog set that parsed and failed validation is refused before any artifact is compiled from it.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: "        severity === 'error' && !COMPLETENESS_CODES.has(code),",
+    replace: '        false && !COMPLETENESS_CODES.has(code),',
+    caughtBy: 'packages/toolkit/test/unvalidated-content-not-compiled.test.ts',
+  },
 ]);

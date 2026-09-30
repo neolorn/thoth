@@ -16,7 +16,9 @@ import {
   createLocalizedServerSeat,
 } from '../testing/src/server-seat.js';
 import {
+  createLocaleRequestHandler,
   declarePageOutcome,
+  toWebRequest,
   type LocaleRequestHandlerOptions,
 } from '../http/src/public-api.js';
 import {
@@ -131,6 +133,67 @@ describe('an address answered through the seat', () => {
 
     expect(answered.status).toBe(200);
     expect(answered.headers.get('content-language')).toBe('ar-EG');
+  });
+});
+
+describe('the seat beside the handler a deployment installs', () => {
+  // A seat that answered from its own copy of the rules would agree with the handler on whatever
+  // its tests happened to ask. Asked the same addresses, the two must give the same answer
+  // everywhere, including the addresses the status table treats specially.
+  const addresses: readonly (readonly [
+    string,
+    { readonly method?: string; readonly headers?: Record<string, string> },
+  ])[] = [
+    ['/en-us/second', {}],
+    ['/ar-eg/thani', {}],
+    ['/', {}],
+    ['/', { headers: { 'accept-language': 'ar-EG' } }],
+    ['/second', { headers: { 'accept-language': 'ar-EG' } }],
+    ['/second', { method: 'POST', headers: { 'accept-language': 'ar-EG' } }],
+    ['/en-us/thani', {}],
+    ['/ar-eg/second', {}],
+    ['/en-us/nowhere', {}],
+    ['/fr-fr/second', {}],
+    ['/en-us/%2e%2e/%2e%2e/etc/passwd', {}],
+    ['/en-us/second', { method: 'HEAD' }],
+    ['/en-us/second', { method: 'DELETE' }],
+    ['/assets/main-A1B2C3.js', {}],
+  ];
+
+  it('gives the answer the handler gives, address by address', async () => {
+    const options: LocaleRequestHandlerOptions = {
+      policy: POLICY,
+      projection: PROJECTION,
+      cache: CACHE,
+      cookie: false,
+      render: ({ locale }) =>
+        new Response(documentFor(locale), {
+          headers: { 'content-type': 'text/html' },
+        }),
+    };
+    const seat = createLocalizedServerSeat({
+      ...options,
+      origin: 'https://site.example',
+    });
+    const handler = createLocaleRequestHandler(options);
+    const statuses = new Set<number>();
+
+    for (const [target, init] of addresses) {
+      const answered = await seat.request(target, init);
+      const direct = await handler(
+        toWebRequest(
+          { method: init.method, url: target, headers: init.headers ?? {} },
+          'https://site.example',
+        ),
+      );
+      const label = `${init.method ?? 'GET'} ${target}`;
+      expect(answered.status, label).toBe(direct.status);
+      expect([...answered.headers], label).toEqual([...direct.headers]);
+      expect(answered.body, label).toBe(await direct.text());
+      statuses.add(direct.status);
+    }
+    // The table reaches past the ordinary answers, or agreeing on it would say little.
+    expect(statuses.size).toBeGreaterThanOrEqual(4);
   });
 });
 

@@ -338,6 +338,24 @@ describe('MF2 Default Bidi Strategy', () => {
     const text = render('Hello {$name :string}.', NAME, { name: '' });
     expect(text).toBe('Hello .');
   });
+
+  /**
+   * Isolation belongs to rendered output, `specs/09-safe-content-and-ux.spec.md` section 8. The
+   * value a part carries is what a consumer compares, stores and sends back, so the controls the
+   * projection adds around it stay out of it, in the one case where the projection is sure to add
+   * them.
+   */
+  it('keeps the isolates out of the value a part carries', () => {
+    const result = evaluateParts(
+      'مرحبا {$name :string}.',
+      NAME,
+      { name: 'Ada' },
+      'ar-EG',
+    );
+    expect(result.text).toBe(`مرحبا ${RLI}Ada${PDI}.`);
+    const value = result.value.find((part) => part.kind === 'value');
+    expect(value?.value).toBe('Ada');
+  });
 });
 
 describe('MF2 u:dir and u:id', () => {

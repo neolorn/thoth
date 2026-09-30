@@ -35,15 +35,20 @@ function catalog(
 
 describe('bounded authored inputs', () => {
   it('bounds diagnostic count, text, path depth, and spoofing controls', () => {
+    // The override sits inside the summary ceiling, so it is the replacement that keeps it out of
+    // the text rather than the truncation.
     const diagnostic = toolkitDiagnostic(
       'EQ1701',
-      `${'x'.repeat(3_000)}\u202e`,
+      `Order \u202e12345 shipped ${'x'.repeat(3_000)}`,
       { path: Array.from({ length: 100 }, (_, index) => `segment-${index}`) },
     );
     expect([...diagnostic.summary]).toHaveLength(
       RESOURCE_LIMITS.diagnosticSummaryCharacters,
     );
     expect(diagnostic.summary).not.toContain('\u202e');
+    expect(diagnostic.summary.startsWith('Order \ufffd12345 shipped ')).toBe(
+      true,
+    );
     expect(diagnostic.path).toHaveLength(
       RESOURCE_LIMITS.diagnosticPathSegments,
     );
@@ -124,6 +129,14 @@ describe('bounded authored inputs', () => {
       sourceOptions,
     );
     expect(structural.ok).toBe(false);
+    // The identifier grammar refuses this key as well, so the refusal asserted is the one that
+    // names the control.
+    expect(structural.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'EQ1101',
+        summary: expect.stringContaining('invisible or bidi controls'),
+      }),
+    );
     const noncharacter = parseCatalog(
       'messages:\n  title: "Unsafe \ufdd0"\n',
       sourceOptions,
