@@ -173,6 +173,27 @@ export const stageSelfTests = Object.freeze({
           /message-format-tests-48\.2 manifest hashes to [0-9a-f]+, the lock says/u,
       },
       {
+        id: 'vendored-notice-edited',
+        plant: (root) =>
+          editText(
+            root,
+            'standards/data/cldr-person-names-48.2.0/LICENSE',
+            (text) => `${text}%%\n`,
+          ),
+        refusal:
+          /its notice data\/cldr-person-names-48\.2\.0\/LICENSE is \d+ bytes, the lock says/u,
+      },
+      {
+        id: 'vendored-source-records-no-notice',
+        plant: plantText(
+          'standards/sources.lock.json',
+          ',\n        "noticeNotRequired": "IANA and the IETF place the protocol registries under the CC0 1.0 dedication, which asks for no notice on copies."',
+          '',
+        ),
+        refusal:
+          /its license records neither a noticeFile nor a noticeNotRequired reason/u,
+      },
+      {
         id: 'unrecorded-data-file',
         plant: (root) =>
           writeFile(resolve(root, 'standards/data/unrecorded.txt'), 'planted'),
