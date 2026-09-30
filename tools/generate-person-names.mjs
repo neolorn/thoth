@@ -272,8 +272,8 @@ const source = [
  * same way `provideLocalizationSetup` can be called with a hand-assembled setup. Something has to
  * answer when no generated profile set was threaded through, and the two honest options are to
  * fail or to fall back to root. Root is real published data covering every field, modifier and
- * usage; the alternative Equator shipped before this was a hand-written field order, which is the
- * thing this step exists to remove. It is one profile, so pay-for-what-you-use survives it.
+ * usage; the other way to answer is a hand-written field order, which is what deriving from CLDR
+ * avoids. It is one profile, so pay-for-what-you-use survives it.
  */
 const rootSource = [
   '/** Generated from cldr-person-names-full 48.2.0 by tools/generate-person-names.mjs. */',

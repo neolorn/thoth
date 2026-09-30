@@ -9,8 +9,8 @@
  * reason. Beyond those, the words of a list kept outside the repository are refused when one is
  * configured, as `LISTED_WORDS_VARIABLE` below describes.
  *
- * The stage exists so the sweep that removed this residue is measured rather than asserted, and
- * it stays afterwards so the residue cannot come back one comment at a time.
+ * The stage measures that the residue is absent rather than asserting it, so the residue cannot
+ * come back one comment at a time.
  *
  * ## What is scanned
  *
@@ -542,9 +542,8 @@ function record(category, where, line, text, source) {
  * A comment's line wrap, folded away.
  *
  * The scan below reads one line at a time, and a reference split by a wrap matches neither
- * half. That is not hypothetical: of the fifty-seven numbered rule references the pattern
- * above was written for, two were written that way, so a line scan alone would have reported
- * fifty-five and read as clean.
+ * half. A wrapped reference is an ordinary way to write one, and a line scan alone misses it and
+ * reads as clean.
  */
 const CONTINUATION_LEADER = /^\s*(?:\*|\/\/|#)?\s*/u;
 

@@ -3,11 +3,9 @@
  *
  * The consumer stages install with `--offline --frozen-lockfile`, on purpose: a floating transitive
  * publishing upstream must not be able to change what a gate run means. That determinism has a
- * precondition nobody wrote down, the store must already hold every package those lockfiles name,
- * and on this repository's own machines it was satisfied by accident, because
- * `refresh:consumer-locks` had left the packages behind at some point and nothing evicted them.
+ * precondition: the store must already hold every package those lockfiles name.
  *
- * The first machine that had never run that command failed five stages. `pnpm install` at the
+ * A machine that has never run `refresh:consumer-locks` does not meet it, and `pnpm install` at the
  * workspace root does not help: the workspace resolves `fast-uri@3.1.3` and the consumers resolve
  * `3.1.5`, so a warm workspace store is a cold consumer store, and the error a run gets is
  * `ERR_PNPM_NO_OFFLINE_TARBALL` from inside a stage rather than a missing precondition named up
@@ -20,8 +18,8 @@
  * The lockfiles are found rather than listed. Every committed `pnpm-lock.yaml` under `fixtures/` is
  * one a consumer stage installs from, and a fixture added later is covered the day it lands.
  *
- * What this reports is what it imported, read back off disk, not what the lockfiles asked for. The
- * first version of this file reported the second, and was a no-op for two runs while saying so.
+ * What this reports is what it imported, read back off disk, not what the lockfiles asked for. A
+ * report of what the lockfiles asked for reads the same whether or not anything was imported.
  */
 
 import assert from 'node:assert/strict';

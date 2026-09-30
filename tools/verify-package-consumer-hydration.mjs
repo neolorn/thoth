@@ -173,23 +173,21 @@ function prerenderedRouteViews(deployment) {
 // The consumer's server bundle calls Angular's `attachNodeGlobalErrorHandlers`, which registers
 // `uncaughtException` and `unhandledRejection` listeners that write to `console.error` and return.
 // Node suppresses its own default (print the error, exit non-zero) as soon as any listener is
-// registered for those events. So from the line above onwards, every error that escaped was
-// printed in full and the process exited 0: an assertion outside the `try` further down, a throw
-// inside the static file server's request handler, a promise nobody awaited. This gate reported
-// PASS for two complete pipelines over a consumer build it should have rejected, and the pass was
-// indistinguishable from a real one.
+// registered for those events. So from the line above onwards, without listeners of this file's
+// own, every error that escapes is printed in full and the process exits 0: an assertion outside
+// the `try` further down, a throw inside the static file server's request handler, a promise nobody
+// awaited. The pass that follows is indistinguishable from a real one.
 //
-// Note what the fix cannot be. Moving the assertions inside a `try` would cover the assertions and
-// not the callbacks, and the next `createServer` handler or page listener would be outside it
-// again. The property that has to hold is narrower and stronger than any block boundary: an error
-// this file did not choose to handle ends the process non-zero. Listeners run in registration
-// order and none can cancel another, so these run after Angular's: the message is printed twice,
-// once by each, and then the process ends the way it always should have.
-// `fetch` reports every network failure as a bare `TypeError: fetch failed` and puts the reason
-// (a refused connection and the port it was refused on, a socket hang up, a DNS failure) in
-// `cause`. Printing the top error alone turns a specific failure into a sentence that identifies
-// nothing, which is the same shape of non-answer the bounds in this file exist to remove. One run
-// reported exactly that and could not be diagnosed from its own log.
+// Note what this cannot be replaced by. Moving the assertions inside a `try` would cover the
+// assertions and not the callbacks, and the next `createServer` handler or page listener would be
+// outside it again. The property that has to hold is narrower and stronger than any block boundary:
+// an error this file did not choose to handle ends the process non-zero. Listeners run in
+// registration order and none can cancel another, so these run after Angular's: the message is
+// printed twice, once by each, and then the process ends non-zero. `fetch` reports every network
+// failure as a bare `TypeError: fetch failed` and puts the reason (a refused connection and the
+// port it was refused on, a socket hang up, a DNS failure) in `cause`. Printing the top error alone
+// turns a specific failure into a sentence that identifies nothing, which is the same shape of
+// non-answer the bounds in this file exist to remove.
 const describeError = (error) => {
   const parts = [];
   let current = error;
@@ -265,22 +263,17 @@ assert.ok(
 );
 // What the row is doing right now, kept so the stage bound can report it.
 //
-// The Firefox row's bound has tripped three times and reported the stage name and nothing else:
-// no console error, no page error, no request failure, because there were none. The stage
-// simply did not finish. A bound that counts occurrences and cannot describe one is a tally rather
-// than an instrument, and the passing durations (5258-5929ms against 120000ms) rule out its being
-// the bound's own fault. So the row now carries a rolling account of what it last did and what it
-// is still waiting for, and the watchdog prints it.
-// Playwright bounds a call when its own signature carries a timeout: navigations, locator actions,
-// the explicit waits. Everything else is unbounded by construction: `page.evaluate`,
-// `elementHandle.evaluate`, `context.newPage`, and `page.close`, whose 1.61.1 signature takes
-// `reason` and `runBeforeUnload` and nothing else, so `setDefaultTimeout` cannot reach it.
+// A stage can overrun with no console error, no page error and no request failure to report, and a
+// bound that then reports only the stage name is a tally rather than an instrument. So the row
+// carries a rolling account of what it last did and what it is still waiting for, and the watchdog
+// prints it. Playwright bounds a call when its own signature carries a timeout: navigations,
+// locator actions, the explicit waits. Everything else is unbounded by construction:
+// `page.evaluate`, `elementHandle.evaluate`, `context.newPage`, and `page.close`, whose 1.61.1
+// signature takes `reason` and `runBeforeUnload` and nothing else, so `setDefaultTimeout` cannot
+// reach it.
 //
-// A first version of this bounded `page.evaluate` and `page.evaluateHandle` on a hypothesis, and the
-// next occurrence disproved it: the stage bound tripped at 120s on `verifyRenderingModes` while the
-// evaluate bound stayed silent, which means the wait was in none of them. Enumerating the methods
-// that lack a timeout is the same mistake one layer down: the list is wrong the first time anyone
-// calls a method nobody thought of.
+// Bounding a chosen list of methods leaves every other method unbounded: the list is wrong the
+// first time anyone calls a method nobody thought of.
 //
 // So the rule is over the API rather than over the sites noticed so far: wrap every method, and race
 // only what comes back as a thenable. A call that carries its own timeout reaches Playwright's bound
@@ -570,21 +563,19 @@ async function serveBrowserAsset(request, response, browserRoot) {
   // states in `specs/07-routing-rendering-and-seo.spec.md` section 9, met here rather than
   // assumed.
   //
-  // **On 22.1.5 this line was what made a prerendered non-ASCII address reachable at all, and on
-  // 22.1.7 it is not on that path any more.** That version looked its own prerendered assets up
-  // without decoding the request path, so `/ar-eg/articles/%D8%AF...` missed the manifest entry the
-  // same build wrote under the decoded name and fell through to here, and before this line it fell
-  // through to `readFile` on a directory, which is `EISDIR` rather than `ENOENT` and answered 500,
-  // so the address was unreachable through both paths at once. `baf1ca1` decodes before the lookup
-  // (`buildServerAssetPathFromRequest`, `ssr.mjs:1379-1382` on 22.1.7), and re-measured on the bump
-  // the engine now answers that address itself, `200` with `ng-server-context="ssg"`, without
-  // reaching this function.
+  // **An engine that looks its prerendered assets up without decoding the request path reaches this
+  // line for a non-ASCII address.** `/ar-eg/articles/%D8%AF...` then misses the manifest entry the
+  // same build wrote under the decoded name and falls through to here, and without this line to
+  // `readFile` on a directory, which is `EISDIR` rather than `ENOENT` and answers 500.
+  // `@angular/ssr` 22.1.7 decodes before the lookup (`buildServerAssetPathFromRequest`,
+  // `ssr.mjs:1379-1382`) and answers that address itself, `200` with `ng-server-context="ssg"`,
+  // without reaching this function.
   //
   // The line stays, because what it meets is a requirement on the host and not a workaround for a
   // framework defect. A static file server or a CDN serving this build has no engine in front of it
   // and still has to map the directory itself; section 9.1 states that, and this fixture is where it
-  // is measured. What the fix changes is which of the two paths answers first here, not whether the
-  // requirement holds.
+  // is measured. The engine version decides which of the two paths answers first here, not whether
+  // the requirement holds.
   if (extname(assetPath) === '') {
     assetPath = resolve(assetPath, 'index.html');
   }
@@ -1590,11 +1581,10 @@ async function assertKeyboardLocaleAccessibility(page, check) {
   // Two events, one ordered stream, both timed.
   //
   // The assertion below is about the order of two things: the document committing to a locale, and
-  // the announcer publishing a sentence about it. It failed once in five runs on the Angular 22.0.4
-  // row (4.15) and reported only the two values it compared, which says the order was wrong and
-  // nothing about what the order was, how far apart they were, or whether the commit had happened
-  // at all. Both events are observable from this page, so both are recorded here, with
-  // `performance.now()` on each, and the failure prints the sequence.
+  // the announcer publishing a sentence about it. Reporting only the two values compared says the
+  // order was wrong and nothing about what the order was, how far apart the events were, or whether
+  // the commit happened at all. Both events are observable from this page, so both are recorded
+  // here, with `performance.now()` on each, and the failure prints the sequence.
   //
   // `lang` on the document element is watched rather than polled, so the record is of the mutation
   // itself rather than of a sample that happened to catch it.
@@ -1650,12 +1640,9 @@ async function assertKeyboardLocaleAccessibility(page, check) {
    * selection restored to a specific wrong offset was computed wrongly, and waiting for a second
    * component to overwrite it would certify the disagreement.
    *
-   * This one was introduced on the argument that focus is different: that nothing of Equator's runs
-   * between `.focus()` and the read, leaving only the browser's own scheduling. That was wrong.
-   * Equator's interaction restore runs in there, and it was taking focus back from the control the
-   * visitor had just moved to. The wait is what found that: it failed, and it named
-   * `[data-locale-choice="ar-EG"]` as the holder, which is the entire diagnosis. An immediate read would have
-   * said `false`.
+   * Focus is waited for too, because Equator's interaction restore runs between `.focus()` and the
+   * read and can take focus back from the control the visitor just moved to. A failed wait names
+   * the element holding focus, which is the diagnosis; an immediate read says only `false`.
    *
    * So the reason to keep it is not that focus converges. It is that a failure here has to say what
    * holds focus instead, and a bounded wait is what makes room to ask. The bound is short because
@@ -1817,9 +1804,9 @@ async function assertKeyboardLocaleAccessibility(page, check) {
  * **Two horizontal offsets, both returned, because in RTL they are different numbers.** One is
  * `Math.abs(scrollX)`, the other `maximum - Math.abs(scrollX)`. They agree in LTR, where `before`
  * is read, and disagree in RTL, where `after` is read, so a check computing one and printing the
- * other decides on a scale its own failure message does not show. A WebKit failure printed `inline: 84` beside a
- * check comparing 353 against 240, and the three numbers could not be reconciled by anyone reading
- * them. One expression now produces both, and each is named for the edge it is measured from.
+ * other decides on a scale its own failure message does not show. Numbers from two expressions
+ * cannot be reconciled by anyone reading a failure. One expression produces both, and each is named
+ * for the edge it is measured from.
  *
  * In an RTL document `scrollX` is `0` at the inline-start and runs negative to `-maximum` at the
  * inline-end. Measured on a synthetic page with 1720px of real horizontal range, identically on
@@ -1961,11 +1948,11 @@ const RECT_AGAINST_VIEWPORT_SOURCE = `globalThis.__equatorRectAgainstViewport = 
  * A locale control clicked from inside the page, with its position recorded if anything is
  * recording.
  *
- * The click is a script call rather than `locator.click()`, which is deliberate and predates this:
- * a driver click carries actionability checks that move the page, and this row is measuring the
- * page's position. The rect is written where the recorder's own readings are, on the recorder's
- * clock, so the click sits on the same timeline as every scroll, frame and mutation beside it. A
- * row with no recorder installed writes nothing and clicks the same way.
+ * The click is a script call rather than `locator.click()`, deliberately: a driver click carries
+ * actionability checks that move the page, and this row is measuring the page's position. The rect
+ * is written where the recorder's own readings are, on the recorder's clock, so the click sits on
+ * the same timeline as every scroll, frame and mutation beside it. A row with no recorder installed
+ * writes nothing and clicks the same way.
  */
 // Where each locale is an origin of its own, an option is a link to that origin, and the keyboard
 // reaches and follows it as it does any link. The announcement belongs to a switch made in the
@@ -2059,19 +2046,17 @@ const RECORDER_SOURCE = `() => {
   // Who called, and from where. A scroll event says the page moved; it does not say what moved it,
   // and two hypotheses have now died for want of that. Recorded rather than argued.
   //
-  // Empty and off are different readings, and this report has not distinguished them. The wrappers
-  // are behind a switch because installing them changed the failure rate, so in every unattended run
-  // this array is empty because nothing was watching, not because nothing called. Four occurrences
-  // were read as "no call could have moved it" out of an array that could not have held one. It says
-  // which it is now.
+  // Empty and off are different readings, so this report distinguishes them. The wrappers are
+  // behind a switch because installing them changed the failure rate, so in every unattended run
+  // this array is empty because nothing was watching, not because nothing called.
   record.calls = [];
   // Which functions are actually wrapped, rather than whether any are.
   //
-  // The boolean this replaces had two states for three situations. The three window entry points
-  // below are wrapped on every run and the five element-level ones are not, so "the calls array is
-  // empty" now means something different depending on which call you were looking for, and a
-  // reader who cannot see the difference will read a real absence as a switched-off instrument, or
-  // worse, the reverse. The list says exactly what an empty array is evidence about.
+  // A boolean has two states for three situations. The three window entry points below are wrapped
+  // on every run and the five element-level ones are not, so "the calls array is empty" means
+  // something different depending on which call you are looking for, and a reader who cannot see
+  // the difference will read a real absence as a switched-off instrument, or worse, the reverse.
+  // The list says exactly what an empty array is evidence about.
   record.callsWatched = [];
   const note = (api, detail) => {
     record.calls.push({
@@ -2431,12 +2416,10 @@ async function exerciseLocaleContinuity(page, row) {
   });
   // A viewport narrow enough that the page genuinely overflows, restored before returning.
   //
-  // Without it this check was decided by incidental layout width. At the default 1280 the fixture
-  // has around 10px of horizontal range, so `scrollTo(240)` clamps to the maximum, and the old
-  // inverted formula also answered the maximum at rest, so the two errors cancelled and the
-  // assertion passed. When something made the page wider, 240 no longer clamped, the cancellation
-  // stopped, and it failed. That is the whole of why this gate was green some runs and red others,
-  // in whichever stage happened to reach it first.
+  // Without it the check is decided by incidental layout width: at the default 1280 the fixture has
+  // around 10px of horizontal range, so `scrollTo(240)` clamps to the maximum, and an inverted
+  // formula that answers the maximum at rest passes by cancellation. A wider page stops the clamp,
+  // and the check turns red or green with the layout rather than with the restore.
   const priorViewport = page.viewportSize();
   await page.setViewportSize({ width: 420, height: 700 });
   await page.evaluate(RECT_AGAINST_VIEWPORT_SOURCE);
@@ -2498,11 +2481,11 @@ async function exerciseLocaleContinuity(page, row) {
   // A strip cell, specifically, and the check refuses to run on anything else.
   //
   // The rest of this page is one column, so every element under the inline-start edge spans the
-  // whole width and is found there whichever position the restore lands on. Against that fixture
-  // this check passed the design it was written to reject, which is what a fixture too small to
-  // tell two designs apart does. The strip exists to make the
-  // two answers different elements, and requiring a cell here is what stops the check quietly
-  // reverting to vacuous if the strip is ever moved out from under the probe.
+  // whole width and is found there whichever position the restore lands on. Against a fixture like
+  // that this check passes the design it exists to reject, which is what a fixture too small to
+  // tell two designs apart does. The strip exists to make the two answers different elements, and
+  // requiring a cell here is what stops the check quietly reverting to vacuous if the strip is ever
+  // moved out from under the probe.
   assert.ok(
     witness.cell !== null,
     `The viewport's inline-start edge is not over a cell of the inline scroll strip before the commit, so this check cannot tell a correct restore from the mirror-image one. Observed ${JSON.stringify(witness)}`,
@@ -2590,16 +2573,16 @@ async function exerciseLocaleContinuity(page, row) {
   // Polled on an interval rather than on animation frames. Playwright's default is `raf`, which
   // means the predicate is evaluated inside a `requestAnimationFrame` callback and therefore only
   // while the row is producing frames; the installed playwright-core documents the option as
-  // "Defaults to raf". This wait expired twice with its own predicate true at the moment it
-  // expired, which is a gate failing a page that had already done what was asked of it: the
-  // predicate was never the problem, the opportunity to ask it was. An interval is also the cheaper
-  // instrument here: `elementFromPoint` forces layout, and 100ms costs fifty layouts over the five
-  // seconds where frames cost about three hundred. An instrument's own cost cuts both ways.
+  // "Defaults to raf". A wait can expire with its own predicate true at the moment it expires,
+  // which fails a page that has already done what was asked of it: the predicate is not the
+  // problem, the opportunity to ask it is. An interval is also the cheaper instrument here:
+  // `elementFromPoint` forces layout, and 100ms costs fifty layouts over the five seconds where
+  // frames cost about three hundred. An instrument's own cost cuts both ways.
   const settleStartedAt = Date.now();
   // Why it did not succeed, not merely that it did not. A rejected `waitForFunction` and an expired
   // one are different events with different subjects (the first is about the wait, the second
-  // about the page) and folding both into `false` made the failure message assert a timeout it had
-  // not observed.
+  // about the page) and folding both into `false` would make the failure message assert a timeout
+  // it has not observed.
   let settleFailure = null;
   const settled = await page
     .waitForFunction(
@@ -2711,10 +2694,9 @@ async function exerciseLocaleContinuity(page, row) {
       ({ name, value }) => name === 'equator-locale' && value === 'ar-EG',
     )
   ) {
-    // The first WebKit run on Linux failed here, and the message it failed with, five words,
-    // could not tell an engine that declined to store the cookie from a harness reading the wrong
-    // place for it. Both readings are taken now, because they are different findings and only one
-    // of them is about Equator.
+    // Both readings are taken, because a short message cannot tell an engine that declined to store
+    // the cookie from a harness reading the wrong place for it, and only one of those findings is
+    // about Equator.
     const documentCookie = await page
       .evaluate('document.cookie')
       .then((value) => JSON.stringify(value))
@@ -2841,9 +2823,9 @@ async function exerciseLocaleContinuity(page, row) {
  *
  * Everything above passes on Chromium and Firefox without the runtime's scroll hold ever performing
  * a single re-apply, because nothing on those engines moves the page after the restore. The hold is
- * the part of the restore this item exists for, and on two engines out of three no green run has
- * exercised it at all. On the third it fires about one run in five, which is not a test either:
- * it is a coincidence frequent enough to be mistaken for one.
+ * the part of the restore this check exists for, and on two engines out of three no green run has
+ * exercised it at all. On the third it fires about one run in five, which is not a test either: it
+ * is a coincidence frequent enough to be mistaken for one.
  *
  * So the movement is supplied on purpose, on every engine, every run. A one-shot disturbance is
  * armed, the page is committed to Arabic, and the first scroll event arriving once the commit has
@@ -5872,12 +5854,10 @@ async function verifyBrowserRow(row) {
     // rather than writing it. What this asserts is that adoption is not the end of the story: the
     // ordinary update pass runs over the claimed DOM and writes the committed locale into it.
     //
-    // Equator shipped a `LocalizedDeferredContent` directive that cleared the container first, on
-    // the premise that a claimed block would read English inside an Arabic page forever. That
-    // premise is false (measured across eight binding kinds, every one corrected) and the clear was
-    // a no-op besides, because `ViewContainerRef.clear()` iterates live views and a dehydrated view
-    // is not one. The directive is gone; this stage is what actually holds the invariant, and it
-    // held identically before and after the removal.
+    // Clearing the container first is neither needed nor effective: a claimed block does not read
+    // English inside an Arabic page (measured across eight binding kinds, every one corrected), and
+    // `ViewContainerRef.clear()` iterates live views, which a dehydrated view is not. This stage is
+    // what holds the invariant.
     const probe = boundCalls(await context.newPage(), 'page');
     attachBrowserDiagnostics(probe, diagnostics);
     probe.setDefaultTimeout(15_000);
@@ -5932,12 +5912,10 @@ async function verifyBrowserRow(row) {
     // that asked for it.
     //
     // Waited for rather than read once, and the two are not interchangeable. The wait above is on
-    // the *message*, and the count is written by a different pass; reading it immediately afterwards
-    // asked whether the count had already landed, not whether it lands. In measurement the
-    // count is '0' at the first sample and '1' from roughly 50ms onward, stable for the remaining
-    // two seconds, so the read-once form was a coin toss that had been landing heads. It started
-    // landing tails when the Angular-free core became its own entry point and shifted when the
-    // click handler is wired, which changed the timing without changing the behaviour.
+    // the *message*, and the count is written by a different pass; reading it immediately
+    // afterwards asks whether the count has already landed, not whether it lands. The count is '0'
+    // at the first sample and '1' from roughly 50ms onward, stable for the remaining two seconds,
+    // so a single read depends on timing the behaviour does not fix.
     //
     // The failure names the value it actually found, because 'expected 1' on its own cannot tell a
     // lost interaction from one that had not arrived yet, and that distinction is the whole
@@ -6381,18 +6359,15 @@ try {
   // that anything serves it, and this is precisely the address that does not serve itself.
   //
   // The build writes the page at the decoded spelling on disk while the browser asks for it encoded.
-  // `@angular/ssr` 22.1.5 looked it up without decoding, so its key stayed percent-encoded and missed
-  // the asset the same build produced: every ASCII address in this fixture served 200 with
-  // `ng-server-context="ssg"` while the Arabic ones returned 404, with the file on disk at the right
-  // address the whole time. 22.1.7 decodes first (`baf1ca1`, `ssr.mjs:1379-1382`), and re-measured on
-  // the bump this address is served by the engine from its own prerendered file: 200,
-  // `ng-server-context="ssg"`, the fixture's directory fallback never reached.
+  // An `@angular/ssr` that looks it up without decoding keeps its key percent-encoded and misses
+  // the asset the same build produced, leaving the address to the fixture's directory fallback.
+  // 22.1.7 decodes first (`baf1ca1`, `ssr.mjs:1379-1382`) and serves this address from its own
+  // prerendered file: 200, `ng-server-context="ssg"`.
   //
   // The assertion does not move with the version. It says the address serves, in the language it
   // claims, from whichever half of this deployment answers, which is the deployment requirement in
-  // section 9.1 measured rather than written down, and it held on both versions for different
-  // reasons. A check written against the mechanism would have gone green here and told nobody that
-  // the mechanism changed.
+  // section 9.1 measured rather than written down, and it holds whichever half answers. A check
+  // written against the mechanism would stay green when the mechanism changes and tell nobody.
   //
   // Only a policy that writes the Arabic article at an address of its own has that address to ask
   // for.

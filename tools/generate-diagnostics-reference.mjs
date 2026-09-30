@@ -2,10 +2,9 @@
  * The diagnostics reference, written from the union that declares the codes.
  *
  * `specs/10-compiler-and-tooling.spec.md` section 12 says Equator's diagnostic codes are stable and
- * documented, and the second half of that was not true: no `EQ` code appeared anywhere in
- * `specs/`, and codes were built, argued and measured with nothing naming them. A list written
- * into a specification would not have made it true either: a hand-kept list of every code is a
- * second source, and it drifts from the union on the first commit that adds one.
+ * documented, and the second half needs a document naming every code. A hand-kept list, in a
+ * specification or anywhere else, is a second source, and it drifts from the union on the first
+ * commit that adds one.
  *
  * So the reference is derived, the same way `cli-options.generated.ts` is derived from the
  * configuration schema and `locale-profile.generated.ts` from `cldr-core`. The one hand-written

@@ -3,10 +3,9 @@
  *
  * Equator *parses* MessageFormat 2 with the reference implementation, and that half is settled by
  * construction. It **evaluates** with its own code: selection, function resolution, the fallback
- * rules and the bidi strategy are all written here, and until this file existed every case that code
- * had ever passed was also written here, against the same reading of the specification that produced
- * it. A check drawn from the same source as its subject agrees by construction, and agreeing is
- * not the same as being right.
+ * rules and the bidi strategy are all written here, and a case written here is written against the
+ * same reading of the specification that produced that code. A check drawn from the same source as
+ * its subject agrees by construction, and agreeing is not the same as being right.
  *
  * `specs/01-standards-profile.spec.md` section 7 states the requirement this answers: a release is
  * verified against the working group's suite for the edition it pins, run through the built
@@ -192,11 +191,11 @@ const describe = (diagnostics) =>
  * The behaviour is transcribed from the suite's own README, not from what Equator's descriptor
  * fields appear to offer.
  *
- * **Both of the README's options are declared now, and one of them is deliberately only half
- * honoured.** `decimalPlaces` was unspellable until 3.16 gave the descriptor MessageFormat's own
- * `name` production; it is declared, set by six cases, and honoured in formatting, in matching and
- * in the ranking between `'1.0'` and `'1'`. `fails` is declared and its `never` value is the only
- * one Equator can act on: the option asks for a function that fails as a selector but not as a
+ * **Both of the README's options are declared, and one of them is deliberately only half
+ * honoured.** `decimalPlaces` is spellable because the descriptor takes MessageFormat's own `name`
+ * production; it is declared, set by six cases, and honoured in formatting, in matching and in the
+ * ranking between `'1.0'` and `'1'`. `fails` is declared and its `never` value is the only one
+ * Equator can act on: the option asks for a function that fails as a selector but not as a
  * formatter, and Equator refuses for both or neither. That is a position, not a shortfall, and the
  * gap table below carries the reason. Every case that sets `fails` is listed there.
  */
@@ -407,7 +406,7 @@ async function evaluateCase(testCase) {
         // From the graph and the compiled catalog rather than declared empty. A message using a
         // registered function records the descriptor it needs, and the runtime admits the catalog
         // by comparing what it requires against what the configuration declares, so an empty list
-        // here would refuse exactly the cases the registry was added for.
+        // here would refuse exactly the cases the registry exists for.
         extensionDescriptors: Object.freeze([
           ...graph.value.extensionDescriptors,
         ]),
@@ -566,7 +565,7 @@ const excludedFor = (testCase) =>
  * Eight of the sixteen files declare it in `defaultTestProperties`, which is the suite's way of
  * saying "this case must format without reporting anything". Reading it as "no expectation" would
  * have made a case that produced a diagnostic look unjudged, and unjudged is indistinguishable from
- * passing in a count, which is the exact failure this item exists to prevent.
+ * passing in a count, which is the exact failure this suite exists to prevent.
  */
 function judge(testCase, outcome) {
   const errors = testCase.expErrors;
@@ -602,12 +601,11 @@ function judge(testCase, outcome) {
 
 const cases = loadCases();
 
-// The same question again, on the exclusion list rather than on the loader. The list is now ten
-// named ids instead of a substring match, so the way it can go wrong has changed: an id that
-// names no case
-// excludes nothing and reads as a clean run, and a gap key nothing points at reads as coverage of a
-// limit this file stopped measuring. Both are checked, and so is the suite-side count that decides
-// how many cases the extension registration was supposed to recover.
+// The same question again, on the exclusion list rather than on the loader. The list is named ids
+// rather than a substring match, and it goes wrong this way: an id that names no case excludes
+// nothing and reads as a clean run, and a gap key nothing points at reads as coverage of a limit
+// this file stopped measuring. Both are checked, and so is the suite-side count that decides how
+// many cases the extension registration was supposed to recover.
 {
   const ids = new Set(cases.map(({ file, index }) => `${file}#${index}`));
   const unmatched = Object.keys(UNRUNNABLE_CASES).filter((id) => !ids.has(id));

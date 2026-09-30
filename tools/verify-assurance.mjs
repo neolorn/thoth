@@ -2,10 +2,9 @@
  * Does the suite still fail when it should?
  *
  * A test that cannot fail is worse than an absent one: it reports a guarantee nobody is holding.
- * One was found here: the fixture built to prove Equator honors a consumer's `paths` and strictness
- * kept passing when every one of those behaviors was removed, because it asserted on an outcome
- * flag and one severity while the regressions reported through another channel. The finding is not
- * that one assertion was wrong. It is that nothing was checking whether the checks work.
+ * A test that asserts on an outcome flag and one severity keeps passing when the behavior it names
+ * is removed, if the regression reports through another channel, and nothing in a passing run shows
+ * it. What is missing in that case is a check that the checks work.
  *
  * So this gate removes a behavior and requires the named test to notice. Each entry names the
  * invariant in its own words, so a failure here says what stopped being guarded rather than only

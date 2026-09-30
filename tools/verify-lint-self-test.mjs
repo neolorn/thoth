@@ -11,14 +11,13 @@ import { fileURLToPath } from 'node:url';
  * nothing, or whose type-aware rules silently degraded because the program it was pointed at did not
  * load the file. All three of those are configuration, all three are quiet, and none of them is
  * visible in a passing run, which is the same argument `verify-browser-assurance-self-test.mjs`
- * makes about a gate that had never been seen to fail and could not.
+ * makes: a gate nobody has seen fail is indistinguishable from one that cannot.
  *
- * The two reasons are the ones the stage was asked for. A floating promise is what the compiler
- * cannot see with every strictness flag Equator already sets, and it needs types to detect at all,
- * so a run that reports it proves the rule is on *and* that the TypeScript program reached the
- * file. An import cycle is the other half: no compiler flag reports one, it is a property of the
- * module graph rather than of any file, and the module resolver has to be working for the graph to
- * exist.
+ * A floating promise is what the compiler cannot see with every strictness flag Equator already
+ * sets, and it needs types to detect at all, so a run that reports it proves the rule is on *and*
+ * that the TypeScript program reached the file. An import cycle is the other half: no compiler flag
+ * reports one, it is a property of the module graph rather than of any file, and the module
+ * resolver has to be working for the graph to exist.
  *
  * It seeds real files in the real source tree and runs the real `lint` script, because a fixture
  * project with its own configuration would prove that fixture's rules are on. The stage runs in a

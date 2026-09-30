@@ -176,10 +176,10 @@ const declared = Object.freeze([
     ],
   },
   { id: 'verify:person-names', reads: ['source:packages'] },
-  // The two suites run at the same time, which is what made their shared vitest results cache worth
-  // finding: both hashed the empty project name and overwrote each other's record. Each now has its
-  // own `cacheDir`, so the artefacts below are genuinely separate rather than separated by schedule.
-  // `source:tools` because a test that claims a capability imports the claim from there.
+  // The two suites run at the same time, and with a shared vitest results cache both would hash the
+  // empty project name and overwrite each other's record. Each has its own `cacheDir`, so the
+  // artefacts below are genuinely separate rather than separated by schedule. `source:tools`
+  // because a test that claims a capability imports the claim from there.
   {
     id: 'test:toolkit',
     processors: 4,
@@ -201,13 +201,13 @@ const declared = Object.freeze([
     claims: true,
   },
   // The stages that mutate tracked source in place and restore it. Each gets a tree of its own, so
-  // the mutation has no reader to be protected from and the barrier these stages used to be is not
-  // there to derive: they still write `source:packages`, but not the copy anything else
-  // is reading. Restoring on the way out, including when it throws, remains the stage's own contract
-  // and is checked there rather than here: a private tree makes a failure to restore harmless to
-  // everyone else, which is not the same as making it correct.
-  // Plants a real injection, an inert one, one whose module cannot load and one naming a test that
-  // does not exist, and requires the runner to tell a catch from the three that only exit like one.
+  // the mutation has no reader to be protected from and no barrier is derived for it: they still
+  // write `source:packages`, but not the copy anything else is reading. Restoring on the way out,
+  // including when it throws, remains the stage's own contract and is checked there rather than
+  // here: a private tree makes a failure to restore harmless to everyone else, which is not the
+  // same as making it correct. Plants a real injection, an inert one, one whose module cannot load
+  // and one naming a test that does not exist, and requires the runner to tell a catch from the
+  // three that only exit like one.
   {
     id: 'verify:assurance:self-test',
     processors: 4,
@@ -252,9 +252,8 @@ const declared = Object.freeze([
       },
     ],
   },
-  // What gets published is a tarball, and until this existed nothing in the pipeline ever looked at
-  // one. A release went out with a type declaration containing the runtime module's JavaScript while
-  // the build output on disk was correct throughout.
+  // What gets published is a tarball, and the tarball can be wrong while the build output on disk
+  // is correct: a type declaration can carry the runtime module's JavaScript.
   {
     id: 'verify:tarballs',
     reads: ['dist:runtime', 'dist:toolkit'],
@@ -468,8 +467,7 @@ const declared = Object.freeze([
     claims: true,
   })),
   // Edits the materialized consumer in place and restores it, asserting the restore was exact. It
-  // declares the write, so everything that reads that tree is ordered around it, which under the
-  // list was true only because it happened to be written here.
+  // declares the write, so everything that reads that tree is ordered around it.
   {
     id: 'verify:edit-cost',
     processors: 4,

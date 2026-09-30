@@ -85,10 +85,9 @@ const CORPUS = Object.freeze([
  *
  * Equator keeps source in five places, not one: `packages/runtime/src` plus the secondary entry
  * points beside it (`router`, `forms`, `testing`) and `packages/toolkit/src`. A scan aimed at
- * one of them finds nothing in the other four and reports that as nothing existing. That is not a
- * hypothetical: a grep scoped to `packages/runtime/src/*.ts` returned empty for two
- * symbols that were alive six hundred lines into `packages/runtime/router/src/public-api.ts`, and
- * the empty result was read as evidence they had been deleted.
+ * one of them finds nothing in the other four and reports that as nothing existing. A scan scoped
+ * to `packages/runtime/src/*.ts` does not see `packages/runtime/router/src/public-api.ts`, and
+ * reports the symbols declared there as absent.
  *
  * The general rule, which is what makes this worth enforcing rather than remembering: **an empty
  * result is the output of an instrument nobody calibrated.** A wrong root, a mistyped pattern and
@@ -142,17 +141,16 @@ assert.deepEqual(
 /**
  * Source with its comments removed, because a name written in prose is not a use of it.
  *
- * Both halves of this gate were counting documentation as evidence, and both were wrong the same
- * way. On the declaration side, the occurrence count that decides `structural` read the whole
- * `.d.ts`, so a doc comment naming a sibling export counted as that sibling being used: documenting
- * six toolkit exports moved two of them out of `candidate`, and the gate failed them as "no longer
- * unreferenced" when nothing had begun to reference them. On the corpus side, the same thing is
+ * Without this, both halves of the gate count documentation as evidence. On the declaration side,
+ * an occurrence count over the whole `.d.ts` reads a doc comment naming a sibling export as that
+ * sibling being used, so documenting one export can move another out of `candidate` and fail it as
+ * "no longer unreferenced" when nothing references it. On the corpus side, the same thing is
  * reachable by accident and worse: a baselined candidate would silently resolve the day anyone
  * wrote its name in a comment in `tools/`, a fixture or a test, which is a thing people do when
  * they are explaining why an export exists.
  *
- * The perverse part is the direction of it. Writing down what an export is for made the gate stop
- * tracking it, so it punished exactly the work it should have been indifferent to.
+ * The perverse part is the direction of it: writing down what an export is for would make the gate
+ * stop tracking it, punishing exactly the work it should be indifferent to.
  *
  * Only block comments and whole-line `//` comments go. A `//` inside a string is ordinary in both
  * source and a `.d.ts` (`'https://...'`), and taking the rest of that line would corrupt a real
@@ -456,9 +454,9 @@ assert.notEqual(
   undefined,
   'Control failed: formatNumberRange is published, so a trace that cannot find it is broken.',
 );
-// The case the occurrence proxy got wrong, kept as a control on the walk that replaced it.
-// `LabelAttribute` is written twice in the shipped declarations and is the type of the attribute
-// the label directive binds, so a walk that cannot see it has stopped resolving.
+// A control on the walk, on a name an occurrence count misclassifies. `LabelAttribute` is written
+// twice in the shipped declarations and is the type of the attribute the label directive binds, so
+// a walk that cannot see it has stopped resolving.
 assert.equal(
   statusOf('LabelAttribute'),
   'structural',

@@ -2,12 +2,12 @@
  * Which published names does a consumer arrive at by following the surface from something it holds?
  *
  * The question `verify-export-surface.mjs` asks about a type is whether a consumer has to be able
- * to name it. Occurrence counting answered that with a proxy: a name written more than twice across
+ * to name it. Occurrence counting answers that with a proxy: a name written more than twice across
  * the shipped declarations was called structural, on the argument that the third mention must be
  * another export's signature. The proxy is wrong in both directions. Two exports that only name
  * each other pass it together, and a type held once, in the one signature that matters, fails it:
- * `LabelAttribute` is the type of the attribute a consumer binds on the label directive, and it sat
- * in the accepted baseline for months because it is written exactly twice.
+ * `LabelAttribute` is the type of the attribute a consumer binds on the label directive, and an
+ * occurrence count reads it as used because it is written exactly twice.
  *
  * So the reference is resolved rather than counted. Start from the exports something outside the
  * packages actually names, walk each declaration through the checker, and enqueue every symbol its

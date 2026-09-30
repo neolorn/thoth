@@ -6,18 +6,17 @@
  * from, or verifies itself against, is recorded with its release, its provenance, its role and a
  * digest, and a vendored one matches that digest byte for byte.
  *
- * The lock recorded digests before this existed, and nothing recomputed them. A digest nobody
- * checks is a record of what was true once, not a guarantee about the working copy, and the
- * failure it is supposed to catch is silent by construction: a vendored file edited by hand, a
- * partial download, a `.gitattributes` gap normalizing line endings on the way into the object
- * store. All three produce a tree that builds and tests green.
+ * A digest nobody checks is a record of what was true once, not a guarantee about the working
+ * copy, and the failure it is supposed to catch is silent by construction: a vendored file edited
+ * by hand, a partial download, a `.gitattributes` gap normalizing line endings on the way into the
+ * object store. All three produce a tree that builds and tests green.
  *
  * Two shapes are recorded and both are verified here:
  *
  *   - a single file, with `bytes` and a SHA-256 of its contents;
  *   - a directory, with `fileCount`, `bytes`, and a **manifest digest**. One SHA-256 over the
- *     sorted `<name> <sha256>` lines for every file in it. The XLIFF schemas predate this and
- *     carry a per-file `files` map instead, which is verified entry by entry.
+ *     sorted `<name> <sha256>` lines for every file in it. The XLIFF schemas carry a per-file
+ *     `files` map instead, which is verified entry by entry.
  *
  * A manifest digest rather than 767 entries for the person-name release: any single byte anywhere
  * moves it, so it is exactly as strong and it is one value to read.

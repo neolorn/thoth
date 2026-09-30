@@ -11,20 +11,19 @@ const configPath = resolve(workspaceRoot, 'tsconfig.typecheck.json');
 /**
  * Typechecks every TypeScript file in the repository, including the ones no build reaches.
  *
- * *What was not checked, and how that stayed invisible.* Types were checked only as a side effect of
- * building: `ngc` compiles what each entry point's `public-api.ts` imports, and `tsc -p
- * tsconfig.build.json` compiles the toolkit's `src`. Two categories fell outside every program.
- * Test files, all of them, because vitest transpiles with esbuild, which strips types
- * without checking them. And any module no entry point reaches: `route-table.ts` was written, tested, and
- * `pnpm run build` reported success while the file was in no program at all, which from outside
- * looks exactly like a file that compiled.
+ * *What a build does not check.* A build checks types only as a side effect: `ngc` compiles what
+ * each entry point's `public-api.ts` imports, and `tsc -p tsconfig.build.json` compiles the
+ * toolkit's `src`. Two categories fall outside every such program. Test files, all of them, because
+ * vitest transpiles with esbuild, which strips types without checking them. And any module no entry
+ * point reaches: `pnpm run build` reports success while such a file is in no program at all, which
+ * from outside looks exactly like a file that compiled.
  *
  * *Why this is a script and not just a config.* A `tsconfig` cannot check that it covers the ground
- * it was written for, and that is the failure this item exists to prevent: a hand-written
+ * it was written for, and that is the failure this script exists to prevent: a hand-written
  * `include` that passes every run while covering nothing new. So two things are derived from disk
- * here and compared against the config: the entry points, and the files the program actually loaded.
- * A new entry point, a new package, or a new test directory is covered on the day it lands, and if
- * the config stops reaching it this fails and names what it missed.
+ * here and compared against the config: the entry points, and the files the program actually
+ * loaded. A new entry point, a new package, or a new test directory is covered on the day it lands,
+ * and if the config stops reaching it this fails and names what it missed.
  */
 
 const IGNORED_DIRECTORIES = new Set([
@@ -201,7 +200,7 @@ assert.deepEqual(
   missing,
   [],
   `The typecheck program did not load ${missing.length} file(s) that exist under packages/. This ` +
-    `is the failure the item was written for: a file outside every program compiles by not being ` +
+    `is the failure this check exists for: a file outside every program compiles by not being ` +
     `compiled, and reads from outside exactly like one that passed. Widen "include" in ` +
     `tsconfig.typecheck.json until this is empty.\n  ${missing.join('\n  ')}\n`,
 );

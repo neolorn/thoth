@@ -1,13 +1,13 @@
 /**
- * What R1's three edits cost in the file that composes the application.
+ * What three data edits cost in the file that composes the application.
  *
- * R1 is that an application configures Equator once. The old plan measured that as "one provider
- * configuration", which is a line count, and a line count is the wrong instrument twice over: it
- * passes while the requirement fails, three lines that each need editing per route is still three
- * lines, and it fails while the requirement holds, so deleting something a consumer needs reads as
- * an improvement.
+ * The requirement is that an application configures Equator once. Measuring that as "one provider
+ * configuration" is a line count, and a line count is the wrong instrument twice over: it passes
+ * while the requirement fails, three lines that each need editing per route is still three lines,
+ * and it fails while the requirement holds, so deleting something a consumer needs reads as an
+ * improvement.
  *
- * The requirement is about **cost of change**, so that is what this measures. Each of R1's three
+ * The requirement is about **cost of change**, so that is what this measures. Each of the three
  * edits is applied to the materialized consumer, `equator generate` is run, and `app.config.ts` is
  * required to come back byte for byte identical:
  *

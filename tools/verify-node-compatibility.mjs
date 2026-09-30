@@ -286,7 +286,7 @@ async function main() {
       evidence.push(record);
     }
 
-    // The comparison the matrix existed for. Server and client must not diverge in locale or
+    // The comparison the matrix exists for. Server and client must not diverge in locale or
     // formatting, and a build that prerenders on one Node major while a server renders on another
     // is exactly that situation.
     const [referenceRow, referenceFormatting] = [...formattingByRow][0] ?? [];

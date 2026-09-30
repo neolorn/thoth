@@ -6,10 +6,9 @@
  * `fs.stat` returns inode values above `Number.MAX_SAFE_INTEGER`, so distinct files collapse onto
  * the same number and the packer links files that were never linked.
  *
- * That is not theoretical. `@neolorn/equator@1.0.0-alpha.1` was published with
- * `types/neolorn-equator-router.d.ts` containing the runtime module's JavaScript, byte for byte,
- * because those two paths collided. The build output on disk was correct the whole time; only the
- * tarball was wrong, and nothing in the pipeline looked at the tarball.
+ * Two colliding paths give a type declaration such as `types/neolorn-equator-router.d.ts` the
+ * runtime module's JavaScript, byte for byte, while the build output on disk stays correct: only
+ * the tarball is wrong.
  *
  * So this packs from a copy, where the collision does not occur, and then compares every file in
  * the resulting archive against the build it claims to contain. A tarball that disagrees with its

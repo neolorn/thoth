@@ -408,11 +408,10 @@ assert.deepEqual(runtimePackage.exports['./package.json'], {
 
 // The pseudo-localization transform is absent from every shipped runtime bundle.
 //
-// This is the criterion the removed runtime helper could not have met. The transform now runs at
-// build time in `@neolorn/equator-toolkit`, which a consumer installs as a development dependency,
-// so what reaches an application is a compiled catalog that nothing can tell from a translation.
-// That makes "never in production" an absence rather than a flag: there is no code in the bundle to
-// enable, no environment to read, and nothing to defeat.
+// The transform runs at build time in `@neolorn/equator-toolkit`, which a consumer installs as a
+// development dependency, so what reaches an application is a compiled catalog that nothing can
+// tell from a translation. That makes "never in production" an absence rather than a flag: there is
+// no code in the bundle to enable, no environment to read, and nothing to defeat.
 //
 // Asserted against the built bundles rather than against the source layout, because the layout is
 // what is intended and the bundle is what ships.
@@ -430,8 +429,7 @@ for (const entrypoint of runtimeEntrypoints) {
   const bundlePath = resolve(runtimeRoot, entrypoint.javascript);
   // Escapes are decoded before comparing. A bundler may emit a non-ASCII character literally or as
   // `\uXXXX`, in either hex case, and `includes` sees three different strings for one character.
-  // Comparing against the literal form alone was this gate's first shape, and a leak injected as
-  // `\u27E6` walked straight past it: found by mutating a real bundle rather than by review.
+  // Comparing against the literal form alone lets a leak emitted as `\u27E6` walk straight past.
   const bundle = (await readFile(bundlePath, 'utf8')).replace(
     /\\u([0-9a-fA-F]{4})/gu,
     (_match, hex) => String.fromCharCode(Number.parseInt(hex, 16)),
@@ -497,10 +495,10 @@ await assertManifestTargets(runtimePackage, runtimeRoot, 'runtime package');
 /**
  * Can anyone find these packages, and is there anything to read when they do?
  *
- * The half that needs no baseline, because it is binary. Neither package shipped a README,
- * a `homepage` or `keywords`: a registry search returned nothing for every task-oriented phrase, and
- * a reader who arrived anyway got one sentence of `description` and a file listing. That is the same
- * discovery failure the checks above are about, one layer out from the API.
+ * The half that needs no baseline, because it is binary. A package without a README, a `homepage`
+ * or `keywords` returns nothing to a registry search for any task-oriented phrase, and a reader who
+ * arrives anyway gets one sentence of `description` and a file listing. That is the same discovery
+ * failure the checks above are about, one layer out from the API.
  *
  * Checked on the staged package rather than the source directory, because the source directory is
  * not what gets published: the toolkit's manifest is assembled key by key by

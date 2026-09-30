@@ -4,9 +4,9 @@
  * The specification's own words for this are in `specs/04-message-authoring-and-catalogs.spec.md`
  * section 6: where MessageFormat 2 leaves a behaviour implementation-defined, Equator resolves it
  * as a refusal at compile time, never as a render-time fallback and never as a render-time throw.
- * Three separate pieces of work turned out to be instances of that being untrue (a literal operand
- * that was not a number, `:integer` inheriting a fraction-digit minimum above its own maximum, and
- * `roundingIncrement`) and each was fixed where it was found. Nothing checked the class.
+ * Instances of that being untrue look unrelated (a literal operand that is not a number, `:integer`
+ * inheriting a fraction-digit minimum above its own maximum, `roundingIncrement`), and fixing each
+ * where it is found leaves the class unchecked.
  *
  * **The cases are not written here.** They are generated from the option table the compiler and the
  * evaluator both read, so a function that gains an option contributes its cases the day it lands and
@@ -20,8 +20,7 @@
  *   2. **Nothing accepted is inert.** Every option a function accepts has at least one value whose
  *      rendering differs from the same message without it. An option that compiles, renders, and
  *      changes nothing is the worse half of this defect: the author who wrote `fields=weekday` got a
- *      date with no weekday in it and no diagnostic anywhere. Thirty-seven date options were in that
- *      state when this file was written.
+ *      date with no weekday in it and no diagnostic anywhere.
  *
  * The walk is one option at a time. Pairs are a hundred times the cases and are run as a separate
  * measurement when the table changes, not on every gate: 94 seconds of pair walking on every
@@ -420,9 +419,8 @@ for (const key of Object.keys(COMPANIONS)) {
  * `:time` accepts `calendar` because the specification requires it to, and a time of day shows no
  * calendar whatever it is set to: every value renders `11:30 PM`. The option is not inert: it is
  * carried on the resolved value, and the next annotation reads it. Judging it only by its own
- * output would report a defect that is not there; leaving it out of the walk would mean the
- * inheritance path, which is where two of this item's three original instances lived, had no
- * check at all.
+ * output would report a defect that is not there; leaving it out of the walk would leave the
+ * inheritance path with no check at all.
  *
  * So every option a function inherits is also walked through a chain, and an option is observed if
  * it changes what this function renders or what a function inheriting it renders.
@@ -481,9 +479,9 @@ if (!configuration.ok) {
  * What is asserted is equality with the direct case rather than "changes the output", and that is
  * the stronger statement: an option that survives a declaration must produce exactly what writing
  * it on the expression produces, and a combination the compiler refuses when it is written
- * directly must be refused here too. Both halves of the measured defect fail this: the carried
- * numeric conflict compiled where the direct one is refused, and the carried zone was refused where
- * the direct one renders.
+ * directly must be refused here too. Both directions of divergence fail this: a carried numeric
+ * conflict that compiles where the direct one is refused, and a carried zone refused where the
+ * direct one renders.
  *
  * Only inheritable options are twinned. An option the consuming function discards from its operand,
  * or never inherits at all, is *meant* to render differently through a declaration, and asserting

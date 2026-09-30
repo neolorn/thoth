@@ -91,7 +91,8 @@ export class CapabilityClaimsReporter {
 
 /**
  * The reporters a suite runs with: vitest's own, and the claims reporter when the gate asked for
- * claims. Outside the gate a suite reports exactly as it did before claims existed.
+ * claims. Outside the gate a suite runs with vitest's reporter alone and reports nothing about
+ * claims.
  *
  * `consumer` is for a suite running inside a materialized consumer, whose claims also carry the
  * consumer row it was built as: `true` when the suite runs at the consumer's root, or the path from

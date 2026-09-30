@@ -40,14 +40,12 @@ import { attemptLedgerPath, workingRoot } from './working-state.mjs';
 /**
  * The gate, as a dependency graph rather than a list.
  *
- * *What was wrong with the list.* Thirty steps ran in the order they were written, and the order
- * encoded real dependencies (the consumer after the build, the browser rows after their self-test)
- * but it encoded them as adjacency, so nothing distinguished "must follow" from "happens to be
- * next". Every step paid for every step before it whether or not it read anything that step wrote,
- * and the hand-written `needs` list beside them described the order rather than the dependencies.
- * `verify:edit-cost` and `verify:cost-budget` both declared only `verify:consumer`, and
- * `verify:edit-cost` edits that consumer in place: a scheduler that trusted the list would have run
- * them against each other. Nothing in the list said the tree existed.
+ * *Why not a list.* A list encodes real dependencies (the consumer after the build, the browser
+ * rows after their self-test) as adjacency, so nothing distinguishes "must follow" from "happens to
+ * be next", every step pays for every step before it whether or not it reads anything that step
+ * wrote, and a hand-written `needs` list describes the order rather than the dependencies.
+ * `verify:edit-cost` edits in place the consumer `verify:cost-budget` reads, so a scheduler
+ * trusting declared `needs` alone would run them against each other.
  *
  * *So the graph is measured, not transcribed.* `tools/trace-artefacts.cjs` rides `NODE_OPTIONS` into
  * every process a stage spawns and records which artefacts it reads and writes. Deriving the graph
@@ -345,9 +343,9 @@ const runIn = (path, command, args) =>
 // A tree is at a commit when its tracked content is that commit's content, not merely when its HEAD
 // says so. A stage that dies between applying a mutation and restoring it leaves the mutation behind,
 // and a run reusing that tree proves something other than the commit it names, which is the one
-// thing this whole arrangement exists to guarantee. Measured, not supposed: `verify:assurance` killed
-// mid-injection left `M packages/toolkit/src/static-analysis.ts` in its tree, and the resume that
-// reused it failed on its own anchor, "the code moved", and would have failed there forever.
+// thing this whole arrangement exists to guarantee. A `verify:assurance` run killed mid-injection
+// leaves the injected file modified in its tree, and a resume that reuses the tree fails on its own
+// anchor, "the code moved", on every attempt.
 const treeState = (path, commit) => {
   if (!existsSync(path)) return { at: false, dirty: [] };
   try {

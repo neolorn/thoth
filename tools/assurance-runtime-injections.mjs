@@ -32,17 +32,13 @@ export const injections = Object.freeze([
     id: 'route-scopes-not-derived',
     invariant:
       'A route loads the scopes the generated table says it needs, without the application listing them.',
-    // Moved out of the entry point by `e958d47`, and this pointer stayed behind. The gate has
-    // been red ever since, which is the correct behaviour: an injection that no longer matches
-    // is an invariant nothing is checking, and passing would have been the wrong answer.
     source: 'packages/runtime/router/src/route-localization.ts',
     // The whole body, and both parameters kept referenced. Taking the derivation out leaves the
     // lookup with no reader and the parameters with no use, and `noUnusedLocals` and
     // `noUnusedParameters` refuse to compile either, so the injected build failed rather than
     // the suite, which reports an invariant as unmeasurable rather than as unguarded. `void` is
     // what the injections below already use to say a symbol is still referenced and no longer
-    // used, and it is the honest shape here too: this is the derivation switched off, which is
-    // the defect that reached 0.3.0.
+    // used, and it is the honest shape here too: this is the derivation switched off.
     find: [
       '  const entry = projection.generated.routes.find(({ id }) => id === routeId);',
       '  return entry?.scopes ?? Object.freeze([]);',
@@ -292,10 +288,9 @@ export const injections = Object.freeze([
     //
     // It stays here rather than moving to the fast harness with its integer sibling, and the
     // difference is reachability rather than preference: the consumer's article route uses this
-    // codec, so the consumer's own suite is what notices. The integer one had no route and no test
-    // (56 mutants nothing reached, found by the first mutation run) and its injection is in
-    // `verify-assurance.mjs`, named to the workspace file written for it. Tried here first, and it
-    // reported MISSED: nothing in the consumer exercises an integer parameter at all.
+    // codec, so the consumer's own suite is what notices. Nothing in the consumer exercises an
+    // integer parameter, so the integer codec's injection is in `verify-assurance.mjs`, named to
+    // the workspace test that covers it.
     source: 'packages/runtime/core/src/routing.ts',
     find: '        pattern.test(value) ? { ok: true, value } : { ok: false },',
     replace: '        { ok: true, value },',

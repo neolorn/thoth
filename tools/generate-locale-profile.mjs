@@ -40,9 +40,8 @@ const rtlScripts = Object.entries(scriptDocument.scriptMetadata)
 // The strong right-to-left character class.
 //
 // The property this answers is "can this text reposition the text around it". `Bidi_Class` answers
-// that directly; script membership only stands in for it, and the substitution was visible in both
-// directions. Two earlier derivations were measured over every code point on Unicode 17.0 before
-// this one:
+// that directly; script membership only stands in for it, and the substitution shows in both
+// directions. Two script-based derivations, measured over every code point on Unicode 17.0:
 //
 // - `Script=` over the table above loses exactly one letter, U+0640 ARABIC TATWEEL, which is
 //   `Script=Common` with Arabic among its script extensions.
@@ -50,10 +49,10 @@ const rtlScripts = Object.entries(scriptDocument.scriptMetadata)
 //   DOT, used with Avestan; 24 combining marks including U+0303 and U+0308, used with Syriac;
 //   U+204F REVERSED SEMICOLON, used with Adlam; the Aegean and Coptic Epact number signs. What
 //   separates U+0640 from U+00B7 is not their script data, which has the same shape, but that one
-//   is a letter, so the union of `Script=` with the letters of `Script_Extensions=` was correct,
-//   and correct by a rule that has nothing to do with direction.
+//   is a letter, so the union of `Script=` with the letters of `Script_Extensions=` is correct, and
+//   correct by a rule that has nothing to do with direction.
 //
-// Both missed the 126 Siyaq numerals (U+1EC71..U+1ECB4, U+1ED01..U+1ED3D). They are `Script=Common`
+// Both miss the 126 Siyaq numerals (U+1EC71..U+1ECB4, U+1ED01..U+1ED3D). They are `Script=Common`
 // and `Script_Extensions=Common`, so no script derivation can reach them, and the UCD gives them
 // `Bidi_Class=AL`. Reading the property directly finds them and needs no rule about letters.
 //
@@ -131,7 +130,7 @@ assert.ok(
 const isStrongRtl = (code) =>
   bidiClasses[code] === 'R' || bidiClasses[code] === 'AL';
 
-// The cross-check: what the script data says, which is what shipped before this file was vendored.
+// The cross-check: what the script data says, an independent derivation of the same answer.
 const scriptClass = (property) =>
   new RegExp(
     `[${rtlScripts.map((script) => String.raw`\p{${property}=${script}}`).join('')}]`,
@@ -510,9 +509,9 @@ const encompassedOutput = [
 // casing is lowercase, and Chromium 149 does not translate the `valencia` variant subtag and prints
 // `catala (Espanya, VALENCIA)`. A name no reader of any language has seen. The sharper half is
 // not the browsers disagreeing with each other: Equator server-renders the switcher on Node, so a
-// WebKit visitor was sent one label and recomputed a different one on hydration.
+// WebKit visitor would be sent one label and recompute a different one on hydration.
 //
-// So the name is derived here from a pinned release and shipped, and the engine no longer votes.
+// So the name is derived here from a pinned release and shipped, and the engine has no vote.
 //
 // THE ALGORITHM IS TR35'S, AND THE RULE THAT MATTERS IS THE SECOND LINE OF IT: look the whole
 // locale id up in `languages`, and if it is not there, take the name of the *bare language subtag*

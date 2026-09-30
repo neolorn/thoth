@@ -313,10 +313,9 @@ export const injections = Object.freeze([
     id: 'sign-marks-not-learned-from-the-locale',
     invariant:
       'A signed number can be read back in the locales whose sign the platform decorates with a formatting control.',
-    // The defect this replaces was live, and it was not subtle: `Intl` writes U+061C, U+200E or
-    // U+200F next to the sign in 27 of the 162 locales this ICU build has data for, Equator
-    // compared the front of the string against a bare minus, and so refused to render a negative
-    // decimal in every one of them. Found by the differential on its first run.
+    // `Intl` writes U+061C, U+200E or U+200F next to the sign in 27 of the 162 locales this ICU
+    // build has data for, so comparing the front of the string against a bare minus refuses to
+    // render a negative decimal in every one of them.
     //
     // Emptying the learned set is the mutation because it is the regression that would actually
     // happen: someone deciding the marks are noise, or the derivation moving to a formatter that

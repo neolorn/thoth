@@ -56,9 +56,8 @@ const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 /**
  * The entry points, discovered rather than listed.
  *
- * `verify-export-surface.mjs` learned this the expensive way: four filenames written out by hand
- * meant a new entry point shipped its whole surface unaudited while the gate stayed green because
- * it never knew to look.
+ * Filenames written out by hand let a new entry point ship its whole surface unaudited while the
+ * gate stays green, because it never knows to look.
  */
 const runtimeTypesRoot = resolve(workspaceRoot, 'dist/runtime/types');
 const entryPoints = [

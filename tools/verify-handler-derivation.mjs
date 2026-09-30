@@ -22,9 +22,9 @@ const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
  * descriptor changes its answer. A handler that reimplements the classification keeps the old one,
  * and that is the failure reported here.
  *
- * Two derivations of one answer is a defect this codebase produces readily (two components
- * restoring one caret with different arithmetic, one address carrying two cacheability answers) so
- * it gets a check that fails rather than a comment saying not to.
+ * Two derivations of one answer drift apart silently (two components restoring one caret with
+ * different arithmetic, one address carrying two cacheability answers), so this gets a check that
+ * fails rather than a comment saying not to.
  *
  * `specs/12-verification.spec.md` section 9 names the other half of this: a check derived from
  * the thing it checks agrees by construction, which is why the expected value cannot be

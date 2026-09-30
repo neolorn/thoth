@@ -1,14 +1,12 @@
 /**
  * The options `equator init` accepts, written from the schema that decides what the file accepts.
  *
- * `InitProjectOptions` offered four of the six settable configuration keys, and the
- * two it omitted, `personNameLocales` and `pseudoLocales`, were unreachable from the install
- * line in a way nothing could notice: the initialized project was valid, so the only symptom was a
- * consumer discovering the field by reading Equator's source or by failing at runtime.
+ * An option missing from `equator init` is unreachable from the install line in a way nothing can
+ * notice: the initialized project is valid, so the only symptom is a consumer discovering the field
+ * by reading Equator's source or by failing at runtime.
  *
- * A hand-written option list would have closed those two and gone stale on the seventh key, which
- * is the failure the item names rather than the one it reports. So the option set is not a list
- * that agrees with `CONFIGURATION_SCHEMA`; it *is* that schema, read at build time and
+ * A hand-written option list goes stale on the next key the schema gains. So the option set is not
+ * a list that agrees with `CONFIGURATION_SCHEMA`; it *is* that schema, read at build time and
  * written here. A key added to the parser produces a flag the day it lands, and a checked-in table
  * that no longer matches fails `--check` in the gate. Same mechanism as
  * `locale-profile.generated.ts` from `cldr-core`, for the same reason.
@@ -25,8 +23,8 @@
  * therefore hand-written, and it is the only hand-written thing here. Its key set is asserted equal
  * to the schema's settable key set in both directions, so a new key with no spelling fails this
  * build with its name in the message, and a spelling for a key that no longer exists fails the same
- * way. That assertion is what separates this from the list the item warns about: there is nothing
- * to keep in step by remembering.
+ * way. That assertion is what separates this from a hand-written option list: there is nothing to
+ * keep in step by remembering.
  *
  * ## The spelling conventions
  *
@@ -86,8 +84,8 @@ assert.equal(
  * strict mode refuses an invented one. Checked against the schema in both directions below, so this
  * cannot drift without the build saying so.
  *
- * The four that existed before 10.5 keep their spellings exactly. Renaming a shipped flag to satisfy
- * a naming rule would break every install line in the wild to make this table prettier, and the
+ * A flag a release has shipped keeps its spelling exactly. Renaming a shipped flag to satisfy a
+ * naming rule would break every install line in the wild to make this table prettier, and the
  * `--alias eg=ar-EG` spelling is already the depth-1 form of the convention the new keys use.
  */
 const SPELLINGS = Object.freeze({
@@ -247,10 +245,8 @@ for (const line of helpLines) {
 const help = helpLines.join('\n');
 
 // The line printed beside EQ1701, which the tooling specification requires to be the exact
-// complete invocation. It was written out by hand beside the help block that was also written out
-// by hand, so the two could disagree with the parser and with each other, and did: the help block
-// named four flags and this line named the same four, both of them missing two fields the
-// configuration accepts. Generated from the same descriptors, it cannot say less than --help does.
+// complete invocation. A hand-written copy could disagree with the parser and with the help block.
+// Generated from the same descriptors, it cannot say less than --help does.
 const invocation = [
   'equator init',
   ...ordered.map((descriptor) => {

@@ -281,9 +281,9 @@ const initArguments = [
   ...INIT_REQUEST.locales.flatMap((locale) => ['--locale', locale]),
 ];
 const initialized = run(initArguments);
-// The template no longer ships the Equator-owned scripts, so the first init has real work to do.
-// That is the point: a fixture that pre-types them answers the question this gate is asking.
-// Both files, because the template ships neither: init is what authors them.
+// The template ships none of the Equator-owned scripts, so the first init has real work to do. That
+// is the point: a fixture that pre-types them answers the question this gate is asking. Both files,
+// because the template ships neither: init is what authors them.
 assert.match(
   initialized.stdout,
   /Equator init updated: equator\.config\.json, package\.json/u,
@@ -1169,16 +1169,16 @@ assert.ok(
  * locale-branch address, so a branch that fails to render leaves a hole at the only address anyone
  * uses while the canonical branch, which nobody uses, looks fine.
  *
- * **Fixed upstream and released in 22.1.7** (`f1fd823`, angular/angular-cli#33965). Re-measured on
- * the bump with the same injected throw: the build now fails, exit 1, `Application bundle
- * generation failed.`, naming `/en-us/second` and `/ar-eg/second` and reporting `Prerendered 2
- * static routes.`. The two that rendered, not the four declared. No `dist` is written at all.
+ * **Angular 22.1.7 fails the build** (`f1fd823`, angular/angular-cli#33965). With the same injected
+ * throw it exits 1, `Application bundle generation failed.`, naming `/en-us/second` and
+ * `/ar-eg/second` and reporting `Prerendered 2 static routes.`. The two that rendered, not the four
+ * declared. No `dist` is written at all.
  *
  * The set comparison stays, and the reason it stays is not that Angular might regress. It is that
  * a missing prerendered file has causes that are not Angular's (a route the projection did not
  * emit, a canonical suppression that stopped suppressing, a locale branch that resolved to
- * nothing) and the set is what catches every one of them. A count or an exit code was only ever
- * reading one of the causes, and reads it correctly now by accident of someone else's fix.
+ * nothing) and the set is what catches every one of them. A count or an exit code reads only one of
+ * the causes.
  *
  * It is also what holds the canonical suppression. `localizedServerRoutes` declares the canonical
  * spelling of every route `RenderMode.Server`, so `/index.html`, `/second/index.html` and
@@ -1324,10 +1324,10 @@ async function verifyPrerendered(root, origin, locales) {
     //
     // Equator reads the address being rendered from `PlatformLocation`, because `@angular/ssr`
     // provides `REQUEST` and `REQUEST_CONTEXT` only when the render mode is `Server`: a
-    // prerendered page has neither. Two things had to be true for that to work and only one of
-    // them was ever measured: that `PlatformLocation` is injectable from an application-config-level
-    // factory, and that under prerendering it carries the address being rendered rather than `/`.
-    // This is a prerendered page, so its own address here is that second fact, observed.
+    // prerendered page has neither. Two things have to be true for that to work: that
+    // `PlatformLocation` is injectable from an application-config-level factory, and that under
+    // prerendering it carries the address being rendered rather than `/`. This is a prerendered
+    // page, so its own address here is that second fact, observed.
     const probe = /"feature-lab-ssr-probe":(\{.*?\})/su.exec(prerendered);
     assert.ok(
       probe,

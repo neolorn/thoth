@@ -13,25 +13,24 @@ import {
 /**
  * Prove the browser assurance gate can fail.
  *
- * It could not. `verify-package-consumer-hydration.mjs` imports the consumer's built server bundle,
- * which calls Angular's `attachNodeGlobalErrorHandlers`; registering any `uncaughtException` or
+ * `verify-package-consumer-hydration.mjs` imports the consumer's built server bundle, which calls
+ * Angular's `attachNodeGlobalErrorHandlers`; registering any `uncaughtException` or
  * `unhandledRejection` listener suppresses Node's default of printing the error and exiting
- * non-zero, and Angular's listeners only print. Every error escaping a `try` in that file (111
- * assertions were outside the one it has, plus every server and page callback, which no `try` could
- * have covered) was reported in full to a pipeline that read exit code 0 and moved on. It ran
- * green over a consumer built with the wrong locale set for two complete pipelines.
+ * non-zero, and Angular's listeners only print. Without listeners of its own, every error escaping
+ * a `try` in that file, and every server and page callback, which no `try` can cover, is reported
+ * in full to a pipeline that reads exit code 0 and moves on.
  *
- * That file now registers its own listeners after the import and exits non-zero from them. This
- * runs it twice with a deliberate escape of each class and watches it die, because a gate nobody
- * has seen fail is indistinguishable from a gate that cannot, and the difference between those two
- * states is not visible in any passing run.
+ * That file registers its own listeners after the import and exits non-zero from them. This runs it
+ * twice with a deliberate escape of each class and watches it die, because a gate nobody has seen
+ * fail is indistinguishable from a gate that cannot, and the difference between those two states is
+ * not visible in any passing run.
  *
- * A third case covers the other way that file reported nothing: by not ending. It had no bound on
- * any stage and wrote nothing until it finished, so a hung run and a working run were the same
- * observation from outside. A one-millisecond stage budget makes the first stage overrun, and this
- * watches the run name that stage and die, and checks it was narrating its stages on the way,
- * because the bound and the narration are only useful together. A bound with nothing to read tells
- * you a run stopped; narration with no bound tells you where a run is forever.
+ * A third case covers the other way that file can report nothing: by not ending. Without a bound on
+ * each stage and narration as it goes, a hung run and a working run are the same observation from
+ * outside. A one-millisecond stage budget makes the first stage overrun, and this watches the run
+ * name that stage and die, and checks it was narrating its stages on the way, because the bound and
+ * the narration are only useful together. A bound with nothing to read tells you a run stopped;
+ * narration with no bound tells you where a run is forever.
  *
  * A fifth covers a run that fails before it checks anything: a server on a port the Fetch standard
  * has browsers refuse, which the system hands out where its dynamic range starts low. A listed port
@@ -135,9 +134,9 @@ assert.ok(
   `The gate reported its verification complete after a stage overrun:\n${bounded.stdout}`,
 );
 
-// The fourth silence: the block that reports a caught failure had never been run. Both escapes
-// above die before the try that assembles it and the stage bound exits from its own timer, so
-// nothing had ever read the browser rows, the violations or the page state a real failure reports.
+// The fourth silence: the block that reports a caught failure. Both escapes above die before the
+// try that assembles it and the stage bound exits from its own timer, so without this case nothing
+// reads the browser rows, the violations or the page state a real failure reports.
 const reported = await runVerifier({
   EQUATOR_ASSURANCE_SELF_TEST: 'diagnostics',
 });

@@ -201,7 +201,7 @@ assert.equal(
 assert.equal(
   afterFirstCatalog,
   expectedOwnerId,
-  'The owner identity moved when the first catalog was written. That is the defect EQ1602 reported on day one.',
+  'The owner identity moved when the first catalog was written. That is the defect EQ1602 reports.',
 );
 assert.equal(
   afterSecondScope,
