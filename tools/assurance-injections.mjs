@@ -2408,4 +2408,107 @@ export const injections = Object.freeze([
     replace: '    result += character;',
     caughtBy: 'packages/toolkit/test/bounded-inputs-and-parser-safety.test.ts',
   },
+  {
+    id: 'authored-text-ceiling-unchecked',
+    invariant: 'An authored file past its byte ceiling is refused.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '  if (position > input.maximumBytes) return oversized();',
+    replace: '  if (false) return oversized();',
+    caughtBy: 'packages/toolkit/test/project-host.test.ts',
+  },
+  {
+    id: 'authored-text-decoded-with-replacement',
+    invariant:
+      'An authored file that is not UTF-8 is refused rather than decoded with replacement.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '    return toolkitSuccess(STRICT_UTF8.decode(contents));',
+    replace: "    return toolkitSuccess(contents.toString('utf8'));",
+    caughtBy: 'packages/toolkit/test/project-host.test.ts',
+  },
+  {
+    id: 'cookie-attribute-value-unchecked',
+    invariant:
+      'A cookie attribute value carrying a character a cookie cannot hold is refused.',
+    source: 'packages/runtime/core/src/cookie-attributes.ts',
+    find: '    if (value !== undefined && !ATTRIBUTE_VALUE.test(value)) {',
+    replace: '    if (false) {',
+    caughtBy: 'packages/runtime/test/locale-cookie-defaults.test.ts',
+  },
+  {
+    id: 'cookie-host-prefix-domain',
+    invariant: 'A __Host- cookie with a Domain attribute is refused.',
+    source: 'packages/runtime/core/src/cookie-attributes.ts',
+    find: '    if (domain !== undefined) {',
+    replace: '    if (false) {',
+    caughtBy: 'packages/runtime/test/locale-cookie-defaults.test.ts',
+  },
+  {
+    id: 'cookie-host-prefix-insecure',
+    invariant: 'A __Host- cookie without Secure is refused.',
+    source: 'packages/runtime/core/src/cookie-attributes.ts',
+    find: '    if (!secure) {',
+    replace: '    if (false) {',
+    caughtBy: 'packages/runtime/test/locale-cookie-defaults.test.ts',
+  },
+  {
+    id: 'cookie-host-prefix-path',
+    invariant: 'A __Host- cookie whose path is not / is refused.',
+    source: 'packages/runtime/core/src/cookie-attributes.ts',
+    find: "    if (path !== '/') {",
+    replace: '    if (false) {',
+    caughtBy: 'packages/runtime/test/locale-cookie-defaults.test.ts',
+  },
+  {
+    id: 'cookie-max-age-unchecked',
+    invariant:
+      'A cookie lifetime that is not a positive safe integer is refused.',
+    source: 'packages/runtime/core/src/cookie-attributes.ts',
+    find: '  if (!Number.isSafeInteger(maxAgeSeconds) || maxAgeSeconds <= 0) {',
+    replace: '  if (false) {',
+    caughtBy: 'packages/runtime/test/locale-cookie-defaults.test.ts',
+  },
+  {
+    id: 'cookie-name-not-token',
+    invariant: 'A cookie name that is not an RFC 6265 token is refused.',
+    source: 'packages/runtime/core/src/cookie-attributes.ts',
+    find: '  if (!TOKEN.test(name)) {',
+    replace: '  if (false) {',
+    caughtBy: 'packages/runtime/test/locale-cookie-defaults.test.ts',
+  },
+  {
+    id: 'cookie-samesite-none-insecure',
+    invariant:
+      'A SameSite=None cookie without Secure, which a browser discards, is refused.',
+    source: 'packages/runtime/core/src/cookie-attributes.ts',
+    find: "  if (sameSite === 'None' && !secure) {",
+    replace: '  if (false) {',
+    caughtBy: 'packages/runtime/test/locale-cookie-defaults.test.ts',
+  },
+  {
+    id: 'cookie-secure-prefix-insecure',
+    invariant:
+      'A __Secure- cookie without Secure, which a browser discards, is refused.',
+    source: 'packages/runtime/core/src/cookie-attributes.ts',
+    find: "  if (prefix.startsWith('__secure-') && !secure) {",
+    replace: '  if (false) {',
+    caughtBy: 'packages/runtime/test/locale-cookie-defaults.test.ts',
+  },
+  {
+    id: 'instant-options-override-caller',
+    invariant:
+      'The options a call passes narrow the context rather than being overridden by it.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: '    ...options,\n  };\n}',
+    replace: '  };\n}',
+    caughtBy: 'packages/runtime/test/instant-time-zone.test.ts',
+  },
+  {
+    id: 'json-byte-order-mark-refused',
+    invariant:
+      'A JSON file with one leading byte-order mark is read as the JSON after it.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '  return source.startsWith(BYTE_ORDER_MARK) ? source.slice(1) : source;',
+    replace: '  return source;',
+    caughtBy: 'packages/toolkit/test/project-host.test.ts',
+  },
 ]);

@@ -166,6 +166,11 @@ describe('a cookie configuration neither half will write', () => {
       /__Secure-/u,
     ],
     [
+      'a __Host- name without Secure',
+      { name: '__Host-locale', secure: false },
+      /__Host- name requires Secure/u,
+    ],
+    [
       'a __Host- name with a Domain',
       { name: '__Host-locale', domain: 'site.example' },
       /Domain/u,
