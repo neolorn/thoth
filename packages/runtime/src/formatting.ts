@@ -936,14 +936,10 @@ export function formatInstant(
     if (formattingTag === undefined) {
       return unsupportedNumberingSystem(context);
     }
-    const formatter = sharedFormatters.dateTime(formattingTag, {
-      ...options,
-      ...(context.timeZone === undefined ? {} : { timeZone: context.timeZone }),
-      ...displayCalendar(context.calendar),
-      ...(context.hourCycle === undefined
-        ? {}
-        : { hourCycle: context.hourCycle }),
-    });
+    const formatter = sharedFormatters.dateTime(
+      formattingTag,
+      instantOptions(context, options),
+    );
     return success(
       'instant',
       formatter.format(milliseconds),
@@ -975,6 +971,26 @@ export function formatInstant(
  * So ISO values format under the locale's own calendar, and any other calendar, which a consumer
  * selected deliberately, is forwarded unchanged.
  */
+/**
+ * The context's zone, calendar and hour cycle, under the options the call wrote.
+ *
+ * The call is the narrowest layer, as a message's own options are in a catalog, so a zone named
+ * here formats in that zone rather than being replaced by the application's without a word.
+ */
+function instantOptions(
+  context: FormattingContext,
+  options: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormatOptions {
+  return {
+    ...(context.timeZone === undefined ? {} : { timeZone: context.timeZone }),
+    ...displayCalendar(context.calendar),
+    ...(context.hourCycle === undefined
+      ? {}
+      : { hourCycle: context.hourCycle }),
+    ...options,
+  };
+}
+
 function displayCalendar(calendar: string | undefined): {
   readonly calendar?: string;
 } {
@@ -1326,14 +1342,10 @@ export function formatInstantRange(
     if (formattingTag === undefined) {
       return unsupportedNumberingSystem(context);
     }
-    const formatter = sharedFormatters.dateTime(formattingTag, {
-      ...options,
-      ...(context.timeZone === undefined ? {} : { timeZone: context.timeZone }),
-      ...displayCalendar(context.calendar),
-      ...(context.hourCycle === undefined
-        ? {}
-        : { hourCycle: context.hourCycle }),
-    }) as Intl.DateTimeFormat & Partial<NativeDateRangeFormatter>;
+    const formatter = sharedFormatters.dateTime(
+      formattingTag,
+      instantOptions(context, options),
+    ) as Intl.DateTimeFormat & Partial<NativeDateRangeFormatter>;
     if (
       typeof formatter.formatRange !== 'function' ||
       typeof formatter.formatRangeToParts !== 'function'

@@ -100,6 +100,9 @@ bound that cache, so arbitrary option cardinality cannot grow memory without lim
 A formatting context is resolved in three layers, narrowest last: the application-wide context, then
 the declared context for the locale being formatted, then the pinned locale data for that locale,
 which is the standard's choice rather than an absent one.
+The options of one operation, a formatting call or a message expression, are narrower than all
+three, and a release MUST format with the time zone, calendar, or hour cycle an operation names
+over the context's.
 
 A release MUST let a locale declare only what is a fact about how it is written: its numbering
 system, its calendar, and its hour cycle. A time zone is not one of those, so a release MUST keep
