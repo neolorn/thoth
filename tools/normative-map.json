@@ -374,6 +374,12 @@
     },
     {
       "spec": "02-packages-and-platform.spec.md",
+      "section": "2. Runtime entry points",
+      "statement": "Such an export is not part of the supported contract, the reference omits it, and a consumer MUST NOT import it.",
+      "checks": ["self-test:verify:export-surface:self-test"]
+    },
+    {
+      "spec": "02-packages-and-platform.spec.md",
       "section": "3. Entry-point isolation",
       "statement": "An Angular-free entry point MUST NOT import `@angular/*` in its JavaScript or in its type declarations.",
       "checks": ["plant:verify:packages:core-declarations-import-angular"]

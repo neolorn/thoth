@@ -561,6 +561,89 @@ for (const {
   }
 }
 
+/**
+ * A consumer or a documented example that imports a `ɵ`-prefixed export.
+ *
+ * `specs/02-packages-and-platform.spec.md` section 2: those exports are how the package's own entry
+ * points reach one another, and none of them is part of the supported contract. Each entry point
+ * is its own bundle, so they have to be exported for the other entry points to import them, and
+ * the only thing keeping an application off them is that nothing an application reads uses one.
+ * The fixtures are the applications this repository writes and the documents are what it tells
+ * others to write, so neither may.
+ */
+function wiringImports(text) {
+  const found = [];
+  for (const [, names, specifier] of text.matchAll(
+    /\b(?:import|export)\s+(?:type\s+)?\{([^}]*)\}\s*from\s*['"](@neolorn\/[^'"]+)['"]/gu,
+  )) {
+    for (const name of names.split(',')) {
+      const imported = name
+        .trim()
+        .replace(/^type\s+/u, '')
+        .split(/\s+as\s+/u)[0];
+      if (imported?.startsWith('ɵ'))
+        found.push(`${imported} from ${specifier}`);
+    }
+  }
+  for (const [, namespace, specifier] of text.matchAll(
+    /\bimport\s+\*\s+as\s+([\w$]+)\s+from\s*['"](@neolorn\/[^'"]+)['"]/gu,
+  )) {
+    const reached = new RegExp(
+      `\\b${namespace.replace(/\$/gu, '\\$')}\\s*(?:\\.\\s*|\\[\\s*['"\`])(ɵ[\\w$]*)`,
+      'gu',
+    );
+    for (const [, member] of text.matchAll(reached)) {
+      found.push(`${member} from ${specifier}`);
+    }
+  }
+  return found;
+}
+
+function filesUnder(path, included, out = []) {
+  const absolute = join(workspaceRoot, path);
+  let stats;
+  try {
+    stats = statSync(absolute);
+  } catch {
+    return out;
+  }
+  if (stats.isFile()) {
+    if (included.test(path) && !path.endsWith('.d.ts')) {
+      out.push({ path, text: readFileSync(absolute, 'utf8') });
+    }
+    return out;
+  }
+  for (const name of readdirSync(absolute)) {
+    if (!SKIP.has(name)) filesUnder(`${path}/${name}`, included, out);
+  }
+  return out;
+}
+
+const examples = [
+  ...CORPUS.filter(({ consumer }) => consumer)
+    .flatMap(({ dirs }) => dirs)
+    .flatMap((dir) => filesUnder(dir, /\.(?:ts|mjs|js)$/u))
+    .map(({ path, text }) => ({ path, text: withoutComments(text) })),
+  ...[
+    'docs',
+    'README.md',
+    'packages/runtime/README.md',
+    'packages/toolkit/README.md',
+  ].flatMap((path) => filesUnder(path, /\.md$/u)),
+];
+assert.ok(
+  examples.some(({ path }) => path.startsWith('docs/')),
+  'No document was read, so a documented example importing wiring would pass unseen.',
+);
+const wiring = examples.flatMap(({ path, text }) =>
+  wiringImports(text).map((use) => `${path}: ${use}`),
+);
+assert.deepEqual(
+  wiring,
+  [],
+  `A fixture or a documented example imports a ɵ-prefixed export, which is wiring between Equator's own entry points and not part of its contract:\n${wiring.join('\n')}`,
+);
+
 process.stdout.write(
   `\nEquator export surface verified: ${candidates.length} accepted candidate(s), all named in the baseline.\n`,
 );

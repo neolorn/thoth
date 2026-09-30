@@ -374,6 +374,10 @@ export const stageSelfTests = Object.freeze({
       'tools',
       'packages/toolkit/test',
       'packages/runtime/test',
+      'docs',
+      'README.md',
+      'packages/runtime/README.md',
+      'packages/toolkit/README.md',
     ],
     plants: [
       {
@@ -396,6 +400,30 @@ export const stageSelfTests = Object.freeze({
             (text) => `${text}\nexport declare const ${plantedExport} = 0;\n`,
           ),
         refusal: new RegExp(`toolkit / ${plantedExport}$`, 'mu'),
+      },
+      {
+        id: 'documented-example-imports-wiring',
+        plant: (root) =>
+          editText(
+            root,
+            'docs/how-to/translate-catalogs.md',
+            (text) =>
+              `${text}\n\`\`\`ts\nimport { ɵopenPageOutcomeChannel } from '@neolorn/equator/core';\n\`\`\`\n`,
+          ),
+        refusal:
+          /^docs\/how-to\/translate-catalogs\.md: ɵopenPageOutcomeChannel from @neolorn\/equator\/core$/mu,
+      },
+      {
+        id: 'fixture-reaches-wiring-through-a-namespace',
+        plant: (root) =>
+          editText(
+            root,
+            'fixtures/package-consumer-template/src/app/addresses.ts',
+            (text) =>
+              `${text}\nimport * as equatorCore from '@neolorn/equator/core';\nexport const planted = equatorCore.ɵopenPageOutcomeChannel;\n`,
+          ),
+        refusal:
+          /^fixtures\/package-consumer-template\/src\/app\/addresses\.ts: ɵopenPageOutcomeChannel from @neolorn\/equator\/core$/mu,
       },
     ],
   },

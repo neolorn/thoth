@@ -3,12 +3,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApplicationRef, PLATFORM_ID, REQUEST } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import {
-  pageAbsent,
-  pageOperationalFailure,
-  ɵopenPageOutcomeChannel,
-} from '@neolorn/equator/core';
+import { pageAbsent, pageOperationalFailure } from '@neolorn/equator/core';
+import { createLocaleRequestHandler } from '@neolorn/equator/http';
 import { LocalizedPageOutcome } from '@neolorn/equator/router';
+import { configuration } from '#i18n';
+
+import { pageUrl } from './addresses';
+import { appRouteProjection, routePolicy } from './localization.routes';
+import { responseCaching } from './response-caching';
 
 /**
  * A page declaring what it turned out to be, on a server render its declaration cannot reach.
@@ -54,14 +56,26 @@ describe('a declaration against a request the handler is not holding', () => {
     ).toHaveLength(1);
   });
 
-  it('is not reported where the handler opened the channel', () => {
+  it('is not reported where the handler opened the channel', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const request = new Request('https://site.example/topics/x');
-    ɵopenPageOutcomeChannel(request);
-    const outcome = onServer(request);
+    // The render is handed the request the handler opened a channel for, which is the request a
+    // server render's page receives.
+    const answer = createLocaleRequestHandler({
+      policy: routePolicy,
+      projection: appRouteProjection,
+      configuration,
+      cache: responseCaching,
+      render: ({ request }) => {
+        onServer(request).declare(pageAbsent());
+        return new Response('<!doctype html>', {
+          headers: { 'content-type': 'text/html' },
+        });
+      },
+    });
 
-    outcome.declare(pageAbsent());
+    const response = await answer(new Request(pageUrl('second', 'en-US')));
 
+    expect(response.status).toBe(404);
     expect(
       warn.mock.calls.filter(([message]) => DETACHED.test(String(message))),
     ).toHaveLength(0);

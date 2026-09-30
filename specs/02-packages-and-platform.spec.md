@@ -61,6 +61,11 @@ shipping it in a runtime entry point would put it in a production bundle behind 
 A consumer MUST import only declared package exports. Deep imports, internal paths, generated
 private paths, source paths, and source-tree aliases are unsupported.
 
+An export whose name begins with `ɵ` is how one of the package's own entry points reaches another:
+each entry point is a separate bundle, so what one hands another has to be declared in the export
+map. Such an export is not part of the supported contract, the reference omits it, and a consumer
+MUST NOT import it.
+
 ## 3. Entry-point isolation
 
 An Angular-free entry point MUST NOT import `@angular/*` in its JavaScript or in its type

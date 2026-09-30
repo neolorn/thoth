@@ -268,13 +268,25 @@ const declared = Object.freeze([
   // of its own under `tmp`, which is not an artefact any other stage can see.
   {
     id: 'verify:export-surface:self-test',
-    reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
+    reads: [
+      'dist:runtime',
+      'dist:toolkit',
+      'source:docs',
+      'source:packages',
+      'source:tools',
+    ],
   },
   // A scan that counts a scratch directory as its corpus holds exports "used" on files that are
   // about to be cleaned away, so this one reads the built declaration files instead.
   {
     id: 'verify:export-surface',
-    reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
+    reads: [
+      'dist:runtime',
+      'dist:toolkit',
+      'source:docs',
+      'source:packages',
+      'source:tools',
+    ],
     needs: [
       {
         on: 'verify:export-surface:self-test',
