@@ -325,11 +325,9 @@ export abstract class Localization {
   /**
    * The locale this document's server-rendered HTML was written in, when there was one.
    *
-   * `undefined` in a browser that rendered the page itself, and on the server. It exists because
-   * hydration *claims* DOM rather than writing it: content produced under one locale and hydrated
-   * under another keeps the words the server chose, and no later change detection corrects it,
-   * because the binding's stored value is already the new one. Anything deciding whether to claim
-   * server HTML or build it fresh has to be able to ask which locale that HTML is in.
+   * `undefined` in a browser that rendered the page itself, and on the server. Hydration adopts the
+   * locale the server chose rather than negotiating one, so the stores a browser keeps can only be
+   * read once hydration is over, and this is what says there was a server render to wait for.
    */
   abstract renderedLocale(): string | undefined;
 

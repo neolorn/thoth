@@ -41,14 +41,17 @@ visitor who changes language mid-form keeps what they typed.
 
 ## Hydration
 
-Server-rendered HTML is claimed by hydration rather than rewritten. Content produced under one locale
-and hydrated under another keeps the words the server chose, and no later change detection corrects
-it, because the binding's stored value is already the new one.
+Server-rendered HTML is claimed by hydration rather than rewritten, and hydration adopts the locale
+the server chose rather than negotiating one. Content behind a deferred hydration boundary can be
+claimed after a locale has changed. Angular's ordinary update pass then finds the stored binding
+value no longer matching the committed locale and writes the current one over the claimed DOM, so
+the block shows the committed locale. Equator adds no repair of its own for this. Content placed
+behind a boundary that Angular's public APIs cannot hydrate or replace is outside that guarantee.
 
 `renderedLocale()` reports the locale the server-rendered document was written in, and `undefined` in
-a browser that rendered the page itself. The runtime reads it to decide whether to claim server HTML
-or build it fresh. A mismatch is otherwise invisible: the page looks right, it is in the wrong
-language, and nothing throws.
+a browser that rendered the page itself. Once hydration is over, the runtime reads the locale stores
+again, so a remembered choice that the declared order puts first moves a server-rendered page after
+its first view.
 
 ## Where the guarantee ends
 

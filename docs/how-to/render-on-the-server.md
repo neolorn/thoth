@@ -63,9 +63,10 @@ verifying a catalog does not depend on who asked for it.
 
 ## Know which locale the HTML was written in
 
-`renderedLocale()` returns the locale the server-rendered document was written in, and the runtime
-reads it to decide whether hydration claims that HTML or builds it fresh. What a locale mismatch does
-to hydrated content is
+`renderedLocale()` returns the locale the server-rendered document was written in, and `undefined`
+when the browser rendered the page. When there was a server render, the runtime reads the locale
+stores again once hydration is over, so a remembered choice takes effect after the first view. What
+a locale change does to hydrated content is
 [About how a locale switch is a transaction](../explanation/about-locale-switching.md).
 
 ## Prerender
