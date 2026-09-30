@@ -200,7 +200,14 @@ export async function verifyStagePlants({
         continue;
       }
       await fresh();
-      if (plant !== undefined) await plant(work);
+      // A plant that cannot be planted has shown nothing, and the verdict below is printed whatever
+      // happened, so its failure is counted here rather than left to end the run.
+      try {
+        if (plant !== undefined) await plant(work);
+      } catch (error) {
+        failures.push(`${id}: the plant could not be planted: ${error}`);
+        continue;
+      }
       const result = runComparing(flags);
       out(`${id}: status ${result.status} in ${result.ms} ms`);
       const printed = `${result.stdout}${result.stderr}`;
