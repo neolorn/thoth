@@ -2511,4 +2511,14 @@ export const injections = Object.freeze([
     replace: '  return source;',
     caughtBy: 'packages/toolkit/test/project-host.test.ts',
   },
+  {
+    id: 'message-time-zone-overridden-by-context',
+    invariant:
+      "A time zone a message expression names is used over the formatting context's.",
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '    ...dateTimeFormatOptions(functionName, resolved),\n  };\n  if (options.timeZone === undefined) {',
+    replace:
+      '    ...dateTimeFormatOptions(functionName, resolved),\n    ...(environment.formatting.timeZone === undefined\n      ? {}\n      : { timeZone: environment.formatting.timeZone }),\n  };\n  if (options.timeZone === undefined) {',
+    caughtBy: 'packages/runtime/test/date-option-rendering.test.ts',
+  },
 ]);
