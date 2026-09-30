@@ -1807,6 +1807,14 @@ export const injections = Object.freeze([
       '      if (turnsAround && focusable !== undefined && (turnsAround as unknown) === 0) {',
   },
   {
+    id: 'scroll-hold-opened-without-focus',
+    invariant:
+      'The window that holds a restored scroll position opens only when an element had focus, because a document with nothing focused has nothing for the engine to reveal.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '      active instanceof view.HTMLElement &&\n      active !== this.document.body &&\n      active !== this.document.documentElement &&\n',
+    replace: '      active instanceof view.HTMLElement &&\n',
+  },
+  {
     id: 'browser-percent-differs-from-the-host',
     invariant:
       'Each engine renders the exercise sheet as its own Intl writes it, so a browser and a server show the same text.',

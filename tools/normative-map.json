@@ -2145,7 +2145,8 @@
         "assurance-runtime:scroll-hold-frame-budget-lifted",
         "assurance-runtime:scroll-hold-ignores-the-visitor",
         "assurance-runtime:scroll-hold-outlasts-settling",
-        "assurance-runtime:scroll-hold-survives-a-later-commit"
+        "assurance-runtime:scroll-hold-survives-a-later-commit",
+        "assurance-runtime:scroll-hold-opened-without-focus"
       ]
     },
     {

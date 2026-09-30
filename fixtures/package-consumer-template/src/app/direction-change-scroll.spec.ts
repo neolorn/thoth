@@ -205,6 +205,16 @@ describe('the window that holds a restored scroll position', () => {
     expect(held()).toEqual([50]);
     expect(viewport.y).toBe(50);
   });
+
+  it('is not opened when nothing had focus', async () => {
+    await switchedToArabic({ focused: false });
+    viewport.obeys = false;
+    viewport.y = 0;
+
+    for (let count = 0; count < 12; count += 1) frame();
+
+    expect(held()).toEqual([]);
+  });
 });
 
 /**

@@ -1314,8 +1314,13 @@ class InteractionPreservationCommitHook implements LocalizationCommitHook {
     const view = this.document.defaultView;
     if (!this.enabled || view === null) return;
     const active = this.document.activeElement;
+    // The body or the root holding focus is how a document says nothing has it, so neither is an
+    // element to put focus back on or one the engine scrolls to reveal.
     const focusable =
-      active instanceof view.HTMLElement && typeof active.focus === 'function'
+      active instanceof view.HTMLElement &&
+      active !== this.document.body &&
+      active !== this.document.documentElement &&
+      typeof active.focus === 'function'
         ? active
         : undefined;
     const editable =
