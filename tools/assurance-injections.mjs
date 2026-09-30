@@ -4190,4 +4190,13 @@ export const injections = Object.freeze([
     replace: '.plural(environment.formatting.locale, { type: pluralType })',
     caughtBy: 'packages/runtime/test/fallback-plural-selection.test.ts',
   },
+  {
+    id: 'withdrawn-page-widens-a-private-route',
+    invariant:
+      "A declaration of an absent or removed page keeps a private route's nofollow; a declaration narrows an indexing class and never widens one.",
+    source: 'packages/runtime/core/src/page-outcome.ts',
+    find: "resolved.robots === 'noindex, nofollow' ? 'noindex, nofollow' : 'noindex',",
+    replace: "'noindex',",
+    caughtBy: 'packages/runtime/test/declared-page-outcome.test.ts',
+  },
 ]);

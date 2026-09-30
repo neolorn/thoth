@@ -402,6 +402,19 @@ describe('the descriptor a declaration produces', () => {
     }
   });
 
+  it('keeps a private route private whatever its page declares', () => {
+    expect(robotsDeclared('private')).toStrictEqual([
+      'noindex, nofollow',
+      'noindex, nofollow',
+      'noindex, nofollow',
+    ]);
+    expect(robotsDeclared('non-indexable')).toStrictEqual([
+      'noindex',
+      'noindex',
+      'noindex',
+    ]);
+  });
+
   it('keeps how the language was chosen, which the status does not change', () => {
     const negotiated = routeHttpDescriptor({
       status: 'success',

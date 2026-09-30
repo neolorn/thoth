@@ -2309,7 +2309,8 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "12. The document head",
-      "statement": "An indexing class may be narrowed by a declaration and MUST NOT be widened by one."
+      "statement": "An indexing class may be narrowed by a declaration and MUST NOT be widened by one.",
+      "checks": ["assurance:withdrawn-page-widens-a-private-route"]
     },
     {
       "spec": "07-routing-rendering-and-seo.spec.md",

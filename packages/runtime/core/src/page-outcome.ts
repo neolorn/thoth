@@ -221,10 +221,13 @@ export function pageOutcomeHttpDescriptor(
       cache: 'private-no-store',
     });
   }
+  // The narrower of the two: a withdrawn page is not indexed, and a route that also keeps its links
+  // from being followed keeps that too, since section 12 lets a declaration narrow a class only.
   return Object.freeze({
     status: declaration.outcome === 'absent' ? 404 : 410,
     ...language,
-    robots: 'noindex',
+    robots:
+      resolved.robots === 'noindex, nofollow' ? 'noindex, nofollow' : 'noindex',
     cache: 'private-no-store',
   });
 }
