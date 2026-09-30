@@ -16,6 +16,26 @@ separately would agree until one of them was edited.
 The projection starts from the generated one, so a route added later is covered without a second list
 to maintain, and per-locale route and parameter spellings live beside it.
 
+## How a route is named
+
+Everything that refers to a route by name, from a server render mode to a document title to a
+sitemap entry, uses the identity `generate` derives from the route's full path. It is `route:`
+followed by the path's segments joined by `.`, with each parameter written `_` and the empty path
+written `_index`:
+
+| Path                 | Identity                 |
+| -------------------- | ------------------------ |
+| `''`                 | `route:_index`           |
+| `second`             | `route:second`           |
+| `articles/:slug`     | `route:articles._`       |
+| `orders/:id/invoice` | `route:orders._.invoice` |
+
+A literal segment keeps its ASCII letters and digits, and a run of anything else becomes one `-`.
+Renaming a parameter changes no identity, and the path your visitors see in each locale has no part
+in it. A route that states `data: { equatorRouteId: 'article' }` has that identity instead. State one
+where two paths would derive the same identity or a path has nothing to derive one from, both of
+which `generate` reports as `EQ1404`.
+
 ## Writing a link as a route
 
 A link spelled `/ar-eg/second` stops being true the moment the visitor switches. Worse, clicking it

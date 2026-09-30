@@ -11,12 +11,36 @@ browser-only application installs neither the peer nor this code.
 ## Compose the server providers
 
 ```text
-providers: [provideLocalizedServerRendering()],
+import { mergeApplicationConfig, type ApplicationConfig } from '@angular/core';
+import { RenderMode } from '@angular/ssr';
+import { provideLocalizedServerRendering } from '@neolorn/equator/ssr';
+import { configuration } from '#i18n';
+
+import { appConfig } from './app.config';
+import { appRouteProjection, routePolicy } from './localization.routes';
+
+const serverConfig: ApplicationConfig = {
+  providers: [
+    provideLocalizedServerRendering(
+      routePolicy,
+      appRouteProjection,
+      configuration,
+      [
+        { routeId: 'route:_index', renderMode: RenderMode.Server },
+        { routeId: 'route:second', renderMode: RenderMode.Prerender },
+      ],
+      { fallback: RenderMode.Server },
+    ),
+  ],
+};
+
+export const config = mergeApplicationConfig(appConfig, serverConfig);
 ```
 
-It goes in your server configuration, beside Angular's own server providers. It adds the per-request
-work: negotiating the locale for the request, preparing the scopes that request needs, and making
-the result available to the render.
+This is `app.config.server.ts`. The call takes the place of `provideServerRendering(withRoutes(...))`,
+and its declarations take the place of `app.routes.server.ts`, which you delete. Pass the policy and
+projection `withRouting()` receives. It adds the per-request work: negotiating the locale for the
+request, preparing the scopes that request needs, and making the result available to the render.
 
 On the server, `provideLocalizedRouter` needs the origin your pages are published at, because the
 canonical link and the `hreflang` alternates are composed from it. It refuses to start without one:
@@ -24,6 +48,10 @@ canonical link and the `hreflang` alternates are composed from it. It refuses to
 ```text
 provideLocalizedRouter(routes, { origin: 'https://example.com' }),
 ```
+
+A `routeId` is the identity `generate` gave the route, which
+[About how routing derives addresses](../explanation/about-addresses.md#how-a-route-is-named)
+describes. `fallback` is the render mode of every route the declarations do not name.
 
 The localization a request renders under is scoped to that request, so two concurrent renders never
 share a committed locale. Catalogs are admitted once per process rather than once per request:
@@ -51,7 +79,7 @@ table is, or give a function the build calls for them:
 
 ```text
 {
-  routeId: 'article',
+  routeId: 'route:articles._',
   renderMode: RenderMode.Prerender,
   prerender: async () =>
     (await articles.published()).map((article) => ({ slug: article.id })),
@@ -79,10 +107,18 @@ origin's locale only, at the addresses that origin serves. The head still advert
 Serving several domains means a build per domain.
 
 That policy also needs the server told the same list of domains. `@angular/ssr` answers a `Host`
-header it does not recognize with `400`, before your application runs, and it recognizes loopback and
-nothing else by default. `allowedLocaleHosts(routePolicy)` derives the list, so `allowedHosts` is the
-policy rather than a second copy of it. It returns an empty list for the policies that serve one
-origin, so the line is the same whichever policy you end up with.
+header it does not recognize with `400`, before your application runs. A built server recognizes the
+hosts its `allowedHosts` option lists and the ones the `security.allowedHosts` build option lists,
+and no others, loopback included. `allowedLocaleHosts(routePolicy)` derives the policy's list, so
+`allowedHosts` is the policy rather than a second copy of it. It returns an empty list for the
+policies that serve one origin, so the line is the same whichever policy you end up with. List the
+host you run the built server at beside it:
+
+```text
+const angularApp = new AngularNodeAppEngine({
+  allowedHosts: ['localhost', ...allowedLocaleHosts(routePolicy)],
+});
+```
 
 ## Know what a redirect carries
 
