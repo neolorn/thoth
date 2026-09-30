@@ -168,6 +168,29 @@ describe('bounded authored inputs', () => {
         .ok,
     ).toBe(false);
 
+    // A throwing getter is refused whether or not it ran, because the throw is caught and reported
+    // like any other refusal. One that answers a valid value and counts its calls is the only way
+    // to tell a snapshot that never ran it from one that did.
+    let reads = 0;
+    const answering = {
+      kind: 'identifier-segment',
+      syntax: 'ascii-token',
+      maximumLength: 32,
+    } as Record<string, unknown>;
+    Object.defineProperty(answering, 'id', {
+      enumerable: true,
+      get: () => {
+        reads += 1;
+        return 'example:sku';
+      },
+    });
+    expect(
+      defineExtensionRegistry([
+        answering as unknown as ExtensionDescriptorInput,
+      ]).ok,
+    ).toBe(false);
+    expect(reads).toBe(0);
+
     const cyclicOptions: Record<string, unknown> = {};
     cyclicOptions['cycle'] = cyclicOptions;
     expect(

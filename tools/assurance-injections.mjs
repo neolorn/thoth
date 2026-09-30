@@ -3227,4 +3227,911 @@ export const injections = Object.freeze([
     replace: '      false',
     caughtBy: 'packages/toolkit/test/interchange.test.ts',
   },
+  {
+    id: 'ambiguous-discovery-picks-the-nearest',
+    invariant:
+      'Upward configuration discovery that finds more than one candidate within the package fails with EQ1702 naming every candidate.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: "  if (within.length > 1) return { outcome: 'many', candidates: within };",
+    replace:
+      "  if (within.length > 1) return { outcome: 'one', ownerRoot: within[0] as string };",
+    caughtBy: 'packages/toolkit/test/configuration-discovery.test.ts',
+  },
+  {
+    id: 'analysis-evaluates-application-modules',
+    invariant:
+      'Static analysis reads the application without evaluating any of its modules, getters, calls or decorators.',
+    source: 'packages/toolkit/src/static-analysis.ts',
+    find: '  const program = ts.createProgram({\n    rootNames: request.rootNames.map((path) =>',
+    replace:
+      "  for (const name of request.rootNames) {\n    try {\n      const text = suppliedSources.get(normalizePath(name)) ?? readFileSync(name, 'utf8');\n      const output = ts.transpileModule(text, { compilerOptions: { module: ts.ModuleKind.CommonJS, experimentalDecorators: true } }).outputText;\n      const messages = new Proxy({}, { get: () => ({ messageId: '' }) });\n      new Function('exports', 'require', output)({}, () => ({ messages }));\n    } catch {\n      // An evaluation that fails is still an evaluation.\n    }\n  }\n  const program = ts.createProgram({\n    rootNames: request.rootNames.map((path) =>",
+    caughtBy: 'packages/toolkit/test/analysis-executes-nothing.test.ts',
+  },
+  {
+    id: 'authored-digits-inspected',
+    invariant:
+      'Digits inside an authored catalog value are neither reported nor rewritten between the catalog and the compiled output.',
+    source: 'packages/toolkit/src/catalog.ts',
+    find: '      const violation = inspectAuthoredBidi(value);',
+    replace:
+      "      const violation = inspectAuthoredBidi(value);\n      if (/\\p{Nd}{3,}/u.test(value)) {\n        diagnostics.push(\n          yamlDiagnostic(\n            source,\n            sourcePath,\n            'EQ1103',\n            'Equator catalog text carries digits a locale would render in its own numbering system.',\n            { node, path },\n          ),\n        );\n      }",
+    caughtBy: 'packages/toolkit/test/authored-digits.test.ts',
+  },
+  {
+    id: 'cached-state-reaches-the-output',
+    invariant:
+      'Generated output is byte-identical whether or not a work root with earlier compiler state was present.',
+    source: 'packages/toolkit/src/compiler.ts',
+    find: '    contractFiles: contracts.value,',
+    replace:
+      '    contractFiles:\n      request.previousState === undefined\n        ? contracts.value\n        : contracts.value.map((file, index) =>\n            index === 0\n              ? { ...file, contents: `${file.contents}// ${request.previousState?.outputPlanDigest}\\n` }\n              : file,\n          ),',
+    caughtBy: 'packages/toolkit/test/work-root-determinism.test.ts',
+  },
+  {
+    id: 'catalog-discovery-reads-build-output',
+    invariant:
+      'Catalogs are discovered only in the owner catalog directory; catalog-shaped files in build output, dependencies or a nested project are never read.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '  const scopeEntries = await readdir(catalogRoot, { withFileTypes: true });\n  scopeEntries.sort((left, right) => compareCodePoint(left.name, right.name));\n  for (const scopeEntry of scopeEntries) {\n    if (scopeEntry.isSymbolicLink() || !scopeEntry.isDirectory()) {\n      diagnostics.push(\n        projectDiagnostic(\n          `Equator catalog root contains unsupported entry ${JSON.stringify(scopeEntry.name)}.`,\n        ),\n      );\n      continue;\n    }\n    const scopeRoot = resolve(catalogRoot, scopeEntry.name);',
+    replace:
+      "  const scopeEntries = (\n    await Promise.all(\n      ['i18n', 'dist/i18n', 'dist/browser/i18n'].map((root) =>\n        readdir(resolve(location.ownerRoot, ...root.split('/')), {\n          withFileTypes: true,\n        }).catch(() => []),\n      ),\n    )\n  ).flat();\n  scopeEntries.sort((left, right) => compareCodePoint(left.name, right.name));\n  for (const scopeEntry of scopeEntries) {\n    if (scopeEntry.isSymbolicLink() || !scopeEntry.isDirectory()) {\n      diagnostics.push(\n        projectDiagnostic(\n          `Equator catalog root contains unsupported entry ${JSON.stringify(scopeEntry.name)}.`,\n        ),\n      );\n      continue;\n    }\n    const scopeRoot = resolve(scopeEntry.parentPath, scopeEntry.name);",
+    caughtBy: 'packages/toolkit/test/catalog-discovery-exclusions.test.ts',
+  },
+  {
+    id: 'check-fix-drops-a-message',
+    invariant:
+      'check --fix rewrites an authored catalog only when the rewritten text parses to the same catalog model.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '    const contents = formatted.value;\n    const roundTrip = parseCatalog(contents, catalogOptions);\n    if (\n      !roundTrip.ok ||\n      JSON.stringify(roundTrip.value) !== JSON.stringify(file.catalog)\n    ) {',
+    replace:
+      "    const contents = formatted.value.replace(/\\n[^\\n]*\\n$/u, '\\n');\n    const roundTrip = parseCatalog(contents, catalogOptions);\n    if (\n      !roundTrip.ok\n    ) {",
+    caughtBy: 'packages/toolkit/test/check-fix-preserves-semantics.test.ts',
+  },
+  {
+    id: 'cli-answer-differs-from-the-api',
+    invariant:
+      'The command line reports the diagnostics and plan the programmatic API returns for the same project, because both run the same core.',
+    source: 'packages/toolkit/src/cli.ts',
+    find: '    unique.set(diagnosticKey(diagnostic), diagnostic);',
+    replace:
+      "    if (diagnostic.severity === 'info') continue;\n    unique.set(diagnosticKey(diagnostic), diagnostic);",
+    caughtBy: 'packages/toolkit/test/cli-surface-agreement.test.ts',
+  },
+  {
+    id: 'compiler-cache-carries-a-timestamp',
+    invariant: 'No file in the work root carries a timestamp.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '    stateDigest,\n    state,\n  });\n  return `${JSON.stringify(envelope, null, 2)}\\n`;',
+    replace:
+      '    stateDigest,\n    state,\n    writtenAt: new Date().toISOString(),\n  });\n  return `${JSON.stringify(envelope, null, 2)}\\n`;',
+    caughtBy: 'packages/toolkit/test/work-root-determinism.test.ts',
+  },
+  {
+    id: 'compiler-cache-carries-the-owner-root',
+    invariant: "No file in the work root carries the owner's absolute path.",
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '  const contents = compilerCacheContents(ownerId, state);',
+    replace:
+      '  const contents = compilerCacheContents(ownerId, {\n    ...state,\n    ownerRoot: project.ownerRoot,\n  } as CompilerState);',
+    caughtBy: 'packages/toolkit/test/work-root-determinism.test.ts',
+  },
+  {
+    id: 'compiler-core-schedules-work',
+    invariant:
+      'Nothing the compiler core can run reaches process state, the network, a filesystem write, a timer or a watch.',
+    source: 'packages/toolkit/src/output-plan.ts',
+    find: '  const exact = new Set<string>();\n',
+    replace:
+      '  const exact = new Set<string>();\n  setTimeout(() => undefined, 0);\n',
+    caughtBy: 'packages/toolkit/test/compiler-core-isolation.test.ts',
+  },
+  {
+    id: 'duplicate-catalog-identity-accepted',
+    invariant:
+      'Two catalogs with one provider, scope and locale fail the compilation, whichever arrives first.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '      if (byLocale.has(catalog.locale)) {',
+    replace: '      if (false as boolean) {',
+    caughtBy: 'packages/toolkit/test/catalog-discovery-exclusions.test.ts',
+  },
+  {
+    id: 'empty-project-generation-refused',
+    invariant:
+      'Generation on a project with no catalogs succeeds and reports only an info note naming where the first catalog goes.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: "for example i18n/shell/${configuration.sourceLocale}.yaml.`,\n            'info',",
+    replace:
+      "for example i18n/shell/${configuration.sourceLocale}.yaml.`,\n            'error',",
+    caughtBy: 'packages/toolkit/test/first-run-sequence.test.ts',
+  },
+  {
+    id: 'exported-message-group-counts-as-use',
+    invariant:
+      'Exporting a message group, by name, by re-export or as a default, is not a reachability root.',
+    source: 'packages/toolkit/src/static-analysis.ts',
+    find: '          ts.isArrayLiteralExpression(node.parent);',
+    replace:
+      '          ts.isArrayLiteralExpression(node.parent) ||\n          ts.isExportAssignment(node.parent) ||\n          ts.isExportSpecifier(node.parent);',
+    caughtBy: 'packages/toolkit/test/public-export-not-a-root.test.ts',
+  },
+  {
+    id: 'extension-descriptor-accessor-invoked',
+    invariant:
+      'A programmatic extension descriptor is read as inert data: an accessor on it is refused without being called.',
+    source: 'packages/toolkit/src/extensions.ts',
+    find: '    snapshot = portableSnapshot(inputs);',
+    replace:
+      '    snapshot = JSON.parse(JSON.stringify(inputs)) as CanonicalJsonValue;',
+    caughtBy: 'packages/toolkit/test/bounded-inputs-and-parser-safety.test.ts',
+  },
+  {
+    id: 'extension-descriptor-carries-its-own-fingerprint',
+    invariant:
+      'An extension descriptor that carries a fingerprint of its own is refused; the fingerprint is always derived.',
+    source: 'packages/toolkit/src/schemas.ts',
+    find: "            additionalProperties: false,\n            required: [\n              'kind',\n              'id',\n              'operandType',",
+    replace:
+      "            additionalProperties: true,\n            required: [\n              'kind',\n              'id',\n              'operandType',",
+    caughtBy: 'packages/toolkit/test/extension-descriptor-authority.test.ts',
+  },
+  {
+    id: 'generated-module-imports-a-sibling-relatively',
+    invariant:
+      'Generated modules reach one another through the #i18n import base, never a relative path or a compiler-only alias.',
+    source: 'packages/toolkit/src/generated-contracts.ts',
+    find: '    "import { catalogSet } from \'#i18n/catalog-set\';",',
+    replace: '    "import { catalogSet } from \'./catalog-set\';",',
+    caughtBy: 'packages/toolkit/test/generated-import-base.test.ts',
+  },
+  {
+    id: 'human-column-zero-based',
+    invariant:
+      'A human diagnostic position is the machine span start plus one, in line and column.',
+    source: 'packages/toolkit/src/cli.ts',
+    find: '          diagnostic.span.start.column + 1',
+    replace: '          diagnostic.span.start.column',
+    caughtBy: 'packages/toolkit/test/cli-streams-prompts-interruption.test.ts',
+  },
+  {
+    id: 'human-diagnostics-on-stdout',
+    invariant:
+      'Human diagnostics are written to standard error, never to standard output.',
+    source: 'packages/toolkit/src/cli.ts',
+    find: '      process.stderr.write(humanDiagnostic(diagnostic));\n    // The success lines',
+    replace:
+      '      process.stdout.write(humanDiagnostic(diagnostic));\n    // The success lines',
+    caughtBy: 'packages/toolkit/test/cli-streams-prompts-interruption.test.ts',
+  },
+  {
+    id: 'init-adds-a-lifecycle-script',
+    invariant:
+      'init adds only equator:* commands to package.json scripts and no install, publish, pre or post hook.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: "  'equator:watch': 'equator watch',\n});",
+    replace:
+      "  'equator:watch': 'equator watch',\n  prebuild: 'equator generate',\n});",
+    caughtBy: 'packages/toolkit/test/init-leaves-the-build-alone.test.ts',
+  },
+  {
+    id: 'init-asks-a-fifth-question',
+    invariant:
+      'Interactive init asks exactly the source locale, the default locale, the supported locales and the aliases, in that order.',
+    source: 'packages/toolkit/src/cli.ts',
+    find: '    const aliases =\n      aliasText.length === 0',
+    replace:
+      "    await prompt.question('Fallback locale: ');\n    const aliases =\n      aliasText.length === 0",
+    caughtBy: 'packages/toolkit/test/cli-streams-prompts-interruption.test.ts',
+  },
+  {
+    id: 'init-prompts-off-a-terminal',
+    invariant:
+      'A bare equator init prompts only when standard input and standard error are both terminals; otherwise it asks nothing and fails with the complete invocation.',
+    source: 'packages/toolkit/src/cli.ts',
+    find: '  if (hasArguments || !process.stdin.isTTY || !process.stderr.isTTY) {',
+    replace: '  if (hasArguments) {',
+    caughtBy: 'packages/toolkit/test/cli-streams-prompts-interruption.test.ts',
+  },
+  {
+    id: 'interchange-source-read-as-wording',
+    invariant:
+      'An imported interchange unit contributes its translation only; an edited source side is never read as catalog wording.',
+    source: 'packages/toolkit/src/xliff.ts',
+    find: '    const pattern = data === undefined ? undefined : patternText(target, data);',
+    replace:
+      "    const edited = childElements(segment, XLIFF_NAMESPACE, 'source')[0] ?? target;\n    const pattern = data === undefined ? undefined : patternText(edited, data);",
+    caughtBy: 'packages/toolkit/test/interchange-authority.test.ts',
+  },
+  {
+    id: 'interruption-after-failure',
+    invariant:
+      'An interrupted run answers 130 even when it had already failed.',
+    source: 'packages/toolkit/src/cli.ts',
+    find: '    if (wasInterrupted()) return 130;\n    if (!result.ok) return reportFailure(invocation, result.diagnostics);',
+    replace:
+      '    if (!result.ok) return reportFailure(invocation, result.diagnostics);\n    if (wasInterrupted()) return 130;',
+    caughtBy: 'packages/toolkit/test/cli-streams-prompts-interruption.test.ts',
+  },
+  {
+    id: 'invented-input-follows-completeness-policy',
+    invariant:
+      'Turning an opt-in completeness policy off, or on with a declaration, leaves a protected error at error.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: "          `Target message ${JSON.stringify(messageId)} changes or invents input ${JSON.stringify(input.name)}.`,\n          ['messages', messageId],\n",
+    replace:
+      "          `Target message ${JSON.stringify(messageId)} changes or invents input ${JSON.stringify(input.name)}.`,\n          ['messages', messageId],\n          policy.severity,\n",
+    caughtBy: 'packages/toolkit/test/protected-errors-under-policy.test.ts',
+  },
+  {
+    id: 'lazy-route-table-loaded-to-read-it',
+    invariant:
+      'Route analysis follows a lazy loader through the program and never evaluates the route file it names.',
+    source: 'packages/toolkit/src/static-analysis.ts',
+    find: '          lazyEntryFiles.add(target);',
+    replace:
+      "          lazyEntryFiles.add(target);\n          try {\n            new Function('exports', 'require', ts.transpileModule(target.text, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText)({}, () => ({}));\n          } catch {\n            // Loading the table is how its routes would be read.\n          }",
+    caughtBy: 'packages/toolkit/test/route-code-not-executed.test.ts',
+  },
+  {
+    id: 'machine-stdout-carries-human-text',
+    invariant:
+      'Under --json, standard output carries exactly one JSON document and nothing else.',
+    source: 'packages/toolkit/src/cli.ts',
+    find: '    writeMachineResult(invocation.command, exitCode, ordered, result);',
+    replace:
+      '    writeMachineResult(invocation.command, exitCode, ordered, result);\n    process.stdout.write(`${human}\\n`);',
+    caughtBy: 'packages/toolkit/test/cli-streams-prompts-interruption.test.ts',
+  },
+  {
+    id: 'manifest-read-once-during-inspection',
+    invariant:
+      'Output freshness rereads the completion manifest after inspecting the inventory and fails as stale (EQ1603) when it changed or vanished in between.',
+    source: 'packages/toolkit/src/output-host.ts',
+    find: '  const confirmed = await readCurrentManifest(generatedRoot);',
+    replace: '  const confirmed = current;',
+    caughtBy: 'packages/toolkit/test/manifest-reread.test.ts',
+  },
+  {
+    id: 'manifest-vouches-for-edited-output',
+    invariant:
+      'A generated file whose completion manifest agrees with it is still rewritten when it is not what the output plan produces.',
+    source: 'packages/toolkit/src/output-host.ts',
+    find: '    else if (existing.digest !== file.digest || existing.bytes !== file.bytes) {',
+    replace: '    else if (false as boolean) {',
+    caughtBy: 'packages/toolkit/test/first-generation-overlay.test.ts',
+  },
+  {
+    id: 'nested-generated-and-work-roots-accepted',
+    invariant:
+      'The generated root and the work root are refused when one is, contains or lies inside the other.',
+    source: 'packages/toolkit/src/output-host.ts',
+    find: '    generatedRoot === workRoot ||\n    containedPath(generatedRoot, workRoot) ||\n    containedPath(workRoot, generatedRoot)\n',
+    replace: '    false\n',
+    caughtBy: 'packages/toolkit/test/generated-root-separation.test.ts',
+  },
+  {
+    id: 'output-transaction-swaps-a-directory',
+    invariant:
+      'Publishing a generation renames only files and never renames a directory or creates a link.',
+    source: 'packages/toolkit/src/output-host.ts',
+    find: '      if (await pathExists(backup)) await unlink(backup);\n    }\n    await unlink(journalPath);',
+    replace:
+      '      if (await pathExists(backup)) await unlink(backup);\n    }\n    await rename(roots.generatedRoot, `${roots.generatedRoot}.previous`);\n    await rename(`${roots.generatedRoot}.previous`, roots.generatedRoot);\n    await unlink(journalPath);',
+    caughtBy: 'packages/toolkit/test/output-transaction-primitives.test.ts',
+  },
+  {
+    id: 'owner-identity-follows-the-scope-list',
+    invariant:
+      'Writing the first catalog or adding a scope needs no Equator step before the next generation succeeds.',
+    source: 'packages/toolkit/src/compiled-artifacts.ts',
+    find: '  const ownerId = generatedOwnerId(request.owner);',
+    replace:
+      "  const ownerId = digestCanonicalJson('equator-generated-owner/1', {\n    owner: generatedOwnerId(request.owner),\n    scopes: [...new Set(request.catalogs.map((catalog) => catalog.scopeId))].sort(),\n  });",
+    caughtBy: 'packages/toolkit/test/first-run-sequence.test.ts',
+  },
+  {
+    id: 'string-literal-counts-as-message-use',
+    invariant:
+      'A string, an interpolated string, an unbounded index or an object spelled like a handle never becomes a message identity.',
+    source: 'packages/toolkit/src/static-analysis.ts',
+    find: '      if (\n        ts.isIdentifier(node) ||\n        ts.isPropertyAccessExpression(node) ||\n        ts.isElementAccessExpression(node)\n      ) {\n        const identity = resolvedMessageIdentity(checker, node);',
+    replace:
+      "      if (ts.isStringLiteral(node)) {\n        const named = [...knownIdentities].find(\n          (known) => known === node.text || known.endsWith(`:${node.text}`),\n        );\n        if (named !== undefined) {\n          addUsage(named, portableSourcePath, node.getStart(sourceFile), node.getEnd(), 'typescript');\n        }\n      }\n      if (\n        ts.isIdentifier(node) ||\n        ts.isPropertyAccessExpression(node) ||\n        ts.isElementAccessExpression(node)\n      ) {\n        const identity = resolvedMessageIdentity(checker, node);",
+    caughtBy: 'packages/toolkit/test/message-identity-sources.test.ts',
+  },
+  {
+    id: 'terminal-escape-to-a-non-terminal',
+    invariant:
+      'Nothing the executable writes to a non-terminal carries a terminal escape.',
+    source: 'packages/toolkit/src/cli.ts',
+    find: '  return `${location}${diagnostic.severity} ${diagnostic.code}: ${diagnostic.summary}\\n`;',
+    replace:
+      '  return `\\u001b[33m${location}${diagnostic.severity} ${diagnostic.code}: ${diagnostic.summary}\\n`;',
+    caughtBy: 'packages/toolkit/test/cli-streams-prompts-interruption.test.ts',
+  },
+  {
+    id: 'toolkit-import-writes-to-disk',
+    invariant:
+      'Importing the toolkit entry point compiles nothing, watches nothing, writes nothing and changes no process state.',
+    source: 'packages/toolkit/src/index.ts',
+    find: "export { parseConfiguration } from './configuration.js';",
+    replace:
+      "export { parseConfiguration } from './configuration.js';\nimport { mkdirSync as probe } from 'node:fs';\nprobe('.equator', { recursive: true });",
+    caughtBy: 'packages/toolkit/test/import-cost.test.ts',
+  },
+  {
+    id: 'translation-state-kept-in-the-work-root',
+    invariant:
+      'The translation-state record lives outside every disposable and default-ignored root and survives a clean.',
+    source: 'packages/toolkit/src/translation-state.ts',
+    find: "export const TRANSLATION_STATE_PATH =\n  '.equator-translation-state.json' as const;",
+    replace:
+      "export const TRANSLATION_STATE_PATH =\n  '.equator/translation-state.json' as const;",
+    caughtBy: 'packages/toolkit/test/translation-state-durability.test.ts',
+  },
+  {
+    id: 'undeclared-extension-option-accepted',
+    invariant:
+      'A catalog that passes a registered function an option it does not declare is an error.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '      if (option === undefined) {\n        diagnostics.push(',
+    replace:
+      '      if (option === undefined) {\n        continue;\n        diagnostics.push(',
+    caughtBy: 'packages/toolkit/test/catalog-extension-references.test.ts',
+  },
+  {
+    id: 'unregistered-extension-reference-accepted',
+    invariant:
+      'A catalog reference to a message function the project registry does not hold is an error.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: "    if (descriptor === undefined) {\n      diagnostics.push(\n        semanticDiagnostic(\n          catalog,\n          'EQ1805',\n          `Message function ${JSON.stringify(reference.name)} has no registered application-local descriptor.`,",
+    replace:
+      "    if (descriptor === undefined) {\n      continue;\n      diagnostics.push(\n        semanticDiagnostic(\n          catalog,\n          'EQ1805',\n          `Message function ${JSON.stringify(reference.name)} has no registered application-local descriptor.`,",
+    caughtBy: 'packages/toolkit/test/catalog-extension-references.test.ts',
+  },
+  {
+    id: 'watch-drops-the-pending-cycle',
+    invariant:
+      'An event that arrives while a generation runs causes one more generation after it, so the latest input is what ends up published.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '      } else if (pending) {\n        pending = false;\n        void cycle();',
+    replace: '      } else if (pending) {\n        pending = false;',
+    caughtBy: 'packages/toolkit/test/watch-reconciliation.test.ts',
+  },
+  {
+    id: 'watch-generates-on-every-event',
+    invariant:
+      'Watch debounces filesystem events, so the events of a write in progress produce one generation from the finished file.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '        if (timer !== undefined) clearTimeout(timer);\n        timer = setTimeout(() => {\n          timer = undefined;\n          void cycle();\n        }, debounce);',
+    replace: '        void cycle();',
+    caughtBy: 'packages/toolkit/test/watch-reconciliation.test.ts',
+  },
+  {
+    id: 'watch-ignores-an-unnamed-event',
+    invariant:
+      'A filesystem event that names no file (a dropped or overflowed event) widens to a full reconciliation.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '  if (fileName === null) return false;',
+    replace: '  if (fileName === null) return true;',
+    caughtBy: 'packages/toolkit/test/watch-reconciliation.test.ts',
+  },
+  {
+    id: 'watch-leaves-its-watcher-open',
+    invariant:
+      'Watch holds its platform watcher only while the call runs, and closes it before returning.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '    timer = undefined;\n    watcher?.close();\n    watcher = undefined;',
+    replace: '    timer = undefined;\n    watcher = undefined;',
+    caughtBy: 'packages/toolkit/test/watch-foreground.test.ts',
+  },
+  {
+    id: 'watch-skips-startup-reconciliation',
+    invariant: 'Watch reconciles fully at startup before any filesystem event.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '  await cycle();\n  if (options.signal.aborted',
+    replace: '  if (options.signal.aborted',
+    caughtBy: 'packages/toolkit/test/watch-reconciliation.test.ts',
+  },
+  {
+    id: 'asynchronous-formatting-adapter-admitted',
+    invariant:
+      'A formatting adapter that answers with a thenable is refused, even when the thenable carries text.',
+    source: 'packages/runtime/src/formatting-runtime.ts',
+    find: '      !isPlainRecord(output) ||\n      isPromiseLike(output) ||',
+    replace: '      !isPlainRecord(output) ||',
+    caughtBy: 'packages/runtime/test/formatting-adapter-refusals.test.ts',
+  },
+  {
+    id: 'closed-literal-set-coerced',
+    invariant:
+      'A value is matched against a closed literal set exactly, without case folding, trimming or string conversion.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: "    return typeof value === 'string' && contract.enum.includes(value);",
+    replace:
+      '    return contract.enum.includes(String(value).trim().toLowerCase());',
+    caughtBy: 'packages/runtime/test/closed-literal-set.test.ts',
+  },
+  {
+    id: 'closed-literal-set-open',
+    invariant:
+      "A string outside an input's closed literal set is refused as invalid-message-input and never interpolated.",
+    source: 'packages/runtime/src/evaluator.ts',
+    find: "    return typeof value === 'string' && contract.enum.includes(value);",
+    replace: "    return typeof value === 'string';",
+    caughtBy: 'packages/runtime/test/closed-literal-set.test.ts',
+  },
+  {
+    id: 'content-language-maximized',
+    invariant:
+      'The language a consumer declares for its content comes back as declared, never expanded with likely subtags.',
+    source: 'packages/runtime/src/locale-presentation.ts',
+    find: "    language: profile.locale,\n    direction: profile.direction,\n    classification: 'known',",
+    replace:
+      "    language: new Intl.Locale(profile.locale).maximize().toString(),\n    direction: profile.direction,\n    classification: 'known',",
+    caughtBy: 'packages/runtime/test/content-language-preserved.test.ts',
+  },
+  {
+    id: 'content-language-minimized',
+    invariant:
+      'The language a consumer declares for its content comes back as declared, never reduced to its minimal form.',
+    source: 'packages/runtime/src/locale-presentation.ts',
+    find: "    language: profile.locale,\n    direction: profile.direction,\n    classification: 'known',",
+    replace:
+      "    language: new Intl.Locale(profile.locale).minimize().toString(),\n    direction: profile.direction,\n    classification: 'known',",
+    caughtBy: 'packages/runtime/test/content-language-preserved.test.ts',
+  },
+  {
+    id: 'empty-families-mapping-written',
+    invariant:
+      'The canonical writer omits the families mapping from a source catalog whose scope has none.',
+    source: 'packages/toolkit/src/catalog.ts',
+    find: '    ...(Object.keys(catalog.families).length === 0\n      ? {}',
+    replace: '    ...((false as boolean)\n      ? {}',
+    caughtBy: 'packages/toolkit/test/families-placement.test.ts',
+  },
+  {
+    id: 'entry-workflow-field-accepted',
+    invariant:
+      'A source or target catalog entry carrying an identity, locale, ownership, revision, approval, ticket, vendor or status field is refused.',
+    source: 'packages/toolkit/src/schemas.ts',
+    find: "const messageRecordSchema = {\n  type: 'object',\n  additionalProperties: false,",
+    replace:
+      "const messageRecordSchema = {\n  type: 'object',\n  additionalProperties: true,",
+    caughtBy: 'packages/toolkit/test/entry-workflow-fields.test.ts',
+  },
+  {
+    id: 'fallback-accepts-an-unknown-input',
+    invariant:
+      'An input the supplying message does not declare is refused, not ignored.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '    if (!contracts.has(name)) invalidInput(`Unknown message input ${name}.`);',
+    replace: '    void contracts.has(name);',
+    caughtBy: 'packages/runtime/test/incompatible-fallback-candidate.test.ts',
+  },
+  {
+    id: 'fallback-accepts-another-generated-abi',
+    invariant:
+      'A fallback catalog built against another generated ABI is refused, not rendered.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '    handle.generatedAbi !== candidate.catalog.generatedAbi ||',
+    replace: '    false ||',
+    caughtBy: 'packages/runtime/test/incompatible-fallback-candidate.test.ts',
+  },
+  {
+    id: 'fallback-accepts-another-result-kind',
+    invariant:
+      "A fallback message whose result kind differs from the handle's is refused, not rendered.",
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '    handle.resultKind !== message.resultKind\n  ) {',
+    replace: '    false\n  ) {',
+    caughtBy: 'packages/runtime/test/incompatible-fallback-candidate.test.ts',
+  },
+  {
+    id: 'fallback-values-formatted-in-the-supplying-locale',
+    invariant:
+      "A value in a message a fallback catalog supplied is written in the target locale's formatting context, not the supplying catalog's.",
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '    formatter = environment.formatterCache.number(\n      formattingTag,\n      options as Intl.NumberFormatOptions,',
+    replace:
+      '    formatter = environment.formatterCache.number(\n      environment.supplyingLocale,\n      options as Intl.NumberFormatOptions,',
+    caughtBy: 'packages/runtime/test/supplying-and-formatting-locale.test.ts',
+  },
+  {
+    id: 'family-segment-key-unmatched',
+    invariant:
+      'A segments key that is not a placeholder of the template is refused with EQ1305 at the segments mapping.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '  if (segmentNames.some((name) => !placeholders.has(name))) {',
+    replace: '  if (false as boolean) {',
+    caughtBy: 'packages/toolkit/test/family-templates.test.ts',
+  },
+  {
+    id: 'family-segment-type-unregistered',
+    invariant:
+      'A segments value that is not a registered identifier-segment type is refused with EQ1805.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: "      extensionDescriptor(extensions, 'identifier-segment', type) === undefined\n    ) {",
+    replace: '      (false as boolean)\n    ) {',
+    caughtBy: 'packages/toolkit/test/family-templates.test.ts',
+  },
+  {
+    id: 'family-template-pattern-part-accepted',
+    invariant:
+      'A template part that is neither a whole placeholder nor a message-identity literal, such as a glob, a regular expression, an optional or repeated marker, alternation or concatenation, is refused with EQ1305 at the template.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '    } else if (nativeMessagePartPattern.test(part)) {',
+    replace: '    } else if (true as boolean) {',
+    caughtBy: 'packages/toolkit/test/family-templates.test.ts',
+  },
+  {
+    id: 'family-template-placeholder-repeated',
+    invariant:
+      'A template that repeats a placeholder is refused with EQ1305 at the template.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '      if (placeholders.has(name)) {',
+    replace: '      if (false as boolean) {',
+    caughtBy: 'packages/toolkit/test/family-templates.test.ts',
+  },
+  {
+    id: 'family-template-without-fixed-part',
+    invariant:
+      'A template without a literal part or without a placeholder is refused with EQ1305 at the template.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '  if (literalCount === 0 || placeholders.size === 0) {',
+    replace: '  if (false as boolean) {',
+    caughtBy: 'packages/toolkit/test/family-templates.test.ts',
+  },
+  {
+    id: 'family-without-member-accepted',
+    invariant:
+      'A family whose template matches no current source message is refused with EQ1305.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '    if (members.length === 0) {\n      diagnostics.push(',
+    replace:
+      '    if (members.length === 0) {\n      continue;\n      diagnostics.push(',
+    caughtBy: 'packages/toolkit/test/family-templates.test.ts',
+  },
+  {
+    id: 'formatter-store-ignores-the-override',
+    invariant:
+      "An option one call passes reaches only that call; the next call on the same context is written with the context's own options.",
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '    const key = `number\\u0000${locale}\\u0000${stableOptions(options as Readonly<Record<string, unknown>>)}`;',
+    replace: '    const key = `number\\u0000${locale}`;',
+    caughtBy: 'packages/runtime/test/per-operation-override.test.ts',
+  },
+  {
+    id: 'formatting-adapter-output-unbounded',
+    invariant:
+      "A formatting adapter's text is held to the maximum output length its descriptor declares.",
+    source: 'packages/runtime/src/formatting-runtime.ts',
+    find: '        binding.descriptor.maximumOutputLength,\n      ) === undefined ||',
+    replace: '        Number.MAX_SAFE_INTEGER,\n      ) === undefined ||',
+    caughtBy: 'packages/runtime/test/formatting-adapter-refusals.test.ts',
+  },
+  {
+    id: 'formatting-adapter-trusted-as-passed',
+    invariant:
+      "A formatting adapter is resolved through the calling context's own registry, so one the context did not install is refused and a copy passed under an installed identity is never run.",
+    source: 'packages/runtime/src/formatting-runtime.ts',
+    find: '        : this.context.extensions.formattingAdapter(declaredId);',
+    replace:
+      '        : (adapter as unknown as RuntimeFormattingAdapterBinding);',
+    caughtBy: 'packages/runtime/test/formatting-adapter-refusals.test.ts',
+  },
+  {
+    id: 'integer-parameter-codec-reads-localized-digits',
+    invariant:
+      "An integer route parameter is read in ASCII digits only; the same number in a locale's own digits is not a spelling of it.",
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '    parse: (value: string) => {\n      if (!/^-?[0-9]{1,64}$/u.test(value)) {',
+    replace:
+      "    parse: (spelled: string) => {\n      const value = spelled\n        .normalize('NFKC')\n        .replace(/[\\u0660-\\u0669]/gu, (digit) => String(digit.charCodeAt(0) - 0x660))\n        .replace(/[\\u06F0-\\u06F9]/gu, (digit) => String(digit.charCodeAt(0) - 0x6f0))\n        .replace(/[\\u0966-\\u096F]/gu, (digit) => String(digit.charCodeAt(0) - 0x966));\n      if (!/^-?[0-9]{1,64}$/u.test(value)) {",
+    caughtBy: 'packages/runtime/test/route-parameters-and-x-default.test.ts',
+  },
+  {
+    id: 'interactive-slot-nested',
+    invariant:
+      'An interactive slot inside another interactive slot, directly or through a plain slot, is refused with EQ1303.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '      (interactiveSlotKinds.has(kind) || descriptor?.interactive === true) &&',
+    replace: '      false &&',
+    caughtBy: 'packages/toolkit/test/interactive-slot-nesting.test.ts',
+  },
+  {
+    id: 'issue-convention-consulted-before-the-binding',
+    invariant:
+      "An explicit binding for an issue code wins over the message the code's name derives.",
+    source: 'packages/runtime/src/presentation.ts',
+    find: '  const binding = source.bindings?.[issue.code];\n  if (binding !== undefined) {',
+    replace:
+      '  const binding =\n    issueMessage(source.messages, issue.code) === undefined\n      ? source.bindings?.[issue.code]\n      : undefined;\n  if (binding !== undefined) {',
+    caughtBy: 'packages/runtime/test/issue-presentation.test.ts',
+  },
+  {
+    id: 'issue-message-accepted-by-name-alone',
+    invariant:
+      "A message found by an issue code's name is accepted only when its own identity ends in the derived identifier.",
+    source: 'packages/runtime/src/issue-convention.ts',
+    find: '  return identity === messageId || identity.endsWith(`.${messageId}`)\n    ? candidate\n    : undefined;',
+    replace: '  void identity;\n  return candidate;',
+    caughtBy: 'packages/runtime/test/issue-presentation.test.ts',
+  },
+  {
+    id: 'markup-name-read-as-an-element',
+    invariant:
+      'A markup name the slot-kind registry does not hold is a message-local slot, whatever HTML element it is spelled like.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: "      inherited?.kind ??\n      (builtInSlotKinds.has(name) ? name : 'message-local');\n    const customKind = extensionDescriptor(extensions, 'rich-slot-kind', kind);",
+    replace:
+      "      inherited?.kind ??\n      (builtInSlotKinds.has(name) ? name : name === 'a' ? 'link' : 'message-local');\n    const customKind = extensionDescriptor(extensions, 'rich-slot-kind', kind);",
+    caughtBy: 'packages/toolkit/test/markup-names.test.ts',
+  },
+  {
+    id: 'markup-option-undeclared-accepted',
+    invariant:
+      'A markup option a registered custom kind does not declare, such as a class or a style, is refused with EQ1805.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: "      allowed === undefined ||\n      value.kind !== 'literal' ||\n      !allowed.includes(value.value)",
+    replace:
+      "      allowed !== undefined &&\n      (value.kind !== 'literal' ||\n      !allowed.includes(value.value))",
+    caughtBy: 'packages/toolkit/test/markup-options.test.ts',
+  },
+  {
+    id: 'markup-option-value-unlisted-accepted',
+    invariant:
+      'A markup option on a registered custom kind is refused with EQ1805 when its value is not one the descriptor lists.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '      !allowed.includes(value.value)\n    ) {',
+    replace: '      false\n    ) {',
+    caughtBy: 'packages/toolkit/test/markup-options.test.ts',
+  },
+  {
+    id: 'parsing-adapter-input-unbounded',
+    invariant:
+      "Input past a parsing adapter's declared bound is refused as out of range before the adapter is invoked.",
+    source: 'packages/runtime/src/formatting-runtime.ts',
+    find: '          binding.descriptor.maximumInputLength,',
+    replace: '          Number.MAX_SAFE_INTEGER,',
+    caughtBy: 'packages/runtime/test/formatting-adapter-refusals.test.ts',
+  },
+  {
+    id: 'parsing-adapter-status-outside-the-model',
+    invariant:
+      "A parsing adapter's result is admitted only with a status from the closed result model.",
+    source: 'packages/runtime/src/formatting-runtime.ts',
+    find: "    !adapterInputStatuses.has(value['status'] as LocalizedInputStatus) ||",
+    replace: '',
+    caughtBy: 'packages/runtime/test/formatting-adapter-refusals.test.ts',
+  },
+  {
+    id: 'percentage-points-formatted-as-a-percent',
+    invariant:
+      'Percentage points are written as a count with their own semantic unit, never through percent style.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: "    'percentage-points',\n    value,\n    value.amount,\n    context,\n    options,",
+    replace:
+      "    'percentage-points',\n    value,\n    value.amount,\n    context,\n    { ...options, style: 'percent' },",
+    caughtBy: 'packages/runtime/test/percentage-points.test.ts',
+  },
+  {
+    id: 'person-name-locales-read-from-the-catalogs',
+    invariant:
+      'The person-name profiles a build carries are chosen from the declared locales, not from the locales that happen to have catalogs.',
+    source: 'packages/toolkit/src/compiled-artifacts.ts',
+    find: '  const personNameProfiles = personNameProfilesFor([\n    ...request.graph.locales,',
+    replace:
+      '  const personNameProfiles = personNameProfilesFor([\n    ...new Set(catalogs.map(({ key }) => key.catalogLocale)),',
+    caughtBy: 'packages/toolkit/test/one-locale-declaration.test.ts',
+  },
+  {
+    id: 'refinement-enum-null-accepted',
+    invariant:
+      'An enum carrying null is refused with EQ1102, because null is governed only by nullable.',
+    source: 'packages/toolkit/src/schemas.ts',
+    find: "          minItems: 1,\n          uniqueItems: true,\n          items: {\n            anyOf: [\n              { type: 'string' },",
+    replace:
+      "          minItems: 1,\n          uniqueItems: true,\n          items: {\n            anyOf: [\n              { type: 'null' },\n              { type: 'string' },",
+    caughtBy: 'packages/toolkit/test/input-refinements.test.ts',
+  },
+  {
+    id: 'refinement-enum-of-another-type-accepted',
+    invariant:
+      'An enum literal incompatible with the effective input type is refused with EQ1302.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '      refinement.enum.some((literal) => !literalMatchesType(literal, type))',
+    replace: '      (false as boolean)',
+    caughtBy: 'packages/toolkit/test/input-refinements.test.ts',
+  },
+  {
+    id: 'refinement-enum-repeats-accepted',
+    invariant: 'An enum that repeats a literal is refused with EQ1102.',
+    source: 'packages/toolkit/src/schemas.ts',
+    find: "          minItems: 1,\n          uniqueItems: true,\n          items: {\n            anyOf: [\n              { type: 'string' },",
+    replace:
+      "          minItems: 1,\n          uniqueItems: false,\n          items: {\n            anyOf: [\n              { type: 'string' },",
+    caughtBy: 'packages/toolkit/test/input-refinements.test.ts',
+  },
+  {
+    id: 'refinement-key-not-an-input-accepted',
+    invariant:
+      'An inputs key that is not the exact inferred external variable name, whether misspelled, written with its sigil, unused, or naming a local declaration, is refused with EQ1302.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '    if (!message.semantics.externalInputs.includes(name)) {',
+    replace: '    if (false as boolean) {',
+    caughtBy: 'packages/toolkit/test/input-refinements.test.ts',
+  },
+  {
+    id: 'refinement-record-field-accepted',
+    invariant:
+      'A refinement record holds only type, enum, optional, nullable and description, so a default, coercion, substitution or conversion field is refused with EQ1102.',
+    source: 'packages/toolkit/src/schemas.ts',
+    find: "    {\n      type: 'object',\n      additionalProperties: false,\n      minProperties: 1,\n      properties: {\n        type: portableTypeIdSchema,",
+    replace:
+      "    {\n      type: 'object',\n      additionalProperties: true,\n      minProperties: 1,\n      properties: {\n        type: portableTypeIdSchema,",
+    caughtBy: 'packages/toolkit/test/input-refinements.test.ts',
+  },
+  {
+    id: 'refinement-type-outside-the-registry-accepted',
+    invariant:
+      'A refinement type that is not in the portable registry, such as a TypeScript symbol, an import, a type expression or a source path, is refused with EQ1302.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '  if (!portableTypes.has(refinement.type as PortableTypeId)) {\n    diagnostics.push(',
+    replace:
+      '  if (!portableTypes.has(refinement.type as PortableTypeId)) {\n    return refinement.type as PortableTypeId;\n    diagnostics.push(',
+    caughtBy: 'packages/toolkit/test/input-refinements.test.ts',
+  },
+  {
+    id: 'refused-input-carries-a-value',
+    invariant:
+      'A localized input result carries a value only when its status is valid.',
+    source: 'packages/runtime/src/localized-input.ts',
+    find: '  return Object.freeze({\n    status,\n    text,\n    diagnostic: diagnostic(',
+    replace:
+      '  return Object.freeze({\n    status,\n    text,\n    value: text,\n    diagnostic: diagnostic(',
+    caughtBy: 'packages/runtime/test/non-valid-input-carries-no-value.test.ts',
+  },
+  {
+    id: 'registered-interactive-kind-nested',
+    invariant:
+      'A registered kind that declares itself interactive is refused inside a link, as the built-in interactive kinds are.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '      (interactiveSlotKinds.has(kind) || descriptor?.interactive === true) &&',
+    replace: '      interactiveSlotKinds.has(kind) &&',
+    caughtBy: 'packages/toolkit/test/interactive-slot-nesting.test.ts',
+  },
+  {
+    id: 'registered-interactive-parent-ignored',
+    invariant:
+      'A link inside a registered interactive kind is refused with EQ1303.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: "          extensionDescriptor(extensions, 'rich-slot-kind', parentKind)\n            ?.interactive === true",
+    replace: '          (false as boolean)',
+    caughtBy: 'packages/toolkit/test/interactive-slot-nesting.test.ts',
+  },
+  {
+    id: 'rich-slot-binding-without-projection-accepted',
+    invariant:
+      'A runtime binding for a custom rich-slot kind that supplies no projectText is refused as invalid-configuration when the extensions are assembled.',
+    source: 'packages/runtime/src/extensions.ts',
+    find: "  if (!hasExactKeys(candidate, ['descriptor', handlerName])) {",
+    replace:
+      "  if (descriptor.kind === 'rich-slot-kind' && !('projectText' in candidate)) {\n    return Object.freeze({ descriptor, projectText: () => '' }) as unknown as RuntimeExtensionBinding;\n  }\n  if (!hasExactKeys(candidate, ['descriptor', handlerName])) {",
+    caughtBy: 'packages/runtime/test/rich-slot-projection-binding.test.ts',
+  },
+  {
+    id: 'rich-slot-kind-projection-open',
+    invariant:
+      "A rich-slot-kind descriptor's text projection is children or binding-required and nothing else.",
+    source: 'packages/toolkit/src/schemas.ts',
+    find: "              textProjection: {\n                enum: ['children', 'binding-required'],",
+    replace:
+      "              textProjection: {\n                enum: ['children', 'binding-required', 'none'],",
+    caughtBy: 'packages/toolkit/test/rich-slot-kind-projection.test.ts',
+  },
+  {
+    id: 'rich-slot-kind-without-projection-accepted',
+    invariant:
+      'A rich-slot-kind descriptor that declares no text projection is refused.',
+    source: 'packages/toolkit/src/schemas.ts',
+    find: "            required: ['kind', 'id', 'shape', 'interactive', 'textProjection'],",
+    replace: "            required: ['kind', 'id', 'shape', 'interactive'],",
+    caughtBy: 'packages/toolkit/test/rich-slot-kind-projection.test.ts',
+  },
+  {
+    id: 'rich-slot-projection-not-text-accepted',
+    invariant:
+      'A rich-slot projection that answers with something other than bounded text is refused as invalid-configuration.',
+    source: 'packages/runtime/src/extensions.ts',
+    find: "      typeof value !== 'string' ||\n      codePointLengthAtMost(value, RUNTIME_LIMITS.outputCodePoints) ===",
+    replace:
+      '      (false as boolean) ||\n      codePointLengthAtMost(String(value), RUNTIME_LIMITS.outputCodePoints) ===',
+    caughtBy: 'packages/runtime/test/rich-slot-projection-binding.test.ts',
+  },
+  {
+    id: 'scope-refused-for-its-name',
+    invariant:
+      'Every scope name the identity grammar admits compiles to its own module, whatever its length or number of parts.',
+    source: 'packages/toolkit/src/identities.ts',
+    find: "    scopePattern,\n    'EQ1104',\n    'Scope identity',",
+    replace:
+      "    /^[a-z][a-z0-9]{0,15}$/u,\n    'EQ1104',\n    'Scope identity',",
+    caughtBy: 'packages/toolkit/test/scope-name-and-breadth.test.ts',
+  },
+  {
+    id: 'slot-absent-from-a-variant-required',
+    invariant:
+      'A slot absent from any reachable variant, or declared and unused by the source, is optional.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '      counts.length === 0 || counts.some((count) => count === 0);',
+    replace: '      counts.length === 0;',
+    caughtBy: 'packages/toolkit/test/slot-refinements.test.ts',
+  },
+  {
+    id: 'slot-authored-outside-within-accepted',
+    invariant:
+      'A within refinement that excludes a placement the source authors is refused with EQ1303.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '      [...parents].some((parent) => !refinement.within?.includes(parent))',
+    replace: '      (false as boolean)',
+    caughtBy: 'packages/toolkit/test/slot-refinements.test.ts',
+  },
+  {
+    id: 'slot-refinement-field-accepted',
+    invariant:
+      'An expanded slot refinement holds only kind, shape, optional, repeatable, within and description, so a component, template, element, class, style or URL field is refused with EQ1102.',
+    source: 'packages/toolkit/src/schemas.ts',
+    find: "    {\n      type: 'object',\n      additionalProperties: false,\n      minProperties: 1,\n      properties: {\n        kind: portableTypeIdSchema,",
+    replace:
+      "    {\n      type: 'object',\n      additionalProperties: true,\n      minProperties: 1,\n      properties: {\n        kind: portableTypeIdSchema,",
+    caughtBy: 'packages/toolkit/test/slot-refinements.test.ts',
+  },
+  {
+    id: 'slot-repeated-on-a-path-single',
+    invariant: 'A slot used more than once on a reachable path is repeatable.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '    const inferredRepeatable = counts.some((count) => count > 1);',
+    replace: '    const inferredRepeatable = false as boolean;',
+    caughtBy: 'packages/toolkit/test/slot-refinements.test.ts',
+  },
+  {
+    id: 'target-catalog-families-accepted',
+    invariant:
+      'A target catalog carrying a families mapping is refused with EQ1102.',
+    source: 'packages/toolkit/src/schemas.ts',
+    find: '        ],\n      },\n    },\n  },\n} as const);\n\nconst extensionIdSchema',
+    replace:
+      '        ],\n      },\n    },\n    families: SOURCE_CATALOG_SCHEMA.properties.families,\n  },\n} as const);\n\nconst extensionIdSchema',
+    caughtBy: 'packages/toolkit/test/families-placement.test.ts',
+  },
+  {
+    id: 'throwing-formatting-adapter-propagates',
+    invariant:
+      'A formatting adapter that throws gives the caller a typed unsupported-formatting result, never the exception.',
+    source: 'packages/runtime/src/formatting-runtime.ts',
+    find: '        Object.freeze({ value, locale: formatting.locale, formatting }),\n      );\n    } catch {',
+    replace:
+      '        Object.freeze({ value, locale: formatting.locale, formatting }),\n      );\n    } catch (error) {\n      if (error !== undefined) throw error;',
+    caughtBy: 'packages/runtime/test/formatting-adapter-refusals.test.ts',
+  },
+  {
+    id: 'unmapped-external-value-presented-as-known',
+    invariant:
+      'An external value nothing is bound to is presented as a typed unknown that keeps its own value, with the unknown message and a diagnostic.',
+    source: 'packages/runtime/src/presentation.ts',
+    find: "  if (message === undefined) {\n    return Object.freeze({\n      status: 'unknown',\n      value,",
+    replace:
+      "  if (message === undefined) {\n    return Object.freeze({\n      status: 'known',\n      value,",
+    caughtBy: 'packages/runtime/test/issue-presentation.test.ts',
+  },
+  {
+    id: 'unused-slot-shape-assumed',
+    invariant:
+      'A declared slot the source does not use, whose kind does not determine a shape, is refused unless the refinement states one.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '      refinement?.shape ?? inferredShape ?? builtInShape ?? customKind?.shape;',
+    replace:
+      "      refinement?.shape ?? inferredShape ?? builtInShape ?? customKind?.shape ?? ('paired' as const);",
+    caughtBy: 'packages/toolkit/test/slot-refinements.test.ts',
+  },
 ]);

@@ -63,6 +63,12 @@ describe('an integer route parameter codec', () => {
       '0x10',
       'NaN',
       '-',
+      // A path segment is a machine field, so the same number in a locale's own digits is another
+      // address, not another spelling of this one.
+      '٤٢',
+      '۴۲',
+      '४२',
+      '４２',
     ]) {
       expect(codeOf(() => DEFAULT.parse(value))).toBeUndefined();
       expect(parse(DEFAULT, value)).toBeUndefined();

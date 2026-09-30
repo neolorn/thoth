@@ -1,10 +1,19 @@
-import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { digestCanonicalJson } from '../src/canonical-json.js';
 import { generateProject } from '../src/index.js';
+import { COMPLETION_MANIFEST_PATH, digestBytes } from '../src/output-plan.js';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
 
@@ -187,6 +196,64 @@ describe('the overlay a first generation analyses through', () => {
         .map(({ summary }) => summary),
     ).toEqual([]);
     expect(clean.ok).toBe(true);
+    claimCapability('cli:generate');
+  });
+});
+
+describe('generated files already on disk', () => {
+  it('do not decide what a clean generation produces, even under a manifest that vouches for them', async () => {
+    const root = await application();
+    const generatedRoot = resolve(root, 'src/generated/i18n');
+    const first = await generateProject({ project: root });
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const planned = first.value.compilation.artifacts.outputPlan;
+    const target = planned.files.find(({ path }) => path === 'shell.ts');
+    expect(target).toBeDefined();
+    if (target === undefined) return;
+
+    // Edited, and the completion manifest rewritten to agree with the edit, so the marker validates
+    // and only a comparison against the output plan can tell the file is not what this generation makes.
+    const edited = `${target.contents}export const edited = true;\n`;
+    await writeFile(resolve(generatedRoot, 'shell.ts'), edited, 'utf8');
+    const manifestPath = resolve(generatedRoot, COMPLETION_MANIFEST_PATH);
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as {
+      planDigest: string;
+      files: { path: string; bytes: number; digest: string }[];
+    };
+    const entry = manifest.files.find(({ path }) => path === 'shell.ts');
+    expect(entry).toBeDefined();
+    if (entry === undefined) return;
+    entry.bytes = Buffer.byteLength(edited, 'utf8');
+    entry.digest = digestBytes(edited);
+    manifest.planDigest = digestCanonicalJson(
+      'equator-output-plan/1',
+      manifest.files.map(({ path, bytes, digest }) => ({
+        path,
+        bytes,
+        digest,
+      })),
+    );
+    await writeFile(
+      manifestPath,
+      `${JSON.stringify(manifest, null, 2)}\n`,
+      'utf8',
+    );
+    await rm(resolve(root, '.equator'), { recursive: true, force: true });
+
+    const clean = await generateProject({ project: root });
+    expect(clean.ok, JSON.stringify(clean.diagnostics)).toBe(true);
+    if (!clean.ok) return;
+    expect(clean.value.compilation.artifacts.outputPlan.planDigest).toBe(
+      planned.planDigest,
+    );
+    expect(clean.value.publication.written).toContain('shell.ts');
+    for (const file of planned.files) {
+      expect(
+        await readFile(resolve(generatedRoot, ...file.path.split('/')), 'utf8'),
+        file.path,
+      ).toBe(file.contents);
+    }
     claimCapability('cli:generate');
   });
 });
