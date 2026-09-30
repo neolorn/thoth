@@ -29,6 +29,10 @@ import {
   type InertJsonSnapshot,
   compareCodePoint,
 } from './runtime-safety';
+import {
+  RUNTIME_EVENT_CODES,
+  type LocalizationEventEmitter,
+} from './observability';
 
 export interface CompiledInputContract {
   readonly name: string;
@@ -1005,6 +1009,7 @@ export class LocalCatalogStore {
     loaders: CatalogLoaders,
     maximumEntries?: number,
     contextTimeZone = false,
+    private readonly observability?: LocalizationEventEmitter,
   ) {
     const admittedConfiguration = snapshotInertJson(configuration, {
       maximumDepth: 32,
@@ -1110,8 +1115,26 @@ export class LocalCatalogStore {
       const candidate = [...this.cache.entries()]
         .filter(([, entry]) => entry.pins === 0)
         .sort((left, right) => left[1].lastUsed - right[1].lastUsed)[0];
-      if (candidate === undefined) return;
+      if (candidate === undefined) {
+        this.observability?.emit({
+          code: RUNTIME_EVENT_CODES.cache,
+          phase: 'cache',
+          status: 'unavailable',
+          count: this.cache.size,
+        });
+        return;
+      }
       this.cache.delete(candidate[0]);
+      const { key } = candidate[1].catalog;
+      this.observability?.emit({
+        code: RUNTIME_EVENT_CODES.cache,
+        phase: 'cache',
+        status: 'succeeded',
+        providerId: key.providerId,
+        scopeId: key.scopeId,
+        targetLocale: key.catalogLocale,
+        count: this.cache.size,
+      });
     }
   }
 
@@ -1159,8 +1182,10 @@ export class LocalCatalogStore {
             pins: 0,
             lastUsed: (this.clock += 1),
           };
+          // Not evicted here: a caller acquiring this catalog pins it after the load settles, and
+          // evicting first would drop the entry that caller is about to hold. Each caller evicts
+          // once what it holds is pinned.
           this.cache.set(key, entry);
-          this.evict();
         }
         return catalog;
       })
@@ -1244,10 +1269,21 @@ export class LocalCatalogStore {
     );
     const artifact = this.artifacts.get(key);
     if (artifact === undefined) return;
-    const catalog = await waitForSignal(
-      admitCatalog(snapshot.value, artifact),
-      operationSignal,
+    // A refused transfer costs nothing visible, because the catalog is loaded instead, so this is
+    // the only place a server sending catalogs the browser cannot admit shows up.
+    const admission = admitCatalog(snapshot.value, artifact);
+    admission.catch(() =>
+      this.observability?.emit({
+        code: RUNTIME_EVENT_CODES.cache,
+        phase: 'cache',
+        status: 'failed',
+        reason: 'catalog-admission-failed',
+        providerId: keyRecord['providerId'] as string,
+        scopeId: keyRecord['scopeId'] as string,
+        targetLocale: keyRecord['catalogLocale'] as string,
+      }),
     );
+    const catalog = await waitForSignal(admission, operationSignal);
     this.assertActive();
     if (aborted(operationSignal)) {
       throw operationSignal.reason ?? new DOMException('Aborted', 'AbortError');

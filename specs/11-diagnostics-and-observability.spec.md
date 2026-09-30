@@ -110,6 +110,13 @@ MUST report work that belonged elsewhere as redirected: a locale change under a 
 origin policy is a document navigation, so reporting success would claim a transition that never
 ran, and reporting failure would claim a defect where the outcome was correct.
 
+The memory cache of `05-compiled-artifacts-and-trust.spec.md` section 9 reports under its own
+code, because what it does happens without any request failing. A release MUST report each entry it
+evicts as succeeded, with the entry's provider, scope, and locale and the number of entries it still
+holds; a bound it cannot keep because every entry over it is pinned as unavailable, with the number
+it holds; and a transferred catalog it refuses to admit as failed, with the reason
+`catalog-admission-failed`. A catalog it loads is reported under the catalog code and not again.
+
 The toolkit and the runtime emit their own event shapes under their own profile markers, because a
 compilation phase and a transition phase are different vocabularies and one union of both would name
 neither well.

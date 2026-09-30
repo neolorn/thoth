@@ -348,7 +348,7 @@ A formatting pipe could not format its value. The pipe renders an empty string, 
 
 Declared as `RUNTIME_EVENT_CODES.cache`.
 
-The runtime's caching area, phase `cache`, which includes the catalog cache that `maximumCachedCatalogs` bounds.
+The catalog cache that `maximumCachedCatalogs` bounds, under phase `cache`: `succeeded` for each entry it evicts, with the entry's provider, scope and locale and `count` the entries it still holds; `unavailable` with `count` when every entry over the bound is held; `failed` with `catalog-admission-failed` when a catalog transferred from the server is not admitted.
 
 ### EQ-E2006
 

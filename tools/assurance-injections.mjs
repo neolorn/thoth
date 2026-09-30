@@ -4353,4 +4353,42 @@ export const injections = Object.freeze([
     replace: '  createMigrationPlan,\n',
     caughtBy: 'packages/toolkit/test/observability.test.ts',
   },
+  {
+    id: 'cache-eviction-unreported',
+    invariant:
+      "The catalog cache reports each entry it evicts, with the entry's identity.",
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: "      this.cache.delete(candidate[0]);\n      const { key } = candidate[1].catalog;\n      this.observability?.emit({\n        code: RUNTIME_EVENT_CODES.cache,\n        phase: 'cache',\n        status: 'succeeded',\n        providerId: key.providerId,\n        scopeId: key.scopeId,\n        targetLocale: key.catalogLocale,\n        count: this.cache.size,\n      });\n",
+    replace: '      this.cache.delete(candidate[0]);\n',
+    caughtBy: 'packages/runtime/test/cache-events.test.ts',
+  },
+  {
+    id: 'cache-pin-pressure-unreported',
+    invariant:
+      'The catalog cache reports a bound it cannot keep because every entry over it is pinned.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: "      if (candidate === undefined) {\n        this.observability?.emit({\n          code: RUNTIME_EVENT_CODES.cache,\n          phase: 'cache',\n          status: 'unavailable',\n          count: this.cache.size,\n        });\n        return;\n      }",
+    replace: '      if (candidate === undefined) return;',
+    caughtBy: 'packages/runtime/test/cache-events.test.ts',
+  },
+  {
+    id: 'refused-transfer-unreported',
+    invariant:
+      'The catalog cache reports a transferred catalog it refuses to admit, so a server sending catalogs the browser cannot admit is visible.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: "        reason: 'catalog-admission-failed',\n        providerId: keyRecord['providerId'] as string,",
+    replace:
+      "        reason: 'catalog-load-failed',\n        providerId: keyRecord['providerId'] as string,",
+    caughtBy: 'packages/runtime/test/cache-events.test.ts',
+  },
+  {
+    id: 'load-evicts-before-the-pin',
+    invariant:
+      'A catalog being acquired is pinned before the cache evicts to its bound, so the entry a caller is about to hold is never the one evicted.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '          this.cache.set(key, entry);\n        }\n        return catalog;',
+    replace:
+      '          this.cache.set(key, entry);\n          this.evict();\n        }\n        return catalog;',
+    caughtBy: 'packages/runtime/test/cache-events.test.ts',
+  },
 ]);

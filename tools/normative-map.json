@@ -1245,7 +1245,10 @@
       "spec": "05-compiled-artifacts-and-trust.spec.md",
       "section": "9. Memory cache",
       "statement": "Eviction is automatic and takes the least recently used unpinned entry, and a release MUST NOT evict a pinned one.",
-      "checks": ["assurance-runtime:unpinned-catalogs-never-evicted"]
+      "checks": [
+        "assurance-runtime:unpinned-catalogs-never-evicted",
+        "assurance:load-evicts-before-the-pin"
+      ]
     },
     {
       "spec": "05-compiled-artifacts-and-trust.spec.md",
@@ -4262,6 +4265,16 @@
       "section": "7. The event",
       "statement": "A release MUST report work that was cancelled, superseded, or unavailable as itself rather than as a failure, and MUST report work that belonged elsewhere as redirected: a locale change under a locale-specific origin policy is a document navigation, so reporting success would claim a transition that never ran, and reporting failure would claim a defect where the outcome was correct.",
       "checks": ["assurance-runtime:superseded-write-reported-as-failed"]
+    },
+    {
+      "spec": "11-diagnostics-and-observability.spec.md",
+      "section": "7. The event",
+      "statement": "A release MUST report each entry it evicts as succeeded, with the entry's provider, scope, and locale and the number of entries it still holds; a bound it cannot keep because every entry over it is pinned as unavailable, with the number it holds; and a transferred catalog it refuses to admit as failed, with the reason `catalog-admission-failed`.",
+      "checks": [
+        "assurance:cache-eviction-unreported",
+        "assurance:cache-pin-pressure-unreported",
+        "assurance:refused-transfer-unreported"
+      ]
     },
     {
       "spec": "11-diagnostics-and-observability.spec.md",
