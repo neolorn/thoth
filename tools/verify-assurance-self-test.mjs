@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 
 import { injections } from './assurance-injections.mjs';
 import {
-  browserVerdict,
+  gateVerdict,
   measureInjection,
   verdictOf,
 } from './assurance-runner.mjs';
@@ -208,7 +208,8 @@ const browserRuns = [
   },
 ];
 for (const { name, status, output, expect, ...rest } of browserRuns) {
-  const { verdict } = browserVerdict({
+  const { verdict } = gateVerdict({
+    gate: 'verify:browser-assurance',
     status,
     output,
     caughtWhen: 'caughtWhen' in rest ? rest.caughtWhen : named,

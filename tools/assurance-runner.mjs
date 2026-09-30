@@ -52,15 +52,16 @@ export function verdictOf({ reportPath, status, testFile, label }) {
 }
 
 /**
- * The verdict of a browser gate run, which writes no report.
+ * The verdict of a gate stage run as a suite, such as the browser gate or a consumer stage, which
+ * writes no report.
  *
- * The gate is one script of many assertions, and a browser that did not start, a server that did
- * not answer and an address that did not exist all end it exactly as the assertion guarding the
- * invariant does. So a failure is `caught` only when its output carries `caughtWhen`, the message
- * of the assertion the injection is declared against, and is `unmeasured` otherwise, with the end
- * of the output as the reason.
+ * A stage is one script of many assertions, and a browser that did not start, a server that did
+ * not answer, an install that failed and an address that did not exist all end it exactly as the
+ * assertion guarding the invariant does. So a failure is `caught` only when its output carries
+ * `caughtWhen`, the message of the assertion the injection is declared against, and is `unmeasured`
+ * otherwise, with the end of the output as the reason.
  */
-export function browserVerdict({ status, output, caughtWhen }) {
+export function gateVerdict({ gate, status, output, caughtWhen }) {
   if (status === 0) return { verdict: 'passed' };
   if (caughtWhen !== undefined && caughtWhen.test(output)) {
     return { verdict: 'caught' };
@@ -68,7 +69,7 @@ export function browserVerdict({ status, output, caughtWhen }) {
   const tail = output.trim().split('\n').slice(-6).join('\n');
   return {
     verdict: 'unmeasured',
-    why: `The browser gate failed (exit ${status ?? 'null'}) without the assertion this injection names:\n${tail}`,
+    why: `${gate} failed (exit ${status ?? 'null'}) without the assertion this injection names:\n${tail}`,
   };
 }
 

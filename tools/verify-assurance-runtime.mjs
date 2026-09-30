@@ -30,8 +30,9 @@ import {
   refreshConsumerPackages,
 } from './refresh-consumer-packages.mjs';
 
-import { browserVerdict, verdictOf } from './assurance-runner.mjs';
+import { gateVerdict, verdictOf } from './assurance-runner.mjs';
 import { injections } from './assurance-runtime-injections.mjs';
+import { steps } from './verify-stages.mjs';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const consumerRoot = resolve(
@@ -103,6 +104,11 @@ function refreshConsumer(why) {
  * a real browser moving a real page, names the browser gate as its suite, and names the assertion
  * there that fails without it. It costs a browser run per injection, which is why it is named
  * rather than assumed.
+ *
+ * Others are visible only to a stage that builds something the consumer's tests do not: the
+ * negative compilation files, a consumer under another URL policy, or the minimal consumers whose
+ * graphs prove an absence. Such an injection names that stage and the assertion it fails with, and
+ * costs one run of the stage.
  */
 function suiteVerdict(suite, caughtWhen) {
   required(
@@ -119,7 +125,7 @@ function suiteVerdict(suite, caughtWhen) {
   refreshConsumer(
     'The materialized consumer did not take the rebuilt package.',
   );
-  if (suite !== 'browser') {
+  if (suite === undefined) {
     // Read from the suite's own report rather than its exit status: a consumer that no longer
     // compiles against the injected package fails exactly as a caught one does, and ran nothing.
     const reportPath = resolve(
@@ -133,6 +139,15 @@ function suiteVerdict(suite, caughtWhen) {
       consumerRoot,
     );
     return verdictOf({ reportPath, status: result.status });
+  }
+  if (suite !== 'browser') {
+    const staged = run('pnpm', ['run', suite], workspaceRoot);
+    return gateVerdict({
+      gate: suite,
+      status: staged.status,
+      output: `${staged.stdout}${staged.stderr}`,
+      caughtWhen,
+    });
   }
 
   // The browser gate serves the consumer's already-built Angular bundle. Refreshing the package in
@@ -173,7 +188,8 @@ function suiteVerdict(suite, caughtWhen) {
     ['run', 'verify:browser-assurance'],
     workspaceRoot,
   );
-  return browserVerdict({
+  return gateVerdict({
+    gate: 'verify:browser-assurance',
     status: browsed.status,
     output: `${browsed.stdout}${browsed.stderr}`,
     caughtWhen,
@@ -225,14 +241,24 @@ const closed = [];
 const unmeasured = [];
 // Browser-named injections last. Each re-materializes the consumer, and whatever state that leaves
 // is what every later injection's suite would run in.
+const stageIds = new Set(steps.map(({ id }) => id));
 for (const { id, suite, caughtWhen } of injections) {
   assert.ok(
-    suite !== 'browser' || caughtWhen instanceof RegExp,
-    `Injection ${id} names the browser gate and no \`caughtWhen\`, so no failure of that gate could count as its catch.`,
+    suite === undefined || suite === 'browser' || stageIds.has(suite),
+    `Injection ${id} names ${suite} as its suite, which is no gate stage.`,
+  );
+  assert.ok(
+    suite === undefined || caughtWhen instanceof RegExp,
+    `Injection ${id} names ${suite} and no \`caughtWhen\`, so no failure of that stage could count as its catch.`,
   );
 }
+// A stage-named injection runs after the consumer's own, because a consumer stage re-materializes
+// the consumer the others run in.
 const ordered = [
-  ...injections.filter(({ suite }) => suite !== 'browser'),
+  ...injections.filter(({ suite }) => suite === undefined),
+  ...injections.filter(
+    ({ suite }) => suite !== undefined && suite !== 'browser',
+  ),
   ...injections.filter(({ suite }) => suite === 'browser'),
 ];
 for (const injection of ordered) {

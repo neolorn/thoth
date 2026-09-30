@@ -630,16 +630,19 @@ const declared = Object.freeze([
     processors: 2,
     writes: ['consumer:package', 'dist:runtime', 'dist:toolkit'],
   },
-  // Last, and now derivably so: it writes source, `dist` and the consumer, so every stage above
+  // Last, and now derivably so: it writes source, `dist` and the consumers, so every stage above
   // reads something it replaces. It rebuilds the package and re-hands it once per injection, which
   // is 52% of the gate on its own and the reason the ceiling for this item is a fifth rather than a
-  // half.
+  // half. An injection that names a consumer stage runs that stage,
+  // so the consumers those stages write are written here too.
   {
     id: 'verify:assurance:runtime',
     processors: 4,
     privateTree: true,
     reads: ['cache:build'],
     writes: [
+      'consumer:focused',
+      'consumer:locale-neutral',
       'consumer:package',
       'dist:other',
       'dist:runtime',
