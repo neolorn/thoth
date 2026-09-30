@@ -4275,4 +4275,34 @@ export const injections = Object.freeze([
     caughtBy:
       'packages/toolkit/test/markup-options-without-a-descriptor.test.ts',
   },
+  {
+    id: 'unreadable-translation-state-read-as-empty',
+    invariant:
+      'A translation-state record that is not JSON is refused rather than read as an empty record.',
+    source: 'packages/toolkit/src/translation-state.ts',
+    find: '    document = JSON.parse(text);\n  } catch {\n    return undefined;\n  }',
+    replace:
+      '    document = JSON.parse(text);\n  } catch {\n    return EMPTY_TRANSLATION_STATE;\n  }',
+    caughtBy: 'packages/toolkit/test/translation-state-unreadable.test.ts',
+  },
+  {
+    id: 'malformed-translation-state-entry-skipped',
+    invariant:
+      'A translation-state entry that is not a pair of fingerprints makes the record unreadable rather than being skipped and re-stamped.',
+    source: 'packages/toolkit/src/translation-state.ts',
+    find: "    if (typeof source !== 'string' || typeof target !== 'string') {\n      return undefined;\n    }",
+    replace:
+      "    if (typeof source !== 'string' || typeof target !== 'string') {\n      continue;\n    }",
+    caughtBy: 'packages/toolkit/test/translation-state-unreadable.test.ts',
+  },
+  {
+    id: 'unreadable-translation-state-refused-after-publication',
+    invariant:
+      'An unreadable translation-state record stops generate before any output is published.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '  const recorded = await readTranslationState(project.ownerRoot);\n  if (!recorded.ok) return recorded;\n  const publication = await applyOutputPlan({',
+    replace:
+      '  const recorded = await readTranslationState(project.ownerRoot);\n  const publication = await applyOutputPlan({',
+    caughtBy: 'packages/toolkit/test/translation-state-unreadable.test.ts',
+  },
 ]);

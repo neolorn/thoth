@@ -3684,6 +3684,16 @@
     {
       "spec": "10-compiler-and-tooling.spec.md",
       "section": "8. Generated roots and the translation state",
+      "statement": "A release MUST refuse a record that is present and cannot be read before it publishes any output, and MUST NOT overwrite it, because reading it as empty is that recomputation; a record that is absent is a first run.",
+      "checks": [
+        "assurance:unreadable-translation-state-read-as-empty",
+        "assurance:malformed-translation-state-entry-skipped",
+        "assurance:unreadable-translation-state-refused-after-publication"
+      ]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
+      "section": "8. Generated roots and the translation state",
       "statement": "A release MUST write one sorted line per entry, so concurrent translation work conflicts per message rather than across the file; MUST leave the recorded source fingerprint of a stale entry unchanged, so the report survives later runs instead of clearing itself the first time it is seen; and MUST NOT keep an entry for a message or a locale that no longer exists.",
       "checks": [
         "assurance:deleted-message-kept-in-translation-state",

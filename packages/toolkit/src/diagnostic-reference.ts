@@ -145,7 +145,7 @@ const REFERENCE = {
   EQ1701:
     'The command cannot act on how it was invoked: an unknown or malformed argument, or a noninteractive `equator init` with a required option missing.',
   EQ1702:
-    'The project could not be selected or read: no Equator configuration inside the package boundary, a selection that is a symbolic link or not a directory, an owner `package.json` that is missing, unreadable or not an object, or an owner `angular.json` that is unreadable.',
+    'The project could not be selected or read: no Equator configuration inside the package boundary, a selection that is a symbolic link or not a directory, an owner `package.json` that is missing, unreadable or not an object, an owner `angular.json` that is unreadable, or a translation-state record that is present and cannot be read.',
   EQ1703:
     'An environment operation failed, or a disposable one was skipped: a corrupt or incompatible incremental cache, a cache that could not be persisted, a formatting refused because semantic equality was not proven, or a watcher that could not start or reconcile.',
   EQ1704:

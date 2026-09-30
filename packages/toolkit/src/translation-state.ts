@@ -93,27 +93,31 @@ function translationDigest(canonicalSource: string | undefined): string {
 }
 
 /**
- * Read a translation state document. Anything unrecognisable is treated as absent rather than as
- * an error: a corrupt or hand-edited record must not stop a build, and re-stamping from scratch
- * reports nothing rather than something false.
+ * Read a translation state document, or `undefined` when the text is not one.
+ *
+ * Nothing in it is skipped or defaulted. An entry read as absent is re-stamped from the current
+ * source and translation, which pronounces that translation current, so a record that cannot be
+ * read whole is not read at all and the caller refuses it.
  */
-export function parseTranslationState(text: string): TranslationState {
+export function parseTranslationState(
+  text: string,
+): TranslationState | undefined {
   let document: unknown;
   try {
     document = JSON.parse(text);
   } catch {
-    return EMPTY_TRANSLATION_STATE;
+    return undefined;
   }
   if (
     typeof document !== 'object' ||
     document === null ||
     Array.isArray(document)
   ) {
-    return EMPTY_TRANSLATION_STATE;
+    return undefined;
   }
   const record = document as Readonly<Record<string, unknown>>;
   if (record['profile'] !== TRANSLATION_STATE_PROFILE) {
-    return EMPTY_TRANSLATION_STATE;
+    return undefined;
   }
   const rawEntries = record['entries'];
   if (
@@ -121,19 +125,21 @@ export function parseTranslationState(text: string): TranslationState {
     rawEntries === null ||
     Array.isArray(rawEntries)
   ) {
-    return EMPTY_TRANSLATION_STATE;
+    return undefined;
   }
   const entries: Record<string, TranslationStateEntry> = {};
   for (const [key, value] of Object.entries(
     rawEntries as Readonly<Record<string, unknown>>,
   )) {
     if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-      continue;
+      return undefined;
     }
     const entry = value as Readonly<Record<string, unknown>>;
     const source = entry['source'];
     const target = entry['target'];
-    if (typeof source !== 'string' || typeof target !== 'string') continue;
+    if (typeof source !== 'string' || typeof target !== 'string') {
+      return undefined;
+    }
     entries[key] = Object.freeze({ source, target });
   }
   return Object.freeze({

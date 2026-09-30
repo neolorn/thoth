@@ -225,7 +225,9 @@ treat it as the consumer application's own durable project data rather than as d
 MUST NOT place it under a root a project ignores by default, because a checkout without it reports
 no stale translation rather than reporting that it cannot tell. Recomputing it would hash the
 current source against the current translation and pronounce every translation current, which is the
-one answer that is always wrong.
+one answer that is always wrong. A release MUST refuse a record that is present and cannot be read
+before it publishes any output, and MUST NOT overwrite it, because reading it as empty is that
+recomputation; a record that is absent is a first run.
 
 A release MUST write one sorted line per entry, so concurrent translation work conflicts per
 message rather than across the file; MUST leave the recorded source fingerprint of a stale entry

@@ -5,7 +5,6 @@ import { analyzeCatalogSet } from '../src/semantic-model.js';
 import { testProjectConfiguration } from './fixtures.js';
 import {
   TRANSLATION_STATE_PROFILE,
-  EMPTY_TRANSLATION_STATE,
   formatTranslationState,
   parseTranslationState,
   reconcileTranslationState,
@@ -130,11 +129,18 @@ describe('translation provenance', () => {
     expect(Object.keys(reconciled.state.entries)).toHaveLength(1);
   });
 
-  it('treats an unreadable record as absent rather than failing a build', () => {
-    // A corrupt or hand-edited file re-stamps from scratch, which reports nothing rather than
-    // something false, and never stops work.
-    for (const text of ['', 'not json', '{}', '{"profile":"other"}', '[]']) {
-      expect(parseTranslationState(text)).toEqual(EMPTY_TRANSLATION_STATE);
+  it('reads nothing from a record it cannot read whole', () => {
+    // Re-stamping an entry read as absent pronounces its translation current, so the caller is
+    // told the record is unreadable rather than handed what could be salvaged from it.
+    for (const text of [
+      '',
+      'not json',
+      '{}',
+      '{"profile":"other"}',
+      '[]',
+      `{"profile":"${TRANSLATION_STATE_PROFILE}","entries":{"a:b:c:ar-EG":{"source":"x"}}}`,
+    ]) {
+      expect(parseTranslationState(text)).toBeUndefined();
     }
   });
 
@@ -143,7 +149,9 @@ describe('translation provenance', () => {
     const text = formatTranslationState(state);
 
     expect(text).toContain(TRANSLATION_STATE_PROFILE);
-    expect(parseTranslationState(text)).toEqual(state);
-    expect(formatTranslationState(parseTranslationState(text))).toBe(text);
+    const parsed = parseTranslationState(text);
+    expect(parsed).toEqual(state);
+    if (parsed === undefined) return;
+    expect(formatTranslationState(parsed)).toBe(text);
   });
 });

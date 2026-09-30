@@ -33,11 +33,13 @@ import {
 } from './compiler.js';
 import {
   TRANSLATION_STATE_PATH,
+  TRANSLATION_STATE_PROFILE,
   EMPTY_TRANSLATION_STATE,
   formatTranslationState,
   parseTranslationState,
   reconcileTranslationState,
   type StaleTranslation,
+  type TranslationState,
 } from './translation-state.js';
 import { INIT_OPTIONS } from './cli-options.generated.js';
 import {
@@ -2048,18 +2050,43 @@ export async function compileProjectFromDisk(
     : compiled;
 }
 
-async function readTranslationState(ownerRoot: string) {
-  try {
-    return parseTranslationState(
-      await readUtf8(
-        resolve(ownerRoot, TRANSLATION_STATE_PATH),
-        4 * 1024 * 1024,
-      ),
-    );
-  } catch {
-    // Absent or unreadable is the ordinary first-run case, not a failure.
-    return EMPTY_TRANSLATION_STATE;
+/**
+ * The translation-state record, empty when there is none yet, or the refusal of one that is present
+ * and cannot be read.
+ *
+ * Absence is the first run. A record that is present and unreadable, such as one a merge left
+ * conflict markers in, is refused and left as it is: reading it as empty would re-stamp every
+ * translation as current and erase every stale report, and writing over it would erase the record
+ * the owner still has to resolve.
+ */
+async function readTranslationState(
+  ownerRoot: string,
+): Promise<ToolkitResult<TranslationState>> {
+  const path = resolve(ownerRoot, TRANSLATION_STATE_PATH);
+  if (!(await pathExists(path))) {
+    return toolkitSuccess(EMPTY_TRANSLATION_STATE);
   }
+  const refusal = (reason: string) =>
+    toolkitFailure([
+      projectDiagnostic(
+        `Equator cannot read the translation-state record ${JSON.stringify(TRANSLATION_STATE_PATH)} because ${reason}, and leaves it unchanged. Resolve it, or delete it to record every translation as current.`,
+      ),
+    ]);
+  let read: ToolkitResult<string>;
+  try {
+    read = await readAuthoredText(ownerRoot, path, {
+      code: 'EQ1702',
+      name: 'the translation-state record',
+      maximumBytes: 4 * 1024 * 1024,
+    });
+  } catch {
+    return refusal('the file could not be opened');
+  }
+  if (!read.ok) return read;
+  const state = parseTranslationState(jsonText(read.value));
+  return state === undefined
+    ? refusal(`it is not an ${TRANSLATION_STATE_PROFILE} record`)
+    : toolkitSuccess(state);
 }
 
 /**
@@ -2131,6 +2158,8 @@ async function generateProjectCore(
   const compiled = await compileProjectFromDiskInternal(options);
   if (!compiled.ok) return compiled;
   const { project, compilation } = compiled.value;
+  const recorded = await readTranslationState(project.ownerRoot);
+  if (!recorded.ok) return recorded;
   const publication = await applyOutputPlan({
     ownerRoot: project.ownerRoot,
     generatedRoot: project.generatedRoot,
@@ -2148,7 +2177,7 @@ async function generateProjectCore(
   // staleness without recording that it observed it, or the next real run would see nothing.
   const translationState = reconcileTranslationState(
     compilation.graph,
-    await readTranslationState(project.ownerRoot),
+    recorded.value,
   );
   const staleDiagnostics = staleTranslationDiagnostics(
     translationState.stale,
@@ -2270,6 +2299,8 @@ export async function checkProject(
   const compiled = await compileProjectFromDiskInternal(options);
   if (!compiled.ok) return compiled;
   const { project, compilation } = compiled.value;
+  const recorded = await readTranslationState(project.ownerRoot);
+  if (!recorded.ok) return recorded;
   const freshness = await inspectOutputFreshness({
     ownerRoot: project.ownerRoot,
     generatedRoot: project.generatedRoot,
@@ -2283,7 +2314,7 @@ export async function checkProject(
   // move, so a read-only command cannot quietly retire a warning it just raised.
   const translationState = reconcileTranslationState(
     compilation.graph,
-    await readTranslationState(project.ownerRoot),
+    recorded.value,
   );
 
   const diagnostics = [

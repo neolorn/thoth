@@ -73,8 +73,9 @@ After a source edit that does not change the meaning, the translation written ag
 wording is reported stale until it changes. `.equator-translation-state.json` records, one line per
 message and locale, the source each translation was written against. Delete the line for that
 message and locale, and the next `generate` records the translation as written against the current
-source. When it is the last entry, delete the comma that ends the line before it too: a record that
-is not valid JSON is read as no record, and every translation is then recorded as current.
+source. When it is the last entry, delete the comma that ends the line before it too. A record that
+is not valid JSON, such as one a merge left conflict markers in, stops `generate` and `check` with
+`EQ1702` and is left as it is until you resolve it.
 
 ## What is checked in
 
