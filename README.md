@@ -95,7 +95,7 @@ Use it in a template. The key `app-title` is exposed as `messages.appTitle`, and
     <h1>{{ messages.appTitle | localize }}</h1>
 ```
 
-The [tutorial](./docs/tutorial.md) continues from here to a complete two-locale application with localized routes and a language switcher.
+The runtime's [quick start](./packages/runtime/README.md#quick-start) shows the providers, the imports and the switcher these lines need, and the [tutorial](./docs/tutorial.md) continues from here to a complete two-locale application with localized routes and a language switcher.
 
 ## Documentation
 

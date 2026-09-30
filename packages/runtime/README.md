@@ -50,9 +50,42 @@ The toolkit runs at build time and ships in nothing, which is why it is a develo
 
 ## Quick start
 
-Run `equator init` and `equator generate` first, which the [tutorial](https://github.com/neolorn/equator/blob/main/docs/tutorial.md) covers. `generate` writes a `provideLocalization` for the project, with the locale set already bound.
+Run `equator init` and `equator generate` first, which the [tutorial](https://github.com/neolorn/equator/blob/main/docs/tutorial.md) covers. `generate` writes a `provideLocalization` for the project, with the locale set already bound, and runs again whenever catalogs, routes or providers change; `equator watch` does that while you work.
 
-Compose the providers in `src/app/app.config.ts`. `provideLocalizedRouter` replaces `provideRouter`, and each `with*` selects a feature:
+Declare where the locale sits in a URL, in `src/app/localization.routes.ts`. `#i18n/routes` is generated from the application's route table:
+
+```ts excerpt src/app/localization.routes.ts
+import {
+  createPathPrefixLocalePolicy,
+  defineRouteProjection,
+} from '@neolorn/equator';
+import { routeProjection } from '#i18n/routes';
+
+export const routePolicy = createPathPrefixLocalePolicy({
+  defaultLocale: 'en-US',
+  locales: { 'en-US': 'en-us', 'ar-EG': 'ar-eg' },
+});
+
+export const appRouteProjection = defineRouteProjection({
+  generated: routeProjection,
+});
+```
+
+Compose the providers in `src/app/app.config.ts`. `provideLocalizedRouter`, from `@neolorn/equator/router`, replaces `provideRouter`, and each `with*` selects a feature:
+
+```ts excerpt src/app/app.config.ts
+import { provideLocalization } from '#i18n';
+import { messages } from '#i18n/shell';
+import {
+  cookieStore,
+  withPersistence,
+  withRecoveryMessage,
+  withRouting,
+} from '@neolorn/equator';
+import { provideLocalizedRouter } from '@neolorn/equator/router';
+import { routes } from './app.routes';
+import { appRouteProjection, routePolicy } from './localization.routes';
+```
 
 ```ts excerpt src/app/app.config.ts
 export const localizationFeatures = [
@@ -75,7 +108,18 @@ export const appConfig: ApplicationConfig = {
 };
 ```
 
-Render a message with `LocalizePipe`:
+The recovery message is what a visitor reads if the catalogs cannot load, and `generate` refuses an application without one. Write `recovery-message` and `recovery-retry` beside `app-title` in each locale's catalog.
+
+Render a message with `LocalizePipe`, and a switcher option with the `LocaleChoice` directive, both imported by the component:
+
+```ts excerpt src/app/app.ts
+import {
+  injectLocalization,
+  LocaleChoice,
+  LocalizePipe,
+} from '@neolorn/equator';
+import { messages } from '#i18n/shell';
+```
 
 ```ts excerpt src/app/app.ts
     <h1>{{ messages.appTitle | localize }}</h1>
