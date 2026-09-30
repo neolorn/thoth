@@ -5,7 +5,6 @@ import { TestBed } from '@angular/core/testing';
 import {
   Localization,
   LocalizedMessage,
-  externalDestination,
   provideLocalizationSetup,
   withFormattingContext,
 } from '@neolorn/equator';
@@ -25,44 +24,17 @@ import { runtimeExtensions } from './runtime-extensions';
  * or a token. The one markup-bearing message the shell renders elsewhere is a plain message that
  * Angular interpolates, which escapes it whatever the runtime does, so it cannot show any of this.
  * These messages go through `localized-message`, where the runtime decides what each part becomes.
- *
- * `hostile.link-options` and `hostile.styled` write options on built-in slots. The toolkit carries
- * a built-in slot's options through to the part unvalidated, so the template is the only thing
- * standing between them and the element.
  */
-
-const destination = externalDestination(
-  'https://support.example/guide',
-  ['https://support.example'],
-  '_self',
-);
 
 @Component({
   selector: 'inert-content-host',
   imports: [LocalizedMessage],
   template: `
     <localized-message data-markup [handle]="messages.hostile.markup" />
-    <localized-message
-      data-link
-      [handle]="messages.hostile.linkOptions"
-      [slots]="linkBindings"
-    />
-    <localized-message data-styled [handle]="messages.hostile.styled" />
   `,
 })
 class InertContentHost {
   protected readonly messages = messages;
-  protected readonly linkBindings = Object.freeze({
-    link: Object.freeze({ kind: 'link' as const, destination }),
-  });
-}
-
-/** Attribute names on an element, less the ones Angular writes for its own bookkeeping. */
-function authoredAttributes(element: Element): readonly string[] {
-  return element
-    .getAttributeNames()
-    .filter((name) => !name.startsWith('_ng') && !name.startsWith('ng-'))
-    .sort();
 }
 
 async function render(): Promise<HTMLElement> {
@@ -109,34 +81,5 @@ describe('catalog text on the structured path', () => {
       element.getAttributeNames().filter((name) => /^on/iu.test(name)),
     );
     expect(named).toEqual([]);
-  });
-});
-
-describe('options a catalog wrote on a built-in slot', () => {
-  let host: HTMLElement;
-
-  beforeEach(async () => {
-    host = await render();
-  });
-
-  it('leave the link going where the binding says', () => {
-    const anchors = host.querySelectorAll('[data-link] a');
-    expect(anchors).toHaveLength(1);
-    const anchor = anchors[0];
-    expect(anchor?.getAttribute('href')).toBe(destination.href);
-    expect(anchor?.getAttribute('target')).toBe('_self');
-    expect(anchor?.getAttribute('rel')).toBe(
-      destination.kind === 'external' ? destination.rel : null,
-    );
-    expect(anchor?.textContent?.trim()).toBe('help');
-  });
-
-  it('put no class, style or token on the element', () => {
-    const strong = host.querySelector('[data-styled] strong');
-    expect(strong?.textContent?.trim()).toBe('this');
-    expect(strong === null ? [] : authoredAttributes(strong)).toEqual([
-      'dir',
-      'lang',
-    ]);
   });
 });

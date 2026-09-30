@@ -1243,24 +1243,6 @@ export const injections = Object.freeze([
     replace: '      .finally(() => undefined);',
   },
   {
-    id: 'catalog-chooses-link-destination',
-    invariant:
-      'A link slot goes where its trusted binding says, whatever the catalog wrote on the slot.',
-    source: 'packages/runtime/src/message-template.ts',
-    find: '                      [href]="address(trusted.destination)"',
-    replace:
-      '                      [href]="part.options[\'href\'] ?? address(trusted.destination)"',
-  },
-  {
-    id: 'catalog-chooses-slot-class',
-    invariant:
-      'A slot element carries only the language and direction the runtime writes, never a class, style or token a catalog wrote on the slot.',
-    source: 'packages/runtime/src/message-template.ts',
-    find: '<strong [attr.lang]="part.language" [attr.dir]="part.direction">',
-    replace:
-      '<strong [attr.lang]="part.language" [attr.dir]="part.direction" [attr.class]="part.options[\'class\']">',
-  },
-  {
     id: 'catalog-text-rendered-as-html',
     invariant:
       'A text part of a structured message is written into the page as text, so markup a catalog carries never becomes an element.',

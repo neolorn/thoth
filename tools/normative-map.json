@@ -947,7 +947,8 @@
       "statement": "A catalog MUST NOT control HTML, a URL, a route, a component, a template, a class, a style, a color, a DOM property, an accessibility role, a permission, a sanitizer, a callback, or any executable behavior.",
       "checks": [
         "assurance:markup-option-undeclared-accepted",
-        "assurance:markup-option-value-unlisted-accepted"
+        "assurance:markup-option-value-unlisted-accepted",
+        "assurance:built-in-slot-option-admitted"
       ]
     },
     {
@@ -2995,7 +2996,7 @@
       "spec": "09-safe-content-and-ux.spec.md",
       "section": "3. Rendering a rich message",
       "statement": "A release MUST NOT let a catalog choose a URL, an origin, a scheme, a target, a link relationship, a callback, a command, or an event.",
-      "checks": ["assurance-runtime:catalog-chooses-link-destination"]
+      "checks": ["assurance:built-in-slot-option-admitted"]
     },
     {
       "spec": "09-safe-content-and-ux.spec.md",
@@ -3010,7 +3011,7 @@
       "spec": "09-safe-content-and-ux.spec.md",
       "section": "4. Styling and components",
       "statement": "That covers color, emphasis, a design-system component, or a purpose-built one, and a release MUST NOT let a catalog choose CSS, a class, a color, a design token, a component, or behavior.",
-      "checks": ["assurance-runtime:catalog-chooses-slot-class"]
+      "checks": ["assurance:built-in-slot-option-admitted"]
     },
     {
       "spec": "09-safe-content-and-ux.spec.md",

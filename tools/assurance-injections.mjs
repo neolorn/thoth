@@ -4264,4 +4264,15 @@ export const injections = Object.freeze([
     replace: "          : false\n            ? 'another interactive slot'",
     caughtBy: 'packages/toolkit/test/within-weakening.test.ts',
   },
+  {
+    id: 'built-in-slot-option-admitted',
+    invariant:
+      'An option written on a built-in or message-local slot, which no registered kind declares, is refused.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: '    validateCustomSlotOptions(\n      catalog,\n      messageId,\n      part.name,\n      part.options,\n      descriptor?.options,',
+    replace:
+      '    if (descriptor !== undefined) validateCustomSlotOptions(\n      catalog,\n      messageId,\n      part.name,\n      part.options,\n      descriptor?.options,',
+    caughtBy:
+      'packages/toolkit/test/markup-options-without-a-descriptor.test.ts',
+  },
 ]);

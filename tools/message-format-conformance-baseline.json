@@ -54,6 +54,10 @@
     "closed-option-domain-refused": {
       "standing": "design",
       "reason": "A descriptor may close an option to a set of values, and a message writing one outside it is refused when the catalog is compiled (EQ1805) rather than reported while formatting. The two cases write `decimalPlaces=9` where the suite's own README says only `0` and `1` are valid, and expect MessageFormat's answer: bad-option, then bad-selector, then the catch-all rendered. Same reasoning as the unknown-option class beside this one, one step further in: an option name a function never declared and an option value it declared as impossible are both knowable from the descriptor and the message alone, with no locale, no input and no request involved. The difference is that this set is Equator's own construct: MessageFormat has no way for a function to publish its option domain, so an implementation that wants the check has to invent the declaration, and having invented it there is no reason to defer enforcing it to the moment a reader is already looking at the screen. Both cases were excluded until 3.16 and neither was excluded for this: `decimalPlaces` could not be spelled in a descriptor at all, and once it could, the case ran and produced this."
+    },
+    "markup-option-without-a-declaration": {
+      "standing": "design",
+      "reason": "MessageFormat's markup carries whatever options an author writes, and a formatter that does not understand one leaves it alone. Equator binds markup to a rich slot, and a slot takes only the options its kind declares (specification 04 section 8); a message-local slot such as the suite's `tag` declares none, so `foo=bar` on it is refused when the catalog is compiled (EQ1805) rather than carried to a template with no use for it. The same reasoning as the two option classes before this one, applied to markup: a catalog that could put any option on any slot could put a destination, a handler or a style on one, and translated text is the last place those belong."
     }
   },
   "cases": {
@@ -355,6 +359,10 @@
     },
     "syntax.json#102": {
       "class": "slot-must-be-paired",
+      "verdict": "refused"
+    },
+    "syntax.json#103": {
+      "class": "markup-option-without-a-declaration",
       "verdict": "refused"
     },
     "syntax.json#104": {

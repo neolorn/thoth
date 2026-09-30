@@ -316,13 +316,13 @@ function validateCustomSlotOptions(
       ? Options
       : never
     : never,
-  descriptor: Readonly<RichSlotKindDescriptorInput>,
+  declared: Readonly<RichSlotKindDescriptorInput>['options'],
   diagnostics: ToolkitDiagnostic[],
 ): void {
   for (const [name, value] of Object.entries(
     options as Readonly<Record<string, MessageValueReference>>,
   )) {
-    const allowed = descriptor.options?.[name];
+    const allowed = declared?.[name];
     if (
       allowed === undefined ||
       value.kind !== 'literal' ||
@@ -894,16 +894,16 @@ function patternSlotSummary(
       inheritedSlots?.get(part.name)?.kind ??
       (builtInSlotKinds.has(part.name) ? part.name : 'message-local');
     const descriptor = extensionDescriptor(extensions, 'rich-slot-kind', kind);
-    if (descriptor !== undefined) {
-      validateCustomSlotOptions(
-        catalog,
-        messageId,
-        part.name,
-        part.options,
-        descriptor,
-        diagnostics,
-      );
-    }
+    // Only a registered kind declares options, so a built-in or message-local slot admits none and
+    // every option written on one is refused rather than carried to a renderer that ignores it.
+    validateCustomSlotOptions(
+      catalog,
+      messageId,
+      part.name,
+      part.options,
+      descriptor?.options,
+      diagnostics,
+    );
     if (
       (interactiveSlotKinds.has(kind) || descriptor?.interactive === true) &&
       stack.some((name) => {
