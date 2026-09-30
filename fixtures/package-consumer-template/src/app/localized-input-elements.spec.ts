@@ -95,14 +95,15 @@ describe('a localized field written as a textarea', () => {
     const area = (fixture.nativeElement as HTMLElement).querySelector(
       '[data-amount-area]',
     ) as HTMLTextAreaElement;
-    const englishText = area.value;
-    expect(englishText).not.toBe('');
+    expect(area.value).not.toBe('');
 
+    // A value other than the one written, so the model can only hold it if typing was parsed.
+    const englishText = area.value.replace('1', '2');
     area.value = englishText;
     area.dispatchEvent(new Event('input'));
     fixture.detectChanges();
     expect(fixture.componentInstance.control.errors).toBeNull();
-    expect(fixture.componentInstance.control.value).toEqual(decimal('1234.5'));
+    expect(fixture.componentInstance.control.value).toEqual(decimal('2234.5'));
 
     await localization.changeLocale('ar-EG');
     await fixture.whenStable();
