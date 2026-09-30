@@ -1118,6 +1118,34 @@ function effectiveSlots(
         ),
       );
     }
+    // `within` narrows where a slot may sit and cannot open a placement the nesting rules forbid,
+    // or a target could hold a structure no source can author.
+    const interactive = (slotKind: string): boolean =>
+      interactiveSlotKinds.has(slotKind) ||
+      extensionDescriptor(extensions, 'rich-slot-kind', slotKind)
+        ?.interactive === true;
+    for (const parent of refinement?.within ?? []) {
+      const parentKind =
+        message.slots[parent]?.kind ??
+        inheritedSlots?.get(parent)?.kind ??
+        (builtInSlotKinds.has(parent) ? parent : 'message-local');
+      const forbidden =
+        parentKind === 'code'
+          ? 'code, which holds only text and values'
+          : interactive(kind) && interactive(parentKind)
+            ? 'another interactive slot'
+            : undefined;
+      if (forbidden !== undefined) {
+        diagnostics.push(
+          semanticDiagnostic(
+            catalog,
+            'EQ1303',
+            `Rich slot ${JSON.stringify(name)} cannot be permitted within ${JSON.stringify(parent)}, because it cannot be nested inside ${forbidden}.`,
+            ['messages', messageId, 'slots', name, 'within'],
+          ),
+        );
+      }
+    }
     contracts.push(
       Object.freeze({
         name,

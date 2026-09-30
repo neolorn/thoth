@@ -4245,4 +4245,23 @@ export const injections = Object.freeze([
     replace: '        !inTypePosition(node)',
     caughtBy: 'packages/toolkit/test/message-identity-sources.test.ts',
   },
+  {
+    id: 'within-permits-a-slot-inside-code',
+    invariant:
+      'A `within` refinement cannot permit a slot inside `code`, which holds only text and values.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: "        parentKind === 'code'\n          ? 'code, which holds only text and values'\n          : interactive(kind)",
+    replace:
+      "        false\n          ? 'code, which holds only text and values'\n          : interactive(kind)",
+    caughtBy: 'packages/toolkit/test/within-weakening.test.ts',
+  },
+  {
+    id: 'within-permits-interactive-nesting',
+    invariant:
+      'A `within` refinement cannot permit an interactive slot inside another interactive slot.',
+    source: 'packages/toolkit/src/semantic-model.ts',
+    find: "          : interactive(kind) && interactive(parentKind)\n            ? 'another interactive slot'",
+    replace: "          : false\n            ? 'another interactive slot'",
+    caughtBy: 'packages/toolkit/test/within-weakening.test.ts',
+  },
 ]);

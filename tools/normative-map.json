@@ -924,7 +924,9 @@
         "assurance:slot-authored-outside-within-accepted",
         "assurance:slot-refinement-field-accepted",
         "assurance:slot-repeated-on-a-path-single",
-        "assurance:unused-slot-shape-assumed"
+        "assurance:unused-slot-shape-assumed",
+        "assurance:within-permits-a-slot-inside-code",
+        "assurance:within-permits-interactive-nesting"
       ]
     },
     {
@@ -955,7 +957,8 @@
       "checks": [
         "assurance:interactive-slot-nested",
         "assurance:registered-interactive-kind-nested",
-        "assurance:registered-interactive-parent-ignored"
+        "assurance:registered-interactive-parent-ignored",
+        "assurance:within-permits-interactive-nesting"
       ]
     },
     {
