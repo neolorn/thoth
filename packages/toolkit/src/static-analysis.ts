@@ -344,6 +344,37 @@ function propertyStringLiteral(
   return propertyType.isStringLiteral() ? propertyType.value : undefined;
 }
 
+/**
+ * Whether a node sits in a type rather than in a value.
+ *
+ * `typeof messages.issue.unknown`, or a cast to that type, names the handle's type and holds no
+ * handle, so nothing it reaches can render the message. Only a value reference is a use.
+ */
+function inTypePosition(node: ts.Node): boolean {
+  for (
+    let current = node.parent;
+    !ts.isSourceFile(current);
+    current = current.parent
+  ) {
+    if (ts.isTypeNode(current)) return true;
+  }
+  return false;
+}
+
+/**
+ * Whether a name stands for a type and for no value, such as the name a type alias declares for a
+ * handle's type. Its type is the handle's, and it holds nothing that renders.
+ */
+function namesOnlyAType(checker: ts.TypeChecker, node: ts.Node): boolean {
+  const symbol = checker.getSymbolAtLocation(node);
+  if (symbol === undefined) return false;
+  const target =
+    (symbol.flags & ts.SymbolFlags.Alias) === 0
+      ? symbol
+      : checker.getAliasedSymbol(symbol);
+  return (target.flags & ts.SymbolFlags.Value) === 0;
+}
+
 function resolvedMessageIdentity(
   checker: ts.TypeChecker,
   node: ts.Node,
@@ -3489,9 +3520,11 @@ export function analyzeApplication(
         }
       }
       if (
-        ts.isIdentifier(node) ||
-        ts.isPropertyAccessExpression(node) ||
-        ts.isElementAccessExpression(node)
+        (ts.isIdentifier(node) ||
+          ts.isPropertyAccessExpression(node) ||
+          ts.isElementAccessExpression(node)) &&
+        !inTypePosition(node) &&
+        !namesOnlyAType(checker, node)
       ) {
         const identity = resolvedMessageIdentity(checker, node);
         const isPropertyName =

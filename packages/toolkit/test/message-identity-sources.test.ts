@@ -120,4 +120,13 @@ describe('what does not become a message identity', () => {
       ]),
     ).toEqual(['issue.unknown']);
   });
+
+  it('a cast that asserts a handle type onto a value that is not a handle', async () => {
+    expect(
+      await unreached([
+        'type Held = typeof messages.issue.unknown;',
+        "export const cast = present('issue.unknown' as unknown as Held);",
+      ]),
+    ).toEqual(['issue.unknown']);
+  });
 });

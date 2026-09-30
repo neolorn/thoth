@@ -3573,7 +3573,11 @@
       "spec": "10-compiler-and-tooling.spec.md",
       "section": "5. Static analysis",
       "statement": "A release MUST NOT let a raw or interpolated string, an unchecked cast, an erased base value, or an unbounded index become a message identity.",
-      "checks": ["assurance:string-literal-counts-as-message-use"]
+      "checks": [
+        "assurance:string-literal-counts-as-message-use",
+        "assurance:type-query-counts-as-message-use",
+        "assurance:handle-type-alias-counts-as-message-use"
+      ]
     },
     {
       "spec": "10-compiler-and-tooling.spec.md",

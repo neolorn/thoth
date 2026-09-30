@@ -3532,9 +3532,9 @@ export const injections = Object.freeze([
     invariant:
       'A string, an interpolated string, an unbounded index or an object spelled like a handle never becomes a message identity.',
     source: 'packages/toolkit/src/static-analysis.ts',
-    find: '      if (\n        ts.isIdentifier(node) ||\n        ts.isPropertyAccessExpression(node) ||\n        ts.isElementAccessExpression(node)\n      ) {\n        const identity = resolvedMessageIdentity(checker, node);',
+    find: '      if (\n        (ts.isIdentifier(node) ||\n          ts.isPropertyAccessExpression(node) ||\n          ts.isElementAccessExpression(node)) &&\n        !inTypePosition(node) &&\n        !namesOnlyAType(checker, node)\n      ) {\n        const identity = resolvedMessageIdentity(checker, node);',
     replace:
-      "      if (ts.isStringLiteral(node)) {\n        const named = [...knownIdentities].find(\n          (known) => known === node.text || known.endsWith(`:${node.text}`),\n        );\n        if (named !== undefined) {\n          addUsage(named, portableSourcePath, node.getStart(sourceFile), node.getEnd(), 'typescript');\n        }\n      }\n      if (\n        ts.isIdentifier(node) ||\n        ts.isPropertyAccessExpression(node) ||\n        ts.isElementAccessExpression(node)\n      ) {\n        const identity = resolvedMessageIdentity(checker, node);",
+      "      if (ts.isStringLiteral(node)) {\n        const named = [...knownIdentities].find(\n          (known) => known === node.text || known.endsWith(`:${node.text}`),\n        );\n        if (named !== undefined) {\n          addUsage(named, portableSourcePath, node.getStart(sourceFile), node.getEnd(), 'typescript');\n        }\n      }\n      if (\n        (ts.isIdentifier(node) ||\n          ts.isPropertyAccessExpression(node) ||\n          ts.isElementAccessExpression(node)) &&\n        !inTypePosition(node) &&\n        !namesOnlyAType(checker, node)\n      ) {\n        const identity = resolvedMessageIdentity(checker, node);",
     caughtBy: 'packages/toolkit/test/message-identity-sources.test.ts',
   },
   {
@@ -4226,5 +4226,23 @@ export const injections = Object.freeze([
     find: 'outputPath !== undefined && containedPath(absolute, outputPath)',
     replace: 'false',
     caughtBy: 'packages/toolkit/test/generated-root-separation.test.ts',
+  },
+  {
+    id: 'type-query-counts-as-message-use',
+    invariant:
+      'A handle named in a type position, such as `typeof messages.issue.unknown`, is not a use of the message.',
+    source: 'packages/toolkit/src/static-analysis.ts',
+    find: '        !inTypePosition(node) &&\n        !namesOnlyAType(checker, node)',
+    replace: '        !namesOnlyAType(checker, node)',
+    caughtBy: 'packages/toolkit/test/message-identity-sources.test.ts',
+  },
+  {
+    id: 'handle-type-alias-counts-as-message-use',
+    invariant:
+      "A name that stands only for a handle's type, such as a type alias, is not a use of the message.",
+    source: 'packages/toolkit/src/static-analysis.ts',
+    find: '        !inTypePosition(node) &&\n        !namesOnlyAType(checker, node)',
+    replace: '        !inTypePosition(node)',
+    caughtBy: 'packages/toolkit/test/message-identity-sources.test.ts',
   },
 ]);
