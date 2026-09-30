@@ -55,15 +55,24 @@ Run `equator init` and `equator generate` first, which the [tutorial](https://gi
 Compose the providers in `src/app/app.config.ts`. `provideLocalizedRouter` replaces `provideRouter`, and each `with*` selects a feature:
 
 ```ts excerpt src/app/app.config.ts
+export const localizationFeatures = [
+  withRouting({ policy: routePolicy, projection: appRouteProjection }),
+  withRecoveryMessage({
+    message: messages.recoveryMessage,
+    retryLabel: messages.recoveryRetry,
+  }),
+] as const;
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideBrowserGlobalErrorListeners(),
     provideLocalizedRouter(routes),
     provideLocalization(
-      withRouting({ policy: routePolicy, projection: appRouteProjection }),
-      withRecoveryMessage({
-        message: messages.recoveryMessage,
-        retryLabel: messages.recoveryRetry,
-      }),
+      ...localizationFeatures,
       withPersistence(cookieStore()),
     ),
+  ],
+};
 ```
 
 Render a message with `LocalizePipe`:

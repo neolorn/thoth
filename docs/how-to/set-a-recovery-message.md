@@ -27,10 +27,10 @@ The second names the retry control. Write it in every locale you ship, the way y
 Pass handles, not text:
 
 ```ts excerpt src/app/app.config.ts
-      withRecoveryMessage({
-        message: messages.recoveryMessage,
-        retryLabel: messages.recoveryRetry,
-      }),
+  withRecoveryMessage({
+    message: messages.recoveryMessage,
+    retryLabel: messages.recoveryRetry,
+  }),
 ```
 
 `equator generate` reports `EQ1310` for an application runtime that composes none, and

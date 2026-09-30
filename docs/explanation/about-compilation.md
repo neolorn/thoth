@@ -31,15 +31,20 @@ route.
 An application configuration names the features it selected and nothing else:
 
 ```ts excerpt src/app/app.config.ts
+export const localizationFeatures = [
+  withRouting({ policy: routePolicy, projection: appRouteProjection }),
+  withRecoveryMessage({
+    message: messages.recoveryMessage,
+    retryLabel: messages.recoveryRetry,
+  }),
+] as const;
+
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideBrowserGlobalErrorListeners(),
     provideLocalizedRouter(routes),
     provideLocalization(
-      withRouting({ policy: routePolicy, projection: appRouteProjection }),
-      withRecoveryMessage({
-        message: messages.recoveryMessage,
-        retryLabel: messages.recoveryRetry,
-      }),
+      ...localizationFeatures,
       withPersistence(cookieStore()),
     ),
   ],

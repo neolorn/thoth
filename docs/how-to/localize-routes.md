@@ -28,12 +28,17 @@ list.
 
 ## Compose them
 
-Add both to `provideLocalization`, and replace `provideRouter` with `provideLocalizedRouter`:
+Pass both to `withRouting` among the features `provideLocalization` receives:
+
+```ts excerpt src/app/app.config.ts
+export const localizationFeatures = [
+  withRouting({ policy: routePolicy, projection: appRouteProjection }),
+```
+
+Replace `provideRouter` with `provideLocalizedRouter`:
 
 ```ts excerpt src/app/app.config.ts
     provideLocalizedRouter(routes),
-    provideLocalization(
-      withRouting({ policy: routePolicy, projection: appRouteProjection }),
 ```
 
 ## Write links as routes

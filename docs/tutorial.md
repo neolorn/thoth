@@ -18,7 +18,7 @@ You need:
 ## Create the application
 
 ```text
-npx @angular/cli new my-app --routing --style css
+npx @angular/cli@22 new my-app --routing --style css
 cd my-app
 ```
 
@@ -152,7 +152,7 @@ covers the other three.
 
 The projection states which routes have localized addresses. It starts from `routeProjection`, a
 third generated module written from the application's route table. That table does not exist yet, so
-this import resolves after the second compile.
+the first `generate` wrote this module with no routes in it, and the second compile fills it in.
 
 ## Render a message with structure
 
@@ -251,7 +251,10 @@ whichever locale is committed.
 Replace `src/app/app.config.ts`:
 
 ```ts src/app/app.config.ts
-import type { ApplicationConfig } from '@angular/core';
+import {
+  provideBrowserGlobalErrorListeners,
+  type ApplicationConfig,
+} from '@angular/core';
 import { provideLocalization } from '#i18n';
 import { messages } from '#i18n/shell';
 import {
@@ -264,25 +267,33 @@ import { provideLocalizedRouter } from '@neolorn/equator/router';
 import { routes } from './app.routes';
 import { appRouteProjection, routePolicy } from './localization.routes';
 
+export const localizationFeatures = [
+  withRouting({ policy: routePolicy, projection: appRouteProjection }),
+  withRecoveryMessage({
+    message: messages.recoveryMessage,
+    retryLabel: messages.recoveryRetry,
+  }),
+] as const;
+
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideBrowserGlobalErrorListeners(),
     provideLocalizedRouter(routes),
     provideLocalization(
-      withRouting({ policy: routePolicy, projection: appRouteProjection }),
-      withRecoveryMessage({
-        message: messages.recoveryMessage,
-        retryLabel: messages.recoveryRetry,
-      }),
+      ...localizationFeatures,
       withPersistence(cookieStore()),
     ),
   ],
 };
 ```
 
-`provideLocalizedRouter` replaces `provideRouter`. Each `with*` selects a feature, and leaving one
-out selects its default; [Features](reference/features.md) lists them.
+`provideLocalizedRouter` replaces `provideRouter`, and the CLI's
+`provideBrowserGlobalErrorListeners()` stays. Each `with*` selects a feature, and leaving one out
+selects its default; [Features](reference/features.md) lists them. `localizationFeatures` is
+exported so the test below composes the same features rather than a copy of them.
 `withPersistence(cookieStore())` stores the visitor's choice, so the next visit opens in the
-language the last one ended in.
+language the last one ended in. It stays out of the shared list, because a test that stores a
+choice decides the locale the next test starts in.
 
 ## Render the title and the switcher
 
@@ -321,6 +332,9 @@ export class App {
 `dir`, `aria-current`, `aria-busy`, and, on an anchor, an `href` holding the current page's address
 in that locale.
 
+The template is inline now, so delete `src/app/app.html` and `src/app/app.css`, which the CLI wrote
+for the old one.
+
 ## Compile the routes
 
 The route table exists now, so compile again:
@@ -350,11 +364,7 @@ import { MOCK_PLATFORM_LOCATION_CONFIG } from '@angular/common/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import {
-  Localization,
-  withRecoveryMessage,
-  withRouting,
-} from '@neolorn/equator';
+import { Localization } from '@neolorn/equator';
 import { provideLocalizedRouter } from '@neolorn/equator/router';
 import {
   LocalizationTestingController,
@@ -362,11 +372,11 @@ import {
   resetLocalizationTestEnvironment,
 } from '@neolorn/equator/testing';
 import { localizationSetup } from '#i18n';
-import { messages, providerId, scopeId } from '#i18n/shell';
+import { providerId, scopeId } from '#i18n/shell';
 
 import { App } from './app';
+import { localizationFeatures } from './app.config';
 import { routes } from './app.routes';
-import { appRouteProjection, routePolicy } from './localization.routes';
 
 const shell = { providerId, scopeId } as const;
 
@@ -386,11 +396,7 @@ async function setup() {
       provideZonelessChangeDetection(),
       provideLocalizedRouter(routes),
       // The same setup and the same features the application composes.
-      provideLocalizationTesting(
-        localizationSetup,
-        withRouting({ policy: routePolicy, projection: appRouteProjection }),
-        withRecoveryMessage({ message: messages.recoveryMessage }),
-      ),
+      provideLocalizationTesting(localizationSetup, ...localizationFeatures),
     ],
   });
 
@@ -500,14 +506,15 @@ describe('the application', () => {
 });
 ```
 
-Run the suite:
+Run the suite once:
 
 ```text
-npm test
+npm test -- --no-watch
 ```
 
-Four cases pass. The run also prints `Not implemented: Window's scrollTo()` a few times, which is
-the test environment saying it has no scrolling to do rather than anything about the application.
+On a terminal `ng test` keeps watching for changes unless told not to. Four cases pass. The run
+also prints `Not implemented: Window's scrollTo()` a few times, which is the test environment saying
+it has no scrolling to do rather than anything about the application.
 
 ## What to read next
 
