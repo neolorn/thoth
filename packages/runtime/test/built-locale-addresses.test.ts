@@ -713,3 +713,17 @@ describe('the head of a page served under a sub-path', () => {
     expect(head(HOSTS, '').xDefault).toBe('https://site.example/');
   });
 });
+
+describe('a policy of a kind no provider serves', () => {
+  it('is refused where it is narrowed, naming the kinds that are served', () => {
+    const unserved = {
+      ...POLICY,
+      kind: 'query-parameter',
+    } as unknown as LocaleUrlPolicy;
+    expect(() => builtLocalePolicy(unserved, SHIPPED)).toThrow(
+      'Equator does not serve a "query-parameter" locale URL policy. It serves "path-prefix", "locale-neutral" and "locale-host".',
+    );
+    // The control: the same tables under a served kind narrow without a word.
+    expect(builtLocalePolicy(POLICY, SHIPPED).kind).toBe('path-prefix');
+  });
+});

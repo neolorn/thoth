@@ -1310,6 +1310,19 @@ export function builtLocalePolicy(
   policy: LocaleUrlPolicy,
   configuration: GeneratedConfiguration,
 ): LocaleUrlPolicy {
+  // Decided before any table is read. A kind this build does not serve has none of the tables the
+  // narrowing below reads, so reading on would fail on a missing table and name it rather than the
+  // kind, and every provider that narrows a policy reaches this first.
+  const kind: unknown = (policy as { readonly kind?: unknown }).kind;
+  if (
+    kind !== 'path-prefix' &&
+    kind !== 'locale-neutral' &&
+    kind !== 'locale-host'
+  ) {
+    routeError(
+      `Equator does not serve a ${JSON.stringify(kind)} locale URL policy. It serves "path-prefix", "locale-neutral" and "locale-host".`,
+    );
+  }
   const built = builtLocales(policy, configuration);
   const retain = <Value extends string>(
     table: Readonly<Record<string, Value>>,
