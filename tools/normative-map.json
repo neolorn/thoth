@@ -2887,7 +2887,10 @@
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "10. Enums and consumer-supplied content",
       "statement": "An unknown external value stays a typed unknown state and maps to a safe fallback with a diagnostic, and a release MUST keep machine equality and persistence on the invariant value rather than the localized label.",
-      "checks": ["assurance:unmapped-external-value-presented-as-known"]
+      "checks": [
+        "assurance:unmapped-external-value-presented-as-known",
+        "assurance:external-value-bound-through-an-inherited-member"
+      ]
     },
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",

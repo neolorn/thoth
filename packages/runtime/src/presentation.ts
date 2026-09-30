@@ -53,7 +53,12 @@ export function presentIssue(
   source: IssueMessageSource,
 ): IssuePresentation {
   if (!safeCode(issue.code)) return unknownIssue(localization, issue, source);
-  const binding = source.bindings?.[issue.code];
+  // Own members only: the bindings are an ordinary object literal, and a code spelled like a member
+  // every object inherits was bound to nothing.
+  const binding =
+    source.bindings !== undefined && Object.hasOwn(source.bindings, issue.code)
+      ? source.bindings[issue.code]
+      : undefined;
   if (binding !== undefined) {
     return Object.freeze({
       status: 'known',
@@ -107,7 +112,10 @@ export function presentExternalValue<Value extends string>(
   bindings: Readonly<Record<string, PlainMessageHandle>>,
   unknownMessage: PlainMessageHandle,
 ): ExternalValuePresentation<Value> {
-  const message = safeCode(value) ? bindings[value] : undefined;
+  const message =
+    safeCode(value) && Object.hasOwn(bindings, value)
+      ? bindings[value]
+      : undefined;
   if (message === undefined) {
     return Object.freeze({
       status: 'unknown',

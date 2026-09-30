@@ -3842,9 +3842,9 @@ export const injections = Object.freeze([
     invariant:
       "An explicit binding for an issue code wins over the message the code's name derives.",
     source: 'packages/runtime/src/presentation.ts',
-    find: '  const binding = source.bindings?.[issue.code];\n  if (binding !== undefined) {',
+    find: '  const binding =\n    source.bindings !== undefined && Object.hasOwn(source.bindings, issue.code)\n      ? source.bindings[issue.code]\n      : undefined;\n  if (binding !== undefined) {',
     replace:
-      '  const binding =\n    issueMessage(source.messages, issue.code) === undefined\n      ? source.bindings?.[issue.code]\n      : undefined;\n  if (binding !== undefined) {',
+      '  const binding =\n    issueMessage(source.messages, issue.code) === undefined &&\n    source.bindings !== undefined &&\n    Object.hasOwn(source.bindings, issue.code)\n      ? source.bindings[issue.code]\n      : undefined;\n  if (binding !== undefined) {',
     caughtBy: 'packages/runtime/test/issue-presentation.test.ts',
   },
   {
@@ -4152,5 +4152,14 @@ export const injections = Object.freeze([
     replace: '',
     caughtBy:
       'packages/runtime/test/cancelled-load-failure-is-observed.test.ts',
+  },
+  {
+    id: 'external-value-bound-through-an-inherited-member',
+    invariant:
+      'An external value spelled like a member every object inherits was bound to nothing and is presented as unknown.',
+    source: 'packages/runtime/src/presentation.ts',
+    find: 'safeCode(value) && Object.hasOwn(bindings, value)',
+    replace: 'safeCode(value) && value in bindings',
+    caughtBy: 'packages/runtime/test/inherited-member-codes.test.ts',
   },
 ]);
