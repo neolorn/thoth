@@ -14,6 +14,7 @@
 // a side effect of this.
 
 import assert from 'node:assert/strict';
+import { readdirSync } from 'node:fs';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -43,14 +44,14 @@ const assertContained = (path, owner) => {
 };
 
 const run = (command, args, cwd) => {
-  const commandArguments =
-    process.platform === 'win32' && command === 'pnpm'
-      ? ['/d', '/s', '/c', 'pnpm', ...args]
-      : args;
-  const executable =
-    process.platform === 'win32' && command === 'pnpm'
-      ? (process.env.ComSpec ?? 'cmd.exe')
-      : command;
+  // Through the shell on Windows, where both package managers are command scripts Node will not
+  // start directly.
+  const viaShell =
+    process.platform === 'win32' && (command === 'pnpm' || command === 'npm');
+  const commandArguments = viaShell
+    ? ['/d', '/s', '/c', command, ...args]
+    : args;
+  const executable = viaShell ? (process.env.ComSpec ?? 'cmd.exe') : command;
   // `CI` is deliberately cleared: pnpm treats a CI environment as
   // `--frozen-lockfile`, which is the opposite of what this command does.
   const { CI: _ignoredCi, ...environment } = process.env;
@@ -208,3 +209,67 @@ await refreshTemplateLock(
   resolve(temporaryRoot, 'document-blocks', 'base'),
   'document-consumer-scaffold',
 );
+
+// The npm consumer's lock, resolved by npm with the two packed tarballs of this version in place,
+// because what npm records for a tarball is read from the tarball. Its other packages are the
+// development row's, as the document scaffold's are, so the two consumers install one set.
+const npmFixtureRoot = resolve(workspaceRoot, 'fixtures/npm-package-consumer');
+const npmManifestPath = resolve(npmFixtureRoot, 'package.json');
+const npmManifest = JSON.parse(await readFile(npmManifestPath, 'utf8'));
+for (const dependency of Object.keys(npmManifest.dependencies)) {
+  if (dependency.startsWith('@neolorn/')) continue;
+  const version = resolveRowVersion(
+    consumerProfiles.get('package-consumer'),
+    templateManifest,
+    dependency,
+  );
+  if (version === undefined) {
+    throw new Error(
+      `The npm consumer installs ${dependency}, which the development row does not. Add it to fixtures/package-consumer-template or remove it from the npm consumer.`,
+    );
+  }
+  npmManifest.dependencies[dependency] = version;
+}
+await writeFile(
+  npmManifestPath,
+  `${JSON.stringify(npmManifest, null, 2)}\n`,
+  'utf8',
+);
+const packedVersion = JSON.parse(
+  await readFile(resolve(workspaceRoot, 'dist/runtime/package.json'), 'utf8'),
+).version;
+const npmStagingRoot = resolve(temporaryRoot, 'npm-package-consumer-lock');
+assertContained(npmStagingRoot, temporaryRoot);
+await rm(npmStagingRoot, { force: true, recursive: true });
+await mkdir(resolve(npmStagingRoot, 'equator'), { recursive: true });
+await cp(npmManifestPath, resolve(npmStagingRoot, 'package.json'));
+for (const name of ['runtime', 'toolkit']) {
+  const folder = resolve(workspaceRoot, 'release', name, packedVersion);
+  const packed = readdirSync(folder).filter((file) => file.endsWith('.tgz'));
+  if (packed.length !== 1) {
+    throw new Error(
+      `release/${name}/${packedVersion} holds ${packed.length} tarballs. Run "pnpm run verify:tarballs" first.`,
+    );
+  }
+  await cp(
+    resolve(folder, packed[0]),
+    resolve(npmStagingRoot, 'equator', `${name}.tgz`),
+  );
+}
+run(
+  'npm',
+  [
+    'install',
+    '--package-lock-only',
+    '--no-audit',
+    '--no-fund',
+    '--no-update-notifier',
+    '--ignore-scripts',
+  ],
+  npmStagingRoot,
+);
+await cp(
+  resolve(npmStagingRoot, 'package-lock.json'),
+  resolve(npmFixtureRoot, 'package-lock.json'),
+);
+process.stdout.write('Refreshed npm-package-consumer lockfile.\n');

@@ -267,6 +267,26 @@ const declared = Object.freeze([
   // `stage-plants.mjs` plants for it, and requires each to be refused by name. The copy is a folder
   // of its own under `tmp`, which is not an artefact any other stage can see.
   {
+    id: 'verify:npm-consumer:self-test',
+    reads: ['release:packages', 'source:packages'],
+  },
+  // The tarballs `verify:tarballs` packed, installed with npm from the staged cache. It reads
+  // `source:packages` for the version whose tarballs it installs, and installs into a folder of its
+  // own under `tmp`.
+  {
+    id: 'verify:npm-consumer',
+    reads: ['release:packages', 'source:packages'],
+    needs: [
+      {
+        on: 'verify:npm-consumer:self-test',
+        why: 'A stage nobody has seen refuse the defects it exists for is indistinguishable from one that installs nothing.',
+      },
+    ],
+  },
+  // Runs the stage below over a copy of what it reads, once unchanged and once per defect
+  // `stage-plants.mjs` plants for it, and requires each to be refused by name. The copy is a folder
+  // of its own under `tmp`, which is not an artefact any other stage can see.
+  {
     id: 'verify:export-surface:self-test',
     reads: [
       'dist:runtime',

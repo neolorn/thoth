@@ -465,7 +465,12 @@
     {
       "spec": "02-packages-and-platform.spec.md",
       "section": "5. Distribution format",
-      "statement": "Both distributables MUST remain installable by any npm-compatible package manager."
+      "statement": "Both distributables MUST remain installable by any npm-compatible package manager.",
+      "checks": [
+        "plant:verify:npm-consumer:workspace-protocol-published",
+        "plant:verify:npm-consumer:peer-range-nothing-satisfies",
+        "plant:verify:npm-consumer:exported-file-not-packed"
+      ]
     },
     {
       "spec": "02-packages-and-platform.spec.md",

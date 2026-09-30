@@ -61,7 +61,7 @@ pnpm run test:toolkit
 pnpm run test:runtime
 ```
 
-The full verification suite builds both packages, installs them into consumer applications from the packed tarballs, runs those applications on three Angular versions and three browser engines, executes every code example in the documentation, and checks the generated reference pages against the packages:
+The full verification suite builds both packages, installs the packed tarballs into consumer applications with pnpm and with npm, runs those applications on three Angular versions and three browser engines, executes every code example in the documentation, and checks the generated reference pages against the packages:
 
 ```sh
 pnpm run verify
@@ -86,6 +86,16 @@ pnpm run refresh:consumer-locks
 `refresh:consumer` hands the consumer fixtures the packages that are in `dist/` right now. A fixture takes Equator as a `file:` dependency, which pnpm copies into its store, so a fixture that is already installed goes on running the build it was installed with until this runs.
 
 `refresh:consumer-locks` regenerates the committed lockfiles of the consumer fixtures. It reaches the network, so run it when a fixture manifest or a dependency range changes and commit what it writes.
+
+The suite fetches nothing while it runs, so what it installs and the Node releases it runs on have to be on the machine first. Three commands fetch them, and each reaches the network:
+
+```sh
+pnpm run stage:node-runtimes
+pnpm run stage:consumer-store
+pnpm run stage:npm-cache
+```
+
+`stage:node-runtimes` downloads, and checks against their published digests, the lowest release of each Node line the packages support and the release the repository develops on, into `.runtimes/node`. `stage:consumer-store` puts the packages of every committed `pnpm-lock.yaml` under `fixtures/` in the pnpm store. `stage:npm-cache` puts the packages of the npm consumer's `package-lock.json` in `.runtimes/npm-cache`, where the suite's npm install reads them. Run all three on a new machine, and the last two again after `refresh:consumer-locks`.
 
 ## Making a change
 

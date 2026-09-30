@@ -5,8 +5,9 @@
  * `verify-stage-self-test.mjs <stage>` runs one entry. The normative map names a plant as
  * `plant:<stage>:<id>`, which is a check only while `<stage>:self-test` is in the gate.
  */
-import { readdirSync } from 'node:fs';
-import { rm, writeFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { readFileSync, readdirSync } from 'node:fs';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 import { plants as packageStructurePlants } from './package-structure-plants.mjs';
@@ -45,7 +46,95 @@ const packageSourceRoots = () => {
 // written here would be one this file already uses.
 const plantedExport = `planted${Date.now().toString(36)}`;
 
+// The tarball `verify:npm-consumer` installs, at the version it reads in the copy it runs over. Read
+// when a plant runs rather than when this file loads, because every self-test loads this file.
+const packedTarball = (name, file) => (root) => {
+  const { version } = JSON.parse(
+    readFileSync(resolve(root, 'packages/runtime/package.json'), 'utf8'),
+  );
+  return `release/${name}/${version}/${file}-${version}.tgz`;
+};
+
+/**
+ * Unpacks a tarball in the copy, hands `edit` the unpacked `package` folder, and packs it again in
+ * place. Windows' own tar rather than whichever is first on the path, because it reads and writes
+ * gzip and takes a drive letter as a path.
+ */
+const editTarball = (locate, edit) => async (root) => {
+  const file = resolve(root, locate(root));
+  const unpacked = `${file}.unpacked`;
+  const tar =
+    process.platform === 'win32'
+      ? resolve(process.env.SystemRoot ?? 'C:/Windows', 'System32/tar.exe')
+      : 'tar';
+  await rm(unpacked, { recursive: true, force: true });
+  await mkdir(unpacked, { recursive: true });
+  execFileSync(tar, ['-xzf', file, '-C', unpacked]);
+  await edit(resolve(unpacked, 'package'));
+  execFileSync(tar, ['-czf', file, '-C', unpacked, 'package']);
+  await rm(unpacked, { recursive: true, force: true });
+};
+const editManifest = (change) => async (folder) => {
+  const path = resolve(folder, 'package.json');
+  const manifest = JSON.parse(readFileSync(path, 'utf8'));
+  change(manifest);
+  await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+};
+
 export const stageSelfTests = Object.freeze({
+  'verify:npm-consumer': {
+    script: 'tools/verify-npm-package-consumer.mjs',
+    inputs: [
+      'fixtures/npm-package-consumer',
+      'packages/runtime/package.json',
+      'release/runtime',
+      'release/toolkit',
+    ],
+    timeout: 600_000,
+    plants: [
+      {
+        // pnpm resolves the protocol inside the workspace and replaces it when it packs; a manifest
+        // packed some other way carries it to a consumer, and npm cannot resolve it.
+        id: 'workspace-protocol-published',
+        plant: editTarball(
+          packedTarball('runtime', 'neolorn-equator'),
+          editManifest((manifest) => {
+            manifest.dependencies.tslib = 'workspace:*';
+          }),
+        ),
+        refusal: /EUNSUPPORTEDPROTOCOL|Unsupported URL Type "workspace:"/u,
+      },
+      {
+        id: 'dependency-the-lock-does-not-hold',
+        plant: editTarball(
+          packedTarball('toolkit', 'neolorn-equator-toolkit'),
+          editManifest((manifest) => {
+            manifest.dependencies['left-pad'] = '1.3.0';
+          }),
+        ),
+        refusal: /ENOTCACHED|changed what the committed lock pins/u,
+      },
+      {
+        // A peer range no release of the peer satisfies, which npm refuses and pnpm only warns about.
+        id: 'peer-range-nothing-satisfies',
+        plant: editTarball(
+          packedTarball('runtime', 'neolorn-equator'),
+          editManifest((manifest) => {
+            manifest.peerDependencies.rxjs = '>=8.0.0 <9.0.0';
+          }),
+        ),
+        refusal: /ERESOLVE/u,
+      },
+      {
+        id: 'exported-file-not-packed',
+        plant: editTarball(
+          packedTarball('runtime', 'neolorn-equator'),
+          (folder) => rm(resolve(folder, 'fesm2022/neolorn-equator-http.mjs')),
+        ),
+        refusal: /An entry point of the installed packages did not load/u,
+      },
+    ],
+  },
   'verify:packages': {
     script: 'tools/verify-package-structure.mjs',
     inputs: [

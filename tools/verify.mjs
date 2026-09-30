@@ -319,6 +319,8 @@ const killTree = (child) => {
  * copy instead of having its own.
  */
 const nodeRuntimesRoot = resolve(workspaceRoot, '.runtimes/node');
+// The npm cache `stage:npm-cache` fills, one copy for every tree, for the same reason.
+const npmCacheRoot = resolve(workspaceRoot, '.runtimes/npm-cache');
 
 const treePath = (tree) => resolve(treesRoot, safeName(tree));
 
@@ -466,6 +468,7 @@ const runStep = (id, timeoutSeconds, root, processors) =>
         // thing in a private tree as in the shared one.
         EQUATOR_TRACE_ROOT: root,
         EQUATOR_NODE_COMPATIBILITY_ROOT: nodeRuntimesRoot,
+        EQUATOR_NPM_CACHE: npmCacheRoot,
         // Set to undefined rather than left out, so one set in the caller's shell reaches no stage.
         [CLAIMS_FILE_VARIABLE]: claims ? claimsFile(root, id) : undefined,
         // In the repository beside the trace, for the same reason.
