@@ -773,7 +773,14 @@ function readCookie(header: string | null, name: string): string | undefined {
     const separator = entry.indexOf('=');
     if (separator < 0) continue;
     if (entry.slice(0, separator).trim() !== name) continue;
-    const value = decodeURIComponent(entry.slice(separator + 1).trim());
+    let value: string;
+    try {
+      value = decodeURIComponent(entry.slice(separator + 1).trim());
+    } catch {
+      // A request header is anyone's to write, and a value this library never wrote is no
+      // preference at all rather than a reason to fail the response.
+      return undefined;
+    }
     return value.length === 0 ? undefined : value;
   }
   return undefined;

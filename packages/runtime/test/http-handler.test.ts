@@ -494,3 +494,19 @@ describe('a malformed target', () => {
     expect(response.headers.getSetCookie()).toStrictEqual([]);
   });
 });
+
+describe('a locale cookie the handler cannot decode', () => {
+  it('is read as no cookie, and the request is answered', async () => {
+    const none = await get('/second');
+    for (const value of ['%', '%E0%A4%A', '%ZZ']) {
+      const response = await get('/second', {
+        cookie: `equator-locale=${value}`,
+      });
+
+      expect(response.status, value).toBe(none.status);
+      expect(response.headers.get('location'), value).toBe(
+        none.headers.get('location'),
+      );
+    }
+  });
+});
