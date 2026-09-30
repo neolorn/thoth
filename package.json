@@ -131,6 +131,7 @@
     "@stryker-mutator/core": "10.0.0",
     "@stryker-mutator/vitest-runner": "10.0.0",
     "@types/node": "24.13.3",
+    "axe-core": "4.13.0",
     "cldr-core": "48.2.0",
     "cldr-localenames-full": "48.2.0",
     "eslint": "10.10.0",

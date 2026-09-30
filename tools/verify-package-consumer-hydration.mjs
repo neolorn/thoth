@@ -1449,6 +1449,86 @@ async function assertTrustedTypesPolicy(page, response, row) {
   return supported;
 }
 
+// Read once: evaluating it is what puts `axe` on a page, and a script tag would be refused by the
+// page's own hash-only script policy.
+const axeSource = createRequire(import.meta.url)('axe-core').source;
+// WCAG 2.2 level A and AA as axe-core tags its rules: each edition's rules carry that edition's
+// tags, and axe-core has no `wcag22a` tag because it has no rule for a 2.2 level A criterion.
+const WCAG_22_AA = Object.freeze([
+  'wcag2a',
+  'wcag2aa',
+  'wcag21a',
+  'wcag21aa',
+  'wcag22aa',
+]);
+// The elements Equator renders, where every rule applies. A directive's host is the application's
+// element, and its role, size and place on the page are the application's choice, which
+// specification 09 section 9 leaves to the application.
+const EQUATOR_RENDERED = Object.freeze([
+  'body > div[data-equator-announcer]',
+  'localized-message',
+  'localization-recovery',
+]);
+// The values Equator writes onto elements it does not render: the lang attributes on the root and
+// on each message, and the ARIA states and labels its directives put on their hosts. These rules
+// read a value without asking which element holds it, so they run over the whole document.
+const WRITTEN_VALUE_RULES = Object.freeze([
+  'aria-valid-attr',
+  'aria-valid-attr-value',
+  'html-has-lang',
+  'html-lang-valid',
+  'html-xml-lang-mismatch',
+  'valid-lang',
+]);
+
+async function auditAccessibility(page, row, where) {
+  if (!(await page.evaluate(() => 'axe' in globalThis))) {
+    await page.evaluate(axeSource);
+  }
+  const include = [];
+  for (const selector of EQUATOR_RENDERED) {
+    if ((await page.locator(selector).count()) > 0) include.push(selector);
+  }
+  assert.ok(
+    include.length > 0,
+    `${row.id} ${where}: nothing Equator renders is on the page`,
+  );
+  const violations = await page.evaluate(
+    async ({ include, tags, rules }) => {
+      const found = [
+        ...(
+          await globalThis.axe.run(
+            { include },
+            { runOnly: { type: 'tag', values: tags } },
+          )
+        ).violations,
+        ...(
+          await globalThis.axe.run(document, {
+            runOnly: { type: 'rule', values: rules },
+          })
+        ).violations,
+      ];
+      // An element Equator renders is in both runs, so a value rule can report it twice.
+      return [
+        ...new Set(
+          found.map(
+            (violation) =>
+              `${violation.id} (${violation.help}) at ${violation.nodes
+                .map((node) => node.target.join(' '))
+                .join(', ')}`,
+          ),
+        ),
+      ];
+    },
+    { include, tags: WCAG_22_AA, rules: WRITTEN_VALUE_RULES },
+  );
+  assert.deepEqual(
+    violations,
+    [],
+    `${row.id} ${where}: what Equator renders or writes violates WCAG 2.2 AA: ${violations.join('; ')}`,
+  );
+}
+
 async function assertDirectAccessibility(page, row) {
   assert.equal(await page.getByRole('main').count(), 1);
   assert.equal(await page.getByRole('heading', { level: 1 }).count(), 1);
@@ -4745,6 +4825,7 @@ async function verifyRecovery(row, context) {
     new Intl.Locale(locale).language,
   );
   assert.equal(await recovery.getAttribute('dir'), 'rtl');
+  await auditAccessibility(page, row, 'recovery in ar-EG');
   const retry = recovery.locator('button');
   assert.equal(
     (await retry.textContent()).trim(),
@@ -6309,6 +6390,7 @@ async function verifyBrowserRow(row) {
   );
   await exerciseLocaleContinuity(page, row);
   await assertDirectAccessibility(page, row);
+  await auditAccessibility(page, row, 'home in en-US');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   assert.equal(
     await page.evaluate(
@@ -6323,6 +6405,7 @@ async function verifyBrowserRow(row) {
       document.documentElement.lang === 'ar-EG' &&
       document.documentElement.dir === 'rtl',
   );
+  await auditAccessibility(page, row, 'home in ar-EG');
   await page.locator('[data-locale-choice="en-US"]').click();
   await page.waitForURL((url) => isShown(url, 'home', 'en-US'));
   await page.waitForFunction(

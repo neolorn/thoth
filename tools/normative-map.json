@@ -3200,7 +3200,12 @@
     {
       "spec": "09-safe-content-and-ux.spec.md",
       "section": "9. Accessibility",
-      "statement": "Every user-facing primitive a release supplies, and every reference integration it ships, MUST conform to WCAG 2.2 level AA for the behavior it implements."
+      "statement": "Every user-facing primitive a release supplies, and every reference integration it ships, MUST conform to WCAG 2.2 level AA for the behavior it implements.",
+      "checks": [
+        "assurance-runtime:recovery-retry-state-out-of-its-values",
+        "assurance-runtime:document-language-contradicted-by-xml-lang",
+        "assurance-runtime:label-writes-an-attribute-aria-does-not-define"
+      ]
     },
     {
       "spec": "09-safe-content-and-ux.spec.md",

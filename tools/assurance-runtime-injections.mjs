@@ -1872,6 +1872,46 @@ export const injections = Object.freeze([
     caughtWhen: /Creating a TrustedTypePolicy named 'equator' violates/u,
   },
   {
+    id: 'recovery-retry-state-out-of-its-values',
+    invariant:
+      'What Equator renders conforms to WCAG 2.2 AA, so an ARIA state outside its allowed values on the recovery retry is refused.',
+    // An attribute no spec and no earlier browser check reads, so only the audit can refuse it.
+    source: 'packages/runtime/src/recovery.ts',
+    find: '          <button\n            type="button"\n',
+    replace:
+      '          <button\n            type="button"\n            aria-pressed="maybe"\n',
+    suite: 'browser',
+    caughtWhen:
+      /recovery in ar-EG: what Equator renders or writes violates WCAG 2\.2 AA: aria-valid-attr-value/u,
+  },
+  {
+    id: 'document-language-contradicted-by-xml-lang',
+    invariant:
+      'The language Equator writes on the document root is the only one the root declares, so an xml:lang that contradicts it is refused.',
+    // Beside the lang Equator writes, where only the audit over the whole document can see it.
+    source: 'packages/runtime/src/angular.ts',
+    find: "      root.setAttribute('dir', snapshot.direction);\n    } catch (error: unknown) {",
+    replace:
+      "      root.setAttribute('dir', snapshot.direction);\n      root.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'xml:lang', 'fr');\n    } catch (error: unknown) {",
+    suite: 'browser',
+    caughtWhen:
+      /what Equator renders or writes violates WCAG 2\.2 AA: html-xml-lang-mismatch/u,
+  },
+  {
+    id: 'label-writes-an-attribute-aria-does-not-define',
+    invariant:
+      'Every ARIA attribute a directive writes onto its host is one ARIA defines, whatever element the application chose as the host.',
+    // On the application's element, outside everything Equator renders, so only the rules over the
+    // whole document can see it.
+    source: 'packages/runtime/src/label.ts',
+    find: '      this.renderer.setAttribute(this.element.nativeElement, attribute, value);\n',
+    replace:
+      "      this.renderer.setAttribute(this.element.nativeElement, attribute, value);\n      this.renderer.setAttribute(this.element.nativeElement, 'aria-labelled', value);\n",
+    suite: 'browser',
+    caughtWhen:
+      /what Equator renders or writes violates WCAG 2\.2 AA: aria-valid-attr \(/u,
+  },
+  {
     id: 'text-accepts-wording-of-its-own',
     invariant:
       "A call site cannot hand the runtime wording of its own beside a message's inputs, because the catalog is the only author of a message's words.",
