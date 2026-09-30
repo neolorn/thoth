@@ -79,6 +79,7 @@
     "materialize:node-26-consumer": "node ./tools/materialize-package-consumer.mjs node-26-consumer",
     "verify:node-26-consumer": "pnpm run materialize:node-26-consumer && node ./tools/verify-package-consumer.mjs node-26-consumer",
     "verify:consumer-refresh": "node ./tools/verify-consumer-refresh.mjs",
+    "verify:cost-budget:self-test": "node ./tools/verify-stage-self-test.mjs verify:cost-budget",
     "verify:cost-budget": "node --expose-gc ./tools/verify-cost-budget.mjs",
     "verify:cold-start": "node ./tools/verify-cold-start.mjs",
     "verify:document-blocks": "node ./tools/verify-document-blocks.mjs",

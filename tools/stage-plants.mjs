@@ -424,6 +424,33 @@ export const stageSelfTests = Object.freeze({
       },
     ],
   },
+  'verify:cost-budget': {
+    script: 'tools/verify-cost-budget.mjs',
+    nodeArgs: ['--expose-gc'],
+    inputs: ['dist/runtime'],
+    plants: [
+      {
+        // A heap reading needs the collector exposed. Without it both heap budgets have nothing
+        // to read, and a run that reads nothing must not stand as one within budget.
+        id: 'heap-growth-unmeasured',
+        nodeArgs: [],
+        refusal:
+          /FAIL +the shared formatter store is bounded by its ceiling\n\s+not measured: node ran without --expose-gc[\s\S]*FAIL +repeated locale switching does not accumulate heap\n\s+not measured: node ran without --expose-gc/u,
+      },
+      {
+        // The memo is what keeps a request from paying for the whole catalog. Without it every
+        // context admits the catalog again, which costs the catalog's size on every request.
+        id: 'catalog-admitted-on-every-request',
+        plant: plantText(
+          'dist/runtime/fesm2022/neolorn-equator.mjs',
+          'admittedCatalogs.set(candidate, { key, catalog });',
+          'void key;',
+        ),
+        refusal:
+          /FAIL +request-scoped context construction is flat in catalog size/u,
+      },
+    ],
+  },
 });
 
 /** The plant identifiers by stage, which is what the normative map checks names against. */

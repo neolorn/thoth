@@ -10,6 +10,11 @@
  * A plant must change what it plants into, and must be refused with the words it names. A refusal
  * pattern the unchanged run already prints proves nothing, so each is required to be absent there.
  *
+ * Some stages observe through the process rather than through a file: a heap reading needs Node's
+ * `--expose-gc`. Such a stage names the flags it runs with as `nodeArgs`, and a plant that gives
+ * its own `nodeArgs` withdraws the observing mechanism instead of editing the copy. It must still
+ * change something, so a plant that edits nothing and runs with the stage's own flags is refused.
+ *
  * No run may change what it reads. `specs/12-verification.spec.md` section 9 forbids a failing run
  * rewriting the baseline it fails against, and a refusal read from the output cannot see that: a
  * stage that records its baseline while refusing prints the same words as one that does not. So
@@ -95,6 +100,7 @@ export async function verifyStagePlants({
   args = [],
   inputs,
   plants,
+  nodeArgs = [],
   timeout = 180_000,
 }) {
   // Inside the workspace, so a copied package resolves its dependencies from the repository's
@@ -107,11 +113,11 @@ export async function verifyStagePlants({
   const pristine = resolve(base, 'pristine');
   const work = resolve(base, 'work');
   const out = (line) => process.stdout.write(`${line}\n`);
-  const run = () => {
+  const run = (flags) => {
     const began = Date.now();
     const result = spawnSync(
       process.execPath,
-      [resolve(repositoryRoot, script), ...args, '--inputs', work],
+      [...flags, resolve(repositoryRoot, script), ...args, '--inputs', work],
       { cwd: repositoryRoot, encoding: 'utf8', timeout },
     );
     return { ...result, ms: Date.now() - began };
@@ -125,9 +131,9 @@ export async function verifyStagePlants({
   const repositoryBefore = inputDigests(repositoryRoot, inputs);
   // Read after the plant rather than from the pristine copy, so what a plant edits is not taken
   // for something the run wrote.
-  const runComparing = () => {
+  const runComparing = (flags) => {
     const before = inputDigests(work, inputs);
-    const result = run();
+    const result = run(flags);
     return {
       ...result,
       changed: changedInputs(before, inputDigests(work, inputs)),
@@ -143,7 +149,7 @@ export async function verifyStagePlants({
     }
 
     await fresh();
-    const control = runComparing();
+    const control = runComparing(nodeArgs);
     out(`control: status ${control.status} in ${control.ms} ms`);
     if (control.changed.length > 0) {
       failures.push(
@@ -158,11 +164,11 @@ export async function verifyStagePlants({
     }
     const controlText = `${control.stdout}${control.stderr}`;
 
-    for (const { id, plant, refusal, rewrites } of plants) {
+    for (const { id, plant, nodeArgs: planted, refusal, rewrites } of plants) {
       if (rewrites !== undefined) {
         await fresh();
         await plant(work);
-        const result = runComparing();
+        const result = runComparing(nodeArgs);
         out(`${id}: status ${result.status} in ${result.ms} ms`);
         if (result.error !== undefined) {
           failures.push(
@@ -183,9 +189,19 @@ export async function verifyStagePlants({
         failures.push(`${id}: the unchanged run already prints ${refusal}.`);
         continue;
       }
+      const flags = planted ?? nodeArgs;
+      if (
+        plant === undefined &&
+        JSON.stringify(flags) === JSON.stringify(nodeArgs)
+      ) {
+        failures.push(
+          `${id}: the plant edits nothing and runs with the stage's own flags.`,
+        );
+        continue;
+      }
       await fresh();
-      await plant(work);
-      const result = runComparing();
+      if (plant !== undefined) await plant(work);
+      const result = runComparing(flags);
       out(`${id}: status ${result.status} in ${result.ms} ms`);
       const printed = `${result.stdout}${result.stderr}`;
       if (result.changed.length > 0) {

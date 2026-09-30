@@ -442,7 +442,23 @@ const declared = Object.freeze([
     processors: 4,
     writes: ['consumer:package'],
   },
-  { id: 'verify:cost-budget', reads: ['consumer:package', 'dist:runtime'] },
+  // Runs the stage below over a copy of the built runtime, once unchanged and once per defect
+  // `stage-plants.mjs` plants for it: a heap check that cannot be measured, and a catalog admitted
+  // again on every request. Each has to be refused by name.
+  {
+    id: 'verify:cost-budget:self-test',
+    reads: ['consumer:package', 'dist:runtime'],
+  },
+  {
+    id: 'verify:cost-budget',
+    reads: ['consumer:package', 'dist:runtime'],
+    needs: [
+      {
+        on: 'verify:cost-budget:self-test',
+        why: 'A budget nobody has seen refuse an unmeasured check or a regressed cost is indistinguishable from one that measures nothing.',
+      },
+    ],
+  },
   // What a new project costs Equator between `equator init` and its second scope, run cold against
   // the installed toolkit rather than against the workspace. It reads that consumer and writes
   // nothing it does not create itself, under `tmp/cold-start`, which is nested and so is not an

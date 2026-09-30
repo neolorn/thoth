@@ -29,10 +29,10 @@ import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const require_ = createRequire(resolve(workspaceRoot, 'package.json'));
+import { inputsRoot, repositoryRoot } from './stage-self-test.mjs';
+
+const require_ = createRequire(resolve(repositoryRoot, 'package.json'));
 
 await import(pathToFileURL(require_.resolve('@angular/compiler')).href);
 // The toolkit is read from the materialized consumer rather than from `dist/toolkit` directly.
@@ -41,7 +41,7 @@ await import(pathToFileURL(require_.resolve('@angular/compiler')).href);
 // consumer install is the same artifact a consumer receives, correctly resolved, which makes it
 // both the working import and the more faithful one.
 const consumerToolkit = resolve(
-  workspaceRoot,
+  repositoryRoot,
   'tmp/package-consumer-verification/package-consumer/node_modules/@neolorn/equator-toolkit/index.js',
 );
 if (!existsSync(consumerToolkit)) {
@@ -60,9 +60,12 @@ const { compileLocalArtifacts } = await import(
 const { analyzeCatalogSet } = await import(
   pathToFileURL(resolve(dirname(consumerToolkit), 'semantic-model.js')).href
 );
+// The runtime is read from the inputs, so the self-test can withdraw what a budget guards in a
+// copy of the built package. The toolkit above stays the installed one: a copied installation
+// resolves none of its dependencies.
 const rt = await import(
   pathToFileURL(
-    resolve(workspaceRoot, 'dist/runtime/fesm2022/neolorn-equator.mjs'),
+    resolve(inputsRoot(), 'dist/runtime/fesm2022/neolorn-equator.mjs'),
   ).href
 );
 
@@ -341,8 +344,8 @@ if (typeof globalThis.gc === 'function') {
   record(
     'the shared formatter store is bounded by its ceiling',
     'pass',
-    true,
-    'skipped: run node with --expose-gc to measure heap growth',
+    false,
+    'not measured: node ran without --expose-gc, so heap growth cannot be read',
   );
 }
 
@@ -374,8 +377,8 @@ if (typeof globalThis.gc === 'function') {
   record(
     'repeated locale switching does not accumulate heap',
     'pass',
-    true,
-    'skipped: run node with --expose-gc to measure heap growth',
+    false,
+    'not measured: node ran without --expose-gc, so heap growth cannot be read',
   );
 }
 
@@ -396,7 +399,9 @@ for (const result of surprising) {
     result.passed
       ? `\n${result.name}\n  now passes but is recorded as a known defect. It was fixed. Change its ` +
           `expectation to 'pass' in tools/verify-cost-budget.mjs so it guards the fix.\n`
-      : `\n${result.name}\n  regressed. A cost changed shape; this is not a slow machine.\n`,
+      : result.detail.startsWith('not measured')
+        ? `\n${result.name}\n  was not measured, so nothing is known about it; ${result.detail.slice('not measured: '.length)}.\n`
+        : `\n${result.name}\n  regressed. A cost changed shape; this is not a slow machine.\n`,
   );
 }
 
