@@ -24,14 +24,14 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 /**
  * Contracts that are proven by compiling, not by running.
  *
- * Both defects here were type-level and both were invisible to every runtime assertion: the code
- * ran correctly and could not be written. A test that only executes cannot see that, which is why
- * the assertions that matter in this file are the ones the compiler makes before it starts.
+ * Both contracts here are type-level and invisible to every runtime assertion: code can run
+ * correctly and still be impossible to write. A test that only executes cannot see that, which is
+ * why the assertions that matter in this file are the ones the compiler makes before it starts.
  *
  * The negative halves live in `src/negative-message-handle.negative.ts`, compiled one file at a
- * time by the consumer verifier and required to fail. A positive case alone cannot tell a fixed
- * contract from a contract that stopped checking anything, which is precisely the loosening each
- * of these fixes could have been, and was warned against before either was written.
+ * time by the consumer verifier and required to fail. A positive case alone cannot tell a working
+ * contract from a contract that stopped checking anything, and loosening a contract until the
+ * positive case compiles is the easiest way to make it pass.
  */
 
 declare const localization: Localization;
@@ -124,16 +124,16 @@ describe('type contracts', () => {
   });
 
   it("The server table is Angular's own ServerRoute[], with no cast", () => {
-    // The assertion is the annotation, and it is the whole point of the test: this line did
-    // not compile before, so every consumer wrote `as ServerRoute[]` over the entire table.
-    // A cast that wide silences far more than the thing it was added for (a wrong render
-    // mode, a missing `getPrerenderParams`, a misspelled field) and it sat on the one file
-    // where a mistake produces a page that exists in one language and 404s in the other.
+    // The assertion is the annotation, and it is the whole point of the test: if this line does not
+    // compile, every consumer writes `as ServerRoute[]` over the entire table. A cast that wide
+    // silences far more than the thing it is for (a wrong render mode, a missing
+    // `getPrerenderParams`, a misspelled field) and it sits on the one file where a mistake
+    // produces a page that exists in one language and 404s in the other.
     //
-    // Three things forced it, each measured on its own: the returned array was `readonly`,
-    // `getPrerenderParams` promised a `readonly` array, and one object type carrying a union
-    // `renderMode` matches no member of a discriminated union. `Readonly<Record<...>>` on the
-    // entries was never at fault and still stands.
+    // Three things would force it, each on its own: a `readonly` returned array, a
+    // `getPrerenderParams` that promises a `readonly` array, and one object type carrying a union
+    // `renderMode`, which matches no member of a discriminated union. `Readonly<Record<...>>` on
+    // the entries does not.
     const table: ServerRoute[] = localizedServerRoutes(
       routePolicy,
       appRouteProjection,

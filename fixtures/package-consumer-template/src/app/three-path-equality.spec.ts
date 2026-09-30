@@ -47,30 +47,30 @@ import {
 /**
  * One route, three ways in, and the requirement that they cannot be told apart.
  *
- * There are exactly three doors to a rendered page, and until now the third went somewhere else.
+ * There are exactly three doors to a rendered page, and the third needs delocalizing of its own.
  *
  * 1. **Canonical.** `navigateByUrl('/second')`: a `routerLink`, an application's own call.
  * 2. **Browser-supplied.** The address bar says `/ar-eg/second`: a shared link, a bookmark, a
  *    search result, a reload. `LocalizedLocationStrategy.path()` delocalizes it, so the Router
- *    matches `/second`. That is 4.1, and it has held since 4.2.
+ *    matches `/second`.
  * 3. **Programmatic and localized.** `navigateByUrl('/ar-eg/second')`, written by hand.
  *
- * The third had no delocalization on it. `navigateByUrl` is `parseUrl`, then
+ * Nothing in the Router delocalizes the third. `navigateByUrl` is `parseUrl`, then
  * `urlHandlingStrategy.merge`, then `scheduleNavigation`; it consults no `LocationStrategy` at any
- * point. So a prefixed address went to the matcher prefixed, and what it found was a *locale
+ * point. So a prefixed address goes to the matcher prefixed, and what it finds is a *locale
  * branch*: an entry Equator derives from the route projection so that `@angular/ssr` has an address
  * to walk when it prerenders. A branch carries enough to look renderable. It does not carry the
  * route's `canActivate`, its `resolve`, its `data`, its `title`, or its `providers`, because none
  * of those are addresses.
  *
  * The consequence is the reason this file exists rather than a `toBe` somewhere: **an authorization
- * boundary that holds on two doors and not the third is not a boundary.** A guard that refuses
- * every visitor was one hand-written prefix away from not running. Nothing threw, nothing warned,
- * and the page rendered, so no test that asserted "the page rendered" could have caught it.
+ * boundary that holds on two doors and not the third is not a boundary.** Without it, a guard that
+ * refuses every visitor is one hand-written prefix away from not running, and nothing throws,
+ * nothing warns, and the page renders, so no test that asserts "the page rendered" can catch it.
  *
  * `LocalizedUrlHandlingStrategy.extract` closes it, and closes it with the *same function* the
  * `LocationStrategy` calls rather than a second rule that has to agree with the first. Both doors
- * into the matcher now hand it a canonical address.
+ * into the matcher hand it a canonical address.
  *
  * **Asserted as an equality, not as three expectations.** Three `expect` blocks that each assert
  * `'features'` are three chances to write the same wrong constant three times, and they stay green

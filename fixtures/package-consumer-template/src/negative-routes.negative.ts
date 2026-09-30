@@ -68,11 +68,10 @@ if (parsed.status === 'valid') {
   void parsed.value.sku;
 }
 
-// The same identity contract, on the server table, where the earlier fix never reached. `routeId`
-// was declared `string` while the client half already used `RouteIdOf`, so a typo
-// here type-checked and then threw from `routeById` the moment the module was evaluated. The
-// build does fail that way, but at the wrong moment, with no completion on the way there, and
-// with an error that names the identity rather than the line that wrote it (5.2).
+// The same identity contract, on the server table. Declared as `string`, `routeId` would let a typo
+// here type-check and then throw from `routeById` the moment the module is evaluated. The build
+// does fail that way, but at the wrong moment, with no completion on the way there, and with an
+// error that names the identity rather than the line that wrote it.
 // EXPECT: Type '"itemm"' is not assignable to type
 // EXPECT: Did you mean '"item"'?
 provideLocalizedServerRendering(

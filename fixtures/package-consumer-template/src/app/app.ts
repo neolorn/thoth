@@ -220,10 +220,9 @@ import { FeatureLabReadiness } from './readiness';
         <!--
         The switcher, with no locale in it.
 
-        This was two buttons carrying 'en-US' and 'ar-EG' as literals, a hand-written lang and dir
-        per button, and a hand-written label in a language the author of the second one could not
-        read. Adding a third locale meant a third button and six more attributes to get right, and
-        nothing would have failed if one of them was wrong.
+        A button per locale, with the locale as a literal, a hand-written lang and dir, and a
+        hand-written label in a language its author may not read, means more attributes to get right
+        for every locale added, and nothing fails if one of them is wrong.
 
         The loop is the application's, because it is the application's layout. Everything inside the
         option is the runtime's: localeChoice writes lang, dir, aria-current and aria-busy

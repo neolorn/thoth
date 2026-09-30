@@ -31,11 +31,11 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 /**
  * Does a route's document metadata come from the catalog for the locale that is active?
  *
- * The defect this replaced was not a missing lookup. It was a conditional chain on
- * `context.resolution.routeId` inside the `document` callback, whose last branch answered for every
- * route the chain did not name, so most of the application's pages claimed to be the home page,
- * in whichever language was active, and nothing anywhere reported it. The chain compiled, ran, and
- * returned a real localized string every time.
+ * The failure this guards against is not a missing lookup. It is a conditional chain on
+ * `context.resolution.routeId` inside the `document` callback, whose last branch answers for every
+ * route the chain does not name, so most of the application's pages claim to be the home page, in
+ * whichever language is active, and nothing reports it: the chain compiles, runs, and returns a
+ * real localized string every time.
  *
  * **Two routes, not one.** With a single route under test, "each route's own metadata" and "one
  * title for the whole application" produce identical output, and the assertion is green for the

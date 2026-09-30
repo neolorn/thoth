@@ -219,7 +219,7 @@ describe('the address a locale switch moves to', () => {
  * **The article route is why this group is not vacuous.** Its slug is spelled per locale, so the
  * three locales here fail and pass for three different reasons on one navigation. Every other route
  * in this fixture is spelled alike in all of them, and a test written on one of those would pass
- * before this rule and after it.
+ * with or without this rule.
  *
  * The switch itself is unaffected and is covered by the groups above: an option with no address
  * still switches, in place, which under a neutral policy is the only way a locale is ever chosen.

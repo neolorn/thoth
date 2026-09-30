@@ -153,8 +153,8 @@ describe('bootstrap when a catalog cannot load', () => {
       ],
     });
 
-    // The application booted. Before this fix, bootstrapApplication rejected here and the host
-    // element stayed empty.
+    // The application booted. Without recovery, bootstrapApplication rejects here and the host
+    // element stays empty.
     expect(host.querySelector('[data-application-shell]')).not.toBeNull();
 
     const recovery = host.querySelector('[data-recovery]');

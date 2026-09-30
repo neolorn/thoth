@@ -220,7 +220,7 @@ describe('switching locale under a policy whose locales are origins', () => {
     // The move actually started, at the address that was reported.
     expect(assigned).toEqual([target]);
     // And nothing was committed here. A transition that ran would leave this application claiming
-    // Arabic at the English origin, which is the state the reader was left in before this.
+    // Arabic at the English origin.
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     claimCapability('policy:locale-host', { policy: HOST });
     claimCapability('entry:@neolorn/equator', { policy: HOST });

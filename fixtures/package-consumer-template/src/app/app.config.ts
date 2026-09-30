@@ -51,9 +51,8 @@ import {
  * Exported so a test can assert the values the application actually ships rather than a copy of
  * them. `numberingSystem: 'latn'` is the load-bearing one: `ar-EG` resolves to `arab` on its own,
  * so this line is the difference between Latin and Arabic-Indic digits on every localized surface,
- * and until `app-formatting-context.spec.ts` existed nothing asserted that it arrived. Only the
- * browser harness bootstraps through `appConfig`, and every vitest spec in this lab builds its own
- * providers.
+ * and `app-formatting-context.spec.ts` asserts that it arrives. Only the browser harness bootstraps
+ * through `appConfig`, and every vitest spec in this lab builds its own providers.
  */
 export const appFormattingContext = Object.freeze({
   timeZone: 'UTC',
@@ -82,10 +81,11 @@ const SOCIAL_PREVIEW = {
 /**
  * What each route's document says, declared once per route id.
  *
- * This replaced a conditional chain on `context.resolution.routeId` inside the `document` callback,
- * which answered with the same two strings for every route in the application, so `/second` and
- * `/items/42` and `/lazy` all claimed to be the home page, in both languages, and nothing said so.
- * A chain always has a last branch, so it never stops compiling and never stops answering.
+ * Declared per route id rather than as a conditional chain on `context.resolution.routeId` inside
+ * the `document` callback, which would answer with the same two strings for every route it does not
+ * name, so `/second` and `/items/42` and `/lazy` would all claim to be the home page, in both
+ * languages, and nothing would say so. A chain always has a last branch, so it never stops
+ * compiling and never stops answering.
  *
  * They are messages rather than strings for one reason worth stating: `equator check
  * --require-complete` already fails when a target catalog omits a message, so a title with no Arabic
@@ -94,7 +94,7 @@ const SOCIAL_PREVIEW = {
  * that drifts from the first.
  *
  * `article` is deliberately absent. Its title is the fetched article's own, so no catalog can hold
- * it, and it comes from the `document` callback instead, which is what that callback is now for.
+ * it, and it comes from the `document` callback instead, which is what that callback is for.
  */
 const ROUTE_DOCUMENTS = {
   'route:_index': {

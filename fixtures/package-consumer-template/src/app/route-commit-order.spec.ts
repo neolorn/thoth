@@ -108,9 +108,9 @@ class LocaleRecordingRoute {
 })
 class RootHost {}
 
-// The application's own routes, canonical. Equator no longer wraps them in locale parents, it
-// derives the locale branches from the route projection and supplies them separately, so this is
-// exactly what a consumer writes.
+// The application's own routes, canonical. Equator does not wrap them in locale parents; it derives
+// the locale branches from the route projection and supplies them separately, so this is exactly
+// what a consumer writes.
 const routes: Routes = [
   { path: '', component: LocaleRecordingRoute },
   { path: 'second', component: LocaleRecordingRoute },
@@ -241,13 +241,12 @@ describe('switching locale, and navigating after one', () => {
       //
       // `navigateByUrl('/ar-eg')` is a navigation to `/`, answered in the locale that is committed
       // now. It is not a switch and it is not a no-op: the address is delocalized on the way into
-      // the matcher, so the canonical route runs with everything declared on it, which is 4.18's
-      // whole point. What it does not do is change the language.
+      // the matcher, so the canonical route runs with everything declared on it, which is the point
+      // of delocalizing it. What it does not do is change the language.
       //
-      // **And the second half of the name is asserted, because it was not.** This case was written
-      // as "and says so" while asserting only the ignoring. A test name is a claim like any other,
-      // and one that names a behaviour it does not read is the same defect as a comment that cites
-      // a check nobody wrote.
+      // **And the second half of the name is asserted.** A test name is a claim like any other, and
+      // one that names a behaviour it does not read is the same defect as a comment that cites a
+      // check nobody wrote.
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const { router, localization } = await setup();
       const fixture = TestBed.createComponent(RootHost);
@@ -351,21 +350,21 @@ describe('a Router configuration the adapter cannot make coherent', () => {
  *
  * Five things happen on a switch: the document's `lang` and `dir` are written, the address bar is
  * brought into line, the head is re-projected for the new locale, the interaction that was captured
- * is put back, and the change is announced. Three were commit hooks, ordered by one array in
- * `provideLocalization()`. Two, the address bar and the head, were Angular effects belonging to
- * the routing adapter, so their turn came when their services happened to be constructed. An order
- * that emerges from construction is an order nothing states, nothing can change deliberately, and
- * no test can read; it is also an order that a later `inject()` in an unrelated constructor can
+ * is put back, and the change is announced. All five are positions in one array in
+ * `provideLocalization()`. As Angular effects belonging to the routing adapter, the address bar and
+ * the head would take their turn when their services happen to be constructed. An order that
+ * emerges from construction is an order nothing states, nothing can change deliberately, and no
+ * test can read; it is also an order that a later `inject()` in an unrelated constructor can
  * reverse without anything going red.
  *
- * All five are now positions in the one array, and this is the reading of it.
+ * This is the reading of that array.
  *
  * **The vantage point is the address write itself.** `Location.onUrlChange` fires synchronously
  * inside `replaceState`, which makes it the one point in the sequence that is not batched: what the
  * document already says at that instant ran before it, and what it does not yet say runs after.
- * `MutationObserver` was tried first and is the wrong instrument here: its callbacks are
- * delivered at one microtask checkpoint, so the order they arrive in is the order the records were
- * queued to be delivered, not the order the writes happened.
+ * `MutationObserver` is the wrong instrument here: its callbacks are delivered at one microtask
+ * checkpoint, so the order they arrive in is the order the records were queued to be delivered, not
+ * the order the writes happened.
  *
  * **What this can and cannot see.** Two of the four readings below are load-bearing and go red if
  * the array is reordered: the address bar carrying the new locale at all (the two routed steps run

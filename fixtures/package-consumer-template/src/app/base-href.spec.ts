@@ -257,8 +257,8 @@ describe.runIf(localeInPath)('an application deployed under a sub-path', () => {
   it('reads the locale out of an address that carries the base, declared in the document', async () => {
     const arrival = await arriveAt(arabicUnderApp(), { dom: '/app' });
 
-    // The locale is the assertion. The three below it were already true while this one was false,
-    // which is why the defect was invisible: the right page, at the right address, in English.
+    // The locale is the assertion. The three below it can hold while this one fails, which is how
+    // the failure hides: the right page, at the right address, in English.
     expect(arrival.locale).toBe('ar-EG');
     expect(arrival.routerUrl).toBe('/second');
     expect(arrival.view).toBe('second');

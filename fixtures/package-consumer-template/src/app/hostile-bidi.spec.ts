@@ -144,8 +144,7 @@ describe('isolation of interpolated values', () => {
       reference: 'ABC-12345',
     });
 
-    // The reference is still present and readable; what changed is that it can no longer reorder
-    // the Arabic around it.
+    // The reference is present and readable, and it cannot reorder the Arabic around it.
     //
     // RLI, not FSI. The value carries no direction of its own, so it takes the direction of the
     // message it is going into, and that message is Arabic. FSI is reserved for a value that could
@@ -161,15 +160,15 @@ describe('isolation of interpolated values', () => {
     const fixture = TestBed.createComponent(HostileHost);
     fixture.detectChanges();
 
-    // The component path carries isolation as an element, as it always did.
+    // The component path carries isolation as an element.
     const bdi = fixture.debugElement.query(
       By.css('[data-component-interpolated] bdi'),
     );
     expect(bdi).not.toBeNull();
     expect(bdi.nativeElement.textContent).toContain('ABC-12345');
 
-    // The pipe path has no element, and now carries it in the string instead. Same guarantee,
-    // reached two ways, with nothing asked of the call site.
+    // The pipe path has no element, and carries it in the string instead. Same guarantee, reached
+    // two ways, with nothing asked of the call site.
     const pipe = fixture.debugElement.query(By.css('[data-pipe-interpolated]'));
     expect(pipe.nativeElement.textContent).toContain('ABC-12345');
   });

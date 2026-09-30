@@ -46,10 +46,10 @@ import { localeInPath, localeOrigin, pagePath, pageUrl } from './addresses';
  * current one: an English page at an Arabic address.
  *
  * The two groups below are the two halves of that claim. The first is the sequence a reader
- * produces with the Router alone, asserted step by step: it was already correct and it has to
- * stay correct, because a check that fires on more occasions is also a check that can write on more
- * occasions. The second is the one that was wrong, and it needs an application to push its own
- * history entry, which is what a modal, a wizard step or a filter kept in history does.
+ * produces with the Router alone, asserted step by step: it has to stay correct, because a check
+ * that fires on more occasions is also a check that can write on more occasions. The second is the
+ * one the Router alone gets wrong, and it needs an application to push its own history entry, which
+ * is what a modal, a wizard step or a filter kept in history does.
  */
 
 @Component({

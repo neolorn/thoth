@@ -456,7 +456,7 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
   });
 
   /**
-   * The half that is easiest to skim past, and the one this fixture got wrong by hand.
+   * The half that is easiest to skim past, and the easiest to get wrong by hand.
    * `https://site.example` and `http://site.example` are two origins, and the message says so.
    */
   it('refuses a host policy whose configured origin differs only in scheme', async () => {

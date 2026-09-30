@@ -33,11 +33,8 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 /**
  * Every `LocalizedInputProfile` kind, driven through the published `/forms` directive.
  *
- * `/forms` was recorded as never exercised by a consumer. That was wrong, this application's own
- * percent field has used it since it was written, but the narrower fact was true, and worse for
- * being specific: **one of eleven profile kinds had any consumer-level evidence.** `LocalizedInput`
- * is one of the places Equator is ahead of the field, and ten of its eleven kinds shipped on unit
- * tests alone.
+ * This application's percent field exercises one of `LocalizedInput`'s eleven profile kinds;
+ * without this file, the other ten would rest on unit tests alone.
  *
  * What is asserted is a round trip, not a per-locale expected string. Pinning "١٬٢٣٤٫٥" for
  * ar-EG would pin one ICU version's output and turn every ICU bump into a failure nobody can tell

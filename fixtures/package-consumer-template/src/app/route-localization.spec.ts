@@ -101,7 +101,7 @@ describe('Equator Router transaction integration', () => {
   };
 
   /**
-   * What a failed post-navigation effect puts back, and where the failure has to be driven from now.
+   * What a failed post-navigation effect puts back, and where the failure is driven from.
    *
    * Not from `navigateByUrl('/ar-eg')`. `LocalizedUrlHandlingStrategy.extract` delocalizes the
    * address before the Router matches it, so no navigation reaches a locale branch and no
@@ -110,10 +110,10 @@ describe('Equator Router transaction integration', () => {
    * So the restore is driven across *routes* instead, from a locale that was switched into
    * beforehand. Three of the four dimensions are unchanged by that: route state, URL and document
    * state all genuinely move and genuinely come back. The fourth is weaker and is worth saying
-   * plainly: with no navigation able to change locale, "restores the locale" is now "stays in the
+   * plainly: with no navigation able to change locale, "restores the locale" means "stays in the
    * locale it was in". That is still a claim worth holding. Restore code that reaches for the
-   * default locale rather than the outgoing snapshot passes the old test and fails this one, which
-   * is why the assertion is `ar-EG` and not the policy's default.
+   * default locale rather than the outgoing snapshot fails this one, which is why the assertion is
+   * `ar-EG` and not the policy's default.
    */
   // Where a switch moves the address bar in this document, which needs the path to carry the locale.
   it.runIf(localeInPath)(
@@ -317,13 +317,13 @@ describe('Equator Router transaction integration', () => {
   );
 
   /**
-   * The same hazard as the title, in the other direction, and it was live.
+   * The same hazard as the title, in the other direction.
    *
    * The adapter claims the interaction coordinator at construction, so from then on every commit's
-   * focus, caret and scroll restore is parked and only `NavigationEnd` releases it. That was right
-   * while a locale switch was a navigation. It is not one now, so the restore was parked and never
-   * released, and then fired on the next real navigation, putting the previous page's scroll
-   * position on the page the reader had just opened.
+   * focus, caret and scroll restore is parked and only `NavigationEnd` releases it. A locale switch
+   * is not a navigation, so without a release of its own the restore would stay parked and fire on
+   * the next real navigation, putting the previous page's scroll position on the page the reader
+   * just opened.
    *
    * Asserted on `scrollTo`, which is the last thing the restore does, because a restore that never
    * runs and a restore that runs onto an unmoved page look identical from the DOM afterwards.

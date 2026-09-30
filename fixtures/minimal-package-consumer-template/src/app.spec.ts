@@ -49,12 +49,12 @@ describe('Equator minimal built-package consumer', () => {
       lang: configuration.defaultLocale,
       dir: 'ltr',
     });
-    // One per configured locale, and there are three of them now.
+    // One per configured locale, and there are three of them.
     expect(recoveryPayload).toHaveLength(3);
 
-    // The switcher, and the whole of what this fixture had to write by hand to have one. There is
-    // no locale in its template and no label for a locale in its catalogs: the endonyms below are
-    // the runtime's, and the option's own language and direction come with them.
+    // The switcher, and the whole of what this fixture writes by hand to have one. There is no
+    // locale in its template and no label for a locale in its catalogs: the endonyms below are the
+    // runtime's, and the option's own language and direction come with them.
     const choices = [
       ...element.querySelectorAll('[data-switch-locale]'),
     ] as HTMLElement[];
@@ -110,7 +110,7 @@ describe('Equator minimal built-package consumer', () => {
     // The parent-locale chain, in a built application, through the runtime that a browser runs.
     //
     // `inherited` is in `en-US` and in `ar`, and not in `ar-EG`. `ar-EG` inherits from `ar`, so the
-    // Arabic sentence is what renders here. Before the chain existed this read the English one, and
+    // Arabic sentence is what renders here. Without the chain this would read the English one, and
     // it is the only assertion in this fixture that can tell the difference: everything else above
     // is carried by `ar-EG` itself, which is what makes those four the control.
     expect(element.querySelector('[data-inherited]')?.textContent).toContain(

@@ -96,7 +96,7 @@ function setup(environment: Environment): Localization {
               }),
             },
           ]),
-      // The address, supplied the way Equator now reads it on the server.
+      // The address, supplied the way Equator reads it on the server.
       //
       // Not `REQUEST_CONTEXT`. `@angular/ssr` provides that token only when the render mode is
       // `Server`, so a prerendered page has no address at all and resolves to the default locale:

@@ -6,9 +6,9 @@
  * applied a frame or more later, so three things can be true by then that were not at capture: the
  * visitor has moved focus somewhere, the application has rewritten a field's value and placed the
  * caret in it itself, or nothing was focused at all and the only change was the reading direction.
- * The browser gate saw the first of these by a race, two runs in five; here the window is held open
- * deliberately, by claiming the coordinator the way the Router integration does and releasing it by
- * hand, so each case is decided by the restore and not by the scheduler.
+ * A browser run meets the first of these only by a race; here the window is held open deliberately,
+ * by claiming the coordinator the way the Router integration does and releasing it by hand, so each
+ * case is decided by the restore and not by the scheduler.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

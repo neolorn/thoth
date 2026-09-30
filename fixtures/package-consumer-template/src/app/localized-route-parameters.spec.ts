@@ -60,8 +60,7 @@ const ARABIC = 'ar-EG';
  * The other document specs never render anything: they assert what Equator writes to the head, and
  * Equator writes it from the resolver. Here the declaration comes from the route's component, and a
  * component is constructed by change detection rather than by navigation. Without a rendered
- * outlet nothing declares and every assertion below reads the codec's answer, which is what the
- * first run of this file did.
+ * outlet nothing declares and every assertion below reads the codec's answer.
  */
 @Component({
   standalone: true,

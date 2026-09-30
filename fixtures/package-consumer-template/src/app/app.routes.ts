@@ -116,7 +116,7 @@ class FeatureLabArticleRoute {
  * The counterpart to the article route above, and declared as its counterpart: `articles/:slug`
  * carries a slug that is translated per locale, and this carries one that must be byte-identical
  * in every locale because it names a thing rather than describing it. The distinction is the whole
- * reason two parameter codecs exist, and until now only one of them had a route.
+ * reason two parameter codecs exist, and this route is the one that exercises the second.
  */
 @Component({
   selector: 'feature-topic-route',

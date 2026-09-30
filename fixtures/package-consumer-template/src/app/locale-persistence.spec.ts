@@ -28,17 +28,17 @@ import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
  * Remembering a locale choice between visits.
  *
  * `specs/03-locale-identity-and-resolution.spec.md` section 8 says Equator "exposes typed opt-in
- * memory, browser, SSR-cookie, and authenticated-profile ports". None of the four existed. What
- * shipped was a description of how to write one, which a four-application workspace would have
- * written four times. The shared wrapper that normally prevents that duplication is not always
- * available either: a workspace whose architecture forbids one application reaching another's code
- * has nowhere to put it.
+ * memory, browser, SSR-cookie, and authenticated-profile ports". Equator ships the four stores
+ * rather than a description of how to write one, which a four-application workspace would write
+ * four times. The shared wrapper that normally prevents that duplication is not always available
+ * either: a workspace whose architecture forbids one application reaching another's code has
+ * nowhere to put it.
  *
- * The interesting part is not the four stores; a cookie is a cookie. It is the four rules that had
- * to be identical across all of them and would not have been if each application wrote its own:
- * a write happens only after a commit that succeeded, an older write never overwrites a newer
- * choice, a stored value is not believed until it still canonicalizes to a supported locale, and a
- * store that fails never rolls back a locale change that already worked.
+ * The interesting part is not the four stores; a cookie is a cookie. It is the four rules that have
+ * to be identical across all of them and would not be if each application wrote its own: a write
+ * happens only after a commit that succeeded, an older write never overwrites a newer choice, a
+ * stored value is not believed until it still canonicalizes to a supported locale, and a store that
+ * fails never rolls back a locale change that already worked.
  */
 
 function setup(
