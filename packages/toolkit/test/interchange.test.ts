@@ -476,3 +476,50 @@ describe('Equator XLIFF import of a document Equator did not write', () => {
     claimCapability('capability:xliff');
   });
 });
+
+describe('an XLIFF translation carrying a directional control', () => {
+  // Specification 09 section 7.1 refuses these in an authored catalog value, and a translation
+  // arriving through XLIFF becomes one. A translator pasting from another tool cannot see them.
+  const RLO = String.fromCodePoint(0x202e);
+  const LRI = String.fromCodePoint(0x2066);
+  const plainSource = catalog(
+    'messages:\n  greeting:\n    message: "Hello"\n    description: "Greeting"\n',
+    sourceOptions,
+  );
+  const plainTarget = catalog(
+    'messages:\n  greeting:\n    message: "Ahlan"\n    description: "Tahiya"\n',
+    targetOptions,
+  );
+  const exported = exportXliff22({ source: plainSource, target: plainTarget });
+  const document = exported.ok ? exported.value : '';
+
+  it('exports the fixture every case below edits', () => {
+    expect(exported.ok).toBe(true);
+    expect(document).toContain('>Ahlan</target>');
+    expect(document).toContain('appliesTo="target">Tahiya</note>');
+    expect(importXliff22({ document, source: plainSource }).ok).toBe(true);
+  });
+
+  it('is refused in the translation, with the code a catalog gets', () => {
+    for (const text of [`Ah${RLO}lan`, `Ah${LRI}lan`]) {
+      const imported = importXliff22({
+        document: document.replace('>Ahlan</target>', `>${text}</target>`),
+        source: plainSource,
+      });
+      expect(imported.ok).toBe(false);
+      expect(imported.diagnostics.map(({ code }) => code)).toContain('EQ1103');
+    }
+  });
+
+  it('is refused in the translator guidance the catalog stores', () => {
+    const imported = importXliff22({
+      document: document.replace(
+        'appliesTo="target">Tahiya</note>',
+        `appliesTo="target">Ta${RLO}hiya</note>`,
+      ),
+      source: plainSource,
+    });
+    expect(imported.ok).toBe(false);
+    expect(imported.diagnostics.map(({ code }) => code)).toContain('EQ1103');
+  });
+});

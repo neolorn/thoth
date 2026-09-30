@@ -34,7 +34,12 @@ import {
   type ToolkitObservabilityOptions,
 } from './observability.js';
 import { RESOURCE_LIMITS } from './resource-limits.js';
-import { isSafeStructuralText, isSafeXmlText } from './unicode-safety.js';
+import {
+  BIDI_VIOLATION_SUMMARY,
+  inspectAuthoredBidi,
+  isSafeStructuralText,
+  isSafeXmlText,
+} from './unicode-safety.js';
 import { compareCodePoint } from './sorted-records.js';
 import { escapeXml } from './xml-text.js';
 
@@ -1518,6 +1523,32 @@ function parseNotes(unit: XmlElement): XliffUnitNotes {
  * variant lost the value, but it can say the translation no longer renders it at all, and that is
  * the loss that reaches production.
  */
+/**
+ * The refusal a catalog gives a directional control, for text an import would write into one.
+ *
+ * What a unit carries becomes an authored catalog value, and specification 09 section 7.1 refuses
+ * these there. Refused at the import, where the translator's file is still the one to fix.
+ */
+function authoredBidiRefusal(
+  messageId: string,
+  texts: readonly (string | undefined)[],
+): ToolkitResult<never> | undefined {
+  for (const text of texts) {
+    const violation =
+      text === undefined ? undefined : inspectAuthoredBidi(text);
+    if (violation !== undefined) {
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1103',
+          `XLIFF target ${JSON.stringify(messageId)} cannot be imported. ${BIDI_VIOLATION_SUMMARY[violation]}`,
+          { path: ['messages', messageId] },
+        ),
+      ]);
+    }
+  }
+  return undefined;
+}
+
 function importedMessage(
   unit: XmlElement,
   segment: XmlElement,
@@ -1527,6 +1558,11 @@ function importedMessage(
   guidance: XliffGuidance,
 ): ToolkitResult<CatalogMessage> {
   const messageId = contract.messageId;
+  const refusedGuidance = authoredBidiRefusal(messageId, [
+    guidance.description,
+    guidance.context,
+  ]);
+  if (refusedGuidance !== undefined) return refusedGuidance;
   if (segment.attributes['subState'] === SEGMENT_SUBSTATE_EMPTY) {
     if ((textContent(target) ?? '').length > 0) {
       return toolkitFailure([
@@ -1596,6 +1632,8 @@ function importedMessage(
       ),
     ]);
   }
+  const refusedBody = authoredBidiRefusal(messageId, [body]);
+  if (refusedBody !== undefined) return refusedBody;
   const semantics = parseMessageSemanticModel(body, {
     path: ['messages', messageId],
   });

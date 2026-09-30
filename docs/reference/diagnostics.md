@@ -59,7 +59,7 @@ A catalog is well-formed YAML, and one of its entries is not what the catalog sc
 
 ### EQ1103
 
-A catalog repeats a key, or its text carries a bidi construction Equator refuses.
+A catalog repeats a key, or its text, or a translation an XLIFF import would write into it, carries a bidi construction Equator refuses.
 
 ### EQ1104
 

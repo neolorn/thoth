@@ -63,7 +63,7 @@ const REFERENCE = {
   EQ1102:
     'A catalog is well-formed YAML, and one of its entries is not what the catalog schema allows.',
   EQ1103:
-    'A catalog repeats a key, or its text carries a bidi construction Equator refuses.',
+    'A catalog repeats a key, or its text, or a translation an XLIFF import would write into it, carries a bidi construction Equator refuses.',
   EQ1104:
     'A provider, scope or message identity written in a catalog is malformed.',
   EQ1105:
