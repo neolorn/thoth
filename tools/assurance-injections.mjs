@@ -2380,4 +2380,32 @@ export const injections = Object.freeze([
       '    if (false as boolean && cached instanceof Intl.NumberFormat) {',
     caughtBy: 'packages/runtime/test/shared-formatter-cache.test.ts',
   },
+  {
+    id: 'duplicate-xliff-catalog-matched-by-file-order',
+    invariant:
+      'An interchange document carrying the same catalog twice is refused rather than read from whichever file comes first.',
+    source: 'packages/toolkit/src/xliff.ts',
+    find: '  if (matching.length !== 1) {',
+    replace: '  if (matching.length === 0) {',
+    caughtBy: 'packages/toolkit/test/interchange.test.ts',
+  },
+  {
+    id: 'xliff-doctype-skipped',
+    invariant:
+      'An XLIFF document carrying a document type declaration or an entity is refused rather than read past.',
+    source: 'packages/toolkit/src/xliff.ts',
+    find: "    if (document.startsWith('<!', index) || document.startsWith('<?', index)) {",
+    replace:
+      "    if (document.startsWith('<!DOCTYPE', index)) {\n      const end = document.indexOf(']>', index);\n      index = end < 0 ? document.length : end + 2;\n      continue;\n    }\n    if (document.startsWith('<!', index) || document.startsWith('<?', index)) {",
+    caughtBy: 'packages/toolkit/test/interchange.test.ts',
+  },
+  {
+    id: 'diagnostic-text-carries-controls',
+    invariant:
+      'A control character, directional override or isolate in diagnostic text is replaced before the diagnostic exists.',
+    source: 'packages/toolkit/src/diagnostics.ts',
+    find: "    result += unsafeDiagnosticControl.test(character) ? '\\ufffd' : character;",
+    replace: '    result += character;',
+    caughtBy: 'packages/toolkit/test/bounded-inputs-and-parser-safety.test.ts',
+  },
 ]);

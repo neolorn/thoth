@@ -125,6 +125,24 @@ describe('Equator XLIFF 2.2 interchange', () => {
     expect(formatCatalog(imported.value)).toBe(formatCatalog(wide));
   });
 
+  it('refuses a document type declaration where XML allows one, after the XML declaration', () => {
+    const exported = exportXliff22({ source, target });
+    if (!exported.ok) throw new Error('export failed');
+    // Placed where an entity payload is legal XML. Before the XML declaration it would be refused
+    // as a misplaced declaration, which says nothing about whether a DTD is read.
+    const document = exported.value.replace(
+      /^(<\?xml[^>]*\?>)/u,
+      '$1<!DOCTYPE xliff [<!ENTITY xxe SYSTEM "file:///secret">]>',
+    );
+    expect(document).toContain('?><!DOCTYPE');
+    const imported = importXliff22({ document, source });
+    expect(imported.ok).toBe(false);
+    if (imported.ok) return;
+    expect(imported.diagnostics[0]?.summary).toBe(
+      'XLIFF cannot contain DTDs, entities, or processing instructions.',
+    );
+  });
+
   it('rejects external entities and does not silently accept stale source units', () => {
     const exported = exportXliff22({ source, target });
     if (!exported.ok) throw new Error('export failed');
@@ -451,6 +469,12 @@ describe('Equator XLIFF import of a document Equator did not write', () => {
     });
     const imported = importXliff22({ document, source: foreignSource });
     expect(imported.ok).toBe(false);
+    if (imported.ok) return;
+    // The first of the two files holds a unit with no contract, so reading it would fail too; the
+    // refusal has to be the one that names the duplicate, or file order decided the outcome.
+    expect(imported.diagnostics[0]?.summary).toContain(
+      'contains 2 files for the Equator catalog "@example/app:shell"',
+    );
     claimCapability('capability:xliff');
   });
 

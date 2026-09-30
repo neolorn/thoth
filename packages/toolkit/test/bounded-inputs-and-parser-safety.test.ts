@@ -57,6 +57,16 @@ describe('bounded authored inputs', () => {
     ).toHaveLength(RESOURCE_LIMITS.diagnostics);
   });
 
+  it('replaces a control, an override and an isolate inside the bounded text', () => {
+    // Inside the bound, because a control past the ceiling is dropped with the rest of the text
+    // and says nothing about whether one inside it is replaced.
+    const diagnostic = toolkitDiagnostic('EQ1701', 'a\u0007b\u202ec\u2066d', {
+      path: ['x\u202ey'],
+    });
+    expect(diagnostic.summary).toBe('a\ufffdb\ufffdc\ufffdd');
+    expect(diagnostic.path).toEqual(['x\ufffdy']);
+  });
+
   it('refuses a catalog over the message ceiling with EQ1101, the code its ceilings share', () => {
     const count = RESOURCE_LIMITS.messagesPerCatalog + 1;
     const lines = ['messages:'];
