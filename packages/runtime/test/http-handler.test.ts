@@ -438,11 +438,10 @@ describe('the fact the handler derives and the descriptor is told', () => {
 /**
  * The outcome that has a status and no body.
  *
- * `hasBody` reads "not a redirect", and a malformed target is not a redirect, so the one outcome
- * the entry point documents as never reaching a renderer was the one reaching it. The status was
- * right either way, because it comes from the descriptor; what was wrong is that an application was
- * asked to render a page for an address Equator had already refused, with a resolution carrying no
- * presentation of its own.
+ * A body test that reads "not a redirect" lets a malformed target through, since it is not a
+ * redirect, and the status stays right either way, because it comes from the descriptor. What goes
+ * wrong is that an application is asked to render a page for an address Equator has already
+ * refused, with a resolution carrying no presentation of its own.
  *
  * These are the unsafe shapes a URL keeps. The ones it rewrites are checked through the adapter in
  * `http-node-adapter.test.ts`, because that is where they are lost.

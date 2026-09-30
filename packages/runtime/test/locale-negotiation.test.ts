@@ -67,14 +67,14 @@ describe('Accept-Language weights', () => {
 });
 
 /**
- * 3.7d. RFC 4647 3.4: *"Single letter or digit subtags (including both the letter 'x', which
+ * RFC 4647 section 3.4: *"Single letter or digit subtags (including both the letter 'x', which
  * introduces private-use sequences, and the subtags that introduce extensions) are removed at the
  * same time as their closest trailing subtag."*
  *
  * These assert the candidates rather than the answer, because every sequence below ends at the
- * language subtag and produces the same answer either way. The extra candidate the old loop asked
- * about matched nothing only because canonicalization rejects it, and that is an invariant of a
- * different file.
+ * language subtag and produces the same answer either way. A loop that also asked about the
+ * single-letter subtag's candidate would match nothing only because canonicalization rejects it,
+ * and that is an invariant of a different file.
  */
 describe('RFC 4647 lookup truncation', () => {
   const candidates = (range: string): readonly string[] => {
@@ -150,16 +150,16 @@ describe('same-language fallback compares script', () => {
   });
 
   it('still matches across regions, which is what step 3 exists for', () => {
-    // The regression this fix must not cause. `ar-SA` and `ar-EG` are the same language in the same
-    // script, and answering English to an Arabic speaker because the region differs is the wrong
-    // answer by a wide margin.
+    // The match the script comparison must not break. `ar-SA` and `ar-EG` are the same language in
+    // the same script, and answering English to an Arabic speaker because the region differs is the
+    // wrong answer by a wide margin.
     expect(negotiateLocale(['ar-SA'], ['ar-EG'], canonicalize)).toBe('ar-EG');
     expect(negotiateLocale(['en-AU'], ['en-GB'], canonicalize)).toBe('en-GB');
   });
 
   it('resolves each range fully before considering the next', () => {
-    // Unchanged by this fix and asserted alongside it, because the script comparison happens inside
-    // the per-range loop and a mistake there would show up as English winning.
+    // Asserted alongside the script comparison, because the script comparison happens inside the
+    // per-range loop and a mistake there would show up as English winning.
     expect(
       negotiateLocale(['zh-Hant', 'en'], ['en-GB', 'zh-Hant-HK'], canonicalize),
     ).toBe('zh-Hant-HK');
@@ -167,9 +167,9 @@ describe('same-language fallback compares script', () => {
 });
 
 /**
- * The encompassed-language step. `no` is what a Norwegian browser actually sends, and until this
- * step existed a site shipping `nb-NO` answered it with nothing, so the only repair a consumer had
- * was writing `"no": "nb-NO"` into `aliases` by hand, for a relation two standards already publish.
+ * The encompassed-language step. `no` is what a Norwegian browser actually sends, and without this
+ * step a site shipping `nb-NO` answers it with nothing, and the only repair is writing
+ * `"no": "nb-NO"` into `aliases` by hand, for a relation two standards already publish.
  *
  * The table under it is `packages/runtime/src/encompassed-languages.generated.ts`: membership from
  * the vendored IANA registry's `Macrolanguage` field, ordering from CLDR's language matching data,

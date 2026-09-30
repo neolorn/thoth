@@ -319,10 +319,10 @@ describe('what an address is refused for before any route sees it', () => {
   });
 
   it('reads an absolute HTTP address for its path, and refuses any other scheme', () => {
-    // Measured rather than assumed, and the measurement corrected the case above: under a
-    // path-prefix policy the origin carries nothing, so an absolute address is reduced to its path
-    // and answered. Whose origin it names is not this function's question: only a `locale-host`
-    // policy reads the origin, and it has its own resolver.
+    // Measured rather than assumed: under a path-prefix policy the origin carries nothing, so an
+    // absolute address is reduced to its path and answered. Whose origin it names is not this
+    // function's question: only a `locale-host` policy reads the origin, and it has its own
+    // resolver.
     expect(statusOf('https://elsewhere.example/en-us/second')).toBe('success');
     expect(statusOf('http://site.example/en-us/second')).toBe('success');
     // The scheme is still an allowlist, so an address that would execute rather than navigate is

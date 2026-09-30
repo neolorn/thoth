@@ -16,9 +16,9 @@
  * `{$price :currency roundingMode=halfEven}` compiles, ships, and rounds the other way, and
  * `trailingZeroDisplay`, `roundingPriority`, `roundingIncrement`, `currencySign` and `:currency`'s
  * `fractionDigits` do nothing at all. None of that is visible in the conformance suite, which
- * writes none of those five names in any of its 461 cases, so the shape of the fix cannot be "make
- * the failing cases pass". It has to be the specification's own tables, because they are the only
- * place the missing options exist.
+ * writes none of those five names in any of its 461 cases, so the table cannot be read off failing
+ * cases. It has to be the specification's own tables, because they are the only place the missing
+ * options exist.
  *
  * The six functions do not share an option set. `:integer` has no fraction-digit options,
  * `:percent` has no `roundingIncrement` and no `minimumIntegerDigits`, `:unit` has no
@@ -436,18 +436,17 @@ const SELECT_ONLY: readonly string[] = Object.freeze(['select']);
 /**
  * The profile of a registered extension, from what its descriptor declares.
  *
- * An extension is a message function, so it has a profile like any other; what was missing was
- * anyone building one. The compiler was told a registered function's name and whether it selects,
- * which is not enough to say what its resolved value carries, so it treated an extension
- * declaration as carrying nothing at all. The runtime meanwhile carries the whole resolved mapping
- * forward. Two consequences, both measured, and they are the two halves of the same defect:
+ * An extension is a message function, so it has a profile like any other, built here from its
+ * descriptor. A registered function's name and whether it selects are not enough to say what its
+ * resolved value carries, and treating an extension declaration as carrying nothing, while the
+ * runtime carries the whole resolved mapping forward, has two consequences, both measured:
  *
  *   * `.local $x = {$v :ext:thing minimumFractionDigits=4}` followed by
- *     `{$x :number maximumFractionDigits=2}` **compiled** and threw at render, where the identical
+ *     `{$x :number maximumFractionDigits=2}` **compiles** and throws at render, where the identical
  *     message with `:number` in the declaration is refused at compile with both options named;
  *   * `.local $t = {$d :ext:zoned timeZone=|Asia/Tokyo|}` followed by `{$t :date timeZone=input}`
- *     was **refused** at compile although the runtime renders it correctly, which is a valid
- *     message rejected. The cost section 8 accepts for refusing, spent on nothing.
+ *     is **refused** at compile although the runtime renders it correctly, which is a valid message
+ *     rejected. The cost section 8 accepts for refusing, spent on nothing.
  *
  * The inheritance rule is the numeric one rather than the date one, and that is not a default: it
  * is what the runtime does. An extension's resolved value carries everything its operand carried
@@ -885,7 +884,7 @@ export function numberFormatOptions(
   const formatting: Record<string, unknown> = {};
   for (const [name, value] of Object.entries(resolved)) {
     if (NOT_FORMATTING.includes(name)) continue;
-    // One table now holds both families, so a name from the other one has to be skipped here rather
+    // One table holds both families, so a name from the other one has to be skipped here rather
     // than handed to `Intl.NumberFormat`, which throws on it. A compiled message cannot produce
     // that, the compiler refuses a date-annotated operand under a numeric function, but this
     // function is also reached from a compiled artifact this runtime did not compile.

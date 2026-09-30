@@ -145,12 +145,12 @@ export function compareCodePoint(left: string, right: string): number {
 /**
  * A path a transferred record may state, held to what the address bar could hold.
  *
- * This was written inline for the transferred route's `canonicalPath` and is shared now that the
- * record carries a second kind of address. It is not a formality: an address that leaves here is
- * written to a link's `href` by the locale switcher, and a transfer state is served to a document
- * and can come back edited, so a string that leaves this function is a string a reader can be
- * sent to. A schemed URL is refused by the leading `/`, another site by the refusal of `//`, a
- * separator some parsers fold by the backslash, and a display spoof by the control scan.
+ * Shared by every kind of address the transferred record carries, the route's `canonicalPath`
+ * included. It is not a formality: an address that leaves here is written to a link's `href` by the
+ * locale switcher, and a transfer state is served to a document and can come back edited, so a
+ * string that leaves this function is a string a reader can be sent to. A schemed URL is refused by
+ * the leading `/`, another site by the refusal of `//`, a separator some parsers fold by the
+ * backslash, and a display spoof by the control scan.
  */
 export function isTransferredPath(value: unknown): value is string {
   return (

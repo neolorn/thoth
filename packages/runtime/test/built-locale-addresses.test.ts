@@ -561,8 +561,8 @@ describe('the addresses a page may be advertised at', () => {
 
   it('names a locale whose own spelling reaches it, and not one that shares another', () => {
     // `ar-EG` has its own path here and is advertised. `de-DE` does not, so its address is the
-    // English one, and the English one is `en-US`. The old duplicate filter dropped both of those,
-    // including the true `en-US` entry, because it counted URLs instead of asking.
+    // English one, and the English one is `en-US`. A filter that counts duplicate URLs instead of
+    // asking would drop both of those, including the true `en-US` entry.
     expect(hreflangs(NEUTRAL, 'spelled')).toEqual(['en-US', 'ar-EG']);
   });
 
@@ -621,8 +621,8 @@ describe('the addresses a page may be advertised at', () => {
  * one of its locale domains under `/app`. A composition written for paths alone would silently
  * drop the base for exactly the policy whose URLs are hardest to check by eye.
  *
- * The root-mounted assertions are the control and they are exact strings, not a shape: the whole
- * claim about this change is that a deployment at the root produces what it always produced.
+ * The root-mounted assertions are the control and they are exact strings, not a shape: the claim is
+ * that a deployment at the root produces exactly the head it produces with no base.
  */
 describe('the head of a page served under a sub-path', () => {
   const SIMPLE = defineRouteProjection({

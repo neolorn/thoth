@@ -29,9 +29,9 @@ import { parse, render, renderSemantics } from './message-harness.js';
  * source as its subject agrees whatever the subject does. So the copy is compared byte for byte
  * and every bound is probed against the implementation that imposes it.
  *
- * The table held the numeric six when it was written. It holds all ten built-ins now,
- * because a function absent from it was a function whose options were accepted unread, so the
- * cases below run over whatever the table declares rather than over the list that was true once.
+ * The table holds all ten built-ins, because a function absent from it is a function whose options
+ * are accepted unread, and the cases below run over whatever the table declares rather than over a
+ * hand-kept list.
  */
 
 const NONE: readonly CompiledInputContract[] = Object.freeze([]);
@@ -44,8 +44,8 @@ const sourceOf = (path: string): string =>
 /**
  * The twins, read from the list the mutation configuration reads. Stryker instruments the files it
  * mutates, which changes their bytes, so a twin it mutates fails this test in the dry run and no
- * reading is taken at all. That happened twice while the exclusions were a second list kept in
- * step by a comment. One list cannot drift from itself.
+ * reading is taken at all. A second list of exclusions kept in step by a comment drifts; one list
+ * cannot drift from itself.
  */
 const twins: readonly { runtime: string; toolkit: string }[] = (
   JSON.parse(sourceOf('tools/twin-sources.json')) as {

@@ -56,7 +56,7 @@ const declaresFailure =
       }),
     );
 
-/** The control: an ordinary renderer, which is every consumer written before this existed. */
+/** The control: an ordinary renderer that declares nothing. */
 const rendersPage: LocaleRenderer = ({ locale }) =>
   new Response(`<!doctype html><html lang="${locale}"></html>`, {
     headers: { 'content-type': 'text/html' },

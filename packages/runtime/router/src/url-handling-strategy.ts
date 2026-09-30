@@ -20,14 +20,14 @@ import { toInternalPath, type LocalizedAddressContext } from '@neolorn/equator';
  * The same delocalization the `LocationStrategy` performs, on the one path it cannot see.
  *
  * `LocalizedLocationStrategy.path()` reads a browser-supplied address and hands the Router the
- * canonical one, which is what makes every address the Router matches canonical: 4.2's invariant,
- * and the reason `path()` and `prepareExternalUrl()` are a symmetric pair. But `navigateByUrl` and
+ * canonical one, which is what makes every address the Router matches canonical, and the reason
+ * `path()` and `prepareExternalUrl()` are a symmetric pair. But `navigateByUrl` and
  * `router.navigate` never consult a `LocationStrategy`: `navigateByUrl` is `parseUrl` then
- * `urlHandlingStrategy.merge` then `scheduleNavigation`, so an application navigating to
- * `/ar-eg/second` by hand put a prefixed address in front of the matcher and the invariant held for
- * browser-driven navigation only. The locale branches (which exist to be *walked* by the prerender
- * scan, and carry only enough to look renderable to it) were then matched, and a route's
- * `canActivate`, `resolve`, `data` and `title` were silently absent on that path. An authorization
+ * `urlHandlingStrategy.merge` then `scheduleNavigation`, so without this an application navigating
+ * to `/ar-eg/second` by hand puts a prefixed address in front of the matcher and the invariant
+ * holds for browser-driven navigation only. The locale branches (which exist to be *walked* by the
+ * prerender scan, and carry only enough to look renderable to it) are then matched, and a route's
+ * `canActivate`, `resolve`, `data` and `title` are silently absent on that path. An authorization
  * boundary that holds on one path and not the other is not a boundary.
  *
  * So this is not a second rule. `extract` runs on every navigation request

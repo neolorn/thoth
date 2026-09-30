@@ -1276,8 +1276,7 @@ const scrollHoldFrames = 6;
  * forever.
  * A hold that survives into the next piece of work will undo that work's own scrolling, because a
  * deliberate `scrollTo` by the application is indistinguishable, from inside this class, from the
- * engine's reveal. That is not hypothetical: it happened on the first run of this code, and the
- * caller trace named this tick as what moved the page.
+ * engine's reveal.
  *
  * 150ms is over sixteen times the slowest reveal measured (9ms after the restore across
  * twenty-five reductions, 5 to 8ms across eleven gate occurrences) and it still allows four ticks
@@ -1348,9 +1347,9 @@ class InteractionPreservationCommitHook implements LocalizationCommitHook {
     // every locale commit and every engine.
     //
     // The document's scroll range is deliberately not read here, and not read in the restore either.
-    // The old pair of expressions needed it twice and both readings happened while a direction change
-    // was relaying the document out, which is the worst moment to ask a document how wide it is.
-    // `scrollTo` clamps to the scrollable range on its own, so nothing is gained by clamping first.
+    // Reading it here would happen while a direction change is relaying the document out, which is
+    // the worst moment to ask a document how wide it is. `scrollTo` clamps to the scrollable range
+    // on its own, so nothing is gained by clamping first.
     const logicalInline = Math.abs(view.scrollX);
     const block = view.scrollY;
     // Whether this commit turns the document around. Read here, where the document still carries the
@@ -1787,15 +1786,13 @@ export function provideLocalizationSetup(
         'withRouting() requires a generated route projection. Regenerate this owner so that provideLocalization() carries one.',
     });
   }
-  // The two halves have to be the same generated projection, and now they can say so.
+  // The two halves have to be the same generated projection, and this says so when they are not.
   //
   // `setup.routeProjection` is what the generator emitted for this owner; `routing.options
   // .projection.generated` is what the consumer built their codecs and historical outcomes around.
-  // Before, the second did not exist as a whole: Equator assembled one from the first plus three
-  // loose fields, so the question could not be asked. It can now, and it is worth asking: a
-  // projection imported from a stale generated file, or from another owner in the same workspace,
-  // produces route ids that resolve against nothing, and the symptom is routes silently failing to
-  // localize rather than an error.
+  // It is worth asking: a projection imported from a stale generated file, or from another owner in
+  // the same workspace, produces route ids that resolve against nothing, and the symptom is routes
+  // silently failing to localize rather than an error.
   if (
     routing !== undefined &&
     setup.routeProjection !== undefined &&

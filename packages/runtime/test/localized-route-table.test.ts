@@ -398,10 +398,10 @@ describe('localizedRouteTable', () => {
     });
 
     it('reports a localized spelling that adds a parameter', () => {
-      // Found by mutation, not by design. Removing the length comparison left the suite green,
-      // because comparing name-by-name over the *declared* names cannot see a name the spelling
-      // adds. An unfilled `:version` would reach the address bar verbatim: `buildLocalizedRoute`
-      // serializes the parameters the route declares and knows nothing about this one.
+      // The length comparison is what catches this, because comparing name-by-name over the
+      // *declared* names cannot see a name the spelling adds. An unfilled `:version` would reach
+      // the address bar verbatim: `buildLocalizedRoute` serializes the parameters the route
+      // declares and knows nothing about this one.
       const table = localizedRouteTable(CANONICAL, POLICY, {
         ...PROJECTION,
         localizedPaths: {

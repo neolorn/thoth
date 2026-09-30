@@ -9,26 +9,22 @@ import {
 } from '@neolorn/equator/core';
 
 /**
- * The three exports the core split published, exercised rather than waived.
+ * Three core exports the primary entry point imports, exercised rather than waived.
  *
- * `directionForLocale`, `localeProfile` and `validateRouteProjection` were internal to the primary
- * before the Angular-free core became its own entry point. They are published now because the
- * primary imports them across an entry-point boundary, and anything it needs from the core has to
- * be on the core's public surface: that is the cost of the split, and it is three symbols.
+ * `directionForLocale`, `localeProfile` and `validateRouteProjection` are published because the
+ * primary imports them across an entry-point boundary, and anything it needs from the Angular-free
+ * core has to be on the core's public surface: that is the cost of the split, and it is three
+ * symbols.
  *
- * `verify-export-surface.mjs` refused them for being named by no consumer, gate or test, which is
- * the correct answer: a published export nothing reaches is one nothing has checked. Adding them to
- * the accepted baseline would have silenced the gate without answering it. All three are reasonable
- * API on their own terms (a locale's writing direction, its profile, and validation of a generated
+ * `verify-export-surface.mjs` refuses an export named by no consumer, gate or test, which is the
+ * correct answer: a published export nothing reaches is one nothing has checked. Adding them to the
+ * accepted baseline would silence the gate without answering it. All three are reasonable API on
+ * their own terms (a locale's writing direction, its profile, and validation of a generated
  * projection) so they are reached here instead.
  *
- * **`localeProfile` was the third symbol and it was not here, because the gate could not see that it
- * was missing.** It read as `structural` on an occurrence count taken over declaration text that
- * still had its documentation in it, and the `{@link localeProfile}` in the comment above
- * `directionForLocale` was enough to lift it over the floor. So a published function reached its
- * shipping state with no test anywhere, and the check written to catch exactly that reported it as
- * fine. The count now runs over signatures with the comments stripped, which is what made this
- * visible.
+ * `localeProfile` is here because an occurrence count over declaration text with its documentation
+ * in it reads the `{@link localeProfile}` above `directionForLocale` as a use; the count runs over
+ * signatures with the comments stripped, so it is reached here like the other two.
  */
 
 const VALID: RouteRuntimeProjection = {

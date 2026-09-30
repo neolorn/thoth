@@ -143,10 +143,10 @@ describe('an extension that selects', () => {
    * The multi-key capability, isolated from the ranking.
    *
    * Both cases above are satisfied by matching only the best key, which is what a single
-   * `selectKey` already did: found by reverting `match` to `matching[0] === key` and watching
-   * every test still pass. What separates the two is a message that writes the *second* key and not
-   * the first: the value matches `'1.0'` and `'1'`, only `1` is written, and MessageFormat's
-   * *"true for any key `k` that matches"* says it is reached.
+   * `selectKey` does: with `match` reduced to `matching[0] === key`, every test above still passes.
+   * What separates the two is a message that writes the *second* key and not the first: the value
+   * matches `'1.0'` and `'1'`, only `1` is written, and MessageFormat's *"true for any key `k` that
+   * matches"* says it is reached.
    */
   it('matches a key it listed after the best one, when the best is not written', () => {
     expect(
@@ -231,8 +231,8 @@ describe('an extension that selects', () => {
 /**
  * MessageFormat resolves an operand that is itself an annotated expression to a value carrying its
  * options, *"with options on the expression taking priority over any options of the operand"*.
- * Equator did that for its own numeric functions and not for extensions, so the same message
- * answered differently depending on which function it named.
+ * Equator does this for extensions as for its own numeric functions, so a message answers the same
+ * whichever function it names.
  */
 describe('an extension that inherits its operand', () => {
   const keyedOn = (source: string) => select(source);
@@ -297,12 +297,12 @@ describe('an extension that inherits its operand', () => {
  * MessageFormat resolves an expression's options against its operand's, *"with options on the
  * expression taking priority over any options of the operand"*, and Equator's rule for a custom
  * function is that the resolved value carries the whole merged mapping while the descriptor narrows
- * only what the function is *called* with. The runtime did that. The compiler could not: it was
- * told a registered function's name and whether it selects, which is not enough to build a profile,
- * so it treated an extension declaration as carrying nothing.
+ * only what the function is *called* with. The compiler builds the same profile from the
+ * descriptor; a compiler that knew only a registered function's name and whether it selects would
+ * treat an extension declaration as carrying nothing.
  *
- * Both halves of that were measured before this was written, and they fail in opposite directions,
- * which is why both are here. One message compiled and threw. One message was refused and renders.
+ * That fails in opposite directions, which is why both are here: one message would compile and
+ * throw, and one would be refused and render.
  */
 describe('what a declaration carries when the declaring function is an extension', () => {
   const registryFor = (
@@ -380,9 +380,9 @@ describe('what a declaration carries when the declaring function is an extension
    * The compile-and-throw half. `:integer`'s own discard list exists because a
    * `minimumFractionDigits` above a later `maximumFractionDigits` asks `Intl.NumberFormat` for a
    * range whose minimum exceeds its maximum, and it throws, so the compiler builds the formatter
-   * and refuses the message. Through an extension declaration it built the formatter without the
-   * inherited option, constructed it happily, and shipped a message that throws in front of a
-   * reader.
+   * and refuses the message. Through an extension declaration, a compiler that builds the formatter
+   * without the inherited option constructs it happily and ships a message that throws in front of
+   * a reader.
    */
   it('refuses a conflict the operand contributed, as it does for a built-in', () => {
     const throughExtension =

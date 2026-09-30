@@ -710,12 +710,10 @@ export abstract class Localization {
    * The configured locales as switchable options, one signal, recomputed only when the answer
    * changes.
    *
-   * This replaces `localeSelector()`, which returned a fresh model object on every call whose
-   * `choices` getter allocated a new array of new objects on every read. It tracked signals
-   * correctly inside a template and could not be memoised with `computed` by anyone, because there
-   * was no signal to memoise. It also carried a second vocabulary for the lifecycle (`ready`,
-   * `switching`, `failed`, `uninitialized`) beside the one on `state`, and a `select` method
-   * beside `changeLocale`. One list, one verb.
+   * A signal rather than a model object: a model whose `choices` getter allocates a new array of
+   * new objects on every read tracks signals inside a template but cannot be memoised with
+   * `computed` by anyone, because there is no signal to memoise. The lifecycle is read from `state`
+   * and a locale is chosen with `changeLocale`: one list, one verb.
    */
   abstract readonly localeChoices: Signal<readonly LocaleSelectorChoice[]>;
   /**
@@ -1210,7 +1208,7 @@ class LocalizationInternal {
     //
     // A locale's endonym, its bare language subtag and its direction are properties of the locale.
     // `Intl.DisplayNames` and the likely-subtags maximisation behind `localeProfile` are not free,
-    // and the old selector ran both on every read of `choices`.
+    // so they run once per locale here rather than on every read of `choices`.
     const identities = Object.freeze(
       this.localeList.map((locale) =>
         Object.freeze({
@@ -1503,8 +1501,8 @@ class LocalizationInternal {
       transitionId,
     });
     const sourceLocale = this.sourceLocale;
-    // The chain is resolved at build time and arrives in the generated configuration; a locale
-    // with no entry has no parent and behaves as every locale did before this existed.
+    // The chain is resolved at build time and arrives in the generated configuration; a locale with
+    // no entry has no parent and falls back from its own catalog straight to the source.
     const order = catalogConsultationOrder(
       targetLocale,
       this.localeFallbacks[targetLocale] ?? NO_INHERITED_LOCALES,

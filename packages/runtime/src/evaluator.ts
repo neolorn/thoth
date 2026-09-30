@@ -114,9 +114,9 @@ interface ResolvedValue {
    * MessageFormat divides its functions into formatters and selectors, and a `.match` over a
    * formatter is a *Bad Selector*: the specification requires the error and requires the selector
    * to match nothing but the catch-all. `match` returning `false` for every key produces the
-   * second half of that on its own and swallows the first, which is how `:currency` and `:unit`
-   * came to select as plain numbers here: they never got a `match` of their own, so they
-   * inherited the numeric one and picked a keyed variant nobody could see was wrong.
+   * second half of that on its own and swallows the first, and a formatter that inherits another
+   * function's `match`, as `:currency` and `:unit` would inherit the numeric one, picks a keyed
+   * variant nobody can see is wrong.
    *
    * So it is stated rather than implied. The toolkit refuses such a message at compile time and
    * this is what stands behind that for a compiled message that did not come from this toolkit.
@@ -505,16 +505,15 @@ const PLURAL_KEYWORDS: ReadonlySet<string> = Object.freeze(
  *
  * LDML 48 Part 9: the operand of a number function is "an implementation-defined numeric type, or a
  * string matching the `number-literal` production". A literal written into the message reaches the
- * evaluator as its source text, because source text is what a literal *is*, so a function that
- * asked `typeof raw === 'number'` refused `{42 :number}`, the most ordinary message the syntax can
- * express, while accepting the variable form of exactly the same thing. Sixty-eight conformance
- * cases; nothing here ever wrote a literal operand, so nothing here ever saw it.
+ * evaluator as its source text, because source text is what a literal *is*, so a function that asks
+ * `typeof raw === 'number'` refuses `{42 :number}`, the most ordinary message the syntax can
+ * express, while accepting the variable form of exactly the same thing.
  *
  * The rule lives out here rather than inside the numeric functions because the custom-function
  * boundary needs the identical one. A descriptor declaring `operandType: 'number'` is declaring what
  * the specification calls a Number Operand, and an extension that could not be handed
- * `{1 :feature:thing}` would carry this defect one layer out, in code nobody had looked at yet. Two
- * call sites and one rule, or they drift apart the first time either is touched.
+ * `{1 :feature:thing}` would carry the same refusal one layer out. Two call sites and one rule, or
+ * they drift apart the first time either is touched.
  *
  * `NUMBER_LITERAL` and not `Number()`: `Number('')`, `Number(' 1 ')`, `Number('0x1')` and
  * `Number('Infinity')` are all numbers to JavaScript and none of them is a number to MessageFormat,
@@ -542,11 +541,10 @@ function plainResolved(
     locale,
     direction,
     // Nothing here was formatted by Equator: this is whatever the consumer passed in. Giving it the
-    // message locale's direction is the assumption that produced the defect this replaces: a
-    // customer name typed in Arabic inside an English message is not left-to-right because the
-    // message is. `auto` where the content could reorder, so the renderer's first-strong rule
-    // answers it, and the locale's direction where it cannot, so a wholly English application
-    // carries no invisible characters it has no use for.
+    // message locale's direction is a wrong assumption: a customer name typed in Arabic inside an
+    // English message is not left-to-right because the message is. `auto` where the content could
+    // reorder, so the renderer's first-strong rule answers it, and the locale's direction where it
+    // cannot, so a wholly English application carries no invisible characters it has no use for.
     contentDirection: mayReorder(text) ? ('auto' as const) : direction,
     isolate: false,
     // ":string" "provides string selection and formatting", and an unannotated selector is
@@ -1844,11 +1842,10 @@ const PDI = '\u2069';
 /**
  * Bidi formatting controls: the isolates above, plus the embeddings and overrides.
  *
- * `\p{Bidi_Control}` rather than a written range, and the difference is not stylistic. The written
- * one covered U+202A..U+202E and U+2066..U+2069 and missed U+061C ARABIC LETTER MARK, U+200E LEFT-TO-
- * RIGHT MARK and U+200F RIGHT-TO-LEFT MARK, and U+200F was named in this defect's own evidence as
- * one of the code points the isolation rules failed to see. The property is the definition; a range
- * list is a copy of it.
+ * `\p{Bidi_Control}` rather than a written range, and the difference is not stylistic. A written
+ * range such as U+202A..U+202E and U+2066..U+2069 misses U+061C ARABIC LETTER MARK, U+200E
+ * LEFT-TO-RIGHT MARK and U+200F RIGHT-TO-LEFT MARK. The property is the definition; a range list is
+ * a copy of it.
  */
 const BIDI_CONTROL = /\p{Bidi_Control}/u;
 

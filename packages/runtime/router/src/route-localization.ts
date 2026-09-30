@@ -417,8 +417,8 @@ export class RouteLocalization {
   /**
    * The address bar's keeper, injected so its step can be handed to the commit list.
    *
-   * Read here rather than left to run on its own: what moves the address bar is now a call at a
-   * stated position in a locale commit, and this is where that position is claimed.
+   * Read here rather than left to run on its own: what moves the address bar is a call at a stated
+   * position in a locale commit, and this is where that position is claimed.
    */
   private readonly addressSync = inject(LocalizedAddressSync);
   /**
@@ -781,8 +781,8 @@ export class RouteLocalization {
           ),
         });
     if (result !== undefined && result.status !== 'committed') {
-      // Failing the resolver is better than the commit-then-restore this replaced: the router
-      // abandons the navigation with the address bar untouched, so there is nothing to put back.
+      // Failing the resolver rather than committing and then restoring: the router abandons the
+      // navigation with the address bar untouched, so there is nothing to put back.
       this.commitPromise = Promise.resolve(result);
       throw new RouteLocalizationError(
         Object.freeze({

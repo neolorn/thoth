@@ -4282,17 +4282,17 @@ export function localizedRouteAddresses(
  * cookie, no `Accept-Language`, no session. So both are decided here, by asking the resolver what a
  * stranger would get, rather than by each caller reasoning about the policy it was configured with.
  *
- * **The observation replaces an assumption, and that is the point of it.** A rule written per policy
- * kind is a claim about every route under that kind, and no policy kind is uniform enough to carry
- * one: under `locale-neutral` a route with a localized *path* has a genuine per-locale address that
- * resolves to that locale for anyone, while the same policy's per-locale *slug* produces an address
- * that answers `308` back to the default spelling, because a parameter codec's `parse` maps both
- * spellings to one entity and reports no locale for the canonicalizer to keep. One kind, two
- * answers, measured on all three kinds and three route shapes.
+ * **An observation rather than an assumption, and that is the point of it.** A rule written per
+ * policy kind is a claim about every route under that kind, and no policy kind is uniform enough to
+ * carry one: under `locale-neutral` a route with a localized *path* has a genuine per-locale
+ * address that resolves to that locale for anyone, while the same policy's per-locale *slug*
+ * produces an address that answers `308` back to the default spelling, because a parameter codec's
+ * `parse` maps both spellings to one entity and reports no locale for the canonicalizer to keep.
+ * One kind, two answers, measured on all three kinds and three route shapes.
  *
- * It also subsumes the duplicate-URL filter this replaced. Where two locales share one address, the
- * one actually served passes and the other does not, where that filter dropped both, including the
- * true entry, and kept a unique address that redirects because uniqueness is not truth.
+ * It also does what a duplicate-URL filter cannot. Where two locales share one address, the one
+ * actually served passes and the other does not, where a filter counting URLs drops both, including
+ * the true entry, and keeps a unique address that redirects, because uniqueness is not truth.
  *
  * Under `path-prefix` and `locale-host` every address passes by construction: the prefix or the
  * origin *is* the locale, so the resolver reads it back off the address it was given. Nothing
@@ -5002,12 +5002,12 @@ function originLocale(context: LocalizedAddressContext): string | undefined {
  *
  * A visitor who arrives from outside gets the server's answer, and for an address the resolver
  * corrects that answer is a `308`. A visitor who arrives from inside the application (an in-app
- * link, a `Location` write, a hydrated Back) never reaches the server, and until this the address
- * was handed to the Router unchanged. Under `omitDefaultPrefix` that meant `/en-us/second`, the
- * spelling this policy retired, reached a route table with no `en-us` branch and died with
- * `NG04002`; a retired path spelling did the same and fell through to the application's `**`. Both
- * are the same shape: **the resolver answered with a redirect and the client ignored it**, so one
- * address had two answers depending on which door the reader came through.
+ * link, a `Location` write, a hydrated Back) never reaches the server, and handing that address to
+ * the Router unchanged fails: under `omitDefaultPrefix`, `/en-us/second`, the spelling this policy
+ * retired, reaches a route table with no `en-us` branch and dies with `NG04002`, and a retired path
+ * spelling falls through to the application's `**`. Both are the same shape: **the resolver answers
+ * with a redirect and the client ignores it**, so one address has two answers depending on which
+ * door the reader comes through.
  *
  * `httpStatus` is the whole of the rule, and it comes from the resolution rather than from a list
  * of reasons kept in step by hand. The two `308`s, `canonical-correction` and `replacement`,
@@ -5020,7 +5020,7 @@ function originLocale(context: LocalizedAddressContext): string | undefined {
  *
  * Followed once. A `308` whose target is itself a `308` is a defect in the projection rather than a
  * chain to walk, and the second resolution is returned as it comes: not `success`, so the caller
- * hands the address back untouched, which is what it did before this followed anything.
+ * hands the address back untouched.
  */
 function followPermanentRedirect(
   resolution: RouteResolution,

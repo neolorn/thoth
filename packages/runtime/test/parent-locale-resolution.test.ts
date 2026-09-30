@@ -128,7 +128,7 @@ const french = project({
 
 describe('a regional locale served by its parent', () => {
   it('resolves a message present only in the parent', () => {
-    // The case the feature is named for. Before this, `nav.help` came back in French.
+    // The case the feature is named for. Without the parent, `nav.help` comes back in French.
     const candidate = french('en-AU').resolve('nav.help');
     expect(candidate.catalog.key.catalogLocale).toBe('en');
     expect(candidate.attemptedLocales).toEqual(['en-AU', 'en']);

@@ -7,12 +7,12 @@ import { parse, render, renderSemantics } from './message-harness.js';
 /**
  * What a `.local` or `.input` declaration produces, and what a later reference to it gets.
  *
- * `readReference` returned `value.raw`, so a declaration's whole annotation was thrown away the
- * moment the pattern referred to it: `.local $n = {$v :number minimumFractionDigits=2}` printed
- * `4.2` where it had already produced `4.20`, and `u:dir` written on a declaration lost the
- * isolation the author had asked for by name. Selection read the resolved value and formatting did
- * not, so a message could choose the right variant and print the wrong number inside it: the
- * failure nobody looks for, because the variant is visibly correct.
+ * Reading `value.raw` would throw a declaration's whole annotation away the moment the pattern
+ * refers to it: `.local $n = {$v :number minimumFractionDigits=2}` would print `4.2` where the
+ * declaration produced `4.20`, and `u:dir` written on a declaration would lose the isolation the
+ * author asked for by name. If selection reads the resolved value and formatting does not, a
+ * message chooses the right variant and prints the wrong number inside it: the failure nobody looks
+ * for, because the variant is visibly correct.
  *
  * LDML 48 Part 9, Variable Resolution: *"If a declaration exists for the variable, its resolved
  * value is used."* And for a number function's operand: an implementation-defined operand "can

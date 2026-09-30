@@ -147,18 +147,17 @@ async function startedRuntime(
  * The resolver, reading a canonical address.
  *
  * It does not decide which locale the address states: the strategy settles that before the Router
- * runs. What it still does is the reason it survives at all: it awaits the scopes a route needs
- * *before* that route activates, and it builds the document projection. Nothing else in Equator
- * does either, so removing the resolver outright would take deferred-scope preloading with it,
- * silently.
+ * runs. What it does is the reason it exists: it awaits the scopes a route needs *before* that
+ * route activates, and it builds the document projection. Nothing else in Equator does either, so
+ * removing the resolver outright would take deferred-scope preloading with it, silently.
  *
  * The address is re-localized before it is resolved, and that is not a nicety. `state.url` is
  * canonical here, because the strategy delocalized it on the way in, and a canonical address does
  * not resolve: `resolveLocalizedRoute('/second', …)` answers
  * `{status: 'redirect', reason: 'locale-entry', location: '/en-us/second'}`. Handing that to
  * `prepare` unchanged redirects to the prefixed form, which the strategy delocalizes straight back,
- * which resolves again. Measured, not predicted: it is why the strategy and the old resolver
- * could not be split across two steps.
+ * which resolves again. Measured, not predicted: it is why the strategy and the resolver cannot be
+ * split across two steps.
  *
  * Re-localized in the context the strategies read, the origin this build answers at included, so
  * the address it resolves is one this document can hold.

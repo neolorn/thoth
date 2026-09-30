@@ -27,15 +27,14 @@ import {
  * isolated in the formatter rather than at each call site, and the string surface and the
  * element surface cannot differ in what they guarantee.
  *
- * Two halves of one change. Equator decided isolation by sniffing the formatted string against a
- * hand-written list of Unicode blocks, and it parsed `u:dir` and `u:id` and threw them away. The
- * sniff is now generated from the Unicode Character Database (`Bidi_Class` in {R, AL}, which is
- * the property that says whether a character reorders the text around it) and `u:dir` is what an
- * author writes when the derivation is wrong for their value, so reverting either one on its own
- * leaves the other without the thing that makes it safe.
+ * Two halves that depend on each other. The content check is generated from the Unicode Character
+ * Database (`Bidi_Class` in {R, AL}, which is the property that says whether a character reorders
+ * the text around it) and `u:dir` is what an author writes when the derivation is wrong for their
+ * value, so either one without the other lacks the thing that makes it safe.
  *
  * Every assertion here is on the emitted control characters, never on rendered output. A check that
- * a name "appears correctly" passes under every implementation, including the one being replaced.
+ * a name "appears correctly" passes under every implementation, including one that isolates
+ * nothing.
  */
 
 /** The three directional isolates, and the terminator all three share. */
@@ -284,30 +283,30 @@ describe('MF2 Default Bidi Strategy', () => {
   });
 
   /**
-   * U+0870 was one of the code points the hand-written class missed.
+   * U+0870 is in the Arabic Extended-B block.
    *
-   * The Arabic Extended-B block was added in Unicode 14, after the block list was written, and
-   * nothing compared the two. It is asserted by name rather than by count because a count is
-   * satisfied by adding the two ranges and losing the next release.
+   * The block was added in Unicode 14, which a hand-written block list misses unless something
+   * compares the two. It is asserted by name rather than by count because a count is satisfied by
+   * adding the two ranges and losing the next release.
    */
-  it('isolates a value using a block added after the old list was written', () => {
+  it('isolates a value from the Arabic Extended-B block', () => {
     const text = render('Hello {$name :string}.', NAME, { name: 'x\u0870y' });
     expect(text).toBe(`Hello ${FSI}x\u0870y${PDI}.`);
   });
 
   /**
-   * U+200F RIGHT-TO-LEFT MARK was named in this defect's own evidence as a miss.
+   * U+200F RIGHT-TO-LEFT MARK belongs to no script.
    *
    * It is not a strong character and it is not in any right-to-left script, so neither half of the
    * script derivation sees it. `\p{Bidi_Control}` does, and covers U+061C and U+200E with it,
    * without a table to maintain.
    */
-  it('isolates a value carrying a bidi control the old range list did not cover', () => {
+  it('isolates a value carrying a bidi control that belongs to no script', () => {
     const text = render('Hello {$name :string}.', NAME, { name: 'a\u200Fb' });
     expect(text).toBe(`Hello ${FSI}a\u200Fb${PDI}.`);
   });
 
-  it('isolates a value of Siyaq numerals, which the shipped script class missed', () => {
+  it('isolates a value of Siyaq numerals', () => {
     const text = render('Total {$name :string}.', NAME, {
       name: '\u{1EC71}\u{1EC72}',
     });
@@ -388,13 +387,12 @@ describe('MF2 u:dir and u:id', () => {
   });
 
   /**
-   * The one line that ties the two halves of this change together.
+   * The one line that ties the content check to `u:dir`.
    *
    * Equator isolates a value whose content could reorder the message, which is a decision made
    * about a consumer's string without being told anything about it. `u:dir=inherit` is how an
-   * author overrides that, and it is the reason implementing `u:dir` and correcting the sniff had
-   * to land together: without it the sniff has no escape hatch, and the value below would be
-   * isolated with nothing an author could do about it.
+   * author overrides that, and without it the content check has no escape hatch, and the value
+   * below would be isolated with nothing an author could do about it.
    */
   it('leaves a value bare when the author writes u:dir=inherit over the content check', () => {
     const text = render('Hello {$name :string u:dir=inherit}.', NAME, {

@@ -5,16 +5,13 @@ import { remapCaret } from '../forms/src/caret.js';
 /**
  * A caret's offset is a position in a particular string, and a localized input rewrites its string.
  *
- * The browser assurance gate caught this as an intermittent: a selection of the `0` in `50%` came
- * back as a selection of the `%` after an RTL commit, then corrected itself about a frame later.
- * The correction made it look like a race. It was not: two components were restoring the same
- * selection with different arithmetic, and one of them was wrong. Wrong by exactly the number of
- * bidi marks the commit had inserted anywhere in the value, rather than the number inserted past
- * the caret.
+ * Counting every bidi mark a commit inserts anywhere in the value, rather than the ones inserted
+ * past the caret, moves a selection of the `0` in `50%` onto the `%` after an RTL commit, and when
+ * a second restore corrects it a frame later the error looks like a race.
  *
- * So these are the questions that defect answers wrongly, asked of the arithmetic directly rather
- * than through a browser. Every invisible character here is written as an escape, so a reader
- * can see what a case contains.
+ * So these are the questions that arithmetic answers wrongly, asked of the arithmetic directly
+ * rather than through a browser. Every invisible character here is written as an escape, so a
+ * reader can see what a case contains.
  */
 
 /** LEFT-TO-RIGHT MARK, what a commit into an RTL context puts around a Latin-script number. */
@@ -22,8 +19,8 @@ const LRM = '\u200E';
 
 describe('remapping a caret across a reformat', () => {
   it('counts only what a reader can see', () => {
-    // The measured defect. `50%` becomes `50<LRM>%<LRM>`: one mark lies past the selection, one
-    // does not, and treating both as characters moved the selection by two.
+    // `50%` becomes `50<LRM>%<LRM>`: one mark lies past the selection, one does not, and treating
+    // both as characters would move the selection by two.
     const previous = '50%';
     const next = `50${LRM}%${LRM}`;
 

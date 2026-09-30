@@ -7,16 +7,11 @@ import {
 } from '@neolorn/equator/core';
 
 /**
- * 7.3, written before the handler that can violate it.
+ * Two requirements on the handler that owns the response.
  *
- * These two behaviours are requirements on code that did not exist when they were written, which is
- * the whole reason they are written first: a requirement on absent code has nothing to regress
- * against, so it cannot be added later "once the shape is clear" without becoming a description of
- * whatever was built. Equator has never emitted a `Set-Cookie` at all, because
- * `cookieStore().write` returns immediately outside a browser and says why: setting a cookie on
- * the server means owning
- * the response, and until this handler Equator did not. Owning it is what makes both of these
- * possible to get wrong.
+ * `cookieStore().write` returns immediately outside a browser and says why: setting a cookie on the
+ * server means owning the response, which this handler does, and owning it is what makes both of
+ * these possible to get wrong.
  *
  * Neither is invented here. next-intl writes the cookie only when the locale differs, and excludes
  * background requests with `Sec-Fetch-Dest`. The first keeps a `Set-Cookie` off responses that did

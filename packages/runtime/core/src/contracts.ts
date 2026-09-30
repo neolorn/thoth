@@ -568,11 +568,11 @@ export interface MessageFunctionInvocation {
    *
    * MessageFormat resolves an operand that is itself an annotated expression to a value that can
    * carry options, "with options on the expression taking priority over any options of the
-   * operand". Equator did that for its own numeric functions and not for extensions, so
-   * `.input {$x :ns:f a=1}` followed by `.local $y = {$x :ns:f}` reached the second call with
-   * nothing: the same message, two answers, depending on which function it named. The narrowing
-   * is Equator's: a descriptor says which options a function accepts, and inheritance must not be a
-   * way for a name it never declared to arrive anyway.
+   * operand". Equator does this for extensions as for its own numeric functions; otherwise
+   * `.input {$x :ns:f a=1}` followed by `.local $y = {$x :ns:f}` would reach the second call with
+   * nothing, and the same message would give two answers depending on which function it names. The
+   * narrowing is Equator's: a descriptor says which options a function accepts, and inheritance
+   * must not be a way for a name it never declared to arrive anyway.
    */
   readonly options: Readonly<Record<string, unknown>>;
   /** The locale being rendered in. */

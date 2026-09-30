@@ -7,13 +7,12 @@ import { ɵassertStorableCookie } from '@neolorn/equator/core';
  *
  * `specs/03-locale-identity-and-resolution.spec.md` section 8 provides typed opt-in stores for
  * memory, a cookie, browser storage and an authenticated profile, and leaves their order, names,
- * attributes, lifetimes, scope, endpoints, credentials and synchronization to the consumer. None of
- * the four existed: what shipped was a description
- * of how to write one, which a four-application workspace would have written four times,
- * differently. The shared wrapper that normally prevents that duplication is
- * not always available: a workspace whose architecture forbids one application's code reaching
- * another's has nowhere to put it, which is the ordinary shape of a multi-application repository
- * rather than an unusual constraint.
+ * attributes, lifetimes, scope, endpoints, credentials and synchronization to the consumer. A
+ * description of how to write a store, in place of the stores, gets written once per application,
+ * differently, in a multi-application workspace. The shared wrapper that normally prevents that
+ * duplication is not always available: a workspace whose architecture forbids one application's
+ * code reaching another's has nowhere to put it, which is the ordinary shape of a multi-application
+ * repository rather than an unusual constraint.
  *
  * The port is deliberately two methods. Everything that needs to be identical across stores
  * (when a write happens, which writes may overwrite which, what a read has to look like before

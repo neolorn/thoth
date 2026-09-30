@@ -77,8 +77,7 @@ describe('the store the standalone formatting functions share', () => {
       for (let call = 0; call < 100; call += 1) {
         formatNumber(decimal('1234.5'), EN);
       }
-      // 100 before this step, measured against the built package: the parameter defaulted to
-      // `new FormatterCache(1)`, constructed on entry and discarded on return.
+      // A per-call default cache, constructed on entry and discarded on return, would build 100.
       expect(counter.built()).toBe(1);
     } finally {
       counter.restore();

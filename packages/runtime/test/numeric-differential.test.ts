@@ -40,17 +40,15 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
  * file, so every run everywhere draws the same values in the same order. A property that fails on
  * inputs nobody can reproduce is a rumour.
  *
- * **Why this is a unit test and not a feature-lab spec.** It was written as one, in the consumer
- * fixture, against the built package, and every assertion in it is a call to two pure functions
- * with three plain arguments. Nothing here needs Angular, a component, a provider or a locale
- * commit. Running it there cost a package build, a fixture materialize and a browser suite; running
- * it here costs about a third of a second, and the mutation that guards it dropped from roughly
- * twenty seconds to about three. A pure invariant is asserted in one place, and this is the
- * place.
+ * **Why this is a unit test and not a feature-lab spec.** Every assertion in it is a call to two
+ * pure functions with three plain arguments, and nothing here needs Angular, a component, a
+ * provider or a locale commit. In the consumer fixture it would cost a package build, a fixture
+ * materialize and a browser suite; here it costs about a third of a second. A pure invariant is
+ * asserted in one place, and this is the place.
  *
- * What stayed behind is the part that is not pure. `localized-input-profiles.spec.ts` still drives
- * all eleven profile kinds through the published directive across a locale change, against the
- * built package, which is the claim only the lab can make.
+ * The part that is not pure stays in the consumer fixture. `localized-input-profiles.spec.ts` still
+ * drives all eleven profile kinds through the published directive across a locale change, against
+ * the built package, which is the claim only the lab can make.
  *
  * `specs/12-verification.spec.md` section 8 asks for formatting and parsing to be checked
  * against an authority Equator did not write, because a formatter that is only self-consistent

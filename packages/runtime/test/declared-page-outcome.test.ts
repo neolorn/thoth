@@ -311,7 +311,7 @@ describe('a renderer that states the outcome instead of the page', () => {
     claimCapability('outcome:pageOperationalFailure', { policy: POLICY });
   });
 
-  it('keeps the shape a renderer written before this existed already returns', () => {
+  it('declares a plain 503 response as an operational failure', () => {
     const declaration = declareOperationalFailure(
       new Response('maintenance', { status: 503 }),
     );

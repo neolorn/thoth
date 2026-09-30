@@ -51,9 +51,10 @@ export * from './presentation';
 // Named rather than starred, the way `./angular`, `./localization`, `./label`, `./rich`,
 // `./recovery` and `./extensions` already are. `validateRouteProjection` is the reason: it is the
 // internal validator `angular.ts` and `routing.ts` both call, superseded for a consumer by
-// `defineRouteProjection`, and a star export made it public because it needed the `export` keyword
-// to cross a module boundary. That is the whole class of accident this list prevents: what the
-// package publishes is now a decision rather than a consequence of where a function happens to live.
+// `defineRouteProjection`, and a star export would make it public because it needs the `export`
+// keyword to cross a module boundary. That is the whole class of accident this list prevents: what
+// the package publishes is a decision rather than a consequence of where a function happens to
+// live.
 export {
   addressSelectsLocale,
   allowedLocaleHosts,

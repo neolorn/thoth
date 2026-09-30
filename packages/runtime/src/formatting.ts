@@ -57,12 +57,10 @@ import { RUNTIME_LIMITS, codePointLengthAtMost } from './runtime-safety';
 /**
  * One store of `Intl` formatters for every standalone formatting call in this process.
  *
- * **The parameter this replaces delivered nothing.** `FormatterCache` is absent from the package's
- * type exports and from its runtime exports, so there was no expression a consumer could write that
- * produced one to pass, and the default was `new FormatterCache(1)`: a fresh one-entry cache,
- * constructed per call. Counted against the built package, 100 identical `formatNumber` calls
- * constructed 100 `Intl.NumberFormat`s. The seam looked like a caching option and was a way of
- * writing "no cache" twenty times.
+ * **Not a parameter.** `FormatterCache` is absent from the package's type and runtime exports, so
+ * no consumer can construct one to pass, and a per-call default such as `new FormatterCache(1)`
+ * constructs a fresh one-entry cache per call: 100 identical `formatNumber` calls would construct
+ * 100 `Intl.NumberFormat`s.
  *
  * **Module scope, because these functions have no owner.** They are pure, so there is no object
  * whose lifetime is the right one. A per-instance cache is an owner whose lifetime is *available*
@@ -1623,12 +1621,11 @@ function firstGrapheme(
 /**
  * Person names, from CLDR patterns rather than from a field order written by hand.
  *
- * What this replaces was eleven `surnameFirst` languages and four `compact` ones, both invented,
- * joined with a space or nothing. CLDR 48 lists five surname-first languages in root and a
- * different set per locale; the eleven were the union of every list in the release, which is the
- * correct answer for three locales out of 766. Ordering is the visible half. The invisible half
- * is that a name has patterns, not a field order: `sorting` is `{surname}, {given}` and not
- * surname-first, monograms have their own patterns per locale, `hu` addresses formally as
+ * A hand-written field order gets this wrong. CLDR 48 lists five surname-first languages in root
+ * and a different set per locale, so one list for every locale, even the union of every list in the
+ * release, is right for a handful of locales out of 766. Ordering is the visible half. The
+ * invisible half is that a name has patterns, not a field order: `sorting` is `{surname}, {given}`
+ * and not surname-first, monograms have their own patterns per locale, `hu` addresses formally as
  * `{surname} {given} {title}`, and no arrangement of a field list produces any of it.
  *
  * The data arrives as an argument, defaulted to CLDR root, for the reason recorded on

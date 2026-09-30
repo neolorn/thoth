@@ -16,7 +16,7 @@
  *
  * Bidi marks, isolates, embeddings and overrides, the zero-width family, and the byte-order mark.
  * All occupy no width, so a caret on either side of one is in the same place as far as anyone
- * looking at the screen is concerned, which is the whole reason counting them was wrong.
+ * looking at the screen is concerned, which is why they are not counted.
  */
 const INVISIBLE =
   /[\u061C\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/u;
@@ -50,10 +50,10 @@ function offsetOfVisible(value: string, target: number): number {
  * The offset in `next` that holds the caret `previous` held at `offset`.
  *
  * **Measured in visible characters.** A locale commit into an RTL context appends bidi marks, and
- * counting those moved the caret by the number of marks anywhere in the value rather than by the
- * number beyond it: a selection of the `0` in `50%` came back as a selection of the `%` in
- * `50<LRM>%<LRM>`, off by two where only one mark lay past it. That defect is arithmetic, not
- * timing: the answer was wrong the instant it was computed.
+ * counting those would move the caret by the number of marks anywhere in the value rather than by
+ * the number beyond it: a selection of the `0` in `50%` would come back as a selection of the `%`
+ * in `50<LRM>%<LRM>`, off by two where only one mark lies past it. That is arithmetic, not timing:
+ * such an answer is wrong the instant it is computed.
  *
  * **Anchored to whichever side of the change the caret is on.** Everything up to the last visible
  * character the two strings still agree on is text the reformat did not touch, so a caret there

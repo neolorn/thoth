@@ -45,7 +45,7 @@ const plain = handle('document.title', []);
 const takesAName = handle('document.greeting', ['name']);
 
 describe('a document field that takes no values', () => {
-  it('stays the bare handle every declaration written before this was', () => {
+  it('stays a bare handle that needs no binding', () => {
     expect(isBoundDocumentMessage(plain)).toBe(false);
     expect(() => refuseUnboundDocumentMessage(plain, undefined)).not.toThrow();
   });

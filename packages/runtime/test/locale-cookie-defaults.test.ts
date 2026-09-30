@@ -23,14 +23,13 @@ import {
  *
  * The browser store and the server handler write the same cookie for the same visitor: the handler
  * sets it on the response of the first request, and the store rewrites it once the application has
- * hydrated. They are in different packages, they serialize it separately, and each of their
- * defaults was written down separately, which is a drift waiting to happen, and it happened. The
- * feature lab turned `Secure` off for the store because the lab is served over `http` on loopback,
- * and left the handler on its default, which is on. Chromium and Firefox treat `http://127.0.0.1`
- * as a secure context, so the browser's write replaced the server's and nothing showed; WebKit does
- * not, so a non-secure origin was refused the right to overwrite a `Secure` cookie, `document.cookie`
- * read empty, and the visitor's locale choice was never remembered. One engine of three, on one
- * platform of two, from two lines that were each defensible on their own.
+ * hydrated. They are in different packages, they serialize it separately, and each writes its
+ * defaults down separately, which is a drift waiting to happen. With `Secure` off for the store and
+ * on for the handler over `http` on loopback, Chromium and Firefox treat `http://127.0.0.1` as a
+ * secure context, so the browser's write replaces the server's and nothing shows; WebKit does not,
+ * so a non-secure origin is refused the right to overwrite a `Secure` cookie, `document.cookie`
+ * reads empty, and the visitor's locale choice is never remembered: one engine of three, from two
+ * settings each defensible on its own.
  *
  * So the assertion is not "the default is `Secure`" twice. It is that the two halves produce the
  * same header for the same options, defaults included, which is the only form of it that fails
