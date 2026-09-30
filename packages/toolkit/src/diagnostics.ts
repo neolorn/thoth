@@ -239,12 +239,9 @@ export function toolkitFailure(
  * and every opt-in policy expresses itself by raising a finding to that severity rather than by
  * joining a list somewhere else.
  *
- * The alternative is what this replaces. The CLI's success path returned 0 unconditionally, and the
- * only severity test in it was `code === 'EQ1602' || code === 'EQ1703'`, so `equator check
- * --require-complete` reported `"status": "success"` and exit 0 while carrying `EQ1310` at
- * `severity: error`. A hardcoded blocking-codes list is a second register that every new
- * error-severity diagnostic has to be added to, and the one nobody remembers to add is silent. Any
- * fix keyed to codes rather than severity reintroduces exactly that.
+ * A hardcoded blocking-codes list is a second register that every new error-severity diagnostic has
+ * to be added to, and the one nobody remembers to add passes silently: `equator check
+ * --require-complete` would report `"status": "success"` and exit 0 while carrying an error.
  */
 export function diagnosticsBlock(
   diagnostics: readonly ToolkitDiagnostic[],

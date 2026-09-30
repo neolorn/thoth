@@ -818,10 +818,8 @@ export function pseudoLocaleTags(
  * a message (`EQ1307`), a message missing a plural category (`EQ1308`) and a translation written
  * against an older source (`EQ1309`) are one question asked at four granularities: is this locale
  * finished. They escalate together or not at all. A gate that blocked on a missing message and
- * passed a missing catalog reported a green meaning "every message is translated except in the
- * locales where none are". Measured, before this existed: with the gate on, a locale with no
- * catalog returned the same `ok: true` and the same warning as with the gate off, while the same
- * locale missing one message of three returned `ok: false`.
+ * passed a missing catalog would report a green meaning "every message is translated except in the
+ * locales where none are".
  *
  * Two things have to be true for a finding to block. The **run** asked for it, which is the switch
  * on the command; and the **project** has not said this locale is still being translated, which is
@@ -870,10 +868,9 @@ const BLOCKING: CompletenessPolicy = Object.freeze({
  * else, so a member at `error` is a release policy speaking rather than a fault in the model. That
  * is what lets the catalog analysis keep the graph it finished building: a locale missing a message,
  * or missing every message, still compiles and still generates, it falls back to the source, and
- * an analysis that threw the graph away over it left everything downstream of the compile
- * unreported. Measured before this existed, on one project both incomplete and stale: gate off
- * reported `EQ1307`, `EQ1309` and `EQ1704`; gate on reported `EQ1307` alone. A team that turned
- * the release gate on to learn more learned less.
+ * an analysis that threw the graph away over it would leave everything downstream of the compile
+ * unreported: a project both incomplete and stale would report `EQ1307` alone with the gate on,
+ * and `EQ1307`, `EQ1309` and `EQ1704` with it off.
  *
  * `EQ1309` is a member and is never raised by the analysis: it is raised against the translation
  * record, which is read after the compile. It is listed anyway, because the family is one thing and

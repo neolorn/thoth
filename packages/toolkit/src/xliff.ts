@@ -45,19 +45,11 @@ import { compareCodePoint } from './sorted-records.js';
 import { escapeXml } from './xml-text.js';
 
 /**
- * The Equator XLIFF profile, bumped to `/3` when the output was first run through the schema.
+ * The Equator XLIFF profile.
  *
- * A bump marks a wire format an older importer must not quietly accept. The profile is written into
- * every unit's contract, which is what makes the refusal specific: an older document is rejected as
- * the wrong profile rather than as a malformed one.
- *
- * `/1` declared `urn:oasis:names:tc:xliff:document:2.0` alongside `version="2.2"`, a pairing that
- * belongs to no schema. `/2` corrected the namespace and was still invalid against it in three
- * ways, none of which anything could have noticed, because no schema had ever been run over the
- * output: XLIFF 2.2 Core types every `id` as `xs:NMTOKEN` and Equator wrote `@example/app:shell`
- * there, and it put `equator:empty` on `<source>` and `<target>`, the two elements inside a unit
- * that admit no foreign attributes at all. `/3` corrects both and carries a message's placeholders
- * as inline codes rather than as raw MessageFormat text a translator can delete by accident.
+ * A new profile marks a wire format an older importer must not quietly accept. The profile is
+ * written into every unit's contract, which is what makes the refusal specific: a document of
+ * another profile is rejected as the wrong profile rather than as a malformed one.
  */
 export const XLIFF_PROFILE = 'equator-xliff-2.2/1' as const;
 

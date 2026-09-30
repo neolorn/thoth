@@ -474,8 +474,7 @@ type RouteCodecMapOf<Projection> = Projection extends {
  * The parameter values one route takes, read from the codecs that serialize them.
  *
  * `createIntegerParameterCodec` produces a `RouteParameterCodec<number>`, so the route it is
- * registered under takes a number. The value type was `unknown` before, which is how a route that
- * needs an integer accepted a string that would fail to serialize.
+ * registered under takes a number, and a string that would fail to serialize does not compile.
  */
 export type RouteParametersOf<
   Projection,
@@ -3597,10 +3596,9 @@ export interface LocalizedServerRouteDeclaration<Mode, Projection = unknown> {
    *
    * `RouteIdOf` resolves to the literal union when the projection is the generated one and widens
    * to `string` when it is held generically, so ordinary code keeps working and a spelling
-   * mistake stops compiling. It was `string` here while the client side already used `RouteIdOf`,
-   * the same defect in the same file with only one of its two callers fixed: a typo type-checked
-   * and then threw from `routeById` when the module was evaluated. That does fail the build, but
-   * at the wrong moment and with no completion on the way there.
+   * mistake stops compiling. As a plain `string`, a typo would type-check and then throw from
+   * `routeById` when the module is evaluated, which fails the build at the wrong moment and with no
+   * completion on the way there.
    */
   readonly routeId: RouteIdOf<Projection>;
   /** How this route is rendered, in whatever terms the server framework uses. */

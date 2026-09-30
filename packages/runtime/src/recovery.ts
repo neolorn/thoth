@@ -102,8 +102,8 @@ export class LocalizationRecovery {
   /**
    * Either source makes the control appear, and the localized one wins.
    *
-   * An application that passed a string before this existed keeps the button it had, and one that
-   * selects a retry label gets a localized button without editing its template.
+   * An application that passes a string gets the button it wrote, and one that selects a retry
+   * label gets a localized button without editing its template.
    */
   protected readonly retryControl = computed<RetryControl | undefined>(() => {
     const localized = this.localization.recoveryRetryLabel();

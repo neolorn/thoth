@@ -822,8 +822,7 @@ export function resolvedDateOptions(
  * `fields` and `length` are read as a pair because they decide one thing together: the fields say
  * which components appear and the length says how much of each is spelled out, so `month` is
  * `long`, `numeric` or `short` depending on both. Absent, the fields default to `year-month-day`,
- * which the specification names as the default and which is what Equator rendered unconditionally
- * before this table existed.
+ * which the specification names as the default.
  *
  * `timeZone=input` never arrives here. It names the operand's own zone rather than a zone, and is
  * resolved against the operand before any formatter is built.

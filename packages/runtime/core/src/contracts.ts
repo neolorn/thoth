@@ -238,7 +238,7 @@ export interface GeneratedConfiguration {
    * ships. A member with no catalog would cost a lookup and answer nothing, so it is not sent.
    *
    * Absent, or a locale absent from it, means that locale inherits from nothing and falls to the
-   * source locale directly, which is what every locale did before this existed.
+   * source locale directly.
    *
    * The runtime carries no parent table of its own and must not: the toolkit's is 199 entries
    * about every locale CLDR knows, and an application shipping three locales needs three short
@@ -836,8 +836,7 @@ export interface LocalizationSetup {
    * `provideLocalization()`.
    *
    * Absent means the application generated none, and `formatPersonName` falls back to the CLDR
-   * root profile compiled into the runtime: published data covering every field and modifier,
-   * rather than the hand-written field order Equator carried before this existed.
+   * root profile compiled into the runtime: published data covering every field and modifier.
    */
   readonly personNames?: PersonNameProfileSet;
   /** The installed extensions, each pairing a declaration with the code that implements it. */
@@ -2600,9 +2599,9 @@ export interface LocalizationContextOptions {
  * the consumer: next-intl asks for a `select` message in every catalog, Nuxt for a `name` key on
  * every locale object, Transloco for a label beside every id.
  *
- * There is no `disabled`. It was the context's own disposal copied onto every row, which is a
- * property of the switcher and not of a choice; a control that must disable the whole set reads the
- * lifecycle once instead of reading the same answer once per option.
+ * There is no `disabled`. Whether the switcher can be used is a property of the switcher and not of
+ * a choice, so a control that must disable the whole set reads the lifecycle once instead of reading
+ * the same answer once per option.
  */
 export interface LocaleSelectorChoice {
   /** The locale this option switches to. */

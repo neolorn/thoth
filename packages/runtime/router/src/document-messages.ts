@@ -30,8 +30,7 @@ export interface BoundDocumentMessage {
 /**
  * One field of a document declaration: a message that takes nothing, or one with its values bound.
  *
- * A bare handle stays valid, which is what every declaration written before this was, and it is the
- * right shape for the ordinary title: a sentence with nothing in it that varies.
+ * A bare handle is the right shape for the ordinary title: a sentence with nothing in it that varies.
  */
 export type RouteDocumentField = PlainMessageHandle | BoundDocumentMessage;
 

@@ -63,10 +63,9 @@ export function pseudoLocaleTagProblem(
 /**
  * How a pseudo-locale differs from its source, as settings that combine freely.
  *
- * This was `PseudoLocaleMode`, two values naming fixed *combinations*, `expansion-accent`
- * and `bidi-rtl`, which made the behaviours mutually exclusive and welded the boundary markers
- * into one of them. A reader wanting expansion *and* markers, or contraction *without* them, could
- * not ask for it. Nothing about the behaviours requires them to be bundled, so they are not.
+ * Nothing about the behaviours requires them to be bundled, so they are not: a reader can ask for
+ * expansion *and* boundary markers, or contraction *without* them, which a set of fixed
+ * combinations could not express.
  *
  * **Direction is deliberately absent from this interface.** It is carried by the locale tag, not by
  * the transform: direction is derived from the script subtag through the generated `RTL_SCRIPTS`
