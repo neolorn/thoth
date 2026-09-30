@@ -6,7 +6,11 @@
  * offsets. Both then want the same three things from that tree, and the only thing they disagree
  * about is which diagnostic a duplicate key is reported under.
  */
-import { type Node as JsonNode } from 'jsonc-parser';
+import {
+  createScanner,
+  type Node as JsonNode,
+  type SyntaxKind,
+} from 'jsonc-parser';
 
 import {
   toolkitDiagnostic,
@@ -155,4 +159,40 @@ export function constructJsonValue(node: JsonNode): unknown {
     default:
       throw new TypeError(`Unsupported JSON node type: ${node.type}`);
   }
+}
+
+/**
+ * Whether the text nests objects and arrays deeper than `maximumDepth`, read without parsing it.
+ *
+ * `parseTree` recurses once per level, so a document nested deep enough overflows the stack before
+ * there is a tree to measure. The scanner reads one token at a time, strings included, so counting
+ * brackets with it is bounded by the text's length rather than by the stack.
+ */
+// `SyntaxKind` is a const enum, which this build cannot read at run time, so the four bracket
+// tokens and the end of input are spelled with the values jsonc-parser 3.3.1 declares for them.
+const OPEN_BRACE = 1 as SyntaxKind;
+const CLOSE_BRACE = 2 as SyntaxKind;
+const OPEN_BRACKET = 3 as SyntaxKind;
+const CLOSE_BRACKET = 4 as SyntaxKind;
+const END_OF_INPUT = 17 as SyntaxKind;
+
+export function jsonNestingExceeds(
+  source: string,
+  maximumDepth: number,
+): boolean {
+  const scanner = createScanner(source, true);
+  let depth = 0;
+  for (
+    let token = scanner.scan();
+    token !== END_OF_INPUT;
+    token = scanner.scan()
+  ) {
+    if (token === OPEN_BRACE || token === OPEN_BRACKET) {
+      depth += 1;
+      if (depth > maximumDepth) return true;
+    } else if (token === CLOSE_BRACE || token === CLOSE_BRACKET) {
+      depth -= 1;
+    }
+  }
+  return false;
 }

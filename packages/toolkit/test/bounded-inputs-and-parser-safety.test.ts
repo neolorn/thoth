@@ -10,6 +10,8 @@ import {
   type CatalogParseOptions,
   type ExtensionDescriptorInput,
 } from '../src/index.js';
+import { parseAuthoredChangePlan } from '../src/authoring-transaction.js';
+import { parseExtensionRegistry } from '../src/extensions.js';
 import { RESOURCE_LIMITS } from '../src/resource-limits.js';
 import { toolkitDiagnostic, toolkitFailure } from '../src/diagnostics.js';
 
@@ -73,6 +75,28 @@ describe('bounded authored inputs', () => {
     expect(result.diagnostics[0]?.summary).toContain(
       'message implementation ceiling',
     );
+  });
+
+  it('refuses JSON nested past what the parser itself can recurse through', () => {
+    // The depth ceiling below is checked on the parsed tree, and the parser recurses once per
+    // level, so a nesting deep enough overflows the stack before the tree exists.
+    const nested = `${'['.repeat(100_000)}${']'.repeat(100_000)}`;
+    for (const [what, parse, code] of [
+      ['configuration', () => parseConfiguration(nested), 'EQ1001'],
+      ['extension registry', () => parseExtensionRegistry(nested), 'EQ1805'],
+      ['change plan', () => parseAuthoredChangePlan(nested), 'EQ1805'],
+    ] as const) {
+      const result = parse();
+      expect(result.ok, what).toBe(false);
+      if (result.ok) continue;
+      expect(result.diagnostics[0], what).toMatchObject({ code });
+      expect(result.diagnostics[0]?.summary, what).toContain('depth');
+    }
+    // Brackets inside a string are text, and counting them would refuse a document for its words.
+    const quoted = parseConfiguration(`{"unknown": "${'['.repeat(1000)}"}`);
+    expect(
+      quoted.ok ? [] : quoted.diagnostics.map(({ summary }) => summary),
+    ).not.toContainEqual(expect.stringContaining('depth'));
   });
 
   it('rejects over-deep JSON before recursive construction', () => {

@@ -38,7 +38,7 @@ import { isMessageName } from './message-format-syntax.js';
 import { RESOURCE_LIMITS } from './resource-limits.js';
 import { EXTENSION_REGISTRY_SCHEMA } from './schemas.js';
 import { compareCodePoint } from './sorted-records.js';
-import { constructJsonValue } from './json-tree.js';
+import { constructJsonValue, jsonNestingExceeds } from './json-tree.js';
 
 /** The version stamp on an extension registry file, checked before one is read. */
 export const EXTENSION_REGISTRY_PROFILE =
@@ -550,6 +550,14 @@ export function parseExtensionRegistry(
       toolkitDiagnostic(
         'EQ1805',
         'Equator extension registry exceeds the 1 MiB authored-input ceiling.',
+      ),
+    ]);
+  }
+  if (jsonNestingExceeds(source, RESOURCE_LIMITS.jsonDepth)) {
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1805',
+        `Equator extension registry exceeds the JSON depth ceiling of ${RESOURCE_LIMITS.jsonDepth}.`,
       ),
     ]);
   }

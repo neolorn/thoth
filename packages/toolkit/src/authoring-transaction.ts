@@ -37,7 +37,11 @@ import {
 } from './observability.js';
 import { RESOURCE_LIMITS } from './resource-limits.js';
 import { compareCodePoint } from './sorted-records.js';
-import { constructJsonValue, duplicateJsonKeys } from './json-tree.js';
+import {
+  constructJsonValue,
+  duplicateJsonKeys,
+  jsonNestingExceeds,
+} from './json-tree.js';
 
 /**
  * Whether a plan rewrites authored files by a team's own decision, or to move between versions.
@@ -303,6 +307,11 @@ export function parseAuthoredChangePlan(
   ) {
     return invalidPlan(
       `Equator authored change plan exceeds the ${RESOURCE_LIMITS.authoredChangePlanBytes}-byte implementation ceiling.`,
+    );
+  }
+  if (jsonNestingExceeds(source, RESOURCE_LIMITS.jsonDepth)) {
+    return invalidPlan(
+      `Equator authored change plan exceeds the ${RESOURCE_LIMITS.jsonDepth}-depth or ${RESOURCE_LIMITS.jsonNodes}-node JSON implementation ceiling.`,
     );
   }
   const parseErrors: ParseError[] = [];

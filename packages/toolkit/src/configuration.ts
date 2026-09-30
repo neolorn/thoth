@@ -41,6 +41,7 @@ import { RESOURCE_LIMITS } from './resource-limits.js';
 import {
   constructJsonValue,
   duplicateJsonKeys,
+  jsonNestingExceeds,
   jsonNodeSpan,
 } from './json-tree.js';
 
@@ -289,6 +290,14 @@ export function parseConfiguration(
         {
           span: spanAt(source, 0, source.length, options.sourcePath),
         },
+      ),
+    ]);
+  }
+  if (jsonNestingExceeds(source, RESOURCE_LIMITS.jsonDepth)) {
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1001',
+        `Equator configuration exceeds the JSON depth ceiling of ${RESOURCE_LIMITS.jsonDepth}.`,
       ),
     ]);
   }
