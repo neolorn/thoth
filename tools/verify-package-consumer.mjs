@@ -849,6 +849,28 @@ assert.equal(
   Number(collectedFiles[4]),
   `The consumer's test run did not pass every spec file:\n${testedOutput}`,
 );
+// A policy that has no address for a case skips that case, and a file whose every case needs such
+// an address is skipped whole. That is right only when the file says so: each skip in it is a
+// condition (`runIf`, `skipIf`), and none is a bare `skip` or `todo`, which skips the file under
+// every policy and reads as passed under each.
+const skippedWhole = [
+  ...testedOutput.matchAll(/^\s*\u2193\s+(?:\S+\s+)?(\S+\.spec\.ts)\s+\(/gmu),
+].map(([, file]) => file);
+assert.equal(
+  skippedWhole.length,
+  Number(collectedFiles[3] ?? 0),
+  `The consumer's test run skipped ${collectedFiles[3] ?? 0} spec file(s) whole and ${skippedWhole.length} could be named:\n${testedOutput}`,
+);
+const UNCONDITIONAL_SKIP =
+  /\b(?:(?:describe|it|test)\.(?:skip|todo)|x(?:describe|it))\(/u;
+const CONDITIONAL_SKIP = /\.(?:runIf|skipIf)\(/u;
+for (const file of skippedWhole) {
+  const source = await readFile(resolve(consumerRoot, file), 'utf8');
+  assert.ok(
+    CONDITIONAL_SKIP.test(source) && !UNCONDITIONAL_SKIP.test(source),
+    `${consumerName} skipped ${file} whole, and its skips are not all conditions on the policy, so nothing in it was asserted under any policy.`,
+  );
+}
 const collectedCases = /Tests\s+(\d+) passed[^\n(]*\((\d+)\)/u.exec(
   testedOutput,
 );
@@ -1022,11 +1044,16 @@ const isWithin = (candidate, owner) => {
   );
 };
 const resolveStatsInput = async (input) => {
-  const candidate = resolve(consumerRoot, input);
   try {
-    return await realpath(candidate);
-  } catch {
-    return undefined;
+    return await realpath(resolve(consumerRoot, input));
+  } catch (error) {
+    // The builder names modules it generates itself, such as angular:styles/global, in a namespace
+    // of its own, and those are the only inputs with no file behind them. Anything else that does
+    // not resolve is an input the checks below would otherwise pass over without having read it.
+    if (/^[a-z][a-z-]+:/u.test(input)) return undefined;
+    throw new Error(`The build names an input that is not on disk: ${input}`, {
+      cause: error,
+    });
   }
 };
 

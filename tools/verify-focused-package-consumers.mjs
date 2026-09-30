@@ -217,8 +217,14 @@ for (const output of Object.values(stats.outputs)) {
 const resolveStatsInput = async (input) => {
   try {
     return await realpath(resolve(consumerRoot, input));
-  } catch {
-    return undefined;
+  } catch (error) {
+    // The builder names modules it generates itself, such as angular:styles/global, in a namespace
+    // of its own, and those are the only inputs with no file behind them. Anything else that does
+    // not resolve is an input the checks below would otherwise pass over without having read it.
+    if (/^[a-z][a-z-]+:/u.test(input)) return undefined;
+    throw new Error(`The build names an input that is not on disk: ${input}`, {
+      cause: error,
+    });
   }
 };
 const canonicalProductionInputs = new Set(

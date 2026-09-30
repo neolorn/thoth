@@ -461,6 +461,9 @@ async function evaluateCase(testCase) {
       stage: 'evaluate',
       refused: true,
       thrown: true,
+      // Only a refusal the runtime made carries its diagnostic. Anything else thrown here is this
+      // harness failing to set the case up, which says nothing about the message.
+      fromRuntime: error?.diagnostic !== undefined,
       diagnostics: [
         {
           code: error?.diagnostic?.code ?? error?.name ?? 'threw',
@@ -571,6 +574,9 @@ function judge(testCase, outcome) {
   const assertsNoError = Array.isArray(errors) && errors.length === 0;
   const hasExpectation = typeof testCase.exp === 'string';
 
+  if (outcome.refused && outcome.thrown && !outcome.fromRuntime) {
+    return 'harness-failed';
+  }
   if (outcome.refused) {
     // MessageFormat's formatter reports an error *and* still produces a fallback string. A compiled
     // system refuses the message instead, and where the suite expects only an error the two agree
