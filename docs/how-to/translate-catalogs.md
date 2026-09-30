@@ -11,9 +11,24 @@ You need catalogs, which is [How to write a message](write-messages.md).
 
 ## Export and import
 
-`exportXliff22` produces an interchange document per locale, carrying each message with the
-`description` and `context` you authored, so a translator has the notes rather than a bare string.
-`importXliff22` reads the same document back and tracks the translation state of each unit.
+`exportXliff22` and `importXliff22` are exported from `@neolorn/equator-toolkit` and work on one
+scope in one target locale at a time, so a project with two scopes and one translated locale
+exchanges two documents. Both take catalogs read with `parseCatalog`, whose `providerId` is the
+`name` in the owner's `package.json`.
+
+`exportXliff22({ source, target })` carries each message with the `description` and `context` you
+authored, so a translator has the notes rather than a bare string. Pass the existing translation as
+`target` and the work already done comes back in the document.
+`importXliff22({ document, source })` reads the returned document against the catalog it was
+exported from and returns the translated catalog. A segment still in the `initial` state is not
+imported, because it holds a placeholder rather than translated work.
+
+A message without variants reaches the translator as text, with its placeholders and markup as
+XLIFF inline codes a translation tool protects. A message with variants, one written with `.match`,
+travels as its MessageFormat 2 text, and the translator edits the variants in that syntax.
+
+The toolkit has no command for the exchange. `formatCatalog` writes the imported catalog as a new
+file in canonical form, so comments and block scalars in the translated file are not kept.
 
 Nothing about your build, your routes or your project goes into the document, and nothing in the
 document can introduce markup or a destination into your page, which is
@@ -52,11 +67,29 @@ stay where they are.
 It is not a way to serve a locale you have not declared. What it overlays has to be a locale you
 compiled.
 
+## Accept a translation that still fits
+
+After a source edit that does not change the meaning, the translation written against the old
+wording is reported stale until it changes. `.equator-translation-state.json` records, one line per
+message and locale, the source each translation was written against. Delete the line for that
+message and locale, and the next `generate` records the translation as written against the current
+source. When it is the last entry, delete the comma that ends the line before it too: a record that
+is not valid JSON is read as no record, and every translation is then recorded as current.
+
 ## What is checked in
 
-The catalogs and `equator.config.json` are yours and are checked in. Everything under the generated
-root is output: it carries an ownership marker, it regenerates, and `equator clean` removes it. A
-hand-edited generated file is overwritten by the next `generate`.
+The catalogs, `equator.config.json` and `.equator-translation-state.json` are yours and are checked
+in. Without the translation state, a fresh checkout reports no translation stale.
+
+Everything under the generated root, `src/generated/i18n/` unless configured otherwise, is output:
+it carries an ownership marker, it regenerates, and `equator clean` removes it. A hand-edited
+generated file is overwritten by the next `generate`. `.equator/` holds a cache that is safe to
+delete. Add both to `.gitignore`:
+
+```text
+src/generated/i18n/
+.equator/
+```
 
 ## Related
 
