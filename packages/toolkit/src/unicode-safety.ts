@@ -106,7 +106,8 @@ export function isSafeXmlText(value: string): boolean {
       codePoint !== 0x0d &&
       (codePoint < 0x20 ||
         (codePoint > 0xd7ff && codePoint < 0xe000) ||
-        codePoint > 0xfffd)
+        codePoint === 0xfffe ||
+        codePoint === 0xffff)
     ) {
       return false;
     }

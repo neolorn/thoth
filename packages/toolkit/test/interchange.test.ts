@@ -96,6 +96,35 @@ describe('Equator XLIFF 2.2 interchange', () => {
     claimCapability('capability:xliff');
   });
 
+  it('round-trips text beyond the Basic Multilingual Plane', () => {
+    // XML 1.0 section 2.2 allows U+10000 to U+10FFFF, where emoji live, and so do CJK extension B
+    // characters that Japanese and Chinese names are written with.
+    const beyond = `${String.fromCodePoint(0x20bb7)} ${String.fromCodePoint(0x1f600)}`;
+    const wide = catalog(
+      [
+        'messages:',
+        `  greeting: "${beyond} {#strong}{$name}{/strong}."`,
+        '  count: |-',
+        '    .input {$count :number}',
+        '    .match $count',
+        '    1 {{one}}',
+        '    * {{other {$count}}}',
+        '  spacer:',
+        '    empty: true',
+        '',
+      ].join('\n'),
+      targetOptions,
+    );
+
+    const exported = exportXliff22({ source, target: wide });
+    expect(exported.ok, JSON.stringify(exported)).toBe(true);
+    if (!exported.ok) return;
+    const imported = importXliff22({ document: exported.value, source });
+    expect(imported.ok, JSON.stringify(imported)).toBe(true);
+    if (!imported.ok) return;
+    expect(formatCatalog(imported.value)).toBe(formatCatalog(wide));
+  });
+
   it('rejects external entities and does not silently accept stale source units', () => {
     const exported = exportXliff22({ source, target });
     if (!exported.ok) throw new Error('export failed');
