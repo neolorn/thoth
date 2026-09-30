@@ -206,3 +206,64 @@ describe('the window that holds a restored scroll position', () => {
     expect(viewport.y).toBe(50);
   });
 });
+
+/**
+ * Section 8 again: the distance from the inline start is captured and restored without asking the
+ * document how far it can scroll. A direction change is relaying the document out when both happen,
+ * and a document that has not finished growing reports a range that is still too small, so a
+ * restore clamped to it lands short where `scrollTo` would have clamped correctly on its own.
+ */
+describe('the restore across a direction change', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    for (const [name, descriptor] of originals) {
+      if (descriptor === undefined) Reflect.deleteProperty(window, name);
+      else Object.defineProperty(window, name, descriptor);
+    }
+    originals.clear();
+    pending.length = 0;
+    writes.length = 0;
+    document.body
+      .querySelectorAll('button')
+      .forEach((element) => element.remove());
+  });
+
+  it('reads no scroll range at capture or at restore', async () => {
+    const reads: string[] = [];
+    const watched: [Element, string][] = [];
+    const watch = () => {
+      for (const element of new Set(
+        [
+          document.documentElement,
+          document.body,
+          document.scrollingElement,
+        ].filter((each): each is Element => each instanceof Element),
+      )) {
+        for (const name of ['scrollWidth', 'scrollHeight']) {
+          const inherited = Object.getOwnPropertyDescriptor(
+            Element.prototype,
+            name,
+          );
+          Object.defineProperty(element, name, {
+            configurable: true,
+            get() {
+              reads.push(`${element.nodeName}.${name}`);
+              return inherited?.get?.call(element) as number;
+            },
+          });
+          watched.push([element, name]);
+        }
+      }
+    };
+    try {
+      await switchedToArabic({ focused: true, beforeTheSwitch: watch });
+      for (let count = 0; count < 12; count += 1) frame();
+    } finally {
+      for (const [element, name] of watched) {
+        Reflect.deleteProperty(element, name);
+      }
+    }
+
+    expect(reads).toEqual([]);
+  });
+});

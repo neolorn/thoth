@@ -681,7 +681,7 @@ const declared = Object.freeze([
       'dist:toolkit',
       'source:packages',
     ],
-    // The 202 injections took about 8,200s between them when each was measured on its own, so the
+    // The 203 injections took about 8,200s between them when each was measured on its own, so the
     // bound is a little over three times that.
     timeoutSeconds: 26_000,
   },

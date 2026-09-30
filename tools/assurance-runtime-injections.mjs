@@ -1906,4 +1906,13 @@ export const injections = Object.freeze([
     caughtWhen:
       /negative-message-handle\.negative\.ts did not report "Expected 2 arguments, but got [13]"/u,
   },
+  {
+    id: 'scroll-restore-clamped-to-the-range',
+    invariant:
+      "The inline position restored across a direction change is the captured distance, not one clamped to the document's scroll range read at restore.",
+    source: 'packages/runtime/src/angular.ts',
+    find: "      const inline =\n        snapshot.direction === 'rtl' ? -logicalInline : logicalInline;",
+    replace:
+      "      const range = Math.max(\n        0,\n        this.document.documentElement.scrollWidth - view.innerWidth,\n      );\n      const inline =\n        snapshot.direction === 'rtl'\n          ? -Math.min(logicalInline, range)\n          : Math.min(logicalInline, range);",
+  },
 ]);
