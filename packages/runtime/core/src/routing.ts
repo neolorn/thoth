@@ -2623,29 +2623,11 @@ function resolvePathPrefixRoute(
             requestedLocale: first,
           });
         }
-        // An address carrying no locale is locale entry, whether or not this application has a page
-        // at it. Answering not-found here settled the second question before the first and left the
-        // visitor on an unprefixed URL, which under this policy no localized route can match: the
-        // outlet renders nothing, the document takes no title, and the response claims success.
-        //
-        // The requested path travels through unchanged, so the localized address answers, with
-        // the application's own not-found page, in a locale, at a URL that states which one. A
-        // crawler needs the same thing, which is why this is a redirect rather than a rendered 404
-        // at an address that names no language.
-        if (!policy.omitDefaultPrefix) {
-          const entryLocale =
-            preferredEntryLocale(policy, context) ?? policy.defaultLocale;
-          return Object.freeze({
-            status: 'redirect',
-            reason: 'locale-entry',
-            httpStatus: 307,
-            cache: 'private-no-cache',
-            locale: entryLocale,
-            location: `/${policy.locales[entryLocale] as string}${parsed.segments.length === 0 ? '' : `/${encodedSegments(parsed.segments)}`}${parsed.canonicalSuffix}`,
-          });
-        }
-        // Where the default locale has no prefix, the unprefixed space is that locale's own
-        // canonical form. There is nowhere to send this address that is not itself.
+        // Nothing is served at this address in any locale, so there is no page to negotiate a
+        // locale for: sending the visitor to a prefixed spelling of it would answer a second
+        // address that is missing too. It is a 404 where it stands, in the default locale, and the
+        // application's own `**` route renders it because the address is handed to the router
+        // unchanged.
         return Object.freeze({
           status: 'not-found',
           httpStatus: 404,

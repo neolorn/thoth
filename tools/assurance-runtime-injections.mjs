@@ -50,14 +50,6 @@ export const injections = Object.freeze([
     ].join('\n'),
   },
   {
-    id: 'locale-entry-only-for-known-addresses',
-    invariant:
-      'An address carrying no locale is sent to one whether or not a page exists at it.',
-    source: 'packages/runtime/core/src/routing.ts',
-    find: '        if (!policy.omitDefaultPrefix) {',
-    replace: '        if (policy.omitDefaultPrefix) {',
-  },
-  {
     id: 'not-found-abandons-the-navigation',
     invariant:
       "A not-found commits its locale and lets the application's own routing answer, rather than throwing.",

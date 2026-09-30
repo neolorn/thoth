@@ -540,15 +540,11 @@ describe('what locale entry may be cached as', () => {
     });
   });
 
-  it('is the same for an address that names no route', () => {
-    // Entry answers before the question of whether the page exists, so the address that has no
-    // page is classified the same way as the one that does.
+  it('does not reach an address that names no route', () => {
+    // Entry is for a page that exists in some locale. An address with none is a 404 where it
+    // stands, which carries no preference and so no private marking.
     expect(resolveLocalizedRoute('/nowhere', POLICY, PROJECTION)).toMatchObject(
-      {
-        status: 'redirect',
-        reason: 'locale-entry',
-        cache: 'private-no-cache',
-      },
+      { status: 'not-found', httpStatus: 404, presentationLocale: 'en-US' },
     );
   });
 });

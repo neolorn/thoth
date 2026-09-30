@@ -113,6 +113,21 @@ describe('an address with no projected route, under a prefix policy', () => {
     claimCapability('policy:path-prefix', { policy: PREFIXED });
   });
 
+  it('answers an unknown address that states no locale with a 404, not a negotiation', () => {
+    // Spec 07 section 15: there is no page to negotiate a locale for, so a redirect to one sends
+    // the visitor to a second missing address.
+    for (const context of [undefined, { locale: 'ar-EG' }]) {
+      expect(
+        resolveLocalizedRoute('/قسم/detail', PREFIXED, PROJECTION, context),
+      ).toEqual({
+        status: 'not-found',
+        httpStatus: 404,
+        presentationLocale: PREFIXED.defaultLocale,
+      });
+    }
+    claimCapability('policy:path-prefix', { policy: PREFIXED });
+  });
+
   it('still declines an address whose prefix names a locale the build lacks', () => {
     const resolution = resolveLocalizedRoute('/de/tools', PREFIXED, PROJECTION);
     expect(resolution.status).toBe('unsupported-locale');

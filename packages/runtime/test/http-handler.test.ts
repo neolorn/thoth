@@ -159,17 +159,21 @@ describe('a localized address whose segments are not ASCII', () => {
  */
 describe('what the handler declines to localize', () => {
   it('follows the policy when a root is added rather than a hardcoded list', async () => {
-    // `media` is not a root here, so it localizes like anything else.
+    // `media` is not a root here, so it localizes like anything else: no page is there, so it is
+    // answered as a missing page in the default locale.
     const before = await get('/media/logo');
-    expect(before.status).toBe(307);
+    expect(before.status).toBe(404);
+    expect(before.headers.get('content-language')).toBe('en-US');
 
-    // The same address under a policy that names it. Nothing in the handler changed.
+    // The same address under a policy that names it. Nothing in the handler changed, and the
+    // address is declined rather than answered in a locale.
     const after = await get(
       '/media/logo',
       {},
       { ...POLICY, localeNeutralRoots: ['assets', 'media'] },
     );
     expect(after.status).toBe(404);
+    expect(after.headers.get('content-language')).toBeNull();
     claimCapability('declaration:locale-neutral-roots', { policy: POLICY });
   });
 

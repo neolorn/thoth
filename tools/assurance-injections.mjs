@@ -4305,4 +4305,14 @@ export const injections = Object.freeze([
       '  const recorded = await readTranslationState(project.ownerRoot);\n  const publication = await applyOutputPlan({',
     caughtBy: 'packages/toolkit/test/translation-state-unreadable.test.ts',
   },
+  {
+    id: 'unknown-unprefixed-address-negotiated',
+    invariant:
+      'An address that states no locale and that nothing serves in any locale is a 404 where it stands, not a locale entry.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: "        // unchanged.\n        return Object.freeze({\n          status: 'not-found',\n          httpStatus: 404,\n          presentationLocale: policy.defaultLocale,\n        });",
+    replace:
+      "        // unchanged.\n        if (!policy.omitDefaultPrefix) {\n          const entryLocale =\n            preferredEntryLocale(policy, context) ?? policy.defaultLocale;\n          return Object.freeze({\n            status: 'redirect',\n            reason: 'locale-entry',\n            httpStatus: 307,\n            cache: 'private-no-cache',\n            locale: entryLocale,\n            location: `/${policy.locales[entryLocale]}/${encodedSegments(parsed.segments)}`,\n          });\n        }\n        return Object.freeze({\n          status: 'not-found',\n          httpStatus: 404,\n          presentationLocale: policy.defaultLocale,\n        });",
+    caughtBy: 'packages/runtime/test/locale-of-an-unprojected-address.test.ts',
+  },
 ]);

@@ -202,54 +202,35 @@ describe.runIf(entryRedirects)('what the redirect may be cached as', () => {
   });
 
   /**
-   * Every case above uses an address this application serves, which is what hides the defect.
+   * Every case above uses an address this application serves. Locale entry is for those: the page
+   * exists in some locale and the address has not said which.
    *
-   * Locale entry offered only when the unprefixed path matches a route leaves an address with no
-   * locale and no page answering not-found where it stands. Under a prefix policy nothing is
-   * mounted there: the outlet renders empty, the document takes no title, and the response claims
-   * success. A visitor following an ordinary unprefixed link, which is what a hand-written `href`
-   * produces, gets a blank page rather than a not-found page.
-   *
-   * Whether to send an address to a locale depends on the address having no locale. Whether a page
-   * exists is the localized address's question, asked after arrival.
+   * An address that no locale serves has no page to send the visitor to, and spec 07 section 15
+   * answers it with a 404 where it stands, in the default locale, whatever the request prefers.
+   * The application's own `**` route renders it, because an address Equator cannot place is handed
+   * to the router unchanged.
    */
-  it('sends an address with no page to a locale, so a localized 404 can answer', () => {
-    const anonymous = resolveLocalizedRoute(
-      '/nothing-is-mounted-here',
-      routePolicy,
-      appRouteProjection,
-    );
-
-    expect(anonymous).toEqual({
-      status: 'redirect',
-      reason: 'locale-entry',
-      httpStatus: 307,
-      cache: 'private-no-cache',
-      locale: 'en-US',
-      location: '/en-us/nothing-is-mounted-here',
-    });
-
-    // And to the locale the request resolved to, exactly as a known address would.
-    expect(
-      resolveLocalizedRoute(
-        '/nothing-is-mounted-here',
-        routePolicy,
-        appRouteProjection,
-        { locale: 'ar-EG' },
-      ),
-    ).toMatchObject({
-      status: 'redirect',
-      locale: 'ar-EG',
-      cache: 'private-no-cache',
-      location: '/ar-eg/nothing-is-mounted-here',
-    });
+  it('answers an address with no page where it stands, in the default locale', () => {
+    for (const context of [undefined, { locale: 'ar-EG' }]) {
+      expect(
+        resolveLocalizedRoute(
+          '/nothing-is-mounted-here',
+          routePolicy,
+          appRouteProjection,
+          context,
+        ),
+      ).toEqual({
+        status: 'not-found',
+        httpStatus: 404,
+        presentationLocale: 'en-US',
+      });
+    }
     claimCapability('policy:path-prefix', { policy: routePolicy });
     claimCapability('entry:@neolorn/equator', { policy: routePolicy });
   });
 
   it('leaves a prefixed address that has no page to answer as a not-found', () => {
-    // The counterpart. Once the address states its locale there is nothing left to decide, so it
-    // is answered where it stands rather than redirected again.
+    // The counterpart. Once the address states its locale, it is answered in that locale.
     expect(
       resolveLocalizedRoute(
         '/ar-eg/nothing-is-mounted-here',

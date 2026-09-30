@@ -2480,7 +2480,8 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "15. Error presentation and coherence",
-      "statement": "An unknown unprefixed route is a direct 404 rather than a locale negotiation, and a release MUST emit no canonical or alternate relationship for it."
+      "statement": "An unknown unprefixed route is a direct 404 rather than a locale negotiation, and a release MUST emit no canonical or alternate relationship for it.",
+      "checks": ["assurance:unknown-unprefixed-address-negotiated"]
     },
     {
       "spec": "07-routing-rendering-and-seo.spec.md",

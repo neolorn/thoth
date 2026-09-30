@@ -4749,10 +4749,10 @@ async function verifyLocalizedNotFound(row, context, diagnostics) {
   await returnCookies(missingBrowserContext, context);
   await closeIsolated(missing, missingBrowserContext);
 
-  // The same address without a prefix, which is what an ordinary hand-written `href` produces.
-  // Locale entry has to be offered for an address the projection does not know, exactly as it is
-  // for one it knows. Answered as not-found where it stands, under a prefix policy nothing is
-  // mounted there, so the outlet renders empty and the document takes no title.
+  // An address with no prefix that nothing serves in any locale, which is what a hand-written
+  // `href` to a page that does not exist produces. Spec 07 section 15: a 404 where it stands, in
+  // the default locale, with no negotiation, and with no canonical or alternate relationship,
+  // because there is no page for one to name.
   //
   // The path deliberately opens with a segment no language tag can be: `/no-such-page` would
   // not test this, because `no` is Norwegian and `no-such-page` parses as a language tag, so
@@ -4765,9 +4765,7 @@ async function verifyLocalizedNotFound(row, context, diagnostics) {
     );
     attachBrowserDiagnostics(unprefixed, diagnostics);
     unprefixed.setDefaultTimeout(15_000);
-    expectedErrorDocuments.add(
-      `${browserOrigin}${addresses.path('missing', 'en-US')}`,
-    );
+    expectedErrorDocuments.add(`${browserOrigin}/nothing-is-mounted-here`);
     const unprefixedResponse = await unprefixed.goto(
       `${browserOrigin}/nothing-is-mounted-here`,
       { waitUntil: 'networkidle' },
@@ -4784,12 +4782,28 @@ async function verifyLocalizedNotFound(row, context, diagnostics) {
     );
     assert.equal(
       new URL(unprefixed.url()).pathname,
-      addresses.path('missing', 'en-US'),
-      'An address with no locale prefix was not sent to one before answering',
+      '/nothing-is-mounted-here',
+      'An address with no locale prefix that nothing serves was sent somewhere instead of answered where it stands',
+    );
+    assert.equal(
+      await unprefixed.evaluate(() => document.documentElement.lang),
+      'en-US',
+      'The not-found page reached without a prefix is not in the default locale',
     );
     assert.ok(
       (await unprefixed.title()).length > 0,
       'The not-found page reached without a prefix has no document title',
+    );
+    assert.deepEqual(
+      await unprefixed.evaluate(() =>
+        [
+          ...document.head.querySelectorAll(
+            'link[rel="canonical"], link[rel="alternate"][hreflang]',
+          ),
+        ].map((link) => link.outerHTML),
+      ),
+      [],
+      'The not-found page reached without a prefix names a canonical or an alternate address',
     );
     await collectPolicyDiagnostics(unprefixed, diagnostics);
     await returnCookies(unprefixedBrowserContext, context);
