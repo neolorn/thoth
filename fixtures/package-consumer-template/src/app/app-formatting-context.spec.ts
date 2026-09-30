@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 
+import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   Localization,
@@ -15,6 +16,8 @@ import { messages } from '#i18n/shell';
 import { appFormattingContext } from './app.config';
 import inputs from './exercise-inputs.json';
 import { runtimeExtensions } from './runtime-extensions';
+
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
 /**
  * Does the formatting context this application declares reach rendered output?
@@ -73,11 +76,17 @@ describe('the declared formatting context reaches rendered output', () => {
 
   it('renders Latin digits in ar-EG, which resolves to arab on its own', () => {
     const rendered = localization.text(messages.fmt.number, { v: 1234.5 });
-    expect(rendered).toMatch(LATIN);
+    expect(
+      rendered,
+      'the numbering system the application declared through withFormattingContext',
+    ).toMatch(LATIN);
     // Both directions. Asserting only that Latin digits are present would pass for a partly
     // converted string, and asserting only their absence would pass for a string with no digits
     // at all.
     expect(rendered).not.toMatch(ARABIC_INDIC);
+    claimCapability('feature:withFormattingContext', {
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 
   it('is asserting against a locale whose default differs, so the claim is not vacuous', () => {

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { APP_BASE_HREF, Location, PlatformLocation } from '@angular/common';
 import { MOCK_PLATFORM_LOCATION_CONFIG } from '@angular/common/testing';
-import { Component, signal } from '@angular/core';
+import { Component, PLATFORM_ID, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   NavigationCancel,
@@ -350,7 +350,14 @@ describe.runIf(localeInPath)('an application deployed under a sub-path', () => {
     expect(canonical()).toBe(pageUrl('second', 'ar-EG'));
     expect(alternate('ar-EG')).toBe(pageUrl('second', 'ar-EG'));
     expect(alternate('en-US')).toBe(pageUrl('second', 'en-US'));
-    expect(alternate('x-default')).toBe(`${localeOrigin('en-US')}/`);
+    expect(
+      alternate('x-default'),
+      'where the xDefaultPath the policy declares points',
+    ).toBe(`${localeOrigin('en-US')}/`);
+    claimCapability('declaration:x-default', {
+      policy: routePolicy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 
   it('reads the base href from the one resolution both halves use', async () => {

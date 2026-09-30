@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import {
@@ -97,7 +98,7 @@ describe('the readiness panel exercises what the published surface kept', () => 
       expect(alternates.map((link) => link.getAttribute('href'))).toEqual(
         offered.map((locale) => pageAddress('home', locale)),
       );
-      claimRunningPolicy();
+      claimRunningPolicy(TestBed.inject(PLATFORM_ID) as string);
     },
   );
 

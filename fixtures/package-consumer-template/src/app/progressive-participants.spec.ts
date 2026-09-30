@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { inject, provideEnvironmentInitializer } from '@angular/core';
+import {
+  PLATFORM_ID,
+  inject,
+  provideEnvironmentInitializer,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   Localization,
@@ -17,6 +21,8 @@ import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 
 import { runtimeExtensions } from './runtime-extensions';
+
+import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
 /**
  * Progressive participants, which is Equator's answer to the region that must not hold up the page.
@@ -151,11 +157,17 @@ describe('a progressive participant does not hold up the primary UI', () => {
     region.open();
 
     await vi.waitFor(() => {
-      expect(region.events).toEqual(['prepare:en-US', 'commit:en-US']);
+      expect(
+        region.events,
+        'what the application’s LocalizationParticipant was asked, in order',
+      ).toEqual(['prepare:en-US', 'commit:en-US']);
     });
     expect(registration.state().current?.report.status).toBe('ready');
     expect(registration.state().current?.targetLocale).toBe('en-US');
     expect(registration.state().coordination).toBe('progressive');
+    claimCapability('extension:locale-participant', {
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 
   it('runs the region independently on a locale change too, without holding the change', async () => {

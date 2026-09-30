@@ -184,7 +184,10 @@ describe('the declared order', () => {
     });
 
     expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
-    claimCapability('source:url', { policy });
+    claimCapability('source:url', {
+      policy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 
   it.runIf(addressCanStateNone)(
@@ -203,6 +206,22 @@ describe('the declared order', () => {
       claimCapability('source:stored', { policy: routePolicy });
     },
   );
+
+  it('takes what this visitor chose before, in the browser', async () => {
+    // Stored ahead of the URL, so the document's own address, which is the test runner's, decides
+    // nothing here whatever the row's policy reads from it.
+    const localization = setup({
+      sources: ['stored', 'url', 'default'],
+      stores: [storeReturning('ar-EG')],
+      browser: true,
+    });
+
+    expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
+    claimCapability('source:stored', {
+      policy: routePolicy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
+  });
 
   it.runIf(addressCanStateNone)(
     'falls through to what the client asked for',

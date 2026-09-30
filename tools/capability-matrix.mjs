@@ -14,6 +14,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -128,6 +129,22 @@ function kindUnion(text, name) {
   });
 }
 
+/**
+ * The optional members an interface body declares itself, leaving out those of an object type one
+ * of its members has, which belong to that member.
+ */
+function optionalMembers(body) {
+  const members = [];
+  let depth = 0;
+  const pattern = /[{}]|\breadonly (\w+)\?:/gu;
+  for (const [token, member] of body.matchAll(pattern)) {
+    if (token === '{') depth += 1;
+    else if (token === '}') depth -= 1;
+    else if (depth === 0) members.push(member);
+  }
+  return members;
+}
+
 /** Whether a published interface declares a member, the resolution a registry entry is held to. */
 function declaresMember(texts, owner, member) {
   return texts.some((text) => {
@@ -144,23 +161,44 @@ function declaresMember(texts, owner, member) {
 // ---------------------------------------------------------------------------------------------
 
 /**
- * The four ways a page reaches a reader. They are not a list anything else publishes: a page is
- * rendered on the server or prerendered (`specs/07-routing-rendering-and-seo.spec.md` section 9),
- * then hydrated or reached by a client navigation, which that specification treats as their own
- * cases. Each is read from what a claim observed rather than from what the check says it did.
+ * How a claim shows each render mode the runtime relays from Angular. The modes are read from the
+ * installed `RenderMode`, and a mode is a column only once it has a matcher here, so a mode Angular
+ * adds fails the stage until someone says what observing it looks like.
+ *
+ * A client render is a page the browser rendered with no server render before it: a check that
+ * rendered through an injector whose `PLATFORM_ID` is `browser`, over no document a server or a
+ * build marked with `ng-server-context`. A hydrated page also runs on the browser platform, and
+ * its marked document is what keeps it out. A document with no mark is not a client render on its
+ * own: it is what a server answered without rendering, such as the application shell or a
+ * redirect, and nothing in it shows a browser rendered anything.
  */
-const RENDER_CONTEXTS = Object.freeze([
-  {
+const RENDER_MODES = Object.freeze({
+  Server: {
     id: 'render:server',
     name: 'server render',
     matches: (claim) =>
       claim.platform === 'server' || (claim.document ?? []).includes('ssr'),
   },
-  {
+  Prerender: {
     id: 'render:prerender',
     name: 'prerender',
     matches: (claim) => (claim.document ?? []).includes('ssg'),
   },
+  Client: {
+    id: 'render:client',
+    name: 'client render',
+    matches: (claim) =>
+      claim.platform === 'browser' &&
+      !(claim.document ?? []).some((mark) => mark === 'ssr' || mark === 'ssg'),
+  },
+});
+
+/**
+ * What happens to a rendered page afterwards, which is not a render mode and so is not in
+ * `RenderMode`: the page is hydrated or reached by a client navigation, and
+ * `specs/07-routing-rendering-and-seo.spec.md` section 9 treats each as its own case.
+ */
+const AFTER_RENDER = Object.freeze([
   {
     id: 'render:client-navigation',
     name: 'client navigation',
@@ -172,6 +210,62 @@ const RENDER_CONTEXTS = Object.freeze([
     matches: (claim) => (claim.adoptedElements ?? 0) > 0,
   },
 ]);
+
+/** The render columns, one per mode in `renderModes` and then the two that follow a render. */
+function renderColumns(renderModes) {
+  const columns = renderModes.map((mode) => {
+    const column = RENDER_MODES[mode];
+    assert.ok(
+      column !== undefined,
+      `Angular's RenderMode has a member ${mode}, which the matrix has no column for. Name it in RENDER_MODES.`,
+    );
+    return column;
+  });
+  for (const mode of Object.keys(RENDER_MODES)) {
+    assert.ok(
+      renderModes.includes(mode),
+      `RENDER_MODES names ${mode}, which Angular's RenderMode no longer has.`,
+    );
+  }
+  return [...columns, ...AFTER_RENDER].map((column) => ({
+    ...column,
+    group: 'Render',
+  }));
+}
+
+/**
+ * The members of the `RenderMode` the runtime's server entry point imports, read from the Angular
+ * that is installed, since the runtime relays Angular's modes rather than declaring its own.
+ */
+function relayedRenderModes(runtime) {
+  const ssr =
+    runtime.find((entry) => entry.entryPoint === 'neolorn-equator-ssr')?.text ??
+    '';
+  assert.ok(
+    /import \{[^}]*\bRenderMode\b[^}]*\} from '@angular\/ssr';/u.test(ssr),
+    "The runtime's server entry point no longer imports RenderMode from @angular/ssr, so the modes read here are not the ones it relays.",
+  );
+  const require = createRequire(import.meta.url);
+  const declarations = readFileSync(
+    resolve(
+      dirname(require.resolve('@angular/ssr/package.json')),
+      'types/ssr.d.ts',
+    ),
+    'utf8',
+  );
+  const body = /\bdeclare enum RenderMode \{([^}]*)\}/u.exec(
+    declarations.replaceAll(/\/\*[\s\S]*?\*\//gu, ''),
+  );
+  assert.ok(body, 'The installed @angular/ssr declares no RenderMode enum.');
+  const modes = [...body[1].matchAll(/^\s*(\w+)\s*=/gmu)].map(
+    ([, mode]) => mode,
+  );
+  assert.ok(
+    modes.includes('Server'),
+    `Reading RenderMode found ${modes.join(', ') || 'nothing'}, and not Server, so the reading has stopped matching.`,
+  );
+  return modes;
+}
 
 /**
  * A policy's variants are its booleans, and a boolean is a variant only once it has a name here.
@@ -464,6 +558,30 @@ const REGISTRY = Object.freeze([
   },
 ]);
 
+/**
+ * Optional members of a registry interface that are not a row of their own: a member another row
+ * already stands for, or one that is not the application's to declare. The stage fails on a
+ * placement whose member or row no longer exists.
+ */
+const MEMBER_PLACEMENTS = Object.freeze({
+  'PathPrefixLocalePolicyOptions.omitDefaultPrefix': {
+    row: 'policy:default-locale-prefix',
+  },
+  'GeneratedConfiguration.pseudoLocales': { row: 'capability:pseudo-locale' },
+  'GeneratedConfiguration.extensionDescriptors': { row: 'extension:*' },
+  'GeneratedRouteProjectionEntry.indexing': {
+    row: 'declaration:route-indexing-class',
+  },
+  'GeneratedRouteProjectionEntry.caching': {
+    row: 'declaration:route-caching-class',
+  },
+  'RoutingOptions.indexing': { row: 'declaration:route-indexing-class' },
+  'RoutingOptions.caching': { row: 'declaration:route-caching-class' },
+  'GeneratedRouteProjectionEntry.sourcePath': {
+    none: 'Where the build found the route, which its diagnostics cite; nothing reads it at run time.',
+  },
+});
+
 /** The commands the built CLI lists in its own help, run where it acts on nothing. */
 function cliCommands() {
   const elsewhere = mkdtempSync(join(tmpdir(), 'equator-matrix-help-'));
@@ -673,6 +791,53 @@ export function rowsFrom({
     add(category, name, entry.binding);
   }
 
+  // Every optional member of an interface the registry reads is something an application may
+  // declare, so each is a row: the registry's own where it names the member, the one
+  // MEMBER_PLACEMENTS gives it, or otherwise a row of its own, which a member added later gets on
+  // the day it lands.
+  const owners = [
+    ...new Set(
+      REGISTRY.flatMap(({ resolves }) =>
+        resolves.member === undefined ? [] : [resolves.member[0]],
+      ),
+    ),
+  ];
+  const registered = new Set(
+    REGISTRY.flatMap(({ resolves }) =>
+      resolves.member === undefined ? [] : [resolves.member.join('.')],
+    ),
+  );
+  const derived = new Set();
+  for (const owner of owners) {
+    for (const each of everything) {
+      const body = interfaceBody(each, owner);
+      if (body === undefined) continue;
+      for (const member of optionalMembers(body)) {
+        const key = `${owner}.${member}`;
+        derived.add(key);
+        if (registered.has(key) || MEMBER_PLACEMENTS[key] !== undefined) {
+          continue;
+        }
+        add('declaration', key, [named(member)]);
+      }
+    }
+  }
+  for (const [key, placement] of Object.entries(MEMBER_PLACEMENTS)) {
+    // A placement for a member that is gone would hide the row a member of that name gets later.
+    if (!derived.has(key)) resolveFailures.push(`placement:${key}`);
+    if (
+      placement.row !== undefined &&
+      !rows.some(
+        (row) =>
+          row.id === placement.row ||
+          (placement.row.endsWith(':*') &&
+            row.category === placement.row.slice(0, -2)),
+      )
+    ) {
+      resolveFailures.push(`placement:${key}`);
+    }
+  }
+
   // A capability exported from two entry points is one capability.
   const unique = new Map();
   for (const row of rows) if (!unique.has(row.id)) unique.set(row.id, row);
@@ -712,6 +877,7 @@ export function readDeclared() {
     ).trim(),
     engines: playwrightEngines(),
     profiles: consumerProfiles,
+    renderModes: relayedRenderModes(runtimeDeclarations()),
   };
 }
 
@@ -725,12 +891,13 @@ export function columnsFrom({
   developmentVersion,
   engines,
   profiles,
+  renderModes,
 }) {
   const core =
     runtime.find((entry) => entry.entryPoint === 'neolorn-equator-core')
       ?.text ?? '';
   return [
-    ...RENDER_CONTEXTS.map((column) => ({ ...column, group: 'Render' })),
+    ...renderColumns(renderModes),
     ...policyColumns(core).map(({ id, group, name, matches }) => ({
       id,
       group,

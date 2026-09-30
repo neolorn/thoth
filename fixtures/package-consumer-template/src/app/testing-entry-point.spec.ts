@@ -11,6 +11,7 @@ import {
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
 } from '@neolorn/equator/testing';
+import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { localizationSetup } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
@@ -117,9 +118,10 @@ describe('provideLocalizationTesting', () => {
     expect(localization.text(messages.appTitle)).toBe('Equator feature lab');
     await localization.changeLocale('ar-EG');
     expect(localization.text(messages.appTitle)).toBe('مختبر ميزات Equator');
-    claimCapability('testing:provideLocalizationTesting');
-    claimCapability('entry:@neolorn/equator/testing');
-    claimCapability('entry:@neolorn/equator');
+    const platform = TestBed.inject(PLATFORM_ID) as string;
+    claimCapability('testing:provideLocalizationTesting', { platform });
+    claimCapability('entry:@neolorn/equator/testing', { platform });
+    claimCapability('entry:@neolorn/equator', { platform });
   });
 
   it('is a different entry point from the application provider, not a different runtime', () => {

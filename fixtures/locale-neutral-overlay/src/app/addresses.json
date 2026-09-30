@@ -73,6 +73,9 @@
       "en-US": "/exercise/values",
       "ar-EG": "/تمرين/قيم"
     },
+    "drawn sheet": {
+      "en-US": "/drawn-sheet"
+    },
     "missing": {
       "en-US": "/nothing-is-mounted-here"
     }

@@ -104,6 +104,11 @@
       "ar-EG": "/ar-eg/تمرين/قيم",
       "en-Arab-XB": "/en-arab-xb/exercise/values"
     },
+    "drawn sheet": {
+      "en-US": "/en-us/drawn-sheet",
+      "ar-EG": "/ar-eg/drawn-sheet",
+      "en-Arab-XB": "/en-arab-xb/drawn-sheet"
+    },
     "missing": {
       "en-US": "/en-us/nothing-is-mounted-here",
       "ar-EG": "/ar-eg/nothing-is-mounted-here",

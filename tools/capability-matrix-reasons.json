@@ -63,8 +63,12 @@
     {
       "id": "server-seat-no-client",
       "rows": ["testing:createLocalizedServerSeat", "testing:answeredHead"],
-      "columns": ["render:client-navigation", "render:hydration"],
-      "reason": "The server seat renders one response and reads it; nothing boots on a client after it."
+      "columns": [
+        "render:client",
+        "render:client-navigation",
+        "render:hydration"
+      ],
+      "reason": "The server seat renders one response on the server platform and reads it; nothing renders or boots on a client."
     },
     {
       "id": "testing-in-a-test-host",
@@ -76,14 +80,29 @@
         "testing:renderedText",
         "testing:resetLocalizationTestEnvironment"
       ],
-      "columns": ["render:*"],
-      "reason": "These helpers run in a test host: TestBed, which Angular's unit-test builder starts on the browser platform before any setup file runs, creating components into a fixture. No reader reaches that page by a server render, a prerender, a hydration or a navigation after a document, which are what the render columns name; the engines a test host runs in are the engine columns."
+      "columns": [
+        "render:server",
+        "render:prerender",
+        "render:client-navigation",
+        "render:hydration"
+      ],
+      "reason": "These helpers run in a test host: TestBed, which Angular's unit-test builder starts on the browser platform before any setup file runs, creating components into a fixture, which is a client render. No reader reaches that page by a server render, a prerender, a hydration or a navigation after a document; the engines a test host runs in are the engine columns."
     },
     {
       "id": "testing-entry-without-a-client",
       "rows": ["entry:@neolorn/equator/testing"],
       "columns": ["render:client-navigation", "render:hydration"],
       "reason": "The entry point's helpers run in a test host or, in the server seat, answer one response and read it; nothing boots on a client after either, and nothing adopts markup a server drew."
+    },
+    {
+      "id": "testing-helpers-without-a-platform",
+      "rows": [
+        "testing:ControllableLocalizationParticipant",
+        "testing:createInMemoryCatalogLoaders",
+        "testing:resetLocalizationTestEnvironment"
+      ],
+      "columns": ["render:client"],
+      "reason": "A controllable participant, an in-memory loader map and the environment reset take no injector and read no platform: a test hands the first two to a localization it creates, and the reset clears the browser's address, cookies and storages. They run the same whatever renders the page, and the runtime they feed is claimed at render:client on its own rows."
     },
     {
       "id": "testing-helpers-without-policy",
@@ -105,7 +124,8 @@
       "id": "caching-is-a-response-header",
       "rows": [
         "declaration:route-caching-class",
-        "declaration:host-page-floor"
+        "declaration:host-page-floor",
+        "declaration:RouteCacheDurations.revalidateSuccess"
       ],
       "columns": ["render:client-navigation", "render:hydration", "engine:*"],
       "reason": "A caching declaration becomes a response header the server writes; no browser runs it, and a client navigation or hydration makes no document request."
@@ -173,8 +193,13 @@
     {
       "id": "alias-answered-before-a-render",
       "rows": ["declaration:locale-aliases"],
-      "columns": ["render:server", "render:prerender", "render:hydration"],
-      "reason": "An address under an alias is answered with a correction before anything renders: the server draws no page for it, a build writes none, and the page a browser adopts afterwards is the address the correction names."
+      "columns": [
+        "render:server",
+        "render:prerender",
+        "render:client",
+        "render:hydration"
+      ],
+      "reason": "An address under an alias is answered with a correction before anything renders: the server draws no page and sends no application shell for it, a build writes none, and the page a browser adopts or renders afterwards is the address the correction names."
     },
     {
       "id": "locale-neutral-roots-left-to-their-owner",

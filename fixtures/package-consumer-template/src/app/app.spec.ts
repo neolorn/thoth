@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NgControl } from '@angular/forms';
 import { provideRouter } from '@angular/router';
-import { Component } from '@angular/core';
+import { Component, PLATFORM_ID } from '@angular/core';
 import {
   LABEL_ATTRIBUTES,
   Localization,
@@ -344,6 +344,10 @@ describe('Equator feature-lab package consumer', () => {
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     expect(localization.targetLocale()).toBeUndefined();
     claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    claimCapability('declaration:GeneratedConfiguration.localeNames', {
+      policy: routePolicy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 
   it('deduplicates equivalent work and evicts unpinned catalogs within the configured bound', async () => {
@@ -365,6 +369,7 @@ describe('Equator feature-lab package consumer', () => {
     claimCapability('entry:@neolorn/equator', { policy: routePolicy });
     claimCapability('testing:LocalizationTestingController', {
       policy: routePolicy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
     });
     claimCapability('entry:@neolorn/equator/testing', { policy: routePolicy });
   });
@@ -407,11 +412,18 @@ describe('Equator feature-lab package consumer', () => {
       diagnostic: { code: 'unsupported-formatting-capability' },
     });
     expect(deterministicInstant).toMatchObject({ ok: true });
-    claimCapability('format:formatPercent', { policy: routePolicy });
-    claimCapability('format:formatPercentagePoints', { policy: routePolicy });
-    claimCapability('format:formatNumber', { policy: routePolicy });
-    claimCapability('format:formatInstant', { policy: routePolicy });
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    const platform = TestBed.inject(PLATFORM_ID) as string;
+    claimCapability('format:formatPercent', { policy: routePolicy, platform });
+    claimCapability('format:formatPercentagePoints', {
+      policy: routePolicy,
+      platform,
+    });
+    claimCapability('format:formatNumber', { policy: routePolicy, platform });
+    claimCapability('format:formatInstant', { policy: routePolicy, platform });
+    claimCapability('entry:@neolorn/equator', {
+      policy: routePolicy,
+      platform,
+    });
   });
 
   it('keeps localized Forms models invariant while preserving validation, focus, selection, and composition', async () => {

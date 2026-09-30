@@ -567,9 +567,10 @@ function collated(context: FormattingContext): string {
  * Every pipe and every formatting function, each on a line of its own, writing fixed inputs in the
  * locale the page is shown in.
  *
- * Reached at `exercise/:sheet`, as a sheet rendered on request and as one the build prerenders, so
- * the checks read each line as the server wrote it, as the build wrote it, as the client adopted
- * it and as a client navigation drew it.
+ * Reached at `exercise/:sheet`, as a sheet rendered on request and as one the build prerenders, and
+ * at `drawn-sheet`, which the server answers with the application shell, so the checks read each
+ * line as the server wrote it, as the build wrote it, as the client adopted it, as a client
+ * navigation drew it and as a client render drew it.
  */
 @Component({
   selector: 'feature-exercise-route',

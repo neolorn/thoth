@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { PLATFORM_ID, REQUEST } from '@angular/core';
+import { Component, PLATFORM_ID, REQUEST } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { PlatformLocation } from '@angular/common';
 import {
@@ -9,12 +9,14 @@ import {
 } from '@angular/common/testing';
 import {
   Localization,
+  LocalizePipe,
   createDefaultLocalePrefixPolicy,
   createHostLocalePolicy,
   createLocaleNeutralPolicy,
   createPathPrefixLocalePolicy,
   defineRouteProjection,
   provideLocalizationSetup,
+  withLocaleSources,
   withRouting,
   type LocaleUrlPolicy,
 } from '@neolorn/equator';
@@ -114,4 +116,55 @@ describe('the fallback chain under each URL policy', () => {
       });
     });
   }
+});
+
+/** The panel's two opening lines, as a page in a browser writes them. */
+@Component({
+  selector: 'panel-lines',
+  imports: [LocalizePipe],
+  template: `
+    <h1 data-heading>{{ messages.heading | localize }}</h1>
+    <p data-greeting>{{ messages.greeting | localize }}</p>
+  `,
+})
+class PanelLines {
+  protected readonly messages = messages;
+}
+
+describe('the fallback chain in a page the browser renders', () => {
+  it('shows what ar-EG leaves out as ar wrote it', async () => {
+    expect(configuration.localeFallbacks).toEqual({ 'ar-EG': ['ar'] });
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [PanelLines],
+      // Only the default decides, so the page is in ar-EG whatever language the test host sends.
+      providers: [
+        provideLocalizationSetup(
+          localizationSetup,
+          withLocaleSources('default'),
+        ),
+      ],
+    }).compileComponents();
+    const localization = TestBed.inject(Localization);
+    expect((await localization.initialize()).primaryLocale).toBe('ar-EG');
+    const fixture = TestBed.createComponent(PanelLines);
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+    const text = (selector: string): string =>
+      element.querySelector(selector)?.textContent?.trim() ?? '';
+
+    // Each expectation is the catalog line itself: the heading from `i18n/shell/ar-EG.yaml`, and
+    // the greeting, which that file does not have, from `i18n/shell/ar.yaml`.
+    expect(text('[data-heading]')).toBe('لوحة الحساب المدمجة');
+    expect(
+      text('[data-greeting]'),
+      'the greeting the ar-EG catalog leaves out, from ar, the next locale in localeFallbacks',
+    ).toBe('تم تسجيل الدخول وكل شيء جاهز.');
+    expect(localization.evaluateText(messages.greeting).supplyingLocale).toBe(
+      'ar',
+    );
+    claimCapability('capability:fallback-chain', {
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
+  });
 });

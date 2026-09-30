@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { Component } from '@angular/core';
+import { Component, PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, RouterOutlet, TitleStrategy } from '@angular/router';
 import {
@@ -157,9 +157,16 @@ describe('a route whose entity turned out to be absent', () => {
     await settle();
 
     expect(document.title).toBe('Topic');
-    expect(canonical()).toBe(pageUrl('topic', 'en-US'));
+    expect(
+      canonical(),
+      'written against the origin the Router integration was given',
+    ).toBe(pageUrl('topic', 'en-US'));
     expect(alternates()).toBeGreaterThan(0);
     expect(robots()).toBeNull();
+    claimCapability('declaration:RouteLocalizationOptions.origin', {
+      policy: routePolicy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 
   it('withdraws the canonical address and the alternates when the page declares it is not there', async () => {
@@ -180,8 +187,15 @@ describe('a route whose entity turned out to be absent', () => {
     await router.navigateByUrl('/topics/nothing-filed-here');
     await settle();
 
-    expect(document.title).toBe('Topic not found');
+    expect(
+      document.title,
+      'the title the document callback wrote for a page declared absent',
+    ).toBe('Topic not found');
     expect(description()).toBe('No topic is filed under this address.');
+    claimCapability('declaration:RouteLocalizationOptions.document', {
+      policy: routePolicy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 
   it('does not carry one page’s declaration onto the next', async () => {
@@ -205,7 +219,10 @@ describe('a route whose entity turned out to be absent', () => {
     const outcome = TestBed.inject(LocalizedPageOutcome);
     await router.navigateByUrl('/topics/nothing-filed-here');
     await settle();
-    expect(outcome.current()).toEqual({ outcome: 'absent' });
+    expect(
+      outcome.current(),
+      'the pageAbsent() the topic page declared',
+    ).toEqual({ outcome: 'absent' });
 
     // The arriving page declares nothing, and that replaces the declaration rather than leaving the
     // previous page's standing for a reader who asks what is current rather than about a
@@ -213,6 +230,10 @@ describe('a route whose entity turned out to be absent', () => {
     await router.navigateByUrl('/topics/handbook');
     await settle();
     expect(outcome.current()).toBeUndefined();
+    claimCapability('outcome:pageAbsent', {
+      policy: routePolicy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 
   it('keeps the page on screen rather than inventing a response for it', async () => {
@@ -228,6 +249,55 @@ describe('a route whose entity turned out to be absent', () => {
   });
 });
 
+describe('a route whose entity was removed for good', () => {
+  it('withdraws what the address claimed, as it does for an absent one', async () => {
+    const router = await configure();
+    const outcome = TestBed.inject(LocalizedPageOutcome);
+    await router.navigateByUrl('/topics/retired-topic');
+    await settle();
+
+    expect(outcome.current(), 'the pageGone() the topic page declared').toEqual(
+      { outcome: 'gone' },
+    );
+    // Section 12 withdraws the canonical address and the alternates for a removal as for an
+    // absence: the page is not there in any language.
+    expect(canonical()).toBeNull();
+    expect(alternates()).toBe(0);
+    expect(robots()).toBe('noindex');
+    claimCapability('outcome:pageGone', {
+      policy: routePolicy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
+  });
+});
+
+describe('a page whose own lookup failed', () => {
+  it('keeps the head the address implies, because the failure is not a fact about the address', async () => {
+    const router = await configure();
+    const outcome = TestBed.inject(LocalizedPageOutcome);
+    await router.navigateByUrl('/topics/unavailable-topic');
+    await settle();
+
+    expect(
+      outcome.current(),
+      'the pageOperationalFailure(503) the topic page declared',
+    ).toEqual({ outcome: 'operational-failure', status: 503 });
+    // Section 12 withdraws the canonical address and the alternates for an absence or a removal
+    // only. This render failed to produce the page; the page at this address still exists in every
+    // language the projection names, so what the head says of the address stands.
+    expect(canonical()).toBe(pageUrl('unavailable topic', 'en-US'));
+    expect(alternates()).toBeGreaterThan(0);
+    expect(robots()).toBeNull();
+    expect(document.title).toBe('Topic');
+    // Section 5: a client navigation has no response to reach, so the page stays on screen.
+    expect(document.querySelector('[data-route-view="topic"]')).not.toBeNull();
+    claimCapability('outcome:pageOperationalFailure', {
+      policy: routePolicy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
+  });
+});
+
 describe('a response that reached no route at all', () => {
   it('writes the head of an address this application does not serve', async () => {
     const router = await configure();
@@ -240,13 +310,20 @@ describe('a response that reached no route at all', () => {
 
     // Without an outcome document this head is the previous page's, in full: its title, its
     // description, and a canonical link saying this address is that page.
-    expect(document.title).toBe('Page not found');
+    expect(
+      document.title,
+      'the not-found title outcomeDocuments declares',
+    ).toBe('Page not found');
     expect(description()).toBe(
       'This address does not name a page in this application.',
     );
     expect(canonical()).toBeNull();
     // Kept out of an index by the head as well as by the header the server sends with it.
     expect(robots()).toBe('noindex');
+    claimCapability('declaration:outcome-documents', {
+      policy: routePolicy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 
   // Where the path can name a locale for the Router to be handed.
@@ -285,9 +362,16 @@ describe('a response that reached no route at all', () => {
     await router.navigateByUrl('/removed');
     await settle();
 
-    expect(document.title).toBe('Page removed');
+    expect(
+      document.title,
+      'the gone document, for the address the historical table removed',
+    ).toBe('Page removed');
     expect(canonical()).toBeNull();
     expect(robots()).toBe('noindex');
+    claimCapability('declaration:historical-route-outcome', {
+      policy: routePolicy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 });
 

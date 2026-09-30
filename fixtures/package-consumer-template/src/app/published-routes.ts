@@ -42,4 +42,5 @@ export const publishedRoutes = [
     renderMode: RenderMode.Prerender,
     prerender: [{ sheet: 'values' }],
   },
+  { routeId: 'route:drawn-sheet', renderMode: RenderMode.Client },
 ] as const;

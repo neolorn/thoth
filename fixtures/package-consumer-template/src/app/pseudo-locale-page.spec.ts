@@ -53,8 +53,8 @@ const MARKER_END = '⟧';
   selector: 'pseudo-page',
   imports: [LocalizePipe, LocalizedMessage, LocalizedLabel],
   template: `
-    <h1 data-title>{{ messages.appTitle | localize }}</h1>
-    <localized-message data-rich [handle]="messages.learnMore" />
+    <h1 data-localize>{{ messages.appTitle | localize }}</h1>
+    <localized-message data-localized-message [handle]="messages.learnMore" />
     <button data-label [localizedLabel]="messages.control.submit"></button>
     <!-- Not localized. A developer typed this straight into the template. -->
     <p data-hardcoded>Saved 3 minutes ago</p>
@@ -63,15 +63,6 @@ const MARKER_END = '⟧';
 class PseudoPage {
   protected readonly messages = messages;
 }
-
-/**
- * The rendered-text channels. `data-label` is not among them and is asserted separately, because
- * `localizedLabel` writes `aria-label` rather than text: an element with a localized label has no
- * text content at all. Keeping it in the criterion matters: a message that reaches a page only
- * through an attribute is still a message the page rendered, and it is the one a reader scanning
- * for untransformed text would never notice.
- */
-const LOCALIZED = ['data-title', 'data-rich'] as const;
 
 const textOf = (element: HTMLElement, selector: string): string =>
   renderedText(element.querySelector(`[${selector}]`) as Element);
@@ -106,9 +97,15 @@ describe('a page rendered under a pseudo-locale', () => {
     const fixture = TestBed.createComponent(PseudoPage);
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;
+    // The rendered-text channels, each marked with what renders it. `data-label` is not among them
+    // and is asserted separately, because `localizedLabel` writes `aria-label` rather than text: an
+    // element with a localized label has no text content at all. Keeping it in the criterion
+    // matters: a message that reaches a page only through an attribute is still a message the page
+    // rendered, and it is the one a reader scanning for untransformed text would never notice.
+    const localized = ['data-localize', 'data-localized-message'] as const;
 
     const before = new Map(
-      LOCALIZED.map((selector) => [selector, textOf(element, selector)]),
+      localized.map((selector) => [selector, textOf(element, selector)]),
     );
     const labelBefore = labelOf(element);
     const hardcodedBefore = textOf(element, 'data-hardcoded');
@@ -129,7 +126,7 @@ describe('a page rendered under a pseudo-locale', () => {
     await TestBed.inject(Localization).changeLocale('en-Arab-XB');
     await fixture.whenStable();
 
-    for (const selector of LOCALIZED) {
+    for (const selector of localized) {
       const after = textOf(element, selector);
       expect(
         after,
@@ -141,7 +138,9 @@ describe('a page rendered under a pseudo-locale', () => {
 
     // The attribute channel, transformed like the text ones.
     const labelAfter = labelOf(element);
-    expect(labelAfter).toContain(MARKER_START);
+    expect(labelAfter, 'the aria-label localizedLabel wrote').toContain(
+      MARKER_START,
+    );
     expect(labelAfter).toContain(MARKER_END);
     expect(labelAfter).not.toBe(labelBefore);
 
@@ -153,8 +152,20 @@ describe('a page rendered under a pseudo-locale', () => {
       textOf(element, 'data-hardcoded'),
       'the page provideLocalizationTesting composed',
     ).toBe(HARDCODED);
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
     const platform = TestBed.inject(PLATFORM_ID) as string;
+    claimCapability('entry:@neolorn/equator', {
+      policy: routePolicy,
+      platform,
+    });
+    claimCapability('pipe:localize', { policy: routePolicy, platform });
+    claimCapability('directive:LocalizedMessage', {
+      policy: routePolicy,
+      platform,
+    });
+    claimCapability('directive:LocalizedLabel', {
+      policy: routePolicy,
+      platform,
+    });
     claimCapability('capability:pseudo-locale', {
       policy: routePolicy,
       platform,

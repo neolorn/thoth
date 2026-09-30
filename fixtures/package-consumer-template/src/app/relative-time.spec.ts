@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   Localization,
@@ -167,13 +168,19 @@ describe('the service call', () => {
       numeric: 'auto',
     });
 
-    expect(outcome).toMatchObject({
+    expect(
+      outcome,
+      'three hours before the instant withLocalizationClock fixed as now',
+    ).toMatchObject({
       kind: 'relative',
       unit: 'hour',
       value: -3,
     });
     if (outcome.kind !== 'relative') return;
     expect(outcome.formatted.text).toBe('3 hours ago');
+    claimCapability('feature:withLocalizationClock', {
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 
   it('formats in the active locale', async () => {
@@ -199,9 +206,15 @@ describe('the service call', () => {
 
     // Not `unavailable`. Nothing broke: the policy did its job and the consumer now renders a
     // date. Folding this into the failure channel would make a correct answer look like a bug.
-    expect(outcome.kind).toBe('absolute');
+    expect(
+      outcome.kind,
+      'past the ceiling withRelativeTimePolicy declared',
+    ).toBe('absolute');
     if (outcome.kind !== 'absolute') return;
     expect(outcome.elapsedMilliseconds).toBe(-30 * DAY);
+    claimCapability('feature:withRelativeTimePolicy', {
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 
   it('uses the system clock when none is supplied', async () => {

@@ -168,10 +168,12 @@ describe('bootstrap when a catalog cannot load', () => {
     expect(alert).not.toBeNull();
     expect(alert?.getAttribute('aria-live')).toBe('assertive');
 
+    // Read before the application is destroyed, when its injector still answers.
+    const platform = application.injector.get(PLATFORM_ID) as string;
     application.destroy();
-    claimCapability('feature:provideLocalizationSetup');
-    claimCapability('feature:withRecoveryMessage');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('feature:provideLocalizationSetup', { platform });
+    claimCapability('feature:withRecoveryMessage', { platform });
+    claimCapability('entry:@neolorn/equator', { platform });
   });
 
   it('publishes no partial runtime behind the recovery surface', async () => {
@@ -266,7 +268,10 @@ describe('bootstrap when a catalog cannot load', () => {
 
     // No catalog loaded, so both of these came from the recovery payload rather than from one.
     const alert = host.querySelector('[role="alert"]');
-    expect(alert?.getAttribute('lang')).toBe('ar');
+    expect(
+      alert?.getAttribute('lang'),
+      'the locale the LocalizationPersistenceStore remembered, read first by withLocaleSources',
+    ).toBe('ar');
     expect(alert?.getAttribute('dir')).toBe('rtl');
     expect(alert?.textContent ?? '').toContain('الترجمة غير متاحة مؤقتًا.');
 
@@ -277,9 +282,13 @@ describe('bootstrap when a catalog cannot load', () => {
     expect(button?.getAttribute('lang')).toBe('ar');
     expect(button?.getAttribute('dir')).toBe('rtl');
 
+    const platform = application.injector.get(PLATFORM_ID) as string;
     application.destroy();
-    claimCapability('feature:withRecoveryMessage');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('feature:withRecoveryMessage', { platform });
+    claimCapability('feature:withPersistence', { platform });
+    claimCapability('feature:withLocaleSources', { platform });
+    claimCapability('extension:persistence-store', { platform });
+    claimCapability('entry:@neolorn/equator', { platform });
   });
 
   it('rejects bootstrap when no recovery presentation is configured', async () => {
@@ -525,10 +534,11 @@ describe('the first navigation when a catalog cannot load', () => {
       fixture.nativeElement.querySelector('[data-route-view="item"]'),
     ).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
+    const platformId = TestBed.inject(PLATFORM_ID) as string;
     fixture.destroy();
     TestBed.resetTestingModule();
-    claimCapability('feature:withRecoveryMessage');
-    claimCapability('feature:withRouting');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('feature:withRecoveryMessage', { platform: platformId });
+    claimCapability('feature:withRouting', { platform: platformId });
+    claimCapability('entry:@neolorn/equator', { platform: platformId });
   });
 });

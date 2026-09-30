@@ -6,7 +6,7 @@ This page is generated from the packages and is not edited by hand.
 
 ## How it is measured
 
-Two applications install the built packages and are built for production with the Angular CLI (`@angular/build` 22.1.7), which links the partially compiled runtime and removes what nothing reaches. Compressed sizes are gzip at level 9 and Brotli at quality 11, per file, on Node 24.18.0.
+Two applications install the built packages and are built for production with the Angular CLI (`@angular/build` 22.1.9), which links the partially compiled runtime and removes what nothing reaches. Compressed sizes are gzip at level 9 and Brotli at quality 11, per file, on Node 24.18.0.
 
 - Minimal consumer: selects the setup, one locale switcher and the recovery message, and nothing else.
 - Full consumer: selects routing, forms, server rendering, hydration and the request handler.
@@ -19,11 +19,11 @@ The bytes of each entry point's own module in each build, before compression, as
 
 | Entry point                | Minimal consumer, initial | Minimal consumer, lazy | Minimal consumer, server | Full consumer, initial | Full consumer, lazy | Full consumer, server |
 | -------------------------- | ------------------------: | ---------------------: | -----------------------: | ---------------------: | ------------------: | --------------------: |
-| `@neolorn/equator`         |                   204,462 |                      0 |                        0 |                263,958 |                   0 |               219,730 |
-| `@neolorn/equator/core`    |                    28,847 |                      0 |                        0 |                 65,002 |                   0 |               112,348 |
-| `@neolorn/equator/forms`   |                         0 |                      0 |                        0 |                  4,424 |                   0 |                 3,582 |
+| `@neolorn/equator`         |                   204,465 |                      0 |                        0 |                263,881 |                   0 |               219,730 |
+| `@neolorn/equator/core`    |                    28,847 |                      0 |                        0 |                 64,983 |                   0 |               112,348 |
+| `@neolorn/equator/forms`   |                         0 |                      0 |                        0 |                  4,425 |                   0 |                 3,582 |
 | `@neolorn/equator/http`    |                         0 |                      0 |                        0 |                      0 |                   0 |                 6,191 |
-| `@neolorn/equator/router`  |                         0 |                      0 |                        0 |                 38,566 |                   0 |                31,978 |
+| `@neolorn/equator/router`  |                         0 |                      0 |                        0 |                 38,562 |                   0 |                31,978 |
 | `@neolorn/equator/ssr`     |                         0 |                      0 |                        0 |                      0 |                   0 |                   157 |
 | `@neolorn/equator/testing` |                         0 |                      0 |                        0 |                      0 |                   0 |                     0 |
 
@@ -33,12 +33,12 @@ Everything each build emits, including Angular and the application itself.
 
 | Application      | Part    | Files |     Bytes |    gzip |  Brotli |
 | ---------------- | ------- | ----: | --------: | ------: | ------: |
-| Minimal consumer | initial |     1 |   327,554 |  98,883 |  85,028 |
+| Minimal consumer | initial |     1 |   327,953 |  98,988 |  85,135 |
 | Minimal consumer | lazy    |     4 |     8,758 |   4,299 |   3,521 |
 | Minimal consumer | server  |     0 |         0 |       0 |       0 |
-| Full consumer    | initial |     1 |   704,100 | 201,916 | 169,082 |
-| Full consumer    | lazy    |     6 |    63,191 |  17,533 |  15,364 |
-| Full consumer    | server  |    20 | 1,661,081 | 496,256 | 428,044 |
+| Full consumer    | initial |     1 |   705,676 | 202,273 | 169,376 |
+| Full consumer    | lazy    |     6 |    63,193 |  17,539 |  15,371 |
+| Full consumer    | server  |    20 | 1,664,089 | 496,821 | 428,515 |
 
 ## Generated contracts
 
@@ -57,7 +57,7 @@ Generated code in the initial files: 13,871 bytes.
 
 ### Full consumer
 
-Generated code in the initial files: 50,479 bytes.
+Generated code in the initial files: 50,845 bytes.
 
 | Scope | Locale |  Bytes |  gzip | Brotli |
 | ----- | ------ | -----: | ----: | -----: |
@@ -73,7 +73,7 @@ What `equator generate` writes for each application. A second run over unchanged
 | Application      | Files |   Bytes |
 | ---------------- | ----: | ------: |
 | Minimal consumer |    15 |  42,310 |
-| Full consumer    |    16 | 178,987 |
+| Full consumer    |    16 | 179,312 |
 
 ## Packages
 
@@ -81,15 +81,15 @@ Each entry point as published, unminified, and each package as installed, source
 
 | Entry point                |   Bytes |    gzip |  Brotli |
 | -------------------------- | ------: | ------: | ------: |
-| `@neolorn/equator`         | 683,351 | 160,032 | 127,408 |
+| `@neolorn/equator`         | 683,351 | 160,034 | 127,422 |
 | `@neolorn/equator/core`    | 229,804 |  65,722 |  53,832 |
-| `@neolorn/equator/forms`   |  18,180 |   5,708 |   4,847 |
+| `@neolorn/equator/forms`   |  18,180 |   5,707 |   4,845 |
 | `@neolorn/equator/http`    |  31,904 |   9,876 |   8,478 |
-| `@neolorn/equator/router`  | 153,267 |  43,294 |  35,173 |
+| `@neolorn/equator/router`  | 153,267 |  43,297 |  35,164 |
 | `@neolorn/equator/ssr`     |   3,215 |   1,430 |   1,144 |
 | `@neolorn/equator/testing` |  20,924 |   6,964 |   5,871 |
 
 | Package                    | Files |     Bytes |
 | -------------------------- | ----: | --------: |
-| `@neolorn/equator`         |    38 | 3,804,777 |
-| `@neolorn/equator-toolkit` |   214 | 3,729,031 |
+| `@neolorn/equator`         |    38 | 3,804,611 |
+| `@neolorn/equator-toolkit` |   214 | 3,732,778 |

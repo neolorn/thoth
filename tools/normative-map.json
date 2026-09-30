@@ -4379,7 +4379,8 @@
     {
       "spec": "12-verification.spec.md",
       "section": "3. Coverage, and the checks a release does not run",
-      "statement": "A release MUST keep a matrix with every capability it ships as a row and every context it verifies in as a column, and MUST derive both from what it publishes and what its gate declares rather than from a list kept beside them, so a capability or a context added later has its row or its column on the day it lands."
+      "statement": "A release MUST keep a matrix with every capability it ships as a row and every context it verifies in as a column, and MUST derive both from what it publishes and what its gate declares rather than from a list kept beside them, so a capability or a context added later has its row or its column on the day it lands.",
+      "checks": ["self-test:verify:matrix:self-test"]
     },
     {
       "spec": "12-verification.spec.md",

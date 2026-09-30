@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { Component, InjectionToken, inject } from '@angular/core';
+import { Component, InjectionToken, PLATFORM_ID, inject } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TestBed } from '@angular/core/testing';
 import {
@@ -282,8 +282,45 @@ describe('every LocalizedInputProfile kind round-trips through the published dir
 
       // The fixed point: rendering the value parsed out of Arabic text returns the original English
       // text character for character. Any information lost anywhere in the loop shows up here.
-      expect(input.value).toBe(englishText);
-      claimCapability('directive:LocalizedInput');
+      expect(input.value, 'what LocalizedInput renders back').toBe(englishText);
+      const platform = TestBed.inject(PLATFORM_ID) as string;
+      claimCapability('directive:LocalizedInput', { platform });
+      // Each case claims the one control it drove, and a claim names its row as written.
+      switch (profileCase.profile.kind) {
+        case 'decimal':
+          claimCapability('control:decimal', { platform });
+          break;
+        case 'money':
+          claimCapability('control:money', { platform });
+          break;
+        case 'measurement':
+          claimCapability('control:measurement', { platform });
+          break;
+        case 'percent':
+          claimCapability('control:percent', { platform });
+          break;
+        case 'percentage-points':
+          claimCapability('control:percentage-points', { platform });
+          break;
+        case 'plain-date':
+          claimCapability('control:plain-date', { platform });
+          break;
+        case 'plain-time':
+          claimCapability('control:plain-time', { platform });
+          break;
+        case 'plain-date-time':
+          claimCapability('control:plain-date-time', { platform });
+          break;
+        case 'time-zone':
+          claimCapability('control:time-zone', { platform });
+          break;
+        case 'duration':
+          claimCapability('control:duration', { platform });
+          break;
+        case 'instant':
+          claimCapability('control:instant', { platform });
+          break;
+      }
     });
   }
 

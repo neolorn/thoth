@@ -166,15 +166,25 @@ export const unstatedAddress = `${localeOrigin('en-US')}/`;
  * Claims the running policy's own row, for a check that exercised it. Each consumer row runs one
  * policy, and a claim for another policy's row would be refused as a mislabel, so only the one
  * that matches is made.
+ *
+ * `platform` is the `PLATFORM_ID` of the injector a check rendered with, and is left out by a
+ * check that rendered through none, since there is nothing for it to report.
  */
-export function claimRunningPolicy(): void {
+export function claimRunningPolicy(platform?: string): void {
+  const rendered = platform === undefined ? {} : { platform };
   if (routePolicy.kind === 'locale-host') {
-    claimCapability('policy:locale-host', { policy: routePolicy });
+    claimCapability('policy:locale-host', { policy: routePolicy, ...rendered });
   } else if (routePolicy.kind === 'locale-neutral') {
-    claimCapability('policy:locale-neutral', { policy: routePolicy });
+    claimCapability('policy:locale-neutral', {
+      policy: routePolicy,
+      ...rendered,
+    });
   } else if (routePolicy.omitDefaultPrefix) {
-    claimCapability('policy:default-locale-prefix', { policy: routePolicy });
+    claimCapability('policy:default-locale-prefix', {
+      policy: routePolicy,
+      ...rendered,
+    });
   } else {
-    claimCapability('policy:path-prefix', { policy: routePolicy });
+    claimCapability('policy:path-prefix', { policy: routePolicy, ...rendered });
   }
 }

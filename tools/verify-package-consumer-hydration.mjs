@@ -62,11 +62,33 @@ const consumerRoot = resolve(
 openCapabilityEvidence('browser-assurance', { consumer: consumerRoot });
 // Where each page lives, read from the address table the consumer's own specs read.
 const addresses = await readConsumerAddresses(consumerRoot);
+// Whether the deployment lets a cache serve a stale success without asking again. The address
+// table says so beside the floor, so a declaration that goes missing from `response-caching.ts`
+// fails the checks that expect it instead of switching them off.
+const declaresNoRevalidation =
+  JSON.parse(
+    await readFile(resolve(consumerRoot, 'src/app/addresses.json'), 'utf8'),
+  ).revalidateSuccess === false;
 // The locales this build generated, which are the ones it prerenders.
 const consumerConfiguration = JSON.parse(
   await readFile(resolve(consumerRoot, 'equator.config.json'), 'utf8'),
 );
 const builtLocales = consumerConfiguration.locales;
+// The name the build gave each locale, from the one line the toolkit writes for them in the
+// generated configuration, so a choice's label is held to the build rather than to the engine's
+// own display names.
+const generatedLocaleNames = JSON.parse(
+  /^ {2}localeNames: Object\.freeze\((\{.*\}) as const\),$/mu.exec(
+    await readFile(
+      resolve(consumerRoot, 'src/generated/i18n/index.ts'),
+      'utf8',
+    ),
+  )?.[1] ?? 'null',
+);
+assert.ok(
+  typeof generatedLocaleNames?.['ar-EG'] === 'string',
+  'The generated configuration gives ar-EG no name, so no choice label can be held to one',
+);
 // The source locale, whose addresses a pseudo-locale spells where no address names a locale, and
 // the formatting the consumer declares for each locale that departs from CLDR.
 const { sourceLocale, formatting: configuredFormatting = {} } =
@@ -838,6 +860,27 @@ async function measuredContext(page) {
     adoptedElements: reported.adoptedElements,
     clientNavigations: Number(reported.clientNavigations),
   };
+}
+
+/**
+ * Where a client render's claims were asserted: what `measuredContext` reads, the platform the
+ * page's own injector reports, and the document the server answered for the page in place of the
+ * one the browser holds now. `measuredContext` reports no platform, because a hydrated page is on
+ * the browser platform too and every claim made there would then name a client render. Only a
+ * document the server answered without a server-context mark shows that nothing drew the page
+ * before the browser did.
+ */
+async function clientRenderContext(page, answered) {
+  const measured = await measuredContext(page);
+  const platform = await page.evaluate(
+    () => document.documentElement.dataset['platform'],
+  );
+  assert.notEqual(
+    platform,
+    undefined,
+    'The page reports no platform, so its claims cannot say which one rendered it',
+  );
+  return { ...measured, platform, document: answered };
 }
 
 /**
@@ -2972,6 +3015,32 @@ async function exerciseSheetOn(page) {
 }
 
 /**
+ * Every line of a sheet a page shows, held to what this engine's own formatters write for the same
+ * input, and each capability a line shows claimed with what was observed where it was read.
+ */
+async function holdSheetToAuthority(page, check, sheet, locale, observed) {
+  const expected = await page.evaluate(exerciseAuthority, {
+    inputs: exerciseInputs,
+    locale,
+    ...exerciseSources.get(locale),
+  });
+  claimExercisedContext(check, sheet, expected, observed);
+  claimInstalledRelativeTime(check, sheet, expected, observed);
+  claimExercisedPipes(check, sheet, expected, observed);
+  claimExercisedDirectives(check, sheet, expected, observed);
+  claimExercisedFormats(check, sheet, expected, observed);
+  claimExercisedControls(
+    check,
+    sheet,
+    expected,
+    exerciseInputs.controls,
+    observed,
+  );
+  claimExercisedExtensions(check, sheet, expected, observed);
+  await verifyTypedFields(page, check, expected, observed);
+}
+
+/**
  * The exercise sheet in this engine: every pipe and formatting function, rendered on request and
  * adopted, prerendered and adopted, and drawn by a client navigation, in each locale the build
  * serves. Each line is held to what this engine's own formatters write for the same input.
@@ -3027,25 +3096,7 @@ async function verifyExerciseSheets(row, context, diagnostics) {
       locale,
       observed,
     );
-    const expected = await page.evaluate(exerciseAuthority, {
-      inputs: exerciseInputs,
-      locale,
-      ...exerciseSources.get(locale),
-    });
-    claimExercisedContext(check, sheet, expected, observed);
-    claimInstalledRelativeTime(check, sheet, expected, observed);
-    claimExercisedPipes(check, sheet, expected, observed);
-    claimExercisedDirectives(check, sheet, expected, observed);
-    claimExercisedFormats(check, sheet, expected, observed);
-    claimExercisedControls(
-      check,
-      sheet,
-      expected,
-      exerciseInputs.controls,
-      observed,
-    );
-    claimExercisedExtensions(check, sheet, expected, observed);
-    await verifyTypedFields(page, check, expected, observed);
+    await holdSheetToAuthority(page, check, sheet, locale, observed);
   };
 
   for (const locale of builtLocales) {
@@ -3055,7 +3106,7 @@ async function verifyExerciseSheets(row, context, diagnostics) {
     ]) {
       if (!addresses.has(sheetPage, locale)) continue;
       await visit(async (page) => {
-        await visitFor(context, sheetPage, locale, (url) =>
+        const response = await visitFor(context, sheetPage, locale, (url) =>
           navigateWithScriptGate(page, url, async () => {
             await page.waitForSelector('[data-route-view="exercise"]', {
               state: 'attached',
@@ -3068,13 +3119,39 @@ async function verifyExerciseSheets(row, context, diagnostics) {
           observed.adoptedElements > 0,
           `${row.label} kept none of the ${sheetPage} sheet's server elements in ${locale}`,
         );
-        await verifySheet(
-          page,
-          sectionCheck(row, `exercise sheet in ${locale}, ${rendered}`),
-          locale,
-          observed,
-          sheetPage,
+        const check = sectionCheck(
+          row,
+          `exercise sheet in ${locale}, ${rendered}`,
         );
+        // The sheet declares no caching class, so where the address states its locale and no floor
+        // is declared it is a shared success, and whether a cache asks again before serving it
+        // stale is the deployment's. No engine: the header is the server's. A prerendered address
+        // an engine looks up without decoding it is answered by the host's own file serving
+        // (`serveBrowserAsset`), which writes none of the handler's fields, so only an answer
+        // carrying the language the handler states is held to the handler's caching.
+        const handlerAnswered =
+          response?.headers()['content-language'] !== undefined;
+        if (
+          addresses.localeInPath &&
+          addresses.pageCaching === undefined &&
+          handlerAnswered
+        ) {
+          assert.equal(
+            response?.headers()['cache-control'],
+            declaresNoRevalidation
+              ? 'public, max-age=600'
+              : 'public, max-age=600, must-revalidate',
+            `${check}: not the shared answer revalidateSuccess ${declaresNoRevalidation ? 'false' : 'left to its default'} gives`,
+          );
+          if (declaresNoRevalidation) {
+            recordCapabilityClaim(
+              check,
+              'declaration:RouteCacheDurations.revalidateSuccess',
+              { document: observed.document, policy: observed.policy },
+            );
+          }
+        }
+        await verifySheet(page, check, locale, observed, sheetPage);
       });
     }
 
@@ -3450,6 +3527,13 @@ async function verifyDeclaredOutcomes(row, context, diagnostics) {
       switch (outcomePage) {
         case 'unfiled topic':
           recordCapabilityClaim(check, 'outcome:pageAbsent', observed);
+          // The title is the topic-absent message, which only the application's document callback
+          // writes.
+          recordCapabilityClaim(
+            check,
+            'declaration:RouteLocalizationOptions.document',
+            observed,
+          );
           break;
         case 'retired topic':
           recordCapabilityClaim(check, 'outcome:pageGone', observed);
@@ -3675,9 +3759,42 @@ async function verifyRenderingModes(row, context, diagnostics) {
   assert.equal(
     await prerenderPage.locator('link[rel="canonical"]').getAttribute('href'),
     addresses.url(prerenderedPage, 'en-US'),
+    `${row.label}: the prerendered canonical is not written against the origin provideLocalizedRouter is given`,
+  );
+  // The image is only in the social block the application's document callback returns, so the
+  // head carrying it is that callback's answer and not a default.
+  assert.deepEqual(
+    await prerenderPage.evaluate(() =>
+      [...document.querySelectorAll('meta[property="og:image"]')].map((node) =>
+        node.getAttribute('content'),
+      ),
+    ),
+    ['https://site.example/social/preview.png'],
+    `${row.label}: the prerendered head does not carry the social block the document callback returns`,
   );
   const prerenderCheck = sectionCheck(row, 'prerender');
-  claimRunningPolicy(prerenderCheck, await measuredContext(prerenderPage));
+  const prerendered = await measuredContext(prerenderPage);
+  claimRunningPolicy(prerenderCheck, prerendered);
+  recordCapabilityClaim(
+    prerenderCheck,
+    'declaration:RouteLocalizationOptions.origin',
+    prerendered,
+  );
+  recordCapabilityClaim(
+    prerenderCheck,
+    'declaration:RouteLocalizationOptions.document',
+    prerendered,
+  );
+  assert.equal(
+    (await localeChoice(prerenderPage, 'ar-EG').textContent())?.trim(),
+    generatedLocaleNames['ar-EG'],
+    `${row.label}: the prerendered choice for ar-EG is not labelled with the name the generated localeNames gives it`,
+  );
+  recordCapabilityClaim(
+    prerenderCheck,
+    'declaration:GeneratedConfiguration.localeNames',
+    prerendered,
+  );
   await localeChoice(prerenderPage, 'ar-EG').click();
   await prerenderPage.waitForURL((url) =>
     isShown(url, prerenderedPage, 'ar-EG'),
@@ -3708,6 +3825,23 @@ async function verifyRenderingModes(row, context, diagnostics) {
   attachBrowserDiagnostics(csrPage, diagnostics);
   csrPage.setDefaultTimeout(15_000);
   csrPage.setDefaultNavigationTimeout(20_000);
+  // The document the page shows, which each claim below observes. A switch that is a document
+  // navigation replaces it with another the server answered, and a switch in the document keeps
+  // it. The body is asked for as it arrives, while the engine still holds it.
+  let shownDocument;
+  csrPage.on('response', (response) => {
+    const request = response.request();
+    if (
+      request.resourceType() !== 'document' ||
+      request.frame() !== csrPage.mainFrame() ||
+      (response.status() >= 300 && response.status() < 400)
+    ) {
+      return;
+    }
+    shownDocument = response.text();
+    // Read where a claim awaits it, which is where a body the engine no longer holds is reported.
+    shownDocument.catch(() => {});
+  });
   const csrResponse = await visitFor(context, 'item', 'en-US', (url) =>
     navigateWithScriptGate(csrPage, url, async () => {
       await csrPage.waitForSelector('app-root', { state: 'attached' });
@@ -3725,6 +3859,79 @@ async function verifyRenderingModes(row, context, diagnostics) {
   await csrPage.waitForSelector('[data-route-view="item"]');
   assert.equal(await csrPage.locator('html').getAttribute('lang'), 'en-US');
   assert.equal(await csrPage.locator('html').getAttribute('dir'), 'ltr');
+
+  // Angular answers a route its server table declares `RenderMode.Client` with the application
+  // shell and runs nothing on the server for it (`@angular/ssr` 22.1.7, `handleRendering`), so the
+  // answer carries no server-context mark and no route, and the route on the page is the browser's.
+  const shell = await csrResponse.text();
+  assert.doesNotMatch(
+    shell,
+    /\bng-server-context=/u,
+    `${row.label}: item is RenderMode.Client in the table provideLocalizedServerRendering from @neolorn/equator/ssr installs, and the server rendered it`,
+  );
+  assert.doesNotMatch(
+    shell,
+    /\bdata-route-view=/u,
+    `${row.label}: the shell the server answered for item already shows a route`,
+  );
+  const shellRender = await clientRenderContext(csrPage, shell);
+  assert.equal(
+    shellRender.platform,
+    'browser',
+    `${row.label}: item was drawn on the ${shellRender.platform} platform`,
+  );
+  // No engine: the table and the response headers are the server's, and the engine only drew the
+  // shell they shaped.
+  const shellAnswered = {
+    platform: shellRender.platform,
+    document: shellRender.document,
+    policy: shellRender.policy,
+  };
+  const shellCheck = sectionCheck(row, 'client render shell');
+  recordCapabilityClaim(
+    shellCheck,
+    'feature:provideLocalizedServerRendering',
+    shellAnswered,
+  );
+  recordCapabilityClaim(
+    shellCheck,
+    'entry:@neolorn/equator/ssr',
+    shellAnswered,
+  );
+  // item declares no caching class, so what its shell carries is the deployment's: the pageCaching
+  // floor where the table says it declares one, and otherwise, where the address states its locale,
+  // the shared directive, which asks a cache to revalidate a stale success unless the deployment
+  // declares revalidateSuccess false.
+  const shellCaching = csrResponse.headers()['cache-control'];
+  if (addresses.pageCaching !== undefined) {
+    assert.equal(
+      shellCaching,
+      addresses.pageCaching === 'not-stored'
+        ? 'private, no-store'
+        : 'private, no-cache',
+      `${row.label}: the shell answered for item was not raised to the ${addresses.pageCaching} pageCaching floor`,
+    );
+    recordCapabilityClaim(
+      shellCheck,
+      'declaration:host-page-floor',
+      shellAnswered,
+    );
+  } else if (addresses.localeInPath) {
+    assert.equal(
+      shellCaching,
+      declaresNoRevalidation
+        ? 'public, max-age=600'
+        : 'public, max-age=600, must-revalidate',
+      `${row.label}: the shell answered for item is not the shared answer revalidateSuccess ${declaresNoRevalidation ? 'false' : 'left to its default'} gives`,
+    );
+    if (declaresNoRevalidation) {
+      recordCapabilityClaim(
+        shellCheck,
+        'declaration:RouteCacheDurations.revalidateSuccess',
+        shellAnswered,
+      );
+    }
+  }
 
   // The server sent this page's shell with the application's own head, so the head documentMetadata
   // declares for `item` is one only the browser writes.
@@ -3756,7 +3963,7 @@ async function verifyRenderingModes(row, context, diagnostics) {
     recordCapabilityClaim(
       sectionCheck(row, `client render head in ${locale}`),
       'declaration:document-metadata',
-      await measuredContext(csrPage),
+      await clientRenderContext(csrPage, await shownDocument),
     );
   };
   await itemHead('en-US');
@@ -3775,7 +3982,7 @@ async function verifyRenderingModes(row, context, diagnostics) {
   recordCapabilityClaim(
     sectionCheck(row, 'client render switch'),
     'declaration:localized-paths',
-    await measuredContext(csrPage),
+    await clientRenderContext(csrPage, await shownDocument),
   );
   await csrPage.waitForFunction(
     () =>
@@ -3785,7 +3992,7 @@ async function verifyRenderingModes(row, context, diagnostics) {
   recordCapabilityClaim(
     sectionCheck(row, 'client render'),
     'directive:LocaleChoice',
-    await measuredContext(csrPage),
+    await clientRenderContext(csrPage, await shownDocument),
   );
   await itemHead('ar-EG');
 
@@ -3808,6 +4015,103 @@ async function verifyRenderingModes(row, context, diagnostics) {
   await collectPolicyDiagnostics(csrPage, diagnostics);
   await prerenderPage.close();
   await csrPage.close();
+
+  await verifyClientRenderedSheet(row, context, diagnostics);
+}
+
+/**
+ * The exercise sheet as a client render draws it, in each locale the build serves: the server
+ * answers its route with the application shell, and every line is held to what this engine's own
+ * formatters write, as the other sheets are.
+ */
+async function verifyClientRenderedSheet(row, context, diagnostics) {
+  for (const locale of builtLocales) {
+    if (!addresses.has('drawn sheet', locale)) continue;
+    const page = boundCalls(await context.newPage(), 'page');
+    attachBrowserDiagnostics(page, diagnostics);
+    page.setDefaultTimeout(15_000);
+    page.setDefaultNavigationTimeout(20_000);
+    const check = sectionCheck(
+      row,
+      `exercise sheet in ${locale}, rendered by the browser`,
+    );
+    const answered = await visitFor(context, 'drawn sheet', locale, (url) =>
+      navigateWithScriptGate(page, url, async () => {
+        await page.waitForSelector('app-root', { state: 'attached' });
+        assert.equal(
+          await page.locator('[data-route-view]').count(),
+          0,
+          `${check}: the page shows a route before its scripts run`,
+        );
+      }),
+    );
+    const shell = await answered.text();
+    assert.doesNotMatch(
+      shell,
+      /\bng-server-context=/u,
+      `${check}: the route is RenderMode.Client, and the server rendered it`,
+    );
+    const sheet = await exerciseSheetOn(page);
+    assert.equal(sheet.locale, locale, `${check} shows ${sheet.locale}`);
+    const rendered = await clientRenderContext(page, shell);
+    assert.equal(
+      rendered.platform,
+      'browser',
+      `${check}: drawn on the ${rendered.platform} platform`,
+    );
+    // Nothing was adopted and the page is the document's own navigation, so the claims observe the
+    // render and nothing that follows one.
+    const { engine, policy, platform, document } = rendered;
+    // The route raises its shell to per visitor, which no row's floor or policy lowers.
+    assert.equal(
+      answered.headers()['cache-control'],
+      addresses.pageCaching === 'not-stored'
+        ? 'private, no-store'
+        : 'private, no-cache',
+      `${check}: the route declares equatorCaching per-visitor, and a shared cache may keep the shell the @neolorn/equator/http handler answered for it`,
+    );
+    recordCapabilityClaim(check, 'entry:@neolorn/equator/http', {
+      platform,
+      document,
+      policy,
+    });
+    // Read once, as the exercise sheets read it: a locator would wait for a missing tag and report
+    // the wait rather than the declaration.
+    assert.equal(
+      await page.evaluate(
+        () =>
+          document
+            .querySelector('meta[name="robots"]')
+            ?.getAttribute('content') ?? null,
+      ),
+      'noindex',
+      `${check}: the route declares equatorIndexing non-indexable, and the head the browser wrote does not keep it out of an index`,
+    );
+    recordCapabilityClaim(check, 'declaration:route-indexing-class', {
+      engine,
+      policy,
+      platform,
+      document,
+    });
+    // Only where the address states its locale and no floor is declared is the shell otherwise
+    // shared, so only there is the class what made it private. No engine: the header is the
+    // server's.
+    if (addresses.localeInPath && addresses.pageCaching === undefined) {
+      recordCapabilityClaim(check, 'declaration:route-caching-class', {
+        platform,
+        document,
+        policy,
+      });
+    }
+    await holdSheetToAuthority(page, check, sheet, locale, {
+      engine,
+      policy,
+      platform,
+      document,
+    });
+    await collectPolicyDiagnostics(page, diagnostics);
+    await page.close();
+  }
 }
 
 /**
@@ -4832,29 +5136,74 @@ async function verifyRouteDeferredScope(row, context, diagnostics) {
     const deferred = boundCalls(await context.newPage(), 'page');
     attachBrowserDiagnostics(deferred, diagnostics);
     deferred.setDefaultTimeout(15_000);
+    // Held before any script runs, so the count below says whether the client kept the page the
+    // server drew with the deferred scope rather than drawing it again.
     const lazyUrl = await visitFor(context, 'lazy', locale, async (url) => {
-      await deferred.goto(url, { waitUntil: 'networkidle' });
+      await navigateWithScriptGate(deferred, url, async () => {
+        await deferred.waitForSelector('[data-route-view="lazy"]', {
+          state: 'attached',
+        });
+        await holdServerElements(deferred);
+      });
       return url;
     });
-    await deferred.waitForFunction(
-      () => document.querySelector('[data-route-view="lazy"]') !== null,
-      undefined,
-      { timeout: 10_000 },
-    );
     assert.equal(
       (
         await deferred.locator('[data-route-view="lazy"]').textContent()
       )?.trim(),
       expected,
-      `provideLocalizedRouter did not load the scope deferred behind ${lazyUrl} in ${locale} when that route activated`,
+      `provideLocalizedRouter did not load the scope the generated route table's scopes name behind ${lazyUrl} in ${locale} when that route activated`,
     );
+    const adopted = await measuredContext(deferred);
+    assert.ok(
+      adopted.adoptedElements > 0,
+      `${row.label} kept none of the lazy page's server elements in ${locale}`,
+    );
+    const check = sectionCheck(row, 'route-deferred scope');
+    recordCapabilityClaim(check, 'feature:provideLocalizedRouter', adopted);
     recordCapabilityClaim(
-      sectionCheck(row, 'route-deferred scope'),
-      'feature:provideLocalizedRouter',
-      await measuredContext(deferred),
+      check,
+      'declaration:GeneratedRouteProjectionEntry.scopes',
+      adopted,
     );
     await collectPolicyDiagnostics(deferred, diagnostics);
     await deferred.close();
+
+    // The same route reached by the router from a page that needs none of its scope, so the scope
+    // arrives because the navigation's route names it.
+    const navigated = boundCalls(await context.newPage(), 'page');
+    attachBrowserDiagnostics(navigated, diagnostics);
+    navigated.setDefaultTimeout(15_000);
+    await visitFor(context, 'home', locale, (url) => navigated.goto(url));
+    await navigated.waitForFunction(
+      () => document.documentElement.dataset['clientReady'] === 'true',
+    );
+    await throughHistory(navigated, addresses.shownPath('lazy', locale));
+    // Attached rather than visible: the route activates only once its scopes have loaded, so an
+    // empty view is the missing scope, which the assertion below names.
+    await navigated.waitForSelector('[data-route-view="lazy"]', {
+      state: 'attached',
+    });
+    assert.equal(
+      (
+        await navigated.locator('[data-route-view="lazy"]').textContent()
+      )?.trim(),
+      expected,
+      `a client navigation to lazy in ${locale} did not load the scope the generated route table's scopes name for it`,
+    );
+    const { engine, policy, clientNavigations } =
+      await measuredContext(navigated);
+    assert.ok(
+      clientNavigations > 0,
+      `${row.label} reached lazy in ${locale} without a client navigation`,
+    );
+    recordCapabilityClaim(
+      sectionCheck(row, 'route-deferred scope by client navigation'),
+      'declaration:GeneratedRouteProjectionEntry.scopes',
+      { engine, policy, clientNavigations },
+    );
+    await collectPolicyDiagnostics(navigated, diagnostics);
+    await navigated.close();
   }
 }
 
@@ -5631,7 +5980,22 @@ async function verifyClientNavigation(row, page) {
   assert.equal(
     await page.locator('link[rel="canonical"]').getAttribute('href'),
     addresses.url('second', 'en-US'),
-    'withRouting did not move the canonical to the second page on a client navigation',
+    'withRouting did not move the canonical to the second page on a client navigation, written against the origin provideLocalizedRouter is given',
+  );
+  recordCapabilityClaim(
+    sectionCheck(row, 'canonical after a client navigation'),
+    'declaration:RouteLocalizationOptions.origin',
+    await measuredContext(page),
+  );
+  assert.equal(
+    (await localeChoice(page, 'ar-EG').textContent())?.trim(),
+    generatedLocaleNames['ar-EG'],
+    'after a client navigation the choice for ar-EG is not labelled with the name the generated localeNames gives it',
+  );
+  recordCapabilityClaim(
+    sectionCheck(row, 'locale names after a client navigation'),
+    'declaration:GeneratedConfiguration.localeNames',
+    await measuredContext(page),
   );
   assert.equal(
     await xDefault(),
@@ -6150,7 +6514,9 @@ try {
     // vary. `Vary` must be absent for the same reason.
     assert.equal(
       builtAddress.headers.get('cache-control'),
-      'public, max-age=600, must-revalidate',
+      declaresNoRevalidation
+        ? 'public, max-age=600'
+        : 'public, max-age=600, must-revalidate',
     );
     assert.equal(builtAddress.headers.get('vary'), null);
   }

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { createLocaleRequestHandler } from '@neolorn/equator/http';
+import {
+  createLocaleRequestHandler,
+  type LocaleRequestHandlerOptions,
+} from '@neolorn/equator/http';
 import { configuration } from '#i18n';
 
 import { expectedPageCaching, pageUrl } from './addresses';
@@ -87,5 +90,54 @@ describe('a floor declared for every page, under any policy', () => {
     expect(replaced.status).toBe(308);
     expect(replaced.headers.get('cache-control')).toBe('public, max-age=86400');
     claimCapability('declaration:host-page-floor', { policy: routePolicy });
+  });
+});
+
+/**
+ * A deployment that lets a cache serve a stale success without asking again, declared here for
+ * every row whatever its deployment declares.
+ *
+ * No cookie is read, so an address every locale shares is answered per language from
+ * `Accept-Language` and a shared cache may keep each variant: every policy has a shared success
+ * for the declaration to reach.
+ */
+describe('a success a cache may serve stale, under any policy', () => {
+  it('leaves must-revalidate off a shared success and nothing else', async () => {
+    const answerWith = (
+      cache: LocaleRequestHandlerOptions['cache'],
+    ): ((request: Request) => Promise<Response>) =>
+      createLocaleRequestHandler({
+        policy: routePolicy,
+        projection: appRouteProjection,
+        configuration,
+        cache,
+        cookie: false,
+        render: () =>
+          new Response('<!doctype html>', {
+            headers: { 'content-type': 'text/html' },
+          }),
+      });
+    const durations = { successMaxAge: 600, permanentRedirectMaxAge: 86_400 };
+    const asked = await answerWith(durations)(
+      new Request(pageUrl('second', 'en-US')),
+    );
+    const stale = answerWith({ ...durations, revalidateSuccess: false });
+    const page = await stale(new Request(pageUrl('second', 'en-US')));
+    const replaced = await stale(
+      new Request(`${pageUrl('legacy', 'en-US')}?tab=one`),
+    );
+
+    expect(asked.status).toBe(200);
+    expect(asked.headers.get('cache-control')).toBe(
+      'public, max-age=600, must-revalidate',
+    );
+    expect(page.status).toBe(200);
+    expect(page.headers.get('cache-control')).toBe('public, max-age=600');
+    // A permanent redirect is not a success, so the declaration leaves it as it was.
+    expect(replaced.status).toBe(308);
+    expect(replaced.headers.get('cache-control')).toBe('public, max-age=86400');
+    claimCapability('declaration:RouteCacheDurations.revalidateSuccess', {
+      policy: routePolicy,
+    });
   });
 });

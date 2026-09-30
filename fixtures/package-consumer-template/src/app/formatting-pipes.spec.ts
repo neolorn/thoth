@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 
-import { Component } from '@angular/core';
+import { Component, PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   Localization,
@@ -90,21 +90,31 @@ const LATIN_DIGIT = /[0-9]/u;
     LocalizedZonedDateTimePipe,
   ],
   template: `
-    <p data-decimal>{{ amount | localizedDecimal }}</p>
-    <p data-money>{{ price | localizedMoney }}</p>
-    <p data-measurement>{{ distance | localizedMeasurement }}</p>
-    <p data-percent>{{ share | localizedPercent }}</p>
-    <p data-percentage-points>{{ movement | localizedPercentagePoints }}</p>
-    <p data-instant>{{ moment | localizedInstant: dateTimeOptions }}</p>
-    <p data-plain-date>{{ day | localizedPlainDate: dateOptions }}</p>
-    <p data-plain-time>{{ clock | localizedPlainTime: timeOptions }}</p>
-    <p data-plain-date-time>
+    <p data-pipe="localizedDecimal">{{ amount | localizedDecimal }}</p>
+    <p data-pipe="localizedMoney">{{ price | localizedMoney }}</p>
+    <p data-pipe="localizedMeasurement">
+      {{ distance | localizedMeasurement }}
+    </p>
+    <p data-pipe="localizedPercent">{{ share | localizedPercent }}</p>
+    <p data-pipe="localizedPercentagePoints">
+      {{ movement | localizedPercentagePoints }}
+    </p>
+    <p data-pipe="localizedInstant">
+      {{ moment | localizedInstant: dateTimeOptions }}
+    </p>
+    <p data-pipe="localizedPlainDate">
+      {{ day | localizedPlainDate: dateOptions }}
+    </p>
+    <p data-pipe="localizedPlainTime">
+      {{ clock | localizedPlainTime: timeOptions }}
+    </p>
+    <p data-pipe="localizedPlainDateTime">
       {{ stamp | localizedPlainDateTime: dateTimeOptions }}
     </p>
-    <p data-zoned-date-time>
+    <p data-pipe="localizedZonedDateTime">
       {{ zoned | localizedZonedDateTime: dateTimeOptions }}
     </p>
-    <p data-duration>{{ span | localizedDuration }}</p>
+    <p data-pipe="localizedDuration">{{ span | localizedDuration }}</p>
     <p data-unformattable>{{ tooPrecise | localizedDecimal }}</p>
   `,
 })
@@ -147,16 +157,16 @@ const sink: LocalizationObservabilitySink = Object.freeze({
 });
 
 const NUMERIC_MARKERS = [
-  'data-decimal',
-  'data-money',
-  'data-measurement',
-  'data-percent',
-  'data-percentage-points',
-  'data-instant',
-  'data-plain-date',
-  'data-plain-time',
-  'data-plain-date-time',
-  'data-zoned-date-time',
+  'data-pipe=localizedDecimal',
+  'data-pipe=localizedMoney',
+  'data-pipe=localizedMeasurement',
+  'data-pipe=localizedPercent',
+  'data-pipe=localizedPercentagePoints',
+  'data-pipe=localizedInstant',
+  'data-pipe=localizedPlainDate',
+  'data-pipe=localizedPlainTime',
+  'data-pipe=localizedPlainDateTime',
+  'data-pipe=localizedZonedDateTime',
 ] as const;
 
 /**
@@ -171,14 +181,15 @@ const HOST_WRITES_DURATIONS =
 
 function expectDuration(
   fixture: { nativeElement: unknown },
+  marker: string,
   localization: Localization,
   written: (text: string) => void,
 ): void {
   if (HOST_WRITES_DURATIONS) {
-    written(textOf(fixture, 'data-duration'));
+    written(textOf(fixture, marker));
     return;
   }
-  expect(textOf(fixture, 'data-duration')).toBe('');
+  expect(textOf(fixture, marker)).toBe('');
   const result = localization.formatDuration(
     duration({ hours: 2, minutes: 30 }),
   );
@@ -225,22 +236,53 @@ describe('a formatting pipe for each canonical value kind', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(textOf(fixture, 'data-decimal')).toBe('1,234.5');
-    expect(textOf(fixture, 'data-money')).toBe('$19.99');
-    expect(textOf(fixture, 'data-measurement')).toBe('3.5 km');
-    expect(textOf(fixture, 'data-percent')).toBe('15%');
-    expect(textOf(fixture, 'data-percentage-points')).toBe('2.5');
-    expect(textOf(fixture, 'data-plain-date')).toBe('Mar 14, 2026');
+    expect(textOf(fixture, 'data-pipe=localizedDecimal')).toBe('1,234.5');
+    expect(textOf(fixture, 'data-pipe=localizedMoney')).toBe('$19.99');
+    expect(textOf(fixture, 'data-pipe=localizedMeasurement')).toBe('3.5 km');
+    expect(textOf(fixture, 'data-pipe=localizedPercent')).toBe('15%');
+    expect(textOf(fixture, 'data-pipe=localizedPercentagePoints')).toBe('2.5');
+    expect(textOf(fixture, 'data-pipe=localizedPlainDate')).toBe(
+      'Mar 14, 2026',
+    );
     // The separator between a time and its day period moved to a narrow no-break space in recent
     // platform data, so the assertion is on the digits rather than on that character.
-    expect(textOf(fixture, 'data-plain-time')).toContain('9:30');
-    expect(textOf(fixture, 'data-plain-date-time')).toContain('Mar 14, 2026');
-    expect(textOf(fixture, 'data-plain-date-time')).toContain('9:30');
-    expect(textOf(fixture, 'data-instant')).toContain('Mar 14, 2026');
-    expect(textOf(fixture, 'data-zoned-date-time')).toContain('Mar 14, 2026');
-    expectDuration(fixture, localization, (text) => {
-      expect(text).toContain('30');
-    });
+    expect(textOf(fixture, 'data-pipe=localizedPlainTime')).toContain('9:30');
+    expect(textOf(fixture, 'data-pipe=localizedPlainDateTime')).toContain(
+      'Mar 14, 2026',
+    );
+    expect(textOf(fixture, 'data-pipe=localizedPlainDateTime')).toContain(
+      '9:30',
+    );
+    expect(textOf(fixture, 'data-pipe=localizedInstant')).toContain(
+      'Mar 14, 2026',
+    );
+    expect(textOf(fixture, 'data-pipe=localizedZonedDateTime')).toContain(
+      'Mar 14, 2026',
+    );
+    expectDuration(
+      fixture,
+      'data-pipe=localizedDuration',
+      localization,
+      (text) => {
+        expect(text).toContain('30');
+      },
+    );
+    const platform = TestBed.inject(PLATFORM_ID) as string;
+    claimCapability('pipe:localizedDecimal', { platform });
+    claimCapability('pipe:localizedMoney', { platform });
+    claimCapability('pipe:localizedMeasurement', { platform });
+    claimCapability('pipe:localizedPercent', { platform });
+    claimCapability('pipe:localizedPercentagePoints', { platform });
+    claimCapability('pipe:localizedPlainDate', { platform });
+    claimCapability('pipe:localizedPlainTime', { platform });
+    claimCapability('pipe:localizedPlainDateTime', { platform });
+    claimCapability('pipe:localizedInstant', { platform });
+    claimCapability('pipe:localizedZonedDateTime', { platform });
+    // Where the host has no duration formatter the pipe renders nothing, which is asserted above
+    // and is not the pipe writing a duration.
+    if (HOST_WRITES_DURATIONS) {
+      claimCapability('pipe:localizedDuration', { platform });
+    }
   });
 
   it('rewrites every kind when the locale moves under it', async () => {
@@ -259,10 +301,15 @@ describe('a formatting pipe for each canonical value kind', () => {
       // line above by having something to match.
       expect(rendered, marker).not.toMatch(LATIN_DIGIT);
     }
-    expectDuration(fixture, localization, (text) => {
-      expect(text).toMatch(ARABIC_INDIC);
-      expect(text).not.toMatch(LATIN_DIGIT);
-    });
+    expectDuration(
+      fixture,
+      'data-pipe=localizedDuration',
+      localization,
+      (text) => {
+        expect(text).toMatch(ARABIC_INDIC);
+        expect(text).not.toMatch(LATIN_DIGIT);
+      },
+    );
   });
 });
 

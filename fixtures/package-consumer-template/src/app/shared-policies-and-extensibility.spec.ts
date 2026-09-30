@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import { Component, PLATFORM_ID } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import {
+  Localization,
   buildLocalizedRoute,
   createLocalizationContext,
   createDefaultLocalePrefixPolicy,
@@ -8,14 +11,21 @@ import {
   createLocaleNeutralPolicy,
   dynamicAssetParticipantReport,
   fixedLanguageAsset,
+  injectLocalization,
   localizedAsset,
   neutralAsset,
   projectRouteSeo,
   resolveLocalizedAsset,
   resolveLocalizedRoute,
+  withExtensions,
+  withFormattingContext,
   type DynamicAssetParticipantReportInput,
   type RouteRuntimeProjection,
 } from '@neolorn/equator';
+import {
+  provideLocalizationTesting,
+  renderedText,
+} from '@neolorn/equator/testing';
 import {
   createMigrationPlan,
   PSEUDO_LOCALE_ACCENTED,
@@ -30,7 +40,7 @@ import {
   type Catalog,
   type CatalogParseOptions,
 } from '@neolorn/equator-toolkit';
-import { configuration } from '#i18n';
+import { configuration, localizationSetup } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { families, messages, providerId, scopeId } from '#i18n/shell';
@@ -181,6 +191,54 @@ describe('shared URL policies', () => {
   });
 });
 
+/**
+ * A line for each kind of extension, each reached the way a page reaches it: through the
+ * localization the application's providers made, so what the page shows is whatever bindings those
+ * providers installed.
+ */
+@Component({
+  selector: 'extension-lines',
+  template: `
+    <p data-extension="message-function">{{ called() }}</p>
+    <p data-extension="identifier-segment">{{ member() }}</p>
+    <p data-extension="rich-slot-kind">{{ badge() }}</p>
+    <p data-extension="formatting-adapter">{{ formatted() }}</p>
+    <p data-extension="parsing-adapter">{{ parsed() }}</p>
+  `,
+})
+class ExtensionLines {
+  private readonly localization = injectLocalization();
+
+  protected called(): string {
+    return this.localization.text(messages.extension.uppercase, {
+      name: 'Equator',
+    });
+  }
+
+  protected member(): string {
+    const ready = families.featureState.resolve({ state: 'ready' });
+    return ready === undefined ? 'absent' : this.localization.text(ready);
+  }
+
+  protected badge(): string {
+    return this.localization.parts(messages.extension.badge).text;
+  }
+
+  protected formatted(): string {
+    const result = this.localization.formatWithAdapter(
+      skuFormatAdapter,
+      'item-42',
+    );
+    return result.ok ? result.value.text : result.diagnostic.code;
+  }
+
+  protected parsed(): string {
+    return JSON.stringify(
+      this.localization.parseWithAdapter(skuParseAdapter, 'sku-item-42'),
+    );
+  }
+}
+
 describe('application-local extensibility', () => {
   it('admits exact bindings and evaluates custom functions, slots, families, and adapters', async () => {
     const localization = createLocalizationContext({
@@ -247,6 +305,51 @@ describe('application-local extensibility', () => {
       }),
     ).toThrow(/Required runtime extension/u);
     claimCapability('entry:@neolorn/equator');
+  });
+
+  it('renders what each binding withExtensions installed answers', async () => {
+    // The generated setup carries no bindings, and admission refuses it without them, as the case
+    // above shows, so every line below was answered by what the feature delivered.
+    expect(localizationSetup).not.toHaveProperty('extensions');
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [ExtensionLines],
+      providers: [
+        provideLocalizationTesting(
+          localizationSetup,
+          withExtensions(runtimeExtensions),
+          withFormattingContext({ timeZone: 'UTC' }),
+        ),
+      ],
+    }).compileComponents();
+    await TestBed.inject(Localization).initialize();
+    const fixture = TestBed.createComponent(ExtensionLines);
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+    const line = (kind: string): string =>
+      renderedText(
+        element.querySelector(`[data-extension="${kind}"]`) as Element,
+      );
+
+    // Each expectation is the application's own rule for its binding, in `runtime-extensions.ts`,
+    // applied to the en-US catalog.
+    expect(line('message-function')).toBe('Custom function: EQUATOR!');
+    expect(line('identifier-segment')).toBe('Feature state ready');
+    expect(line('rich-slot-kind')).toBe('Badge: New');
+    expect(line('formatting-adapter')).toBe('SKU-ITEM-42');
+    expect(JSON.parse(line('parsing-adapter'))).toEqual({
+      status: 'valid',
+      text: 'sku-item-42',
+      value: { value: 'ITEM-42' },
+    });
+    const platform = TestBed.inject(PLATFORM_ID) as string;
+    claimCapability('feature:withExtensions', { platform });
+    claimCapability('extension:message-function', { platform });
+    claimCapability('extension:identifier-segment', { platform });
+    claimCapability('extension:rich-slot-kind', { platform });
+    claimCapability('extension:formatting-adapter', { platform });
+    claimCapability('extension:parsing-adapter', { platform });
+    claimCapability('entry:@neolorn/equator', { platform });
   });
 });
 

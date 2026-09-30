@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { LocationStrategy } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, RouterOutlet, TitleStrategy } from '@angular/router';
 import {
@@ -247,6 +247,14 @@ describe('an internal address spelled with another locale’s parameter', () => 
     expect(
       TestBed.inject(RouteLocalization).context()?.resolution.parameters,
     ).toEqual({ sheet: 'live' });
-    claimCapability('entry:@neolorn/equator/router', { policy: routePolicy });
+    const platform = TestBed.inject(PLATFORM_ID) as string;
+    claimCapability('entry:@neolorn/equator/router', {
+      policy: routePolicy,
+      platform,
+    });
+    claimCapability('declaration:route-parameter-codec', {
+      policy: routePolicy,
+      platform,
+    });
   });
 });

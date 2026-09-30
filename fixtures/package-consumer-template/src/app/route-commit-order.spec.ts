@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Location } from '@angular/common';
 import { MOCK_PLATFORM_LOCATION_CONFIG } from '@angular/common/testing';
-import { Component, inject } from '@angular/core';
+import { Component, PLATFORM_ID, inject } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   NavigationCancel,
@@ -476,11 +476,19 @@ describe.runIf(localeInPath)(
       });
       expect(canonical()).toBe(pageUrl('second', 'en-US'));
       expect(announced()).toBe('American English');
+      const platform = TestBed.inject(PLATFORM_ID) as string;
       claimCapability('feature:provideLocalizedRouter', {
         policy: routePolicy,
+        platform,
       });
-      claimCapability('entry:@neolorn/equator/router', { policy: routePolicy });
-      claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+      claimCapability('entry:@neolorn/equator/router', {
+        policy: routePolicy,
+        platform,
+      });
+      claimCapability('entry:@neolorn/equator', {
+        policy: routePolicy,
+        platform,
+      });
     });
   },
 );

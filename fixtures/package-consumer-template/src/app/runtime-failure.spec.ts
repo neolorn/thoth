@@ -1,3 +1,4 @@
+import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   Localization,
@@ -55,6 +56,7 @@ describe('Equator runtime failure and recovery contracts', () => {
       providers: [{ provide: Localization, useValue: localization }],
     }).compileComponents();
     const fixture = TestBed.createComponent(LocalizationRecovery);
+    const platform = TestBed.inject(PLATFORM_ID) as string;
     fixture.componentRef.setInput('retryLabel', 'Retry');
     fixture.detectChanges();
     const recoveryRegion = fixture.nativeElement.querySelector(
@@ -82,7 +84,7 @@ describe('Equator runtime failure and recovery contracts', () => {
     fixture.destroy();
     TestBed.resetTestingModule();
     localization.dispose();
-    claimCapability('directive:LocalizationRecovery');
+    claimCapability('directive:LocalizationRecovery', { platform });
     claimCapability('entry:@neolorn/equator');
   });
 

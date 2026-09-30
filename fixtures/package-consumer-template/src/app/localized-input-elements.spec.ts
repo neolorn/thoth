@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { Component } from '@angular/core';
+import { Component, PLATFORM_ID } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TestBed } from '@angular/core/testing';
@@ -122,7 +122,9 @@ describe('a localized field written as a textarea', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     expect(area.value).toBe(englishText);
-    claimCapability('directive:LocalizedInput');
+    claimCapability('directive:LocalizedInput', {
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 });
 
@@ -154,7 +156,8 @@ describe('a write that arrives before the profile binding does', () => {
     // form wrote is the value on screen.
     expect(input.value).not.toBe('');
     expect(input.value.replace(/[^0-9.]/gu, '')).toBe('1234.5');
-    claimCapability('directive:LocalizedInput');
-    claimCapability('entry:@neolorn/equator/forms');
+    const platform = TestBed.inject(PLATFORM_ID) as string;
+    claimCapability('directive:LocalizedInput', { platform });
+    claimCapability('entry:@neolorn/equator/forms', { platform });
   });
 });

@@ -495,6 +495,9 @@ export class App {
       root.dataset['clientReady'] = 'true';
       root.dataset['transferSource'] = adoptedSource;
       root.dataset['urlPolicy'] = JSON.stringify(policy);
+      // A client render and a hydrated page both end here, so a claim that names the platform
+      // reads it from the injector that rendered the page rather than from the stage that visited.
+      root.dataset['platform'] = String(this.platformId);
     });
 
     // The runtime reads the stores again once the application is stable, which is where hydration

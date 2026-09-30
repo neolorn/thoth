@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DOCUMENT } from '@angular/common';
-import { Component, signal } from '@angular/core';
+import { Component, PLATFORM_ID, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, type Routes } from '@angular/router';
 import {
@@ -257,7 +257,7 @@ describe('switching locale under a policy whose locales are origins', () => {
       expect(result.status).toBe('committed');
       expect(assigned).toEqual([]);
       expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
-      claimRunningPolicy();
+      claimRunningPolicy(TestBed.inject(PLATFORM_ID) as string);
       claimCapability('entry:@neolorn/equator', { policy: routePolicy });
     },
   );

@@ -3,6 +3,7 @@
   "prerendered": ["second", "article", "exercise values"],
   "xDefault": "https://site.example/",
   "localeNeutralRoots": ["assets"],
+  "revalidateSuccess": false,
   "origins": {
     "en-US": "https://site.example",
     "ar-EG": "https://site.example",
@@ -103,6 +104,11 @@
       "en-US": "/exercise/values",
       "ar-EG": "/ar-eg/تمرين/قيم",
       "en-Arab-XB": "/en-arab-xb/exercise/values"
+    },
+    "drawn sheet": {
+      "en-US": "/drawn-sheet",
+      "ar-EG": "/ar-eg/drawn-sheet",
+      "en-Arab-XB": "/en-arab-xb/drawn-sheet"
     },
     "missing": {
       "en-US": "/nothing-is-mounted-here",

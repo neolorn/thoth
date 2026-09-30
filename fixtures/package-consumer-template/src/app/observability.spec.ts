@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { makeStateKey, TransferState } from '@angular/core';
+import { makeStateKey, PLATFORM_ID, TransferState } from '@angular/core';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -218,7 +218,10 @@ describe('Angular observability boundaries', () => {
     }).compileComponents();
 
     const localization = TestBed.inject(Localization);
-    expect(events.filter(({ phase }) => phase === 'ssr-hydration')).toEqual([
+    expect(
+      events.filter(({ phase }) => phase === 'ssr-hydration'),
+      'what the LocalizationObservabilitySink withObservability installed received',
+    ).toEqual([
       {
         profile: RUNTIME_OBSERVABILITY_PROFILE,
         code: RUNTIME_EVENT_CODES.ssrHydration,
@@ -236,10 +239,12 @@ describe('Angular observability boundaries', () => {
     expect(JSON.stringify(events)).not.toContain('hostile-transfer-secret');
     await localization.initialize();
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
+    const platform = TestBed.inject(PLATFORM_ID) as string;
     localization.dispose();
     TestBed.resetTestingModule();
-    claimCapability('feature:withObservability');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('feature:withObservability', { platform });
+    claimCapability('extension:observability-sink', { platform });
+    claimCapability('entry:@neolorn/equator', { platform });
   });
 
   it('reports integration failure after rollback at the commit boundary', async () => {
@@ -283,11 +288,16 @@ describe('Angular observability boundaries', () => {
       },
     ]);
     expect(JSON.stringify(events)).not.toContain('secret integration payload');
-    expect(localization.snapshot()?.primaryLocale).toBe('en-US');
+    expect(
+      localization.snapshot()?.primaryLocale,
+      'rolled back when the LocalizationOverlayAdapter withOverlayLocale installed threw',
+    ).toBe('en-US');
+    const platform = TestBed.inject(PLATFORM_ID) as string;
     localization.dispose();
     TestBed.resetTestingModule();
-    claimCapability('feature:withObservability');
-    claimCapability('feature:withOverlayLocale');
-    claimCapability('entry:@neolorn/equator');
+    claimCapability('feature:withObservability', { platform });
+    claimCapability('feature:withOverlayLocale', { platform });
+    claimCapability('extension:overlay-adapter', { platform });
+    claimCapability('entry:@neolorn/equator', { platform });
   });
 });

@@ -95,7 +95,9 @@ describe('a remembered choice', () => {
     const snapshot = await second.initialize();
 
     expect(snapshot.primaryLocale).toBe('ar-EG');
-    claimCapability('store:memoryStore');
+    claimCapability('store:memoryStore', {
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
     claimCapability('entry:@neolorn/equator');
   });
 
@@ -391,7 +393,9 @@ describe('the shipped stores', () => {
     expect((await setup([cookieStore()]).initialize()).primaryLocale).toBe(
       'ar-EG',
     );
-    claimCapability('store:cookieStore');
+    claimCapability('store:cookieStore', {
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
     claimCapability('entry:@neolorn/equator');
   });
 
@@ -441,7 +445,9 @@ describe('the shipped stores', () => {
       (await setup([localStorageStore({ key: 'lang' })]).initialize())
         .primaryLocale,
     ).toBe('ar-EG');
-    claimCapability('store:localStorageStore');
+    claimCapability('store:localStorageStore', {
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
     claimCapability('entry:@neolorn/equator');
   });
 
@@ -455,7 +461,9 @@ describe('the shipped stores', () => {
     await settled();
 
     expect(write).toHaveBeenCalledWith('ar-EG');
-    claimCapability('store:profileStore');
+    claimCapability('store:profileStore', {
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
     claimCapability('entry:@neolorn/equator');
   });
 

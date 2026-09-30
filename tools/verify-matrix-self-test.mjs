@@ -12,8 +12,11 @@
  * - a reason placed over an exercised cell, and a reason over no cell at all;
  * - a claim for a capability its test never names, an entry point its test names only through a
  *   type, and a route class claimed through a field the application declared for another class;
- * - a composable export the packages did not publish and a consumer profile the gate did not
- *   declare, each of which must open a row or a column whose cells are red;
+ * - a composable export the packages did not publish, an optional member of an option interface
+ *   the registry reads, and a consumer profile the gate did not declare, each of which must open a
+ *   row or a column whose cells are red;
+ * - a render mode Angular adds that has no column, and a placement whose member is gone;
+ * - a document a server answered, marked or not, which must not fill the client render column;
  * - a stage whose evidence is missing, and evidence no writer opened;
  * - a claim that no check's source makes;
  * - a run handed no claims path, which must write nothing.
@@ -443,6 +446,110 @@ try {
     assert.ok(
       isRed(evaluate({ columns: grown }), 'format:formatMoney', column),
       `The column ${column} was derived and format:formatMoney @ ${column} was not red.`,
+    );
+  });
+
+  // An option an application may declare, added to an interface the registry reads. A registry
+  // that listed its members would give it no row.
+  expectRed('an optional member added to a declared option interface', () => {
+    const member = 'plantedOption';
+    const row = `declaration:RouteLocalizationOptions.${member}`;
+    let planted = 0;
+    const runtime = published.runtime.map((entry) => {
+      const head = /\binterface RouteLocalizationOptions\b[^{]*\{/u.exec(
+        entry.text,
+      );
+      if (head === null) return entry;
+      planted += 1;
+      const at = head.index + head[0].length;
+      return {
+        ...entry,
+        text: `${entry.text.slice(0, at)}\n    readonly ${member}?: string;${entry.text.slice(at)}`,
+      };
+    });
+    assert.equal(planted, 1, 'RouteLocalizationOptions was not found once.');
+    assert.ok(
+      !rows.some(({ id }) => id === row),
+      `${row} is a row before it was planted.`,
+    );
+    const grown = rowsFrom({ ...published, runtime }).rows;
+    assert.ok(
+      grown.some(({ id }) => id === row),
+      `An optional member added to RouteLocalizationOptions has no row ${row}.`,
+    );
+    assert.ok(
+      isRed(evaluate({ rows: grown }), row, 'node:24'),
+      `The row ${row} was derived and its cell was not red.`,
+    );
+  });
+
+  // The client column is filled by a render on the browser platform and by nothing a server
+  // answered, marked or not: an unmarked answer is one the server wrote without rendering.
+  expectRed('a client render read from a document a server answered', () => {
+    const observing = (observed) =>
+      evaluate({
+        evidence: [
+          {
+            ...evidence,
+            claims: evidence.claims.map((claim) => ({ ...claim, ...observed })),
+          },
+        ],
+      });
+    assert.ok(
+      isRed(
+        observing({ document: ['ssr'] }),
+        'format:formatMoney',
+        'render:client',
+      ),
+      'A claim observing a server-marked document filled render:client.',
+    );
+    assert.ok(
+      isRed(observing({ document: [] }), 'format:formatMoney', 'render:client'),
+      'A claim observing a document a server answered without rendering filled render:client.',
+    );
+    assert.ok(
+      isRed(
+        observing({ platform: 'browser', document: ['ssr'] }),
+        'format:formatMoney',
+        'render:client',
+      ),
+      'A claim from a hydrated page, on the browser platform over a server-rendered document, filled render:client.',
+    );
+    assert.ok(
+      !isRed(
+        observing({ platform: 'browser' }),
+        'format:formatMoney',
+        'render:client',
+      ),
+      'A claim rendered on the browser platform left render:client red.',
+    );
+  });
+
+  expectRed('a render mode Angular adds', () => {
+    assert.throws(
+      () =>
+        columnsFrom({
+          ...declared,
+          renderModes: [...declared.renderModes, 'Planted'],
+        }),
+      /RenderMode has a member Planted/u,
+    );
+  });
+
+  expectRed('a placement whose member is gone', () => {
+    const runtime = published.runtime.map((entry) => ({
+      ...entry,
+      text: entry.text.replace(
+        /(\binterface GeneratedRouteProjectionEntry\b[^{]*\{[\s\S]*?)readonly sourcePath\?:/u,
+        '$1readonly plantedPath?:',
+      ),
+    }));
+    const { resolveFailures } = rowsFrom({ ...published, runtime });
+    assert.ok(
+      resolveFailures.includes(
+        'placement:GeneratedRouteProjectionEntry.sourcePath',
+      ),
+      `A placement for a member no interface declares was accepted: ${resolveFailures.join(', ') || 'no failures'}.`,
     );
   });
 

@@ -413,7 +413,10 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
       'LocalizedUrlHandlingStrategy',
     );
     expect(warnings(warn)).toEqual([]);
-    claimCapability('policy:locale-neutral', { policy: NEUTRAL });
+    claimCapability('policy:locale-neutral', {
+      policy: NEUTRAL,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 
   it('serves a locale-host policy, and says nothing about it', async () => {
@@ -423,7 +426,10 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
       'LocalizedLocationStrategy',
     );
     expect(warnings(warn)).toEqual([]);
-    claimCapability('policy:locale-host', { policy: HOST });
+    claimCapability('policy:locale-host', {
+      policy: HOST,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 
   /**
@@ -442,7 +448,12 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
     expect(TestBed.inject(LocationStrategy).constructor.name).toBe(
       'LocalizedLocationStrategy',
     );
-    claimCapability('policy:locale-host', { policy: HOST });
+    const platform = TestBed.inject(PLATFORM_ID) as string;
+    claimCapability('policy:locale-host', { policy: HOST, platform });
+    claimCapability('declaration:RouteLocalizationOptions.origin', {
+      policy: HOST,
+      platform,
+    });
   });
 
   it('refuses a host policy whose origins do not name the configured origin', async () => {
@@ -500,6 +511,10 @@ describe('provideLocalizedRouter decides every policy kind by name', () => {
     expect(TestBed.inject(LocationStrategy).constructor.name).toBe(
       'LocalizedLocationStrategy',
     );
+    claimCapability('declaration:RouteLocalizationOptions.origin', {
+      policy: PATH_PREFIX,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 
   /**

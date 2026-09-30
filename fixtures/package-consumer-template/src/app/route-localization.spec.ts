@@ -1,9 +1,9 @@
-import { vi } from 'vitest';
+import { onTestFinished, vi } from 'vitest';
 
 import { LocationStrategy } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Router, type Routes } from '@angular/router';
+import { NavigationEnd, Router, type Routes } from '@angular/router';
 import {
   Localization,
   withRouting,
@@ -13,8 +13,12 @@ import {
   RouteLocalization,
   provideLocalizedRouter,
   type RouteLocalizationContext,
+  type RouteLocalizationOptions,
 } from '@neolorn/equator/router';
-import { provideLocalizationTesting } from '@neolorn/equator/testing';
+import {
+  LocalizationTestingController,
+  provideLocalizationTesting,
+} from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
@@ -76,11 +80,16 @@ const ROUTING_OPTIONS = {
 } as const;
 
 describe('Equator Router transaction integration', () => {
-  /** The integration as an application configures it, with nothing added for the test's benefit. */
-  const configureRouterIntegration = async () => {
+  /**
+   * The integration as an application configures it, with nothing added for the test's benefit
+   * beyond the options a case is about.
+   */
+  const configureRouterIntegration = async (
+    options: RouteLocalizationOptions = {},
+  ) => {
     await TestBed.configureTestingModule({
       providers: [
-        provideLocalizedRouter(routes, ROUTING_OPTIONS),
+        provideLocalizedRouter(routes, { ...ROUTING_OPTIONS, ...options }),
         provideLocalizationTesting(
           {
             configuration,
@@ -250,8 +259,124 @@ describe('Equator Router transaction integration', () => {
 
     await router.navigateByUrl(pagePath('lazy', 'en-US'));
 
+    expect(
+      localization.scopeReadiness(lazyScope)().status,
+      'the scope the generated route table lists in the lazy route’s scopes',
+    ).toBe('ready');
+    const platform = TestBed.inject(PLATFORM_ID) as string;
+    claimCapability('entry:@neolorn/equator', {
+      policy: routePolicy,
+      platform,
+    });
+    claimCapability('declaration:GeneratedRouteProjectionEntry.scopes', {
+      policy: routePolicy,
+      platform,
+    });
+  });
+
+  /**
+   * A scope the application names for a route holds the navigation until it has loaded.
+   *
+   * The lazy scope is named for the second page, whose generated entry does not list it, so only the
+   * option can be what asks for it. Its load is held open, and the navigation must still be waiting
+   * while it is.
+   */
+  it('holds a navigation for the scope requiredScopes names for its route', async () => {
+    const lazyScope = { providerId: lazyProviderId, scopeId: lazyScopeId };
+    await configureRouterIntegration({
+      requiredScopes: { 'route:second': [lazyScope] },
+    });
+    const localization = TestBed.inject(Localization);
+    const router = TestBed.inject(Router);
+    const controller = TestBed.inject(LocalizationTestingController);
+    let completed = 0;
+    const counting = router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd) completed += 1;
+    });
+    onTestFinished(() => counting.unsubscribe());
+    await localization.initialize();
+    await router.navigateByUrl(pagePath('home', 'en-US'));
+    expect(localization.scopeReadiness(lazyScope)().status).not.toBe('ready');
+
+    const held = controller.deferNext(lazyScope, 'en-US');
+    let landed = false;
+    const navigation = router
+      .navigateByUrl(pagePath('second', 'en-US'))
+      .then((arrived) => {
+        landed = true;
+        return arrived;
+      });
+    await held.started;
+    for (let hop = 0; hop < 10; hop += 1) await Promise.resolve();
+    expect(landed, 'the navigation finished before its scope loaded').toBe(
+      false,
+    );
+    expect(router.url).not.toBe('/second');
+
+    held.release();
+    await expect(navigation).resolves.toBe(true);
+    expect(router.url).toBe('/second');
     expect(localization.scopeReadiness(lazyScope)().status).toBe('ready');
-    claimCapability('entry:@neolorn/equator', { policy: routePolicy });
+    // The navigation held is the one after the first, so it is a client navigation.
+    claimCapability('declaration:RouteLocalizationOptions.requiredScopes', {
+      policy: routePolicy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+      clientNavigations: completed - 1,
+    });
+  });
+
+  /**
+   * In progressive mode a scope named as progressive arrives after the page, not before it.
+   *
+   * The same held load as above, named as progressive instead: the navigation finishes while the
+   * load is still open, and the scope becomes ready once it is released. Section 7 of
+   * `specs/06-runtime-and-angular.spec.md` lets a progressive commit land with the scopes that are
+   * ready while the rest finish on their own.
+   */
+  it('lands a navigation before the scope progressiveScopes names, in progressive mode', async () => {
+    const lazyScope = { providerId: lazyProviderId, scopeId: lazyScopeId };
+    await configureRouterIntegration({
+      mode: 'progressive',
+      progressiveScopes: { 'route:second': [lazyScope] },
+    });
+    const localization = TestBed.inject(Localization);
+    const router = TestBed.inject(Router);
+    const controller = TestBed.inject(LocalizationTestingController);
+    let completed = 0;
+    const counting = router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd) completed += 1;
+    });
+    onTestFinished(() => counting.unsubscribe());
+    await localization.initialize();
+    await router.navigateByUrl(pagePath('home', 'en-US'));
+
+    const held = controller.deferNext(lazyScope, 'en-US');
+    await expect(
+      router.navigateByUrl(pagePath('second', 'en-US')),
+    ).resolves.toBe(true);
+    await held.started;
+    expect(router.url).toBe('/second');
+    expect(
+      localization.scopeReadiness(lazyScope)().status,
+      'the progressive scope, still loading after the navigation landed',
+    ).not.toBe('ready');
+
+    held.release();
+    await vi.waitFor(() => {
+      expect(localization.scopeReadiness(lazyScope)().status).toBe('ready');
+    });
+    const platform = TestBed.inject(PLATFORM_ID) as string;
+    // The navigation that landed early is the one after the first, so it is a client navigation.
+    const observed = {
+      policy: routePolicy,
+      platform,
+      clientNavigations: completed - 1,
+    };
+    claimCapability(
+      'declaration:RouteLocalizationOptions.progressiveScopes',
+      observed,
+    );
+    claimCapability('declaration:RouteLocalizationOptions.mode', observed);
   });
 
   /**

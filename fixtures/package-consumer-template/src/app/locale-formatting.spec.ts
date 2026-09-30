@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   Localization,
@@ -105,7 +106,9 @@ describe('a locale is written the way that locale declares', () => {
     // And the locale itself did not move with the digits: a runtime that answered in English would
     // satisfy the assertion above and be wrong.
     expect(arabic).toMatch(/\p{Script=Arabic}/u);
-    claimCapability('declaration:locale-formatting');
+    claimCapability('declaration:locale-formatting', {
+      platform: TestBed.inject(PLATFORM_ID) as string,
+    });
   });
 
   it("overrides the application's default for the locale that declared it", async () => {

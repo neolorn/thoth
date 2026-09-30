@@ -309,6 +309,17 @@ export const routes = [
     data: { equatorRouteId: 'exercise', equatorIndexing: 'non-indexable' },
   },
   {
+    // The same sheet at a route the render table leaves to the browser, so the gate reads every
+    // line as a client render wrote it. Per visitor, because the shell the server answers for a
+    // route it does not render still carries the class the route declares.
+    path: 'drawn-sheet',
+    loadComponent: () =>
+      import('./exercise-route').then(
+        (module) => module.FeatureLabExerciseRoute,
+      ),
+    data: { equatorIndexing: 'non-indexable', equatorCaching: 'per-visitor' },
+  },
+  {
     // The address this application does not serve. No fixture had one, which is why an
     // application's own not-found page never rendering under a locale prefix went unnoticed: the
     // projection excludes a wildcard by design, and the adapter treated "not in the projection" as

@@ -34,6 +34,7 @@ const routed = {
   home: 'route:_index',
   second: 'route:second',
   lazy: 'route:lazy',
+  'drawn sheet': 'route:drawn-sheet',
   item: 'item',
   article: 'article',
   topic: 'topic',
@@ -90,6 +91,13 @@ const build = (page: RoutedPage, locale: string): string => {
         routePolicy,
         appRouteProjection,
         'route:lazy',
+        locale,
+      );
+    case 'drawn sheet':
+      return buildLocalizedRoute(
+        routePolicy,
+        appRouteProjection,
+        'route:drawn-sheet',
         locale,
       );
     case 'item':

@@ -145,6 +145,12 @@ describe('route and SEO contracts, called directly', () => {
         indexing: 'indexable',
       },
       {
+        id: 'route:drawn-sheet',
+        path: 'drawn-sheet',
+        parameterNames: [],
+        indexing: 'non-indexable',
+      },
+      {
         id: 'route:lazy',
         path: 'lazy',
         parameterNames: [],
@@ -172,7 +178,10 @@ describe('route and SEO contracts, called directly', () => {
       appRouteProjection.generated.routes.flatMap((route) =>
         'caching' in route ? [{ id: route.id, caching: route.caching }] : [],
       ),
-    ).toEqual([{ id: 'route:lazy', caching: 'per-visitor' }]);
+    ).toEqual([
+      { id: 'route:drawn-sheet', caching: 'per-visitor' },
+      { id: 'route:lazy', caching: 'per-visitor' },
+    ]);
     expect(
       routeHttpDescriptor(
         resolveLocalizedRoute(

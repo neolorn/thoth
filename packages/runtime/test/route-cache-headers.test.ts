@@ -64,6 +64,31 @@ describe('the cache headers Equator determines', () => {
     ).toStrictEqual({ 'cache-control': 'private, no-store' });
   });
 
+  it('asks a cache to revalidate a stale success unless the deployment says it need not', () => {
+    expect(
+      routeCacheHeaders(descriptorFor('public'), {
+        ...FRESHNESS,
+        revalidateSuccess: false,
+      }),
+    ).toStrictEqual({ 'cache-control': 'public, max-age=600' });
+    expect(
+      routeCacheHeaders(descriptorFor('public'), {
+        ...FRESHNESS,
+        revalidateSuccess: true,
+      }),
+    ).toStrictEqual({
+      'cache-control': 'public, max-age=600, must-revalidate',
+    });
+    // A permanent redirect is not a success, so the setting leaves it alone.
+    expect(
+      routeCacheHeaders(descriptorFor('consumer-defined-permanent'), {
+        ...FRESHNESS,
+        revalidateSuccess: true,
+      }),
+    ).toStrictEqual({ 'cache-control': 'public, max-age=86400' });
+    claimCapability('declaration:RouteCacheDurations.revalidateSuccess');
+  });
+
   it('turns a varying answer into a shared variant only when the header allows it', () => {
     // `Accept-Language` is content negotiation, and a shared cache holding one variant per language
     // is exactly what it is for.
