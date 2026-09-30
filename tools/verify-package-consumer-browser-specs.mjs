@@ -9,8 +9,10 @@
  * cookie jar and the storages the environment reset puts back are the engine's own, and the claims
  * each spec makes carry the engine the claims reporter reads off the project it ran in.
  *
- * The specs are the ones that claim a testing helper, found in the consumer's sources rather than
- * listed, so a spec that starts claiming one runs here on the day it does.
+ * The specs are found in the consumer's sources rather than listed, so a spec that starts doing what
+ * selects it runs here on the day it does. Two things select one: claiming a testing helper, and
+ * calling the locale matcher. The matcher reads CLDR likely subtags from the engine's `Intl`, and
+ * `specs/01-standards-profile.spec.md` section 6 requires its answer not to vary between browsers.
  *
  * The seat is left as the consumer stage left it. The pseudo-locale spec reads the catalog
  * `equator generate --pseudo` writes, so the run generates it first and generates the production
@@ -54,17 +56,24 @@ for (const entry of await readdir(sourceRoot, {
 })) {
   if (!entry.isFile() || !entry.name.endsWith('.spec.ts')) continue;
   const path = resolve(entry.parentPath, entry.name);
+  const source = await readFile(path, 'utf8');
   if (
-    /\bclaimCapability\(\s*['"]testing:/u.test(await readFile(path, 'utf8'))
+    /\bclaimCapability\(\s*['"]testing:/u.test(source) ||
+    /\b(?:negotiateLocale|parseAcceptLanguage)\(/u.test(source)
   ) {
     specFiles.push(relative(consumerRoot, path).split(sep).join('/'));
   }
 }
 specFiles.sort();
-assert.ok(
-  specFiles.includes('src/app/testing-entry-point.spec.ts'),
-  `The scan for specs that claim a testing helper found ${specFiles.join(', ') || 'none'}, and not the one that must be among them.`,
-);
+for (const required of [
+  'src/app/testing-entry-point.spec.ts',
+  'src/app/locale-matching.spec.ts',
+]) {
+  assert.ok(
+    specFiles.includes(required),
+    `The scan for specs that claim a testing helper or call the locale matcher found ${specFiles.join(', ') || 'none'}, and not ${required}, which must be among them.`,
+  );
+}
 
 const run = (entry, args, label, timeout) => {
   const started = Date.now();

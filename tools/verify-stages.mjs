@@ -702,10 +702,10 @@ const declared = Object.freeze([
       ],
     }),
   ),
-  // The specs that claim a testing helper, run in each engine through the test builder's browser
-  // mode. Alone for the reason the browser rows are. A writer of the development seat, because the
-  // pseudo-locale spec reads what `equator generate --pseudo` writes there, and the stage generates
-  // the production output again after the run.
+  // The specs that claim a testing helper or call the locale matcher, run in each engine through the
+  // test builder's browser mode. Alone for the reason the browser rows are. A writer of the
+  // development seat, because the pseudo-locale spec reads what `equator generate --pseudo` writes
+  // there, and the stage generates the production output again after the run.
   {
     id: 'verify:browser-specs',
     writes: ['consumer:package'],

@@ -1916,4 +1916,26 @@ export const injections = Object.freeze([
     replace:
       "      const range = Math.max(\n        0,\n        this.document.documentElement.scrollWidth - view.innerWidth,\n      );\n      const inline =\n        snapshot.direction === 'rtl'\n          ? -Math.min(logicalInline, range)\n          : Math.min(logicalInline, range);",
   },
+  // One per engine the browser specs run in, each answering differently in that engine alone, so
+  // an engine the stage stopped running would leave its injection uncaught.
+  ...[
+    { engine: 'chromium', test: '/Chrome\\//u.test(userAgent)' },
+    { engine: 'firefox', test: '/Firefox\\//u.test(userAgent)' },
+    {
+      engine: 'webkit',
+      test: '/AppleWebKit/u.test(userAgent) && !/Chrome\\/|Firefox\\/|jsdom/u.test(userAgent)',
+    },
+  ].map(({ engine, test }) => ({
+    id: `locale-match-differs-in-${engine}`,
+    invariant: `A request for a region the application does not have is matched to the same locale in ${engine} as everywhere else.`,
+    source: 'packages/runtime/core/src/locale-negotiation.ts',
+    find: '    if (related !== undefined) return related.locale;',
+    replace: `    const userAgent =\n      (globalThis as { navigator?: { userAgent?: string } }).navigator\n        ?.userAgent ?? '';\n    if (related !== undefined && !(${test})) return related.locale;`,
+    suite: 'verify:browser-specs',
+    // The failure line, which names the engine; the engine's passing line names the file too.
+    caughtWhen: new RegExp(
+      `FAIL\\s+\\|feature-lab \\(${engine}\\)\\| src/app/locale-matching\\.spec\\.ts`,
+      'u',
+    ),
+  })),
 ]);
