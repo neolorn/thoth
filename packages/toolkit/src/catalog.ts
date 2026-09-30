@@ -1081,6 +1081,27 @@ export function parseCatalog(
   }
 
   const value = constructYamlValue(root);
+  // Ahead of the schema, which bounds the same count and would report a ceiling as a shape.
+  const declared = (value as { readonly messages?: unknown } | null)?.messages;
+  if (
+    typeof declared === 'object' &&
+    declared !== null &&
+    Object.keys(declared).length > RESOURCE_LIMITS.messagesPerCatalog
+  ) {
+    const messagesNode = yamlPathNode(root, ['messages']).node;
+    return toolkitFailure([
+      yamlDiagnostic(
+        source,
+        options.sourcePath,
+        'EQ1101',
+        `Equator catalog exceeds the ${RESOURCE_LIMITS.messagesPerCatalog}-message implementation ceiling.`,
+        {
+          path: ['messages'],
+          ...(messagesNode === undefined ? {} : { node: messagesNode }),
+        },
+      ),
+    ]);
+  }
   const validator =
     options.role === 'source' ? validateSourceCatalog : validateTargetCatalog;
   if (!validator(value)) {
@@ -1110,24 +1131,6 @@ export function parseCatalog(
   }
 
   const objectValue = value as JsonObject;
-  if (
-    Object.keys(objectValue['messages'] as JsonObject).length >
-    RESOURCE_LIMITS.messagesPerCatalog
-  ) {
-    const messagesNode = yamlPathNode(root, ['messages']).node;
-    return toolkitFailure([
-      yamlDiagnostic(
-        source,
-        options.sourcePath,
-        'EQ1101',
-        `Equator catalog exceeds the ${RESOURCE_LIMITS.messagesPerCatalog}-message implementation ceiling.`,
-        {
-          path: ['messages'],
-          ...(messagesNode === undefined ? {} : { node: messagesNode }),
-        },
-      ),
-    ]);
-  }
   for (const messageId of Object.keys(objectValue['messages'] as JsonObject)) {
     const parsedMessageId = parseMessageId(messageId);
     const node = yamlPathNode(root, ['messages', messageId]).node;

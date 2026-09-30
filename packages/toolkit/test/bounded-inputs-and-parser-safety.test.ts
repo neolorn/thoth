@@ -55,6 +55,26 @@ describe('bounded authored inputs', () => {
     ).toHaveLength(RESOURCE_LIMITS.diagnostics);
   });
 
+  it('refuses a catalog over the message ceiling with EQ1101, the code its ceilings share', () => {
+    const count = RESOURCE_LIMITS.messagesPerCatalog + 1;
+    const lines = ['messages:'];
+    for (let index = 0; index < count; index += 1) {
+      lines.push(`  m${index}: "x"`);
+    }
+    const result = parseCatalog(`${lines.join('\n')}\n`, {
+      role: 'source',
+      providerId: '@example/app',
+      scopeId: 'shell',
+      locale: 'en-US',
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.diagnostics[0]).toMatchObject({ code: 'EQ1101' });
+    expect(result.diagnostics[0]?.summary).toContain(
+      'message implementation ceiling',
+    );
+  });
+
   it('rejects over-deep JSON before recursive construction', () => {
     const nested = `${'{"unknown":'.repeat(70)}null${'}'.repeat(70)}`;
     const result = parseConfiguration(nested);
