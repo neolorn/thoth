@@ -176,10 +176,9 @@ export interface CompileProjectResult {
  * `specs/10-compiler-and-tooling.spec.md` section 6 makes this a grouped source-located
  * advisory with an optional safe cleanup preview, and keeps friendly mode from deleting the
  * message, failing the compilation, writing a tombstone, or requiring a waiver or a
- * suppression ledger. Reachability was already collected and already
- * load-bearing (it drives message usages, recovery-root detection and route extraction) so the
- * advisory was the one part missing, and an owner had no way to see what its catalogs were still
- * carrying.
+ * suppression ledger. Reachability is already collected and load-bearing (it drives message usages,
+ * recovery-root detection and route extraction), so the advisory adds no analysis, only the report
+ * that lets an owner see what its catalogs are still carrying.
  *
  * Grouped into one diagnostic per scope rather than one per message: a catalog that has drifted
  * has drifted by dozens, and dozens of separate advisories would bury the errors underneath them.
@@ -643,10 +642,9 @@ function compileProjectCore(
   ) {
     // `specs/10-compiler-and-tooling.spec.md` section 10: for an owner that selects an
     // application runtime, a missing recovery root is a protected correctness error in both
-    // generate and bare check. The rule existed and
-    // could never fire, because nothing could tell that an owner had selected one, so an owner
-    // that authored recovery copy and never selected it passed both commands silently, and the
-    // first anyone learned of it was a blank page.
+    // generate and bare check. The rule depends on the analysis telling that an owner has selected
+    // one; without it, an owner that authors recovery copy and never selects it passes both
+    // commands silently, and the first anyone learns of it is a blank page.
     diagnostics.push(
       toolkitDiagnostic(
         'EQ1310',
@@ -659,8 +657,7 @@ function compileProjectCore(
   //
   // `equator.config.json` says which locales this owner has catalogs for. The route policy says
   // which locales have addresses. They are separate statements in separate files and they have to
-  // agree, and until now nothing compared them: the toolkit had no knowledge of the policy, so none
-  // of its diagnostics could have covered this.
+  // agree, and this is where they are compared.
   //
   // Both directions are wrong and they fail differently, which is why both are reported rather than
   // one being treated as the source of truth. A locale with catalogs and no address cannot be

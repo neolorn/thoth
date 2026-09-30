@@ -483,13 +483,13 @@ describe('Equator MessageFormat inherited select', () => {
 /**
  * Numeric options, refused where an author can still fix them.
  *
- * LDML 48 Part 9 gives each of the six numeric functions its own option table, and Equator read one
- * union of seven names for all of them: `roundingMode`, `roundingPriority`, `roundingIncrement`,
- * `trailingZeroDisplay`, `currencySign` and `:currency`'s `fractionDigits` were parsed, compiled,
- * shipped and ignored. The conformance suite cannot see any of it, it writes none of those names
- * in any of its 461 cases, so the check is against the specification's tables rather than against
- * a failing case. `packages/runtime/test/message-function-options.test.ts` holds the other
- * half, where the same tables are checked against the two `Intl` constructors that impose them.
+ * LDML 48 Part 9 gives each of the six numeric functions its own option table, and one union of
+ * seven names for all of them would parse, compile, ship and ignore `roundingMode`,
+ * `roundingPriority`, `roundingIncrement`, `trailingZeroDisplay`, `currencySign` and `:currency`'s
+ * `fractionDigits`. The conformance suite cannot see any of it, it writes none of those names in
+ * any of its 461 cases, so the check is against the specification's tables rather than against a
+ * failing case. `packages/runtime/test/message-function-options.test.ts` holds the other half,
+ * where the same tables are checked against the two `Intl` constructors that impose them.
  */
 describe('Equator MessageFormat numeric options', () => {
   const summaryFor = (message: string): string | undefined => {

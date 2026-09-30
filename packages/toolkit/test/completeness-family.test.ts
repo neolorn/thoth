@@ -13,11 +13,11 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
 /**
  * Is the release gate about completeness, or about two of its findings?
  *
- * `requireCompleteTargets` escalated `EQ1307` and `EQ1308` and nothing else, so the gate had a
- * hole exactly where the failure is largest. Measured before this changed: with the gate **on**, a
- * locale with no catalog at all returned `ok: true` and one warning, identical to the same call
- * with the gate off, while the same locale missing one message of three returned `ok: false`.
- * Translate two messages of three and the release stopped; translate none of them and it shipped.
+ * Escalating `EQ1307` and `EQ1308` alone leaves a hole exactly where the failure is largest: with
+ * the gate **on**, a locale with no catalog at all would return `ok: true` and one warning,
+ * identical to the same call with the gate off, while the same locale missing one message of three
+ * returns `ok: false`. Translating two messages of three would stop the release; translating none
+ * would ship it.
  *
  * So the family escalates as one. `EQ1306` (no catalog for this scope), `EQ1307` (a message
  * missing) and `EQ1308` (a plural category missing) are one question at three granularities, and

@@ -8,9 +8,9 @@ import type { SemanticGraph } from './semantic-model.js';
  * and the effective contracts rather than asking an author to maintain a revision field, and makes
  * the default report advisory.
  *
- * Changing the English wording while leaving the old Arabic in place produced success
- * with an empty diagnostics array. Nothing anywhere recorded what a translation corresponded to,
- * so "the source moved and this translation did not" was not a question Equator could answer.
+ * Without this record, changing the English wording while leaving the old Arabic in place produces
+ * success with an empty diagnostics array: nothing records what a translation corresponds to, so
+ * "the source moved and this translation did not" is not a question Equator can answer.
  *
  * Equator maintains this record itself. Nothing is asked of a translator and nothing is stamped by
  * hand: each entry carries the source fingerprint at the time of stamping *and* a digest of the

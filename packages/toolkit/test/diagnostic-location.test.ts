@@ -64,7 +64,7 @@ describe('a diagnostic about something that is not in the file', () => {
     // to add the message to, which is the most useful true statement available.
     expect(omitted?.span?.sourcePath).toBe('i18n/shell/ar-EG.yaml');
     expect(omitted?.span?.start.line).toBe(1);
-    // Not 1:1, which is what this replaces and what a synthetic span always produced.
+    // Not 1:1, which is what a synthetic span produces.
     expect(
       `${(omitted?.span?.start.line ?? 0) + 1}:${(omitted?.span?.start.column ?? 0) + 1}`,
     ).not.toBe('1:1');

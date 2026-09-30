@@ -13,9 +13,8 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
  * An application states its locales twice, and the two statements have to agree.
  *
  * `equator.config.json` decides which locales get catalogs. The locale URL policy decides which
- * locales get addresses. They are separate files written at separate times, and nothing compared
- * them: the toolkit had no knowledge of the policy at all, so none of its diagnostic codes could
- * have covered this.
+ * locales get addresses. They are separate files written at separate times, and only a toolkit that
+ * reads the policy can compare them.
  *
  * Both directions are silent at runtime and neither is recoverable by a reader:
  *

@@ -16,11 +16,10 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
 /**
  * A locale falls back to its parent before it falls back to the source.
  *
- * Until this existed a target catalog that omitted a message was answered by the source locale and
- * by nothing in between, so an application shipping `en`, `en-AU` and `en-GB` either wrote every
- * string three times or served the source language for the ones it did not. CLDR has said which
- * locale each locale inherits from for as long as there has been a CLDR, and Equator was not
- * reading it.
+ * Without it, a target catalog that omits a message is answered by the source locale and by nothing
+ * in between, so an application shipping `en`, `en-AU` and `en-GB` either writes every string three
+ * times or serves the source language for the ones it does not. CLDR states which locale each
+ * locale inherits from.
  *
  * ## What the chain is
  *
@@ -35,7 +34,8 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
  * `und` in the pinned table is a value rather than an absence. `parentLocales.json` carries
  * `_localeRules` `{"parentLocale":{"nonlikelyScript":"root"}}`, and that rule is what produced its
  * 49 `und` entries: a locale written in a script its language does not usually take inherits from
- * root. Those 49 behave exactly as every locale did before this existed.
+ * root. Those 49 have no parent, and fall back from their own catalog straight to the source
+ * locale.
  */
 
 const chainOf = (locale: string, overrides?: Record<string, string>) =>

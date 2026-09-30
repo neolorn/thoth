@@ -3,11 +3,10 @@ import { parseConfiguration, type ProjectConfiguration } from '../src/index.js';
 /**
  * A project configuration for a test, built by the parser that reads a real one.
  *
- * Three suites carried the same hand-written object literal, and every one of them was wrong in the
- * same way: `ProjectConfiguration` gained `pseudoLocales` and nothing said so, because nothing
- * typechecked a test file. A literal is also the wrong shape for a different reason: `locales`,
- * `sourceLocale` and `defaultLocale` are `CanonicalLocale`, a branded type no literal can produce,
- * so writing one out either casts the brand away or does not compile.
+ * A hand-written object literal goes stale when `ProjectConfiguration` gains a field, and silently
+ * wherever a test file is not typechecked. A literal is also the wrong shape for a different
+ * reason: `locales`, `sourceLocale` and `defaultLocale` are `CanonicalLocale`, a branded type no
+ * literal can produce, so writing one out either casts the brand away or does not compile.
  *
  * Going through `parseConfiguration` answers both. The fixture is whatever the parser produces
  * from the source a project would actually contain, so a field added to the configuration is

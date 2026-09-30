@@ -14,17 +14,17 @@ import { parseMessageSemanticModel } from '../src/message-format.js';
  * Validators handed something that is not text.
  *
  * These functions exist to be given untrusted input: a value out of a JSON configuration, off a
- * command line, out of a consumer's build script. Their parameters were declared `string`, which
- * stopped nobody, since TypeScript is not present at the boundary where those values arrive, and
- * the declaration meant the check that would have caught a non-string was never written.
+ * command line, out of a consumer's build script. A parameter declared `string` stops nobody, since
+ * TypeScript is not present at the boundary where those values arrive, and the declaration means
+ * the check that would catch a non-string is never written.
  *
- * What that produced was not a crash. `RegExp.prototype.test` coerces its argument, so `42` was
- * tested as `"42"` and `undefined` as `"undefined"`, both of which satisfy an identifier grammar
- * as readily as a real identity does. The validator returned success and branded the original
- * value, still a number or still `undefined`, as an Equator identity. Every later consumer of that
- * value was then working with a type that lied.
+ * What that produces is not a crash. `RegExp.prototype.test` coerces its argument, so `42` is
+ * tested as `"42"` and `undefined` as `"undefined"`, both of which satisfy an identifier grammar as
+ * readily as a real identity does. The validator returns success and brands the original value,
+ * still a number or still `undefined`, as an Equator identity, and every later consumer of that
+ * value works with a type that lies.
  *
- * The parameters are `unknown` now, because that is what a validator's callers actually hold, and
+ * The parameters are `unknown`, because that is what a validator's callers actually hold, and
  * saying so is what makes the check exist.
  *
  * `specs/12-verification.spec.md` section 4 asks for refusal to be verified as thoroughly as
@@ -66,7 +66,7 @@ describe('identities', () => {
     expect(parseProviderId('a'.repeat(257)).ok).toBe(false);
   });
 
-  it('still accepts what it always accepted', () => {
+  it('accepts well-formed identifiers', () => {
     expect(parseProviderId('@example/app').ok).toBe(true);
     expect(parseScopeId('shell').ok).toBe(true);
     expect(parseMessageId('nav.products').ok).toBe(true);
@@ -108,7 +108,7 @@ describe('locales and aliases', () => {
     expect(canonicalizeLocale(42).ok).toBe(false);
   });
 
-  it('still accepts what it always accepted', () => {
+  it('accepts a well-formed alias and locale', () => {
     expect(parseLocaleAlias('ar').ok).toBe(true);
     const canonical = canonicalizeLocale('ar-eg');
     expect(canonical.ok).toBe(true);

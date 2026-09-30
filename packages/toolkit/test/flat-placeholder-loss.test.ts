@@ -15,10 +15,10 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
  *
  * A message with variants has no inline XLIFF representation, one unit holds one pattern, so
  * it is exported flat: the whole MessageFormat source as text, with no `<ph>` elements and no
- * `<originalData>`. Nothing in that representation is structural, so until now nothing compared it
- * to the source, and a translator or a translation-management system could delete `{$count}` and
- * hand back a document that parses, validates, imports, and renders a sentence with the number
- * missing.
+ * `<originalData>`. Nothing in that representation is structural, so nothing but this comparison
+ * checks it against the source, and a translator or a translation-management system could delete
+ * `{$count}` and hand back a document that parses, validates, imports, and renders a sentence with
+ * the number missing.
  *
  * The comparison these cases pin down is between the inputs the source renders anywhere and the
  * inputs the translation renders anywhere. It is coarser than the inline check on purpose, and the

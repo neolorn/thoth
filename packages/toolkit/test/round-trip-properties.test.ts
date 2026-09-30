@@ -433,9 +433,9 @@ describe('the generators produce input, and the shapes they exclude are excluded
   });
 
   it('refuses a message id whose segment starts with a digit', () => {
-    // Found by the generator rather than written from the schema: a de-duplicating suffix of `-5`
-    // produced `title-5`, which the id pattern refuses because every segment must start with a
-    // letter. Pinned so the pattern cannot loosen without someone saying so.
+    // A de-duplicating suffix such as `-5` produces `title-5`, which the id pattern refuses because
+    // every segment must start with a letter. Pinned so the pattern cannot loosen without someone
+    // saying so.
     expect(parseCatalog(`messages:\n  title-5: 'x'\n`, OPTIONS).ok).toBe(false);
     expect(parseCatalog(`messages:\n  title-e: 'x'\n`, OPTIONS).ok).toBe(true);
   });

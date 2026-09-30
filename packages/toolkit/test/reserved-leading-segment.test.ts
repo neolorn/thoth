@@ -313,13 +313,13 @@ describe('a route may not be declared at an address the policy owns', () => {
   });
 
   /**
-   * The hole that made the check silent for half the ways of spelling a policy.
+   * Every way of spelling a policy, so the check is silent for none of them.
    *
-   * Equator exports four policy factories and the toolkit recognized two, so a consumer who used
-   * `createDefaultLocalePrefixPolicy` (the shape in which a route's own leading segment becomes
-   * the first segment of an address, and therefore the one most exposed to this defect) got no
-   * check at all. Every factory is asserted here, and the two that put no locale in the path are
-   * asserted to claim only their neutral roots.
+   * Equator exports four policy factories, and a toolkit that recognized only some would give a
+   * consumer who used `createDefaultLocalePrefixPolicy` (the shape in which a route's own leading
+   * segment becomes the first segment of an address, and therefore the one most exposed to this
+   * defect) no check at all. Every factory is asserted here, and the two that put no locale in the
+   * path are asserted to claim only their neutral roots.
    */
   it('reads every factory the package exports', async () => {
     const prefixing = await project({

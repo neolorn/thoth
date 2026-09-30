@@ -16,11 +16,10 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
  * is not imported by anything, so read literally every template usage sits outside every lazy
  * boundary.
  *
- * Found by migrating a real application. Its home page is a `loadComponent` route whose sections
- * put every message in templates, and the derived startup set contained the page's scope anyway,
- * so the derivation agreed exactly with the hand-written list it replaced, and looked correct
- * for that reason. Reachability is a question about modules, so it has to be asked about the
- * component that owns the template.
+ * A `loadComponent` home page whose sections put every message in templates shows why: a derivation
+ * that puts the page's scope in the startup set anyway agrees with a hand-written list, and looks
+ * correct for that reason. Reachability is a question about modules, so it has to be asked about
+ * the component that owns the template.
  */
 
 const temporaryRoots: string[] = [];

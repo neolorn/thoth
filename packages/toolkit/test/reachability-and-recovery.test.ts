@@ -9,21 +9,19 @@ import { checkProject, generateProject } from '../src/index.js';
 import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
 
 /**
- * Two promises the tooling rules make that nothing kept.
+ * Two promises the tooling rules make.
  *
  * `specs/10-compiler-and-tooling.spec.md` section 10: for an owner that selects an application
  * runtime, a missing or invalid recovery root is a protected correctness error in both generate
- * and a bare check. The rule existed and could
- * never fire, because nothing could tell that an owner had selected one, so an owner that
- * authored recovery copy and never selected it passed both commands with no diagnostics, and the
- * first anyone learned of it was a blank page. An application's error-page scope is
- * exactly such a recovery surface, and it is the one nobody exercises until it is needed.
+ * and a bare check. The rule depends on the analysis telling that an owner has selected one;
+ * without it, an owner that authors recovery copy and never selects it passes both commands with no
+ * diagnostics, and the first anyone learns of it is a blank page. An application's error-page scope
+ * is exactly such a recovery surface, and it is the one nobody exercises until it is needed.
  *
  * `specs/10-compiler-and-tooling.spec.md` section 6: an unused source message is a grouped
- * source-located advisory. Reachability was
- * already collected and already load-bearing, driving message usages, recovery-root detection
- * and route extraction, so the advisory was the one part missing, and an owner had no way to see
- * what its catalogs were still carrying.
+ * source-located advisory. Reachability is already collected and load-bearing, driving message
+ * usages, recovery-root detection and route extraction, so the advisory adds no analysis, only the
+ * report that lets an owner see what its catalogs are still carrying.
  */
 
 const temporaryRoots: string[] = [];

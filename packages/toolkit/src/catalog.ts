@@ -328,11 +328,10 @@ export function catalogPathAnchor(
 /**
  * Walk as far down the pointer as the document goes, and say where you stopped.
  *
- * Stopping is the ordinary outcome rather than the failure. This already returned the node it had
- * when the next step needed a different kind of collection; what it did not do was stop when a key
- * was simply **absent**: it set `current` to `undefined` and walked on, so a pointer into a
- * missing message came back with nothing at all and the caller had no position to report. Absence
- * is exactly the case the diagnostics that use this are reporting.
+ * Stopping is the ordinary outcome rather than the failure. It stops when the next step needs a
+ * different kind of collection, and when a key is simply **absent**: walking on past an absent key
+ * would return nothing at all for a pointer into a missing message, and the caller would have no
+ * position to report. Absence is exactly the case the diagnostics that use this are reporting.
  */
 function yamlPathNode(
   root: ParsedNode,

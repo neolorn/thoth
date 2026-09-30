@@ -6,11 +6,9 @@ import type { ToolkitDiagnosticCode } from './diagnostics.js';
  * `specs/10-compiler-and-tooling.spec.md` section 12 says the codes are stable and documented,
  * and `specs/11-diagnostics-and-observability.spec.md` section 4 makes the codes the
  * compatibility surface and asks for this reference to be derived from the declaration that
- * holds them. Until this file existed the second half of that was not true: no `EQ` code
- * appeared anywhere in `specs/`, and three of them were built, argued and measured with nothing
- * naming them. Writing the list into a specification would not have made it true either: a
- * hand-kept list of every code is a second source that drifts from the union on the first
- * commit that adds one, and the one nobody remembers to update is silent.
+ * holds them. A hand-kept list of every code, in a specification or anywhere else, is a second
+ * source that drifts from the union on the first commit that adds one, and the one nobody remembers
+ * to update is silent.
  *
  * So the reference is derived. `satisfies Record<ToolkitDiagnosticCode, string>` on the literal is
  * the whole of the both-ways check, and the compiler makes it rather than a script asserting it: a
@@ -19,10 +17,10 @@ import type { ToolkitDiagnosticCode } from './diagnostics.js';
  * `DIAGNOSTICS.md` from it and re-renders it in the gate, so the shipped document cannot fall
  * behind the table either.
  *
- * `satisfies` on the literal rather than an annotation on the constant, and the difference was
+ * `satisfies` on the literal rather than an annotation on the constant, and the difference is
  * measured rather than assumed. Written as
  * `const X: Readonly<Record<ToolkitDiagnosticCode, string>> = Object.freeze({ ... })`, an entry for
- * `EQ1312`, a code that does not exist, typechecked clean: the literal is an argument to
+ * `EQ1312`, a code that does not exist, typechecks clean: the literal is an argument to
  * `Object.freeze`, so what is assigned to the annotated constant is a call's return value rather
  * than a fresh literal, and excess property checking does not reach it. Half a check that reads
  * like a whole one is worse than none, because nobody looks at it twice. With `satisfies` the same

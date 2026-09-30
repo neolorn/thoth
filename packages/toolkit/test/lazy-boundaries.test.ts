@@ -18,8 +18,8 @@ import type { ToolkitDiagnostic } from '../src/index.js';
  *
  * The alternative designs are both wrong. Making every application hand-write a list of startup
  * scopes is wiring that has to be maintained forever and will drift. Loading every scope at
- * startup is the same defect with nobody to blame for it. Equator already analyses the route tree,
- * so it can see the boundaries and derive the answer, which is what it does now.
+ * startup is the same defect with nobody to blame for it. Equator analyses the route tree, so it
+ * can see the boundaries and derive the answer.
  *
  * A file behind a boundary that something eager also imports is eager: the first render already
  * pays for it, so deferring its messages would defer nothing and risk rendering a component whose

@@ -11,11 +11,12 @@ import { localeEndonym } from '../src/locales.js';
 /**
  * A locale's own name, decided by the build rather than by the visitor's browser.
  *
- * `selfName` was `new Intl.DisplayNames([locale], { type: 'language' }).of(locale)`, read wherever
- * the switcher happened to render. Measured over sixteen locales on the four engines Equator gates
- * on, three disagreed: WebKit 26.5 title-cases the language name, and Chromium 149 prints the
- * untranslated variant subtag as `VALENCIA`. Equator server-renders the switcher on Node, so the
- * label could change under a WebKit visitor on hydration: from a string Equator itself had sent.
+ * Read as `new Intl.DisplayNames([locale], { type: 'language' }).of(locale)` wherever the switcher
+ * renders, `selfName` would be the engine's answer. Measured over sixteen locales on the four
+ * engines Equator gates on, three disagree: WebKit 26.5 title-cases the language name, and Chromium
+ * 149 prints the untranslated variant subtag as `VALENCIA`. Equator server-renders the switcher on
+ * Node, so the label would change under a WebKit visitor on hydration, from a string Equator itself
+ * sent.
  *
  * This is the channel from the pinned CLDR release to the generated module. Whether the rendered
  * switcher agrees with the server is a claim about the composed application and is asserted in the

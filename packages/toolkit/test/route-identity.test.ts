@@ -352,7 +352,7 @@ describe('route identity', () => {
   });
 
   it('names the empty path with something no literal path can produce', async () => {
-    // `route:root` was the old answer, and a route at `/root` produced it too.
+    // `route:root` would collide, since a route at `/root` produces it too.
     const analysed = await analyse(
       routeFile(
         "[{ path: '', component: Page }, { path: 'root', component: Page }, { path: 'index', component: Page }]",

@@ -2,9 +2,8 @@
  * Strict freshness is an opt-in, and both halves are asserted.
  *
  * `specs/10-compiler-and-tooling.spec.md` section 12 keeps source-freshness findings
- * non-blocking in friendly mode and makes strict freshness an explicit opt-in. The advisory was
- * intended and present; the opt-in was missing, so there was no way to ask `check` to fail on
- * stale generated output at all.
+ * non-blocking in friendly mode and makes strict freshness an explicit opt-in. The advisory reports
+ * stale output; the opt-in is what lets `check` fail on it.
  *
  * It is one of four separate policy switches rather than a share in one strictness flag. Separate
  * switches can be aggregated behind a convenience flag later; a single switch cannot be split
@@ -27,14 +26,12 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
 /**
  * Whether the gate can fail at all.
  *
- * Everything else here is verified by `equator check` or by the `verify` scripts, and until this
- * existed neither could fail on the things the rest of it depends on.
- * `equator check --require-complete` returned exit 0 and `"status": "success"` while carrying
- * `EQ1310` at `severity: error`; `equator generate` did the same on the same input. A gate that
- * cannot report a failure is not a weaker gate, it is a claim nobody is holding.
+ * Everything else here is verified by `equator check` or by the `verify` scripts, and neither can
+ * fail on the things the rest of it depends on unless the success path reads severity: without it,
+ * `equator check --require-complete` returns exit 0 and `"status": "success"` while carrying
+ * `EQ1310` at `severity: error`, and `equator generate` does the same. A gate that cannot report a
+ * failure is not a weaker gate, it is a claim nobody is holding.
  *
- * These are the criteria for 0.1 and 0.2, written so that the fix each one warns against fails
- * them.
  */
 
 const temporaryRoots: string[] = [];

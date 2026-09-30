@@ -6,12 +6,11 @@ import { parseMessageSemanticModel } from '../src/message-format.js';
  * Every built-in function declares the options it accepts, and the compiler builds the
  * formatter the evaluator will build for all of them rather than for the numeric six.
  *
- * The state this replaced is worth stating, because it is the reason the check is shaped this way.
- * `checkFunctionOptions` looked the function up in a table that held only the numeric family and
- * returned when it was absent, so **every option name and every option value written on `:string`,
- * `:datetime`, `:date` and `:time` was accepted unread**. That failed in two directions at once:
- * thirteen messages compiled and threw while rendering, and thirty-seven compiled, rendered, and
- * ignored the option the author had written.
+ * The failure it guards against is the reason the check is shaped this way. A lookup in a table
+ * that holds only the numeric family, returning when the function is absent, accepts **every option
+ * name and every option value written on `:string`, `:datetime`, `:date` and `:time` unread**, and
+ * that fails in two directions at once: messages that compile and throw while rendering, and
+ * messages that compile, render, and ignore the option the author wrote.
  *
  * The exhaustive half of this lives in `tools/verify-message-function-space.mjs`, which generates
  * its cases from the table and runs in the gate. What is here is the named cases: the ones a
@@ -57,8 +56,7 @@ describe('the option vocabulary of the built-in functions', () => {
 
     /**
      * `:datetime` writes `dateFields` and `dateLength` where `:date` writes `fields` and `length`,
-     * and the specification does not let either borrow the other's spelling. Both were accepted
-     * before this item, and neither was read.
+     * and the specification does not let either borrow the other's spelling.
      */
     it('refuses one function spelling of an option on another', () => {
       expect(refusal('{$d :date dateFields=weekday}')).toContain(

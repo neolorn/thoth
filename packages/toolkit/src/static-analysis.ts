@@ -868,10 +868,10 @@ function routeIndexingPolicy(
  *
  * An application states its locales twice and always has: once in `equator.config.json`, which is
  * what generates the catalogs, and once in the call that builds its locale URL policy, which is
- * what turns a locale into an address. The two have to agree and nothing compared them: the
- * toolkit had no knowledge of the policy at all, so none of its diagnostics could have covered it.
- * Adding a locale to one and not the other is silent in both directions: a locale with catalogs and
- * no address is unreachable, and an address with no catalogs renders in the default language.
+ * what turns a locale into an address. The two have to agree, and reading the policy is what lets
+ * the toolkit compare them. Adding a locale to one and not the other is silent in both directions:
+ * a locale with catalogs and no address is unreachable, and an address with no catalogs renders in
+ * the default language.
  *
  * It also declares the leading path segments it owns, and those are read here for a second
  * question the toolkit is the only place that can ask. A canonical route whose own first segment
@@ -2976,8 +2976,8 @@ function analyzeRoutes(
       // ordinary, supported Angular, and refusing to generate on it would mean no application
       // containing one anywhere can adopt Equator at all, with "restructure your routing" as the
       // only remedy. That is a wall rather than a limit, and Equator is meant to sit in
-      // applications it did not design. What the item actually requires is that this not be silent,
-      // and a named warning carrying the route, the consequence and the remedy is not silence.
+      // applications it did not design. What is required is that this not be silent, and a named
+      // warning carrying the route, the consequence and the remedy is not silence.
       if (parentPath !== undefined && declared.kind === 'hidden') {
         const [cause, remedy] = {
           computed: [

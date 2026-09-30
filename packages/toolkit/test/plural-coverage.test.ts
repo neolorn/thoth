@@ -213,17 +213,16 @@ describe('plural category coverage', () => {
 });
 
 /**
- * The gate read the cardinal table for every selector, whatever MF2's `select`
- * option said, so it was wrong in both directions at once: it demanded of an Arabic ordinal
- * translation five categories Arabic has no ordinal forms for, and it passed an English ordinal
- * translation that was missing `two` and `few`.
+ * Reading the cardinal table for every selector, whatever MF2's `select` option says, is wrong in
+ * both directions at once: it demands of an Arabic ordinal translation five categories Arabic has
+ * no ordinal forms for, and it passes an English ordinal translation missing `two` and `few`.
  *
  * The two tables are not variants of one another, which is why one cannot stand in for the other.
  */
 describe('plural category coverage follows MF2 select', () => {
   it('accepts an Arabic ordinal target that supplies only the catch-all', () => {
-    // CLDR 48.2 gives Arabic ordinals exactly ["other"]. Under the cardinal table this fixture was
-    // required to supply zero/one/two/few/many, which is a demand no translator could satisfy.
+    // CLDR 48.2 gives Arabic ordinals exactly ["other"]. Under the cardinal table this fixture
+    // would have to supply zero/one/two/few/many, which is a demand no translator can satisfy.
     expect(
       coverage(analyzeSelect('ordinal', 'ar-EG', ['* {{عنصر}}'])),
     ).toHaveLength(0);
@@ -235,7 +234,7 @@ describe('plural category coverage follows MF2 select', () => {
 
   it('reports an English ordinal target missing two and few', () => {
     // English ordinals need one/two/few/other. Checked against cardinal ["one","other"] this
-    // translation passed, and shipped "2th" and "3th".
+    // translation would pass and ship "2th" and "3th".
     const [diagnostic] = coverage(
       analyzeSelect('ordinal', 'en-GB', ['one {{1st item}}', '* {{#th item}}']),
     );
@@ -271,7 +270,7 @@ describe('plural category coverage follows MF2 select', () => {
   it('rejects a select value the spec does not define, at parse time', () => {
     // UTS #35 Part 2: the value must be a literal and one of plural, ordinal, exact, otherwise a
     // Bad Option error. Accepting anything else means falling through to the cardinal table, which
-    // is the defect this section fixes reappearing by a different route.
+    // is the wrong-table failure above by a different route.
     const rejected = (select: string) => {
       const result = parseCatalog(message(['* {{x}}'], select), {
         role: 'source',
@@ -463,15 +462,15 @@ describe('requireCompleteTargets accepts a target that is complete', () => {
 /**
  * The four functions that select numerically, not the two a hand-kept set remembered.
  *
- * `PLURAL_SELECTOR_FUNCTIONS` was `new Set(['number', 'integer'])` beside a built-in profile that
- * knows the answer, so a `.match` on `:offset` or `:percent` shipped with its target plural
- * coverage unmeasured: the Arabic translation below, one variant and a catch-all where the
- * grammar needs six, reported nothing. The set is derived from the profile now, and these are the
- * two rows that were missing.
+ * A hand-kept set such as `new Set(['number', 'integer'])` beside a built-in profile that knows the
+ * answer leaves a `.match` on `:offset` or `:percent` with its target plural coverage unmeasured:
+ * the Arabic translation below, one variant and a catch-all where the grammar needs six, would
+ * report nothing. The set is derived from the profile, and these are the two rows a hand-kept set
+ * misses.
  *
  * `:currency` is here as the other half of the check: it selects numerically in no sense at all,
- * 3.17 refuses a `.match` over it outright, and a coverage rule that fired on it would be measuring
- * a message that cannot exist.
+ * the compiler refuses a `.match` over it outright, and a coverage rule that fired on it would be
+ * measuring a message that cannot exist.
  */
 describe('which functions have plural categories to be missing', () => {
   const arabicMessage = (annotation: string, variants: readonly string[]) =>

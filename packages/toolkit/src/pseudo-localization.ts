@@ -82,11 +82,11 @@ export interface PseudoLocaleTransform {
   /**
    * Signed. Positive expands, negative contracts, absent leaves length alone.
    *
-   * **No default, deliberately.** The value this replaces defaulted to `0.35`, a German expansion
-   * figure, which every caller silently inherited whether or not anyone had measured their content.
-   * Omitting the key now means the length behaviour is off rather than that an unmeasured number is
-   * applied. A ratio worth using is derived from real translations of the strings that have no room
-   * to shorten.
+   * **No default, deliberately.** A default such as `0.35`, a German expansion figure, would be
+   * inherited silently by every caller whether or not anyone had measured their content. Omitting
+   * the key means the length behaviour is off rather than that an unmeasured number is applied. A
+   * ratio worth using is derived from real translations of the strings that have no room to
+   * shorten.
    *
    * Contraction is not padding with a negative count. It elides vowels in proportion to the factor,
    * because that is what makes one language shorter than another rather than what truncation looks

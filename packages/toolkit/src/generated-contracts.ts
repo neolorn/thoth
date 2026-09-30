@@ -88,11 +88,10 @@ export interface GenerateContractsOptions {
    * an overlay is not an Angular application and has no reason to synthesize those, and an owner
    * that is a library has no `@angular/core` to resolve them against.
    *
-   * Omitting it entirely was the earlier answer, and it was wrong in a way nothing caught: an
-   * application composes the runtime by calling `provideLocalization` from `#i18n`, so an overlay
-   * without it reports that import as unresolved and makes every application look like one that
-   * composes nothing. A declaration resolves the import, carries the symbol detection resolves,
-   * and pulls in nothing.
+   * Omitting it entirely would be wrong in a way nothing catches: an application composes the
+   * runtime by calling `provideLocalization` from `#i18n`, so an overlay without it reports that
+   * import as unresolved and makes every application look like one that composes nothing. A
+   * declaration resolves the import, carries the symbol detection resolves, and pulls in nothing.
    */
   readonly provider?: 'implementation' | 'declaration';
 }
@@ -493,14 +492,13 @@ function providerImplementationLines(): readonly string[] {
     '',
     // Named, and exported, because the provider is not the only thing that composes it. A test
     // reaches the runtime through `provideLocalizationTesting()` from `@neolorn/equator/testing`,
-    // which takes the setup rather than building it, and before this existed every such test
-    // hand-assembled these six fields from five generated modules: the exact hand-assembly the
-    // provider below was created to remove, reappearing the moment anyone wrote a test.
+    // which takes the setup rather than building it, so a test does not hand-assemble these six
+    // fields from five generated modules, which is the hand-assembly the provider below exists to
+    // remove.
     //
-    // Hand-assembly also drifts, and it had. `testing-entry-point.spec.ts` composed five of the
-    // six (no `personNames`, no `routeProjection`) under the name "composes the same runtime
-    // the application provider does". It did not, and nothing could notice: two copies of a shape
-    // only one of which anything checks.
+    // Hand-assembly also drifts silently: a test composing five of the six still passes under a
+    // name claiming the runtime the application provider composes, because it is two copies of a
+    // shape only one of which anything checks.
     'export const localizationSetup = Object.freeze({',
     '  configuration: configuration,',
     '  catalogSet: catalogSet,',
@@ -571,7 +569,7 @@ function indexModule(
     .map(([alias, locale]) => `  ${quote(alias)}: ${quote(locale)},`);
   // One name per configured locale, looked up at build time so the visitor's engine does not get
   // a vote. A locale CLDR has no name for is left out rather than given its tag: the runtime falls
-  // back to the engine there, which is what it did for every locale before this existed.
+  // back to the engine there.
   const localeNames = Object.fromEntries(
     graph.locales.flatMap((locale) => {
       const endonym = localeEndonym(locale);

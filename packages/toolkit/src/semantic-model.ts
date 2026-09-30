@@ -1204,8 +1204,8 @@ function pluralTableIndex(
  *
  * CLDR keys some rows by more than one subtag, `pt-PT` and `kok-Latn` in 48.2, so keying on the
  * language alone makes those rows unreachable. Today each of them happens to be identical to its
- * base language, which is exactly why the defect was silent: the first release in which one of them
- * diverges would be read wrongly and nothing would say so.
+ * base language, which is exactly why keying on the language alone is silently wrong: the first
+ * release in which one of them diverges would be read wrongly and nothing would say so.
  *
  * Longest-prefix is also what the selection this gate is gating does. `Intl.PluralRules` resolves
  * `kok-Latn-IN` to `kok-Latn` and `pt-BR` to `pt`: truncating a subtag at a time and stopping at
@@ -2118,9 +2118,9 @@ export function analyzeCatalogSet(
         !byLocale.has(locale) &&
         (inheritedCatalogs.get(locale) ?? noInheritance).length === 0
       ) {
-        // The most complete form of incompleteness, and until this read the policy it was the one
-        // the release gate ignored: a locale missing one message of three blocked, and the same
-        // locale missing all three, by having no catalog at all, passed.
+        // The most complete form of incompleteness, and the one a gate escalating only missing
+        // messages would ignore: a locale missing one message of three would block, and the same
+        // locale missing all three, by having no catalog at all, would pass.
         //
         // A locale that inherits a catalog from a parent is not this case. Shipping `en-AU` with
         // no catalog of its own beside an `en` it inherits from is a whole locale saying it has

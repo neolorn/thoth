@@ -14,17 +14,16 @@ import { checkProject, generateProject } from '../src/index.js';
  * locale-dependent table from the one declaration. A locale spelled out in a template is not
  * regenerated when that declaration changes.
  *
- * Every locale switcher in this repository was written by hand before this check existed, and both
- * of them looked the same: the locale as a string in a click handler, the option's language as a
- * static `lang`, its direction as a static `dir`, and its name in its own language as literal text.
- * Four answers Equator already holds, authored again per locale per template, in languages the
- * author may not read, and adding a locale means finding every one of those places, with nothing
- * failing when one is missed.
+ * A hand-written locale switcher has a recognizable shape: the locale as a string in a click
+ * handler, the option's language as a static `lang`, its direction as a static `dir`, and its name
+ * in its own language as literal text. Four answers Equator already holds, authored again per
+ * locale per template, in languages the author may not read, and adding a locale means finding
+ * every one of those places, with nothing failing when one is missed.
  *
- * **The old fixtures are the mutation.** The first case below is a switcher exactly as one was
- * written by hand, and it has to be refused; the second is the same switcher built on
- * `localeChoices` and `localeChoice`, and it has to pass. A check that only ever ran
- * against the shape it approves of would pass without ever having refused anything.
+ * **A hand-written switcher is the mutation.** The first case below is a switcher as one is written
+ * by hand, and it has to be refused; the second is the same switcher built on `localeChoices` and
+ * `localeChoice`, and it has to pass. A check that only ever ran against the shape it approves of
+ * would pass without ever having refused anything.
  *
  * Both build steps are exercised. `generate` is the step a consumer cannot skip, `check` is the one
  * a release gate runs, and a refusal only one of them carried would be silent for whoever ran the

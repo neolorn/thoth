@@ -1124,11 +1124,11 @@ async function discoverCatalogs(
     }
   }
   if (catalogs.length === 0) {
-    // This said *"Equator found no conventional i18n/<scope>/<locale>.yaml catalogs"*
-    // whether none existed or every one of them existed and failed to parse, and it said it above
-    // the parse errors for the very files it had just read. A reader who has an `en-US.yaml` open in
-    // front of them is told Equator cannot find it, which sends them to check the path convention,
-    // the scope name and the locale spelling, none of which is wrong.
+    // One sentence for both cases, *"Equator found no conventional i18n/<scope>/<locale>.yaml
+    // catalogs"*, would be printed whether none exist or every one exists and fails to parse, above
+    // the parse errors for the very files just read. A reader who has an `en-US.yaml` open in front
+    // of them is told Equator cannot find it, which sends them to check the path convention, the
+    // scope name and the locale spelling, none of which is wrong.
     //
     // Absence and unreadability are different facts and they take different sentences. The
     // unreadable case names the files, because ordering diagnostics is `orderedDiagnostics`'s

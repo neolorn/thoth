@@ -80,8 +80,8 @@ describe('Equator XLIFF 2.2 interchange', () => {
     expect(exported.ok).toBe(true);
     if (!exported.ok) return;
     expect(exported.value).toContain('version="2.2"');
-    // The empty translation is a refinement of the segment's state now, not a foreign attribute
-    // on <target>, which is one of the two elements in a unit that admit no foreign attributes.
+    // The empty translation is a refinement of the segment's state, not a foreign attribute on
+    // <target>, which is one of the two elements in a unit that admit no foreign attributes.
     expect(exported.value).toContain('subState="equator:empty"');
     expect(exported.value).not.toContain('equator:empty="true"');
     expect(exported.value).toContain('equator:contract');
@@ -187,8 +187,7 @@ describe('Equator pseudo-locales', () => {
   /**
    * Each behaviour switched on with the others off.
    *
-   * The previous two modes were fixed combinations, so this could not be asked at all: expansion
-   * always brought accenting and markers, and there was no contraction. A test that only checks
+   * Each behaviour is its own switch, so each can be asked about alone. A test that only checks
    * "output differs from source" passes for any of them and distinguishes none.
    */
   it('applies markers without touching length', () => {
@@ -253,8 +252,7 @@ describe('Equator pseudo-locales', () => {
   it('parses a registered message function instead of rejecting it', () => {
     // The transform re-parses each message to find its literal runs. Without the application's
     // own function names it rejects the message the source catalog accepted moments earlier, so
-    // deriving a pseudo-locale failed outright for any application registering an extension.
-    // Found by the consumer gate on `:feature:uppercase`, not by this suite.
+    // deriving a pseudo-locale would fail outright for any application registering an extension.
     const withExtension =
       'Custom function: {$name :feature:uppercase emphasis=loud}';
 
@@ -328,9 +326,8 @@ describe('Equator pseudo-locales', () => {
  * A conformant XLIFF 2.2 document that Equator did not write.
  *
  * Round-tripping Equator's own export can never catch a conformance defect: whatever the exporter
- * writes, the importer is built to read. Every check on this interchange did exactly that, which is
- * why an importer that required Equator's own prefix spellings and exactly one `<file>` passed for
- * as long as it existed.
+ * writes, the importer is built to read. A check of that kind passes an importer that requires
+ * Equator's own prefix spellings and exactly one `<file>`.
  *
  * The document below carries the same information and none of the same serialization decisions:
  *

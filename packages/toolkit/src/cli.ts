@@ -516,17 +516,16 @@ function reportSuccess(
 ): number {
   const ordered = orderedDiagnostics(diagnostics);
   // A command can do what it was asked to do and still have found something that is not allowed to
-  // pass. Until this existed the success path never looked: `equator check --require-complete`
-  // returned exit 0 and `"status": "success"` while carrying `EQ1310` at `severity: error`, and
-  // `equator generate` did the same on the same input.
+  // pass. Unless the success path reads severity, `equator check --require-complete` returns exit 0
+  // and `"status": "success"` while carrying `EQ1310` at `severity: error`, and `equator generate`
+  // does the same.
   //
   // The test is on **severity**, never on a list of codes.
   // `specs/10-compiler-and-tooling.spec.md` section 12 keys it that way, a bare check fails
-  // only on an error, and the alternative is the trap this replaces: a hardcoded
-  // blocking-codes list is a second place every new error-severity diagnostic has to be
-  // registered, and the one nobody remembers is silent. `failureExitCode` still chooses *which*
-  // non-zero code, because that mapping is about the kind of failure, not about whether there is
-  // one.
+  // only on an error, and the alternative is a trap: a hardcoded blocking-codes list is a second
+  // place every new error-severity diagnostic has to be registered, and the one nobody remembers is
+  // silent. `failureExitCode` still chooses *which* non-zero code, because that mapping is about
+  // the kind of failure, not about whether there is one.
   const exitCode = diagnosticsBlock(ordered)
     ? failureExitCode(ordered, invocation.command)
     : 0;

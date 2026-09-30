@@ -757,9 +757,9 @@ function noteElement(
  * Translator guidance, as XLIFF Core notes.
  *
  * `specs/01-standards-profile.spec.md` section 12 requires the mapping to preserve notes and
- * context. Until now `description` and `context` were parsed from YAML, carried through the
- * compiled model, and dropped at the one boundary where a translator would ever read them: the
- * message went out with no explanation of what it means or where it appears.
+ * context. `description` and `context` are parsed from YAML and carried through the compiled model,
+ * and without this mapping they would be dropped at the one boundary where a translator reads them,
+ * sending the message out with no explanation of what it means or where it appears.
  *
  * Source guidance and target guidance are separate notes rather than one merged blob, because they
  * answer to different owners: the source note is Equator's authored explanation of the message, and

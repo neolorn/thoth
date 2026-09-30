@@ -185,8 +185,8 @@ function dateOptionProblem(
  *
  * LDML 48 Part 9: such an operand is a numeric value or "a string matching the `number-literal`
  * production". A literal is the half of that a compiler can settle on its own, the text is right
- * there in the source, and settling it here is the point of compiling at all. Before this,
- * `{foo :number}` parsed, compiled, shipped and threw in front of a reader, which is the one class
+ * there in the source, and settling it here is the point of compiling at all. Unchecked,
+ * `{foo :number}` parses, compiles, ships and throws in front of a reader, which is the one class
  * of defect a localization library cannot put in a release.
  *
  * A variable operand is not checked here and cannot be: what a consumer passes is known at the call
@@ -671,13 +671,13 @@ export function syntaxErrorSentence(error: MessageSyntaxError): string {
  * Which refusals are Data Model Errors, by the standard's division rather than the parser's stages.
  *
  * `EQ1201` is a message the syntax refuses and `EQ1202` is a message the data model refuses, and
- * until this table existed the two were told apart by *where* the refusal came from: anything thrown
- * out of `parseMessage` was syntax, anything reported by `validate` was the data model. That is the
- * implementation's division, and for one type it disagrees with the specification's. LDML 48.2 lists
- * Duplicate Option Name among its Data Model Errors, the working group's own suite files it in
- * `data-model-errors.json`, while `messageformat` throws it while parsing, because a repeated
- * option is visible to the parser. Measured over that suite before this changed: five of its six
- * error types arrived as `EQ1202`, and `duplicate-option-name` alone arrived as `EQ1201`.
+ * telling the two apart by *where* the refusal comes from (anything thrown out of `parseMessage` as
+ * syntax, anything reported by `validate` as the data model) follows the implementation's division,
+ * and for one type it disagrees with the specification's. LDML 48.2 lists Duplicate Option Name
+ * among its Data Model Errors, the working group's own suite files it in `data-model-errors.json`,
+ * while `messageformat` throws it while parsing, because a repeated option is visible to the
+ * parser. Split by stage, five of that suite's six error types arrive as `EQ1202`, and
+ * `duplicate-option-name` alone as `EQ1201`.
  *
  * Which stage notices something is an implementation detail of the parser Equator embeds; which
  * class of error it is belongs to the message. So the class decides the code, one rule for all six,

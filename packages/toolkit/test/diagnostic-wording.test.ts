@@ -91,9 +91,9 @@ async function projectWithCatalogs(scopes: readonly string[]): Promise<string> {
     },
   });
   expect(initialized.ok).toBe(true);
-  // A TypeScript graph, because since 10.1 a project with no catalogs is no longer a failure and
-  // the run carries on to the analysis that needs one. Without this the absence case reports the
-  // missing graph instead of the sentence under test.
+  // A TypeScript graph, because a project with no catalogs is not a failure and the run carries on
+  // to the analysis that needs one. Without this the absence case reports the missing graph instead
+  // of the sentence under test.
   await writeFile(
     resolve(root, 'tsconfig.json'),
     `${JSON.stringify(
@@ -264,13 +264,12 @@ describe('catalogs that are missing and catalogs that will not parse', () => {
 /**
  * What a refused message says, held as text.
  *
- * Filed by 3.17, fixed here, and the same family as EQ1101 above. `MessageSyntaxError.message` is
- * the parser's own type slug followed by the offset, `parse-error at 6`, and
- * `MessageDataModelError` adds nothing to it, so the diagnostic that carried it whole read
+ * The same family as EQ1101 above. `MessageSyntaxError.message` is the parser's own type slug
+ * followed by the offset, `parse-error at 6`, and `MessageDataModelError` adds nothing to it, so a
+ * diagnostic that carries it whole reads
  * `MessageFormat missing-selector-annotation: missing-selector-annotation`: the slug twice over,
  * beside a position the diagnostic already states as a span. Every assertion here is on the
- * sentence; the two codes were covered before this item and are covered by `message-format.test.ts`
- * still.
+ * sentence; the two codes are covered by `message-format.test.ts`.
  *
  * Each source below is one that produced its type when the pinned parser and validator were
  * measured: all thirteen types are reachable, and so are all six of the tokens `missing-syntax`

@@ -24,18 +24,16 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
 /**
  * Can `equator init` state everything `equator.config.json` accepts?
  *
- * It could not: `InitProjectOptions` named four of the six settable keys, so
- * `personNameLocales` and `pseudoLocales` were unreachable from the install line. A test that
- * passed `personNameLocales` had it silently discarded, and the project it produced was *valid*, so
- * nothing failed and nothing said anything. A consumer met the field by reading Equator's source or
- * by failing at runtime.
+ * An option `equator init` does not accept is unreachable from the install line, and the project
+ * produced without it is *valid*, so nothing fails and nothing says anything; a consumer meets the
+ * field by reading Equator's source or by failing at runtime.
  *
- * Closing those two by hand would have fixed the report and left the defect: the seventh key would
- * go the same way. So the option set is not a list that agrees with `CONFIGURATION_SCHEMA`;
- * it is generated from it, and `verify:cli-options` fails when the checked-in table and the schema
- * have drifted apart. **The first two tests below are the ones that cannot go stale**, they are
- * written against the schema rather than against six names, and everything after them is about
- * the conventions that turn a key into something a person can type.
+ * A hand-written option list goes stale on the next key the schema gains, so the option set is not
+ * a list that agrees with `CONFIGURATION_SCHEMA`; it is generated from it, and `verify:cli-options`
+ * fails when the checked-in table and the schema have drifted apart. **The first two tests below
+ * are the ones that cannot go stale**, they are written against the schema rather than against six
+ * names, and everything after them is about the conventions that turn a key into something a person
+ * can type.
  */
 
 const option = (key: string) => {
@@ -108,7 +106,7 @@ describe('the option set is the configuration schema', () => {
     expect(initialized.ok, JSON.stringify(initialized, null, 2)).toBe(true);
     if (!initialized.ok) return;
 
-    // Read back off disk rather than off the result, because the defect was in what got written.
+    // Read back off disk rather than off the result, because what matters is what gets written.
     const written = await readFile(
       resolve(root, 'equator.config.json'),
       'utf8',

@@ -109,9 +109,9 @@ describe('a target locale that omits a source message', () => {
     expect(omissions[0]?.severity).toBe('error');
   });
 
-  it('still treats an invented message as an error either way', () => {
-    // The pre-existing half of the contract, kept honest: extra and missing are now both
-    // reportable, and the invention does not depend on the completeness policy.
+  it('treats an invented message as an error under either policy', () => {
+    // The other half of the contract: extra and missing are both reportable, and the invention does
+    // not depend on the completeness policy.
     const invented = catalog(
       'target',
       'ar-EG',
