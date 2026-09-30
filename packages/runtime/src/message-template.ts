@@ -12,7 +12,7 @@
  * catalog deciding where a reader goes.
  */
 
-import { NgTemplateOutlet } from '@angular/common';
+import { LocationStrategy, NgTemplateOutlet } from '@angular/common';
 import { type TrustedSlotBinding } from './angular-contracts';
 import {
   ChangeDetectionStrategy,
@@ -30,6 +30,7 @@ import {
   type MessageInputArguments,
   type MessageInputs,
   type MessageSlots,
+  type TrustedDestination,
 } from '@neolorn/equator/core';
 import { Localization } from './localization';
 
@@ -144,7 +145,7 @@ function requireBindings(
                 @if (binding(part.name); as trusted) {
                   @if (trusted.kind === 'link') {
                     <a
-                      [href]="trusted.destination.href"
+                      [href]="address(trusted.destination)"
                       [attr.target]="
                         trusted.destination.kind === 'external'
                           ? trusted.destination.target
@@ -214,6 +215,9 @@ export class LocalizedMessage<
     MessageHandle & { readonly resultKind: 'structured' },
 > {
   private readonly localization = inject(Localization);
+  private readonly locationStrategy = inject(LocationStrategy, {
+    optional: true,
+  });
 
   /** The message to render, which is what fixes the types of `inputs` and `slots`. */
   readonly handle = input.required<Handle>();
@@ -254,6 +258,22 @@ export class LocalizedMessage<
     );
     return result;
   });
+
+  /**
+   * The address a link slot writes.
+   *
+   * An internal destination names a page the way a route does, origin-relative and in no locale,
+   * and the address written for it is the one the application's location strategy writes for that
+   * page, as a router link's is: in the committed locale's spelling and under the base href. Written
+   * as given it names no locale, and a visitor who follows it is sent through locale entry.
+   * `specs/07-routing-rendering-and-seo.spec.md` section 6. Without a router there is no strategy,
+   * and the address is the application's as written.
+   */
+  protected address(destination: TrustedDestination): string {
+    return destination.kind === 'internal' && this.locationStrategy !== null
+      ? this.locationStrategy.prepareExternalUrl(destination.href)
+      : destination.href;
+  }
 
   protected binding(name: string): TrustedSlotBinding | undefined {
     return (this.slots() as Readonly<Record<string, TrustedSlotBinding>>)[name];

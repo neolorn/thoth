@@ -54,6 +54,10 @@ A link's destination comes from your application, wrapped so the two kinds canno
 it. The wrapper decides what the rendered anchor is allowed to do, which is
 [About the trust model for translated content](../explanation/about-trusted-content.md).
 
+Name an internal page the way you name a route, with no locale in it. With localized routing the
+anchor carries the page's address in the committed locale, `/ar-eg/second` on an Arabic page, and
+changes with the locale.
+
 Authoring the message this way is what lets a translator move the emphasis to where their language
 puts it.
 
