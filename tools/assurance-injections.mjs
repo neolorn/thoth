@@ -2521,4 +2521,13 @@ export const injections = Object.freeze([
       '    ...dateTimeFormatOptions(functionName, resolved),\n    ...(environment.formatting.timeZone === undefined\n      ? {}\n      : { timeZone: environment.formatting.timeZone }),\n  };\n  if (options.timeZone === undefined) {',
     caughtBy: 'packages/runtime/test/date-option-rendering.test.ts',
   },
+  {
+    id: 'context-time-zone-feature-not-marked',
+    invariant:
+      'A catalog with a date or time expression that names no time zone is marked as requiring the context time zone.',
+    source: 'packages/toolkit/src/compiled-artifacts.ts',
+    find: "      features.add('context-time-zone');",
+    replace: '      void features;',
+    caughtBy: 'packages/toolkit/test/artifact-output.test.ts',
+  },
 ]);
