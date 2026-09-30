@@ -1325,6 +1325,15 @@ for (const surface of packageSurfaces) {
         assertPortableReference(sourceRoot, `${path} sourceRoot`);
       }
       assert.ok(Array.isArray(map.sources), `${path} sources are invalid`);
+      // A JavaScript map names sources outside the package, so a debugger or a stack trace can
+      // show them only if the map carries them. A declaration map is read by an editor, which
+      // falls back to the declaration file when the source is absent.
+      if (!path.endsWith('.d.ts.map')) {
+        assert.ok(
+          Array.isArray(map.sourcesContent),
+          `${path} names sources the package does not carry and embeds none of them`,
+        );
+      }
       if (map.sourcesContent !== undefined) {
         assert.ok(
           Array.isArray(map.sourcesContent),

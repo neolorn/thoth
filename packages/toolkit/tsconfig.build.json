@@ -11,7 +11,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "inlineSources": false,
+    "inlineSources": true,
     "importHelpers": true,
     "isolatedModules": true,
     "stripInternal": true
