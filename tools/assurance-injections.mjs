@@ -4344,4 +4344,13 @@ export const injections = Object.freeze([
       '  if (canonicalFragment !== undefined && fragment !== undefined && [...fragment].length > 512) {',
     caughtBy: 'packages/runtime/test/canonical-correction-single-hop.test.ts',
   },
+  {
+    id: 'migration-sink-unreachable',
+    invariant:
+      'Applying an authored change plan is public, so a consumer can hand it the observability sink the migration events are reported to.',
+    source: 'packages/toolkit/src/index.ts',
+    find: '  applyAuthoredChangePlan,\n  createMigrationPlan,\n',
+    replace: '  createMigrationPlan,\n',
+    caughtBy: 'packages/toolkit/test/observability.test.ts',
+  },
 ]);

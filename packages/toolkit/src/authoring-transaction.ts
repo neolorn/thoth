@@ -131,15 +131,23 @@ export interface MigrationPlanRequest {
   readonly changes: readonly AuthoredFileChangeInput[];
 }
 
+/** What `applyAuthoredChangePlan` applies, where, and whether it only previews. */
 export interface ApplyAuthoredPlanOptions extends ToolkitObservabilityOptions {
+  /** The project directory the change plan's paths are relative to. */
   readonly ownerRoot: string;
+  /** The change plan, as `createMigrationPlan` or `planMessageRefactor` built it. */
   readonly plan: AuthoredChangePlan;
+  /** Reports what applying would change, and writes nothing. */
   readonly dryRun?: boolean;
 }
 
+/** What applying a change plan changed, or with `dryRun`, would change. */
 export interface ApplyAuthoredPlanResult {
+  /** Whether any file differed from what the change plan leaves it as. */
   readonly changed: boolean;
+  /** The paths of those files, relative to the project directory. */
   readonly files: readonly string[];
+  /** The change plan's digest, which names the change that was applied. */
   readonly planDigest: string;
 }
 
@@ -699,6 +707,15 @@ async function applyAuthoredChangePlanCore(
   }
 }
 
+/**
+ * Applies a change plan to a project's authored files, all of them or none.
+ *
+ * Each file must still read as the change plan found it, or already read as the change plan leaves
+ * it, so a file edited since the change plan was made is refused before anything is written. A file
+ * already changed is skipped, which makes applying one change plan twice change nothing the second
+ * time. A failure part of the way through restores every file it had written. `equator migrate` runs this; calling it
+ * directly is how the work reports to an observability sink.
+ */
 export async function applyAuthoredChangePlan(
   options: ApplyAuthoredPlanOptions,
 ): Promise<ToolkitResult<ApplyAuthoredPlanResult>> {

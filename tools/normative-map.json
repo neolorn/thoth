@@ -4134,7 +4134,10 @@
       "spec": "11-diagnostics-and-observability.spec.md",
       "section": "1. What a diagnostic is for",
       "statement": "A release MUST report typed product-neutral diagnostics for authoring, compilation, validation and admission, catalog loading, fallback and recovery, transitions, formatting, caching, server rendering and hydration, and integrations.",
-      "checks": ["assurance:catalog-load-failure-miscoded"]
+      "checks": [
+        "assurance:catalog-load-failure-miscoded",
+        "assurance:migration-sink-unreachable"
+      ]
     },
     {
       "spec": "11-diagnostics-and-observability.spec.md",

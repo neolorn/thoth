@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   TOOLKIT_EVENT_CODES,
   TOOLKIT_OBSERVABILITY_PROFILE,
+  applyAuthoredChangePlan,
   compileProject,
   createMigrationPlan,
   exportXliff22,
@@ -19,7 +20,6 @@ import {
   type ToolkitObservabilityEvent,
   type ToolkitObservabilitySink,
 } from '../src/index.js';
-import { applyAuthoredChangePlan } from '../src/authoring-transaction.js';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
 

@@ -123,8 +123,13 @@ export type {
   CatalogDiffSnapshot,
   CatalogIdentityMove,
 } from './catalog-diff.js';
-export { createMigrationPlan } from './authoring-transaction.js';
+export {
+  applyAuthoredChangePlan,
+  createMigrationPlan,
+} from './authoring-transaction.js';
 export type {
+  ApplyAuthoredPlanOptions,
+  ApplyAuthoredPlanResult,
   AuthoredChangeKind,
   AuthoredChangePlan,
   AuthoredFileChange,
