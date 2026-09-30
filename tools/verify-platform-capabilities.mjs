@@ -4,14 +4,45 @@
  * `specs/01-standards-profile.spec.md` section 5 makes the host's own implementation the engine and
  * requires a capability to be feature-detected before anything rests on it. The probe runs on the
  * pinned Node version and in the three browser engines, so each detection is exercised against
- * the engines a release claims rather than against a stub.
+ * the engines a release claims rather than against a stub. The other Node rows the suites run on
+ * take the same probe, because the toolkit canonicalizes a declaration on whichever of them a build
+ * uses, and a host missing a capability is a host the documentation has to name.
+ *
+ * `specs/03-locale-identity-and-resolution.spec.md` section 3 forbids a difference between runtimes
+ * from changing an identity. The toolkit canonicalizes a declaration at build time and the runtime
+ * canonicalizes a requested locale on the server and in the browser, each through its own host's
+ * `Intl`, so the probe canonicalizes spellings that are not canonical on every host and requires
+ * every answer, and the built toolkit's, to be the pinned Node's.
+ *
+ * `specs/08-formatting-parsing-and-domain.spec.md` section 3 lets a supported runtime lack a
+ * capability only where the release names both in its documentation. The compatibility page is
+ * where it does, and a host the probe finds lacking one is held against that page in both
+ * directions.
  */
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { chromium, firefox, webkit } from 'playwright';
 
 import { listenForBrowsers } from './browser-reachable-port.mjs';
+import {
+  reportedCapabilities,
+  unreportedCapabilities,
+} from './host-capability-gaps.mjs';
+import { describeSpawnFailure, locateNode } from './node-runtimes.mjs';
+import { inputsRoot } from './stage-self-test.mjs';
+import {
+  compareVersions,
+  developmentNode,
+  nodeFloors,
+} from './supported-versions.mjs';
+
+const inputs = inputsRoot();
+const compatibilityPage = 'docs/reference/compatibility.md';
 
 assert.equal(
   process.version,
@@ -82,6 +113,66 @@ async function probePlatform() {
           region: maximized.region ?? null,
         },
       ];
+    }),
+  );
+
+  // Spellings a consumer can declare, request or store that are not canonical: casing, including
+  // the fixture consumers' own locales and route segments; the pinned data's deprecated language,
+  // territory, script and variant aliases; the legacy tags it maps; and tags one host could accept
+  // and another refuse. A refusal is an answer too, because a tag one host refuses and another
+  // accepts is an identity only one of them has.
+  const canonicalIdentities = Object.fromEntries(
+    [
+      'EN-us',
+      'en-us',
+      'ar-eg',
+      'en-arab-xb',
+      'EN',
+      'AR',
+      'zh-hant-tw',
+      'ZH-HANS-cn',
+      'sr-latn-rs',
+      'iw',
+      'iw-IL',
+      'in',
+      'ji',
+      'jw',
+      'mo',
+      'mo-MD',
+      'sh',
+      'sh-BA',
+      'tl',
+      'tl-PH',
+      'cmn',
+      'cmn-Hans-CN',
+      'no-bokmal',
+      'art-lojban',
+      'cel-gaulish',
+      'zh-guoyu',
+      'zh-hakka',
+      'zh-xiang',
+      'sgn-GR',
+      'zh-min-nan',
+      'zh-cmn-Hans',
+      'i-klingon',
+      'en-GB-oed',
+      'de-DD',
+      'en-UK',
+      'my-BU',
+      'ru-SU',
+      'sr-YU',
+      'und-Qaai',
+      'hy-arevela',
+      'hy-arevmda',
+      'ja-Latn-hepburn-heploc',
+      'sv-aaland',
+      'de-1996-1901',
+    ].map((input) => {
+      try {
+        return [input, Intl.getCanonicalLocales(input)[0] ?? null];
+      } catch {
+        return [input, 'refused'];
+      }
     }),
   );
 
@@ -199,6 +290,7 @@ async function probePlatform() {
   );
 
   return {
+    canonicalIdentities,
     crypto: {
       ed25519,
       sha256: digest.byteLength === 32,
@@ -223,6 +315,22 @@ function assertRequiredCapabilities(evidence, runtime) {
     evidence.crypto.sha256,
     true,
     `${runtime} lacks required Web Crypto SHA-256`,
+  );
+}
+
+// Per input rather than one deep comparison, so the refusal names the spelling and both answers. An
+// input the runtime reported nothing for differs from the reference rather than matching it.
+function assertSameIdentities(actual, expected, runtime, reference) {
+  const differences = Object.keys(expected)
+    .filter((input) => actual?.[input] !== expected[input])
+    .map(
+      (input) =>
+        `${input} to ${actual?.[input]}, and ${reference} to ${expected[input]}`,
+    );
+  assert.deepEqual(
+    differences,
+    [],
+    `${runtime} canonicalizes ${differences.join('; ')}`,
   );
 }
 
@@ -303,6 +411,133 @@ assert.deepEqual(nodeEvidence.localeProfiles, {
   },
 });
 
+const hostNode = `Node ${process.version}`;
+
+// Each replacement is the pinned CLDR 48.2 alias data (`supplemental/aliases.json` in `cldr-core`)
+// applied under UTS #35: `languageAlias` for iw, in, ji, jw, mo, sh, tl, cmn, no-bokmal, the legacy
+// tags and the variant pairs; `territoryAlias` for DD, UK, BU, SU and YU, where a list resolves to
+// the language's likely region; `scriptAlias` for Qaai; `variantAlias` for heploc; and variants
+// sorted alphabetically, which is where 1996 and 1901 trade places. A refusal is a
+// tag the Unicode locale identifier grammar ECMA-402 parses does not admit: an extended language
+// subtag, an irregular legacy tag, or a three-letter variant.
+assertSameIdentities(
+  nodeEvidence.canonicalIdentities,
+  {
+    'EN-us': 'en-US',
+    'en-us': 'en-US',
+    'ar-eg': 'ar-EG',
+    'en-arab-xb': 'en-Arab-XB',
+    EN: 'en',
+    AR: 'ar',
+    'zh-hant-tw': 'zh-Hant-TW',
+    'ZH-HANS-cn': 'zh-Hans-CN',
+    'sr-latn-rs': 'sr-Latn-RS',
+    iw: 'he',
+    'iw-IL': 'he-IL',
+    in: 'id',
+    ji: 'yi',
+    jw: 'jv',
+    mo: 'ro',
+    'mo-MD': 'ro-MD',
+    sh: 'sr-Latn',
+    'sh-BA': 'sr-Latn-BA',
+    tl: 'fil',
+    'tl-PH': 'fil-PH',
+    cmn: 'zh',
+    'cmn-Hans-CN': 'zh-Hans-CN',
+    'no-bokmal': 'nb',
+    'art-lojban': 'jbo',
+    'cel-gaulish': 'xtg',
+    'zh-guoyu': 'zh',
+    'zh-hakka': 'hak',
+    'zh-xiang': 'hsn',
+    'sgn-GR': 'gss',
+    'zh-min-nan': 'refused',
+    'zh-cmn-Hans': 'refused',
+    'i-klingon': 'refused',
+    'en-GB-oed': 'refused',
+    'de-DD': 'de-DE',
+    'en-UK': 'en-GB',
+    'my-BU': 'my-MM',
+    'ru-SU': 'ru-RU',
+    'sr-YU': 'sr-RS',
+    'und-Qaai': 'und-Zinh',
+    'hy-arevela': 'hy',
+    'hy-arevmda': 'hyw',
+    'ja-Latn-hepburn-heploc': 'ja-Latn-alalc97',
+    'sv-aaland': 'sv-AX',
+    'de-1996-1901': 'de-1901-1996',
+  },
+  hostNode,
+  'the pinned CLDR alias data',
+);
+
+// The function the compiler canonicalizes a declared locale through, read from the built package
+// because that is what a consumer's build runs. It refuses what Node refuses and also refuses an
+// extension, which none of the inputs carries, so a refusal compares as one.
+const { canonicalizeLocale } = await import(
+  pathToFileURL(resolve(inputs, 'dist/toolkit/locales.js')).href
+);
+assertSameIdentities(
+  Object.fromEntries(
+    Object.keys(nodeEvidence.canonicalIdentities).map((input) => {
+      const result = canonicalizeLocale(input);
+      return [input, result.ok ? result.value : 'refused'];
+    }),
+  ),
+  nodeEvidence.canonicalIdentities,
+  'The toolkit',
+  hostNode,
+);
+
+// The other Node rows run the same probe as a child, the way the compatibility rows run the suites,
+// so each answers from its own `Intl` rather than from this process's.
+const nodeRowVersions = [...new Set([...nodeFloors, developmentNode])]
+  .filter((version) => version !== process.versions.node)
+  .sort(compareVersions);
+const located = [];
+const missingRows = [];
+for (const version of nodeRowVersions) {
+  const { executable, failure } = await locateNode(version, `Node ${version}`);
+  if (failure === undefined) located.push({ executable, version });
+  else missingRows.push(failure);
+}
+if (missingRows.length > 0) {
+  throw new Error(
+    `The platform capability row needs every Node row the suites run on.\n\n${missingRows.join('\n\n')}`,
+  );
+}
+const nodeRowResults = located.map(({ executable, version }) => {
+  const label = `Node v${version}`;
+  process.stdout.write(`Probing ${label}.\n`);
+  const result = spawnSync(executable, ['--input-type=module', '-'], {
+    encoding: 'utf8',
+    env: { ...process.env, NODE_OPTIONS: '', NODE_PATH: '' },
+    input: `const probePlatform = ${probePlatform.toString()};\nprocess.stdout.write(JSON.stringify(await probePlatform()));\n`,
+    maxBuffer: 4_194_304,
+    timeout: 120_000,
+    windowsHide: true,
+  });
+  if (
+    result.status !== 0 ||
+    result.error !== undefined ||
+    result.signal !== null
+  ) {
+    throw new Error(
+      `${label} could not run the capability probe: ${describeSpawnFailure(result)}`,
+    );
+  }
+  const evidence = JSON.parse(result.stdout);
+  assertRequiredCapabilities(evidence, label);
+  assertSameIdentities(
+    evidence.canonicalIdentities,
+    nodeEvidence.canonicalIdentities,
+    label,
+    hostNode,
+  );
+  return { evidence, host: 'Node', label, version };
+});
+
 const capabilityServer = createServer((_request, response) => {
   response.setHeader('Content-Type', 'text/html; charset=utf-8');
   response.end('<!doctype html><title>Equator capability probe</title>');
@@ -356,6 +591,12 @@ try {
         nodeEvidence.localeProfiles,
         `${row.label} ${version} likely-script results differ from the Node reference row`,
       );
+      assertSameIdentities(
+        evidence.canonicalIdentities,
+        nodeEvidence.canonicalIdentities,
+        `${row.label} ${version}`,
+        hostNode,
+      );
 
       const formatDifferences = [];
       const formatDifferenceDetails = [];
@@ -390,6 +631,7 @@ try {
         formatDifferenceDetails,
         formatDifferences,
         formatDifferencesReviewed: reviewedDifferences !== undefined,
+        host: row.label,
         id: row.id,
         label: row.label,
         version,
@@ -410,6 +652,68 @@ try {
   });
 }
 
+// Every optional capability the probe reads is either one the runtime reports as unsupported, and so
+// one the page has to name, or one Equator formats nothing with. A capability added to the probe
+// without that decision would otherwise be measured and never held to anything.
+assert.deepEqual(
+  Object.keys(nodeEvidence.optionalIntl).sort(),
+  [...Object.keys(reportedCapabilities), ...unreportedCapabilities].sort(),
+  'The probe reads an optional Intl capability tools/host-capability-gaps.mjs neither reports nor sets aside',
+);
+
+const measuredGaps = [
+  { evidence: nodeEvidence, host: 'Node', version: process.versions.node },
+  ...nodeRowResults,
+  ...browserResults,
+].flatMap(({ evidence, host, version }) =>
+  Object.entries(reportedCapabilities)
+    .filter(([capability]) => evidence.optionalIntl[capability] !== true)
+    .map(([, { native }]) => `${host} ${version} lacks ${native}`),
+);
+
+// Read from the page a reader sees rather than from the record it is generated from, so what is held
+// to the measurement is what is published. `verify:docs-reference` holds the page to the record.
+const pageText = (await readFile(resolve(inputs, compatibilityPage), 'utf8'))
+  .replaceAll('\r\n', '\n')
+  .split('\n');
+const gapHeading = pageText.indexOf('## Formatting a host does not provide');
+assert.notEqual(
+  gapHeading,
+  -1,
+  `${compatibilityPage} has no "Formatting a host does not provide" section, so it names no host that lacks a capability`,
+);
+const gapSectionEnd = pageText.findIndex(
+  (line, index) => index > gapHeading && line.startsWith('## '),
+);
+const documentedGaps = pageText
+  .slice(gapHeading + 1, gapSectionEnd === -1 ? undefined : gapSectionEnd)
+  .filter((line) => line.startsWith('|'))
+  .slice(2)
+  .map((line) => {
+    const [host, native] = line
+      .split('|')
+      .slice(1, 3)
+      .map((cell) => cell.replaceAll('`', '').trim());
+    return `${host} lacks ${native}`;
+  });
+
+const undocumentedGaps = measuredGaps.filter(
+  (gap) => !documentedGaps.includes(gap),
+);
+assert.deepEqual(
+  undocumentedGaps,
+  [],
+  `${undocumentedGaps.join('; ')}, and ${compatibilityPage} does not say so`,
+);
+const contradictedGaps = documentedGaps.filter(
+  (gap) => !measuredGaps.includes(gap),
+);
+assert.deepEqual(
+  contradictedGaps,
+  [],
+  `${compatibilityPage} says ${contradictedGaps.join('; ')}, and the probe did not find that on any host it ran`,
+);
+
 // The row above proves agreement; this says what was agreed. A record that reports only "no
 // differences" cannot be read later to find out what the engines actually emitted, and the
 // positions are the whole content of the numeric direction-control measurement.
@@ -423,6 +727,12 @@ process.stdout.write(
   [
     `Equator platform capability rows verified against Node ${process.version}.`,
     `Numeric direction controls, agreed by every row above, as code-point index and value: ${numericControlEvidence.join('; ')}.`,
+    `Canonical identities of ${Object.keys(nodeEvidence.canonicalIdentities).length} spellings agreed by the toolkit, ${nodeRowResults.map(({ label }) => label).join(', ')} and every browser row with the pinned alias data.`,
+    `Hosts lacking a reported capability, each named in ${compatibilityPage}: ${measuredGaps.length === 0 ? 'none' : measuredGaps.join('; ')}.`,
+    ...nodeRowResults.map(
+      ({ evidence, label }) =>
+        `${label}: conditional Intl=${JSON.stringify(evidence.optionalIntl)}.`,
+    ),
     ...browserResults.flatMap((result) => [
       `${result.label} ${result.version}: native formatting differences=${JSON.stringify(result.formatDifferences)}${result.formatDifferencesReviewed ? ' (reviewed)' : ' (uncharacterized; record after review)'}.`,
       `${result.label} ${result.version}: native formatting difference details=${JSON.stringify(result.formatDifferenceDetails)}.`,

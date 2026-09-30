@@ -29,7 +29,8 @@
  * The compatibility page is the peer ranges and the engines field, which are what an install reads,
  * together with the versions the matrix actually runs. Both halves come from `supported-versions`,
  * so the page cannot claim support for a version no row proves, and cannot omit one the packages
- * admit.
+ * admit. The hosts that lack a formatting capability come from `host-capability-gaps`, which
+ * `verify:platform` holds against what those hosts are measured to provide.
  *
  * `--check` re-renders all five and fails when what is checked in differs, which is the same
  * mechanism the diagnostics table and the init option table use.
@@ -71,6 +72,10 @@ import {
   peerRange,
   runtimePeers,
 } from './supported-versions.mjs';
+import {
+  hostCapabilityGaps,
+  reportedCapabilities,
+} from './host-capability-gaps.mjs';
 import { inputsRoot } from './stage-self-test.mjs';
 
 const workspaceRoot = inputsRoot();
@@ -465,6 +470,19 @@ const nodeRowVersions = [...nodeConsumerProfiles.values()]
   .map(({ node }) => `\`${node}\``)
   .join(' and ');
 
+// Rendered from the record `verify:platform` holds this page against, so the list a reader sees is
+// the list the probe has to agree with on every host it runs.
+const capabilityGapRows = hostCapabilityGaps.map(
+  ({ host, version, capability }) => {
+    const reported = reportedCapabilities[capability];
+    assert.ok(
+      reported !== undefined,
+      `tools/host-capability-gaps.mjs records ${host} ${version} lacking ${capability}, which is not a capability the runtime reports.`,
+    );
+    return `| ${host} \`${version}\` | \`${reported.native}\` | ${reported.fails.join(' and ')} |`;
+  },
+);
+
 const compatibilityDocument = `${[
   '# Compatibility',
   '',
@@ -546,6 +564,24 @@ const compatibilityDocument = `${[
   'slightly differently in the same locale, so assert on what your application does with the result',
   'rather than on the exact string, which is',
   '[How to test localized output](../how-to/test-localized-output.md).',
+  '',
+  '## Formatting a host does not provide',
+  '',
+  "Equator formats with the host's own `Intl`. On a host without the capability a function needs,",
+  'that function returns a failure with the code `unsupported-formatting-capability` rather than an',
+  'approximation.',
+  '',
+  ...(capabilityGapRows.length === 0
+    ? [
+        'Every host each release is run on has every capability Equator formats with.',
+      ]
+    : [
+        'These are the hosts each release is run on that lack one:',
+        '',
+        '| Host | Missing | What fails there |',
+        '| ---- | ------- | ---------------- |',
+        ...capabilityGapRows,
+      ]),
   '',
   '## When a version outside the range is installed',
   '',

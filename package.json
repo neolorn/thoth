@@ -56,6 +56,7 @@
     "stage:node-runtimes": "node ./tools/stage-node-runtimes.mjs",
     "stage:consumer-store": "node ./tools/stage-consumer-store.mjs",
     "verify:node-compatibility": "node ./tools/verify-node-compatibility.mjs",
+    "verify:platform:self-test": "node ./tools/verify-stage-self-test.mjs verify:platform",
     "verify:platform": "node ./tools/verify-platform-capabilities.mjs",
     "refresh:consumer": "node ./tools/refresh-consumer-packages.mjs",
     "refresh:consumer-locks": "node ./tools/refresh-package-consumer-locks.mjs",

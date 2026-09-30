@@ -359,9 +359,26 @@ const declared = Object.freeze([
     id: 'verify:node-compatibility',
     reads: ['dist:runtime', 'dist:toolkit', 'source:packages'],
   },
-  // Empty on purpose: it reads no file at all. It probes the installed engines, Node's `Intl`
-  // and the three Playwright browsers, which the lockfile binds rather than a stage.
-  { id: 'verify:platform', reads: [] },
+  // Runs the stage below over a copy of the built toolkit and the compatibility page, once
+  // unchanged and once per defect `stage-plants.mjs` plants: a toolkit that canonicalizes a tag
+  // differently from Node, and a page that omits or invents a capability a host lacks.
+  {
+    id: 'verify:platform:self-test',
+    reads: ['dist:toolkit', 'source:docs', 'source:packages'],
+  },
+  // Probes the installed engines, every Node row the suites run on and the three Playwright
+  // browsers, and holds the built toolkit's canonicalization and the published compatibility page
+  // to what they answer.
+  {
+    id: 'verify:platform',
+    reads: ['dist:toolkit', 'source:docs', 'source:packages'],
+    needs: [
+      {
+        on: 'verify:platform:self-test',
+        why: 'A stage nobody has seen refuse the defects it exists for is indistinguishable from one that reads nothing.',
+      },
+    ],
+  },
   // The consumer rows read `source:tools` because the materializer copies the claim and its
   // recorder into each consumer, whose specs claim what they assert.
   {

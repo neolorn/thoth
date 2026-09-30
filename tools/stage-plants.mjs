@@ -399,6 +399,45 @@ export const stageSelfTests = Object.freeze({
       },
     ],
   },
+  // Every run launches the three browser engines and the other Node rows, so the budget is the
+  // stage's rather than the default one sized for a script that reads files.
+  'verify:platform': {
+    script: 'tools/verify-platform-capabilities.mjs',
+    inputs: ['dist/toolkit', 'docs/reference/compatibility.md'],
+    timeout: 600_000,
+    plants: [
+      {
+        id: 'toolkit-keeps-a-deprecated-language',
+        plant: plantText(
+          'dist/toolkit/locales.js',
+          '        canonical = locales[0];',
+          "        canonical = locales[0] === 'he' ? 'iw' : locales[0];",
+        ),
+        refusal:
+          /The toolkit canonicalizes iw to iw, and Node v24\.18\.0 to he/u,
+      },
+      {
+        id: 'host-gap-left-undocumented',
+        plant: plantText(
+          'docs/reference/compatibility.md',
+          '\n| Node `22.22.3` | `Intl.DurationFormat` | `formatDuration` and the `localizedDuration` pipe |',
+          '',
+        ),
+        refusal:
+          /Node 22\.22\.3 lacks Intl\.DurationFormat, and docs\/reference\/compatibility\.md does not say so/u,
+      },
+      {
+        id: 'host-gap-documented-and-absent',
+        plant: plantText(
+          'docs/reference/compatibility.md',
+          '| Node `22.22.3` | `Intl.DurationFormat` | `formatDuration` and the `localizedDuration` pipe |',
+          '| Node `22.22.3` | `Intl.DurationFormat` | `formatDuration` and the `localizedDuration` pipe |\n| Node `24.15.0` | `Intl.DurationFormat` | `formatDuration` and the `localizedDuration` pipe |',
+        ),
+        refusal:
+          /docs\/reference\/compatibility\.md says Node 24\.15\.0 lacks Intl\.DurationFormat, and the probe did not find that on any host it ran/u,
+      },
+    ],
+  },
   'verify:message-format-conformance': {
     script: 'tools/verify-message-format-conformance.mjs',
     inputs: [

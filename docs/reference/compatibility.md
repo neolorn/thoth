@@ -73,6 +73,18 @@ slightly differently in the same locale, so assert on what your application does
 rather than on the exact string, which is
 [How to test localized output](../how-to/test-localized-output.md).
 
+## Formatting a host does not provide
+
+Equator formats with the host's own `Intl`. On a host without the capability a function needs,
+that function returns a failure with the code `unsupported-formatting-capability` rather than an
+approximation.
+
+These are the hosts each release is run on that lack one:
+
+| Host           | Missing               | What fails there                                  |
+| -------------- | --------------------- | ------------------------------------------------- |
+| Node `22.22.3` | `Intl.DurationFormat` | `formatDuration` and the `localizedDuration` pipe |
+
 ## When a version outside the range is installed
 
 The toolkit checks the host before the compiler does anything and refuses with `EQ1806` rather
