@@ -80,6 +80,7 @@ interface Analysed {
 
 async function analyse(
   files: Readonly<Record<string, string>>,
+  order: 'as-written' | 'reversed' = 'as-written',
 ): Promise<Analysed> {
   const root = await mkdtemp(resolve(tmpdir(), 'route-id-'));
   temporaryRoots.push(root);
@@ -95,7 +96,10 @@ async function analyse(
   }
   const analysis = analyzeApplication({
     projectRoot: root,
-    rootNames: Object.keys(all).map((path) => resolve(root, path)),
+    rootNames: (order === 'reversed'
+      ? Object.keys(all).reverse()
+      : Object.keys(all)
+    ).map((path) => resolve(root, path)),
     compilerOptions: {
       target: ts.ScriptTarget.ES2022,
       module: ts.ModuleKind.Preserve,
@@ -313,6 +317,40 @@ describe('route indexing', () => {
 });
 
 describe('route identity', () => {
+  it('projects one table whatever order the compiler is handed the files in', async () => {
+    // Three route tables in three files, none referencing another, so each is placed on its own and
+    // the order the program reads the files in is a real variable. The projection is the only
+    // route manifest there is, and one that followed that order would give two builds of the same
+    // source two different route tables.
+    const application = {
+      'src/page.ts': 'export class Page {}\n',
+      'src/zeta/routes.ts': [
+        "import type { Routes } from '@angular/router';",
+        "import { Page } from '../page';",
+        "export const zetaRoutes: Routes = [{ path: 'last', component: Page }];",
+        '',
+      ].join('\n'),
+      'src/alpha/routes.ts': [
+        "import type { Routes } from '@angular/router';",
+        "import { Page } from '../page';",
+        "export const alphaRoutes: Routes = [{ path: 'first', component: Page }];",
+        '',
+      ].join('\n'),
+      'src/app.routes.ts': [
+        "import type { Routes } from '@angular/router';",
+        "import { Page } from './page';",
+        "export const routes: Routes = [{ path: 'home', component: Page }];",
+        '',
+      ].join('\n'),
+    };
+
+    const written = await analyse(application);
+    const reversed = await analyse(application, 'reversed');
+
+    expect(identities(written)).toHaveLength(3);
+    expect(reversed.routes).toStrictEqual(written.routes);
+  });
+
   it('names the empty path with something no literal path can produce', async () => {
     // `route:root` was the old answer, and a route at `/root` produced it too.
     const analysed = await analyse(

@@ -94,6 +94,21 @@ describe('the cookie the handler writes', () => {
       /(^|;\s*)equator-locale=ar-EG(;|$)/u,
     );
   });
+
+  it('writes nothing at an address naming a locale the site does not serve', async () => {
+    // Section 15: the locale was asked for and not activated, so there is no choice to remember,
+    // and the locale the page is presented in was never the visitor's either.
+    for (const cookie of ['equator-locale=ar-EG', undefined]) {
+      const unsupported = await get(
+        '/fr-fr/second',
+        cookie === undefined ? {} : { cookie },
+      );
+
+      expect(unsupported.status).toBe(404);
+      expect(unsupported.headers.get('content-language')).not.toBe('fr-FR');
+      expect(unsupported.headers.get('set-cookie')).toBeNull();
+    }
+  });
 });
 
 describe('what a background request may change', () => {

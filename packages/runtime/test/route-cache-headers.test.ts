@@ -616,6 +616,31 @@ describe('what a locale-neutral policy does to cacheability', () => {
     claimCapability('policy:locale-neutral', { policy: POLICY });
   });
 
+  it('leaves a correction unvaried, because its location is the same for every locale', () => {
+    for (const locale of [undefined, 'ar-EG']) {
+      const descriptor = routeHttpDescriptor(
+        resolveLocalizedRoute(
+          '/about/',
+          POLICY,
+          PROJECTION,
+          locale === undefined ? undefined : { locale },
+        ),
+      );
+      expect(descriptor).toStrictEqual({
+        status: 308,
+        location: '/about',
+        cache: 'consumer-defined-permanent',
+      });
+      expect(
+        routeCacheHeaders(descriptor, {
+          ...FRESHNESS,
+          localePreference: 'accept-language',
+        }),
+      ).toStrictEqual({ 'cache-control': 'public, max-age=86400' });
+    }
+    claimCapability('policy:locale-neutral', { policy: POLICY });
+  });
+
   it('is private under a cookie and a shared variant under Accept-Language', () => {
     expect(headersFor(undefined, 'cookie')).toStrictEqual({
       'cache-control': 'private, no-cache',

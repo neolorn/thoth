@@ -85,6 +85,23 @@ describe("an address in another locale's spelling", () => {
     claimCapability('policy:path-prefix', { policy: PREFIXED });
   });
 
+  it('rebuilds the query and fragment it keeps rather than copying their text', () => {
+    // Every value is decoded, bounded and encoded again, so what reaches the location is what the
+    // parser accepted and nothing the request wrote around it.
+    expect(
+      resolveLocalizedRoute(
+        '/ar-eg/articles/hello?flag&x=%7e&q=a%20b#%74op',
+        PREFIXED,
+        PROJECTION,
+      ),
+    ).toMatchObject({
+      status: 'redirect',
+      reason: 'canonical-correction',
+      location: `/ar-eg/${ARTICLES_ENC}/hello?flag=&x=~&q=a%20b#top`,
+    });
+    claimCapability('policy:path-prefix', { policy: PREFIXED });
+  });
+
   it('is corrected on its own origin under a host policy', () => {
     expect(
       resolveLocalizedRoute(

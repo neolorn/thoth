@@ -199,6 +199,24 @@ describe('inbound: localized external to canonical internal', () => {
     claimCapability('policy:path-prefix', { policy: CONTEXT.policy });
   });
 
+  it('keeps the case of a parameter its codec reads as written', () => {
+    // A static segment is lowercase by policy and its other casings are corrected to it. A
+    // parameter is the application's data, and only its codec says which spellings are the same
+    // value, so an identifier that differs from its lowercase form is a different identifier.
+    expect(
+      resolveLocalizedRoute('/en-us/articles/Handbook', PREFIXED, PROJECTION),
+    ).toMatchObject({
+      status: 'success',
+      routeId: 'article',
+      parameters: { slug: 'Handbook' },
+      canonicalPath: '/en-us/articles/Handbook',
+    });
+    expect(toInternalPath('/en-us/articles/Handbook', CONTEXT)).toBe(
+      '/articles/Handbook',
+    );
+    claimCapability('policy:path-prefix', { policy: CONTEXT.policy });
+  });
+
   it('corrects a decoded spelling rather than declining it', () => {
     // Every inbound case above is fed the encoded form, because that is what
     // `document.location.pathname` yields. A decoded spelling can only come from application code,

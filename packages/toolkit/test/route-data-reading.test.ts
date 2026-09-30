@@ -786,3 +786,27 @@ describe('route tables the build does not follow', () => {
     expect(codes(analysed)).toEqual(['EQ1406']);
   });
 });
+
+describe('a provider file', () => {
+  it('is read from its source and never run', async () => {
+    // Section 14 of `specs/07-routing-rendering-and-seo.spec.md`: the build obtains the indexing
+    // declaration without executing consumer code. The file below leaves a mark on the global object
+    // when it runs, so a build that ran it to learn the table would still answer correctly and be
+    // caught by the mark rather than by the answer.
+    const MARK = 'equatorProviderFileEvaluated';
+    const analysed = await analyse({
+      ...routeFile(
+        "[{ path: 'admin', component: Page, data: { area: 'staff' } }]",
+      ),
+      ...routingFile(
+        "{ indexing: { field: 'area', values: { staff: 'private' } } }",
+        `Reflect.set(globalThis, '${MARK}', true);`,
+      ),
+    });
+
+    expect(rows(analysed)).toEqual({
+      'route:admin': { indexing: 'private', caching: undefined },
+    });
+    expect(Reflect.has(globalThis, MARK)).toBe(false);
+  });
+});

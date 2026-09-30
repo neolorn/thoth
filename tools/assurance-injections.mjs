@@ -2670,4 +2670,155 @@ export const injections = Object.freeze([
     replace: '        false && !COMPLETENESS_CODES.has(code),',
     caughtBy: 'packages/toolkit/test/unvalidated-content-not-compiled.test.ts',
   },
+  {
+    id: 'alternate-carries-the-visit-query',
+    invariant:
+      "A page's alternate URLs omit the query the visitor arrived with.",
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '    const url = mounted(splitSuffix(address)[0], baseHref, site);',
+    replace: '    const url = mounted(address, baseHref, site);',
+    caughtBy: 'packages/runtime/test/built-locale-addresses.test.ts',
+  },
+  {
+    id: 'canonical-carries-the-visit-query',
+    invariant:
+      "A page's canonical URL omits the query the visitor arrived with.",
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '    resolution.parameters,\n    [],\n    undefined,\n    spellings,\n  );\n  const canonical = mounted(',
+    replace:
+      '    resolution.parameters,\n    resolution.query,\n    undefined,\n    spellings,\n  );\n  const canonical = mounted(',
+    caughtBy: 'packages/runtime/test/built-locale-addresses.test.ts',
+  },
+  {
+    id: 'correction-copies-raw-query-text',
+    invariant:
+      'A correction carries the query and fragment as parsed and encoded again, never as the text the request wrote.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: "  const canonicalSuffix = `${canonicalQuery.length === 0 ? '' : `?${canonicalQuery}`}${fragment === undefined ? '' : `#${encodeURIComponent(fragment)}`}`;",
+    replace: '  const canonicalSuffix = target.slice(rawPath.length);',
+    caughtBy: 'packages/runtime/test/another-locale-spelling.test.ts',
+  },
+  {
+    id: 'declared-failure-lifts-route-robots',
+    invariant:
+      'A page that declares an operational failure leaves its route kept out of indexing, because a declaration can narrow an indexing class and never widen one.',
+    source: 'packages/runtime/core/src/page-outcome.ts',
+    find: '      ...(resolved.robots === undefined ? {} : { robots: resolved.robots }),',
+    replace: '      ...{},',
+    caughtBy: 'packages/runtime/test/declared-page-outcome.test.ts',
+  },
+  {
+    id: 'dynamic-identity-case-folded',
+    invariant:
+      'A parameter segment keeps the spelling its codec serializes, so an identifier differing from its lowercase form is neither folded nor corrected.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '      canonicalSegments.push(canonical);',
+    replace: '      canonicalSegments.push(canonical.toLowerCase());',
+    caughtBy: 'packages/runtime/test/address-translation.test.ts',
+  },
+  {
+    id: 'locale-neutral-correction-varies',
+    invariant:
+      'A redirect under a locale-neutral policy is not classified as varying, because its location is the same for every locale.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: "        ...(resolution.reason === 'locale-entry'",
+    replace:
+      "        ...(resolution.reason === 'locale-entry' ||\n        resolution.reason === 'canonical-correction'",
+    caughtBy: 'packages/runtime/test/route-cache-headers.test.ts',
+  },
+  {
+    id: 'locale-self-name-read-from-the-engine',
+    invariant:
+      'A locale option carries the self-name the build generated, and asks the engine only for a locale the build has no name for.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '  if (generated !== undefined) return generated;',
+    replace: '  if (generated !== undefined && false) return generated;',
+    caughtBy: 'packages/runtime/test/locale-self-name.test.ts',
+  },
+  {
+    id: 'missing-translation-refuses-the-message',
+    invariant:
+      'A message the requested locale has no translation for renders from the next catalog in the order and is reported as a missing translation, not refused.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '    if (locale !== targetLocale) attempted.push(locale);',
+    replace: '    if (locale !== targetLocale) break;',
+    caughtBy: 'packages/runtime/test/missing-translation-outcome.test.ts',
+  },
+  {
+    id: 'participant-report-extra-fields-admitted',
+    invariant:
+      'A participant answer carrying a field its status does not name is refused, so a consumer payload has no way into the transaction.',
+    source: 'packages/runtime/src/participant-runtime.ts',
+    find: "      if (!keysWithin(value, ['status', 'representation', 'identity'])) {",
+    replace: '      if (!keysWithin(value, Object.keys(value))) {',
+    caughtBy: 'packages/runtime/test/participant-own-language.test.ts',
+  },
+  {
+    id: 'progressive-region-failure-escapes',
+    invariant:
+      "A progressive region's failure is recorded in that region's state and goes no further.",
+    source: 'packages/runtime/src/participant-runtime.ts',
+    find: '      this.commitPrepared([prepared]);\n    } catch {\n      // Independent regional outcomes are exposed through participant state.\n    }',
+    replace:
+      '      this.commitPrepared([prepared]);\n    } catch (error: unknown) {\n      throw error;\n    }',
+    caughtBy: 'packages/runtime/test/progressive-region-failure.test.ts',
+  },
+  {
+    id: 'progressive-region-relabelled-as-the-page',
+    invariant:
+      'A region keeps the language and direction it reported, rather than being relabelled as the locale it was asked for.',
+    source: 'packages/runtime/src/participant-runtime.ts',
+    find: '        const current = Object.freeze({\n          targetLocale: item.context.targetLocale,\n          transitionId: item.context.transitionId,\n          report: item.report,\n        });',
+    replace:
+      "        const current = Object.freeze({\n          targetLocale: item.context.targetLocale,\n          transitionId: item.context.transitionId,\n          report: item.report.status === 'ready'\n            ? Object.freeze({\n                ...item.report,\n                representation: Object.freeze({\n                  kind: 'locale-bound' as const,\n                  supplyingLocale: item.context.targetLocale,\n                  direction: directionForLocale(item.context.targetLocale),\n                }),\n              })\n            : item.report,\n        });",
+    caughtBy: 'packages/runtime/test/participant-own-language.test.ts',
+  },
+  {
+    id: 'provider-file-evaluated-to-read-routing',
+    invariant:
+      'The routing declaration is read from the provider file source, and no consumer code is run to obtain it.',
+    source: 'packages/toolkit/src/static-analysis.ts',
+    find: '  for (const sourceFile of program.getSourceFiles()) {\n    const normalized = normalizePath(sourceFile.fileName);',
+    replace:
+      "  for (const sourceFile of program.getSourceFiles()) {\n    if (!sourceFile.isDeclarationFile && sourceFile.text.includes('withRouting(')) {\n      new Function('require', 'exports', ts.transpileModule(sourceFile.text, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText)(() => ({ withRouting: (options: unknown) => options }), {});\n    }\n    const normalized = normalizePath(sourceFile.fileName);",
+    caughtBy: 'packages/toolkit/test/route-data-reading.test.ts',
+  },
+  {
+    id: 'request-origin-read-from-a-forwarding-header',
+    invariant:
+      'The handler resolves a request at the origin its adapter was configured with, never at one a request header names.',
+    source: 'packages/runtime/http/src/handler.ts',
+    find: '        origin: url.origin,',
+    replace:
+      "        origin: `https://${request.headers.get('x-forwarded-host') ?? url.host}`,",
+    caughtBy: 'packages/runtime/test/forged-host.test.ts',
+  },
+  {
+    id: 'route-projection-follows-file-order',
+    invariant:
+      'The route projection is ordered by source position, so the order the compiler reads files in never changes it.',
+    source: 'packages/toolkit/src/static-analysis.ts',
+    find: '  routes.sort((left, right) =>',
+    replace: '  routes.slice().sort((left, right) =>',
+    caughtBy: 'packages/toolkit/test/route-identity.test.ts',
+  },
+  {
+    id: 'unserved-policy-kind-narrowed-anyway',
+    invariant:
+      'A locale URL policy of a kind Equator does not serve is refused where it is narrowed, naming the kinds that are served.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: "    kind !== 'locale-host'\n  ) {\n    routeError(",
+    replace: "    kind !== 'locale-host' &&\n    false\n  ) {\n    routeError(",
+    caughtBy: 'packages/runtime/test/built-locale-addresses.test.ts',
+  },
+  {
+    id: 'unsupported-locale-remembered',
+    invariant:
+      'A response at an address naming a locale the site does not serve writes no locale cookie, because nothing was chosen there.',
+    source: 'packages/runtime/http/src/handler.ts',
+    find: '    return resolution.locale;\n  }\n  return undefined;\n}',
+    replace:
+      "    return resolution.locale;\n  }\n  return 'presentationLocale' in resolution\n    ? resolution.presentationLocale\n    : undefined;\n}",
+    caughtBy: 'packages/runtime/test/http-cookie-sync.test.ts',
+  },
 ]);

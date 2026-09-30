@@ -371,6 +371,37 @@ describe('the descriptor a declaration produces', () => {
     claimCapability('outcome:pageOperationalFailure');
   });
 
+  // Section 12 lets a declaration narrow an indexing class and never widen one. The class is a
+  // property of the address, so a page that could raise it could publish an address, or links from
+  // one, that the application withheld.
+  const closed = (indexing: 'non-indexable' | 'private') =>
+    routeHttpDescriptor({
+      status: 'success',
+      locale: 'ar-EG',
+      direction: 'rtl',
+      routeId: 'route:second',
+      parameters: {},
+      canonicalPath: 'second',
+      query: [],
+      indexing,
+    });
+  const declarations = [
+    pageAbsent(),
+    pageGone(),
+    pageOperationalFailure(503),
+  ] as const;
+  const robotsDeclared = (indexing: 'non-indexable' | 'private') =>
+    declarations.map(
+      (declaration) =>
+        pageOutcomeHttpDescriptor(declaration, closed(indexing)).robots,
+    );
+
+  it('makes no address indexable that its route keeps out of indexing', () => {
+    for (const indexing of ['non-indexable', 'private'] as const) {
+      expect(robotsDeclared(indexing)).not.toContain(undefined);
+    }
+  });
+
   it('keeps how the language was chosen, which the status does not change', () => {
     const negotiated = routeHttpDescriptor({
       status: 'success',

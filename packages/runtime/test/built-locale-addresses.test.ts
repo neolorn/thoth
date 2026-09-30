@@ -166,6 +166,37 @@ describe('the addresses a build publishes', () => {
     expect(hreflangs(WITH_GERMAN)).toEqual(['en-US', 'ar-EG', 'de-DE']);
   });
 
+  it('claims every address without the query the visitor arrived with', () => {
+    // A query the route accepted is state of this visit. Section 6 keeps it out of indexing
+    // identity unless the route declares a representation for it, and none is declared here.
+    const resolution = resolveLocalizedRoute(
+      '/en-us/second?page=2&sort=new',
+      POLICY,
+      PROJECTION,
+    );
+    expect(resolution).toMatchObject({
+      status: 'success',
+      query: [
+        { name: 'page', value: '2' },
+        { name: 'sort', value: 'new' },
+      ],
+    });
+    if (resolution.status !== 'success') return;
+
+    const seo = projectRouteSeo(
+      resolution,
+      POLICY,
+      PROJECTION,
+      SHIPPED,
+      'https://site.example',
+    );
+    expect(seo.canonical).toBe('https://site.example/en-us/second');
+    expect(seo.alternates.map(({ url }) => url)).toStrictEqual([
+      'https://site.example/en-us/second',
+      `https://site.example/ar-eg/${encodeURIComponent('الثاني')}`,
+    ]);
+  });
+
   it('keeps a page out of its own social alternates, where `hreflang` keeps it in', () => {
     // The assertion above is the reciprocal rule: `/en-us/second` names `en-US` among its own
     // alternates, because that set answers which addresses serve this page. Open Graph asks the
