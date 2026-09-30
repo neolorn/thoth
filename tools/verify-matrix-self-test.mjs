@@ -12,14 +12,22 @@
  * - a reason placed over an exercised cell, and a reason over no cell at all;
  * - a claim for a capability its test never names, an entry point its test names only through a
  *   type, and a route class claimed through a field the application declared for another class;
- * - a stage whose evidence is missing, and evidence no writer opened.
+ * - a stage whose evidence is missing, and evidence no writer opened;
+ * - a claim that no check's source makes;
+ * - a run handed no claims path, which must write nothing.
  *
  * Before any defect, the planted suite's one good claim must fill its cell, so every red below is a
  * change from a green this run saw.
  */
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -132,27 +140,47 @@ try {
   writeFileSync(resolve(planted, 'planted.test.mjs'), SUITE);
   writeFileSync(resolve(planted, 'vitest.config.mjs'), CONFIG);
 
-  const run = spawnSync(
-    process.execPath,
-    [
-      resolve(workspaceRoot, 'node_modules/vitest/vitest.mjs'),
-      'run',
-      '--root',
-      planted,
-      '--config',
-      'vitest.config.mjs',
-    ],
-    {
-      cwd: planted,
-      encoding: 'utf8',
-      timeout: 120_000,
-      env: {
-        ...process.env,
-        [CLAIMS_FILE_VARIABLE]: evidencePath,
-        NO_COLOR: '1',
-      },
-    },
+  const runPlanted = (claimsPath) => {
+    const env = { ...process.env, NO_COLOR: '1' };
+    delete env[CLAIMS_FILE_VARIABLE];
+    if (claimsPath !== undefined) env[CLAIMS_FILE_VARIABLE] = claimsPath;
+    return spawnSync(
+      process.execPath,
+      [
+        resolve(workspaceRoot, 'node_modules/vitest/vitest.mjs'),
+        'run',
+        '--root',
+        planted,
+        '--config',
+        'vitest.config.mjs',
+      ],
+      { cwd: planted, encoding: 'utf8', timeout: 120_000, env },
+    );
+  };
+
+  // First, while the directory holds only the suite and its configuration, so anything a run with
+  // no claims path leaves behind is visible as a new file. A run under an injected defect is one
+  // of these, and what it claimed must not reach any evidence.
+  const unclaimed = runPlanted(undefined);
+  assert.ok(
+    /Tests\s+3 failed \| 2 passed/u.test(
+      `${unclaimed.stdout}\n${unclaimed.stderr}`,
+    ),
+    'The planted suite did not run as planted with no claims path.',
   );
+  expectRed('a run handed no claims path', () => {
+    // Vitest keeps its own results cache under node_modules/.vite in the root it runs, which is
+    // not a claim.
+    assert.deepEqual(
+      readdirSync(planted)
+        .filter((name) => name !== 'node_modules')
+        .sort(),
+      ['planted.test.mjs', 'vitest.config.mjs'],
+      'A run handed no claims path wrote a file.',
+    );
+  });
+
+  const run = runPlanted(evidencePath);
   const output = `${run.stdout}\n${run.stderr}`;
   // The planted suite fails on purpose; what must not happen is that it failed to run at all.
   assert.ok(
@@ -334,6 +362,24 @@ try {
       );
     },
   );
+
+  expectRed('a claim that no check source makes', () => {
+    const result = evaluate({
+      evidence: [
+        {
+          ...evidence,
+          claims: [
+            ...evidence.claims,
+            { ...evidence.claims[0], capability: 'pipe:localizedMoney' },
+          ],
+        },
+      ],
+    });
+    assert.ok(
+      finding(result, 'unsited-claim', 'pipe:localizedMoney'),
+      'A claim no check source makes was accepted.',
+    );
+  });
 
   expectRed('a stage whose evidence is missing', () => {
     const result = evaluate({

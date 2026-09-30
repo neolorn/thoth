@@ -100,4 +100,27 @@ export default tseslint.config(
       '@typescript-eslint/no-unnecessary-condition': 'error',
     },
   },
+  {
+    // `specs/12-verification.spec.md` section 3 seeds every generator from a constant the release
+    // carries, so a failing case can be run again. A draw from the platform's random source in a
+    // test makes the failure a report that cannot be reproduced, and nothing else would notice it.
+    files: ['packages/*/test/**/*.ts'],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'Math',
+          property: 'random',
+          message:
+            'Draw from a generator seeded with a constant the test carries.',
+        },
+        {
+          object: 'crypto',
+          property: 'getRandomValues',
+          message:
+            'Draw from a generator seeded with a constant the test carries.',
+        },
+      ],
+    },
+  },
 );

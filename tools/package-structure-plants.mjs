@@ -17,6 +17,20 @@ const standardsLock = 'standards/sources.lock.json';
 
 export const plants = Object.freeze([
   {
+    id: 'toolkit-runs-work-on-install',
+    plant: editJson(toolkitManifest, (manifest) => {
+      manifest.scripts = { postinstall: 'equator generate' };
+    }),
+    refusal: /toolkit manifest runs postinstall on install/u,
+  },
+  {
+    id: 'runtime-carries-a-private-rxjs',
+    plant: editJson(runtimeManifest, (manifest) => {
+      manifest.optionalDependencies = { rxjs: '7.8.1' };
+    }),
+    refusal: /runtime manifest carries optionalDependencies/u,
+  },
+  {
     id: 'toolkit-depends-on-a-workspace-tool',
     plant: editJson(toolkitManifest, (manifest) => {
       manifest.dependencies['@nx/devkit'] = '22.0.0';

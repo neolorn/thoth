@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const seedRoot = resolve(workspaceRoot, 'packages/runtime/src');
+const testSeedRoot = resolve(workspaceRoot, 'packages/runtime/test');
 
 const seeds = Object.freeze([
   {
@@ -55,6 +56,14 @@ export function fromA(): string {
 `,
   },
   {
+    name: 'lint-self-test-unseeded.ts',
+    root: testSeedRoot,
+    rule: 'no-restricted-properties',
+    why: 'a test drawing from an unseeded random source, whose failure cannot be run again',
+    contents: `export const draw = Math.random();
+`,
+  },
+  {
     name: 'lint-self-test-cycle-b.ts',
     contents: `import { fromA } from './lint-self-test-cycle-a';
 
@@ -65,7 +74,7 @@ export function fromB(): string {
   },
 ]);
 
-const seedPath = (seed) => resolve(seedRoot, seed.name);
+const seedPath = (seed) => resolve(seed.root ?? seedRoot, seed.name);
 
 const removeSeeds = () => {
   for (const seed of seeds) rmSync(seedPath(seed), { force: true });

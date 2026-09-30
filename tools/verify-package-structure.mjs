@@ -598,6 +598,36 @@ assert.deepEqual(toolkitPackage.peerDependencies, {
   typescript: peerRange('typescript'),
 });
 assert.equal(toolkitPackage.peerDependenciesMeta, undefined);
+// `specs/02-packages-and-platform.spec.md` sections 6 and 8: installing a package runs nothing of its
+// own, and the consumer's Angular and RxJS are the only copies. A package manager runs these hooks on
+// install, and installs whatever optionalDependencies and bundleDependencies name with no peer rule
+// over them, so each field is refused whatever it carries. Neither build writes them today, which is
+// why nothing else would notice one arriving.
+const installHooks = ['preinstall', 'install', 'postinstall', 'prepare'];
+for (const [label, manifest] of [
+  ['runtime', runtimePackage],
+  ['toolkit', toolkitPackage],
+]) {
+  const hooks = Object.keys(manifest.scripts ?? {}).filter((name) =>
+    installHooks.includes(name),
+  );
+  assert.deepEqual(
+    hooks,
+    [],
+    `the ${label} manifest runs ${hooks.join(', ')} on install`,
+  );
+  for (const field of [
+    'optionalDependencies',
+    'bundleDependencies',
+    'bundledDependencies',
+  ]) {
+    assert.equal(
+      manifest[field],
+      undefined,
+      `the ${label} manifest carries ${field}, which installs a copy the consumer does not own`,
+    );
+  }
+}
 
 // The Angular range appears in three places that can drift apart: the two published manifests, and
 // the toolkit's own host-admission profile, which is the one that decides at runtime whether a
