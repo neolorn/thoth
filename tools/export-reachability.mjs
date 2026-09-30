@@ -23,12 +23,13 @@
 
 import assert from 'node:assert/strict';
 import { readdirSync } from 'node:fs';
-import { dirname, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { relative, resolve } from 'node:path';
 
 import ts from 'typescript';
 
-const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+import { inputsRoot } from './stage-self-test.mjs';
+
+const workspaceRoot = inputsRoot();
 const runtimeTypesRoot = resolve(workspaceRoot, 'dist/runtime/types');
 const toolkitRoot = resolve(workspaceRoot, 'dist/toolkit');
 

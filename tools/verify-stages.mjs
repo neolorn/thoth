@@ -90,13 +90,45 @@ const declared = Object.freeze([
       },
     ],
   },
-  { id: 'verify:locale-profile', reads: ['source:packages'] },
+  // Runs the stage below over a copy of what it reads, once unchanged and once per defect
+  // `stage-plants.mjs` plants for it, and requires each to be refused by name. The copy is a folder
+  // of its own under `tmp`, which is not an artefact any other stage can see.
+  {
+    id: 'verify:locale-profile:self-test',
+    reads: ['source:packages'],
+  },
+  {
+    id: 'verify:locale-profile',
+    reads: ['source:packages'],
+    needs: [
+      {
+        on: 'verify:locale-profile:self-test',
+        why: 'A stage nobody has seen refuse the defects it exists for is indistinguishable from one that reads nothing.',
+      },
+    ],
+  },
+  // Runs the stage below over a copy of what it reads, once unchanged and once per defect
+  // `stage-plants.mjs` plants for it, and requires each to be refused by name. The copy is a folder
+  // of its own under `tmp`, which is not an artefact any other stage can see.
+  {
+    id: 'verify:standards-sources:self-test',
+    reads: [],
+  },
   // Cheap, and it runs before anything derives from a vendored file: a source that no longer matches
   // its recorded digest makes every downstream result meaningless rather than wrong. The empty list
   // is deliberate: it reads `standards/`, the vendored sources and their lock, which no stage
   // produces. The one ordering that matters is declared as an edge below, where a reason can be
   // written next to it.
-  { id: 'verify:standards-sources', reads: [] },
+  {
+    id: 'verify:standards-sources',
+    reads: [],
+    needs: [
+      {
+        on: 'verify:standards-sources:self-test',
+        why: 'A stage nobody has seen refuse the defects it exists for is indistinguishable from one that reads nothing.',
+      },
+    ],
+  },
   // Every tracked file, so every source artefact, plus the commit log, which is not an artefact any
   // stage writes. Nothing depends on it: it is cheap, and a hit is a writing fault rather than a
   // broken build, so there is no reason to hold any other stage behind it.
@@ -184,9 +216,22 @@ const declared = Object.freeze([
     reads: ['source:packages'],
     writes: ['cache:build', 'dist:other', 'dist:runtime', 'dist:toolkit'],
   },
+  // Runs the stage below over a copy of what it reads, once unchanged and once per defect
+  // `stage-plants.mjs` plants for it, and requires each to be refused by name. The copy is a folder
+  // of its own under `tmp`, which is not an artefact any other stage can see.
+  {
+    id: 'verify:packages:self-test',
+    reads: ['dist:runtime', 'dist:toolkit', 'source:packages'],
+  },
   {
     id: 'verify:packages',
     reads: ['dist:runtime', 'dist:toolkit', 'source:packages'],
+    needs: [
+      {
+        on: 'verify:packages:self-test',
+        why: 'A stage nobody has seen refuse the defects it exists for is indistinguishable from one that reads nothing.',
+      },
+    ],
   },
   // What gets published is a tarball, and until this existed nothing in the pipeline ever looked at
   // one. A release went out with a type declaration containing the runtime module's JavaScript while
@@ -196,11 +241,31 @@ const declared = Object.freeze([
     reads: ['dist:runtime', 'dist:toolkit'],
     writes: ['release:packages'],
   },
+  // Runs the stage below over a copy of what it reads, once unchanged and once per defect
+  // `stage-plants.mjs` plants for it, and requires each to be refused by name. The copy is a folder
+  // of its own under `tmp`, which is not an artefact any other stage can see.
+  {
+    id: 'verify:export-surface:self-test',
+    reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
+  },
   // A scan that counts a scratch directory as its corpus holds exports "used" on files that are
   // about to be cleaned away, so this one reads the built declaration files instead.
   {
     id: 'verify:export-surface',
     reads: ['dist:runtime', 'dist:toolkit', 'source:packages', 'source:tools'],
+    needs: [
+      {
+        on: 'verify:export-surface:self-test',
+        why: 'A stage nobody has seen refuse the defects it exists for is indistinguishable from one that reads nothing.',
+      },
+    ],
+  },
+  // Runs the stage below over a copy of what it reads, once unchanged and once per defect
+  // `stage-plants.mjs` plants for it, and requires each to be refused by name. The copy is a folder
+  // of its own under `tmp`, which is not an artefact any other stage can see.
+  {
+    id: 'verify:cli-options:self-test',
+    reads: ['dist:toolkit', 'source:packages'],
   },
   // Reads the built schema rather than the source, so it waits for `build`, and it is the stage
   // that fails when a settable configuration key has no `equator init` flag. `dist:toolkit` is the
@@ -208,6 +273,19 @@ const declared = Object.freeze([
   {
     id: 'verify:cli-options',
     reads: ['dist:toolkit', 'source:packages'],
+    needs: [
+      {
+        on: 'verify:cli-options:self-test',
+        why: 'A stage nobody has seen refuse the defects it exists for is indistinguishable from one that reads nothing.',
+      },
+    ],
+  },
+  // Runs the stage below over a copy of what it reads, once unchanged and once per defect
+  // `stage-plants.mjs` plants for it, and requires each to be refused by name. The copy is a folder
+  // of its own under `tmp`, which is not an artefact any other stage can see.
+  {
+    id: 'verify:diagnostics-reference:self-test',
+    reads: ['dist:toolkit', 'source:docs', 'source:packages'],
   },
   // Same shape and the same reason: the built table is the input, and the two checked-in copies
   // are what it re-renders. It also reads every `src` under `packages/`, to fail a documented code
@@ -215,6 +293,19 @@ const declared = Object.freeze([
   {
     id: 'verify:diagnostics-reference',
     reads: ['dist:toolkit', 'source:docs', 'source:packages'],
+    needs: [
+      {
+        on: 'verify:diagnostics-reference:self-test',
+        why: 'A stage nobody has seen refuse the defects it exists for is indistinguishable from one that reads nothing.',
+      },
+    ],
+  },
+  // Runs the stage below over a copy of what it reads, once unchanged and once per defect
+  // `stage-plants.mjs` plants for it, and requires each to be refused by name. The copy is a folder
+  // of its own under `tmp`, which is not an artefact any other stage can see.
+  {
+    id: 'verify:docs-reference:self-test',
+    reads: ['dist:runtime', 'dist:toolkit', 'source:docs', 'source:packages'],
   },
   // The command line page is the built CLI's own help and the configuration page is the schema
   // staged beside it, so both wait for `build`. `source:docs` is what they are compared against,
@@ -222,6 +313,12 @@ const declared = Object.freeze([
   {
     id: 'verify:docs-reference',
     reads: ['dist:runtime', 'dist:toolkit', 'source:docs', 'source:packages'],
+    needs: [
+      {
+        on: 'verify:docs-reference:self-test',
+        why: 'A stage nobody has seen refuse the defects it exists for is indistinguishable from one that reads nothing.',
+      },
+    ],
   },
   // The closed unions the strict row compiles a switch for, found in the built declarations, so it
   // waits for `build`. What it compares against is the strict row's overlay under `fixtures/`, which
@@ -382,11 +479,23 @@ const declared = Object.freeze([
     id: 'verify:message-function-space',
     reads: ['consumer:package', 'dist:runtime', 'source:tools'],
   },
+  // Runs the stage below over a copy of what it reads, once unchanged and once per defect
+  // `stage-plants.mjs` plants for it, and requires each to be refused by name. The copy is a folder
+  // of its own under `tmp`, which is not an artefact any other stage can see.
+  {
+    id: 'verify:message-format-conformance:self-test',
+    reads: ['consumer:package', 'dist:runtime', 'source:tools'],
+    writes: ['report:temp'],
+  },
   {
     id: 'verify:message-format-conformance',
     reads: ['consumer:package', 'dist:runtime', 'source:tools'],
     writes: ['report:temp'],
     needs: [
+      {
+        on: 'verify:message-format-conformance:self-test',
+        why: 'A stage nobody has seen refuse the defects it exists for is indistinguishable from one that reads nothing.',
+      },
       {
         on: 'verify:standards-sources',
         why: 'A suite from another revision tests another specification and reports the difference as a defect. No artefact passes between them, so no measurement can find this edge.',

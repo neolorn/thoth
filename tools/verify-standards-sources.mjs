@@ -32,10 +32,11 @@
 
 import { createHash } from 'node:crypto';
 import { readFile, readdir, stat } from 'node:fs/promises';
-import { dirname, join, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, relative, resolve } from 'node:path';
 
-const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+import { inputsRoot } from './stage-self-test.mjs';
+
+const workspaceRoot = inputsRoot();
 const standardsRoot = resolve(workspaceRoot, 'standards');
 const lockPath = resolve(standardsRoot, 'sources.lock.json');
 

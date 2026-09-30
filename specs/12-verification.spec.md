@@ -138,6 +138,11 @@ A release MUST prove that its checks can fail, by withdrawing the behavior a che
 requiring that check to notice. A check nobody has seen fail is indistinguishable from a check that
 cannot, and no passing run tells the two apart.
 
+A check that reads what a build or a repository holds rather than a behavior, such as a stage over
+the built packages, the standards lock, or a generated reference, is proven the same way: a release
+MUST plant each defect the check exists to refuse into a copy of what it reads, and MUST require the
+check to pass on the unchanged copy and to refuse each planted defect by name.
+
 A release MUST NOT derive a check from the thing it checks. Expected values computed through
 the functions under test, a graph transcribed from the order it is meant to verify, and an
 observation generated from the declaration it is meant to test all agree by construction, and

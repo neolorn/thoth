@@ -13,12 +13,13 @@
  */
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, resolve } from 'node:path';
 
 import ts from 'typescript';
 
-const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+import { inputsRoot } from './stage-self-test.mjs';
+
+const workspaceRoot = inputsRoot();
 
 /**
  * The names one declaration file publishes, read from its own export statements.

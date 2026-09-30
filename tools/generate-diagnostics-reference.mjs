@@ -39,11 +39,13 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 
 import { format, resolveConfig } from 'prettier';
 
-const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+import { inputsRoot } from './stage-self-test.mjs';
+
+const workspaceRoot = inputsRoot();
 const builtReference = resolve(
   workspaceRoot,
   'dist/toolkit/diagnostic-reference.js',

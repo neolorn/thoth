@@ -48,8 +48,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, relative, resolve } from 'node:path';
 
 import { format, resolveConfig } from 'prettier';
 
@@ -72,8 +71,9 @@ import {
   peerRange,
   runtimePeers,
 } from './supported-versions.mjs';
+import { inputsRoot } from './stage-self-test.mjs';
 
-const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const workspaceRoot = inputsRoot();
 const builtToolkit = resolve(workspaceRoot, 'dist/toolkit');
 const referenceRoot = resolve(workspaceRoot, 'docs/reference');
 const check = process.argv.includes('--check');

@@ -34,11 +34,12 @@ import {
   sep,
   win32,
 } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 import ts from 'typescript';
 
+import { inputsRoot, repositoryRoot } from './stage-self-test.mjs';
 import { nodeRange, peerRange } from './supported-versions.mjs';
 
 // The packaged Angular entrypoint is intentionally published in partial-Ivy
@@ -47,7 +48,10 @@ import { nodeRange, peerRange } from './supported-versions.mjs';
 // declarations through the linker.
 await import('@angular/compiler');
 
-const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+// What is verified, laid out as the repository is, and the copy carrying a planted defect when the
+// self-test names one. The dependencies the built toolkit is linked against, and the directory its
+// commands run in, stay the repository's, because the copy has no `node_modules` of its own.
+const workspaceRoot = inputsRoot();
 const runtimeRoot = resolve(workspaceRoot, 'dist/runtime');
 const toolkitRoot = resolve(workspaceRoot, 'dist/toolkit');
 const isWithin = (candidate, owner) => {
@@ -796,7 +800,7 @@ for (const [specifier, sourceRoot] of [
   const linkPath = resolve(toolkitHarnessNodeModules, ...specifier.split('/'));
   await mkdir(dirname(linkPath), { recursive: true });
   await symlink(
-    await realpath(resolve(workspaceRoot, sourceRoot)),
+    await realpath(resolve(repositoryRoot, sourceRoot)),
     linkPath,
     process.platform === 'win32' ? 'junction' : 'dir',
   );
@@ -926,7 +930,7 @@ try {
   );
   const run = (arguments_) =>
     spawnSync(process.execPath, [cliPath, ...arguments_], {
-      cwd: workspaceRoot,
+      cwd: repositoryRoot,
       encoding: 'utf8',
     });
   const machineResult = (result) => {
@@ -1164,7 +1168,7 @@ try {
     const result = spawnSync(
       process.execPath,
       [cliPath, ...arguments_, '--json'],
-      { cwd: workspaceRoot, encoding: 'utf8', timeout: 60_000 },
+      { cwd: repositoryRoot, encoding: 'utf8', timeout: 60_000 },
     );
     assert.equal(
       result.error,
@@ -1215,7 +1219,7 @@ const walk = async (root) => {
 };
 
 const machinePrivateRoots = new Set(
-  [workspaceRoot, homedir(), tmpdir()].flatMap((root) => {
+  [repositoryRoot, workspaceRoot, homedir(), tmpdir()].flatMap((root) => {
     const forward = root.replaceAll('\\', '/');
     return [
       root,

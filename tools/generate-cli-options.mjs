@@ -55,10 +55,12 @@
 
 import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
-const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+import { inputsRoot } from './stage-self-test.mjs';
+
+const workspaceRoot = inputsRoot();
 const builtSchemas = resolve(workspaceRoot, 'dist/toolkit/schemas.js');
 
 let schemas;

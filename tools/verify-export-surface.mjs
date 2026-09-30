@@ -26,13 +26,13 @@
 
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, resolve } from 'node:path';
 
 import { reachablePublishedNames } from './export-reachability.mjs';
 import { publishedNames, runtimeDeclarations } from './published-surface.mjs';
+import { inputsRoot } from './stage-self-test.mjs';
 
-const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const workspaceRoot = inputsRoot();
 
 /**
  * Exports nothing reaches, accepted and listed by name.

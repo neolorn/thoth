@@ -9,11 +9,12 @@
  */
 import assert from 'node:assert/strict';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
-const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const cldrRoot = resolve(workspaceRoot, 'node_modules/cldr-core');
+import { inputsRoot, repositoryRoot } from './stage-self-test.mjs';
+
+const workspaceRoot = inputsRoot();
+const cldrRoot = resolve(repositoryRoot, 'node_modules/cldr-core');
 const manifest = JSON.parse(
   await readFile(resolve(cldrRoot, 'package.json'), 'utf8'),
 );
@@ -538,7 +539,7 @@ const encompassedOutput = [
 // actually answered from, and a locale outside the requested one's inheritance chain is not a
 // disagreement about a name: it is ICU not having one.
 const localeNamesRoot = resolve(
-  workspaceRoot,
+  repositoryRoot,
   'node_modules/cldr-localenames-full',
 );
 const localeNamesManifest = JSON.parse(

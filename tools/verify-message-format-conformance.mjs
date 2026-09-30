@@ -37,10 +37,12 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, relative, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 
-const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const require_ = createRequire(resolve(workspaceRoot, 'package.json'));
+import { inputsRoot, repositoryRoot } from './stage-self-test.mjs';
+
+const workspaceRoot = inputsRoot();
+const require_ = createRequire(resolve(repositoryRoot, 'package.json'));
 
 /* ------------------------------------------------------------------ *
  * The suite.                                                          *
@@ -106,7 +108,7 @@ await import(pathToFileURL(require_.resolve('@angular/compiler')).href);
 // importing it from the workspace root fails at its first bare specifier. The consumer install is
 // the same artifact a consumer receives, correctly resolved.
 const consumerToolkit = resolve(
-  workspaceRoot,
+  repositoryRoot,
   'tmp/package-consumer-verification/package-consumer/node_modules/@neolorn/equator-toolkit/index.js',
 );
 if (!existsSync(consumerToolkit)) {
@@ -127,7 +129,7 @@ const { analyzeCatalogSet } = await import(
 );
 const rt = await import(
   pathToFileURL(
-    resolve(workspaceRoot, 'dist/runtime/fesm2022/neolorn-equator.mjs'),
+    resolve(repositoryRoot, 'dist/runtime/fesm2022/neolorn-equator.mjs'),
   ).href
 );
 
@@ -671,7 +673,7 @@ for (const testCase of cases) {
 }
 
 const reportPath = resolve(
-  workspaceRoot,
+  repositoryRoot,
   'tmp/message-format-conformance-report.json',
 );
 writeFileSync(reportPath, `${JSON.stringify(records, null, 2)}\n`, 'utf8');
@@ -685,7 +687,7 @@ for (const [verdict, count] of [...counts].sort((a, b) => b[1] - a[1])) {
   process.stdout.write(`${String(count).padStart(4)}  ${verdict}\n`);
 }
 process.stdout.write(
-  `\nReport written to ${relative(workspaceRoot, reportPath).replaceAll('\\', '/')}\n`,
+  `\nReport written to ${relative(repositoryRoot, reportPath).replaceAll('\\', '/')}\n`,
 );
 
 /* ------------------------------------------------------------------ *
