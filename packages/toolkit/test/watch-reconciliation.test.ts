@@ -22,6 +22,10 @@ const control = vi.hoisted(() => ({
     | ((event: string, fileName: string | null) => void)
     | undefined,
   onRead: undefined as ((path: string) => Promise<void>) | undefined,
+  onClose: undefined as ((emitClose: () => void) => void) | undefined,
+  watcher: undefined as
+    | { emit(event: string, ...values: unknown[]): boolean }
+    | undefined,
 }));
 
 vi.mock('node:fs', async (original) => {
@@ -41,7 +45,12 @@ vi.mock('node:fs', async (original) => {
       };
       watcher.close = () => {
         control.listener = undefined;
+        // Node reports the close on the next tick; a test that holds it back decides when.
+        const emitClose = () => watcher.emit('close');
+        if (control.onClose === undefined) process.nextTick(emitClose);
+        else control.onClose(emitClose);
       };
+      control.watcher = watcher;
       return watcher;
     },
   };
@@ -72,6 +81,8 @@ const roots: string[] = [];
 afterEach(async () => {
   control.listener = undefined;
   control.onRead = undefined;
+  control.onClose = undefined;
+  control.watcher = undefined;
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
   );
@@ -260,5 +271,61 @@ describe('watch', () => {
     } finally {
       await finish();
     }
+  });
+
+  it('returns only after the platform watcher reports that it closed', async () => {
+    const root = await project();
+    let emitClose: (() => void) | undefined;
+    control.onClose = (emit) => {
+      emitClose = emit;
+    };
+    const controller = new AbortController();
+    let cycles = 0;
+    let returned = false;
+    const watched = watchProject({
+      project: root,
+      signal: controller.signal,
+      debounceMilliseconds: 20,
+      onCycle: () => {
+        cycles += 1;
+      },
+    }).then((result) => {
+      returned = true;
+      return result;
+    });
+    expect(await until(() => cycles >= 1, 15_000)).toBe(true);
+
+    controller.abort();
+    expect(await until(() => emitClose !== undefined, 5_000)).toBe(true);
+    // Long enough for anything that did not wait on the close to have returned.
+    await pause(200);
+    expect(returned).toBe(false);
+
+    emitClose?.();
+    const result = await watched;
+    expect(result.ok, JSON.stringify(result.diagnostics)).toBe(true);
+  });
+
+  it('returns the watcher error without waiting for a close the platform never reports', async () => {
+    const root = await project();
+    control.onClose = () => undefined;
+    const controller = new AbortController();
+    let cycles = 0;
+    const watched = watchProject({
+      project: root,
+      signal: controller.signal,
+      debounceMilliseconds: 20,
+      onCycle: () => {
+        cycles += 1;
+      },
+    });
+    expect(await until(() => cycles >= 1, 15_000)).toBe(true);
+
+    control.watcher?.emit('error', new Error('planted watcher failure'));
+    const result = await watched;
+    expect(result.ok).toBe(false);
+    expect(
+      result.diagnostics.map(({ summary }) => summary).join('\n'),
+    ).toContain('planted watcher failure');
   });
 });

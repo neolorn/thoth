@@ -3619,8 +3619,9 @@ export const injections = Object.freeze([
     invariant:
       'Watch holds its platform watcher only while the call runs, and closes it before returning.',
     source: 'packages/toolkit/src/project-host.ts',
-    find: '    timer = undefined;\n    watcher?.close();\n    watcher = undefined;',
-    replace: '    timer = undefined;\n    watcher = undefined;',
+    // The wait for the close goes with the close, or the planted defect would read as a hang.
+    find: "      closed = new Promise((resolveClosed) => {\n        closing.once('close', () => resolveClosed());\n      });\n      closing.close();\n",
+    replace: '      void closing;\n',
     caughtBy: 'packages/toolkit/test/watch-foreground.test.ts',
   },
   {

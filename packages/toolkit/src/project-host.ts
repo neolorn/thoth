@@ -3078,12 +3078,21 @@ export async function watchProject(
   const done = new Promise<void>((resolvePromise) => {
     resolveDone = resolvePromise;
   });
+  // Settles once the platform watcher has said it closed, so a caller that removes the owner the
+  // moment this returns is not racing a watcher that still holds it.
+  let closed: Promise<void> = Promise.resolve();
   const stop = (): void => {
     stopping = true;
     if (timer !== undefined) clearTimeout(timer);
     timer = undefined;
-    watcher?.close();
-    watcher = undefined;
+    if (watcher !== undefined) {
+      const closing = watcher;
+      watcher = undefined;
+      closed = new Promise((resolveClosed) => {
+        closing.once('close', () => resolveClosed());
+      });
+      closing.close();
+    }
     if (!running) resolveDone?.();
   };
   const cycle = async (): Promise<void> => {
@@ -3140,6 +3149,9 @@ export async function watchProject(
     );
     watcher.on('error', (error) => {
       watcherError = error;
+      // Node has already closed the handle before reporting the error, and a close after that
+      // emits no `close` event, so there is nothing left to wait for.
+      watcher = undefined;
       stop();
     });
   } catch (error) {
@@ -3154,6 +3166,7 @@ export async function watchProject(
   await cycle();
   if (options.signal.aborted && !isRunning()) stop();
   await done;
+  await closed;
   if (watcherError !== undefined) {
     return toolkitFailure([
       toolkitDiagnostic(
