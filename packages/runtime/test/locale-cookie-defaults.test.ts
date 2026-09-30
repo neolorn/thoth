@@ -151,3 +151,86 @@ describe('the cookie both halves of Equator write', () => {
     expect(await clientHeader(options, 'ar-EG')).not.toContain('Secure');
   });
 });
+
+describe('a cookie configuration neither half will write', () => {
+  const CRLF = String.fromCharCode(13, 10);
+  const refused: readonly [string, CookieStoreOptions, RegExp][] = [
+    [
+      'SameSite=None without Secure',
+      { sameSite: 'None', secure: false },
+      /SameSite=None/u,
+    ],
+    [
+      'a __Secure- name without Secure',
+      { name: '__Secure-locale', secure: false },
+      /__Secure-/u,
+    ],
+    [
+      'a __Host- name with a Domain',
+      { name: '__Host-locale', domain: 'site.example' },
+      /Domain/u,
+    ],
+    [
+      'a __Host- name off the root',
+      { name: '__Host-locale', path: '/app' },
+      /Path/u,
+    ],
+    [
+      'a name that is not a token',
+      { name: `a;${CRLF}X-Injected: 1` },
+      /not a token/u,
+    ],
+    ['an empty name', { name: '' }, /not a token/u],
+    ['a path carrying a ";"', { path: '/;Domain=elsewhere.example' }, /Path/u],
+    [
+      'a domain carrying a line break',
+      { domain: `site.example${CRLF}X: 1` },
+      /Domain/u,
+    ],
+    ['a lifetime of nothing', { maxAgeSeconds: 0 }, /maxAgeSeconds/u],
+    [
+      'a lifetime that is not a number',
+      { maxAgeSeconds: Number.NaN },
+      /maxAgeSeconds/u,
+    ],
+  ];
+
+  it('is refused by the browser store where it is configured', () => {
+    for (const [what, options, rule] of refused) {
+      expect(() => cookieStore(options), what).toThrow(rule);
+      expect(() => cookieStore(options), what).toThrow(/Equator cookieStore/u);
+    }
+  });
+
+  it('is refused by the server handler where it is configured', () => {
+    for (const [what, options, rule] of refused) {
+      const create = () =>
+        createLocaleRequestHandler({
+          policy: POLICY,
+          projection: PROJECTION,
+          cache: { successMaxAge: 600, permanentRedirectMaxAge: 86_400 },
+          cookie: options,
+        });
+      expect(create, what).toThrow(rule);
+      expect(create, what).toThrow(/Equator createLocaleRequestHandler/u);
+    }
+  });
+
+  it('leaves an ordinary one alone, so the refusals above are about the attribute', () => {
+    const ordinary: CookieStoreOptions = {
+      name: '__Host-locale',
+      path: '/',
+      maxAgeSeconds: 60,
+      sameSite: 'Strict',
+    };
+    expect(() => cookieStore(ordinary)).not.toThrow();
+    expect(() =>
+      createLocaleRequestHandler({
+        policy: POLICY,
+        projection: PROJECTION,
+        cache: { successMaxAge: 600, permanentRedirectMaxAge: 86_400 },
+        cookie: ordinary,
+      }),
+    ).not.toThrow();
+  });
+});

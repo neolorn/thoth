@@ -96,9 +96,10 @@ choice belongs in your account record, and the value follows the visitor across 
 across tabs. The server waits for it, so a transport that can reach the account from the server
 fixes the first response as a cookie does.
 
-The cookie store validates its own configuration where you write it rather than leaving a browser to
-drop the cookie later. `SameSite=None` without `Secure`, a `__Secure-` name without `Secure`, and a
-`__Host-` name carrying a `Domain` are each invalid at that point.
+The cookie store and the request handler in `@neolorn/equator/http` validate the cookie where you
+configure it rather than leaving a browser to drop it later. `SameSite=None` without `Secure`, a
+`__Secure-` name without `Secure`, a `__Host-` name carrying a `Domain`, a name that is not an HTTP
+token, and a `maxAgeSeconds` that is not a positive whole number are each invalid at that point.
 
 ## Overlay locale
 

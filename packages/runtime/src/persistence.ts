@@ -1,5 +1,6 @@
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { PLATFORM_ID, REQUEST, inject } from '@angular/core';
+import { ɵassertStorableCookie } from '@neolorn/equator/core';
 
 /**
  * Where a locale choice is remembered between visits.
@@ -180,66 +181,6 @@ function cookieValue(header: string, name: string): string | undefined {
 }
 
 /**
- * Refuses a cookie configuration a browser would discard, at the point it is written down.
- *
- * `draft-ietf-httpbis-rfc6265bis-22` section 5.7 ignores a newly created cookie *entirely* in four
- * cases this store can be configured into: `SameSite=None` without `Secure` (step 19), a
- * `__Secure-` name without `Secure` (step 20), and a `__Host-` name that is not `Secure`, or
- * carries a `Domain`, or has a `Path` other than `/` (step 21).
- *
- * Every one of them writes a header the browser drops on the floor. Nothing throws, `read` answers
- * `undefined` for the life of the application, and the server renders the default language on every
- * first visit, which is the single thing this store exists to prevent, so the failure is invisible
- * in exactly the place it costs the most.
- *
- * It refuses rather than repairs. Turning `Secure` on because `SameSite` is `None` would silently
- * replace what the consumer wrote with something else, which is the same silence one layer in.
- *
- * The check is here rather than in `write` because the options are static: a configuration that can
- * never store anything is wrong before the first render, not on the first write, and an application
- * config is usually evaluated at import.
- */
-function assertStorableCookie(
-  name: string,
-  path: string,
-  domain: string | undefined,
-  sameSite: 'Lax' | 'Strict' | 'None',
-  secure: boolean,
-): void {
-  const refuse = (rule: string): never => {
-    throw new Error(
-      `Equator cookieStore: ${rule} A browser ignores such a cookie entirely, so nothing would ever be stored or read.`,
-    );
-  };
-  if (sameSite === 'None' && !secure) {
-    refuse('SameSite=None requires Secure (rfc6265bis section 5.7 step 19).');
-  }
-  const prefix = name.toLowerCase();
-  if (prefix.startsWith('__secure-') && !secure) {
-    refuse(
-      'a __Secure- name requires Secure (rfc6265bis section 5.7 step 20).',
-    );
-  }
-  if (prefix.startsWith('__host-')) {
-    if (!secure) {
-      refuse(
-        'a __Host- name requires Secure (rfc6265bis section 5.7 step 21).',
-      );
-    }
-    if (domain !== undefined) {
-      refuse(
-        'a __Host- name must not set Domain (rfc6265bis section 5.7 step 21).',
-      );
-    }
-    if (path !== '/') {
-      refuse(
-        `a __Host- name requires Path=/ , not ${JSON.stringify(path)} (rfc6265bis section 5.7 step 21).`,
-      );
-    }
-  }
-}
-
-/**
  * The store that fixes the language of the first render with nothing to build.
  *
  * A server render happens before any script runs in the browser, so `localStorage` is unavailable
@@ -260,7 +201,14 @@ export function cookieStore(
   const maxAge = options.maxAgeSeconds ?? ONE_YEAR_SECONDS;
   const sameSite = options.sameSite ?? 'Lax';
   const secure = options.secure ?? true;
-  assertStorableCookie(name, path, options.domain, sameSite, secure);
+  ɵassertStorableCookie('cookieStore', {
+    name,
+    path,
+    domain: options.domain,
+    maxAgeSeconds: maxAge,
+    sameSite,
+    secure,
+  });
   return () => {
     const platformId = inject(PLATFORM_ID);
     const browser = isPlatformBrowser(platformId);

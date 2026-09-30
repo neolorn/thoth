@@ -29,6 +29,11 @@ export * from './contracts';
 export * from './routing';
 
 export {
+  ɵassertStorableCookie,
+  type ɵCookieAttributes,
+} from './cookie-attributes';
+
+export {
   pageAbsent,
   pageGone,
   pageOperationalFailure,

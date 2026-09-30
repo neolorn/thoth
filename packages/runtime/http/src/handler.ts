@@ -18,6 +18,7 @@ import {
   resolveLocalizedRoute,
   routeCacheHeaders,
   routeHttpDescriptor,
+  ɵassertStorableCookie,
   ɵopenPageOutcomeChannel,
   ɵtakePageOutcome,
   type DeclaredPageOutcomeDescriptor,
@@ -327,6 +328,16 @@ export function createLocaleRequestHandler(
   const cookie = options.cookie ?? {};
   const cookieName =
     cookie === false ? undefined : (cookie.name ?? 'equator-locale');
+  if (cookie !== false) {
+    ɵassertStorableCookie('createLocaleRequestHandler', {
+      name: cookie.name ?? 'equator-locale',
+      path: cookie.path ?? '/',
+      domain: cookie.domain,
+      maxAgeSeconds: cookie.maxAgeSeconds ?? ONE_YEAR_SECONDS,
+      sameSite: cookie.sameSite ?? 'Lax',
+      secure: cookie.secure ?? true,
+    });
+  }
 
   // Derived from what this deployment reads, never from what this request happened to carry.
   //

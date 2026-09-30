@@ -184,6 +184,12 @@ asked for a locale change or a removal while it was being read: that request is 
 decision. Cookie writing is done in the browser, because the response headers belong to the
 consumer's server.
 
+The locale cookie a release writes, from its browser store or from its own request handler, MUST
+be one a browser stores. A release MUST refuse at configuration a cookie name that is not a token, a
+path or domain a `Set-Cookie` header cannot carry, a lifetime that is not a positive number of
+seconds, and an attribute combination the browser's cookie storage model discards, such as
+`SameSite=None` without `Secure` or a `__Host-` name with a domain.
+
 Persistence state is created per injector rather than per configuration, so a store declared in a
 shared application configuration cannot carry one server-rendered request's preference into the next.
 
