@@ -4554,7 +4554,12 @@
     {
       "spec": "12-verification.spec.md",
       "section": "10. Cost and resource measurement",
-      "statement": "A release MUST publish reproducible measurements for its runtime, its framework integration, its generated contracts, its compiler work, and its packages, and MUST measure each published entry point separately."
+      "statement": "A release MUST publish reproducible measurements for its runtime, its framework integration, its generated contracts, its compiler work, and its packages, and MUST measure each published entry point separately.",
+      "checks": [
+        "plant:verify:cost-reference:entry-point-grew",
+        "plant:verify:cost-reference:published-figure-edited",
+        "plant:verify:cost-reference:entry-point-attributed-to-nothing"
+      ]
     },
     {
       "spec": "12-verification.spec.md",

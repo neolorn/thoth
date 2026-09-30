@@ -374,6 +374,75 @@ export const stageSelfTests = Object.freeze({
       },
     ],
   },
+  'verify:cost-reference': {
+    script: 'tools/generate-cost-reference.mjs',
+    args: ['--check'],
+    inputs: [
+      'dist/runtime',
+      'dist/toolkit',
+      'docs/reference/cost.md',
+      ...[
+        'tmp/focused-package-consumer-verification/minimal-runtime-consumer',
+        'tmp/package-consumer-verification/package-consumer',
+      ].flatMap((root) => [
+        `${root}/src/generated/i18n`,
+        `${root}/node_modules/@angular/build/package.json`,
+      ]),
+      'tmp/focused-package-consumer-verification/minimal-runtime-consumer/dist/minimal',
+      'tmp/package-consumer-verification/package-consumer/dist/feature-lab',
+    ],
+    plants: [
+      {
+        id: 'entry-point-grew',
+        plant: editJson(
+          'tmp/focused-package-consumer-verification/minimal-runtime-consumer/dist/minimal/stats.json',
+          (stats) => {
+            const input = Object.values(stats.outputs)
+              .flatMap(({ inputs }) => Object.entries(inputs ?? {}))
+              .find(([path]) =>
+                path.endsWith(
+                  'node_modules/@neolorn/equator/fesm2022/neolorn-equator-core.mjs',
+                ),
+              );
+            input[1].bytesInOutput += 100;
+          },
+        ),
+        refusal:
+          /docs\/reference\/cost\.md is not what the builds measure now/u,
+      },
+      {
+        id: 'published-figure-edited',
+        plant: (root) =>
+          editText(root, 'docs/reference/cost.md', (text) =>
+            text.replace(/\d{1,3}(?:,\d{3})+/u, (figure) =>
+              (Number(figure.replaceAll(',', '')) + 1).toLocaleString('en-US'),
+            ),
+          ),
+        refusal:
+          /docs\/reference\/cost\.md is not what the builds measure now/u,
+      },
+      // A store layout the suffix does not match would attribute every input to nothing and print a
+      // page of zeros, which a page generated the same way would agree with.
+      {
+        id: 'entry-point-attributed-to-nothing',
+        plant: editJson(
+          'tmp/focused-package-consumer-verification/minimal-runtime-consumer/dist/minimal/stats.json',
+          (stats) => {
+            for (const output of Object.values(stats.outputs)) {
+              output.inputs = Object.fromEntries(
+                Object.entries(output.inputs ?? {}).map(([path, value]) => [
+                  path.replace('/@neolorn/equator/', '/@neolorn/elsewhere/'),
+                  value,
+                ]),
+              );
+            }
+          },
+        ),
+        refusal:
+          /Minimal consumer: no input of the build was attributed to @neolorn\/equator\./u,
+      },
+    ],
+  },
   'verify:format-shapes': {
     script: 'tools/generate-format-shapes.mjs',
     args: ['--check'],

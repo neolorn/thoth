@@ -534,6 +534,39 @@ const declared = Object.freeze([
   // a staged package cannot run its own CLI. Nothing resolves its dependencies in place. The only
   // toolkit that can execute the six commands is the installed one, and that is a different input.
   { id: 'verify:cold-start', reads: ['consumer:package'] },
+  // Runs the stage below over a copy of what it reads, once unchanged and once per defect
+  // `stage-plants.mjs` plants for it, and requires each to be refused by name. The copy is a folder
+  // of its own under `tmp`, which is not an artefact any other stage can see.
+  {
+    id: 'verify:cost-reference:self-test',
+    reads: [
+      'consumer:focused',
+      'consumer:package',
+      'dist:runtime',
+      'dist:toolkit',
+      'source:docs',
+      'source:packages',
+    ],
+  },
+  // The production builds the two consumer stages leave behind are what the page measures, so it
+  // waits for both rather than building a third application of its own.
+  {
+    id: 'verify:cost-reference',
+    reads: [
+      'consumer:focused',
+      'consumer:package',
+      'dist:runtime',
+      'dist:toolkit',
+      'source:docs',
+      'source:packages',
+    ],
+    needs: [
+      {
+        on: 'verify:cost-reference:self-test',
+        why: 'A stage nobody has seen refuse the defects it exists for is indistinguishable from one that reads nothing.',
+      },
+    ],
+  },
   // The published documents, assembled into applications and run. Every fenced block names the file
   // it is, and the READMEs' files are one consumer: the providers, the route table, the switcher,
   // both catalogs and the spec. It ends at the spec, so a README whose blocks compile into an

@@ -55,6 +55,8 @@ These pages are generated from the packages.
 - [Diagnostics](reference/diagnostics.md): every code and what it means.
 - [Compatibility](reference/compatibility.md): the versions you can install against, and the ones
   that are tested.
+- [Cost](reference/cost.md): what each entry point adds to a production build, and what the
+  packages weigh.
 
 ## Explanation
 
