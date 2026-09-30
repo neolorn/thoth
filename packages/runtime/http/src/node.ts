@@ -1,3 +1,8 @@
+import {
+  routeCacheHeaders,
+  type RouteHttpDescriptor,
+} from '@neolorn/equator/core';
+
 import type { LocaleRequestHandler } from './handler';
 import { rememberRawTarget } from './raw-target';
 
@@ -114,9 +119,37 @@ export function toNodeListener(
     const origin =
       options.origin ??
       `http://${typeof host === 'string' ? host : 'localhost'}`;
-    await writeNodeResponse(
-      await handler(toWebRequest(message, origin)),
-      target,
-    );
+    let request: Request;
+    try {
+      request = toWebRequest(message, origin);
+    } catch {
+      // The Host header and the target are the client's to write, and a listener that rejects
+      // ends the process, so a request no URL can be built from is answered as the handler
+      // answers a malformed target.
+      await writeNodeResponse(unbuildableRequest(), target);
+      return;
+    }
+    await writeNodeResponse(await handler(request), target);
   };
+}
+
+function unbuildableRequest(): Response {
+  const descriptor: RouteHttpDescriptor = {
+    status: 400,
+    robots: 'noindex',
+    cache: 'private-no-store',
+  };
+  // A response nothing may keep reads neither duration nor the preference source, and the
+  // listener was given none of them.
+  const headers = new Headers(
+    Object.entries(
+      routeCacheHeaders(descriptor, {
+        successMaxAge: 0,
+        permanentRedirectMaxAge: 0,
+        localePreference: 'accept-language',
+      }),
+    ),
+  );
+  headers.set('x-robots-tag', 'noindex');
+  return new Response(null, { status: descriptor.status, headers });
 }

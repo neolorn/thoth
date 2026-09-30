@@ -248,3 +248,38 @@ describe('a structurally unsafe target read through the Node adapter', () => {
     expect(await response.text()).toBe('');
   });
 });
+
+/**
+ * The Host header and the target are the client's to write, and a Node listener that rejects ends
+ * the process under Node's default for an unhandled rejection. One bad request must not take down
+ * the server that answers everyone else.
+ */
+describe('a request no URL can be built from, read through the Node listener', () => {
+  it('answers 400, unstored and unindexed, and asks no renderer', async () => {
+    let renders = 0;
+    const handler = createLocaleRequestHandler({
+      policy: POLICY,
+      projection: PROJECTION,
+      cache: { successMaxAge: 600, permanentRedirectMaxAge: 86_400 },
+      cookie: { name: 'equator-locale' },
+      render: () => {
+        renders += 1;
+        return new Response('');
+      },
+    });
+    for (const [url, host] of [
+      ['/second', 'a b'],
+      ['/second', 'site.example:99999'],
+      ['http://[', 'site.example'],
+    ] as const) {
+      const sink = recorder();
+
+      await toNodeListener(handler)(incoming(url, { host }), sink.target);
+
+      expect(sink.status(), `${host} ${url}`).toBe(400);
+      expect(sink.headers.get('cache-control')).toBe('private, no-store');
+      expect(sink.headers.get('x-robots-tag')).toBe('noindex');
+    }
+    expect(renders).toBe(0);
+  });
+});
