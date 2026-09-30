@@ -2356,8 +2356,6 @@ async function verifyCommandLine() {
 
   // The compile verb of the programmatic API, over the same project. It writes nothing, and the
   // route policy its analysis read is the one the application runs, which the page above reports.
-  // The served policy is narrowed to the built locales, so its locales are held to be among the
-  // declared ones rather than equal to them.
   const { compileProjectFromDisk } = await import(
     pathToFileURL(
       resolve(consumerRoot, 'node_modules/@neolorn/equator-toolkit/index.js'),
@@ -2380,11 +2378,15 @@ async function verifyCommandLine() {
     { kind: policy.kind, omitDefaultPrefix: policy.omitDefaultPrefix === true },
     'compileProjectFromDisk read another route policy than the one the application runs',
   );
-  const servedLocales = Object.keys(policy.locales ?? {});
-  assert.ok(
-    servedLocales.length > 0 &&
-      servedLocales.every((locale) => analyzedPolicy.locales.includes(locale)),
-    `compileProjectFromDisk read the locales ${analyzedPolicy.locales.join(', ')}, and the application serves ${servedLocales.join(', ')}`,
+  // Every row's policy takes its default locale and its locales from the generated configuration,
+  // which is code the analysis does not run, so it reports neither rather than a guess.
+  assert.deepEqual(
+    {
+      locales: analyzedPolicy.locales,
+      defaultLocale: analyzedPolicy.defaultLocale,
+    },
+    { locales: [], defaultLocale: undefined },
+    'compileProjectFromDisk read locales from a policy that states none in its source',
   );
   recordCapabilityClaim(
     `${consumerName}: compileProjectFromDisk over the seat`,

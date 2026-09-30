@@ -135,12 +135,12 @@ const EDITS = [
   {
     label: 'adding a locale',
     async apply() {
-      // Three data files, and every one of them is data.
+      // The configuration and the catalogs, and nothing else.
       //
-      // A locale is three statements: which locales have catalogs (the configuration), which have
-      // addresses (the policy), and what the words are (the catalogs). `EQ1408` is what makes
-      // editing the first two out of step an error rather than a silently half-present locale, so
-      // this edits both together, which is the shape the edit is meant to have, not a workaround.
+      // A locale is declared once, in the configuration, and its words are the catalogs. The
+      // fixture's route policy reads its locales from the generated configuration, so the new
+      // locale has an address without an edit there, which is what spec 03 section 2 asks of a
+      // declaration made once.
       const undoConfiguration = await edit(
         resolve(consumerRoot, 'equator.config.json'),
         (source) => {
@@ -148,14 +148,6 @@ const EDITS = [
           configuration.locales = [...configuration.locales, 'fr-FR'];
           return `${JSON.stringify(configuration, null, 2)}\n`;
         },
-      );
-      const undoPolicy = await edit(
-        resolve(appRoot, 'route-policy.ts'),
-        (source) =>
-          source.replace(
-            "    'ar-EG': 'ar-eg',",
-            "    'ar-EG': 'ar-eg',\n    'fr-FR': 'fr-fr',",
-          ),
       );
       // The catalogs, copied from the source locale. Untranslated French is still a French
       // catalog as far as this measurement is concerned: the question is what the *composition*
@@ -174,7 +166,6 @@ const EDITS = [
       );
       return async () => {
         for (const undo of undoCatalogs) await undo();
-        await undoPolicy();
         await undoConfiguration();
       };
     },

@@ -34,11 +34,12 @@ import {
 /**
  * The policy this build can serve, which is not always the policy the application declared.
  *
- * `route-policy.ts` gives every locale this application means to have an address, including
- * `en-Arab-XB`, which exists only in a build made with `--pseudo`. Resolving against the declared
- * policy in an ordinary build answers `/en-arab-xb/second` with a 200 in markup labelled
- * `lang="en-Arab-XB"`, and sends a visitor whose cookie remembers that locale to it. Narrowing once
- * here is the whole fix, and it is one line because Equator made it one.
+ * A policy is a source file and may name a locale a build did not generate, such as a
+ * pseudo-locale in a build made without `--pseudo`. Resolving against it in such a build answers
+ * that locale's addresses with a 200 in markup labelled with it, and sends a visitor whose cookie
+ * remembers that locale to it. This application's policy reads its locales from the generated
+ * configuration, so here the narrowing changes nothing, and it stays because a consumer row may
+ * replace the policy with one that does not.
  */
 const servedPolicy = builtLocalePolicy(routePolicy, configuration);
 
