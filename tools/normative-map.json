@@ -2759,7 +2759,8 @@
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "7. Locale data, person names, and what stays domain-owned",
-      "statement": "Locale-aware collation and case conversion are presentation and search aids, and a release MUST NOT use either for a security decision or an identity comparison."
+      "statement": "Locale-aware collation and case conversion are presentation and search aids, and a release MUST NOT use either for a security decision or an identity comparison.",
+      "checks": ["self-test:lint:self-test"]
     },
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",

@@ -636,7 +636,9 @@ export class ParticipantCoordinator {
       this.registryVersion();
       return Object.freeze(
         [...this.adapters.values()]
-          .sort((left, right) => left.id.localeCompare(right.id))
+          .sort((left, right) =>
+            left.id < right.id ? -1 : left.id > right.id ? 1 : 0,
+          )
           .map((adapter) => adapter.stateValue()),
       );
     },

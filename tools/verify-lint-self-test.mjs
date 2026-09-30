@@ -63,6 +63,15 @@ export function fromA(): string {
 `,
   },
   {
+    name: 'lint-self-test-host-order.ts',
+    rule: 'no-restricted-syntax',
+    why: 'an order taken from the host collation, which is host locale data',
+    contents: `export const ordered = ['b', 'a'].sort((left, right) =>
+  left.localeCompare(right),
+);
+`,
+  },
+  {
     name: 'lint-self-test-cycle-b.ts',
     contents: `import { fromA } from './lint-self-test-cycle-a';
 

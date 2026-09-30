@@ -1895,10 +1895,14 @@ function personNameFieldText(
       modifiers.includes('retain'),
     );
   }
+  // Formatted text a reader sees, cased by the name's own language: presentation, which is what
+  // host locale data is for.
   if (modifiers.includes('allCaps')) {
+    // eslint-disable-next-line no-restricted-syntax
     text = text.toLocaleUpperCase(value.language);
   } else if (modifiers.includes('initialCap')) {
     const head = firstGrapheme(text, value.language, cache);
+    // eslint-disable-next-line no-restricted-syntax
     text = head.toLocaleUpperCase(value.language) + text.slice(head.length);
   }
   return { field: name, text };

@@ -164,7 +164,7 @@ export function createOutputPlan(
       );
       continue;
     }
-    const caseFolded = input.path.toLocaleLowerCase('en-US');
+    const caseFolded = input.path.toLowerCase();
     const existing = folded.get(caseFolded);
     if (exact.has(input.path) || existing !== undefined) {
       diagnostics.push(
@@ -303,12 +303,8 @@ export function parseCompletionManifest(
         ),
       ]);
     }
-    const foldedPath = file['path'].toLocaleLowerCase('en-US');
-    if (
-      parsedFiles.some(
-        ({ path }) => path.toLocaleLowerCase('en-US') === foldedPath,
-      )
-    ) {
+    const foldedPath = file['path'].toLowerCase();
+    if (parsedFiles.some(({ path }) => path.toLowerCase() === foldedPath)) {
       return toolkitFailure([
         toolkitDiagnostic(
           'EQ1503',

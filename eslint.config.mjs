@@ -101,6 +101,24 @@ export default tseslint.config(
     },
   },
   {
+    // `specs/01-standards-profile.spec.md` section 5 keeps host locale data to presentation. The
+    // host's collation and its tailored case mappings are that data, so an order or a comparison
+    // taken from them lets the machine a build runs on decide an identity. Code units and the
+    // Unicode default case mapping are fixed by the engine's Unicode version instead.
+    files: ['packages/**/src/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'CallExpression > MemberExpression.callee > Identifier.property[name=/^(?:localeCompare|toLocaleLowerCase|toLocaleUpperCase)$/u]',
+          message:
+            'Host locale data is presentation only. Compare code units, or use toLowerCase() or toUpperCase(), wherever the result decides an identity or an order.',
+        },
+      ],
+    },
+  },
+  {
     // `specs/12-verification.spec.md` section 3 seeds every generator from a constant the release
     // carries, so a failing case can be run again. A draw from the platform's random source in a
     // test makes the failure a report that cannot be reproduced, and nothing else would notice it.
