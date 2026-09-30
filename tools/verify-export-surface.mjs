@@ -169,6 +169,12 @@ function withoutComments(text) {
 }
 
 const SKIP = new Set(['node_modules', 'dist', '.angular', '.equator', 'tmp']);
+const QUOTES_THE_LIBRARY = new Set([
+  'tools/assurance-injections.mjs',
+  'tools/assurance-runtime-injections.mjs',
+  'tools/package-structure-plants.mjs',
+  'tools/stage-plants.mjs',
+]);
 
 function readAll(dir, out = []) {
   let entries;
@@ -191,6 +197,10 @@ function readAll(dir, out = []) {
     // in, the gate reads its own baseline as evidence of use and reports every entry as resolved,
     // which is not a use, it is a record that there is none.
     else if (name === 'verify-export-surface.mjs') continue;
+    // The injection and plant registries hold the packages' own source as the text they find and
+    // replace, so an internal function spelled like an export reads there as a use of the export.
+    // What they quote is the library, not something that calls it.
+    else if (QUOTES_THE_LIBRARY.has(relative)) continue;
     else if (/\.(ts|mjs|js|html)$/u.test(name) && !name.endsWith('.d.ts')) {
       out.push({
         html: name.endsWith('.html'),
