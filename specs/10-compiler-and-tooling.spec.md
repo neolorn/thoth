@@ -83,7 +83,8 @@ catalog wording or message identity.
 Every authored input is UTF-8 text, and a release MUST NOT decode one with replacement. A release
 MUST refuse an authored input that is not UTF-8, or that exceeds its byte ceiling, with the code
 that input's other refusals carry and its path relative to the owner, and MUST NOT report either as
-an environment failure.
+an environment failure. A release MUST read a JSON input that begins with a byte-order mark as the
+JSON after it (RFC 8259 section 8.1), and MUST keep the mark when it rewrites that file.
 
 An extension input is application-local inert data. A release MUST NOT import or execute a
 handler, renderer, adapter, or application module to discover anything, and MUST validate a

@@ -649,3 +649,52 @@ describe('an authored file that is not UTF-8 text, or is over its ceiling', () =
     expect(diagnostic?.summary).not.toContain(root);
   });
 });
+
+describe('a JSON project file saved with a byte-order mark', () => {
+  const MARK = String.fromCharCode(0xfeff);
+
+  it('is read as the JSON after it, and keeps it when Equator rewrites the file', async () => {
+    const root = await temporaryProject('byte-order-mark-');
+    await createInitializedProject(root);
+    await writeProjectFile(root, 'angular.json', '{}\n');
+    await writeProjectFile(
+      root,
+      'equator.extensions.json',
+      JSON.stringify({
+        profile: 'equator-extension-registry/1',
+        descriptors: [],
+      }),
+    );
+    for (const file of [
+      'package.json',
+      'angular.json',
+      'equator.config.json',
+      'equator.extensions.json',
+    ]) {
+      const path = resolve(root, file);
+      await writeFile(path, `${MARK}${await readFile(path, 'utf8')}`, 'utf8');
+    }
+    // Written on one line, so formatting has something to rewrite.
+    const configurationPath = resolve(root, 'equator.config.json');
+    const configuration = await readFile(configurationPath, 'utf8');
+    await writeFile(
+      configurationPath,
+      `${MARK}${JSON.stringify(JSON.parse(configuration.slice(1)))}`,
+      'utf8',
+    );
+
+    const checked = await checkProject({ project: root });
+    expect(checked.ok, JSON.stringify(checked.diagnostics)).toBe(true);
+
+    const formatted = await formatProject({ project: root });
+    expect(formatted.ok, JSON.stringify(formatted.diagnostics)).toBe(true);
+    if (!formatted.ok) return;
+    expect(formatted.value.files).toContain('equator.config.json');
+    expect(formatted.value.files).toContain('equator.extensions.json');
+    for (const file of ['equator.config.json', 'equator.extensions.json']) {
+      const rewritten = await readFile(resolve(root, file), 'utf8');
+      expect(rewritten.startsWith(MARK), file).toBe(true);
+      expect(rewritten.slice(1).startsWith(MARK), file).toBe(false);
+    }
+  });
+});

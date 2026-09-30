@@ -535,6 +535,20 @@ async function readAuthoredText(
   }
 }
 
+const BYTE_ORDER_MARK = '\ufeff';
+
+/**
+ * The JSON a file carries, without the one leading byte-order mark an editor may have saved.
+ *
+ * RFC 8259 section 8.1 lets a parser ignore it, and npm, TypeScript and the Angular CLI all do, so
+ * refusing it refused a manifest every other tool in the project reads. The file's text keeps it,
+ * so a rewrite writes it back and the check that the file did not change underneath still compares
+ * what is on disk.
+ */
+function jsonText(source: string): string {
+  return source.startsWith(BYTE_ORDER_MARK) ? source.slice(1) : source;
+}
+
 function projectDiagnostic(
   summary: string,
   severity: ToolkitDiagnosticSeverity = 'error',
@@ -789,7 +803,7 @@ async function readPackageManifest(
   const source = read.value;
   let value: unknown;
   try {
-    value = JSON.parse(source);
+    value = JSON.parse(jsonText(source));
   } catch {
     return toolkitFailure([
       projectDiagnostic('The selected owner package.json is not valid JSON.'),
@@ -913,7 +927,7 @@ async function readConfiguration(location: ProjectLocation): Promise<
   );
   if (!read.ok) return read;
   const source = read.value;
-  const parsed = parseConfiguration(source, {
+  const parsed = parseConfiguration(jsonText(source), {
     sourcePath: CONFIGURATION_NAME,
   });
   return parsed.ok
@@ -951,7 +965,7 @@ async function readExtensionRegistry(location: ProjectLocation): Promise<
   });
   if (!read.ok) return read;
   const source = read.value;
-  const parsed = parseExtensionRegistry(source, {
+  const parsed = parseExtensionRegistry(jsonText(source), {
     sourcePath: EXTENSION_REGISTRY_NAME,
   });
   return parsed.ok
@@ -1267,7 +1281,7 @@ async function selectAngularApplication(
     if (!read.ok) return read;
     let angular: unknown;
     try {
-      angular = JSON.parse(read.value);
+      angular = JSON.parse(jsonText(read.value));
     } catch {
       return toolkitFailure([
         projectDiagnostic('The selected owner angular.json is not valid JSON.'),
@@ -2271,6 +2285,13 @@ async function applyTextChanges(
   dryRun: boolean,
 ): Promise<ToolkitResult<FormatProjectResult>> {
   const changed = changes
+    .map((change) =>
+      // A mark the file was saved with is the file's, and Equator writes only what it changed.
+      change.previous?.startsWith(BYTE_ORDER_MARK) === true &&
+      !change.contents.startsWith(BYTE_ORDER_MARK)
+        ? { ...change, contents: `${BYTE_ORDER_MARK}${change.contents}` }
+        : change,
+    )
     .filter(({ previous, contents }) => previous !== contents)
     .sort((left, right) =>
       compareCodePoint(left.portablePath, right.portablePath),
@@ -2568,7 +2589,7 @@ function manifestSource(
   value: Readonly<Record<string, unknown>>,
   source: string,
 ): string {
-  if (JSON.stringify(JSON.parse(source)) === JSON.stringify(value)) {
+  if (JSON.stringify(JSON.parse(jsonText(source))) === JSON.stringify(value)) {
     return source;
   }
   const style = /^\s*\{((?:\r?\n)+)([ \t]*)/u.exec(source);
