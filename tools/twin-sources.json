@@ -15,6 +15,14 @@
     {
       "runtime": "packages/runtime/core/src/pseudo-locale-tags.ts",
       "toolkit": "packages/toolkit/src/pseudo-locale-tags.ts"
+    },
+    {
+      "runtime": "packages/runtime/core/src/language-tag.ts",
+      "toolkit": "packages/toolkit/src/language-tag.ts"
+    },
+    {
+      "runtime": "packages/runtime/core/src/locale-aliases.generated.ts",
+      "toolkit": "packages/toolkit/src/locale-aliases.generated.ts"
     }
   ]
 }

@@ -100,7 +100,7 @@ function languageSubtag(tag: string): string {
  * RFC's own worked example never asks about `zh-Hant-CN-x`, which is not a language tag.
  *
  * Truncating one subtag at a time produced that extra candidate, and it matched nothing only
- * because `Intl.getCanonicalLocales` rejects it and every supported locale is canonical. That is an
+ * because canonicalization rejects it and every supported locale is canonical. That is an
  * invariant of another file, and the algorithm this loop claims to implement does not need it.
  */
 function truncateSubtag(candidate: string): string | undefined {

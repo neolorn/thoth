@@ -26,13 +26,26 @@
       "section": "2. Text and locale-data baseline",
       "statement": "A release MUST derive every such table from a source recorded under section 4, and MUST NOT ship a source package's data wholesale.",
       "checks": [
-        "plant:verify:locale-profile:plural-table-not-from-the-pinned-source"
+        "plant:verify:locale-profile:plural-table-not-from-the-pinned-source",
+        "plant:verify:locale-profile:alias-rule-not-the-pinned-one"
       ]
     },
     {
       "spec": "01-standards-profile.spec.md",
       "section": "3. Locale identity and matching",
-      "statement": "An Equator release MUST canonicalize a locale identity from the pinned CLDR release and the recorded IANA Language Subtag Registry snapshot, and MUST NOT let a host runtime's own registry decide an identity that is stored, compared, or exchanged."
+      "statement": "An Equator release MUST canonicalize a locale identity from the pinned CLDR release and the recorded IANA Language Subtag Registry snapshot, and MUST NOT let a host runtime's own registry decide an identity that is stored, compared, or exchanged.",
+      "checks": [
+        "assurance:toolkit-canonicalizes-with-the-host",
+        "assurance:toolkit-canonicalization-skips-the-platform",
+        "assurance:alias-rule-taken-in-table-order",
+        "assurance:territory-split-takes-the-first-region",
+        "assurance:region-alias-replaces-a-stated-region",
+        "assurance:unicode-keyword-true-kept",
+        "assurance:repeated-variant-accepted",
+        "assurance:toolkit-language-tag-twin-drifts",
+        "plant:verify:platform:toolkit-keeps-a-deprecated-language",
+        "plant:verify:platform:canonicalizer-stops-before-the-alias-settles"
+      ]
     },
     {
       "spec": "01-standards-profile.spec.md",

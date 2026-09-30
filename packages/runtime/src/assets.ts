@@ -7,6 +7,7 @@
 // status, identity and representation and no payload, because the payload is the consumer's.
 
 import {
+  canonicalizeLanguageTag,
   directionForLocale,
   LocalizationError,
   type LocaleDirection,
@@ -281,11 +282,7 @@ function validOpaqueIdentity(value: string | undefined): boolean {
 
 function canonicalLocale(locale: string): boolean {
   if (locale.length === 0 || locale.length > 64) return false;
-  try {
-    return Intl.getCanonicalLocales(locale)[0] === locale;
-  } catch {
-    return false;
-  }
+  return canonicalizeLanguageTag(locale) === locale;
 }
 
 function validDirection(direction: unknown): direction is LocaleDirection {

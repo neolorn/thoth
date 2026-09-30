@@ -772,19 +772,214 @@ const endonymOutput = [
   '',
 ].join('\n');
 
+// The alias rules of UTS #35 Part 1 Annex C, preprocessed as its "Preprocessing" section states, so
+// the canonicalizer applies them in order and never re-derives the order at run time. The annex
+// reads the four alias tables as rules over a language identifier; a rule whose type is not a valid
+// `unicode_language_id` is discarded there, which removes the legacy `i-` tags, the extended
+// language tags and the three-letter territory codes, all of which the identifier grammar refuses
+// before any rule is consulted.
+const aliasDocument = JSON.parse(
+  await readFile(resolve(cldrRoot, 'supplemental/aliases.json'), 'utf8'),
+).supplemental.metadata.alias;
+
+const aliasLanguage = /^(?:[a-z]{2,3}|[a-z]{5,8})$/u;
+const aliasScript = /^[a-z]{4}$/u;
+const aliasRegion = /^(?:[a-z]{2}|[0-9]{3})$/u;
+const aliasVariant = /^(?:[a-z0-9]{5,8}|[0-9][a-z0-9]{3})$/u;
+
+/** A language identifier as the annex's multimap, with `und` read as no language. */
+function aliasLanguageId(text) {
+  const subtags = text.replaceAll('_', '-').toLowerCase().split('-');
+  let index = 0;
+  if (!aliasLanguage.test(subtags[index] ?? '')) return undefined;
+  const language = subtags[index++];
+  const id = {
+    language: language === 'und' ? '' : language,
+    script: '',
+    region: '',
+    variants: [],
+  };
+  if (aliasScript.test(subtags[index] ?? '')) {
+    const script = subtags[index++];
+    id.script = script[0].toUpperCase() + script.slice(1);
+  }
+  if (aliasRegion.test(subtags[index] ?? '')) {
+    id.region = subtags[index++].toUpperCase();
+  }
+  while (aliasVariant.test(subtags[index] ?? ''))
+    id.variants.push(subtags[index++]);
+  if (index !== subtags.length) return undefined;
+  if (new Set(id.variants).size !== id.variants.length) return undefined;
+  id.variants.sort(compareCodePoint);
+  return id;
+}
+
+const aliasSubtags = (id) =>
+  [id.language || 'und', id.script, id.region, ...id.variants].filter(Boolean);
+const aliasText = (id) => aliasSubtags(id).join('-');
+
+const aliasEntries = [
+  ...Object.entries(aliasDocument.languageAlias).map(
+    ([type, { _replacement }]) => [type, _replacement],
+  ),
+  ...['scriptAlias', 'territoryAlias', 'variantAlias'].flatMap((table) =>
+    Object.entries(aliasDocument[table]).map(([type, { _replacement }]) => [
+      `und-${type}`,
+      _replacement
+        .split(' ')
+        .map((replacement) => `und-${replacement}`)
+        .join(' '),
+    ]),
+  ),
+];
+const aliasRules = [];
+let discardedAliasRules = 0;
+for (const [typeText, replacementText] of aliasEntries) {
+  const type = aliasLanguageId(typeText);
+  if (type === undefined) {
+    discardedAliasRules += 1;
+    continue;
+  }
+  const replacements = replacementText.split(' ').map(aliasLanguageId);
+  assert.ok(
+    replacements.every((replacement) => replacement !== undefined),
+    `The CLDR alias ${typeText} has a valid type and a replacement ${replacementText} that is not a language identifier.`,
+  );
+  // Only a territory rule may name more than one replacement, and the annex resolves that list
+  // over the region alone; a list that changed anything else would need a rule the annex lacks.
+  assert.ok(
+    replacements.length === 1 ||
+      replacements.every(
+        (replacement) =>
+          replacement.region !== '' && aliasSubtags(replacement).length === 2,
+      ),
+    `The CLDR alias ${typeText} lists replacements that are not regions alone.`,
+  );
+  aliasRules.push({ type, replacements });
+}
+
+const aliasFields = (id) => [
+  id.language === '' ? [] : [id.language],
+  id.script === '' ? [] : [id.script],
+  id.region === '' ? [] : [id.region],
+  id.variants,
+];
+function compareAliasRules(left, right) {
+  const leftFields = aliasFields(left.type);
+  const rightFields = aliasFields(right.type);
+  const size = (fields) => fields.reduce((sum, field) => sum + field.length, 0);
+  if (size(leftFields) !== size(rightFields)) {
+    return size(rightFields) - size(leftFields);
+  }
+  for (let field = 0; field < 4; field += 1) {
+    const leftEmpty = leftFields[field].length === 0;
+    const rightEmpty = rightFields[field].length === 0;
+    if (leftEmpty !== rightEmpty) return leftEmpty ? 1 : -1;
+  }
+  for (let field = 0; field < 4; field += 1) {
+    const length = Math.max(
+      leftFields[field].length,
+      rightFields[field].length,
+    );
+    for (let position = 0; position < length; position += 1) {
+      const order = compareCodePoint(
+        leftFields[field][position] ?? '',
+        rightFields[field][position] ?? '',
+      );
+      if (order !== 0) return order;
+    }
+  }
+  return 0;
+}
+aliasRules.sort(compareAliasRules);
+
+// Two rules the order cannot separate would make the result depend on the table's own order, which
+// the annex does not define.
+for (let index = 1; index < aliasRules.length; index += 1) {
+  assert.notEqual(
+    compareAliasRules(aliasRules[index - 1], aliasRules[index]),
+    0,
+    `Two CLDR alias rules share the type ${aliasText(aliasRules[index].type)}.`,
+  );
+}
+
+// The annex's territory exception picks, from a rule's list, the region likely subtags give the
+// language and script. Its lookup tries the language with its script and then the language alone,
+// so only the keys whose region is a later entry of some list change the answer, and a key with
+// its script is kept as well when it answers differently from the language it would fall back to.
+const laterRegions = new Set(
+  aliasRules.flatMap(({ replacements }) =>
+    replacements.slice(1).map(({ region }) => region),
+  ),
+);
+const likelySubtags = likelyDocument.supplemental.likelySubtags;
+const likelyRegion = (key) => likelySubtags[key]?.split('-').at(-1);
+const likelyKeys = Object.keys(likelySubtags).filter((key) =>
+  /^[a-z]{2,8}(?:-[A-Z][a-z]{3})?$/u.test(key),
+);
+const likelyRegions = Object.fromEntries(
+  likelyKeys
+    .filter((key) => {
+      const region = likelyRegion(key);
+      if (laterRegions.has(region)) return true;
+      const [language, script] = key.split('-');
+      return script !== undefined && laterRegions.has(likelyRegion(language));
+    })
+    .sort(compareCodePoint)
+    .map((key) => [key, likelyRegion(key)]),
+);
+
+const aliasRuleText = aliasRules
+  .map(
+    ({ type, replacements }) =>
+      `${aliasText(type)}>${replacements.map(aliasText).join(' ')}`,
+  )
+  .join(',');
+const likelyRegionText = Object.entries(likelyRegions)
+  .map(([key, region]) => `${key}>${region}`)
+  .join(',');
+
+const localeAliasOutput = [
+  `/** Generated from cldr-core ${manifest.version} by tools/generate-locale-profile.mjs. */`,
+  '',
+  '/**',
+  ' * The alias rules of UTS #35 Part 1 Annex C, from `supplemental/aliases.json`, in the order the',
+  ' * annex applies them: `type>replacement`, comma separated, with a territory rule listing its',
+  ' * replacements space separated. Kept as text because the canonicalizer reads it once, and a',
+  ' * string is the smallest form a bundler can carry.',
+  ' */',
+  '// prettier-ignore',
+  `export const LOCALE_ALIAS_RULES = ${JSON.stringify(aliasRuleText)};`,
+  '',
+  '/**',
+  ' * The likely region of a language, or of a language with its script, from',
+  ' * `supplemental/likelySubtags.json`, for the keys that decide which region of a territory rule',
+  ' * with several replacements applies. A key absent here takes the first replacement.',
+  ' */',
+  '// prettier-ignore',
+  `export const LIKELY_REPLACEMENT_REGIONS = ${JSON.stringify(likelyRegionText)};`,
+  '',
+].join('\n');
+
+// A tag is canonical when it is spelled in canonical case and no alias rule matches it, which is
+// the annex's own stopping condition.
+function isPinnedCanonical(tag) {
+  const id = aliasLanguageId(tag);
+  if (id === undefined || aliasText(id) !== tag) return false;
+  const fields = aliasFields(id);
+  return !aliasRules.some(({ type }) =>
+    aliasFields(type).every((field, index) =>
+      field.every((value) => fields[index].includes(value)),
+    ),
+  );
+}
+
 // Every tag in the table canonicalizes to itself, so a key here matches what
 // `canonicalizeLocale` produces from a project's own configuration. A release that changed
 // that would silently stop matching, and the chain would quietly become truncation again.
 const nonCanonicalParentTags = [
   ...new Set(Object.entries(parentLocales).flat()),
-].filter((tag) => {
-  try {
-    const canonical = Intl.getCanonicalLocales(tag);
-    return canonical.length !== 1 || canonical[0] !== tag;
-  } catch {
-    return true;
-  }
-});
+].filter((tag) => !isPinnedCanonical(tag));
 assert.deepEqual(
   nonCanonicalParentTags,
   [],
@@ -872,6 +1067,12 @@ const outputPath = resolve(
   workspaceRoot,
   'packages/runtime/core/src/locale-profile.generated.ts',
 );
+// The toolkit canonicalizes a declaration and the runtime a request, and neither package can import
+// the other, so both carry the same table.
+const localeAliasOutputPaths = [
+  'packages/runtime/core/src/locale-aliases.generated.ts',
+  'packages/toolkit/src/locale-aliases.generated.ts',
+].map((path) => resolve(workspaceRoot, path));
 if (process.argv.includes('--check')) {
   assert.equal(
     await readFile(outputPath, 'utf8'),
@@ -903,8 +1104,15 @@ if (process.argv.includes('--check')) {
     toolkitRtlOutput,
     'The checked-in toolkit copy of the right-to-left scripts is stale; run pnpm run generate:locale-profile.',
   );
+  for (const path of localeAliasOutputPaths) {
+    assert.equal(
+      await readFile(path, 'utf8'),
+      localeAliasOutput,
+      'The checked-in Equator locale alias table is stale; run pnpm run generate:locale-profile.',
+    );
+  }
   console.log(
-    `Verified ${rtlScripts.length} RTL scripts, ${rtlRanges.length} strong right-to-left code point ranges derived from Unicode 17.0.0 Bidi_Class, agreeing with the CLDR script data on every letter in Unicode and dropping ${droppedByBidiClass.length} context-resolved code points and no strong one, and cardinal plural categories for ${Object.keys(pluralCategories).length} languages and ordinal plural categories for ${Object.keys(ordinalCategories).length} languages from cldr-core 48.2.0, and ${encompassedPairs} encompassed-language pairs over ${Object.keys(encompassed).length} language subtags, every one ranked by CLDR at ${widestKept} or closer where two languages it does not relate stand at ${unrelatedDistance._distance} and its default matching threshold is ${DEFAULT_THRESHOLD}; likely-script resolution remains native Intl under the tested platform matrix; and ${Object.keys(endonyms).length} endonyms from cldr-localenames-full ${localeNamesManifest.version}, agreeing with this platform's ICU on ${endonymsComparedToIcu.length - endonymsDisagreeingWithIcu.length} of the ${endonymsComparedToIcu.length} locales it has display names for; and ${Object.keys(orderedParentLocales).length} declared parent locales from cldr-core ${manifest.version}, ${undParents} of which name root.`,
+    `Verified ${rtlScripts.length} RTL scripts, ${rtlRanges.length} strong right-to-left code point ranges derived from Unicode 17.0.0 Bidi_Class, agreeing with the CLDR script data on every letter in Unicode and dropping ${droppedByBidiClass.length} context-resolved code points and no strong one, and cardinal plural categories for ${Object.keys(pluralCategories).length} languages and ordinal plural categories for ${Object.keys(ordinalCategories).length} languages from cldr-core 48.2.0, and ${encompassedPairs} encompassed-language pairs over ${Object.keys(encompassed).length} language subtags, every one ranked by CLDR at ${widestKept} or closer where two languages it does not relate stand at ${unrelatedDistance._distance} and its default matching threshold is ${DEFAULT_THRESHOLD}; likely-script resolution remains native Intl under the tested platform matrix; and ${Object.keys(endonyms).length} endonyms from cldr-localenames-full ${localeNamesManifest.version}, agreeing with this platform's ICU on ${endonymsComparedToIcu.length - endonymsDisagreeingWithIcu.length} of the ${endonymsComparedToIcu.length} locales it has display names for; and ${Object.keys(orderedParentLocales).length} declared parent locales from cldr-core ${manifest.version}, ${undParents} of which name root; and ${aliasRules.length} locale alias rules, ${discardedAliasRules} discarded as UTS #35 Annex C discards them, with ${Object.keys(likelyRegions).length} likely regions for the territory exception.`,
   );
 } else {
   let current;
@@ -963,5 +1171,17 @@ if (process.argv.includes('--check')) {
   }
   if (currentToolkitRtl !== toolkitRtlOutput) {
     await writeFile(toolkitRtlOutputPath, toolkitRtlOutput, 'utf8');
+  }
+
+  for (const path of localeAliasOutputPaths) {
+    let currentAliases;
+    try {
+      currentAliases = await readFile(path, 'utf8');
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+    }
+    if (currentAliases !== localeAliasOutput) {
+      await writeFile(path, localeAliasOutput, 'utf8');
+    }
   }
 }

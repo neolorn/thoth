@@ -47,6 +47,14 @@ const sourceOf = (path: string): string =>
  * reading is taken at all. A second list of exclusions kept in step by a comment drifts; one list
  * cannot drift from itself.
  */
+/**
+ * The toolkit resolves modules as Node does, which needs the extension on a relative import, and the
+ * runtime's bundler resolution does not take one. That spelling is the only difference a twin may
+ * have.
+ */
+const withoutImportExtensions = (source: string): string =>
+  source.replace(/(from '\.\/[^']+)\.js';/gu, "$1';");
+
 const twins: readonly { runtime: string; toolkit: string }[] = (
   JSON.parse(sourceOf('tools/twin-sources.json')) as {
     twins: { runtime: string; toolkit: string }[];
@@ -65,7 +73,9 @@ describe('the option table', () => {
   it.each(twins.map(({ runtime, toolkit }) => [runtime, toolkit]))(
     '%s and %s are the same file',
     (runtimePath, toolkitPath) => {
-      expect(sourceOf(runtimePath)).toBe(sourceOf(toolkitPath));
+      expect(sourceOf(runtimePath)).toBe(
+        withoutImportExtensions(sourceOf(toolkitPath)),
+      );
     },
   );
 

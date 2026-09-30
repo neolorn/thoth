@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ENCOMPASSED_LANGUAGE_PROFILE } from '../core/src/encompassed-languages.generated.js';
+import { canonicalizeLanguageTag } from '../core/src/language-tag.js';
 import {
   negotiateLocale,
   parseAcceptLanguage,
@@ -15,13 +16,7 @@ import {
  */
 
 /** What the runtime actually passes in: canonicalization, with a tag it rejects meaning no match. */
-const canonicalize = (value: string): string | undefined => {
-  try {
-    return Intl.getCanonicalLocales(value)[0];
-  } catch {
-    return undefined;
-  }
-};
+const canonicalize = canonicalizeLanguageTag;
 
 /**
  * RFC 9110 12.4.2 introduces the parameter as *"q" (case-insensitive)* and says the weight *"is

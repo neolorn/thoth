@@ -17,7 +17,7 @@ Composable from here: `provideLocalizationSetup`, `withExtensions`, `withFormatt
 
 The contracts, the locale profiles and negotiation, and the route and address helpers, with no Angular in the graph. This is what a library or a test helper imports.
 
-Publishes 236 name(s).
+Publishes 237 name(s).
 
 ## `@neolorn/equator/forms`
 

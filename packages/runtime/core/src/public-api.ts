@@ -50,6 +50,8 @@ export {
   type PageOutcomeOperationalFailure,
 } from './page-outcome';
 
+export { canonicalizeLanguageTag } from './language-tag';
+
 export {
   directionForLocale,
   localeProfile,

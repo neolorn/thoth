@@ -2072,10 +2072,10 @@ export const injections = Object.freeze([
   {
     id: 'toolkit-canonicalization-skips-the-platform',
     invariant:
-      'The toolkit canonicalizes a locale tag through the same ECMA-402 algorithm the runtime uses, so both write one spelling for one locale.',
+      'The toolkit canonicalizes a locale tag through the same pinned algorithm the runtime uses, so both write one spelling for one locale.',
     source: 'packages/toolkit/src/locales.ts',
-    find: '    canonical = locales[0];',
-    replace: '    canonical = locale;',
+    find: '  const canonical = canonicalizeLanguageTag(locale);',
+    replace: '  const canonical: string | undefined = locale;',
     caughtBy: 'packages/toolkit/test/round-trip-properties.test.ts',
   },
   {
@@ -4390,5 +4390,68 @@ export const injections = Object.freeze([
     replace:
       '          this.cache.set(key, entry);\n          this.evict();\n        }\n        return catalog;',
     caughtBy: 'packages/runtime/test/cache-events.test.ts',
+  },
+  {
+    id: 'territory-split-takes-the-first-region',
+    invariant:
+      'A region CLDR split into several becomes the one likely subtags give the language, not the first of the list.',
+    source: 'packages/runtime/core/src/language-tag.ts',
+    find: '    replacements.find(({ region }) => region === likely) ??\n',
+    replace: '',
+    caughtBy: 'packages/runtime/test/language-tag.test.ts',
+  },
+  {
+    id: 'alias-rule-taken-in-table-order',
+    invariant:
+      'Of the alias rules matching a tag, the one UTS #35 Annex C orders first applies, so a rule naming more subtags wins over one naming fewer.',
+    source: 'packages/runtime/core/src/language-tag.ts',
+    find: '        (first === undefined || rule.order < first.order) &&',
+    replace: '        (first === undefined || rule.order > first.order) &&',
+    caughtBy: 'packages/runtime/test/language-tag.test.ts',
+  },
+  {
+    id: 'unicode-keyword-true-kept',
+    invariant:
+      'A Unicode extension keyword whose value is true is spelled as its key alone, as hosts spell it.',
+    source: 'packages/runtime/core/src/language-tag.ts',
+    find: "        value === '' || value === 'true' ? key : `${key}-${value}`,",
+    replace: "        value === '' ? key : `${key}-${value}`,",
+    caughtBy: 'packages/runtime/test/language-tag.test.ts',
+  },
+  {
+    id: 'repeated-variant-accepted',
+    invariant: 'A tag repeating a variant is refused, as ECMA-402 refuses it.',
+    source: 'packages/runtime/core/src/language-tag.ts',
+    find: '    if (id.variants.includes(variant)) return undefined;',
+    replace: '',
+    caughtBy: 'packages/runtime/test/language-tag.test.ts',
+  },
+  {
+    id: 'region-alias-replaces-a-stated-region',
+    invariant:
+      'A rule that does not name a region fills one only where the tag had none, so sv-FI-aaland keeps FI.',
+    source: 'packages/runtime/core/src/language-tag.ts',
+    find: "  if (type.region !== '' || id.region === '') {",
+    replace: '  if (true) {',
+    caughtBy: 'packages/runtime/test/language-tag.test.ts',
+  },
+  {
+    id: 'toolkit-language-tag-twin-drifts',
+    invariant:
+      'The toolkit canonicalizes a declaration with the same code the runtime canonicalizes a request with.',
+    source: 'packages/toolkit/src/language-tag.ts',
+    find: 'const MAXIMUM_ALIAS_STEPS = 16;',
+    replace: 'const MAXIMUM_ALIAS_STEPS = 17;',
+    caughtBy: 'packages/runtime/test/message-function-options.test.ts',
+  },
+  {
+    id: 'toolkit-canonicalizes-with-the-host',
+    invariant:
+      "The toolkit canonicalizes a declared locale from the pinned CLDR alias data, not the host's ICU.",
+    source: 'packages/toolkit/src/locales.ts',
+    find: '  const canonical = canonicalizeLanguageTag(locale);',
+    replace:
+      '  let canonical: string | undefined;\n  try {\n    canonical = Intl.getCanonicalLocales(locale)[0];\n  } catch {\n    canonical = canonicalizeLanguageTag(locale);\n  }',
+    caughtBy: 'packages/toolkit/test/pinned-locale-aliases.test.ts',
   },
 ]);

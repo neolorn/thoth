@@ -14,6 +14,7 @@
 // layering the right way up: the base does not depend on the integration.
 import {
   builtLocalePolicy,
+  canonicalizeLanguageTag,
   negotiateLocale,
   pageOutcomeHttpDescriptor,
   parseAcceptLanguage,
@@ -802,11 +803,7 @@ function readCookie(header: string | null, name: string): string | undefined {
 
 /** A tag in canonical form, or `undefined` for one that is not well formed. */
 function canonicalTag(tag: string): string | undefined {
-  try {
-    return Intl.getCanonicalLocales(tag)[0];
-  } catch {
-    return undefined;
-  }
+  return canonicalizeLanguageTag(tag);
 }
 
 /** The locale a signal names, where this build serves it. */

@@ -17,6 +17,7 @@ import {
 } from './angular-contracts';
 
 import {
+  canonicalizeLanguageTag,
   directionForLocale,
   GENERATED_ABI,
   localeProfile,
@@ -1444,17 +1445,14 @@ class LocalizationInternal {
       ? this.aliases[locale]
       : undefined;
     if (alias !== undefined) return alias;
-    let canonical: string;
-    try {
-      canonical = Intl.getCanonicalLocales(locale)[0] as string;
-    } catch (cause) {
+    const canonical = canonicalizeLanguageTag(locale);
+    if (canonical === undefined) {
       throw new LocalizationError(
         operationalDiagnostic(
           'unsupported-locale',
           'The requested locale is malformed or unsupported.',
           { reason: 'malformed-input' },
         ),
-        { cause },
       );
     }
     const canonicalAlias = hasOwn(this.aliases, canonical)

@@ -11,6 +11,7 @@
 // lost the scale, the unit or the precision it was created with.
 
 import {
+  canonicalizeLanguageTag,
   directionForLocale,
   localeProfile,
   LocalizationError,
@@ -530,14 +531,11 @@ export function personName(
       'A person name requires a bounded canonical language tag.',
     );
   }
-  let canonicalLanguage: string;
-  try {
-    canonicalLanguage = Intl.getCanonicalLocales(language)[0] as string;
-  } catch (cause) {
+  const canonicalLanguage = canonicalizeLanguageTag(language);
+  if (canonicalLanguage === undefined) {
     return invalidCanonicalValue(
       'A person name requires a canonical language tag.',
       'malformed-input',
-      cause,
     );
   }
   const normalized: Partial<Record<PersonNameFieldKey, string>> = {};
@@ -2289,14 +2287,16 @@ interface ExtendedLocale {
  * What a locale tag implies: its direction, its calendar, its numbering system, its week.
  *
  * Takes the tag and returns what the host resolves for it, so this is the platform's answer rather
- * than a table Equator keeps. A tag the host cannot canonicalize is reported.
+ * than a table Equator keeps. The tag it reports is canonicalized from the pinned alias data, as
+ * every identity is, and a tag that is not well formed or that the host rejects is reported.
  */
 export function localeMetadata(
   locale: string,
 ): LocaleCapabilityResult<LocaleMetadata> {
   const context: FormattingContext = { locale };
+  const canonical = canonicalizeLanguageTag(locale);
   try {
-    const canonical = Intl.getCanonicalLocales(locale)[0] as string;
+    if (canonical === undefined) throw new RangeError(locale);
     const native = new Intl.Locale(canonical) as unknown as ExtendedLocale;
     const profile = localeProfile(canonical);
     const calendars = native.getCalendars?.() ?? [];

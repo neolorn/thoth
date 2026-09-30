@@ -37,10 +37,11 @@ and the visitor lands on the closest locale you do serve.
 
 ## Identity before comparison
 
-A locale identity is a [BCP 47](https://www.rfc-editor.org/info/bcp47) tag, canonicalized through
-`Intl.getCanonicalLocales` before anything compares it. `EN-us`, `en-US` and `en-Latn-US` are one
-locale, so a browser spelling a tag differently from your configuration is not a miss and there is no
-alias table to maintain.
+A locale identity is a [BCP 47](https://www.rfc-editor.org/info/bcp47) tag, canonicalized before
+anything compares it. The aliases come from the CLDR release Equator pins rather than from the
+browser's or the server's own copy, so `iw` is `he` and `tl` is `fil` on every host. `EN-us`,
+`en-US` and `en-Latn-US` are one locale, so a browser spelling a tag differently from your
+configuration is not a miss and there is no alias table to maintain.
 
 Everything else about a locale is published data: its direction, its plural categories, its number
 and date conventions, and what it inherits from. That is why adding a locale is adding a tag to

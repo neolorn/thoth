@@ -225,7 +225,7 @@ function supportedNumberingSystems(): ReadonlySet<string> {
  *
  * Built through `Intl.Locale` and never by concatenation. `${locale}-u-nu-${system}` throws on any
  * locale that already carries a `-u-` extension, because RFC 5646 §2.2.6 forbids a repeated
- * singleton, and Equator canonicalizes through `Intl.getCanonicalLocales`, which preserves them.
+ * singleton, and a canonical tag keeps the extensions it was given.
  * `Intl.Locale` merges into the extension already there: `ar-EG-u-ca-islamic` becomes
  * `ar-EG-u-ca-islamic-nu-latn`.
  *

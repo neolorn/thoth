@@ -5,6 +5,7 @@ import {
   type ToolkitResult,
 } from './diagnostics.js';
 import { LOCALE_ENDONYMS } from './endonyms.generated.js';
+import { canonicalizeLanguageTag } from './language-tag.js';
 import { PARENT_LOCALES } from './parent-locales.generated.js';
 import { untrustedText } from './untrusted-text.js';
 
@@ -54,16 +55,8 @@ export function canonicalizeLocale(
     ]);
   }
 
-  let canonical: string;
-  try {
-    const locales = Intl.getCanonicalLocales(locale);
-    if (locales.length !== 1 || locales[0] === undefined) {
-      return toolkitFailure([
-        toolkitDiagnostic('EQ1003', 'Locale identity is malformed.'),
-      ]);
-    }
-    canonical = locales[0];
-  } catch {
+  const canonical = canonicalizeLanguageTag(locale);
+  if (canonical === undefined) {
     return toolkitFailure([
       toolkitDiagnostic('EQ1003', 'Locale identity is malformed.'),
     ]);

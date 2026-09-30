@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  createHostLocalePolicy,
   createPathPrefixLocalePolicy,
   LocalizationError,
 } from '@neolorn/equator/core';
@@ -14,8 +15,8 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
  *
  * `LocalizationDiagnostic.reason` and the `cause` option on `LocalizationError` are both published,
  * and both helpers that raise these two failures took a reason and a cause from their callers and
- * threw them away. Eight call sites hand over `'malformed-input'` and the `Intl` or `URL` error that
- * decided it, and none of it reached the person reading the failure.
+ * threw them away. The call sites hand over `'malformed-input'` and the `URL` error that decided it,
+ * and none of it reached the person reading the failure.
  *
  * Nothing asserted either field, which is how it survived: the compiler reported it the day
  * `noUnusedParameters` was turned on, and these two rows are what watches it now. They assert the
@@ -24,7 +25,7 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
  * platform refused, is reading these.
  */
 describe('a refused value carries its reason and its cause', () => {
-  it('carries what Intl refused about a route locale', () => {
+  it('carries why a route locale was refused', () => {
     let thrown: unknown;
     try {
       createPathPrefixLocalePolicy({
@@ -39,8 +40,28 @@ describe('a refused value carries its reason and its cause', () => {
     const failure = thrown as LocalizationError;
     expect(failure.diagnostic.code).toBe('invalid-configuration');
     expect(failure.diagnostic.reason).toBe('malformed-input');
-    expect(failure.cause).toBeInstanceOf(RangeError);
+    // Equator's own grammar refused the tag, so no platform error stands behind it.
+    expect(failure.cause).toBeUndefined();
     claimCapability('policy:path-prefix');
+  });
+
+  it('carries what URL refused about a locale origin', () => {
+    let thrown: unknown;
+    try {
+      createHostLocalePolicy({
+        defaultLocale: 'en-US',
+        origins: { 'en-US': 'not an origin' },
+      });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(LocalizationError);
+    const failure = thrown as LocalizationError;
+    expect(failure.diagnostic.code).toBe('invalid-configuration');
+    expect(failure.diagnostic.reason).toBe('malformed-input');
+    expect(failure.cause).toBeInstanceOf(TypeError);
+    claimCapability('policy:locale-host');
   });
 
   it('carries what URL refused about a rich-message destination', () => {

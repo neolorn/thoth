@@ -68,6 +68,10 @@ An Equator release MUST canonicalize a locale identity from the pinned CLDR rele
 IANA Language Subtag Registry snapshot, and MUST NOT let a host runtime's own registry decide an
 identity that is stored, compared, or exchanged.
 
+The canonical form applies the language, script, region, and variant aliases of UTS #35 Part 1
+Annex C, including its territory exception. An identity a release stores carries no extension, so
+the values of an extension keep their spelling and only their order is canonical.
+
 Matching a requested locale against a supported set is the problem RFC 4647 states, and the runtime
 answers it from the same locked data: membership from the registry snapshot, ordering from the
 pinned release's language matching data read at the language dimension only. Script and region

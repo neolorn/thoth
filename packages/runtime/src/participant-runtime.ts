@@ -12,6 +12,7 @@
  */
 
 import {
+  canonicalizeLanguageTag,
   directionForLocale,
   LocalizationError,
   type FormattingContext,
@@ -115,12 +116,7 @@ function canonicalLanguage(value: unknown): string | undefined {
   if (typeof value !== 'string' || value.length === 0 || value.length > 128) {
     return undefined;
   }
-  try {
-    const canonical = Intl.getCanonicalLocales(value)[0];
-    return canonical === value ? canonical : undefined;
-  } catch {
-    return undefined;
-  }
+  return canonicalizeLanguageTag(value) === value ? value : undefined;
 }
 
 function validDirection(value: unknown): value is 'ltr' | 'rtl' {

@@ -10,9 +10,9 @@
  *
  * `specs/03-locale-identity-and-resolution.spec.md` section 3 forbids a difference between runtimes
  * from changing an identity. The toolkit canonicalizes a declaration at build time and the runtime
- * canonicalizes a requested locale on the server and in the browser, each through its own host's
- * `Intl`, so the probe canonicalizes spellings that are not canonical on every host and requires
- * every answer, and the built toolkit's, to be the pinned Node's.
+ * canonicalizes a requested locale on the server and in the browser, both with the module built
+ * from the pinned CLDR alias data rather than through the host's `Intl`. So every engine runs that
+ * built module over spellings that are not canonical, and every answer has to be the pinned data's.
  *
  * `specs/08-formatting-parsing-and-domain.spec.md` section 3 lets a supported runtime lack a
  * capability only where the release names both in its documentation. The compatibility page is
@@ -50,9 +50,63 @@ assert.equal(
   `The exact capability row requires Node v24.18.0; received ${process.version}`,
 );
 
+// Spellings a consumer can declare, request or store that are not canonical: casing, including
+// the fixture consumers' own locales and route segments; the pinned data's deprecated language,
+// territory, script and variant aliases; the legacy tags it maps; and tags one host could accept
+// and another refuse. A refusal is an answer too, because a tag one engine refuses and another
+// accepts is an identity only one of them has.
+const identitySpellings = Object.freeze([
+  'EN-us',
+  'en-us',
+  'ar-eg',
+  'en-arab-xb',
+  'EN',
+  'AR',
+  'zh-hant-tw',
+  'ZH-HANS-cn',
+  'sr-latn-rs',
+  'iw',
+  'iw-IL',
+  'in',
+  'ji',
+  'jw',
+  'mo',
+  'mo-MD',
+  'sh',
+  'sh-BA',
+  'tl',
+  'tl-PH',
+  'bh',
+  'tw',
+  'cmn',
+  'cmn-Hans-CN',
+  'no-bokmal',
+  'art-lojban',
+  'cel-gaulish',
+  'zh-guoyu',
+  'zh-hakka',
+  'zh-xiang',
+  'sgn-GR',
+  'zh-min-nan',
+  'zh-cmn-Hans',
+  'i-klingon',
+  'en-GB-oed',
+  'de-DD',
+  'en-UK',
+  'my-BU',
+  'ru-SU',
+  'hy-SU',
+  'sr-YU',
+  'und-Qaai',
+  'hy-arevela',
+  'hy-arevmda',
+  'ja-Latn-hepburn-heploc',
+  'sv-aaland',
+  'de-1996-1901',
+]);
+
 async function probePlatform() {
   const requiredIntl = {
-    canonicalLocales: typeof Intl.getCanonicalLocales === 'function',
     locale:
       typeof Intl.Locale === 'function' &&
       new Intl.Locale('ar-EG').baseName === 'ar-EG',
@@ -113,66 +167,6 @@ async function probePlatform() {
           region: maximized.region ?? null,
         },
       ];
-    }),
-  );
-
-  // Spellings a consumer can declare, request or store that are not canonical: casing, including
-  // the fixture consumers' own locales and route segments; the pinned data's deprecated language,
-  // territory, script and variant aliases; the legacy tags it maps; and tags one host could accept
-  // and another refuse. A refusal is an answer too, because a tag one host refuses and another
-  // accepts is an identity only one of them has.
-  const canonicalIdentities = Object.fromEntries(
-    [
-      'EN-us',
-      'en-us',
-      'ar-eg',
-      'en-arab-xb',
-      'EN',
-      'AR',
-      'zh-hant-tw',
-      'ZH-HANS-cn',
-      'sr-latn-rs',
-      'iw',
-      'iw-IL',
-      'in',
-      'ji',
-      'jw',
-      'mo',
-      'mo-MD',
-      'sh',
-      'sh-BA',
-      'tl',
-      'tl-PH',
-      'cmn',
-      'cmn-Hans-CN',
-      'no-bokmal',
-      'art-lojban',
-      'cel-gaulish',
-      'zh-guoyu',
-      'zh-hakka',
-      'zh-xiang',
-      'sgn-GR',
-      'zh-min-nan',
-      'zh-cmn-Hans',
-      'i-klingon',
-      'en-GB-oed',
-      'de-DD',
-      'en-UK',
-      'my-BU',
-      'ru-SU',
-      'sr-YU',
-      'und-Qaai',
-      'hy-arevela',
-      'hy-arevmda',
-      'ja-Latn-hepburn-heploc',
-      'sv-aaland',
-      'de-1996-1901',
-    ].map((input) => {
-      try {
-        return [input, Intl.getCanonicalLocales(input)[0] ?? null];
-      } catch {
-        return [input, 'refused'];
-      }
     }),
   );
 
@@ -290,7 +284,6 @@ async function probePlatform() {
   );
 
   return {
-    canonicalIdentities,
     crypto: {
       ed25519,
       sha256: digest.byteLength === 32,
@@ -414,84 +407,100 @@ assert.deepEqual(nodeEvidence.localeProfiles, {
 const hostNode = `Node ${process.version}`;
 
 // Each replacement is the pinned CLDR 48.2 alias data (`supplemental/aliases.json` in `cldr-core`)
-// applied under UTS #35: `languageAlias` for iw, in, ji, jw, mo, sh, tl, cmn, no-bokmal, the legacy
-// tags and the variant pairs; `territoryAlias` for DD, UK, BU, SU and YU, where a list resolves to
-// the language's likely region; `scriptAlias` for Qaai; `variantAlias` for heploc; and variants
-// sorted alphabetically, which is where 1996 and 1901 trade places. A refusal is a
-// tag the Unicode locale identifier grammar ECMA-402 parses does not admit: an extended language
-// subtag, an irregular legacy tag, or a three-letter variant.
+// applied under UTS #35: `languageAlias` for iw, in, ji, jw, mo, sh, tl, bh, tw, cmn, no-bokmal, the
+// legacy tags and the variant pairs; `territoryAlias` for DD, UK, BU, SU and YU, where a list
+// resolves to the language's likely region; `scriptAlias` for Qaai; `variantAlias` for heploc; and
+// variants sorted alphabetically, which is where 1996 and 1901 trade places. A refusal is a tag the
+// Unicode locale identifier grammar ECMA-402 parses does not admit: an extended language subtag, an
+// irregular legacy tag, or a three-letter variant.
+const pinnedIdentities = Object.freeze({
+  'EN-us': 'en-US',
+  'en-us': 'en-US',
+  'ar-eg': 'ar-EG',
+  'en-arab-xb': 'en-Arab-XB',
+  EN: 'en',
+  AR: 'ar',
+  'zh-hant-tw': 'zh-Hant-TW',
+  'ZH-HANS-cn': 'zh-Hans-CN',
+  'sr-latn-rs': 'sr-Latn-RS',
+  iw: 'he',
+  'iw-IL': 'he-IL',
+  in: 'id',
+  ji: 'yi',
+  jw: 'jv',
+  mo: 'ro',
+  'mo-MD': 'ro-MD',
+  sh: 'sr-Latn',
+  'sh-BA': 'sr-Latn-BA',
+  tl: 'fil',
+  'tl-PH': 'fil-PH',
+  bh: 'bho',
+  tw: 'ak',
+  cmn: 'zh',
+  'cmn-Hans-CN': 'zh-Hans-CN',
+  'no-bokmal': 'nb',
+  'art-lojban': 'jbo',
+  'cel-gaulish': 'xtg',
+  'zh-guoyu': 'zh',
+  'zh-hakka': 'hak',
+  'zh-xiang': 'hsn',
+  'sgn-GR': 'gss',
+  'zh-min-nan': 'refused',
+  'zh-cmn-Hans': 'refused',
+  'i-klingon': 'refused',
+  'en-GB-oed': 'refused',
+  'de-DD': 'de-DE',
+  'en-UK': 'en-GB',
+  'my-BU': 'my-MM',
+  'ru-SU': 'ru-RU',
+  'hy-SU': 'hy-AM',
+  'sr-YU': 'sr-RS',
+  'und-Qaai': 'und-Zinh',
+  'hy-arevela': 'hy',
+  'hy-arevmda': 'hyw',
+  'ja-Latn-hepburn-heploc': 'ja-Latn-alalc97',
+  'sv-aaland': 'sv-AX',
+  'de-1996-1901': 'de-1901-1996',
+});
+
+// The module the toolkit and the runtime canonicalize through, read from the built package because
+// that is what a consumer's build and its browsers run.
+const languageTagModule = resolve(inputs, 'dist/toolkit/language-tag.js');
+const aliasTableModule = resolve(
+  inputs,
+  'dist/toolkit/locale-aliases.generated.js',
+);
+const { canonicalizeLanguageTag } = await import(
+  pathToFileURL(languageTagModule).href
+);
+const canonicalIdentitiesOf = (canonicalize) =>
+  Object.fromEntries(
+    identitySpellings.map((input) => [input, canonicalize(input) ?? 'refused']),
+  );
 assertSameIdentities(
-  nodeEvidence.canonicalIdentities,
-  {
-    'EN-us': 'en-US',
-    'en-us': 'en-US',
-    'ar-eg': 'ar-EG',
-    'en-arab-xb': 'en-Arab-XB',
-    EN: 'en',
-    AR: 'ar',
-    'zh-hant-tw': 'zh-Hant-TW',
-    'ZH-HANS-cn': 'zh-Hans-CN',
-    'sr-latn-rs': 'sr-Latn-RS',
-    iw: 'he',
-    'iw-IL': 'he-IL',
-    in: 'id',
-    ji: 'yi',
-    jw: 'jv',
-    mo: 'ro',
-    'mo-MD': 'ro-MD',
-    sh: 'sr-Latn',
-    'sh-BA': 'sr-Latn-BA',
-    tl: 'fil',
-    'tl-PH': 'fil-PH',
-    cmn: 'zh',
-    'cmn-Hans-CN': 'zh-Hans-CN',
-    'no-bokmal': 'nb',
-    'art-lojban': 'jbo',
-    'cel-gaulish': 'xtg',
-    'zh-guoyu': 'zh',
-    'zh-hakka': 'hak',
-    'zh-xiang': 'hsn',
-    'sgn-GR': 'gss',
-    'zh-min-nan': 'refused',
-    'zh-cmn-Hans': 'refused',
-    'i-klingon': 'refused',
-    'en-GB-oed': 'refused',
-    'de-DD': 'de-DE',
-    'en-UK': 'en-GB',
-    'my-BU': 'my-MM',
-    'ru-SU': 'ru-RU',
-    'sr-YU': 'sr-RS',
-    'und-Qaai': 'und-Zinh',
-    'hy-arevela': 'hy',
-    'hy-arevmda': 'hyw',
-    'ja-Latn-hepburn-heploc': 'ja-Latn-alalc97',
-    'sv-aaland': 'sv-AX',
-    'de-1996-1901': 'de-1901-1996',
-  },
+  canonicalIdentitiesOf(canonicalizeLanguageTag),
+  pinnedIdentities,
   hostNode,
   'the pinned CLDR alias data',
 );
 
-// The function the compiler canonicalizes a declared locale through, read from the built package
-// because that is what a consumer's build runs. It refuses what Node refuses and also refuses an
-// extension, which none of the inputs carries, so a refusal compares as one.
+// The function the compiler canonicalizes a declared locale through. It also refuses an extension,
+// which none of the inputs carries, so a refusal compares as one.
 const { canonicalizeLocale } = await import(
   pathToFileURL(resolve(inputs, 'dist/toolkit/locales.js')).href
 );
 assertSameIdentities(
-  Object.fromEntries(
-    Object.keys(nodeEvidence.canonicalIdentities).map((input) => {
-      const result = canonicalizeLocale(input);
-      return [input, result.ok ? result.value : 'refused'];
-    }),
-  ),
-  nodeEvidence.canonicalIdentities,
+  canonicalIdentitiesOf((input) => {
+    const result = canonicalizeLocale(input);
+    return result.ok ? result.value : undefined;
+  }),
+  pinnedIdentities,
   'The toolkit',
-  hostNode,
+  'the pinned CLDR alias data',
 );
 
-// The other Node rows run the same probe as a child, the way the compatibility rows run the suites,
-// so each answers from its own `Intl` rather than from this process's.
+// The other Node rows run the same probe and the built module as a child, the way the compatibility
+// rows run the suites, so each answers from its own engine rather than from this process's.
 const nodeRowVersions = [...new Set([...nodeFloors, developmentNode])]
   .filter((version) => version !== process.versions.node)
   .sort(compareVersions);
@@ -513,7 +522,14 @@ const nodeRowResults = located.map(({ executable, version }) => {
   const result = spawnSync(executable, ['--input-type=module', '-'], {
     encoding: 'utf8',
     env: { ...process.env, NODE_OPTIONS: '', NODE_PATH: '' },
-    input: `const probePlatform = ${probePlatform.toString()};\nprocess.stdout.write(JSON.stringify(await probePlatform()));\n`,
+    input: [
+      `const probePlatform = ${probePlatform.toString()};`,
+      `const { canonicalizeLanguageTag } = await import(${JSON.stringify(pathToFileURL(languageTagModule).href)});`,
+      `const spellings = ${JSON.stringify(identitySpellings)};`,
+      'const canonicalIdentities = Object.fromEntries(spellings.map((input) => [input, canonicalizeLanguageTag(input) ?? "refused"]));',
+      'process.stdout.write(JSON.stringify({ ...(await probePlatform()), canonicalIdentities }));',
+      '',
+    ].join('\n'),
     maxBuffer: 4_194_304,
     timeout: 120_000,
     windowsHide: true,
@@ -531,16 +547,35 @@ const nodeRowResults = located.map(({ executable, version }) => {
   assertRequiredCapabilities(evidence, label);
   assertSameIdentities(
     evidence.canonicalIdentities,
-    nodeEvidence.canonicalIdentities,
+    pinnedIdentities,
     label,
-    hostNode,
+    'the pinned CLDR alias data',
   );
   return { evidence, host: 'Node', label, version };
 });
 
-const capabilityServer = createServer((_request, response) => {
-  response.setHeader('Content-Type', 'text/html; charset=utf-8');
-  response.end('<!doctype html><title>Equator capability probe</title>');
+// The page imports the built module from its own origin, so a browser runs the same file Node did.
+const servedModules = new Map([
+  ['/language-tag.js', languageTagModule],
+  ['/locale-aliases.generated.js', aliasTableModule],
+]);
+const capabilityServer = createServer((request, response) => {
+  const module = servedModules.get(request.url ?? '');
+  if (module === undefined) {
+    response.setHeader('Content-Type', 'text/html; charset=utf-8');
+    response.end('<!doctype html><title>Equator capability probe</title>');
+    return;
+  }
+  readFile(module).then(
+    (source) => {
+      response.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+      response.end(source);
+    },
+    (error) => {
+      response.statusCode = 500;
+      response.end(String(error));
+    },
+  );
 });
 
 await listenForBrowsers(capabilityServer, '127.0.0.1');
@@ -584,7 +619,18 @@ try {
       const version = browser.version();
       const page = await browser.newPage();
       await page.goto(capabilityOrigin);
-      const evidence = await page.evaluate(probePlatform);
+      const evidence = {
+        ...(await page.evaluate(probePlatform)),
+        canonicalIdentities: await page.evaluate(async (spellings) => {
+          const { canonicalizeLanguageTag } = await import('/language-tag.js');
+          return Object.fromEntries(
+            spellings.map((input) => [
+              input,
+              canonicalizeLanguageTag(input) ?? 'refused',
+            ]),
+          );
+        }, identitySpellings),
+      };
       assertRequiredCapabilities(evidence, `${row.label} ${version}`);
       assert.deepEqual(
         evidence.localeProfiles,
@@ -593,9 +639,9 @@ try {
       );
       assertSameIdentities(
         evidence.canonicalIdentities,
-        nodeEvidence.canonicalIdentities,
+        pinnedIdentities,
         `${row.label} ${version}`,
-        hostNode,
+        'the pinned CLDR alias data',
       );
 
       const formatDifferences = [];
@@ -727,7 +773,7 @@ process.stdout.write(
   [
     `Equator platform capability rows verified against Node ${process.version}.`,
     `Numeric direction controls, agreed by every row above, as code-point index and value: ${numericControlEvidence.join('; ')}.`,
-    `Canonical identities of ${Object.keys(nodeEvidence.canonicalIdentities).length} spellings agreed by the toolkit, ${nodeRowResults.map(({ label }) => label).join(', ')} and every browser row with the pinned alias data.`,
+    `Canonical identities of ${identitySpellings.length} spellings agreed by the toolkit, ${nodeRowResults.map(({ label }) => label).join(', ')} and every browser row with the pinned alias data.`,
     `Hosts lacking a reported capability, each named in ${compatibilityPage}: ${measuredGaps.length === 0 ? 'none' : measuredGaps.join('; ')}.`,
     ...nodeRowResults.map(
       ({ evidence, label }) =>

@@ -1,3 +1,4 @@
+import { canonicalizeLanguageTag } from './language-tag';
 import { directionForLocale } from './locale-profile';
 import {
   LocalizationError,
@@ -1150,15 +1151,13 @@ function routeError(
 }
 
 function canonicalLocale(value: string): string {
-  try {
-    return Intl.getCanonicalLocales(value)[0] as string;
-  } catch (cause) {
-    return routeError(
+  return (
+    canonicalizeLanguageTag(value) ??
+    routeError(
       `Route locale ${JSON.stringify(value)} is invalid.`,
       'malformed-input',
-      cause,
-    );
-  }
+    )
+  );
 }
 
 function validPrefix(value: string): boolean {
@@ -4226,9 +4225,9 @@ export function buildLocalizedRoute<
  * own string from it.
  *
  * Keyed by the canonical locale, which is the spelling the generated configuration uses:
- * `canonicalizeLocale` runs `Intl.getCanonicalLocales` over every configured locale at build
- * time and `canonicalLocale` runs it again here, so a policy that spells a locale differently
- * still lands on the key its runtime speaks. A locale whose parameters have no spelling in that
+ * `canonicalizeLocale` canonicalizes every configured locale at build time and `canonicalLocale`
+ * does it again here from the same pinned alias data, so a policy that spells a locale
+ * differently still lands on the key its runtime speaks. A locale whose parameters have no spelling in that
  * locale is absent rather than approximated: an address Equator cannot build is one it must not
  * publish, which is the same rule the alternates are filtered by.
  *

@@ -332,8 +332,19 @@ export const stageSelfTests = Object.freeze({
       'packages/toolkit/src/endonyms.generated.ts',
       'packages/toolkit/src/parent-locales.generated.ts',
       'packages/toolkit/src/rtl-scripts.generated.ts',
+      'packages/runtime/core/src/locale-aliases.generated.ts',
+      'packages/toolkit/src/locale-aliases.generated.ts',
     ],
     plants: [
+      {
+        id: 'alias-rule-not-the-pinned-one',
+        plant: plantText(
+          'packages/toolkit/src/locale-aliases.generated.ts',
+          ',tw>ak,',
+          ',tw>tw,',
+        ),
+        refusal: /The checked-in Equator locale alias table is stale/u,
+      },
       {
         id: 'plural-table-not-from-the-pinned-source',
         plant: plantText(
@@ -438,11 +449,21 @@ export const stageSelfTests = Object.freeze({
         id: 'toolkit-keeps-a-deprecated-language',
         plant: plantText(
           'dist/toolkit/locales.js',
-          '        canonical = locales[0];',
-          "        canonical = locales[0] === 'he' ? 'iw' : locales[0];",
+          '    const canonical = canonicalizeLanguageTag(locale);',
+          "    const canonical = canonicalizeLanguageTag(locale) === 'he' ? 'iw' : canonicalizeLanguageTag(locale);",
         ),
         refusal:
-          /The toolkit canonicalizes iw to iw, and Node v24\.18\.0 to he/u,
+          /The toolkit canonicalizes iw to iw, and the pinned CLDR alias data to he/u,
+      },
+      {
+        id: 'canonicalizer-stops-before-the-alias-settles',
+        plant: plantText(
+          'dist/toolkit/language-tag.js',
+          'const MAXIMUM_ALIAS_STEPS = 16;',
+          'const MAXIMUM_ALIAS_STEPS = 0;',
+        ),
+        refusal:
+          /Node v24\.18\.0 canonicalizes iw to refused, and the pinned CLDR alias data to he/u,
       },
       {
         id: 'host-gap-left-undocumented',
