@@ -681,6 +681,101 @@ export const stageSelfTests = Object.freeze({
         refusal:
           /FAIL +request-scoped context construction is flat in catalog size/u,
       },
+      {
+        // The quadratic strip the single backward scan replaced.
+        id: 'trailing-zeros-rescanned',
+        plant: plantText(
+          'dist/runtime/fesm2022/neolorn-equator.mjs',
+          '    let end = fraction.length;\n    while (end > 0 && fraction.charCodeAt(end - 1) === 0x30)\n        end -= 1;\n    return end === fraction.length ? fraction : fraction.slice(0, end);',
+          "    return fraction.replace(/0+$/u, '');",
+        ),
+        refusal: /FAIL +decimal\(\) is sub-quadratic in input length/u,
+      },
+      {
+        // Without eviction the shared store keeps every locale and option pair it is asked for.
+        id: 'formatter-store-unbounded',
+        plant: plantText(
+          'dist/runtime/fesm2022/neolorn-equator.mjs',
+          'while (this.values.size > this.maximumEntries) {',
+          'while (false) {',
+        ),
+        refusal: /FAIL +the shared formatter store is bounded by its ceiling/u,
+      },
+      {
+        // Every configured scope loaded at initialization, and so again at every switch.
+        id: 'every-scope-loaded-up-front',
+        plant: plantText(
+          'dist/runtime/fesm2022/neolorn-equator.mjs',
+          "this.bootstrapScopes = this.normalizeScopes(options.bootstrapScopes, 'bootstrapScopes');",
+          "this.bootstrapScopes = this.normalizeScopes(options.setup.configuration.scopes.map(({ providerId, scopeId }) => ({ providerId, scopeId })), 'bootstrapScopes');",
+        ),
+        refusal:
+          /FAIL +a switch loads the scopes in use[\s\S]*FAIL +initial loading takes the bootstrap scope only/u,
+      },
+      {
+        // A progressive switch holding its commit for the required participants.
+        id: 'progressive-switch-waits',
+        plant: plantText(
+          'dist/runtime/fesm2022/neolorn-equator.mjs',
+          "const requiredParticipants = mode === 'coordinated'",
+          'const requiredParticipants = true',
+        ),
+        refusal:
+          /FAIL +a coordinated switch waits for every required participant, and a progressive one for none/u,
+      },
+      {
+        id: 'prepared-participant-kept',
+        // The cohort that met an unavailable participant keeps every one that prepared for it.
+        plant: plantText(
+          'dist/runtime/fesm2022/neolorn-equator.mjs',
+          '                if (!item.finalized) {\n                    invokeDiscard(item.adapter, item.context, item.report);\n                    this.cleanup(item);\n                }\n            }\n            if (failure !== undefined)',
+          '                if (false) {\n                    invokeDiscard(item.adapter, item.context, item.report);\n                    this.cleanup(item);\n                }\n            }\n            if (failure !== undefined)',
+        ),
+        refusal:
+          /FAIL +a switch prepares each participant once and discards every one a refused switch prepared/u,
+      },
+      {
+        // A failed load left in flight answers every later attempt with the same failure.
+        id: 'failed-load-kept-in-flight',
+        plant: plantText(
+          'dist/runtime/fesm2022/neolorn-equator.mjs',
+          '.finally(() => this.inFlight.delete(key));',
+          '.finally(() => void key);',
+        ),
+        refusal:
+          /FAIL +each repeated failure costs one load and keeps nothing/u,
+      },
+      {
+        id: 'catalog-cache-unbounded',
+        plant: plantText(
+          'dist/runtime/fesm2022/neolorn-equator.mjs',
+          'while (this.cache.size > this.maximumEntries) {',
+          'while (false) {',
+        ),
+        refusal:
+          /FAIL +the catalog cache reloads only past maximumCachedCatalogs/u,
+      },
+      {
+        // The length checked after the pattern has read the whole value, or not at all.
+        id: 'oversized-number-read',
+        plant: plantText(
+          'dist/runtime/fesm2022/neolorn-equator.mjs',
+          'value.length > RUNTIME_LIMITS.canonicalNumberCodeUnits ||\n        !/^-?[0-9]+(?:\\.[0-9]+)?$/u.test(value)) {',
+          '!/^-?[0-9]+(?:\\.[0-9]+)?$/u.test(value)) {',
+        ),
+        refusal:
+          /FAIL +a number at the bound is accepted, and one beyond it is refused at a cost that does not grow/u,
+      },
+      {
+        // Selection that reads every variant again for each variant it considers.
+        id: 'variants-rescanned',
+        plant: plantText(
+          'dist/runtime/fesm2022/neolorn-equator.mjs',
+          "for (const variant of body['variants']) {\n        tick(environment);",
+          "for (const variant of body['variants']) {\n        for (const other of body['variants']) void other;\n        tick(environment);",
+        ),
+        refusal: /FAIL +evaluating a message is linear in its variants/u,
+      },
     ],
   },
 });

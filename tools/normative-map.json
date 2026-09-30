@@ -4570,7 +4570,18 @@
     {
       "spec": "12-verification.spec.md",
       "section": "10. Cost and resource measurement",
-      "statement": "A release MUST vary what the cost depends on: message, scope, provider, and locale counts; message complexity; cold and warm generation; initial and lazy catalog loading; coordinated and progressive locale switching; participant count and readiness; server rendering concurrency and hydration transfer; cache pressure; repeated failure; and adversarial input at and beyond the allowed bounds."
+      "statement": "A release MUST vary what the cost depends on: message, scope, provider, and locale counts; message complexity; cold and warm generation; initial and lazy catalog loading; coordinated and progressive locale switching; participant count and readiness; server rendering concurrency and hydration transfer; cache pressure; repeated failure; and adversarial input at and beyond the allowed bounds.",
+      "checks": [
+        "plant:verify:cost-budget:catalog-cache-unbounded",
+        "plant:verify:cost-budget:every-scope-loaded-up-front",
+        "plant:verify:cost-budget:failed-load-kept-in-flight",
+        "plant:verify:cost-budget:formatter-store-unbounded",
+        "plant:verify:cost-budget:oversized-number-read",
+        "plant:verify:cost-budget:prepared-participant-kept",
+        "plant:verify:cost-budget:progressive-switch-waits",
+        "plant:verify:cost-budget:trailing-zeros-rescanned",
+        "plant:verify:cost-budget:variants-rescanned"
+      ]
     },
     {
       "spec": "12-verification.spec.md",

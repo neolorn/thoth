@@ -25,11 +25,15 @@
  * objectives belong to the application, and Equator supplies the instrument rather than the
  * target.
  */
+import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
+import { listenForBrowsers } from './browser-reachable-port.mjs';
 import { inputsRoot, repositoryRoot } from './stage-self-test.mjs';
 
 const require_ = createRequire(resolve(repositoryRoot, 'package.json'));
@@ -159,93 +163,170 @@ record(
  * configuration this measures is built the way a consumer's is, and a field added later
  * arrives here with its default rather than as a crash.
  */
-const parsedConfiguration = tk.parseConfiguration(
-  JSON.stringify({
-    schemaVersion: 1,
-    sourceLocale: 'en-US',
-    defaultLocale: 'en-US',
-    locales: ['en-US'],
-  }),
-);
-if (!parsedConfiguration.ok) {
-  process.stderr.write(
-    `The cost budget's own configuration did not load: ${(
-      parsedConfiguration.diagnostics ?? []
-    )
-      .map(({ code, summary }) => `${code} ${summary}`)
-      .join('; ')}\n`,
+function loadedConfiguration(locales) {
+  const parsed = tk.parseConfiguration(
+    JSON.stringify({
+      schemaVersion: 1,
+      sourceLocale: 'en-US',
+      defaultLocale: 'en-US',
+      locales,
+    }),
   );
-  process.exit(1);
-}
-const configuration = parsedConfiguration.value;
-
-async function artifactsFor(messageCount) {
-  const lines = ['messages:'];
-  for (let index = 0; index < messageCount; index += 1) {
-    lines.push(`  m.k${index}: "Message number ${index} with a little body."`);
+  if (!parsed.ok) {
+    process.stderr.write(
+      `The cost budget's own configuration did not load: ${(
+        parsed.diagnostics ?? []
+      )
+        .map(({ code, summary }) => `${code} ${summary}`)
+        .join('; ')}\n`,
+    );
+    process.exit(1);
   }
-  const parsed = tk.parseCatalog(`${lines.join('\n')}\n`, {
-    role: 'source',
-    providerId: 'p',
-    scopeId: 's',
-    locale: 'en-US',
-  });
-  if (!parsed.ok) throw new Error('cost budget fixture failed to parse');
-  const graph = analyzeCatalogSet({
-    configuration,
-    catalogs: [parsed.value],
-  });
+  return parsed.value;
+}
+
+// Enough distinct tags for the largest locale count a case asks for, the source first.
+const LOCALES = [
+  'en-US',
+  ...['en', 'fr', 'de', 'es', 'it', 'pt', 'nl', 'sv']
+    .flatMap((language) =>
+      ['US', 'GB', 'FR', 'DE', 'ES', 'IT', 'BR', 'NL'].map(
+        (region) => `${language}-${region}`,
+      ),
+    )
+    .filter((locale) => locale !== 'en-US'),
+];
+
+const oneMessage = '  m.k: "Hello."\n';
+
+/**
+ * A compiled set of `providers` x `scopes` x `locales` catalogs, each holding `messages`.
+ *
+ * Built through the toolkit's own analysis and compiler rather than written out here, for the
+ * reason the configuration is: a hand-written artifact drifts from what a consumer's generation
+ * produces, and a cost measured over it is a cost of something no consumer runs.
+ */
+async function catalogSet({
+  providers = 1,
+  scopes = 1,
+  locales = 1,
+  messages = oneMessage,
+} = {}) {
+  const configured = LOCALES.slice(0, locales);
+  const configuration = loadedConfiguration(configured);
+  const catalogs = [];
+  for (let provider = 0; provider < providers; provider += 1) {
+    for (let scope = 0; scope < scopes; scope += 1) {
+      for (const locale of configured) {
+        const parsed = tk.parseCatalog(`messages:\n${messages}`, {
+          role: locale === 'en-US' ? 'source' : 'target',
+          providerId: `p${provider}`,
+          scopeId: `s${scope}`,
+          locale,
+        });
+        if (!parsed.ok) {
+          throw new Error(
+            `The cost budget's catalog did not parse: ${JSON.stringify(parsed.diagnostics?.[0])}`,
+          );
+        }
+        catalogs.push(parsed.value);
+      }
+    }
+  }
+  const graph = analyzeCatalogSet({ configuration, catalogs });
+  if (!graph.ok) {
+    throw new Error(
+      `The cost budget's catalogs did not analyze: ${JSON.stringify(graph.diagnostics?.[0])}`,
+    );
+  }
   const compiled = compileLocalArtifacts({
     owner: {
       providerId: '@neolorn/verify',
       generatedRootPath: 'src/generated/i18n',
     },
     graph: graph.value,
-    catalogs: [parsed.value],
+    catalogs,
     configuration,
   });
-  return compiled.value;
+  if (!compiled.ok) {
+    throw new Error(
+      `The cost budget's catalogs did not compile: ${JSON.stringify(compiled.diagnostics?.[0])}`,
+    );
+  }
+  return { artifacts: compiled.value, locales: configured };
 }
 
-function contextFor(artifacts) {
-  const catalog = artifacts.catalogs[0];
+/**
+ * A context over `set`, counting every catalog its loaders hand out in `loads.count`.
+ *
+ * Each loader returns the same catalog object on every call, as a generated loader returns the same
+ * module export, so admission is paid once per catalog the way it is in a consumer.
+ */
+function contextOver(
+  { artifacts, locales },
+  { loads = { count: 0 }, loader, bootstrapScopes, maximumCachedCatalogs } = {},
+) {
+  const catalogLoaders = {};
+  const scopes = new Map();
+  for (const catalog of artifacts.catalogs) {
+    const { providerId, scopeId, catalogLocale } = catalog.key;
+    catalogLoaders[`${providerId}:${scopeId}:${catalogLocale}`] =
+      loader?.(catalog) ??
+      (() => {
+        loads.count += 1;
+        return Promise.resolve(catalog);
+      });
+    scopes.set(`${providerId}:${scopeId}`, catalog);
+  }
   return rt.createLocalizationContext({
     setup: {
       configuration: Object.freeze({
         generatedAbi: 'equator-generated/1',
         sourceLocale: 'en-US',
         defaultLocale: 'en-US',
-        locales: Object.freeze(['en-US']),
+        locales: Object.freeze(locales),
         aliases: Object.freeze({}),
         applicationContractFingerprint:
           artifacts.descriptor.applicationContractFingerprint,
         semanticRegistryFingerprint:
           artifacts.descriptor.semanticRegistryFingerprint,
         extensionDescriptors: Object.freeze([]),
-        scopes: Object.freeze([
-          Object.freeze({
-            providerId: 'p',
-            scopeId: 's',
-            applicationContractFingerprint:
-              catalog.applicationContractFingerprint,
-            semanticRegistryFingerprint: catalog.semanticRegistryFingerprint,
-            requiredExtensions: Object.freeze([]),
-          }),
-        ]),
+        scopes: Object.freeze(
+          [...scopes.values()].map((catalog) =>
+            Object.freeze({
+              providerId: catalog.key.providerId,
+              scopeId: catalog.key.scopeId,
+              applicationContractFingerprint:
+                catalog.applicationContractFingerprint,
+              semanticRegistryFingerprint: catalog.semanticRegistryFingerprint,
+              requiredExtensions: Object.freeze([]),
+            }),
+          ),
+        ),
       }),
       catalogSet: artifacts.descriptor,
-      catalogLoaders: { 'p:s:en-US': () => Promise.resolve(catalog) },
+      catalogLoaders,
+      ...(maximumCachedCatalogs === undefined ? {} : { maximumCachedCatalogs }),
     },
-    bootstrapScopes: [Object.freeze({ providerId: 'p', scopeId: 's' })],
+    bootstrapScopes: bootstrapScopes ?? [
+      Object.freeze({ providerId: 'p0', scopeId: 's0' }),
+    ],
   });
 }
 
+const manyMessages = (count) =>
+  Array.from(
+    { length: count },
+    (_, index) =>
+      `  m.k${index}: "Message number ${index} with a little body."\n`,
+  ).join('');
+
 async function perContextMs(messageCount, runs) {
-  const artifacts = await artifactsFor(messageCount);
-  await contextFor(artifacts).initialize(); // warm module init out of the measurement
+  const set = await catalogSet({ messages: manyMessages(messageCount) });
+  await contextOver(set).initialize(); // warm module init out of the measurement
   const start = process.hrtime.bigint();
   for (let run = 0; run < runs; run += 1) {
-    await contextFor(artifacts).initialize();
+    await contextOver(set).initialize();
   }
   return Number(process.hrtime.bigint() - start) / 1e6 / runs;
 }
@@ -354,24 +435,38 @@ if (typeof globalThis.gc === 'function') {
  * ------------------------------------------------------------ */
 
 if (typeof globalThis.gc === 'function') {
-  const artifacts = await artifactsFor(500);
-  const localization = contextFor(artifacts);
+  const set = await catalogSet({ locales: 2, messages: manyMessages(500) });
+  const localization = contextOver(set);
   await localization.initialize();
-  for (let run = 0; run < 50; run += 1)
-    await localization.changeLocale('en-US');
+  // Between two locales, because a switch to the locale already committed is answered without a
+  // transition, and 500 of those measure nothing.
+  // A commit is counted by the snapshot it produces, which is new for every switch that did work.
+  let snapshotId = -1;
+  const switchTo = async (run) => {
+    const result = await localization.changeLocale(set.locales[run % 2]);
+    if (
+      result.status !== 'committed' ||
+      result.snapshot.primaryLocale !== set.locales[run % 2] ||
+      result.snapshot.id === snapshotId
+    ) {
+      return 0;
+    }
+    snapshotId = result.snapshot.id;
+    return 1;
+  };
+  for (let run = 0; run < 50; run += 1) await switchTo(run);
   globalThis.gc();
   const baseline = process.memoryUsage().heapUsed;
-  for (let run = 0; run < 500; run += 1) {
-    await localization.changeLocale('en-US');
-  }
+  let committed = 0;
+  for (let run = 0; run < 500; run += 1) committed += await switchTo(run);
   globalThis.gc();
   const growth = process.memoryUsage().heapUsed - baseline;
   const MEMORY_LIMIT = 8 * 1024 * 1024;
   record(
     'repeated locale switching does not accumulate heap',
     'pass',
-    growth < MEMORY_LIMIT,
-    `500 switches grew heap ${(growth / 1024 / 1024).toFixed(1)} MiB (limit ${MEMORY_LIMIT / 1024 / 1024} MiB)`,
+    committed === 500 && growth < MEMORY_LIMIT,
+    `500 switches between two locales, ${committed} committed, grew heap ${(growth / 1024 / 1024).toFixed(1)} MiB (limit ${MEMORY_LIMIT / 1024 / 1024} MiB)`,
   );
 } else {
   record(
@@ -381,6 +476,618 @@ if (typeof globalThis.gc === 'function') {
     'not measured: node ran without --expose-gc, so heap growth cannot be read',
   );
 }
+
+/* ------------------------------------------------------------------ *
+ * What a context loads must not follow provider, scope or locale      *
+ * counts, and what constructing one costs must not follow the set.    *
+ * ------------------------------------------------------------------ */
+
+// Two scopes at least, so the last one is never the bootstrap scope and loading it is lazy.
+const countedSets = [
+  { providers: 1, scopes: 2, locales: 2 },
+  { providers: 1, scopes: 2, locales: 32 },
+  { providers: 1, scopes: 32, locales: 2 },
+  { providers: 8, scopes: 4, locales: 2 },
+];
+const countedLoads = [];
+for (const shape of countedSets) {
+  const set = await catalogSet(shape);
+  const loads = { count: 0 };
+  const localization = contextOver(set, { loads });
+  await localization.initialize();
+  const initial = loads.count;
+  await localization.changeLocale(set.locales[1]);
+  const switched = loads.count - initial;
+  await localization.ensureScope({
+    providerId: `p${shape.providers - 1}`,
+    scopeId: `s${shape.scopes - 1}`,
+  });
+  const lazy = loads.count - initial - switched;
+  countedLoads.push({ ...shape, initial, switched, lazy });
+}
+const describeLoads = countedLoads
+  .map(
+    ({ providers, scopes, locales, initial, switched, lazy }) =>
+      `${providers}x${scopes}x${locales}: ${initial}/${switched}/${lazy}`,
+  )
+  .join(' ');
+// One bootstrap scope, so initialization loads its one catalog and a switch loads that scope in
+// the new locale. Anything more is loading work proportional to the set rather than to the page.
+record(
+  'a switch loads the scopes in use, whatever the provider, scope and locale counts',
+  'pass',
+  countedLoads.every(
+    ({ initial, switched }) => initial === 1 && switched === 1,
+  ),
+  `providers x scopes x locales: loads at initialization/switch/lazy scope ${describeLoads} (expected 1/1 throughout)`,
+);
+record(
+  'initial loading takes the bootstrap scope only, and a lazy scope costs the same at every count',
+  'pass',
+  countedLoads.every(
+    ({ initial, lazy }) => initial === 1 && lazy === countedLoads[0].lazy,
+  ),
+  `providers x scopes x locales: loads at initialization/switch/lazy scope ${describeLoads}`,
+);
+
+/**
+ * A context is constructed per server request, and nothing in the generated set it is built over
+ * depends on the request. Constructing one over 64 times as many catalogs should cost about the
+ * same, which is the same argument as the per-request catalog admission above.
+ *
+ * Known to fail: the constructor snapshots and re-validates the whole descriptor and configuration
+ * for every context. Sharing the admitted result between contexts is what would flatten it, and
+ * `specs/06-runtime-and-angular.spec.md` section 6 names only catalog artifacts as what contexts
+ * may share, so the fix waits on that section.
+ */
+async function constructionMs(shape) {
+  const set = await catalogSet(shape);
+  contextOver(set);
+  const samples = [];
+  for (let run = 0; run < 5; run += 1) {
+    samples.push(
+      elapsedMs(() => {
+        for (let index = 0; index < 10; index += 1) contextOver(set);
+      }) / 10,
+    );
+  }
+  return median(samples);
+}
+const fewCatalogs = await constructionMs({ scopes: 1, locales: 8 });
+const manyCatalogs = await constructionMs({ scopes: 64, locales: 8 });
+const constructionGrowth = manyCatalogs / Math.max(fewCatalogs, 0.001);
+const CONSTRUCTION_LIMIT = 3;
+record(
+  'context construction is flat in the number of catalogs the set declares',
+  'known-fail',
+  constructionGrowth < CONSTRUCTION_LIMIT,
+  `64x catalogs grew per-context construction ${constructionGrowth.toFixed(1)}x (flat ~1x, limit ${CONSTRUCTION_LIMIT}x); ` +
+    `8:${fewCatalogs.toFixed(2)}ms 512:${manyCatalogs.toFixed(2)}ms`,
+);
+
+/* ------------------------------------------------------------------ *
+ * Coordinated and progressive switching, and participant readiness.   *
+ * ------------------------------------------------------------------ */
+
+const participantSet = await catalogSet({ locales: 4 });
+const settle = (milliseconds) =>
+  new Promise((resolveSettle) => setTimeout(resolveSettle, milliseconds));
+
+// Each prepare waits on a timer, so a switch that does not wait for it resolves before any has
+// finished, and the count at resolution says which kind of switch it was.
+async function preparedAtResolution(mode, count) {
+  const localization = contextOver(participantSet);
+  await localization.initialize();
+  const prepared = { count: 0 };
+  for (let index = 0; index < count; index += 1) {
+    localization.registerParticipant(
+      {
+        id: `participant-${index}`,
+        prepare: async (context) => {
+          await settle(5);
+          prepared.count += 1;
+          return {
+            status: 'ready',
+            representation: {
+              kind: 'locale-bound',
+              supplyingLocale: context.targetLocale,
+              direction: 'ltr',
+            },
+          };
+        },
+      },
+      { coordination: 'required' },
+    );
+  }
+  await settle(50);
+  const before = prepared.count;
+  await localization.changeLocale(participantSet.locales[1], { mode });
+  const atResolution = prepared.count - before;
+  const deadline = Date.now() + 5_000;
+  while (prepared.count - before < count && Date.now() < deadline) {
+    await settle(5);
+  }
+  return { atResolution, eventually: prepared.count - before };
+}
+const switchModes = [];
+for (const count of [1, 16, 128]) {
+  switchModes.push({
+    count,
+    coordinated: await preparedAtResolution('coordinated', count),
+    progressive: await preparedAtResolution('progressive', count),
+  });
+}
+record(
+  'a coordinated switch waits for every required participant, and a progressive one for none',
+  'pass',
+  switchModes.every(
+    ({ count, coordinated, progressive }) =>
+      coordinated.atResolution === count &&
+      progressive.atResolution === 0 &&
+      progressive.eventually === count,
+  ),
+  `participants: prepared when coordinated/progressive resolved ` +
+    switchModes
+      .map(
+        ({ count, coordinated, progressive }) =>
+          `${count}:${coordinated.atResolution}/${progressive.atResolution}`,
+      )
+      .join(' '),
+);
+
+// One participant cannot supply the target, so the switch fails and every participant that
+// prepared for it has to be discarded; a switch to the locale already rendered prepares nothing.
+async function unreadySwitch(count) {
+  const localization = contextOver(participantSet);
+  await localization.initialize();
+  const counts = { prepared: 0, discarded: 0 };
+  for (let index = 0; index < count; index += 1) {
+    localization.registerParticipant(
+      {
+        id: `participant-${index}`,
+        prepare: (context) => {
+          counts.prepared += 1;
+          return index === 0 && context.targetLocale !== 'en-US'
+            ? {
+                status: 'unavailable',
+                outcome: 'localized-representation-unavailable',
+              }
+            : {
+                status: 'ready',
+                representation: {
+                  kind: 'locale-bound',
+                  supplyingLocale: context.targetLocale,
+                  direction: 'ltr',
+                },
+              };
+        },
+        discard: () => {
+          counts.discarded += 1;
+        },
+      },
+      { coordination: 'required' },
+    );
+  }
+  await settle(20);
+  const before = counts.prepared;
+  const failed = await localization.changeLocale(participantSet.locales[1]);
+  const prepared = counts.prepared - before;
+  await localization.changeLocale('en-US');
+  const beforeSame = counts.prepared;
+  await localization.changeLocale('en-US');
+  return {
+    count,
+    status: failed.status,
+    prepared,
+    discarded: counts.discarded,
+    same: counts.prepared - beforeSame,
+  };
+}
+const readiness = [];
+for (const count of [2, 16, 128]) readiness.push(await unreadySwitch(count));
+record(
+  'a switch prepares each participant once and discards every one a refused switch prepared',
+  'pass',
+  readiness.every(
+    ({ count, status, prepared, discarded, same }) =>
+      status === 'failed' &&
+      prepared === count &&
+      discarded === count &&
+      same === 0,
+  ),
+  `participants: status/prepared/discarded/prepared again for the same locale ` +
+    readiness
+      .map(
+        ({ count, status, prepared, discarded, same }) =>
+          `${count}:${status}/${prepared}/${discarded}/${same}`,
+      )
+      .join(' '),
+);
+
+/* ------------------------------------------------------------------ *
+ * Repeated failure and cache pressure.                                *
+ * ------------------------------------------------------------------ */
+
+if (typeof globalThis.gc === 'function') {
+  const failing = participantSet.locales[1];
+  const attempts = { count: 0 };
+  const localization = contextOver(participantSet, {
+    loader: (catalog) =>
+      catalog.key.catalogLocale === failing
+        ? () => {
+            attempts.count += 1;
+            return Promise.reject(new Error('The catalog is unavailable.'));
+          }
+        : () => Promise.resolve(catalog),
+  });
+  await localization.initialize();
+  const fail = async (times) => {
+    let failed = 0;
+    for (let attempt = 0; attempt < times; attempt += 1) {
+      const result = await localization.changeLocale(failing);
+      if (result.status === 'failed') failed += 1;
+    }
+    return failed;
+  };
+  await fail(10);
+  globalThis.gc();
+  const baseline = process.memoryUsage().heapUsed;
+  const beforeAttempts = attempts.count;
+  const failed = await fail(1000);
+  globalThis.gc();
+  const growth = process.memoryUsage().heapUsed - baseline;
+  const loads = attempts.count - beforeAttempts;
+  const FAILURE_LIMIT = 2 * 1024 * 1024;
+  // A failed load must be tried again on the next request, once, and leave nothing behind: a
+  // remembered failure would never recover, and a retained attempt grows with every one.
+  record(
+    'each repeated failure costs one load and keeps nothing',
+    'pass',
+    failed === 1000 && loads === 1000 && growth < FAILURE_LIMIT,
+    `1000 failing switches: ${failed} failed, ${loads} loads, heap grew ${(growth / 1024 / 1024).toFixed(2)} MiB (limit ${FAILURE_LIMIT / 1024 / 1024} MiB)`,
+  );
+} else {
+  record(
+    'each repeated failure costs one load and keeps nothing',
+    'pass',
+    false,
+    'not measured: node ran without --expose-gc, so heap growth cannot be read',
+  );
+}
+
+const pressureSet = await catalogSet({ locales: 8 });
+async function loadsPerSwitch(maximumCachedCatalogs, workingSet) {
+  const loads = { count: 0 };
+  const localization = contextOver(pressureSet, {
+    loads,
+    maximumCachedCatalogs,
+  });
+  await localization.initialize();
+  const cycle = async () => {
+    for (let index = 0; index < workingSet; index += 1) {
+      await localization.changeLocale(pressureSet.locales[index]);
+    }
+  };
+  await cycle();
+  await cycle();
+  const before = loads.count;
+  for (let round = 0; round < 4; round += 1) await cycle();
+  return (loads.count - before) / (4 * workingSet);
+}
+const pressure = [];
+for (const [maximum, workingSet] of [
+  [2, 2],
+  [2, 3],
+  [2, 6],
+  [4, 4],
+  [4, 6],
+]) {
+  pressure.push({
+    maximum,
+    workingSet,
+    perSwitch: await loadsPerSwitch(maximum, workingSet),
+  });
+}
+record(
+  'the catalog cache reloads only past maximumCachedCatalogs, and then at most once per switch',
+  'pass',
+  pressure.every(({ maximum, workingSet, perSwitch }) =>
+    workingSet <= maximum ? perSwitch === 0 : perSwitch > 0 && perSwitch <= 1,
+  ),
+  `maximum/working set: loads per switch ` +
+    pressure
+      .map(
+        ({ maximum, workingSet, perSwitch }) =>
+          `${maximum}/${workingSet}:${perSwitch.toFixed(2)}`,
+      )
+      .join(' '),
+);
+
+/* ------------------------------------------------------------------ *
+ * Adversarial input at and beyond the allowed bounds, and message     *
+ * complexity.                                                         *
+ * ------------------------------------------------------------------ */
+
+const numberBound = rt.RUNTIME_LIMITS.canonicalNumberCodeUnits;
+const decimalOfLength = (length) => `1.${'0'.repeat(length - 3)}1`;
+const refusalMs = (value) => {
+  let refused = true;
+  const cost = median(
+    Array.from({ length: 5 }, () =>
+      elapsedMs(() => {
+        for (let call = 0; call < 50; call += 1) {
+          try {
+            rt.decimal(value);
+            refused = false;
+          } catch {
+            // The refusal is the expected answer; what is measured is what it cost.
+          }
+        }
+      }),
+    ),
+  );
+  return { refused, cost: cost / 50 };
+};
+let acceptedAtBound = true;
+try {
+  rt.decimal(decimalOfLength(numberBound));
+} catch {
+  acceptedAtBound = false;
+}
+const justBeyond = refusalMs(decimalOfLength(numberBound + 1));
+const farBeyond = refusalMs(decimalOfLength(numberBound * 100));
+const refusalGrowth = farBeyond.cost / Math.max(justBeyond.cost, 0.0001);
+// Refusing an oversized value has to cost the same however far past the bound it is; a refusal
+// that reads the value first is paid by whoever sends the largest one.
+const REFUSAL_LIMIT = 3;
+record(
+  'a number at the bound is accepted, and one beyond it is refused at a cost that does not grow',
+  'pass',
+  acceptedAtBound &&
+    justBeyond.refused &&
+    farBeyond.refused &&
+    refusalGrowth < REFUSAL_LIMIT,
+  `${numberBound} code units accepted: ${acceptedAtBound}; refused at 1x+1/100x: ${justBeyond.refused}/${farBeyond.refused}; ` +
+    `100x the bound cost ${refusalGrowth.toFixed(1)}x the refusal just past it (limit ${REFUSAL_LIMIT}x)`,
+);
+
+async function evaluationMs(variants) {
+  const lines = ['.input {$n :number}', '.match $n'];
+  for (let index = 0; index < variants - 1; index += 1) {
+    // Short, so 4096 of them stay inside the MessageFormat source ceiling.
+    lines.push(`${index} {{v}}`);
+  }
+  lines.push('* {{other}}');
+  const set = await catalogSet({
+    messages: `  m.k: |\n    ${lines.join('\n    ')}\n`,
+  });
+  const localization = contextOver(set);
+  await localization.initialize();
+  const handle = Object.freeze({
+    generatedAbi: 'equator-generated/1',
+    providerId: 'p0',
+    scopeId: 's0',
+    messageId: 'm.k',
+    identity: 'p0:s0:m.k',
+    resultKind: 'plain',
+    inputNames: Object.freeze(['n']),
+    slotNames: Object.freeze([]),
+  });
+  // A value no key names, so selection reads every variant before it settles on the catch-all.
+  const evaluate = () => localization.evaluateText(handle, { n: variants + 5 });
+  evaluate();
+  return median(
+    Array.from({ length: 5 }, () =>
+      elapsedMs(() => {
+        for (let call = 0; call < 50; call += 1) evaluate();
+      }),
+    ),
+  );
+}
+const fewVariants = await evaluationMs(1024);
+const manyVariants = await evaluationMs(4096);
+const evaluationGrowth = manyVariants / Math.max(fewVariants, 0.001);
+const EVALUATION_LIMIT = 9;
+record(
+  'evaluating a message is linear in its variants',
+  'pass',
+  evaluationGrowth < EVALUATION_LIMIT,
+  `4x variants grew evaluation ${evaluationGrowth.toFixed(1)}x (linear ~4x, quadratic ~16x, limit ${EVALUATION_LIMIT}x); ` +
+    `1024:${(fewVariants / 50).toFixed(3)}ms 4096:${(manyVariants / 50).toFixed(3)}ms`,
+);
+
+/* ------------------------------------------------------------------ *
+ * Cold and warm generation.                                           *
+ * ------------------------------------------------------------------ */
+
+/**
+ * Run through the installed command line in a project of its own, because generation is what a
+ * consumer runs and its cost is what the output transaction writes. Nested under `tmp`, so it is
+ * not an artefact any other stage can see.
+ */
+const generationRoot = resolve(repositoryRoot, 'tmp/cost-budget-generation');
+const equatorCli = resolve(dirname(consumerToolkit), 'cli.js');
+function generated(cwd) {
+  const finished = spawnSync(
+    process.execPath,
+    [equatorCli, 'generate', '--json'],
+    { cwd, encoding: 'utf8' },
+  );
+  const result = JSON.parse(
+    (finished.stdout ?? '').trim().split('\n').at(-1) ?? '{}',
+  );
+  if (result.status !== 'success') {
+    throw new Error(
+      `equator generate did not succeed in ${cwd}: ${finished.stdout}${finished.stderr}`,
+    );
+  }
+  return result.result.written.length;
+}
+async function generationWrites(scopes) {
+  const cwd = resolve(generationRoot, `scopes-${scopes}`);
+  await mkdir(resolve(cwd, 'src'), { recursive: true });
+  await writeFile(
+    resolve(cwd, 'package.json'),
+    `${JSON.stringify({ name: `cost-budget-${scopes}`, private: true })}\n`,
+  );
+  await writeFile(
+    resolve(cwd, 'tsconfig.json'),
+    `${JSON.stringify({
+      compilerOptions: { target: 'ES2022', module: 'preserve', strict: true },
+      include: ['src/**/*.ts'],
+    })}\n`,
+  );
+  await writeFile(
+    resolve(cwd, 'src/main.ts'),
+    'export const started = true;\n',
+  );
+  spawnSync(
+    process.execPath,
+    [
+      equatorCli,
+      'init',
+      '--source-locale',
+      'en-US',
+      '--default-locale',
+      'en-US',
+      '--locale',
+      'en-US',
+      '--locale',
+      'fr-FR',
+      '--json',
+    ],
+    { cwd, encoding: 'utf8' },
+  );
+  for (let scope = 0; scope < scopes; scope += 1) {
+    await mkdir(resolve(cwd, `i18n/s${scope}`), { recursive: true });
+    await writeFile(
+      resolve(cwd, `i18n/s${scope}/en-US.yaml`),
+      `messages:\n  greeting: "Hello ${scope}"\n`,
+    );
+    await writeFile(
+      resolve(cwd, `i18n/s${scope}/fr-FR.yaml`),
+      `messages:\n  greeting: "Bonjour ${scope}"\n`,
+    );
+  }
+  const cold = generated(cwd);
+  const warm = generated(cwd);
+  await writeFile(
+    resolve(cwd, 'i18n/s0/fr-FR.yaml'),
+    'messages:\n  greeting: "Salut"\n',
+  );
+  const edited = generated(cwd);
+  return { scopes, cold, warm, edited };
+}
+await rm(generationRoot, { recursive: true, force: true });
+const generations = [];
+for (const scopes of [1, 10, 40])
+  generations.push(await generationWrites(scopes));
+await rm(generationRoot, { recursive: true, force: true });
+record(
+  'regenerating rewrites nothing when nothing changed, and the same files after a one-message edit at every scope count',
+  'pass',
+  generations.every(
+    ({ warm, edited }) => warm === 0 && edited === generations[0].edited,
+  ) && generations[0].edited > 0,
+  `scopes: files written cold/warm/after one edit ` +
+    generations
+      .map(
+        ({ scopes, cold, warm, edited }) =>
+          `${scopes}:${cold}/${warm}/${edited}`,
+      )
+      .join(' '),
+);
+
+/* ------------------------------------------------------------------ *
+ * Server rendering concurrency and hydration transfer.                *
+ * ------------------------------------------------------------------ */
+
+/**
+ * The full consumer's own server, answering on a loopback port, because what a response transfers
+ * is decided by the rendered application and nothing smaller has one.
+ *
+ * Every request is for the same two pages, so every response for a locale has to carry the same
+ * transfer bytes as one rendered alone: state from another request in flight is the first thing
+ * concurrency would add to it.
+ */
+const TRANSFER_KEY = '@neolorn/equator:localization-state/1';
+const consumerServer = await import(
+  pathToFileURL(
+    resolve(
+      repositoryRoot,
+      'tmp/package-consumer-verification/package-consumer/dist/feature-lab/server/server.mjs',
+    ),
+  ).href
+);
+// The consumer logs every runtime event on the console, which is its own diagnostics and would
+// bury this budget's lines; everything else still reaches the console.
+const consoleInfo = console.info;
+console.info = (...lines) => {
+  if (typeof lines[0] === 'string' && lines[0].startsWith('equator-event '))
+    return;
+  consoleInfo(...lines);
+};
+const listening = createServer(consumerServer.reqHandler);
+const serverOrigin = `http://127.0.0.1:${await listenForBrowsers(listening, '127.0.0.1')}`;
+async function transferAt(path) {
+  const response = await fetch(`${serverOrigin}${path}`, {
+    redirect: 'manual',
+    signal: AbortSignal.timeout(30_000),
+  });
+  const html = await response.text();
+  const state = html.match(
+    /<script id="ng-state" type="application\/json">([\s\S]*?)<\/script>/u,
+  );
+  const transfer =
+    state === null ? undefined : JSON.parse(state[1])[TRANSFER_KEY];
+  return response.status === 200 && transfer !== undefined
+    ? JSON.stringify(transfer)
+    : undefined;
+}
+const renderedPages = ['/en-us', '/ar-eg'];
+const alone = [];
+for (const path of renderedPages) alone.push(await transferAt(path));
+const concurrency = [];
+for (const concurrent of [1, 8, 32]) {
+  const paths = Array.from(
+    { length: concurrent },
+    (_, index) => renderedPages[index % 2],
+  );
+  const start = process.hrtime.bigint();
+  const transfers = await Promise.all(paths.map(transferAt));
+  concurrency.push({
+    concurrent,
+    ms: Number(process.hrtime.bigint() - start) / 1e6,
+    differing: transfers.filter(
+      (transfer, index) =>
+        transfer === undefined || transfer !== alone[index % 2],
+    ).length,
+  });
+}
+await new Promise((resolveClosed) => listening.close(resolveClosed));
+console.info = consoleInfo;
+record(
+  'the hydration transfer of a response does not depend on how many are rendered at once',
+  'pass',
+  alone.every((transfer) => transfer !== undefined) &&
+    concurrency.every(({ differing }) => differing === 0),
+  `transfer bytes rendered alone ${alone.map((transfer) => transfer?.length).join('/')}; ` +
+    `responses differing at concurrency ` +
+    concurrency
+      .map(({ concurrent, differing }) => `${concurrent}:${differing}`)
+      .join(' '),
+);
+const eight = concurrency.find(({ concurrent }) => concurrent === 8);
+const thirtyTwo = concurrency.find(({ concurrent }) => concurrent === 32);
+const renderingGrowth = thirtyTwo.ms / Math.max(eight.ms, 0.001);
+const RENDERING_LIMIT = 9;
+record(
+  'server rendering cost is linear in concurrent requests',
+  'pass',
+  renderingGrowth < RENDERING_LIMIT,
+  `4x concurrent requests grew the batch ${renderingGrowth.toFixed(1)}x (linear ~4x, quadratic ~16x, limit ${RENDERING_LIMIT}x); ` +
+    `8:${eight.ms.toFixed(0)}ms 32:${thirtyTwo.ms.toFixed(0)}ms`,
+);
 
 /* --------------- */
 
