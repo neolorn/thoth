@@ -2071,6 +2071,22 @@ export function validateRouteProjection(
 const INVISIBLE_IN_ADDRESS =
   /[\p{Cc}\u061c\u200b\u200e\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/u;
 
+/**
+ * A table's own entry for a key a request chose.
+ *
+ * A policy's tables and a projection's history are plain objects, built by the constructors or
+ * written by the application, so an inherited member such as `constructor` would otherwise answer
+ * for a prefix, an origin or a retired address nobody configured.
+ */
+function ownEntry<Value>(
+  table: Readonly<Record<string, Value>> | undefined,
+  key: string,
+): Value | undefined {
+  return table !== undefined && Object.hasOwn(table, key)
+    ? table[key]
+    : undefined;
+}
+
 interface ParsedTarget {
   readonly segments: readonly string[];
   readonly trailingSlash: boolean;
@@ -2276,7 +2292,7 @@ function historicalResolution(
   policy: LocaleUrlPolicy,
   projection: RouteRuntimeProjection,
 ): RouteResolution | undefined {
-  const outcome = projection.historical?.[routeSegments.join('/')];
+  const outcome = ownEntry(projection.historical, routeSegments.join('/'));
   if (outcome === undefined) return undefined;
   if (outcome.kind === 'gone') {
     return Object.freeze({
@@ -2509,7 +2525,9 @@ function preferredEntryLocale(
   } catch {
     return undefined;
   }
-  return policy.locales[requested] === undefined ? undefined : requested;
+  return ownEntry(policy.locales, requested) === undefined
+    ? undefined
+    : requested;
 }
 
 function resolvePathPrefixRoute(
@@ -2543,8 +2561,10 @@ function resolvePathPrefixRoute(
   let locale: string | undefined;
   let routeSegments: readonly string[];
   let prefixCorrection = false;
-  if (first !== undefined && policy.prefixes[first] !== undefined) {
-    locale = policy.prefixes[first];
+  const prefixed =
+    first === undefined ? undefined : ownEntry(policy.prefixes, first);
+  if (prefixed !== undefined) {
+    locale = prefixed;
     routeSegments = parsed.segments.slice(1);
   } else {
     const casePrefix =
@@ -2990,7 +3010,7 @@ function servedPreference(
   if (requested === undefined) return undefined;
   try {
     const locale = canonicalLocale(requested);
-    return policy.locales[locale] === undefined ? undefined : locale;
+    return ownEntry(policy.locales, locale) === undefined ? undefined : locale;
   } catch {
     return undefined;
   }
@@ -3047,7 +3067,8 @@ function resolveHostRoute(
             return undefined;
           }
         })();
-  const locale = origin === undefined ? undefined : policy.origins[origin];
+  const locale =
+    origin === undefined ? undefined : ownEntry(policy.origins, origin);
   if (origin === undefined || locale === undefined) {
     return Object.freeze({
       status: 'malformed',
