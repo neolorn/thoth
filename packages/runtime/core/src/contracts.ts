@@ -162,11 +162,28 @@ export interface PlainMessageHandle extends MessageHandle {
  * Spread into a signature, so one function accepts `text(greeting)` for a message taking nothing
  * and requires `text(welcome, { name })` for one that does. Neither call has an optional argument
  * that is really required.
+ *
+ * A handle chosen at runtime between messages is a union, and the call has to be right for
+ * whichever member is chosen: the inputs are those every member takes, and they are required when
+ * any member requires them. Reading the union as a whole instead finds no key common to every
+ * member and makes the inputs optional.
  */
-export type MessageInputArguments<Handle> =
-  keyof MessageInputs<Handle> extends never
-    ? readonly [inputs?: MessageInputs<Handle>]
-    : readonly [inputs: MessageInputs<Handle>];
+export type MessageInputArguments<Handle> = true extends (
+  Handle extends unknown
+    ? keyof MessageInputs<Handle> extends never
+      ? false
+      : true
+    : never
+)
+  ? readonly [inputs: InputsOfEveryMember<Handle>]
+  : readonly [inputs?: InputsOfEveryMember<Handle>];
+
+/** The inputs that satisfy every member of a union of handles at once. */
+type InputsOfEveryMember<Handle> = (
+  Handle extends unknown ? (inputs: MessageInputs<Handle>) => void : never
+) extends (inputs: infer Inputs) => void
+  ? Inputs
+  : never;
 
 /** One scope as the generated configuration lists it: what it is, and what loading it requires. */
 export interface GeneratedScope {

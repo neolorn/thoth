@@ -1868,12 +1868,26 @@ export const injections = Object.freeze([
     invariant:
       "A call site cannot hand the runtime wording of its own beside a message's inputs, because the catalog is the only author of a message's words.",
     source: 'packages/runtime/core/src/contracts.ts',
-    find: '    : readonly [inputs: MessageInputs<Handle>];',
+    find: '  ? readonly [inputs: InputsOfEveryMember<Handle>]',
     replace:
-      '    : readonly [inputs: MessageInputs<Handle>, fallback?: string];',
+      '  ? readonly [inputs: InputsOfEveryMember<Handle>, fallback?: string]',
+    suite: 'verify:consumer',
+    // Either file reports the extra argument first, depending on the order the stage reads them in;
+    // both hold the call to the number of arguments the message takes.
+    caughtWhen:
+      /negative-(?:message-handle|handle-choice)\.negative\.ts did not report "Expected 2 arguments, but got [13]"/u,
+  },
+  {
+    id: 'handle-choice-read-as-one-message',
+    invariant:
+      'A handle chosen at runtime between messages takes the inputs of every message it can select, and requires them when any of those messages does.',
+    source: 'packages/runtime/core/src/contracts.ts',
+    find: 'true extends (\n  Handle extends unknown\n    ? keyof MessageInputs<Handle> extends never\n      ? false\n      : true\n    : never\n)\n  ? readonly [inputs: InputsOfEveryMember<Handle>]\n  : readonly [inputs?: InputsOfEveryMember<Handle>];',
+    replace:
+      'keyof MessageInputs<Handle> extends never\n  ? readonly [inputs?: InputsOfEveryMember<Handle>]\n  : readonly [inputs: InputsOfEveryMember<Handle>];',
     suite: 'verify:consumer',
     caughtWhen:
-      /negative-message-handle\.negative\.ts did not report "Expected 2 arguments, but got [13]"/u,
+      /negative-handle-choice(?:-optional)?\.negative\.ts did not report/u,
   },
   {
     id: 'scroll-restore-clamped-to-the-range',

@@ -990,7 +990,8 @@
     {
       "spec": "04-message-authoring-and-catalogs.spec.md",
       "section": "10. Collections and families",
-      "statement": "The toolkit keeps each selected handle's relationship to its own contracts and MUST NOT widen a heterogeneous choice into an untyped parameter map."
+      "statement": "The toolkit keeps each selected handle's relationship to its own contracts and MUST NOT widen a heterogeneous choice into an untyped parameter map.",
+      "checks": ["assurance-runtime:handle-choice-read-as-one-message"]
     },
     {
       "spec": "04-message-authoring-and-catalogs.spec.md",
