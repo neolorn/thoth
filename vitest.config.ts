@@ -1,6 +1,33 @@
 import { fileURLToPath } from 'node:url';
 
+import ts from 'typescript';
 import { defineConfig } from 'vitest/config';
+
+/**
+ * Standard decorators, lowered by the compiler the packages are built with.
+ *
+ * Vite transforms TypeScript with Oxc, which lowers only TypeScript's legacy decorators. The runtime
+ * declares its injectables, components, directives and pipes with standard decorators, so Oxc leaves
+ * `@Injectable()` in place and Node refuses the module. TypeScript lowers them at the target the
+ * library compiles to, and only a file that declares one goes through it.
+ */
+const standardDecorators = {
+  name: 'equator-standard-decorators',
+  enforce: 'pre' as const,
+  transform(code: string, id: string) {
+    if (!id.endsWith('.ts') || !/^@[A-Z]\w*\(/mu.test(code)) return null;
+    const { outputText, sourceMapText } = ts.transpileModule(code, {
+      fileName: id,
+      compilerOptions: {
+        target: ts.ScriptTarget.ES2022,
+        module: ts.ModuleKind.ESNext,
+        verbatimModuleSyntax: true,
+        sourceMap: true,
+      },
+    });
+    return { code: outputText, map: sourceMapText ?? null };
+  },
+};
 
 /**
  * Two aliases, and the rule that decides which specifiers may have one.
@@ -20,6 +47,7 @@ import { defineConfig } from 'vitest/config';
  * no Angular at all, which is why aliasing them is safe and aliasing the primary is not.
  */
 export default defineConfig({
+  plugins: [standardDecorators],
   test: {
     /**
      * `tmp/` is never a source of tests, and after a red gate it holds four copies of them.

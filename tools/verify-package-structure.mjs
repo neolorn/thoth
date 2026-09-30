@@ -140,8 +140,8 @@ assert.equal(workspacePackage.packageManager, 'pnpm@11.1.2');
 // development row, so reading the versions back out of the manifest would assert nothing. Angular's
 // framework and tooling ship on separate patch trains, so both halves are pinned: pinning only
 // `@angular/core` would let `@angular/build`, `@angular/cli` and `@angular/ssr` drift unwatched.
-assert.equal(workspacePackage.devDependencies['@angular/core'], '22.1.3');
-assert.equal(workspacePackage.devDependencies['@angular/ssr'], '22.1.7');
+assert.equal(workspacePackage.devDependencies['@angular/core'], '22.1.8');
+assert.equal(workspacePackage.devDependencies['@angular/ssr'], '22.1.9');
 assert.equal(workspacePackage.devDependencies.typescript, '6.0.3');
 assert.equal(
   (await readFile(resolve(workspaceRoot, '.node-version'), 'utf8')).trim(),

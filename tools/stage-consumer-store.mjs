@@ -6,8 +6,9 @@
  * precondition: the store must already hold every package those lockfiles name.
  *
  * A machine that has never run `refresh:consumer-locks` does not meet it, and `pnpm install` at the
- * workspace root does not help: the workspace resolves `fast-uri@3.1.3` and the consumers resolve
- * `3.1.5`, so a warm workspace store is a cold consumer store, and the error a run gets is
+ * workspace root does not help: the workspace lock and the consumer locks are resolved separately,
+ * so a transitive can sit at one version in the first and another in the second, a warm workspace
+ * store is then a cold consumer store, and the error a run gets is
  * `ERR_PNPM_NO_OFFLINE_TARBALL` from inside a stage rather than a missing precondition named up
  * front.
  *
