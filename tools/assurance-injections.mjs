@@ -722,7 +722,7 @@ export const injections = Object.freeze([
     invariant:
       'A declared page outcome is read once and closed, so no second read at the same address finds it.',
     source: 'packages/runtime/core/src/page-outcome.ts',
-    find: '  channels.delete(request);',
+    find: '  channels().delete(request);',
     replace: '  void channels;',
     caughtBy: 'packages/runtime/test/declared-page-outcome.test.ts',
   },
@@ -4161,5 +4161,24 @@ export const injections = Object.freeze([
     find: 'safeCode(value) && Object.hasOwn(bindings, value)',
     replace: 'safeCode(value) && value in bindings',
     caughtBy: 'packages/runtime/test/inherited-member-codes.test.ts',
+  },
+  {
+    id: 'runtime-import-starts-a-timer',
+    invariant: 'Importing a runtime entry point starts no timer.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: 'const sharedFormatters = new FormatterCache(',
+    replace:
+      'setTimeout(() => undefined, 0);\nconst sharedFormatters = new FormatterCache(',
+    caughtBy: 'packages/runtime/test/import-has-no-effects.test.ts',
+  },
+  {
+    id: 'runtime-import-creates-the-outcome-channel',
+    invariant:
+      'Importing a runtime entry point adds nothing to global state; the page-outcome channel is created when it is first used.',
+    source: 'packages/runtime/core/src/page-outcome.ts',
+    find: 'const channels = (): WeakMap<Request, PageOutcomeChannel> =>',
+    replace:
+      'registry[CHANNELS] ??= new WeakMap<Request, PageOutcomeChannel>();\nconst channels = (): WeakMap<Request, PageOutcomeChannel> =>',
+    caughtBy: 'packages/runtime/test/import-has-no-effects.test.ts',
   },
 ]);

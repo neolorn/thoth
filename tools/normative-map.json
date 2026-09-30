@@ -456,7 +456,11 @@
     {
       "spec": "02-packages-and-platform.spec.md",
       "section": "8. Install and import behavior",
-      "statement": "A runtime module MUST be free of side effects on import, and importing `@neolorn/equator` MUST NOT: - load locale data or a catalog; - start a timer, watcher, worker, or network request; - read or mutate the document, the Router, storage, or global state; - register a platform effect or application state; - install a service worker or a persistence mechanism."
+      "statement": "A runtime module MUST be free of side effects on import, and importing `@neolorn/equator` MUST NOT: - load locale data or a catalog; - start a timer, watcher, worker, or network request; - read or mutate the document, the Router, storage, or global state; - register a platform effect or application state; - install a service worker or a persistence mechanism.",
+      "checks": [
+        "assurance:runtime-import-starts-a-timer",
+        "assurance:runtime-import-creates-the-outcome-channel"
+      ]
     },
     {
       "spec": "02-packages-and-platform.spec.md",

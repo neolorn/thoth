@@ -120,10 +120,12 @@ const registry = globalThis as unknown as Record<
   symbol,
   WeakMap<Request, PageOutcomeChannel> | undefined
 >;
-const channels = (registry[CHANNELS] ??= new WeakMap<
-  Request,
-  PageOutcomeChannel
->());
+
+// Created on first use rather than when this module loads, because importing an entry point adds
+// nothing to global state (`specs/02-packages-and-platform.spec.md` section 8). Every copy of the
+// module asks for the same key, so the first to use it creates the one map they all share.
+const channels = (): WeakMap<Request, PageOutcomeChannel> =>
+  (registry[CHANNELS] ??= new WeakMap<Request, PageOutcomeChannel>());
 
 /**
  * Opens the channel for one render, which is also what makes a missing one detectable.
@@ -135,7 +137,7 @@ const channels = (registry[CHANNELS] ??= new WeakMap<
  * handler is not holding.
  */
 export function ɵopenPageOutcomeChannel(request: Request): void {
-  channels.set(request, {});
+  channels().set(request, {});
 }
 
 /**
@@ -150,7 +152,7 @@ export function ɵrememberPageOutcome(
   request: Request,
   declaration: PageOutcomeDeclaration,
 ): boolean {
-  const channel = channels.get(request);
+  const channel = channels().get(request);
   if (channel === undefined) return false;
   channel.declared = declaration;
   return true;
@@ -165,8 +167,8 @@ export function ɵrememberPageOutcome(
 export function ɵtakePageOutcome(
   request: Request,
 ): PageOutcomeDeclaration | undefined {
-  const channel = channels.get(request);
-  channels.delete(request);
+  const channel = channels().get(request);
+  channels().delete(request);
   return channel?.declared;
 }
 
