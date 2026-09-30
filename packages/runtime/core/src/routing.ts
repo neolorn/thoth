@@ -2168,19 +2168,34 @@ function parseTarget(target: string): ParsedTarget | undefined {
       if (name === undefined || value === undefined || name.length === 0) {
         return undefined;
       }
+      // The bounds hold for the canonical spelling as well as the one requested, because a
+      // correction writes the canonical one, and a spelling that grows past them once encoded would
+      // be corrected to an address this parser then refuses.
+      if (
+        encodeURIComponent(name).length > 128 ||
+        encodeURIComponent(value).length > 512
+      ) {
+        return undefined;
+      }
       query.push(Object.freeze({ name, value }));
     }
   }
   const fragment =
     rawFragment === undefined ? undefined : decodeBounded(rawFragment, 512);
   if (rawFragment !== undefined && fragment === undefined) return undefined;
+  const canonicalFragment =
+    fragment === undefined ? undefined : encodeURIComponent(fragment);
+  if (canonicalFragment !== undefined && canonicalFragment.length > 512) {
+    return undefined;
+  }
   const canonicalQuery = query
     .map(
       ({ name, value }) =>
         `${encodeURIComponent(name)}=${encodeURIComponent(value)}`,
     )
     .join('&');
-  const canonicalSuffix = `${canonicalQuery.length === 0 ? '' : `?${canonicalQuery}`}${fragment === undefined ? '' : `#${encodeURIComponent(fragment)}`}`;
+  if (canonicalQuery.length > 2048) return undefined;
+  const canonicalSuffix = `${canonicalQuery.length === 0 ? '' : `?${canonicalQuery}`}${canonicalFragment === undefined ? '' : `#${canonicalFragment}`}`;
   return Object.freeze({
     segments: Object.freeze(segments),
     trailingSlash,

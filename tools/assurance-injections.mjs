@@ -2693,7 +2693,7 @@ export const injections = Object.freeze([
     invariant:
       'A correction carries the query and fragment as parsed and encoded again, never as the text the request wrote.',
     source: 'packages/runtime/core/src/routing.ts',
-    find: "  const canonicalSuffix = `${canonicalQuery.length === 0 ? '' : `?${canonicalQuery}`}${fragment === undefined ? '' : `#${encodeURIComponent(fragment)}`}`;",
+    find: "  const canonicalSuffix = `${canonicalQuery.length === 0 ? '' : `?${canonicalQuery}`}${canonicalFragment === undefined ? '' : `#${canonicalFragment}`}`;",
     replace: '  const canonicalSuffix = target.slice(rawPath.length);',
     caughtBy: 'packages/runtime/test/another-locale-spelling.test.ts',
   },
@@ -4324,5 +4324,24 @@ export const injections = Object.freeze([
     replace:
       "      (request.headers.get('accept-language') ?? '')\n        .split(',')\n        .map((part) => ({ tag: (part.split(';')[0] ?? '').trim(), q: Number(/q=([0-9.]+)/u.exec(part)?.[1] ?? 1) }))\n        .sort((left, right) => right.q - left.q)\n        .map(({ tag }) => servedLocale(policy, tag))\n        .find((locale) => locale !== undefined) ?? (negotiateLocale.length + parseAcceptLanguage.length < 0 ? undefined : undefined);",
     caughtBy: 'packages/runtime/test/handler-language-negotiation.test.ts',
+  },
+  {
+    id: 'query-bounded-only-as-requested',
+    invariant:
+      'A query spelling that grows past its bounds once canonically encoded is refused, not corrected to an address the resolver then refuses.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '        encodeURIComponent(name).length > 128 ||\n        encodeURIComponent(value).length > 512\n',
+    replace: '        name.length > 128 ||\n        value.length > 512\n',
+    caughtBy: 'packages/runtime/test/canonical-correction-single-hop.test.ts',
+  },
+  {
+    id: 'fragment-bounded-only-as-requested',
+    invariant:
+      'A fragment that grows past its bound once canonically encoded is refused, not corrected to an address the resolver then refuses.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '  if (canonicalFragment !== undefined && canonicalFragment.length > 512) {',
+    replace:
+      '  if (canonicalFragment !== undefined && fragment !== undefined && [...fragment].length > 512) {',
+    caughtBy: 'packages/runtime/test/canonical-correction-single-hop.test.ts',
   },
 ]);

@@ -2010,7 +2010,9 @@
       "statement": "A release MUST answer with 308 only where strict parsing proves the request is a user-independent one-to-one variant of one final canonical URL, and MUST combine compatible host, locale, static-segment, slash, alias, and query corrections into a single hop.",
       "checks": [
         "assurance-runtime:canonical-correction-split-into-hops",
-        "assurance:crossed-spellings-corrected-anyway"
+        "assurance:crossed-spellings-corrected-anyway",
+        "assurance:query-bounded-only-as-requested",
+        "assurance:fragment-bounded-only-as-requested"
       ]
     },
     {
