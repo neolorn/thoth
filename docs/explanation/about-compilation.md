@@ -69,6 +69,12 @@ shows.
 Which scopes a route needs is derived from template and route analysis rather than declared, so a
 component that starts rendering a message is a component whose scope is already accounted for.
 
+The unit of that analysis is the file. A route that loads its component lazily needs the scopes
+whose messages are used in the files that load brings in, a template counting as the file of its
+component. Two components in one file therefore share their scopes, and a component whose messages
+only one route shows belongs in a file of its own. The scopes the startup files use are loaded
+before the first route renders, and every route has them.
+
 ## Freshness
 
 Generated output that no longer matches its sources still compiles, and renders the messages it was

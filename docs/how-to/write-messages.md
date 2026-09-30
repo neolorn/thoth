@@ -129,6 +129,61 @@ Plural and gender selection, number and date formatting, and each locale's plura
 from the locale data Equator compiles its profile from, so a translator writing Arabic gets Arabic's
 six plural categories rather than English's two.
 
+## Write a message that counts
+
+A message that changes with a number declares the number with `.input` and chooses a variant with
+`.match`. Each locale writes the variants its language has, ending with the catch-all `*`:
+
+```yaml i18n/inbox/en-US.yaml
+messages:
+  unread: |-
+    .input {$count :number}
+    .match $count
+    one {{You have {$count} unread message.}}
+    * {{You have {$count} unread messages.}}
+```
+
+```yaml i18n/inbox/ar-EG.yaml
+messages:
+  unread: |-
+    .input {$count :number}
+    .match $count
+    zero {{ليس لديك رسائل غير مقروءة.}}
+    one {{لديك رسالة واحدة غير مقروءة.}}
+    two {{لديك رسالتان غير مقروءتين.}}
+    few {{لديك {$count} رسائل غير مقروءة.}}
+    many {{لديك {$count} رسالة غير مقروءة.}}
+    * {{لديك {$count} رسالة غير مقروءة.}}
+```
+
+`{$count}` inside a variant is formatted as a number in the locale being rendered. `equator check`
+reports a translation that leaves out a category its language has.
+
+The inputs are the pipe's argument:
+
+```ts src/app/inbox.ts
+import { Component } from '@angular/core';
+import { LocalizePipe } from '@neolorn/equator';
+import { messages } from '#i18n/inbox';
+
+@Component({
+  selector: 'app-inbox',
+  imports: [LocalizePipe],
+  template: `<p>{{ messages.unread | localize: { count: unreadCount } }}</p>`,
+})
+export class Inbox {
+  protected readonly messages = messages;
+  protected readonly unreadCount = 3;
+}
+```
+
+```sh run
+npx equator generate
+```
+
+A date or a time is formatted in a time zone, which [How to format values](format-values.md)
+covers.
+
 ## Related
 
 - [How to render a message](render-messages.md)
