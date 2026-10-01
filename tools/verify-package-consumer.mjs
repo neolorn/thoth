@@ -2649,6 +2649,13 @@ async function verifyWatchEvents(cliPath, catalogFile, catalog, policy) {
   let pending = '';
   let stderr = '';
   let aliveAfterFailure = false;
+  // Each edit waits for the outcome of the one before it rather than for a count of events, because
+  // a read can itself be an event: where the platform records access times, reading an input not
+  // read for a while is reported as a change, so any cycle can schedule another over the same
+  // input. `specs/10-compiler-and-tooling.spec.md` section 13 makes events hints, so that cycle is
+  // the watch working. It repeats the outcome before it, and is the only extra cycle the assertion
+  // below lets through.
+  let step = 'start';
   const completed = new Promise((resolvePromise, rejectPromise) => {
     // One bound on silence and one on the whole, as `verifyWatchCommand` has, for its reason.
     const IDLE_MILLISECONDS = 30_000;
@@ -2682,8 +2689,10 @@ async function verifyWatchEvents(cliPath, catalogFile, catalog, policy) {
       const lines = `${pending}${chunk.toString()}`.split('\n');
       pending = lines.pop();
       for (const line of lines.filter((each) => each.trim() !== '')) {
-        events.push(JSON.parse(line));
-        if (events.length === 1) {
+        const event = JSON.parse(line);
+        events.push(event);
+        if (step === 'start') {
+          step = 'break';
           setTimeout(() => {
             void writeFile(
               catalogFile,
@@ -2691,12 +2700,14 @@ async function verifyWatchEvents(cliPath, catalogFile, catalog, policy) {
               'utf8',
             );
           }, 100);
-        } else if (events.length === 2) {
+        } else if (step === 'break' && event.status !== 'success') {
+          step = 'restore';
           aliveAfterFailure = child.exitCode === null;
           setTimeout(() => {
             void writeFile(catalogFile, catalog, 'utf8');
           }, 100);
-        } else if (events.length === 3) {
+        } else if (step === 'restore' && event.status === 'success') {
+          step = 'done';
           child.kill('SIGTERM');
         }
       }
@@ -2724,8 +2735,15 @@ async function verifyWatchEvents(cliPath, catalogFile, catalog, policy) {
       `equator watch --json printed an event its schema refuses: ${JSON.stringify(validate.errors)}\n${JSON.stringify(event)}`,
     );
   }
+  // What a cycle saw, as its event reports it: the input a generation read, or why it refused it.
+  const outcome = (event) =>
+    `${event.status} ${event.result?.inputFingerprint ?? JSON.stringify(event.diagnostics)}`;
+  const repeated = (event, index) =>
+    index > 0 && outcome(event) === outcome(events[index - 1]);
   assert.deepEqual(
-    events.map(({ status }) => status),
+    events
+      .filter((event, index) => !repeated(event, index))
+      .map(({ status }) => status),
     ['success', 'diagnostic-failure', 'success'],
     `${JSON.stringify(events)}\n${stderr}`,
   );
