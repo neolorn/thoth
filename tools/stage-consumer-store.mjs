@@ -25,6 +25,7 @@
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -82,7 +83,11 @@ const readLockfile = (text) => {
   let entry = '';
   let block = '';
   let depended = '';
-  for (const line of text.split('\n')) {
+  // The project's document only. pnpm writes the package manager a manifest pins as a document of
+  // its own ahead of it, and that one describes pnpm's install, which no consumer's
+  // `node_modules` holds.
+  const project = text.split(/^---\r?$/mu).at(-1);
+  for (const line of project.split('\n')) {
     if (/^\S/u.test(line)) {
       section = line.replace(/:.*$/u, '');
       entry = '';
@@ -192,7 +197,7 @@ for (const lockfile of lockfiles) {
   // a lockfile, pnpm walks up for the nearest `package.json`, finds Equator's own, decides that
   // project is already installed and prints "Already up to date": five fetches in four seconds,
   // nothing added to the store, exit zero.
-  // `--ignore-workspace` does not prevent it, because what pnpm found was a manifest and not the
+  // A workspace file does not prevent it, because what pnpm found was a manifest and not the
   // workspace file. The contents do not matter, since `pnpm fetch` takes the lockfile as its
   // input by design. The file has to be there for the lockfile beside it to be the one it
   // reads.
@@ -205,20 +210,36 @@ for (const lockfile of lockfiles) {
     )}\n`,
   );
 
+  // The settings the consumer installs under, beside the lockfile they produced. pnpm refuses a
+  // frozen fetch whose peer policy differs from the one the lockfile records, and refuses a package
+  // whose build script no setting names. A lock under `package-consumer-locks/` belongs to a row of
+  // the consumer template, so it takes the template's file.
+  const ownSettings = resolve(
+    workspaceRoot,
+    dirname(lockfile),
+    'pnpm-workspace.yaml',
+  );
+  await cp(
+    existsSync(ownSettings)
+      ? ownSettings
+      : resolve(
+          workspaceRoot,
+          'fixtures/package-consumer-template/pnpm-workspace.yaml',
+        ),
+    resolve(directory, 'pnpm-workspace.yaml'),
+  );
+
   // Copied out of `fixtures/` rather than fetched in place: `pnpm fetch` writes a virtual store
   // beside the lockfile, and a fixture directory is not the place for it.
   //
-  // `--ignore-workspace` is what makes this the consumer's lockfile rather than Equator's, and it
-  // is not a tidiness flag. Without it pnpm walks up to the repository's own `pnpm-workspace.yaml`,
-  // treats the command as a workspace fetch, and `pnpm fetch` **purges the workspace's
-  // node_modules** on the way: `node_modules/` at the repository root is emptied and the next
-  // command cannot find `prettier`. The confirmation prompt that would catch it is the one this
-  // call disables, because a staging step has no terminal to answer it.
-  pnpm(directory, [
-    'fetch',
-    '--ignore-workspace',
-    '--config.confirmModulesPurge=false',
-  ]);
+  // The workspace file copied above is what makes this the consumer's lockfile rather than
+  // Equator's, and it is not a tidiness measure. Without a workspace file of its own pnpm walks up to
+  // the repository's `pnpm-workspace.yaml`, treats the command as a workspace fetch, and
+  // `pnpm fetch` **purges the workspace's node_modules** on the way: `node_modules/` at the
+  // repository root is emptied and the next command cannot find `prettier`. The confirmation prompt
+  // that would catch it is the one this call disables, because a staging step has no terminal to
+  // answer it.
+  pnpm(directory, ['fetch', '--config.confirmModulesPurge=false']);
   // Checked against the lockfile before the evidence is deleted. A fetch that quietly did nothing
   // exits zero and prints reassuring progress, and the store is the kind of state where the next
   // thing to notice is a stage failing offline half an hour later.

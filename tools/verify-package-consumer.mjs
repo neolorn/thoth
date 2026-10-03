@@ -63,6 +63,7 @@ import {
   sheetInDocument,
 } from './exercise-sheet.mjs';
 import { expectations, unmetExpectations } from './negative-expectations.mjs';
+import { readBuildStats } from './build-stats.mjs';
 import { locateNode, withNodeFirst } from './node-runtimes.mjs';
 import {
   INIT_REQUEST,
@@ -980,9 +981,8 @@ assert.equal(
   '@neolorn/equator-toolkit',
 );
 
-const stats = await readJson(
-  resolve(consumerRoot, 'dist/feature-lab/stats.json'),
-);
+const stats = readBuildStats(resolve(consumerRoot, 'dist/feature-lab'));
+assert.ok(stats !== undefined, 'The build wrote no stats file.');
 assert.equal(typeof stats.inputs, 'object', 'Angular stats inputs are absent');
 assert.equal(
   typeof stats.outputs,
@@ -3500,7 +3500,10 @@ assert.deepEqual(
 
 /** What an embedded page shows, read from its markup. */
 function embeddedPage(html, where) {
-  const panel = /<section data-panel lang="([^"]+)" dir="([^"]+)"/u.exec(html);
+  // A server renderer writes an attribute with no value either bare or as `=""`, and which one
+  // depends on the Angular version the row installs.
+  const panel =
+    /<section data-panel(?:="")? lang="([^"]+)" dir="([^"]+)"/u.exec(html);
   const supplied = (name) =>
     new RegExp(
       `<[a-z0-9]+[^>]*\\bdata-${name}\\b[^>]*data-supplying="([^"]+)"`,

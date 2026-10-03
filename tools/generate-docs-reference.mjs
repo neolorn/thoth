@@ -279,7 +279,8 @@ function entryPointRows() {
       'utf8',
     );
     const imported = new Set(
-      [...text.matchAll(/from '([^']+)'/gu)].map(([, source]) => source),
+      // Either quote: which one a declaration file is written with is the packager's choice.
+      [...text.matchAll(/from ['"]([^'"]+)['"]/gu)].map(([, source]) => source),
     );
     rows.push({
       specifier: `@neolorn/equator${subpath === '.' ? '' : subpath.slice(1)}`,

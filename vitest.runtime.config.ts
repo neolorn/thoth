@@ -1,7 +1,7 @@
 import { mergeConfig } from 'vitest/config';
 
 import { capabilityClaimsReporters } from './tools/capability-evidence.mjs';
-import shared from './vitest.config';
+import shared from './vitest.config.ts';
 
 /** The runtime suite. `vitest.toolkit.config.ts` carries the reasoning for the separate cache. */
 export default mergeConfig(shared, {

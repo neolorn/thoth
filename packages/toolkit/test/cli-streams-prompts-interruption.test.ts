@@ -206,9 +206,9 @@ describe('interactive initialization', () => {
 describe('an interrupted watch', () => {
   it('answers 130 even when the watch had already failed', async () => {
     const root = await project();
-    const watcher = vi.hoisted(() => ({
+    const watcher = {
       current: undefined as import('node:events').EventEmitter | undefined,
-    }));
+    };
     vi.doMock('node:fs', async (original) => {
       const actual = await original<typeof import('node:fs')>();
       const { EventEmitter } =

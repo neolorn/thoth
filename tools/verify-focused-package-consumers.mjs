@@ -28,6 +28,7 @@ import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
+import { readBuildStats } from './build-stats.mjs';
 import { withOfflineStoreRemedy } from './offline-store.mjs';
 import { unselectedCapabilitiesIn } from './unselected-capabilities.mjs';
 
@@ -176,9 +177,8 @@ assert.equal(
 pnpm(['run', 'test']);
 pnpm(['exec', 'ng', 'build', '--stats-json']);
 
-const stats = JSON.parse(
-  await readFile(resolve(consumerRoot, 'dist/minimal/stats.json'), 'utf8'),
-);
+const stats = readBuildStats(resolve(consumerRoot, 'dist/minimal'));
+assert.ok(stats !== undefined, 'The build wrote no stats file.');
 assert.equal(typeof stats.inputs, 'object', 'Angular stats inputs are absent.');
 assert.equal(
   typeof stats.outputs,

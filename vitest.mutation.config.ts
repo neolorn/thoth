@@ -1,6 +1,6 @@
 import { mergeConfig } from 'vitest/config';
 
-import shared from './vitest.config';
+import shared from './vitest.config.ts';
 
 /**
  * The two suites a mutant is allowed to be measured against.

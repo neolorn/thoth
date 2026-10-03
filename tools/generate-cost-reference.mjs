@@ -22,6 +22,7 @@ import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
 
 import { format, resolveConfig } from 'prettier';
 
+import { readBuildStats } from './build-stats.mjs';
 import { inputsRoot } from './stage-self-test.mjs';
 import { developmentNode } from './supported-versions.mjs';
 
@@ -115,12 +116,11 @@ function filesUnder(root) {
 
 function measureConsumer(consumer) {
   const root = resolve(workspaceRoot, consumer.root);
-  const statsPath = resolve(root, consumer.output, 'stats.json');
+  const stats = readBuildStats(resolve(root, consumer.output));
   assert.ok(
-    existsSync(statsPath),
-    `${relative(workspaceRoot, statsPath)} is absent. Run pnpm run ${consumer.stage} first.`,
+    stats !== undefined,
+    `${relative(workspaceRoot, resolve(root, consumer.output))} holds no build stats. Run pnpm run ${consumer.stage} first.`,
   );
-  const stats = readJson(statsPath);
   const builder = readJson(
     resolve(root, 'node_modules/@angular/build/package.json'),
   ).version;

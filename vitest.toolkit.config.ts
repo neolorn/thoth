@@ -1,7 +1,7 @@
 import { mergeConfig } from 'vitest/config';
 
 import { capabilityClaimsReporters } from './tools/capability-evidence.mjs';
-import shared from './vitest.config';
+import shared from './vitest.config.ts';
 
 /**
  * The toolkit suite, which is the shared configuration plus a cache directory of its own.

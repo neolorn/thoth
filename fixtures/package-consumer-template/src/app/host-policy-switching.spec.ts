@@ -127,6 +127,9 @@ function documentWithSpy(assign: (url: string) => void): Document {
   });
   return new Proxy(document, {
     get: passThrough(document, { defaultView: proxiedWindow }),
+    // Written to the document itself. A setter of the DOM refuses a receiver that is not a
+    // Document, and without a trap the receiver of every write is this proxy.
+    set: (target, key, value) => Reflect.set(target, key, value),
   }) as Document;
 }
 
