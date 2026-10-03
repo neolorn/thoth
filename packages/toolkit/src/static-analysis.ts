@@ -2037,12 +2037,7 @@ interface RouteChild {
    * that is not a string literal is one Equator does not name.
    */
   readonly matches:
-    | 'empty'
-    | 'wildcard'
-    | 'nothing'
-    | 'matcher'
-    | 'computed'
-    | 'unreadable';
+    'empty' | 'wildcard' | 'nothing' | 'matcher' | 'computed' | 'unreadable';
   /** `undefined` where a spread or a computed key may set `redirectTo`. */
   readonly redirects: boolean | undefined;
   /**

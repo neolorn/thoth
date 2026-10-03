@@ -57,10 +57,7 @@ export type ToolkitEventPhase =
  * ordinary outcome of building a project nobody has edited.
  */
 export type ToolkitEventStatus =
-  | 'started'
-  | 'succeeded'
-  | 'failed'
-  | 'unchanged';
+  'started' | 'succeeded' | 'failed' | 'unchanged';
 
 /**
  * One thing the toolkit reports, with no message text and no file content in it.

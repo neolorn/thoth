@@ -79,11 +79,7 @@ export const SEMANTIC_REGISTRY_PROFILE = 'equator-semantic-registry/1' as const;
  * represent the same way, so a contract means the same thing on a server and in a browser.
  */
 export type PortableTypeId =
-  | 'boolean'
-  | 'date-time'
-  | 'integer'
-  | 'number'
-  | 'string';
+  'boolean' | 'date-time' | 'integer' | 'number' | 'string';
 
 /**
  * What a caller must pass for one of a message's inputs, after the analysis has settled it.

@@ -140,8 +140,8 @@ assert.equal(workspacePackage.packageManager, 'pnpm@12.9.1');
 // development row, so reading the versions back out of the manifest would assert nothing. Angular's
 // framework and tooling ship on separate patch trains, so both halves are pinned: pinning only
 // `@angular/core` would let `@angular/build`, `@angular/cli` and `@angular/ssr` drift unwatched.
-assert.equal(workspacePackage.devDependencies['@angular/core'], '22.1.8');
-assert.equal(workspacePackage.devDependencies['@angular/ssr'], '22.1.9');
+assert.equal(workspacePackage.devDependencies['@angular/core'], '22.2.1');
+assert.equal(workspacePackage.devDependencies['@angular/ssr'], '22.2.1');
 assert.equal(workspacePackage.devDependencies.typescript, '6.0.3');
 assert.equal(
   (await readFile(resolve(workspaceRoot, '.node-version'), 'utf8')).trim(),
@@ -585,7 +585,7 @@ assert.deepEqual(toolkitPackage.dependencies, {
   'jsonc-parser': '3.3.1',
   messageformat: '4.0.0',
   tslib: '^2.8.1',
-  yaml: '2.9.0',
+  yaml: '2.9.1',
 });
 // A peer rather than a dependency, because these decide compilation and the consumer's copy is the
 // one that runs. `specs/02-packages-and-platform.spec.md` section 7 divides the graph this way, and

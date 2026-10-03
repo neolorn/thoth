@@ -194,8 +194,7 @@ export class FeatureLabReadiness {
 
   protected readonly inputIssue = computed(() => {
     const errors = this.amountControl.errors?.['localizedInput'] as
-      | { readonly code: string }
-      | undefined;
+      { readonly code: string } | undefined;
     if (errors === undefined) return 'none';
     return INPUT_ISSUE_MESSAGES.get(errors.code) ?? 'unmapped';
   });

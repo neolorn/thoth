@@ -813,8 +813,7 @@ function oneFeature<Kind extends LocalizationFeatureKind>(
     });
   }
   return matches[0] as
-    | Extract<LocalizationFeature, { readonly ɵkind: Kind }>
-    | undefined;
+    Extract<LocalizationFeature, { readonly ɵkind: Kind }> | undefined;
 }
 
 class DocumentLocaleCommitHook implements LocalizationCommitHook {
@@ -1829,38 +1828,27 @@ export function provideLocalizationSetup(
   ...features: readonly LocalizationFeature[]
 ): EnvironmentProviders {
   const recovery = oneFeature(features, 'recovery-message') as
-    | RecoveryMessageFeature
-    | undefined;
+    RecoveryMessageFeature | undefined;
   const formatting = oneFeature(features, 'formatting-context') as
-    | FormattingContextFeature
-    | undefined;
+    FormattingContextFeature | undefined;
   const documentLocale = oneFeature(features, 'document-locale') as
-    | DocumentLocaleFeature
-    | undefined;
+    DocumentLocaleFeature | undefined;
   const announcement = oneFeature(features, 'locale-announcement') as
-    | LocaleAnnouncementFeature
-    | undefined;
+    LocaleAnnouncementFeature | undefined;
   const overlay = oneFeature(features, 'overlay-locale') as
-    | OverlayLocaleFeature
-    | undefined;
+    OverlayLocaleFeature | undefined;
   const observability = oneFeature(features, 'observability') as
-    | ObservabilityFeature
-    | undefined;
+    ObservabilityFeature | undefined;
   const clock = oneFeature(features, 'localization-clock') as
-    | LocalizationClockFeature
-    | undefined;
+    LocalizationClockFeature | undefined;
   const relativeTimePolicy = oneFeature(features, 'relative-time-policy') as
-    | RelativeTimePolicyFeature
-    | undefined;
+    RelativeTimePolicyFeature | undefined;
   const persistence = oneFeature(features, 'persistence') as
-    | PersistenceFeature
-    | undefined;
+    PersistenceFeature | undefined;
   const localeSources = oneFeature(features, 'locale-sources') as
-    | LocaleSourcesFeature
-    | undefined;
+    LocaleSourcesFeature | undefined;
   const extensions = oneFeature(features, 'extensions') as
-    | ExtensionsFeature
-    | undefined;
+    ExtensionsFeature | undefined;
   const routing = oneFeature(features, 'routing') as RoutingFeature | undefined;
   // Built before anything else, so a projection that is not this owner's is refused here, at
   // the call, rather than when something first injects what it provides.

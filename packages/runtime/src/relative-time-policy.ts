@@ -103,8 +103,7 @@ export interface RelativeTimeOutOfRange {
  * the fields and the zone of that date are the application's.
  */
 export type RelativeTimeDecision =
-  | RelativeTimeSelection
-  | RelativeTimeOutOfRange;
+  RelativeTimeSelection | RelativeTimeOutOfRange;
 
 function epochMilliseconds(instant: InstantValue): number {
   // Instants are canonical epoch-nanosecond strings; only whole milliseconds matter here, and a

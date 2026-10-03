@@ -18,8 +18,8 @@ export const consumerProfiles = new Map([
   [
     'package-consumer',
     {
-      angular: '22.1.8',
-      angularTooling: '22.1.9',
+      angular: '22.2.1',
+      angularTooling: '22.2.1',
       typescript: '6.0.3',
       rxjs: '7.8.2',
       label: 'Equator development row',
@@ -56,8 +56,8 @@ export const consumerProfiles = new Map([
   [
     'strict-consumer',
     {
-      angular: '22.1.8',
-      angularTooling: '22.1.9',
+      angular: '22.2.1',
+      angularTooling: '22.2.1',
       typescript: '6.0.3',
       rxjs: '7.8.2',
       label: 'Demanding compiler options',

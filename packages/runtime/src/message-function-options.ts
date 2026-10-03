@@ -387,11 +387,7 @@ const NOT_FORMATTING: readonly string[] = Object.freeze([
  * is the wider one so that one profile shape describes a built-in and an extension alike.
  */
 export type MessageOperandKind =
-  | 'boolean'
-  | 'date-time'
-  | 'integer'
-  | 'number'
-  | 'string';
+  'boolean' | 'date-time' | 'integer' | 'number' | 'string';
 
 export interface MessageFunctionOptionProfile {
   readonly operand: MessageOperandKind;

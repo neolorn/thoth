@@ -228,8 +228,7 @@ export class ControllableLocalizationParticipant implements LocalizationParticip
   prepare(
     context: LocalizationParticipantContext,
   ):
-    | LocalizationParticipantReport
-    | PromiseLike<LocalizationParticipantReport> {
+    LocalizationParticipantReport | PromiseLike<LocalizationParticipantReport> {
     this.contexts.push(context);
     const plan = this.plans.shift();
     if (plan === undefined) return this.defaultReport;

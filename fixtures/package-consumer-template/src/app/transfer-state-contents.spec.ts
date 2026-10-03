@@ -109,8 +109,7 @@ describe('the transfer a server render writes', () => {
     await TestBed.inject(Localization).initialize();
 
     const transfer = TestBed.inject(TransferState).get(TRANSFER_KEY, null) as
-      | (Record<string, unknown> & { participants?: unknown[] })
-      | null;
+      (Record<string, unknown> & { participants?: unknown[] }) | null;
     expect(transfer).not.toBeNull();
     expect(region.store.size).toBeGreaterThan(0);
 

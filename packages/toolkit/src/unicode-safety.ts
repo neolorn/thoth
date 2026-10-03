@@ -44,9 +44,7 @@ export function isSafeStructuralText(value: string): boolean {
  * who cannot see the character. The diagnostic has to say which kind and what it does.
  */
 export type BidiViolation =
-  | 'directional-override'
-  | 'unbalanced-isolate'
-  | 'byte-order-mark';
+  'directional-override' | 'unbalanced-isolate' | 'byte-order-mark';
 
 /** What each refusal says, the same whether the text arrived in a catalog or through XLIFF. */
 export const BIDI_VIOLATION_SUMMARY: Readonly<Record<BidiViolation, string>> =

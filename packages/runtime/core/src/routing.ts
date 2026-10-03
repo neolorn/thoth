@@ -97,13 +97,7 @@ export interface RouteCachingPolicy {
  * but a document a validator refuses.
  */
 export type SitemapChangeFrequency =
-  | 'always'
-  | 'hourly'
-  | 'daily'
-  | 'weekly'
-  | 'monthly'
-  | 'yearly'
-  | 'never';
+  'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
 
 /** What one class of routes claims about itself in a sitemap. */
 export interface SitemapRouteClass {
@@ -387,9 +381,7 @@ export interface HostLocalePolicy {
  * prefixes and origins are checked before anything is published under them.
  */
 export type LocaleUrlPolicy =
-  | PathPrefixLocalePolicy
-  | LocaleNeutralPolicy
-  | HostLocalePolicy;
+  PathPrefixLocalePolicy | LocaleNeutralPolicy | HostLocalePolicy;
 
 /** What is known about the request an address is being resolved for. */
 export interface RouteResolutionContext {
@@ -3376,10 +3368,7 @@ type LocalizedSegments =
   | {
       readonly ok: false;
       readonly reason:
-        | 'parameter-missing'
-        | 'unrepresentable'
-        | 'unsafe'
-        | 'unreadable';
+        'parameter-missing' | 'unrepresentable' | 'unsafe' | 'unreadable';
       readonly parameter: string;
     };
 

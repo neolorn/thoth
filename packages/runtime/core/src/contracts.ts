@@ -55,11 +55,7 @@ export type LocaleChangeMode = 'coordinated' | 'progressive';
  * when there is nothing to render and recovery is what is on screen.
  */
 export type LocalizationLifecycle =
-  | 'uninitialized'
-  | 'initializing'
-  | 'ready'
-  | 'transitioning'
-  | 'failed';
+  'uninitialized' | 'initializing' | 'ready' | 'transitioning' | 'failed';
 
 /**
  * What a consumer holds in place of a message key: which message, and what it needs.
@@ -442,11 +438,7 @@ export type CatalogLoaders = Readonly<Record<string, CatalogLoader>>;
  * built-in takes and nothing more exotic.
  */
 export type ExtensionValueType =
-  | 'boolean'
-  | 'date-time'
-  | 'integer'
-  | 'number'
-  | 'string';
+  'boolean' | 'date-time' | 'integer' | 'number' | 'string';
 
 interface RuntimeExtensionDescriptorBase {
   readonly profile: typeof EXTENSION_DESCRIPTOR_PROFILE;
@@ -1342,8 +1334,7 @@ export interface LocalizationParticipant {
   readonly prepare: (
     context: LocalizationParticipantContext,
   ) =>
-    | LocalizationParticipantReport
-    | PromiseLike<LocalizationParticipantReport>;
+    LocalizationParticipantReport | PromiseLike<LocalizationParticipantReport>;
   /**
    * Swaps in what `prepare` fetched. Called once the whole change has succeeded.
    *
@@ -1600,9 +1591,7 @@ export interface LocalizedSlotPart {
  * each slot is; anything it cannot render is dropped rather than shown as text.
  */
 export type LocalizedPart =
-  | LocalizedTextPart
-  | LocalizedValuePart
-  | LocalizedSlotPart;
+  LocalizedTextPart | LocalizedValuePart | LocalizedSlotPart;
 
 /**
  * A message evaluated to pieces a template places, rather than to one string.
@@ -1890,11 +1879,7 @@ export type PersonNameField =
  * that ask.
  */
 export type PersonNameFieldVariant =
-  | 'informal'
-  | 'prefix'
-  | 'core'
-  | 'vocative'
-  | 'genitive';
+  'informal' | 'prefix' | 'core' | 'vocative' | 'genitive';
 
 /**
  * How one part of a name is named: a role on its own, or a role with a variant after a hyphen.
@@ -1903,8 +1888,7 @@ export type PersonNameFieldVariant =
  * when absent, so a name supplying only the seven roles still formats everywhere.
  */
 export type PersonNameFieldKey =
-  | PersonNameField
-  | `${PersonNameField}-${PersonNameFieldVariant}`;
+  PersonNameField | `${PersonNameField}-${PersonNameFieldVariant}`;
 
 /** A person's name, held as the parts it is made of, in the language it belongs to. */
 export interface PersonNameValue {
@@ -2263,13 +2247,7 @@ export interface LocalizedTimeZoneInputProfile {
 
 /** The seven units a duration field can be built out of. */
 export type LocalizedDurationFieldName =
-  | 'years'
-  | 'months'
-  | 'weeks'
-  | 'days'
-  | 'hours'
-  | 'minutes'
-  | 'seconds';
+  'years' | 'months' | 'weeks' | 'days' | 'hours' | 'minutes' | 'seconds';
 
 /** One unit in a duration field, and what a value for it may look like. */
 export interface LocalizedDurationInputField {

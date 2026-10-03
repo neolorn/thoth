@@ -43,12 +43,12 @@ browser-only application installs none of the three.
 
 ## The combinations that are built and tested
 
-| Row                             | Angular                     | TypeScript | RxJS    |
-| ------------------------------- | --------------------------- | ---------- | ------- |
-| Equator development row         | `22.1.8` (tooling `22.1.9`) | `6.0.3`    | `7.8.2` |
-| Angular patch compatibility row | `22.0.4`                    | `6.0.3`    | `7.8.2` |
-| Demanding compiler options      | `22.1.8` (tooling `22.1.9`) | `6.0.3`    | `7.8.2` |
-| Lowest supported versions       | `22.0.0`                    | `6.0.2`    | `7.4.0` |
+| Row                             | Angular  | TypeScript | RxJS    |
+| ------------------------------- | -------- | ---------- | ------- |
+| Equator development row         | `22.2.1` | `6.0.3`    | `7.8.2` |
+| Angular patch compatibility row | `22.0.4` | `6.0.3`    | `7.8.2` |
+| Demanding compiler options      | `22.2.1` | `6.0.3`    | `7.8.2` |
+| Lowest supported versions       | `22.0.0` | `6.0.2`    | `7.4.0` |
 
 Each row builds a real application against the packages and runs it. The lower bound row's
 versions are the floors of the ranges above, read from the same manifests, so the row moves when a

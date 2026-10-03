@@ -54,11 +54,7 @@ export const EXTENSION_DESCRIPTOR_PROFILE =
  * takes and nothing more exotic.
  */
 export type ExtensionValueType =
-  | 'boolean'
-  | 'date-time'
-  | 'integer'
-  | 'number'
-  | 'string';
+  'boolean' | 'date-time' | 'integer' | 'number' | 'string';
 
 /**
  * Declares a function messages may call, such as a domain-specific way of writing a quantity.

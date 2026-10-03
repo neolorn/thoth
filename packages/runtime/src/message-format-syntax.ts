@@ -22,11 +22,7 @@
  * typechecked against it and a mismatch is a compile error rather than a behaviour.
  */
 export type ExtensionValueType =
-  | 'boolean'
-  | 'date-time'
-  | 'integer'
-  | 'number'
-  | 'string';
+  'boolean' | 'date-time' | 'integer' | 'number' | 'string';
 
 /* ------------------------------------------------------------------ *
  * `name`                                                              *

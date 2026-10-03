@@ -47,9 +47,7 @@ export interface PageOutcomeOperationalFailure {
  * status, because nothing fixes that one.
  */
 export type PageOutcomeDeclaration =
-  | PageOutcomeAbsent
-  | PageOutcomeGone
-  | PageOutcomeOperationalFailure;
+  PageOutcomeAbsent | PageOutcomeGone | PageOutcomeOperationalFailure;
 
 const ABSENT: PageOutcomeAbsent = Object.freeze({ outcome: 'absent' });
 const GONE: PageOutcomeGone = Object.freeze({ outcome: 'gone' });

@@ -394,11 +394,7 @@ function validateRange<Value>(
     LocalizedInputProfile,
     {
       readonly kind:
-        | 'decimal'
-        | 'money'
-        | 'measurement'
-        | 'percent'
-        | 'percentage-points';
+        'decimal' | 'money' | 'measurement' | 'percent' | 'percentage-points';
     }
   >,
   text: string,
@@ -436,11 +432,7 @@ function parseNumeric(
     LocalizedInputProfile,
     {
       readonly kind:
-        | 'decimal'
-        | 'money'
-        | 'measurement'
-        | 'percent'
-        | 'percentage-points';
+        'decimal' | 'money' | 'measurement' | 'percent' | 'percentage-points';
     }
   >,
   context: FormattingContext,

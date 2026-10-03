@@ -25,8 +25,7 @@ const targetCatalogOptions: CatalogParseOptions = {
 
 function expectFailureCode(
   result:
-    | ReturnType<typeof parseConfiguration>
-    | ReturnType<typeof parseCatalog>,
+    ReturnType<typeof parseConfiguration> | ReturnType<typeof parseCatalog>,
   code: string,
 ): void {
   expect(result.ok).toBe(false);

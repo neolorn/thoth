@@ -19,13 +19,11 @@ import { initializeProject, watchProject } from '../src/project-host.js';
 
 const control = vi.hoisted(() => ({
   listener: undefined as
-    | ((event: string, fileName: string | null) => void)
-    | undefined,
+    ((event: string, fileName: string | null) => void) | undefined,
   onRead: undefined as ((path: string) => Promise<void>) | undefined,
   onClose: undefined as ((emitClose: () => void) => void) | undefined,
   watcher: undefined as
-    | { emit(event: string, ...values: unknown[]): boolean }
-    | undefined,
+    { emit(event: string, ...values: unknown[]): boolean } | undefined,
 }));
 
 vi.mock('node:fs', async (original) => {

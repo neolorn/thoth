@@ -210,10 +210,7 @@ interface StagedArticle {
 }
 
 export type DynamicPresentationPolicy =
-  | 'retain'
-  | 'skeleton'
-  | 'hide'
-  | 'substitute';
+  'retain' | 'skeleton' | 'hide' | 'substitute';
 
 export interface DynamicArticlePresentation {
   readonly kind: 'content' | 'retained' | 'skeleton' | 'hidden' | 'substitute';

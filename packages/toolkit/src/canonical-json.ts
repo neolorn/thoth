@@ -24,12 +24,7 @@ export interface CanonicalJsonObject {
  * safe to read.
  */
 export type CanonicalJsonValue =
-  | null
-  | boolean
-  | number
-  | string
-  | CanonicalJsonArray
-  | CanonicalJsonObject;
+  null | boolean | number | string | CanonicalJsonArray | CanonicalJsonObject;
 
 function assertValidUnicode(value: string): void {
   for (let index = 0; index < value.length; index += 1) {

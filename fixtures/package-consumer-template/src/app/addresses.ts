@@ -34,9 +34,7 @@ export const tablePolicy: string = table.policy;
  * there fails the checks that expect it instead of switching them off.
  */
 export const expectedPageCaching = (():
-  | 'per-visitor'
-  | 'not-stored'
-  | undefined => {
+  'per-visitor' | 'not-stored' | undefined => {
   const value = (table as Readonly<Record<string, unknown>>)['pageCaching'];
   if (
     value === undefined ||

@@ -98,8 +98,7 @@ interface ProjectOptions {
   /** The links under test, beside the ordinary ones. */
   readonly links: readonly string[];
   readonly factory?:
-    | 'createPathPrefixLocalePolicy'
-    | 'createLocaleNeutralPolicy';
+    'createPathPrefixLocalePolicy' | 'createLocaleNeutralPolicy';
   readonly aliases?: Readonly<Record<string, string>>;
 }
 

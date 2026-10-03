@@ -218,10 +218,7 @@ function prerenderedRouteViews(deployment) {
 const describeError = (error) => {
   const parts = [];
   let current = error;
-  for (
-    let depth = 0;
-    current !== undefined && current !== null && depth < 8;
-  ) {
+  for (let depth = 0; current !== undefined && current !== null && depth < 8;) {
     parts.push(
       current instanceof Error
         ? (current.stack ?? current.message)

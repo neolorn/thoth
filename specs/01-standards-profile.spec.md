@@ -352,7 +352,7 @@ dependency, listed in `02-packages-and-platform.spec.md`.
 
 The toolkit package depends on `tslib` and four packages, each bounded to one responsibility:
 
-- `yaml` 2.9.0 parses YAML 1.2 through its documented document and node APIs. The toolkit applies
+- `yaml` 2.9.1 parses YAML 1.2 through its documented document and node APIs. The toolkit applies
   its own restricted admission for profile, duplicate keys, tags, directives, aliases, anchors,
   merge keys, scalars, resources, and semantics before it constructs catalog data.
 - `ajv` 8.20.0 validates the toolkit's own closed JSON Schema Draft 2020-12 contracts. It compiles

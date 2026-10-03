@@ -1051,8 +1051,7 @@ class LocalizationInternal {
   private queuedRoute: LocalizationRouteSnapshot | undefined;
   /** See `Localization.ɵclaimLocaleChange`. Registered by the routing adapter, or by nothing. */
   private localeChangeClaim:
-    | ((locale: string) => string | undefined)
-    | undefined;
+    ((locale: string) => string | undefined) | undefined;
 
   readonly state: LocalizationState;
 

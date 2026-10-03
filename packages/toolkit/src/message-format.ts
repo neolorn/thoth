@@ -401,8 +401,7 @@ export interface MessageCatchallVariantKey {
 
 /** One position of one variant's key list: an exact value to match, or the catch-all. */
 export type MessageVariantKey =
-  | MessageLiteralVariantKey
-  | MessageCatchallVariantKey;
+  MessageLiteralVariantKey | MessageCatchallVariantKey;
 
 /** One branch of a selecting message: what it matches, and what it says when it does. */
 export interface MessageVariant {
@@ -455,8 +454,7 @@ export interface SelectMessageSemanticModel extends MessageSemanticBase {
  * Check `kind` to tell a plain message from a selecting one.
  */
 export type MessageSemanticModel =
-  | PatternMessageSemanticModel
-  | SelectMessageSemanticModel;
+  PatternMessageSemanticModel | SelectMessageSemanticModel;
 
 function normalizeValue(
   value: Model.Literal | Model.VariableRef,

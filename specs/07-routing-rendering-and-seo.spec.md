@@ -413,8 +413,8 @@ or at restore, because a scroll call clamps to the range on its own and a docume
 finished growing then costs the visitor accuracy rather than correctness.
 
 One engine also moves the block position, and only under one condition. In the engines Playwright
-1.61.1 supplies, Chromium 149 and Firefox 151 leave it untouched across a direction change and
-WebKit 26.5 does not: with an element focused as the direction changes it scrolls to reveal that
+1.63.0 supplies, Chromium 153 and Firefox 155 leave it untouched across a direction change and
+WebKit 26.6 does not: with an element focused as the direction changes it scrolls to reveal that
 element, which moves both axes. A bisect isolates the trigger exactly, a focused element together
 with a direction change being sufficient and nothing else necessary, and a focus call that asks the
 engine not to scroll is honored on all three, so the focus call is not what moves the page.
