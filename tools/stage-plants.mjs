@@ -321,8 +321,8 @@ export const stageSelfTests = Object.freeze({
         id: 'compatibility-page-lists-an-unexecuted-row',
         plant: plantText(
           'docs/reference/compatibility.md',
-          '`22.22.3`, `24.15.0`, `24.18.0`, `26.0.0`.',
-          '`22.22.3`, `22.30.0`, `24.15.0`, `24.18.0`, `26.0.0`.',
+          '`22.22.3`, `24.15.0`, `26.0.0`, `26.10.0`.',
+          '`22.22.3`, `22.30.0`, `24.15.0`, `26.0.0`, `26.10.0`.',
         ),
         refusal:
           /compatibility\.md is not what its source of truth produces now/u,

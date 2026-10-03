@@ -145,7 +145,7 @@ assert.equal(workspacePackage.devDependencies['@angular/ssr'], '22.1.9');
 assert.equal(workspacePackage.devDependencies.typescript, '6.0.3');
 assert.equal(
   (await readFile(resolve(workspaceRoot, '.node-version'), 'utf8')).trim(),
-  '24.18.0',
+  '26.10.0',
 );
 
 const workspaceConfiguration = await readFile(
@@ -156,7 +156,7 @@ for (const setting of [
   'autoInstallPeers: false',
   'strictPeerDependencies: true',
   "savePrefix: ''",
-  'nodeVersion: 24.18.0',
+  'nodeVersion: 26.10.0',
   'engineStrict: true',
 ]) {
   assert.match(workspaceConfiguration, new RegExp(`^${setting}$`, 'mu'));
