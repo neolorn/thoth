@@ -12,9 +12,9 @@ This page is generated from the packages and is not edited by hand.
 The suites run at the lowest version of every line the range admits, and on the version this
 repository develops on:
 
-`22.22.3`, `24.15.0`, `24.18.0`, `26.0.0`.
+`22.22.3`, `24.15.0`, `26.0.0`, `26.10.0`.
 
-The development row below is also installed, tested, built and served on `22.22.3` and `26.0.0`,
+The development row below is also installed, tested, built and served on `22.22.3` and `24.15.0`,
 the lowest version of each line other than the one this repository develops on.
 
 ## Angular, TypeScript and RxJS

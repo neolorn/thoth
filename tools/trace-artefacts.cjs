@@ -113,8 +113,6 @@ function install(traceFile, workspaceRoot) {
       'tmp/package-consumer-verification/locale-host-consumer',
       'consumer:locale-host',
     ],
-    ['tmp/package-consumer-verification/node-22-consumer', 'consumer:node-22'],
-    ['tmp/package-consumer-verification/node-26-consumer', 'consumer:node-26'],
     ['tmp/focused-package-consumer-verification', 'consumer:focused'],
     // `tmp/package-consumer-verification`, the directory that holds the consumers above,
     // is deliberately not one. The only thing any stage does to it is `mkdir` it before installing
@@ -144,6 +142,8 @@ function install(traceFile, workspaceRoot) {
   ].map(([prefix, name]) => [path.resolve(root, prefix), name]);
 
   const packagesPrefix = path.resolve(root, 'packages') + path.sep;
+  const consumersPrefix =
+    path.resolve(root, 'tmp', 'package-consumer-verification') + path.sep;
   // One artefact per claiming stage, named for the file, rather than one for the folder. The folder
   // as one artefact would give every claiming stage a write to the same thing, and the graph would
   // run them one at a time to protect a file none of them shares.
@@ -172,6 +172,15 @@ function install(traceFile, workspaceRoot) {
       const file = resolved.slice(claimsPrefix.length);
       if (file.includes(path.sep) || !file.endsWith('.jsonl')) return undefined;
       return { name: `claims:${file.slice(0, -'.jsonl'.length)}`, resolved };
+    }
+    // The development row on another Node line. Which lines have one follows the engines range and
+    // .node-version, so the name is read from the path and no line is listed here.
+    if (resolved.startsWith(consumersPrefix)) {
+      const line = /^node-(\d+)-consumer$/u.exec(
+        resolved.slice(consumersPrefix.length).split(path.sep)[0],
+      )?.[1];
+      if (line !== undefined)
+        return { name: `consumer:node-${line}`, resolved };
     }
     for (const [prefix, name] of artefacts) {
       if (resolved !== prefix && !resolved.startsWith(prefix + path.sep))

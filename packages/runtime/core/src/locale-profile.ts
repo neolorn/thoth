@@ -31,8 +31,8 @@ export interface LocaleProfile {
  * nonterminal"*, and then *"Return the first subtag of baseName"*, having first asserted that the
  * subtag matches `unicode_language_subtag`. No step in that chain produces `undefined`.
  *
- * V8 produces one anyway. `new Intl.Locale('und').baseName` is `'und'` and `.language` is
- * `undefined`, so the engine contradicts its own two answers: the accessor is defined as the first
+ * V8 before 14, which Node 22 and Node 24 carry, produces one anyway. There
+ * `new Intl.Locale('und').baseName` is `'und'` and `.language` is `undefined`, so the engine contradicts its own two answers: the accessor is defined as the first
  * subtag of exactly the base name it just returned. It holds for every tag built on `und`,
  * `und-Arab-EG` included, where the profile then reported an undetermined language beside an Arabic
  * script and a right-to-left direction.

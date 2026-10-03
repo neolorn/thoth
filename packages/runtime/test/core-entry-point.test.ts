@@ -115,11 +115,16 @@ describe('a locale profile', () => {
     expect(undetermined.script).toBe('Latn');
     expect(undetermined.direction).toBe('ltr');
 
-    // The engine's own two answers, which cannot both be right: `language` is specified as the
-    // first subtag of this exact `baseName`. Pinned deliberately: the day an engine in the
-    // supported matrix returns 'und' here, this goes red and the derivation above can go with it.
+    // The engine's own two answers, which on V8 before 14 cannot both be right: `language` is
+    // specified as the first subtag of this exact `baseName`. Node 22 and Node 24 carry V8 12 and
+    // 13 and answer `undefined`; Node 26 carries V8 14 and answers 'und'. Pinned per engine
+    // deliberately: the derivation above is needed for as long as the supported range admits a
+    // host on the first branch, and a host that moves from one answer to the other goes red here.
+    const engineMajor = Number(process.versions.v8.split('.')[0]);
     expect(new Intl.Locale('und').baseName).toBe('und');
-    expect(new Intl.Locale('und').language).toBeUndefined();
+    expect(new Intl.Locale('und').language).toBe(
+      engineMajor >= 14 ? 'und' : undefined,
+    );
 
     // Not one tag. Every tag built on `und` was affected, and this is the one where the wrong
     // answer was visible: an undetermined language written in Arabic script, reading right to left.

@@ -4,7 +4,7 @@ packages:
 autoInstallPeers: false
 strictPeerDependencies: true
 savePrefix: ''
-nodeVersion: 24.18.0
+nodeVersion: 26.10.0
 engineStrict: true
 
 allowBuilds:
