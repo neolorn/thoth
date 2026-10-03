@@ -54,6 +54,7 @@ import {
   PERSON_NAME_USAGES,
 } from './person-names-root.generated';
 import { RUNTIME_LIMITS, codePointLengthAtMost } from './runtime-safety';
+import { TIME_ZONE_IDENTITIES } from './time-zone-identities.generated';
 
 /**
  * One store of `Intl` formatters for every standalone formatting call in this process.
@@ -282,11 +283,38 @@ export function plainDateTime(
   return Object.freeze({ kind: 'plain-date-time', date, time });
 }
 
+let primaryTimeZones: ReadonlyMap<string, string> | undefined;
+
+/**
+ * The primary identifier the pinned time-zone database gives a name, or `undefined` for a name its
+ * table does not carry.
+ *
+ * Read without case, as the database's names are matched, and built on first use: an application
+ * that never names a zone never pays for the map.
+ */
+function pinnedTimeZone(id: string): string | undefined {
+  primaryTimeZones ??= new Map(
+    TIME_ZONE_IDENTITIES.split(' ').map((entry) => {
+      const [name = entry, primary = name] = entry.split('>');
+      return [name.toLowerCase(), primary];
+    }),
+  );
+  return primaryTimeZones.get(id.toLowerCase());
+}
+
 /**
  * A time zone, from its IANA identity.
  *
- * Takes a name such as `Europe/Berlin` or `UTC` and returns the platform's canonical spelling of
- * it, so a deprecated alias and its replacement come back as the same zone.
+ * Takes a name such as `Europe/Berlin` or `UTC` and returns the primary identifier the pinned
+ * time-zone database gives it, so a former name and its replacement come back as the same zone:
+ * `Asia/Calcutta` and `Asia/Kolkata` are both `Asia/Kolkata`. A zone a country still calls its
+ * own keeps its name even where the database links it to a neighbor's, so `Europe/Oslo` stays
+ * `Europe/Oslo`.
+ *
+ * The identity is the database's and not the host's. Hosts disagree about which spelling is
+ * canonical, and a stored identity that changed with the host could not be compared or exchanged.
+ * A name the pinned table does not carry, a fixed offset such as `Etc/GMT+5` or a zone newer than
+ * the table, comes back in the host's spelling.
  *
  * Throws for a name this platform does not know, which is the honest answer: a zone the host
  * cannot resolve has no offsets to format with.
@@ -298,10 +326,13 @@ export function timeZone(id: string): TimeZoneValue {
     );
   }
   try {
-    const canonical = new Intl.DateTimeFormat('en-US', {
+    const host = new Intl.DateTimeFormat('en-US', {
       timeZone: id,
     }).resolvedOptions().timeZone;
-    return Object.freeze({ kind: 'time-zone', id: canonical });
+    return Object.freeze({
+      kind: 'time-zone',
+      id: pinnedTimeZone(id) ?? pinnedTimeZone(host) ?? host,
+    });
   } catch (cause) {
     return invalidCanonicalValue(
       'A time zone requires a supported IANA time-zone identity.',

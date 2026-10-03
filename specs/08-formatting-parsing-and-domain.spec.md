@@ -48,6 +48,13 @@ the result can vary. A release MUST take time-zone identity, aliases, links, and
 from the pinned time-zone database recorded under `01-standards-profile.spec.md` section 4, and MUST
 NOT let host presentation data redefine a stored time-zone identity.
 
+A time zone's identity MUST be the primary identifier the pinned database gives its name, as
+ECMA-402 section 6.5 defines one: a Zone is primary, a Link resolves to the Zone it names, a Link
+that the `TZ` column of `zone.tab` lists is primary itself, and `Etc/UTC`, `Etc/GMT`, `GMT` and
+their Links are `UTC`. A name is matched without regard to case. A name the pinned release does not
+carry, which a fixed offset under `Etc/` and a zone newer than the release both are, keeps the
+host's spelling.
+
 A release MUST NOT perform accounting, exchange, tax, cash rounding, business precision, rate
 calculation, percentage-point conversion, or implicit unit conversion. Those belong to the consumer
 application's domain.

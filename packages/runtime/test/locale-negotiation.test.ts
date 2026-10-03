@@ -225,7 +225,7 @@ describe('a language written under another subtag', () => {
     // The string moves when either source moves, so a regeneration that changes what negotiation
     // answers cannot land as a silent data update.
     expect(ENCOMPASSED_LANGUAGE_PROFILE).toBe(
-      'cldr-48.2+iana-2026-06-14/equator-encompassed-1',
+      'cldr-48.2+iana-2026-09-17/equator-encompassed-1',
     );
   });
 

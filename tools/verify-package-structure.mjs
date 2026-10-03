@@ -253,12 +253,12 @@ for (const source of [cldrJson, cldrLocaleNames]) {
 }
 
 const languageRegistry = standardsLock.dataSources.ianaLanguageSubtagRegistry;
-assert.equal(languageRegistry.fileDate, '2026-06-14');
+assert.equal(languageRegistry.fileDate, '2026-09-17');
 assert.equal(
   languageRegistry.projectSnapshot,
-  'data/language-subtag-registry-2026-06-14.txt',
+  'data/language-subtag-registry-2026-09-17.txt',
 );
-assert.equal(languageRegistry.bytes, 731605);
+assert.equal(languageRegistry.bytes, 731819);
 assertDigest(languageRegistry, 'SHA-256', 64);
 const standardsRoot = resolve(workspaceRoot, 'standards');
 const registrySnapshotPath = resolve(
@@ -278,13 +278,19 @@ assert.equal(
 );
 assert.match(
   registrySnapshot.toString('utf8', 0, 64),
-  /^File-Date: 2026-06-14$/mu,
+  /^File-Date: 2026-09-17$/mu,
 );
 
 const timeZoneDatabase = standardsLock.dataSources.ianaTimeZoneDatabase;
-assert.equal(timeZoneDatabase.version, '2026c');
-assert.equal(timeZoneDatabase.bytes, 475694);
-assertDigest(timeZoneDatabase, 'SHA-512', 128);
+assert.equal(timeZoneDatabase.version, '2026e');
+assert.equal(timeZoneDatabase.projectSnapshot, 'data/tzdata-2026e');
+assert.equal(timeZoneDatabase.crossCheck.artifactBytes, 481989);
+assert.equal(timeZoneDatabase.crossCheck.artifactDigest.algorithm, 'SHA-512');
+assert.match(
+  timeZoneDatabase.crossCheck.artifactDigest.value,
+  /^[0-9a-f]{128}$/u,
+);
+assert.equal(timeZoneDatabase.crossCheck.signature.result, 'good signature');
 assert.equal(
   standardsLock.normativeDocuments.xliffCore,
   'https://docs.oasis-open.org/xliff/xliff-core/v2.2/cs01/xliff-core-v2.2-cs01-part1.html',
@@ -1520,7 +1526,11 @@ for (const name of runtimeBundles) {
     resolve(workspaceRoot, 'dist/runtime/fesm2022', name),
     'utf8',
   );
-  if (/\bclass LocalizationError\b/u.test(text)) bundlesDefiningCore.push(name);
+  // Either spelling of a definition: a bundler writes a class as a declaration or as a class
+  // expression bound to its name, and which one is the packager's choice.
+  if (/\bclass LocalizationError\b|\bLocalizationError = class\b/u.test(text)) {
+    bundlesDefiningCore.push(name);
+  }
 }
 assert.deepEqual(
   bundlesDefiningCore,

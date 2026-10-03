@@ -101,7 +101,7 @@ describe('a locale profile', () => {
     // `undefined` here, in a field typed `string` and not optional, is not answered by widening
     // the type. Two sources, and neither leaves room for an absence:
     //
-    // - the pinned IANA registry, `language-subtag-registry-2026-06-14.txt`: "Type: language,
+    // - the pinned IANA registry, `language-subtag-registry-2026-09-17.txt`: "Type: language,
     //   Subtag: und, Description: Undetermined, Added: 2005-10-16, Scope: special". It is a
     //   registered language subtag, and UTS 35 48.2's `unicode_language_subtag = alpha{2,3} |
     //   alpha{5,8}` matches it;

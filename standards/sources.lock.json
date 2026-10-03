@@ -138,15 +138,15 @@
       }
     },
     "ianaLanguageSubtagRegistry": {
-      "fileDate": "2026-06-14",
+      "fileDate": "2026-09-17",
       "url": "https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry",
       "role": "Development-only derivation input. tools/generate-locale-profile.mjs reads its Macrolanguage relations, beside cldr-core's matching data, to derive packages/runtime/src/encompassed-languages.generated.ts. Only the generated table reaches a published package.",
-      "projectSnapshot": "data/language-subtag-registry-2026-06-14.txt",
-      "bytes": 731605,
+      "projectSnapshot": "data/language-subtag-registry-2026-09-17.txt",
+      "bytes": 731819,
       "digest": {
         "algorithm": "SHA-256",
         "encoding": "hex",
-        "value": "be1fad86a99e3a932d07b80c9b3c271ec2381a5909ce22420144e5077ab0a43a"
+        "value": "755fad43283be7b41ebe3c89ad054b6eaf928f404f9c0edb74799e0eab74beb1"
       },
       "license": {
         "name": "CC0-1.0",
@@ -194,18 +194,57 @@
       }
     },
     "ianaTimeZoneDatabase": {
-      "version": "2026c",
-      "url": "https://data.iana.org/time-zones/releases/tzdata2026c.tar.gz",
-      "role": "The time zone database release the profile is pinned to. Nothing is derived from it.",
-      "bytes": 475694,
-      "digest": {
-        "algorithm": "SHA-512",
-        "encoding": "hex",
-        "value": "e0b4b7044b66fbc27bc21d13d18063abcdf78ab58d5ba5fd64bd1a88d86e9d495f45add4d8e65bb6c40249f9c94ca29b72c8ebba8d0e4c468f2965ac77932ef0"
+      "version": "2026e",
+      "url": "https://data.iana.org/time-zones/releases/tzdata2026e.tar.gz",
+      "projectSnapshot": "data/tzdata-2026e",
+      "role": "The time zone database release the profile is pinned to. Development-only derivation input: tools/generate-locale-profile.mjs derives packages/runtime/src/time-zone-identities.generated.ts, the primary identifier of every name the release's zone.tab and backward files carry, and only that table reaches a published package.",
+      "snapshotLayout": "Two files of the release, byte for byte: `backward`, which holds the links from former and merged names, and `zone.tab`, whose TZ column says which names a country still calls its own. Nothing else in the release is read.",
+      "crossCheck": {
+        "method": "The release archive was verified against its detached OpenPGP signature before extraction, and the vendored files were taken from that verified archive and from nothing else. The signature is the tz coordinator's, the key the release announcements are signed with.",
+        "artifact": "tzdata2026e.tar.gz",
+        "artifactBytes": 481989,
+        "artifactDigest": {
+          "algorithm": "SHA-512",
+          "encoding": "hex",
+          "value": "5be2f875f73b75e5783c474bf7a6c768e433cc90283f8fc6a75e3d05bd92aec97936e8a55ccca5e880b5dacc18ba65932bab0e783e1ed5d2af4a3a4df95512be"
+        },
+        "signature": {
+          "url": "https://data.iana.org/time-zones/releases/tzdata2026e.tar.gz.asc",
+          "keyFingerprint": "7E3792A9D8ACF7D633BC1588ED97E90E62AA7E34",
+          "signer": "Paul Eggert <eggert@cs.ucla.edu>",
+          "result": "good signature"
+        }
       },
       "license": {
         "name": "Public domain",
-        "url": "https://data.iana.org/time-zones/tzdb-2026c/LICENSE"
+        "url": "https://data.iana.org/time-zones/tzdb-2026e/LICENSE",
+        "noticeFile": {
+          "path": "data/tzdata-2026e.LICENSE.txt",
+          "bytes": 252,
+          "digest": {
+            "algorithm": "SHA-256",
+            "encoding": "hex",
+            "value": "0613408568889f5739e5ae252b722a2659c02002839ad970a63dc5e9174b27cf"
+          }
+        }
+      },
+      "files": {
+        "backward": {
+          "bytes": 14051,
+          "digest": {
+            "algorithm": "SHA-256",
+            "encoding": "hex",
+            "value": "b8296b9ef1ece72d813878132c0f17e2c52b26af6004eeb9c37d049b64cd9401"
+          }
+        },
+        "zone.tab": {
+          "bytes": 18809,
+          "digest": {
+            "algorithm": "SHA-256",
+            "encoding": "hex",
+            "value": "e2e8e31c4e10f44576c79345e76060591dbb3eef6ce14e006afc8a373caa9593"
+          }
+        }
       }
     },
     "oasisXliff22Schemas": {

@@ -1038,6 +1038,120 @@ const toolkitRtlOutput = [
   '',
 ].join('\n');
 
+// The primary identifier of every time zone name the pinned release carries, by the rule ECMA-402
+// section 6.5 states over the IANA database: a Zone is primary, a Link is not, a Link that
+// zone.tab's TZ column lists is primary all the same, and UTC, Etc/UTC, Etc/GMT and GMT with
+// their links are UTC.
+//
+// The zone.tab exception is what keeps a country's zone its own. The release links Europe/Oslo to
+// Europe/Berlin because the two have agreed since 1970, and following that link would store
+// Norway's zone as Germany's; zone.tab still lists Europe/Oslo for Norway, so it stays.
+//
+// A "#= TARGET1" comment on a Link line is the release's own statement of the name the link stands
+// for, written only because some parsers mishandle a link to a link. It is read as the target, so
+// Africa/Asmera resolves to Africa/Asmara, which zone.tab lists, and not to Africa/Nairobi.
+const timeZoneSource = sourcesLock.dataSources?.ianaTimeZoneDatabase;
+assert.ok(
+  typeof timeZoneSource?.projectSnapshot === 'string' &&
+    typeof timeZoneSource?.version === 'string',
+  'standards/sources.lock.json does not pin the IANA Time Zone Database.',
+);
+const timeZoneRelease = timeZoneSource.version;
+const timeZoneRoot = resolve(
+  workspaceRoot,
+  'standards',
+  timeZoneSource.projectSnapshot,
+);
+const zoneTabNames = new Set(
+  (await readFile(resolve(timeZoneRoot, 'zone.tab'), 'utf8'))
+    .split('\n')
+    .filter((line) => line !== '' && !line.startsWith('#'))
+    .map((line) => line.split('\t')[2]),
+);
+const timeZoneLinks = new Map();
+const backwardZones = new Set();
+for (const line of (
+  await readFile(resolve(timeZoneRoot, 'backward'), 'utf8')
+).split('\n')) {
+  const link = /^Link\s+(\S+)\s+(\S+)(?:\s+#=\s+(\S+))?/u.exec(line);
+  if (link !== null) timeZoneLinks.set(link[2], link[3] ?? link[1]);
+  const zone = /^Zone\s+(\S+)/u.exec(line);
+  if (zone !== null) backwardZones.add(zone[1]);
+}
+assert.ok(
+  zoneTabNames.size >= 400 && !zoneTabNames.has(undefined),
+  'The pinned zone.tab did not yield the TZ column; a reader that found no names would call every link non-primary.',
+);
+assert.ok(
+  timeZoneLinks.size >= 200,
+  'The pinned backward file yielded ' +
+    timeZoneLinks.size +
+    ' links; the release carries more than two hundred.',
+);
+const UTC_NAMES = new Set(['UTC', 'Etc/UTC', 'Etc/GMT', 'GMT']);
+const primaryTimeZone = (name, hops = 0) => {
+  assert.ok(hops < 4, 'The links from ' + name + ' do not end.');
+  if (UTC_NAMES.has(name)) return 'UTC';
+  if (zoneTabNames.has(name) || !timeZoneLinks.has(name)) return name;
+  return primaryTimeZone(timeZoneLinks.get(name), hops + 1);
+};
+const timeZoneEntries = [
+  ...[...UTC_NAMES]
+    .filter((name) => name !== 'UTC')
+    .map((name) => [name, 'UTC']),
+  ...[...zoneTabNames].map((name) => [name, name]),
+  ...[...backwardZones].map((name) => [name, name]),
+  ...[...timeZoneLinks.keys()]
+    .filter((name) => !zoneTabNames.has(name))
+    .map((name) => [name, primaryTimeZone(name)]),
+].sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0));
+assert.equal(
+  new Set(timeZoneEntries.map(([name]) => name.toLowerCase())).size,
+  timeZoneEntries.length,
+  'Two time zone names differ only by case, and the table is read without it.',
+);
+for (const [name, primary] of timeZoneEntries) {
+  assert.ok(
+    /^[\w+\-/]+$/u.test(name) && /^[\w+\-/]+$/u.test(primary),
+    'The time zone name ' +
+      name +
+      ' or ' +
+      primary +
+      ' holds a character the table uses as a separator.',
+  );
+}
+const timeZoneLinkCount = timeZoneEntries.filter(
+  ([name, primary]) => name !== primary,
+).length;
+const timeZoneOutput = [
+  '/** Generated from the IANA Time Zone Database ' +
+    timeZoneRelease +
+    ' by tools/generate-locale-profile.mjs. */',
+  'export const TIME_ZONE_IDENTITIES_VERSION =',
+  "  'tzdata-" + timeZoneRelease + "/equator-time-zone-1' as const;",
+  '',
+  '/**',
+  ' * Every name the release gives a time zone, separated by spaces. A name that is not its own',
+  ' * primary identifier is followed by a greater-than sign and the primary it stands for.',
+  ' */',
+  '// prettier-ignore',
+  'export const TIME_ZONE_IDENTITIES =',
+  '  ' +
+    JSON.stringify(
+      timeZoneEntries
+        .map(([name, primary]) =>
+          name === primary ? name : name + '>' + primary,
+        )
+        .join(' '),
+    ) +
+    ';',
+  '',
+].join('\n');
+const timeZoneOutputPath = resolve(
+  workspaceRoot,
+  'packages/runtime/src/time-zone-identities.generated.ts',
+);
+
 const toolkitRtlOutputPath = resolve(
   workspaceRoot,
   'packages/toolkit/src/rtl-scripts.generated.ts',
@@ -1111,8 +1225,13 @@ if (process.argv.includes('--check')) {
       'The checked-in Equator locale alias table is stale; run pnpm run generate:locale-profile.',
     );
   }
+  assert.equal(
+    await readFile(timeZoneOutputPath, 'utf8'),
+    timeZoneOutput,
+    'The checked-in Equator time zone identity table is stale; run pnpm run generate:locale-profile.',
+  );
   console.log(
-    `Verified ${rtlScripts.length} RTL scripts, ${rtlRanges.length} strong right-to-left code point ranges derived from Unicode 17.0.0 Bidi_Class, agreeing with the CLDR script data on every letter in Unicode and dropping ${droppedByBidiClass.length} context-resolved code points and no strong one, and cardinal plural categories for ${Object.keys(pluralCategories).length} languages and ordinal plural categories for ${Object.keys(ordinalCategories).length} languages from cldr-core 48.2.0, and ${encompassedPairs} encompassed-language pairs over ${Object.keys(encompassed).length} language subtags, every one ranked by CLDR at ${widestKept} or closer where two languages it does not relate stand at ${unrelatedDistance._distance} and its default matching threshold is ${DEFAULT_THRESHOLD}; likely-script resolution remains native Intl under the tested platform matrix; and ${Object.keys(endonyms).length} endonyms from cldr-localenames-full ${localeNamesManifest.version}, agreeing with this platform's ICU on ${endonymsComparedToIcu.length - endonymsDisagreeingWithIcu.length} of the ${endonymsComparedToIcu.length} locales it has display names for; and ${Object.keys(orderedParentLocales).length} declared parent locales from cldr-core ${manifest.version}, ${undParents} of which name root; and ${aliasRules.length} locale alias rules, ${discardedAliasRules} discarded as UTS #35 Annex C discards them, with ${Object.keys(likelyRegions).length} likely regions for the territory exception.`,
+    `Verified ${rtlScripts.length} RTL scripts, ${rtlRanges.length} strong right-to-left code point ranges derived from Unicode 17.0.0 Bidi_Class, agreeing with the CLDR script data on every letter in Unicode and dropping ${droppedByBidiClass.length} context-resolved code points and no strong one, and cardinal plural categories for ${Object.keys(pluralCategories).length} languages and ordinal plural categories for ${Object.keys(ordinalCategories).length} languages from cldr-core 48.2.0, and ${encompassedPairs} encompassed-language pairs over ${Object.keys(encompassed).length} language subtags, every one ranked by CLDR at ${widestKept} or closer where two languages it does not relate stand at ${unrelatedDistance._distance} and its default matching threshold is ${DEFAULT_THRESHOLD}; likely-script resolution remains native Intl under the tested platform matrix; and ${Object.keys(endonyms).length} endonyms from cldr-localenames-full ${localeNamesManifest.version}, agreeing with this platform's ICU on ${endonymsComparedToIcu.length - endonymsDisagreeingWithIcu.length} of the ${endonymsComparedToIcu.length} locales it has display names for; and ${Object.keys(orderedParentLocales).length} declared parent locales from cldr-core ${manifest.version}, ${undParents} of which name root; and ${aliasRules.length} locale alias rules, ${discardedAliasRules} discarded as UTS #35 Annex C discards them, with ${Object.keys(likelyRegions).length} likely regions for the territory exception; and ${timeZoneEntries.length} time zone names from tzdata ${timeZoneRelease}, ${timeZoneLinkCount} of them resolved to another primary identifier.`,
   );
 } else {
   let current;
@@ -1183,5 +1302,15 @@ if (process.argv.includes('--check')) {
     if (currentAliases !== localeAliasOutput) {
       await writeFile(path, localeAliasOutput, 'utf8');
     }
+  }
+
+  let currentTimeZones;
+  try {
+    currentTimeZones = await readFile(timeZoneOutputPath, 'utf8');
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
+  if (currentTimeZones !== timeZoneOutput) {
+    await writeFile(timeZoneOutputPath, timeZoneOutput, 'utf8');
   }
 }

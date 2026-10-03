@@ -144,7 +144,7 @@ export const stageSelfTests = Object.freeze({
       'pnpm-lock.yaml',
       'LICENSE',
       'standards/sources.lock.json',
-      'standards/data/language-subtag-registry-2026-06-14.txt',
+      'standards/data/language-subtag-registry-2026-09-17.txt',
       'dist/runtime',
       'dist/toolkit',
       'packages/runtime/src',
@@ -356,11 +356,11 @@ export const stageSelfTests = Object.freeze({
         plant: (root) =>
           editText(
             root,
-            'standards/data/language-subtag-registry-2026-06-14.txt',
+            'standards/data/language-subtag-registry-2026-09-17.txt',
             (text) => `${text}%%\n`,
           ),
         refusal:
-          /language-subtag-registry-2026-06-14\.txt is \d+ bytes, the lock says/u,
+          /language-subtag-registry-2026-09-17\.txt is \d+ bytes, the lock says/u,
       },
       {
         id: 'conformance-suite-edited',
@@ -413,7 +413,7 @@ export const stageSelfTests = Object.freeze({
     args: ['--check'],
     inputs: [
       'standards/sources.lock.json',
-      'standards/data/language-subtag-registry-2026-06-14.txt',
+      'standards/data/language-subtag-registry-2026-09-17.txt',
       'standards/data/DerivedBidiClass-17.0.0.txt',
       'packages/runtime/core/src/locale-profile.generated.ts',
       'packages/runtime/core/src/encompassed-languages.generated.ts',
@@ -423,8 +423,28 @@ export const stageSelfTests = Object.freeze({
       'packages/toolkit/src/rtl-scripts.generated.ts',
       'packages/runtime/core/src/locale-aliases.generated.ts',
       'packages/toolkit/src/locale-aliases.generated.ts',
+      'standards/data/tzdata-2026e',
+      'packages/runtime/src/time-zone-identities.generated.ts',
     ],
     plants: [
+      {
+        id: 'time-zone-link-not-the-pinned-one',
+        plant: plantText(
+          'packages/runtime/src/time-zone-identities.generated.ts',
+          'Asia/Calcutta>Asia/Kolkata',
+          'Asia/Calcutta>Asia/Dhaka',
+        ),
+        refusal: /The checked-in Equator time zone identity table is stale/u,
+      },
+      {
+        id: 'zone-a-country-calls-its-own-read-as-a-link',
+        plant: plantText(
+          'standards/data/tzdata-2026e/zone.tab',
+          'Europe/Oslo',
+          'Europe/Oslo_',
+        ),
+        refusal: /The checked-in Equator time zone identity table is stale/u,
+      },
       {
         id: 'alias-rule-not-the-pinned-one',
         plant: plantText(

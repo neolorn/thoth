@@ -1796,6 +1796,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/person-names.test.ts',
   },
   {
+    id: 'time-zone-identity-taken-from-the-host',
+    invariant:
+      "A time zone's stored identity is the pinned time-zone database's primary identifier, whatever spelling the host prefers.",
+    source: 'packages/runtime/src/formatting.ts',
+    find: '      id: pinnedTimeZone(id) ?? pinnedTimeZone(host) ?? host,',
+    replace: '      id: host,',
+    caughtBy: 'packages/runtime/test/time-zone-identity.test.ts',
+  },
+  {
     id: 'formatter-cache-key-omits-locale',
     invariant:
       "A cached number formatter is keyed on its full locale tag, so a request for other digits is never handed another locale's formatter.",

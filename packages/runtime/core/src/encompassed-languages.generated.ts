@@ -1,6 +1,6 @@
-/** Generated from cldr-core 48.2.0 and the IANA registry of 2026-06-14 by tools/generate-locale-profile.mjs. */
+/** Generated from cldr-core 48.2.0 and the IANA registry of 2026-09-17 by tools/generate-locale-profile.mjs. */
 export const ENCOMPASSED_LANGUAGE_PROFILE =
-  'cldr-48.2+iana-2026-06-14/equator-encompassed-1' as const;
+  'cldr-48.2+iana-2026-09-17/equator-encompassed-1' as const;
 
 /**
  * How far apart two language subtags are, for subtags that are the same language written twice.
