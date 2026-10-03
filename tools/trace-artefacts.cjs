@@ -19,7 +19,7 @@
  * here right up to the point where it corrupted a consumer install.
  *
  * **Loaded with `--require` through `NODE_OPTIONS`, so it reaches child processes too.** A stage is
- * `pnpm run <id>`, which is a shell, which is `pnpm`, which is node, which spawns `ngc`, `vitest`,
+ * `pnpm run <id>`, which is a shell, which is `pnpm`, which starts node, which spawns `ngc`, `vitest`,
  * `tsc` and more node. Patching `fs` in this process alone would observe almost nothing; the
  * environment variable is what makes the measurement cover the work.
  *
@@ -48,7 +48,8 @@ const workspaceRoot = process.env['EQUATOR_TRACE_ROOT'];
 /**
  * The launcher is not the stage, and it was being measured as one.
  *
- * A stage is spawned as `pnpm run <id>`, so the first node process in the tree is pnpm itself, and
+ * A stage is spawned as `pnpm run <id>`. A pnpm reached through a script entry, Corepack's or an
+ * npm shim's, is the first node process in the tree, and
  * pnpm reads `packages/runtime/package.json` and `packages/toolkit/package.json` to resolve the
  * workspace before it starts anything. Traced, that arrives as the stage reading `source:packages`:
  * an edge the stage does not have, from work it did not do. It is invisible in the twenty-seven
@@ -62,16 +63,29 @@ const workspaceRoot = process.env['EQUATOR_TRACE_ROOT'];
  * an undeclared read on others, from nothing they did differently. Two opposite verdicts,
  * neither about the stage.
  *
- * **A flag consumed by the first process that sees it.** `verify.mjs` sets it once per stage; this
- * runs in the launcher, deletes it from the environment before the launcher spawns anything, and
- * declines to instrument itself. Everything the launcher starts is the stage and is traced as
- * before, including the `pnpm install` a stage runs against a consumer tree, which is a real write
- * by a real stage. Identifying the launcher by its own script path was rejected: a package manager's
- * entry lives wherever it was installed, and a rule that reads correctly under corepack and silently
- * stops matching under a local install is a check that fails open.
+ * **A flag consumed by the first process that sees it.** `verify.mjs` sets it once per stage; the
+ * first node process deletes it from the environment before it spawns anything, and declines to
+ * instrument itself when it is a launcher. Everything the launcher starts is the stage and is
+ * traced, including the `pnpm install` a stage runs against a consumer tree, which is a real write
+ * by a real stage.
+ *
+ * **The first process is a launcher only when its script lies outside the traced tree.** pnpm's own
+ * executable is native and loads nothing here, so under it the first node process is the stage's
+ * script, which lies inside the tree and has to be measured. A package manager's script entry lives
+ * wherever it was installed, so the rule names where the stage lives instead: one installed inside
+ * the tree would be traced, and its workspace scan would turn the run red rather than pass unseen.
  */
-const launcher = process.env['EQUATOR_TRACE_LAUNCHER'] === '1';
-if (launcher) delete process.env['EQUATOR_TRACE_LAUNCHER'];
+const first = process.env['EQUATOR_TRACE_LAUNCHER'] === '1';
+if (first) delete process.env['EQUATOR_TRACE_LAUNCHER'];
+const insideTree = (script) => {
+  const relative = path.relative(path.resolve(workspaceRoot), script);
+  return !relative.startsWith('..') && !path.isAbsolute(relative);
+};
+const launcher =
+  first &&
+  workspaceRoot !== undefined &&
+  process.argv[1] !== undefined &&
+  !insideTree(process.argv[1]);
 
 if (!launcher && traceFile !== undefined && workspaceRoot !== undefined) {
   install(traceFile, workspaceRoot);

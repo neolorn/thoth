@@ -454,10 +454,10 @@ const runStep = (id, timeoutSeconds, root, processors) =>
       env: {
         ...process.env,
         NODE_OPTIONS: nodeOptions,
-        // Read and removed by the tracer in the first node process it reaches, which is `pnpm`
-        // itself. Its workspace scan is the runner's work, not the stage's, and attributing it to
-        // the stage gave three stages an undeclared read of `source:packages` on the runs where
-        // pnpm happened not to skip that scan.
+        // Read and removed by the tracer in the first node process it reaches. When that is a
+        // script entry of `pnpm`, its workspace scan is the runner's work, not the stage's, and
+        // attributing it to the stage gave three stages an undeclared read of `source:packages` on
+        // the runs where pnpm happened not to skip that scan.
         EQUATOR_TRACE_LAUNCHER: '1',
         // The stage's share of the processor budget, in the settings its runners size themselves by.
         ...runnerEnvironment(processors),

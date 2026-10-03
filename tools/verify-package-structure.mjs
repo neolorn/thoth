@@ -135,7 +135,7 @@ const assertManifestTargets = async (manifest, packageRoot, label) => {
 };
 
 const workspacePackage = await readJson(resolve(workspaceRoot, 'package.json'));
-assert.equal(workspacePackage.packageManager, 'pnpm@11.1.2');
+assert.equal(workspacePackage.packageManager, 'pnpm@12.9.1');
 // Literals, deliberately: this is a tripwire against an accidental `pnpm update` moving the
 // development row, so reading the versions back out of the manifest would assert nothing. Angular's
 // framework and tooling ship on separate patch trains, so both halves are pinned: pinning only
@@ -168,7 +168,7 @@ const lockfile = await readFile(
 assert.match(
   lockfile,
   /^settings:\r?\n\s+autoInstallPeers: false$/mu,
-  'The lockfile was not generated with the pnpm 11 peer policy',
+  'The lockfile was not generated with autoInstallPeers off',
 );
 const standardsLock = await readJson(
   resolve(workspaceRoot, 'standards/sources.lock.json'),

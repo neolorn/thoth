@@ -106,17 +106,21 @@ if (
   process.exit(rerun.status ?? 1);
 }
 
-// The package manager this process was started by, run on this process's Node. Its command shim
-// starts the machine's default Node whatever the search path says, which on a row for another Node
-// line would install and build on the wrong one.
+// The package manager this process was started by, rather than whichever one a search of the path
+// finds. pnpm is a native executable and starts every script on the first Node the search path
+// holds, which on a row for another Node line is the row's: the rerun above put it there. A pnpm
+// reached through a script entry is a Node program, and runs on this process's Node.
 const pnpmEntry = process.env.npm_execpath;
 assert.ok(
   pnpmEntry !== undefined && pnpmEntry !== '',
   'npm_execpath is not set, so there is no package manager to run the consumer with. Start this through "pnpm run", as the gate does.',
 );
+const pnpmCommand = /\.[cm]?js$/u.test(pnpmEntry)
+  ? [process.execPath, [pnpmEntry]]
+  : [pnpmEntry, []];
 
 const spawnPnpm = (args, env = {}) =>
-  spawnSync(process.execPath, [pnpmEntry, ...args], {
+  spawnSync(pnpmCommand[0], [...pnpmCommand[1], ...args], {
     cwd: consumerRoot,
     encoding: 'utf8',
     env: { ...process.env, CI: 'true', ...env },
