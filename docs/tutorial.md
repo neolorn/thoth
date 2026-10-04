@@ -189,7 +189,7 @@ Create `src/app/hero.html`:
 ```html src/app/hero.html
 <p>{{ messages.heroTagline | localize }}</p>
 
-<div [localizedLabel]="messages.asset.alt"></div>
+<div role="img" [localizedLabel]="messages.asset.alt"></div>
 
 <localized-message [handle]="messages.learnMore" />
 
@@ -197,7 +197,7 @@ Create `src/app/hero.html`:
 ```
 
 `LocalizePipe` renders a message that is text. `LocalizedLabel` puts one in an attribute that cannot
-hold markup. `LocalizedMessage` renders a message that has a slot in it, and `helpBindings` states
+hold markup, here the `aria-label` that names the image. `LocalizedMessage` renders a message that has a slot in it, and `helpBindings` states
 what the `link` slot becomes. [How to render a message](how-to/render-messages.md) covers all four.
 
 ## Write the routes

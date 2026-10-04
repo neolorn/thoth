@@ -91,11 +91,12 @@ The alt text is a message like any other, authored in the catalog beside everyth
 reads:
 
 ```html excerpt src/app/hero.html
-<div [localizedLabel]="messages.asset.alt"></div>
+<div role="img" [localizedLabel]="messages.asset.alt"></div>
 ```
 
-`localizedLabel` writes the attribute the element takes, which is
-[How to render a message](render-messages.md).
+`localizedLabel` writes `aria-label`, which is the text alternative of an element with the `img`
+role. On an `img` element, add `localizedLabelAttribute="alt"` and it writes `alt`. Which elements
+can carry the label is in [How to render a message](render-messages.md).
 
 ## Related
 

@@ -23,8 +23,24 @@ An `alt`, a `title` and an `aria-label` have to be text and cannot hold markup. 
 puts a message there:
 
 ```html excerpt src/app/hero.html
-<div [localizedLabel]="messages.asset.alt"></div>
+<div role="img" [localizedLabel]="messages.asset.alt"></div>
 ```
+
+The directive writes `aria-label` unless `localizedLabelAttribute` names another of its seven
+attributes: `aria-placeholder`, `aria-roledescription`, `aria-valuetext`, `alt`, `placeholder` or
+`title`.
+
+`aria-label` names an element only where the element's role allows a name, which is WAI-ARIA 1.2
+section 5.2.8.6. Put the directive on an element that has such a role:
+
+- a landmark or section: `nav`, `main`, `section`, `article`, `aside`, `form`;
+- a control: `button`, `a` with an `href`, `input`, `select`, `textarea`, `summary`;
+- an `img`, a `figure`, a `table`, a list, a heading, a `dialog`, `details` or a `fieldset`;
+- any element with an explicit `role` that allows a name, as the `div` above has.
+
+A `div` or a `span` with no `role` cannot be named, and neither can `p`, `strong`, `em`, `code`,
+`pre`, `label`, `legend`, `caption` or `figcaption`. An accessibility audit reports an `aria-label`
+there as a prohibited attribute.
 
 ## Render a message with structure in it
 

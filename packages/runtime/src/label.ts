@@ -66,8 +66,15 @@ function isLabelAttribute(value: string): value is LabelAttribute {
  * is a string a translator supplied. Angular sanitizes `[attr.href]` already, so what is left is
  * how small that edit is and who wrote the string, which is not the application itself.
  *
- *     <div class="hero__actions" [localizedLabel]="messages.hero.actionsAriaLabel"></div>
+ *     <nav [localizedLabel]="messages.navigation.label"></nav>
  *     <input [localizedLabel]="messages.search.hint" localizedLabelAttribute="placeholder" />
+ *
+ * The default attribute is `aria-label`, and WAI-ARIA 1.2 section 5.2.8.6 lets it name an element
+ * only where the element's role allows a name. A landmark, a control, an `img`, a `figure`, a
+ * table or a list has such a role. A `div` or a `span` has no role, and the roles of text-level
+ * elements such as `p`, `strong`, `em` and `code` prohibit a name, so the host there needs an
+ * explicit `role` that allows one, such as `group` or `img`. The other six attributes are for the
+ * elements HTML or ARIA defines them on: `alt` on an `img`, `placeholder` on a text field.
  *
  * The attribute is written imperatively rather than through a host binding on every supported
  * name, so an element that already carries a static `alt` or `title` keeps it. A host binding
@@ -105,7 +112,10 @@ export class LocalizedLabel<
     { alias: 'localizedLabelInputs' },
   );
 
-  /** Which of the four attributes to write. The default is the one that is read aloud. */
+  /**
+   * Which of the seven attributes to write. The default, `aria-label`, names the host, so the host
+   * needs a role that allows a name.
+   */
   readonly attribute = input<LabelAttribute>('aria-label', {
     alias: 'localizedLabelAttribute',
   });

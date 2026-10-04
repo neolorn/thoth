@@ -604,11 +604,11 @@ function collated(context: FormattingContext): string {
       <p data-exercise="directive:LocalizedMessage">
         <localized-message [handle]="messages.learnMore" />
       </p>
-      <p
+      <section
         data-exercise="directive:LocalizedLabel"
         data-exercise-attribute="aria-label"
         [localizedLabel]="messages.appTitle"
-      ></p>
+      ></section>
       <p data-exercise="localizedDecimal">
         {{ values.decimal | localizedDecimal: options.decimal }}
       </p>
