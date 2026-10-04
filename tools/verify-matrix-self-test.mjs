@@ -99,6 +99,10 @@ it('fails once and passes on retry', { retry: 1 }, () => {
 });
 `;
 
+// The column a planted claim fills: the suites planted below run on this process's Node, and the
+// matrix names a Node column by its line.
+const ownNode = `node:${process.versions.node.split('.')[0]}`;
+
 const CONFIG = `import { capabilityClaimsReporters } from '../../tools/capability-evidence.mjs';
 
 export default { test: { include: ['planted.test.mjs'], reporters: capabilityClaimsReporters() } };
@@ -246,7 +250,7 @@ try {
   // The green every red below is measured against.
   const baseline = evaluate({});
   assert.ok(
-    baseline.exercised.has('format:formatMoney @ node:24'),
+    baseline.exercised.has(`format:formatMoney @ ${ownNode}`),
     'The planted good claim did not fill its cell, so no red below would mean anything.',
   );
   assert.deepEqual(
@@ -264,8 +268,8 @@ try {
         'format:formatList',
       ]) {
         assert.ok(
-          isRed(baseline, row, 'node:24'),
-          `${row} @ node:24 was filled by a claim that must not count.`,
+          isRed(baseline, row, ownNode),
+          `${row} @ ${ownNode} was filled by a claim that must not count.`,
         );
       }
     },
@@ -283,7 +287,7 @@ try {
       ],
     });
     assert.ok(
-      isRed(result, 'format:formatMoney', 'node:24'),
+      isRed(result, 'format:formatMoney', ownNode),
       'Taking the claim away left its cell filled.',
     );
   });
@@ -294,13 +298,13 @@ try {
         {
           id: 'planted',
           rows: ['format:formatMoney'],
-          columns: ['node:24'],
+          columns: [ownNode],
           reason: 'planted',
         },
       ],
     });
     assert.ok(
-      finding(result, 'stale-reason', 'format:formatMoney @ node:24'),
+      finding(result, 'stale-reason', `format:formatMoney @ ${ownNode}`),
       'A reason over an exercised cell was accepted.',
     );
   });
@@ -311,7 +315,7 @@ try {
         {
           id: 'planted',
           rows: ['format:nothing'],
-          columns: ['node:24'],
+          columns: [ownNode],
           reason: 'planted',
         },
       ],
@@ -420,7 +424,7 @@ try {
       `A composable export added to what is published has no row ${row}.`,
     );
     assert.ok(
-      isRed(evaluate({ rows: grown }), row, 'node:24'),
+      isRed(evaluate({ rows: grown }), row, ownNode),
       `The row ${row} was derived and its cell was not red.`,
     );
   });
@@ -478,7 +482,7 @@ try {
       `An optional member added to RouteLocalizationOptions has no row ${row}.`,
     );
     assert.ok(
-      isRed(evaluate({ rows: grown }), row, 'node:24'),
+      isRed(evaluate({ rows: grown }), row, ownNode),
       `The row ${row} was derived and its cell was not red.`,
     );
   });

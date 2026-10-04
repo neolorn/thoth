@@ -50,7 +50,28 @@ function valueNames(text) {
       if (name && /^[A-Za-z_$][\w$]*$/u.test(name)) names.add(name);
     }
   }
+  // A packager writes an export either in a closing list, read above, or on the declaration
+  // itself, and which one is its choice.
+  for (const [, name] of text.matchAll(
+    /^export declare (?:abstract class|class|const|enum|function|let|var) ([A-Za-z_$][\w$]*)/gmu,
+  )) {
+    names.add(name);
+  }
   return names;
+}
+
+/**
+ * The runtime's declarations with every string in one quote.
+ *
+ * The readers below match a literal type and an import specifier between single quotes, and which
+ * quote a declaration file is written with is the packager's choice. No name or literal Equator
+ * publishes contains a quote of either kind, so respelling them loses nothing a reader asks for.
+ */
+function runtimeDeclarationsInOneQuote() {
+  return runtimeDeclarations().map((entry) => ({
+    ...entry,
+    text: entry.text.replaceAll('"', "'"),
+  }));
 }
 
 /** A declared function's parameter list, found by balancing parentheses as `returnTypeOf` does. */
@@ -615,7 +636,7 @@ const readManifest = (path) =>
 /** What the rows are derived from, read from the built packages. */
 export function readPublished() {
   return {
-    runtime: runtimeDeclarations(),
+    runtime: runtimeDeclarationsInOneQuote(),
     toolkit: toolkitDeclaration(),
     runtimeManifest: readManifest('dist/runtime/package.json'),
     toolkitManifest: readManifest('dist/toolkit/package.json'),
@@ -714,12 +735,12 @@ export function rowsFrom({
 
   for (const { text: each } of runtime) {
     for (const [, className, pipe] of each.matchAll(
-      /ɵɵPipeDeclaration<(\w+), "([^"]+)"/gu,
+      /ɵɵPipeDeclaration<(\w+), '([^']+)'/gu,
     )) {
       add('pipe', pipe, [named(pipe, className)]);
     }
     for (const [, className, selector] of each.matchAll(
-      /ɵɵ(?:Directive|Component)Declaration<(\w+)(?:<[^>]*>)?, "([^"]+)"/gu,
+      /ɵɵ(?:Directive|Component)Declaration<(\w+)(?:<[^>]*>)?, '([^']+)'/gu,
     )) {
       const tokens = [
         ...new Set(
@@ -869,7 +890,7 @@ export function deriveRows() {
 /** What the columns are derived from: the built packages and the gate's own declarations. */
 export function readDeclared() {
   return {
-    runtime: runtimeDeclarations(),
+    runtime: runtimeDeclarationsInOneQuote(),
     runtimeManifest: readManifest('dist/runtime/package.json'),
     developmentVersion: readFileSync(
       resolve(workspaceRoot, '.node-version'),
@@ -877,7 +898,7 @@ export function readDeclared() {
     ).trim(),
     engines: playwrightEngines(),
     profiles: consumerProfiles,
-    renderModes: relayedRenderModes(runtimeDeclarations()),
+    renderModes: relayedRenderModes(runtimeDeclarationsInOneQuote()),
   };
 }
 
