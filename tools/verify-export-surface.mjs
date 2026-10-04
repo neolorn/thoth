@@ -41,11 +41,10 @@ const workspaceRoot = inputsRoot();
  * a freed slot under a ceiling. An entry that stops being a candidate must be removed, and the gate
  * says so rather than letting the list rot into a second copy of the surface.
  *
- * One name, published on purpose and invisible to this corpus for a reason stated here rather
- * than deferred. A name reached through a signature a consumer binds, such as
- * `LabelAttribute` or `LocaleUrlResolutionSetup`, does not belong on this list: an occurrence
- * proxy cannot see that use, and the answer is a gate that can rather than an entry admitting it
- * cannot.
+ * Each name is published on purpose and invisible to this corpus for a reason stated here rather
+ * than deferred. A name reached through a signature a consumer binds, such as `LabelAttribute`,
+ * does not belong on this list: an occurrence proxy cannot see that use, and the answer is a gate
+ * that can rather than an entry admitting it cannot.
  */
 const BASELINE = Object.freeze({
   // The plugin half of the extension contract: a plugin calls this to tell the compiler about the
@@ -56,6 +55,18 @@ const BASELINE = Object.freeze({
   // rather than the builder.
   extensionDescriptor:
     'toolkit API; the plugin surface the extension guide documents',
+  // The router entry point imports these two from the primary one, and one entry point of a
+  // package reaches another only through what that one publishes. The corpus reads what uses the
+  // packages, not the packages, so it does not see that import.
+  DocumentLocalization:
+    'runtime API; imported by the router entry point from the primary one',
+  localizedRouteAddresses:
+    'runtime API; imported by the router entry point from the primary one',
+  // No published signature takes this type: `withRouting` declares the same two fields itself.
+  // Withdrawing a published name breaks a consumer that wrote it, so it stays for the length of
+  // the major version.
+  LocaleUrlResolutionSetup:
+    'runtime type; named by no signature and withdrawn only with a major version',
 });
 
 const CORPUS = Object.freeze([

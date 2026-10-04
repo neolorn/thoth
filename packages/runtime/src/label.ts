@@ -1,6 +1,7 @@
 import {
   Directive,
   ElementRef,
+  type InputSignal,
   Renderer2,
   computed,
   effect,
@@ -112,13 +113,18 @@ export class LocalizedLabel<
     { alias: 'localizedLabelInputs' },
   );
 
+  // Annotated so the published declaration names `LabelAttribute`; inferred, it carries the union
+  // written out, and a consumer holding the attribute in a field has no type to give it.
   /**
    * Which of the seven attributes to write. The default, `aria-label`, names the host, so the host
    * needs a role that allows a name.
    */
-  readonly attribute = input<LabelAttribute>('aria-label', {
-    alias: 'localizedLabelAttribute',
-  });
+  readonly attribute: InputSignal<LabelAttribute> = input<LabelAttribute>(
+    'aria-label',
+    {
+      alias: 'localizedLabelAttribute',
+    },
+  );
 
   private readonly text = computed(
     () =>

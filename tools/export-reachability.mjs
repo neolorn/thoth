@@ -141,6 +141,11 @@ export function reachablePublishedNames(namedByCorpus) {
   const enqueue = (symbol) => {
     const resolved = resolveAlias(symbol);
     const declarations = resolved.declarations ?? [];
+    // A namespace import of an entry point resolves to the file. Walking a file visits every
+    // statement in it, the export list included, so one qualified name anywhere would reach all
+    // that the entry point publishes. The name after the qualifier is an identifier of its own and
+    // is followed as one.
+    if (declarations.some(ts.isSourceFile)) return;
     if (
       !declarations.some((declaration) =>
         ours.has(declaration.getSourceFile().fileName),
