@@ -19,7 +19,7 @@
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { rmSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -134,9 +134,28 @@ function suiteVerdict(suite, caughtWhen) {
       'node_modules/.vite/assurance-report.json',
     );
     rmSync(reportPath, { force: true });
+    // The consumer's own runner configuration, stopping at the first failed test. One failure is a
+    // catch, and an injection that leaves every locale change waiting fails each test only at its
+    // deadline: run to the end, that suite outlasts the bound on this run and is reported as
+    // unmeasured. Written after the refresh, which removes `node_modules`.
+    const runnerConfigPath = resolve(
+      consumerRoot,
+      'node_modules/.vite/assurance.vitest.config.mts',
+    );
+    mkdirSync(dirname(runnerConfigPath), { recursive: true });
+    writeFileSync(
+      runnerConfigPath,
+      "import base from '../../vitest.config.mts';\n\n" +
+        'export default { ...base, test: { ...base.test, bail: 1 } };\n',
+    );
     const result = run(
       'pnpm',
-      ['test', '--reporters=json', `--output-file=${reportPath}`],
+      [
+        'test',
+        '--reporters=json',
+        `--output-file=${reportPath}`,
+        `--runner-config=${runnerConfigPath}`,
+      ],
       consumerRoot,
       consumerSpecsEnvironment(),
     );
