@@ -97,6 +97,55 @@ assert.ok(
 // the formatting the consumer declares for each locale that departs from CLDR.
 const { sourceLocale, formatting: configuredFormatting = {} } =
   consumerConfiguration;
+// The imports below take this process's failure reporting away, and this is where the harness keeps
+// it.
+//
+// The consumer's server bundle calls Angular's `attachNodeGlobalErrorHandlers`, which registers
+// `uncaughtException` and `unhandledRejection` listeners that write to `console.error` and return.
+// Node suppresses its own default (print the error, exit non-zero) as soon as any listener is
+// registered for those events. So from the first of those imports onwards, without listeners of
+// this file's own, every error that escapes is printed in full and the process exits 0: a later
+// import that finds no build, an assertion outside the `try` further down, a throw inside the
+// static file server's request handler, a promise nobody awaited. The pass that follows is
+// indistinguishable from a real one. The listeners are registered before the first import and not
+// after the last, because the imports are several and each one after the first can fail.
+//
+// Note what this cannot be replaced by. Moving the assertions inside a `try` would cover the
+// assertions and not the callbacks, and the next `createServer` handler or page listener would be
+// outside it again. The property that has to hold is narrower and stronger than any block boundary:
+// an error this file did not choose to handle ends the process non-zero. Listeners run in
+// registration order, so these run before Angular's and end the process. `fetch` reports every
+// network failure as a bare `TypeError: fetch failed` and puts the reason (a refused connection and
+// the port it was refused on, a socket hang up, a DNS failure) in `cause`. Printing the top error
+// alone turns a specific failure into a sentence that identifies nothing, which is the same shape
+// of non-answer the bounds in this file exist to remove.
+const describeError = (error) => {
+  const parts = [];
+  let current = error;
+  for (let depth = 0; current !== undefined && current !== null && depth < 8;) {
+    parts.push(
+      current instanceof Error
+        ? (current.stack ?? current.message)
+        : String(current),
+    );
+    current = current instanceof Error ? current.cause : undefined;
+    depth += 1;
+  }
+  return parts.join('\ncaused by: ');
+};
+
+const failEscaped = (event) => (error) => {
+  process.stderr.write(
+    `Equator browser assurance failed.\nEscaped as an ${event}, outside every handler in this file.\n${describeError(error)}\n`,
+  );
+  // `process.exit` rather than `process.exitCode`, because an escape can leave the static file
+  // server or a browser holding the event loop open, and a gate that fails by hanging is no better
+  // than one that fails by exiting 0.
+  process.exit(1);
+};
+process.on('uncaughtException', failEscaped('uncaught exception'));
+process.on('unhandledRejection', failEscaped('unhandled rejection'));
+
 // What is deployed: one build, or under a policy that puts each locale on an origin of its own, one
 // build for each of those origins, which is how the consumer stage built them. A request reaches
 // the build its Host names, as it would behind a real deployment's routing.
@@ -199,57 +248,9 @@ function prerenderedRouteViews(deployment) {
   );
 }
 
-// Those imports just took this process's failure reporting away, and this is where the harness takes
-// it back.
-//
-// The consumer's server bundle calls Angular's `attachNodeGlobalErrorHandlers`, which registers
-// `uncaughtException` and `unhandledRejection` listeners that write to `console.error` and return.
-// Node suppresses its own default (print the error, exit non-zero) as soon as any listener is
-// registered for those events. So from the line above onwards, without listeners of this file's
-// own, every error that escapes is printed in full and the process exits 0: an assertion outside
-// the `try` further down, a throw inside the static file server's request handler, a promise nobody
-// awaited. The pass that follows is indistinguishable from a real one.
-//
-// Note what this cannot be replaced by. Moving the assertions inside a `try` would cover the
-// assertions and not the callbacks, and the next `createServer` handler or page listener would be
-// outside it again. The property that has to hold is narrower and stronger than any block boundary:
-// an error this file did not choose to handle ends the process non-zero. Listeners run in
-// registration order and none can cancel another, so these run after Angular's: the message is
-// printed twice, once by each, and then the process ends non-zero. `fetch` reports every network
-// failure as a bare `TypeError: fetch failed` and puts the reason (a refused connection and the
-// port it was refused on, a socket hang up, a DNS failure) in `cause`. Printing the top error alone
-// turns a specific failure into a sentence that identifies nothing, which is the same shape of
-// non-answer the bounds in this file exist to remove.
-const describeError = (error) => {
-  const parts = [];
-  let current = error;
-  for (let depth = 0; current !== undefined && current !== null && depth < 8;) {
-    parts.push(
-      current instanceof Error
-        ? (current.stack ?? current.message)
-        : String(current),
-    );
-    current = current instanceof Error ? current.cause : undefined;
-    depth += 1;
-  }
-  return parts.join('\ncaused by: ');
-};
-
-const failEscaped = (event) => (error) => {
-  process.stderr.write(
-    `Equator browser assurance failed.\nEscaped as an ${event}, outside every handler in this file.\n${describeError(error)}\n`,
-  );
-  // `process.exit` rather than `process.exitCode`, because an escape can leave the static file
-  // server or a browser holding the event loop open, and a gate that fails by hanging is no better
-  // than one that fails by exiting 0.
-  process.exit(1);
-};
-process.on('uncaughtException', failEscaped('uncaught exception'));
-process.on('unhandledRejection', failEscaped('unhandled rejection'));
-
-// And this is what proves the two listeners above still work, because nothing else can: a gate that
-// has never been seen failing is indistinguishable from one that cannot fail, which is exactly the
-// state this file was in. `verify:browser-assurance` does not run unless
+// And this is what proves the two listeners registered above the imports work, because nothing else
+// can: a gate that has never been seen failing is indistinguishable from one that cannot fail.
+// `verify:browser-assurance` does not run unless
 // `verify:browser-assurance:self-test` has just watched this process exit non-zero for both classes
 // of escape, against the same Angular bundle that installs the handlers being overridden, which
 // is why the hook is here, after the import, and not in a unit test that never loads one.
