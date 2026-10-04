@@ -40,8 +40,14 @@ export function verdictOf({ reportPath, status, testFile, label }) {
     };
   }
   const tests = files.flatMap(({ assertionResults }) => assertionResults);
-  if (tests.some(({ status: state }) => state === 'failed')) {
-    return { verdict: 'caught' };
+  const failed = tests.filter(({ status: state }) => state === 'failed');
+  if (failed.length > 0) {
+    // Named, because a suite that fails with nothing injected is reported by its caller, and
+    // "a test fails" sends the reader to rerun the suite to learn which.
+    return {
+      verdict: 'caught',
+      failed: failed.map(({ fullName, title }) => fullName ?? title),
+    };
   }
   if (status === 0 && tests.length > 0) return { verdict: 'passed' };
   const message = files.find(({ message: text }) => text)?.message;

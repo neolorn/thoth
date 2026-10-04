@@ -228,7 +228,7 @@ const baseline = suiteVerdict(undefined);
 assert.equal(
   baseline.verdict,
   'passed',
-  `The consumer suite does not pass with nothing injected (${baseline.verdict}${baseline.why === undefined ? '' : `: ${baseline.why}`}), so no injection could be measured against it.`,
+  `The consumer suite does not pass with nothing injected (${baseline.verdict}${baseline.why === undefined ? '' : `: ${baseline.why}`}${baseline.failed === undefined ? '' : `: ${baseline.failed.join('; ')}`}), so no injection could be measured against it.`,
 );
 
 /** Guarded by nothing and not known to be: the failure this gate exists to report. */
