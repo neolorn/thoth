@@ -769,12 +769,19 @@ export const stageSelfTests = Object.freeze({
     script: 'tools/verify-cost-budget.mjs',
     nodeArgs: ['--expose-gc'],
     inputs: ['dist/runtime'],
+    // Several budgets are growth ratios of wall-clock medians, so a planted run that passes has to
+    // leave the ratio it read behind.
+    measured: true,
     plants: [
       {
         // A heap reading needs the collector exposed. Without it both heap budgets have nothing
         // to read, and a run that reads nothing must not stand as one within budget.
         id: 'heap-growth-unmeasured',
         nodeArgs: [],
+        measures: [
+          'the shared formatter store is bounded by its ceiling',
+          'repeated locale switching does not accumulate heap',
+        ],
         refusal:
           /FAIL +the shared formatter store is bounded by its ceiling\n\s+not measured: node ran without --expose-gc[\s\S]*FAIL +repeated locale switching does not accumulate heap\n\s+not measured: node ran without --expose-gc/u,
       },
@@ -787,6 +794,9 @@ export const stageSelfTests = Object.freeze({
           'admittedCatalogs.set(candidate, { key, catalog });',
           'void key;',
         ),
+        measures: [
+          'request-scoped context construction is flat in catalog size',
+        ],
         refusal:
           /FAIL +request-scoped context construction is flat in catalog size/u,
       },
@@ -798,6 +808,7 @@ export const stageSelfTests = Object.freeze({
           '    let end = fraction.length;\n    while (end > 0 && fraction.charCodeAt(end - 1) === 0x30)\n        end -= 1;\n    return end === fraction.length ? fraction : fraction.slice(0, end);',
           "    return fraction.replace(/0+$/u, '');",
         ),
+        measures: ['decimal() is sub-quadratic in input length'],
         refusal: /FAIL +decimal\(\) is sub-quadratic in input length/u,
       },
       {
@@ -808,6 +819,7 @@ export const stageSelfTests = Object.freeze({
           'while (this.values.size > this.maximumEntries) {',
           'while (false) {',
         ),
+        measures: ['the shared formatter store is bounded by its ceiling'],
         refusal: /FAIL +the shared formatter store is bounded by its ceiling/u,
       },
       {
@@ -818,6 +830,10 @@ export const stageSelfTests = Object.freeze({
           "this.bootstrapScopes = this.normalizeScopes(options.bootstrapScopes, 'bootstrapScopes');",
           "this.bootstrapScopes = this.normalizeScopes(options.setup.configuration.scopes.map(({ providerId, scopeId }) => ({ providerId, scopeId })), 'bootstrapScopes');",
         ),
+        measures: [
+          'a switch loads the scopes in use',
+          'initial loading takes the bootstrap scope only',
+        ],
         refusal:
           /FAIL +a switch loads the scopes in use[\s\S]*FAIL +initial loading takes the bootstrap scope only/u,
       },
@@ -829,6 +845,9 @@ export const stageSelfTests = Object.freeze({
           "const requiredParticipants = mode === 'coordinated'",
           'const requiredParticipants = true',
         ),
+        measures: [
+          'a coordinated switch waits for every required participant, and a progressive one for none',
+        ],
         refusal:
           /FAIL +a coordinated switch waits for every required participant, and a progressive one for none/u,
       },
@@ -840,6 +859,9 @@ export const stageSelfTests = Object.freeze({
           '                if (!item.finalized) {\n                    invokeDiscard(item.adapter, item.context, item.report);\n                    this.cleanup(item);\n                }\n            }\n            if (failure !== undefined)',
           '                if (false) {\n                    invokeDiscard(item.adapter, item.context, item.report);\n                    this.cleanup(item);\n                }\n            }\n            if (failure !== undefined)',
         ),
+        measures: [
+          'a switch prepares each participant once and discards every one a refused switch prepared',
+        ],
         refusal:
           /FAIL +a switch prepares each participant once and discards every one a refused switch prepared/u,
       },
@@ -851,6 +873,7 @@ export const stageSelfTests = Object.freeze({
           '.finally(() => this.inFlight.delete(key));',
           '.finally(() => void key);',
         ),
+        measures: ['each repeated failure costs one load and keeps nothing'],
         refusal:
           /FAIL +each repeated failure costs one load and keeps nothing/u,
       },
@@ -861,6 +884,7 @@ export const stageSelfTests = Object.freeze({
           'while (this.cache.size > this.maximumEntries) {',
           'while (false) {',
         ),
+        measures: ['the catalog cache reloads only past maximumCachedCatalogs'],
         refusal:
           /FAIL +the catalog cache reloads only past maximumCachedCatalogs/u,
       },
@@ -872,6 +896,9 @@ export const stageSelfTests = Object.freeze({
           'value.length > RUNTIME_LIMITS.canonicalNumberCodeUnits ||\n        !/^-?[0-9]+(?:\\.[0-9]+)?$/u.test(value)) {',
           '!/^-?[0-9]+(?:\\.[0-9]+)?$/u.test(value)) {',
         ),
+        measures: [
+          'a number at the bound is accepted, and one beyond it is refused at a cost that does not grow',
+        ],
         refusal:
           /FAIL +a number at the bound is accepted, and one beyond it is refused at a cost that does not grow/u,
       },
@@ -883,6 +910,7 @@ export const stageSelfTests = Object.freeze({
           "for (const variant of body['variants']) {\n        tick(environment);",
           "for (const variant of body['variants']) {\n        for (const other of body['variants']) void other;\n        tick(environment);",
         ),
+        measures: ['evaluating a message is linear in its variants'],
         refusal: /FAIL +evaluating a message is linear in its variants/u,
       },
     ],

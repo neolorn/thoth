@@ -23,6 +23,13 @@
  * resolves its baseline without `inputsRoot()` writes there instead. A plant that declares
  * `rewrites` makes the stage rewrite that input, and is refused only when the comparison names it,
  * which is how the comparison is shown able to fail.
+ *
+ * A stage whose verdict is a measurement can pass with a defect planted because the reading moved,
+ * and a pass that kept no reading cannot be told from a plant that stopped working. Such a stage
+ * sets `measured`, and each of its plants names in `measures` the checks it is aimed at. What the
+ * stage printed for each of those is then printed for every plant, refused or not, beside what the
+ * unchanged run printed for the same check. A named check the stage printed nothing for is a
+ * failure, so a check renamed in the stage cannot leave a plant's line empty.
  */
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -91,6 +98,24 @@ export function changedInputs(before, after) {
 }
 
 /**
+ * What a stage printed about one of its checks: every line that names the check, and the indented
+ * lines under each, which is where a stage puts the reading.
+ */
+export function measurementLines(printed, check) {
+  const lines = printed.split(/\r?\n/u);
+  const found = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    if (!lines[index].includes(check)) continue;
+    found.push(lines[index]);
+    while (index + 1 < lines.length && /^\s+\S/u.test(lines[index + 1])) {
+      index += 1;
+      found.push(lines[index]);
+    }
+  }
+  return found;
+}
+
+/**
  * Runs `script` with `args` over a fresh copy of `inputs` once unchanged and once per plant, and
  * prints the verdict. Resolves to the number of failures, which the caller turns into the status.
  */
@@ -102,6 +127,7 @@ export async function verifyStagePlants({
   plants,
   nodeArgs = [],
   timeout = 180_000,
+  measured = false,
 }) {
   // Inside the workspace, so a copied package resolves its dependencies from the repository's
   // `node_modules` the way the original does.
@@ -163,8 +189,39 @@ export async function verifyStagePlants({
       return;
     }
     const controlText = `${control.stdout}${control.stderr}`;
+    const reportMeasurements = (id, measures, printed) => {
+      for (const check of measures) {
+        const readings = [
+          ['unchanged', measurementLines(controlText, check)],
+          ['planted', measurementLines(printed, check)],
+        ];
+        for (const [run, lines] of readings) {
+          if (lines.length === 0) {
+            failures.push(
+              `${id}: the ${run} run printed nothing for ${JSON.stringify(check)}, so what it measured cannot be read.`,
+            );
+            continue;
+          }
+          out(`  ${run}:`);
+          for (const line of lines) out(`    ${line}`);
+        }
+      }
+    };
 
-    for (const { id, plant, nodeArgs: planted, refusal, rewrites } of plants) {
+    for (const {
+      id,
+      plant,
+      nodeArgs: planted,
+      refusal,
+      rewrites,
+      measures = [],
+    } of plants) {
+      if (measured && rewrites === undefined && measures.length === 0) {
+        failures.push(
+          `${id}: the stage's verdict is a measurement, and the plant names no check whose reading to print.`,
+        );
+        continue;
+      }
       if (rewrites !== undefined) {
         await fresh();
         await plant(work);
@@ -211,6 +268,7 @@ export async function verifyStagePlants({
       const result = runComparing(flags);
       out(`${id}: status ${result.status} in ${result.ms} ms`);
       const printed = `${result.stdout}${result.stderr}`;
+      reportMeasurements(id, measures, printed);
       if (result.changed.length > 0) {
         failures.push(
           `${id}: the run changed what it reads: ${result.changed.join(', ')}.`,

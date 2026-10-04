@@ -14,8 +14,9 @@
  * - **Memory.** No stage starts while free memory is under a quarter of the total. A stage already
  *   running is left to finish, because stopping it would waste what it has done and free nothing a
  *   finished stage would not.
- * - **Alone.** An `exclusive` stage (the browser rows) runs with nothing beside it, so there is only
- *   ever one browser row at a time.
+ * - **Alone.** An `exclusive` stage runs with nothing beside it: the browser rows, so there is only
+ *   ever one browser row at a time, and the cost budget and its self-test, whose readings are
+ *   wall-clock times that anything running beside them would be part of.
  *
  * Priority is not here: the gate lowers its own and every process it starts inherits it, which
  * `verify.mjs` checks on each stage it starts and samples across the whole tree while it runs.
