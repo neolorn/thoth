@@ -9,7 +9,12 @@
  */
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  watch as watchFileSystem,
+} from 'node:fs';
 import {
   cp,
   lstat,
@@ -23,6 +28,7 @@ import {
 } from 'node:fs/promises';
 import { createRequire, isBuiltin } from 'node:module';
 import {
+  basename,
   dirname,
   extname,
   isAbsolute,
@@ -161,49 +167,43 @@ const verifyWatchCommand = async () => {
   let stderr = '';
   let changed = false;
   let restored = false;
+  // A second watcher on the same file, so a failure can say whether the platform reported the edit
+  // or the watch command had it and did nothing.
+  let editWritten = false;
+  let editsReported = 0;
+  const witness = watchFileSystem(dirname(sourcePath), (_event, fileName) => {
+    if (editWritten && fileName === basename(sourcePath)) editsReported += 1;
+  });
   const restore = async () => {
     if (restored) return;
     restored = true;
     await writeFile(sourcePath, originalSource, 'utf8');
   };
   const completed = new Promise((resolvePromise, rejectPromise) => {
-    // Bounded by progress rather than by elapsed time, for the same reason the test timeout is: it
-    // is a hang detector, not a performance assertion. What this probe claims is that the watcher
-    // reacts to a change, and nothing it claims is about speed, but a fixed budget had to cover
-    // booting the CLI, two compile cycles and a Windows watch event, so it also measured how busy
-    // the machine was. Three consumer stages went red together on one saturated run and all three
-    // passed on the resume, same tree, same commit. Silence still fails, which is the failure worth
-    // detecting; the ceiling still catches a watcher that talks without finishing.
-    const IDLE_MILLISECONDS = 30_000;
+    // One bound, on the whole probe. A watch cycle prints nothing while it runs, so a bound on
+    // silence is a bound on how long one cycle may take, and that measures how busy the machine is:
+    // a cycle is about two seconds on an idle machine and has been seen forty times slower beside
+    // another build. What the probe claims is that the watcher reacts to a change, and nothing it
+    // claims is about speed.
     const CEILING_MILLISECONDS = 300_000;
-    let idleTimer;
-    let ceilingTimer;
-    const fail = (why) => {
-      clearTimeout(idleTimer);
-      clearTimeout(ceilingTimer);
+    const ceilingTimer = setTimeout(() => {
       child.kill('SIGTERM');
       rejectPromise(
-        new Error(`Equator watch probe ${why}.\n${stdout}\n${stderr}`),
+        new Error(
+          `Equator watch probe ran past its ${CEILING_MILLISECONDS / 1000}s ceiling. ${
+            editWritten
+              ? `The platform reported the edit to a second watcher ${editsReported} time(s).`
+              : 'The edit had not been written.'
+          }\n${stdout}\n${stderr}`,
+        ),
       );
-    };
-    const progressed = () => {
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(
-        () => fail(`produced no output for ${IDLE_MILLISECONDS / 1000}s`),
-        IDLE_MILLISECONDS,
-      );
-    };
-    ceilingTimer = setTimeout(
-      () => fail(`ran past its ${CEILING_MILLISECONDS / 1000}s ceiling`),
-      CEILING_MILLISECONDS,
-    );
-    progressed();
+    }, CEILING_MILLISECONDS);
     child.stdout.on('data', (chunk) => {
-      progressed();
       stdout += chunk.toString();
       if (!changed && /Equator watch cycle 1:/u.test(stdout)) {
         changed = true;
         setTimeout(() => {
+          editWritten = true;
           void writeFile(sourcePath, `${originalSource}\n`, 'utf8');
         }, 100);
       }
@@ -212,12 +212,10 @@ const verifyWatchCommand = async () => {
       }
     });
     child.stderr.on('data', (chunk) => {
-      progressed();
       stderr += chunk.toString();
     });
     child.once('error', rejectPromise);
     child.once('close', () => {
-      clearTimeout(idleTimer);
       clearTimeout(ceilingTimer);
       resolvePromise(undefined);
     });
@@ -225,6 +223,7 @@ const verifyWatchCommand = async () => {
   try {
     await completed;
   } finally {
+    witness.close();
     await restore();
   }
   assert.match(stdout, /Equator watch cycle 1:/u, stderr);
@@ -2857,35 +2856,17 @@ async function verifyWatchEvents(cliPath, catalogFile, catalog, policy) {
   // and does not move the edits out of step first.
   let step = 'start';
   const completed = new Promise((resolvePromise, rejectPromise) => {
-    // One bound on silence and one on the whole, as `verifyWatchCommand` has, for its reason.
-    const IDLE_MILLISECONDS = 30_000;
+    // One bound on the whole, as `verifyWatchCommand` has, for its reason.
     const CEILING_MILLISECONDS = 300_000;
-    let idleTimer;
-    let ceilingTimer;
-    const fail = (why) => {
-      clearTimeout(idleTimer);
-      clearTimeout(ceilingTimer);
+    const ceilingTimer = setTimeout(() => {
       child.kill('SIGTERM');
       rejectPromise(
         new Error(
-          `equator watch --json ${why}.\n${JSON.stringify(events)}\n${pending}\n${stderr}`,
+          `equator watch --json ran past its ${CEILING_MILLISECONDS / 1000}s ceiling at step ${step}.\n${JSON.stringify(events)}\n${pending}\n${stderr}`,
         ),
       );
-    };
-    const progressed = () => {
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(
-        () => fail(`produced no output for ${IDLE_MILLISECONDS / 1000}s`),
-        IDLE_MILLISECONDS,
-      );
-    };
-    ceilingTimer = setTimeout(
-      () => fail(`ran past its ${CEILING_MILLISECONDS / 1000}s ceiling`),
-      CEILING_MILLISECONDS,
-    );
-    progressed();
+    }, CEILING_MILLISECONDS);
     child.stdout.on('data', (chunk) => {
-      progressed();
       const lines = `${pending}${chunk.toString()}`.split('\n');
       pending = lines.pop();
       for (const line of lines.filter((each) => each.trim() !== '')) {
@@ -2913,12 +2894,10 @@ async function verifyWatchEvents(cliPath, catalogFile, catalog, policy) {
       }
     });
     child.stderr.on('data', (chunk) => {
-      progressed();
       stderr += chunk.toString();
     });
     child.once('error', rejectPromise);
     child.once('close', () => {
-      clearTimeout(idleTimer);
       clearTimeout(ceilingTimer);
       resolvePromise(undefined);
     });
