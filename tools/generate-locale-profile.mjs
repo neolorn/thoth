@@ -1038,18 +1038,32 @@ const toolkitRtlOutput = [
   '',
 ].join('\n');
 
-// The primary identifier of every time zone name the pinned release carries, by the rule ECMA-402
-// section 6.5 states over the IANA database: a Zone is primary, a Link is not, a Link that
-// zone.tab's TZ column lists is primary all the same, and UTC, Etc/UTC, Etc/GMT and GMT with
-// their links are UTC.
+// The primary identifier of every time zone name the pinned release carries, by the steps of
+// AvailableNamedTimeZoneIdentifiers in ECMA-402 section 6.5.1: a Zone is primary, a Link resolves
+// to its Zone, and three exceptions hold. UTC, Etc/UTC, Etc/GMT and GMT with their links are UTC.
+// A Link that zone.tab's TZ column lists is primary. Any other Link resolves inside its own
+// country.
 //
 // The zone.tab exception is what keeps a country's zone its own. The release links Europe/Oslo to
 // Europe/Berlin because the two have agreed since 1970, and following that link would store
 // Norway's zone as Germany's; zone.tab still lists Europe/Oslo for Norway, so it stays.
 //
-// A "#= TARGET1" comment on a Link line is the release's own statement of the name the link stands
-// for, written only because some parsers mishandle a link to a link. It is read as the target, so
-// Africa/Asmera resolves to Africa/Asmara, which zone.tab lists, and not to Africa/Nairobi.
+// The country exception does the same for a former name. The release links Africa/Timbuktu to
+// Africa/Abidjan, which is another country's zone, so the name resolves to the one zone.tab line
+// its own country has, Africa/Bamako. Where a country has several lines the standard reads the
+// answer from backzone, which records the name each former name stood for.
+//
+// No file of the release states the country of a name zone.tab does not list. It is read from the
+// name backzone maps it to, and is the Zone's own country where backzone has no line for it. The
+// standard names one place where that mapping itself crosses a border, Atlantic/Jan_Mayen, and
+// gives its country as SJ; that one fact is written here because the release cannot supply it.
+//
+// A "#= TARGET1" comment on a Link line of backward is the release's own statement of the name the
+// link stands for. The standard's steps do not read it, so it is held against their answer
+// instead: a release in which the two disagree stops the generator.
+const COUNTRY_THE_RELEASE_DOES_NOT_STATE = new Map([
+  ['Atlantic/Jan_Mayen', 'SJ'],
+]);
 const timeZoneSource = sourcesLock.dataSources?.ianaTimeZoneDatabase;
 assert.ok(
   typeof timeZoneSource?.projectSnapshot === 'string' &&
@@ -1062,25 +1076,59 @@ const timeZoneRoot = resolve(
   'standards',
   timeZoneSource.projectSnapshot,
 );
-const zoneTabNames = new Set(
-  (await readFile(resolve(timeZoneRoot, 'zone.tab'), 'utf8'))
-    .split('\n')
-    .filter((line) => line !== '' && !line.startsWith('#'))
-    .map((line) => line.split('\t')[2]),
-);
+const zoneTabCountry = new Map();
+const zoneTabLinesOfCountry = new Map();
+for (const line of (
+  await readFile(resolve(timeZoneRoot, 'zone.tab'), 'utf8')
+).split('\n')) {
+  if (line === '' || line.startsWith('#')) continue;
+  const [country, , name] = line.split('\t');
+  zoneTabCountry.set(name, country);
+  zoneTabLinesOfCountry.set(country, [
+    ...(zoneTabLinesOfCountry.get(country) ?? []),
+    name,
+  ]);
+}
+const zoneTabNames = new Set(zoneTabCountry.keys());
 const timeZoneLinks = new Map();
+const timeZoneLinkStandsFor = new Map();
 const backwardZones = new Set();
 for (const line of (
   await readFile(resolve(timeZoneRoot, 'backward'), 'utf8')
 ).split('\n')) {
   const link = /^Link\s+(\S+)\s+(\S+)(?:\s+#=\s+(\S+))?/u.exec(line);
-  if (link !== null) timeZoneLinks.set(link[2], link[3] ?? link[1]);
+  if (link !== null) {
+    timeZoneLinks.set(link[2], link[1]);
+    if (link[3] !== undefined) timeZoneLinkStandsFor.set(link[2], link[3]);
+  }
   const zone = /^Zone\s+(\S+)/u.exec(line);
   if (zone !== null) backwardZones.add(zone[1]);
 }
+// The two line openings and the single space are the standard's own reading of backzone. A line
+// written any other way is one the standard does not read, and a name that needed it stops the
+// generator below.
+const BACKZONE_LINK_OPENINGS = ['Link ', '#PACKRATLIST zone.tab Link '];
+const backzoneNames = new Map();
+for (const line of (
+  await readFile(resolve(timeZoneRoot, 'backzone'), 'utf8')
+).split('\n')) {
+  if (!BACKZONE_LINK_OPENINGS.some((opening) => line.startsWith(opening))) {
+    continue;
+  }
+  const [target, name] = line.slice(line.indexOf('Link ') + 5).split(' ');
+  assert.ok(
+    target !== undefined && name !== undefined && !backzoneNames.has(name),
+    'The pinned backzone file maps ' + name + ' twice, or not at all.',
+  );
+  backzoneNames.set(name, target);
+}
 assert.ok(
-  zoneTabNames.size >= 400 && !zoneTabNames.has(undefined),
-  'The pinned zone.tab did not yield the TZ column; a reader that found no names would call every link non-primary.',
+  zoneTabNames.size >= 400 &&
+    !zoneTabNames.has(undefined) &&
+    [...zoneTabLinesOfCountry.keys()].every((country) =>
+      /^[A-Z]{2}$/u.test(country),
+    ),
+  'The pinned zone.tab did not yield the country and TZ columns; a reader that found no names would call every link non-primary.',
 );
 assert.ok(
   timeZoneLinks.size >= 200,
@@ -1088,13 +1136,84 @@ assert.ok(
     timeZoneLinks.size +
     ' links; the release carries more than two hundred.',
 );
+assert.ok(
+  backzoneNames.size >= 10,
+  'The pinned backzone file yielded ' +
+    backzoneNames.size +
+    ' link lines; a reader that found none would leave every former name in the country of the zone it is linked to.',
+);
+for (const [name, country] of COUNTRY_THE_RELEASE_DOES_NOT_STATE) {
+  assert.ok(
+    timeZoneLinks.has(name) &&
+      !zoneTabNames.has(name) &&
+      zoneTabLinesOfCountry.has(country),
+    name +
+      ' is no longer a link outside zone.tab, or zone.tab has no line for ' +
+      country +
+      '; the country written for it has nothing to govern.',
+  );
+}
 const UTC_NAMES = new Set(['UTC', 'Etc/UTC', 'Etc/GMT', 'GMT']);
-const primaryTimeZone = (name, hops = 0) => {
+const zoneOfLink = (name, hops = 0) => {
   assert.ok(hops < 4, 'The links from ' + name + ' do not end.');
-  if (UTC_NAMES.has(name)) return 'UTC';
-  if (zoneTabNames.has(name) || !timeZoneLinks.has(name)) return name;
-  return primaryTimeZone(timeZoneLinks.get(name), hops + 1);
+  return timeZoneLinks.has(name)
+    ? zoneOfLink(timeZoneLinks.get(name), hops + 1)
+    : name;
 };
+// backzone maps some former names to a name that is itself a former one, Asia/Chungking to
+// Asia/Chongqing, so the country is followed through it.
+const countryOfTimeZone = (name, hops = 0) => {
+  assert.ok(hops < 4, 'The backzone lines from ' + name + ' do not end.');
+  return (
+    COUNTRY_THE_RELEASE_DOES_NOT_STATE.get(name) ??
+    zoneTabCountry.get(name) ??
+    (backzoneNames.has(name)
+      ? countryOfTimeZone(backzoneNames.get(name), hops + 1)
+      : zoneTabCountry.get(zoneOfLink(name)))
+  );
+};
+const primaryWithinCountry = (name, zone) => {
+  const zoneCountry = zoneTabCountry.get(zone);
+  const nameCountry = countryOfTimeZone(name);
+  assert.ok(
+    nameCountry !== undefined || !backzoneNames.has(name),
+    'The pinned backzone file maps ' +
+      name +
+      ' to ' +
+      backzoneNames.get(name) +
+      ', and zone.tab gives no country for either.',
+  );
+  if (nameCountry === zoneCountry) return zone;
+  const countryLines = zoneTabLinesOfCountry.get(nameCountry);
+  if (countryLines.length === 1) return countryLines[0];
+  assert.ok(
+    backzoneNames.has(name),
+    name +
+      ' is in ' +
+      nameCountry +
+      ', which has several zone.tab lines, and the pinned backzone file has no line for it.',
+  );
+  return backzoneNames.get(name);
+};
+const primaryTimeZone = (name) => {
+  let primary = name;
+  if (timeZoneLinks.has(name) && !zoneTabNames.has(name)) {
+    const zone = zoneOfLink(name);
+    primary = zone.startsWith('Etc/') ? zone : primaryWithinCountry(name, zone);
+  }
+  return UTC_NAMES.has(primary) ? 'UTC' : primary;
+};
+for (const [name, standsFor] of timeZoneLinkStandsFor) {
+  assert.equal(
+    primaryTimeZone(name),
+    primaryTimeZone(standsFor),
+    'The pinned backward file says ' +
+      name +
+      ' stands for ' +
+      standsFor +
+      ', and the two do not resolve to one identifier.',
+  );
+}
 const timeZoneEntries = [
   ...[...UTC_NAMES]
     .filter((name) => name !== 'UTC')

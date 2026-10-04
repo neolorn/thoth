@@ -2670,13 +2670,13 @@
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "2. Canonical value contracts",
-      "statement": "A release MUST take time-zone identity, aliases, links, and conversions from the pinned time-zone database recorded under `01-standards-profile.spec.md` section 4, and MUST NOT let host presentation data redefine a stored time-zone identity.",
+      "statement": "A release MUST take time-zone identity, aliases, and links from the pinned time-zone database recorded under `01-standards-profile.spec.md` section 4, and MUST NOT let host presentation data redefine a stored time-zone identity.",
       "checks": ["assurance:time-zone-identity-taken-from-the-host"]
     },
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "2. Canonical value contracts",
-      "statement": "A time zone's identity MUST be the primary identifier the pinned database gives its name, as ECMA-402 section 6.5 defines one: a Zone is primary, a Link resolves to the Zone it names, a Link that the `TZ` column of `zone.tab` lists is primary itself, and `Etc/UTC`, `Etc/GMT`, `GMT` and their Links are `UTC`.",
+      "statement": "A time zone's identity MUST be the primary identifier the pinned database gives its name, as ECMA-402 section 6.5 defines one: a Zone is primary, a Link resolves to the Zone it names, a Link that the `TZ` column of `zone.tab` lists is primary itself, any other Link whose Zone lies in another country resolves to a name `zone.tab` lists for the Link's own country, and `Etc/UTC`, `Etc/GMT`, `GMT` and their Links are `UTC`.",
       "checks": ["assurance:time-zone-identity-taken-from-the-host"]
     },
     {

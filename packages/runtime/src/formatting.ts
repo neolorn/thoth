@@ -309,7 +309,8 @@ function pinnedTimeZone(id: string): string | undefined {
  * time-zone database gives it, so a former name and its replacement come back as the same zone:
  * `Asia/Calcutta` and `Asia/Kolkata` are both `Asia/Kolkata`. A zone a country still calls its
  * own keeps its name even where the database links it to a neighbor's, so `Europe/Oslo` stays
- * `Europe/Oslo`.
+ * `Europe/Oslo`. A former name the database links across a border comes back as a zone of its own
+ * country: `Africa/Timbuktu` is `Africa/Bamako`, and not the Ivory Coast zone it is linked to.
  *
  * The identity is the database's and not the host's. Hosts disagree about which spelling is
  * canonical, and a stored identity that changed with the host could not be compared or exchanged.

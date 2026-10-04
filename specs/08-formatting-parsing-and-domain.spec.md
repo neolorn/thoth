@@ -44,14 +44,18 @@ milliseconds, civil time with an instant, a currency, a precision, or a unit.
 
 Converting civil time to an instant requires an explicit zone and an explicit disambiguation
 policy, and balancing a calendar-relative duration requires an explicit reference and zone where
-the result can vary. A release MUST take time-zone identity, aliases, links, and conversions
-from the pinned time-zone database recorded under `01-standards-profile.spec.md` section 4, and MUST
-NOT let host presentation data redefine a stored time-zone identity.
+the result can vary. A release MUST take time-zone identity, aliases, and links from the pinned
+time-zone database recorded under `01-standards-profile.spec.md` section 4, and MUST NOT let host
+presentation data redefine a stored time-zone identity. A release converts nothing itself: where a
+value is formatted in a zone, the conversion comes from the host's `Intl`.
 
 A time zone's identity MUST be the primary identifier the pinned database gives its name, as
 ECMA-402 section 6.5 defines one: a Zone is primary, a Link resolves to the Zone it names, a Link
-that the `TZ` column of `zone.tab` lists is primary itself, and `Etc/UTC`, `Etc/GMT`, `GMT` and
-their Links are `UTC`. A name is matched without regard to case. A name the pinned release does not
+that the `TZ` column of `zone.tab` lists is primary itself, any other Link whose Zone lies in
+another country resolves to a name `zone.tab` lists for the Link's own country, and `Etc/UTC`,
+`Etc/GMT`, `GMT` and their Links are `UTC`. Where that country has one `zone.tab` line the Link
+resolves to it, and where it has several, to the name the release's `backzone` file maps the Link
+to. A name is matched without regard to case. A name the pinned release does not
 carry, which a fixed offset under `Etc/` and a zone newer than the release both are, keeps the
 host's spelling.
 

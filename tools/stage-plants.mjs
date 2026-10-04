@@ -475,6 +475,15 @@ export const stageSelfTests = Object.freeze({
         refusal: /The checked-in Equator time zone identity table is stale/u,
       },
       {
+        id: 'former-name-resolved-outside-its-country',
+        plant: plantText(
+          'standards/data/tzdata-2026e/backzone',
+          '#PACKRATLIST zone.tab Link Africa/Bamako Africa/Timbuktu',
+          '#PACKRATLIST zone.tab Link Africa/Abidjan Africa/Timbuktu',
+        ),
+        refusal: /The checked-in Equator time zone identity table is stale/u,
+      },
+      {
         id: 'alias-rule-not-the-pinned-one',
         plant: plantText(
           'packages/toolkit/src/locale-aliases.generated.ts',

@@ -6,7 +6,8 @@ import { timeZone } from '../src/formatting.js';
  * A stored zone identity is compared, persisted and exchanged, so the spelling that comes back has
  * to be the pinned time-zone database's own and not whatever the host's presentation data prefers.
  * The pairs are names of the pinned release: zones, former names that survive only as links in its
- * `backward` file, and links its `zone.tab` still lists for a country.
+ * `backward` file, links its `zone.tab` still lists for a country, and former names the release
+ * links across a border.
  */
 
 const ZONES = ['Asia/Kolkata', 'Europe/Kyiv', 'Asia/Ho_Chi_Minh'] as const;
@@ -44,6 +45,22 @@ describe('a time-zone identity', () => {
     ['Pacific/Truk', 'Pacific/Chuuk'],
   ])(
     'resolves %s to %s, the name its line says it stands for',
+    (link, zone) => {
+      expect(timeZone(link).id).toBe(zone);
+    },
+  );
+
+  // The release links each to a zone of another country. Mali, and Svalbard and Jan Mayen, have
+  // one zone.tab line each; Canada, Antarctica and Micronesia have several, so the answer is the
+  // name the release's `backzone` file says the former name stood for.
+  it.each([
+    ['Africa/Timbuktu', 'Africa/Bamako'],
+    ['Atlantic/Jan_Mayen', 'Arctic/Longyearbyen'],
+    ['America/Coral_Harbour', 'America/Atikokan'],
+    ['Antarctica/South_Pole', 'Antarctica/McMurdo'],
+    ['Pacific/Yap', 'Pacific/Chuuk'],
+  ])(
+    'resolves the former name %s inside its own country, to %s',
     (link, zone) => {
       expect(timeZone(link).id).toBe(zone);
     },

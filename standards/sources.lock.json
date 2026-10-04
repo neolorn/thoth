@@ -197,8 +197,8 @@
       "version": "2026e",
       "url": "https://data.iana.org/time-zones/releases/tzdata2026e.tar.gz",
       "projectSnapshot": "data/tzdata-2026e",
-      "role": "The time zone database release the profile is pinned to. Development-only derivation input: tools/generate-locale-profile.mjs derives packages/runtime/src/time-zone-identities.generated.ts, the primary identifier of every name the release's zone.tab and backward files carry, and only that table reaches a published package.",
-      "snapshotLayout": "Two files of the release, byte for byte: `backward`, which holds the links from former and merged names, and `zone.tab`, whose TZ column says which names a country still calls its own. Nothing else in the release is read.",
+      "role": "The time zone database release the profile is pinned to. Development-only derivation input: tools/generate-locale-profile.mjs derives packages/runtime/src/time-zone-identities.generated.ts, the primary identifier of every name the release's zone.tab and backward files carry, resolved inside a name's own country with the release's backzone file, and only that table reaches a published package.",
+      "snapshotLayout": "Three files of the release, byte for byte: `backward`, which holds the links from former and merged names; `zone.tab`, whose country and TZ columns say which names a country still calls its own; and `backzone`, whose link lines say which of a country's names a former name stood for. Nothing else in the release is read, and of `backzone` only those link lines.",
       "crossCheck": {
         "method": "The release archive was verified against its detached OpenPGP signature before extraction, and the vendored files were taken from that verified archive and from nothing else. The signature is the tz coordinator's, the key the release announcements are signed with.",
         "artifact": "tzdata2026e.tar.gz",
@@ -235,6 +235,14 @@
             "algorithm": "SHA-256",
             "encoding": "hex",
             "value": "b8296b9ef1ece72d813878132c0f17e2c52b26af6004eeb9c37d049b64cd9401"
+          }
+        },
+        "backzone": {
+          "bytes": 71208,
+          "digest": {
+            "algorithm": "SHA-256",
+            "encoding": "hex",
+            "value": "9c965661692c07d241c758c41c6f1e9c082d0f77a193d9240228b995e2f1666f"
           }
         },
         "zone.tab": {
