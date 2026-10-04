@@ -62,11 +62,6 @@ const BASELINE = Object.freeze({
     'runtime API; imported by the router entry point from the primary one',
   localizedRouteAddresses:
     'runtime API; imported by the router entry point from the primary one',
-  // No published signature takes this type: `withRouting` declares the same two fields itself.
-  // Withdrawing a published name breaks a consumer that wrote it, so it stays for the length of
-  // the major version.
-  LocaleUrlResolutionSetup:
-    'runtime type; named by no signature and withdrawn only with a major version',
 });
 
 const CORPUS = Object.freeze([
@@ -551,8 +546,9 @@ for (const {
     undefined,
     `${entryPoint} publishes no declaration file, so this check proves nothing.`,
   );
+  // The head allows an `extends` clause, which `RoutingOptions` has.
   const body = new RegExp(
-    `interface ${interfaceName} \\{[\\s\\S]*?\\n\\}`,
+    `interface ${interfaceName}\\b[^{]*\\{[\\s\\S]*?\\n\\}`,
     'u',
   ).exec(declaration.text);
   // The place an empty result deceives hardest: an absent member and an absent interface read

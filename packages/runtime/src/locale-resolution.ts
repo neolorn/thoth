@@ -48,16 +48,26 @@ export type LocalizationLocaleSource = 'url' | 'stored' | 'browser' | 'default';
  *
  * Both or neither. A policy without a table has nothing to match a translated path against, and a
  * table without a policy has no statement of where in the address the locale sits.
+ *
+ * `withRouting()` takes these two as the required part of its options.
  */
 export interface LocaleUrlResolutionSetup {
-  /** Where the locale lives in an address: a leading path segment, a host, or nowhere. */
+  /**
+   * Where the locale lives in an address: a leading path segment, a host, or nowhere.
+   *
+   * The one routing decision that shows in every URL the application emits, so it belongs to the
+   * deployment rather than to the generated table.
+   */
   readonly policy: LocaleUrlPolicy;
   /**
-   * The generated route table the address is matched against.
+   * The route projection the address is matched against, passed rather than restated.
    *
-   * Carries the translated spellings of each route and the codecs for their parameters, which is
-   * what lets an address written in one locale resolve to the route it names rather than to
-   * nothing.
+   * Carries the translated spellings of each route, the codecs for their parameters and the
+   * outcomes of addresses that no longer exist, which is what lets an address written in one locale
+   * resolve to the route it names rather than to nothing.
+   *
+   * One object, referenced wherever it is needed: `localizedServerRoutes()` takes this same value,
+   * so the server route table and the runtime are never handed two copies that could differ.
    */
   readonly projection: RouteRuntimeProjection;
 }

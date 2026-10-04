@@ -51,6 +51,7 @@ import {
   emitLocalizationRuntimeEvent,
   localizationTransferSnapshot,
   type LocaleFromAddress,
+  type LocaleUrlResolutionSetup,
   type LocalizationCommitHook,
   type LocalizationLocaleSource,
   type LocalizationRuntimeOptions,
@@ -233,29 +234,11 @@ interface LocaleSourcesFeature extends LocalizationFeature<'locale-sources'> {
  * passes it. What an application owns is the URL policy, the localized path spellings, the
  * parameter codecs, the outcomes of addresses that no longer exist, and the name of its own
  * route-data field, which Equator reads at build time rather than inventing.
+ *
+ * The policy and the projection are the base type's two fields, because they are what reading a
+ * locale out of an address needs and the `url` locale source reads them from here.
  */
-export interface RoutingOptions {
-  /**
-   * Where the locale sits in an address: a leading path segment, a host, or nowhere at all.
-   *
-   * The one routing decision that shows in every URL the application emits, so it belongs to the
-   * deployment rather than to the generated table.
-   */
-  readonly policy: LocaleUrlPolicy;
-  /**
-   * The route projection, passed rather than restated.
-   *
-   * One field rather than `localizedPaths`, `parameters` and `historical` restated here, which are
-   * the three fields `RouteRuntimeProjection` already carries. Restated, a consumer declares them
-   * once in `defineRouteProjection()` for the server route table and hands the same three back
-   * here for the runtime, with nothing checking that the two copies agree. The verification
-   * consumer wrote that at nine call sites, two lines each, always the same two lines, and
-   * renaming a route's path in one locale was then a data edit plus a wiring edit whose omission
-   * said nothing.
-   *
-   * One object, referenced wherever it is needed. `localizedServerRoutes()` takes this same value.
-   */
-  readonly projection: RouteRuntimeProjection;
+export interface RoutingOptions extends LocaleUrlResolutionSetup {
   /**
    * Read from this file's source text when Equator compiles the owner, and inert at runtime: by the
    * time this object exists, every route already carries the class it was classified into.
