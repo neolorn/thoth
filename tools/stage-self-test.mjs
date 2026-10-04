@@ -64,6 +64,22 @@ export const replaceOnce = (find, replace) => (text) => {
   return text.replace(find, () => replace);
 };
 
+/**
+ * `replaceOnce` for text a packager writes. Which quote a string is in, how deep a line is indented
+ * and where a statement breaks are its choice, so the plant names what it edits with a pattern that
+ * leaves those open, and the pattern must still match in one place only.
+ */
+export const replaceOnceMatching = (pattern, replace) => (text) => {
+  const everywhere = new RegExp(
+    pattern.source,
+    `${pattern.flags.replace('g', '')}g`,
+  );
+  if ([...text.matchAll(everywhere)].length !== 1) {
+    throw new Error(`The plant expects ${pattern} exactly once.`);
+  }
+  return text.replace(pattern, replace);
+};
+
 export const editJson = (path, edit) => (root) =>
   editText(root, path, (text) => {
     const value = JSON.parse(text);
@@ -290,6 +306,12 @@ export async function verifyStagePlants({
 
   try {
     await exercise();
+  } catch (error) {
+    // The verdict below is printed whatever happened, and a self-test that stopped before it ran a
+    // plant has seen nothing refused.
+    failures.push(
+      `The self-test did not finish: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
+    );
   } finally {
     await rm(base, { recursive: true, force: true });
     const repositoryChanged = changedInputs(

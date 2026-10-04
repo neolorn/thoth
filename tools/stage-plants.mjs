@@ -15,11 +15,29 @@ import {
   editJson,
   editText,
   replaceOnce,
+  replaceOnceMatching,
   repositoryRoot,
 } from './stage-self-test.mjs';
+import {
+  compareVersions,
+  developmentNode,
+  nodeFloors,
+} from './supported-versions.mjs';
 
 const plantText = (path, find, replace) => (root) =>
   editText(root, path, replaceOnce(find, replace));
+
+// For the runtime's built files, whose spelling is the packager's.
+const plantMatching = (path, pattern, replace) => (root) =>
+  editText(root, path, replaceOnceMatching(pattern, replace));
+
+const runtimeBundle = 'dist/runtime/fesm2022/neolorn-equator.mjs';
+
+// The Node rows the compatibility page lists as executed, as the page writes them. Read from the
+// manifest and `.node-version`, so a plant that names them moves when the development Node does.
+const executedNodeRows = [...new Set([...nodeFloors, developmentNode])]
+  .sort(compareVersions)
+  .map((version) => `\`${version}\``);
 
 const suiteRoot = 'standards/data/message-format-tests-48.2';
 
@@ -208,9 +226,9 @@ export const stageSelfTests = Object.freeze({
       },
       {
         id: 'recorded-failure-code-withdrawn',
-        plant: plantText(
+        plant: plantMatching(
           'dist/runtime/types/neolorn-equator-core.d.ts',
-          "'participant-timeout' | ",
+          /(["'])participant-timeout\1 \| /u,
           '',
         ),
         refusal:
@@ -218,10 +236,10 @@ export const stageSelfTests = Object.freeze({
       },
       {
         id: 'runtime-event-code-moved-to-another-area',
-        plant: plantText(
+        plant: plantMatching(
           'dist/runtime/types/neolorn-equator.d.ts',
-          'readonly transition: "EQ-E2003";\n    readonly formatting: "EQ-E2004";',
-          'readonly transition: "EQ-E2004";\n    readonly formatting: "EQ-E2003";',
+          /(readonly transition: ["'])EQ-E2003(["'];\s+readonly formatting: ["'])EQ-E2004(["'];)/u,
+          '$1EQ-E2004$2EQ-E2003$3',
         ),
         refusal:
           /EQ-E2003 is recorded for transition and RUNTIME_EVENT_CODES now declares it for formatting/u,
@@ -321,8 +339,8 @@ export const stageSelfTests = Object.freeze({
         id: 'compatibility-page-lists-an-unexecuted-row',
         plant: plantText(
           'docs/reference/compatibility.md',
-          '`22.22.3`, `24.15.0`, `26.0.0`, `26.10.0`.',
-          '`22.22.3`, `22.30.0`, `24.15.0`, `26.0.0`, `26.10.0`.',
+          `${executedNodeRows.join(', ')}.`,
+          `${[executedNodeRows[0], '`22.30.0`', ...executedNodeRows.slice(1)].join(', ')}.`,
         ),
         refusal:
           /compatibility\.md is not what its source of truth produces now/u,
@@ -596,10 +614,10 @@ export const stageSelfTests = Object.freeze({
       },
       {
         id: 'runtime-reader-field-retyped',
-        plant: plantText(
+        plant: plantMatching(
           'dist/runtime/types/neolorn-equator-core.d.ts',
-          '/** The stable name for this route, which is what every address is built from. */\n    readonly id: string;',
-          '/** The stable name for this route, which is what every address is built from. */\n    readonly id: number;',
+          /(\/\*\* The stable name for this route, which is what every address is built from\. \*\/\s+readonly id: )string;/u,
+          '$1number;',
         ),
         refusal:
           /equator-route-projection\/1: \S+#GeneratedRouteProjection\.\S*\.id: type changed from "string" to "number" \(incompatible\)/u,
@@ -715,8 +733,10 @@ export const stageSelfTests = Object.freeze({
           'const MAXIMUM_ALIAS_STEPS = 16;',
           'const MAXIMUM_ALIAS_STEPS = 0;',
         ),
-        refusal:
-          /Node v24\.18\.0 canonicalizes iw to refused, and the pinned CLDR alias data to he/u,
+        refusal: new RegExp(
+          `Node v${developmentNode.replaceAll('.', '\\.')} canonicalizes iw to refused, and the pinned CLDR alias data to he`,
+          'u',
+        ),
       },
       {
         id: 'host-gap-left-undocumented',
@@ -789,9 +809,9 @@ export const stageSelfTests = Object.freeze({
         // The memo is what keeps a request from paying for the whole catalog. Without it every
         // context admits the catalog again, which costs the catalog's size on every request.
         id: 'catalog-admitted-on-every-request',
-        plant: plantText(
-          'dist/runtime/fesm2022/neolorn-equator.mjs',
-          'admittedCatalogs.set(candidate, { key, catalog });',
+        plant: plantMatching(
+          runtimeBundle,
+          /admittedCatalogs\.set\(candidate, \{\s*key,\s*catalog,?\s*\}\);/u,
           'void key;',
         ),
         measures: [
@@ -803,10 +823,10 @@ export const stageSelfTests = Object.freeze({
       {
         // The quadratic strip the single backward scan replaced.
         id: 'trailing-zeros-rescanned',
-        plant: plantText(
-          'dist/runtime/fesm2022/neolorn-equator.mjs',
-          '    let end = fraction.length;\n    while (end > 0 && fraction.charCodeAt(end - 1) === 0x30)\n        end -= 1;\n    return end === fraction.length ? fraction : fraction.slice(0, end);',
-          "    return fraction.replace(/0+$/u, '');",
+        plant: plantMatching(
+          runtimeBundle,
+          /(function withoutTrailingZeros\(fraction\) \{)[^}]*\}/u,
+          (_, head) => `${head} return fraction.replace(/0+$/u, ''); }`,
         ),
         measures: ['decimal() is sub-quadratic in input length'],
         refusal: /FAIL +decimal\(\) is sub-quadratic in input length/u,
@@ -825,9 +845,9 @@ export const stageSelfTests = Object.freeze({
       {
         // Every configured scope loaded at initialization, and so again at every switch.
         id: 'every-scope-loaded-up-front',
-        plant: plantText(
-          'dist/runtime/fesm2022/neolorn-equator.mjs',
-          "this.bootstrapScopes = this.normalizeScopes(options.bootstrapScopes, 'bootstrapScopes');",
+        plant: plantMatching(
+          runtimeBundle,
+          /this\.bootstrapScopes = this\.normalizeScopes\(options\.bootstrapScopes, (["'])bootstrapScopes\1\);/u,
           "this.bootstrapScopes = this.normalizeScopes(options.setup.configuration.scopes.map(({ providerId, scopeId }) => ({ providerId, scopeId })), 'bootstrapScopes');",
         ),
         measures: [
@@ -840,9 +860,9 @@ export const stageSelfTests = Object.freeze({
       {
         // A progressive switch holding its commit for the required participants.
         id: 'progressive-switch-waits',
-        plant: plantText(
-          'dist/runtime/fesm2022/neolorn-equator.mjs',
-          "const requiredParticipants = mode === 'coordinated'",
+        plant: plantMatching(
+          runtimeBundle,
+          /const requiredParticipants = mode === (["'])coordinated\1/u,
           'const requiredParticipants = true',
         ),
         measures: [
@@ -854,10 +874,10 @@ export const stageSelfTests = Object.freeze({
       {
         id: 'prepared-participant-kept',
         // The cohort that met an unavailable participant keeps every one that prepared for it.
-        plant: plantText(
-          'dist/runtime/fesm2022/neolorn-equator.mjs',
-          '                if (!item.finalized) {\n                    invokeDiscard(item.adapter, item.context, item.report);\n                    this.cleanup(item);\n                }\n            }\n            if (failure !== undefined)',
-          '                if (false) {\n                    invokeDiscard(item.adapter, item.context, item.report);\n                    this.cleanup(item);\n                }\n            }\n            if (failure !== undefined)',
+        plant: plantMatching(
+          runtimeBundle,
+          /if \(!item\.finalized\)( \{\s*invokeDiscard\(item\.adapter, item\.context, item\.report\);)/u,
+          'if (false)$1',
         ),
         measures: [
           'a switch prepares each participant once and discards every one a refused switch prepared',
@@ -891,10 +911,10 @@ export const stageSelfTests = Object.freeze({
       {
         // The length checked after the pattern has read the whole value, or not at all.
         id: 'oversized-number-read',
-        plant: plantText(
-          'dist/runtime/fesm2022/neolorn-equator.mjs',
-          'value.length > RUNTIME_LIMITS.canonicalNumberCodeUnits ||\n        !/^-?[0-9]+(?:\\.[0-9]+)?$/u.test(value)) {',
-          '!/^-?[0-9]+(?:\\.[0-9]+)?$/u.test(value)) {',
+        plant: plantMatching(
+          runtimeBundle,
+          /(function normalizeDecimal\(value\) \{[^}]*?)value\.length > RUNTIME_LIMITS\.canonicalNumberCodeUnits \|\|\s*/u,
+          '$1',
         ),
         measures: [
           'a number at the bound is accepted, and one beyond it is refused at a cost that does not grow',
@@ -905,10 +925,10 @@ export const stageSelfTests = Object.freeze({
       {
         // Selection that reads every variant again for each variant it considers.
         id: 'variants-rescanned',
-        plant: plantText(
-          'dist/runtime/fesm2022/neolorn-equator.mjs',
-          "for (const variant of body['variants']) {\n        tick(environment);",
-          "for (const variant of body['variants']) {\n        for (const other of body['variants']) void other;\n        tick(environment);",
+        plant: plantMatching(
+          runtimeBundle,
+          /(for \(const variant of body\[(["'])variants\2\]\) \{)(\s*tick\(environment\);)/u,
+          '$1 for (const other of body[$2variants$2]) void other;$3',
         ),
         measures: ['evaluating a message is linear in its variants'],
         refusal: /FAIL +evaluating a message is linear in its variants/u,
