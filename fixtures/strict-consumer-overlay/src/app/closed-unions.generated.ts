@@ -22,6 +22,7 @@ import type {
   localizedAsset,
   parseLocalizedInput,
   resolveLocalizedAsset,
+  selectPlural,
 } from '@neolorn/equator';
 import type {
   ApplicationAnalysis,
@@ -40,6 +41,9 @@ import type {
   MessageValueReference,
   MessageVariantKey,
   PortableTypeId,
+  RouteCachingClass,
+  SemanticFamily,
+  SemanticFamilySegment,
   SlotShape,
   ToolkitDiagnosticCode,
   ToolkitDiagnosticSeverity,
@@ -49,7 +53,6 @@ import type {
 } from '@neolorn/equator-toolkit';
 import type {
   ContentDirection,
-  DeclaredPageOutcomeDescriptor,
   DurationValue,
   FormattingContext,
   IconDirectionClass,
@@ -76,17 +79,16 @@ import type {
   LocalizedInputProfile,
   LocalizedNotification,
   LocalizedPart,
-  LocalizedPlainDateInputProfile,
-  LocalizedPlainTimeInputProfile,
+  LocalizedPlainDateInputPattern,
+  LocalizedPlainTimeInputPattern,
   PageOutcomeDeclaration,
   PercentScale,
   PersonNameFormatOptions,
-  RouteCachingClass,
   RouteHistoricalOutcome,
   RouteHttpDescriptor,
   RouteIndexingClass,
   RouteResolution,
-  RuntimeIdentifierSegmentDescriptor,
+  RouteSeoProjection,
   RuntimeMessageFunctionDescriptor,
   RuntimeRichSlotKindDescriptor,
   ScopeReadiness,
@@ -227,38 +229,6 @@ export function contentPresentationClassification(
   }
 }
 
-export function declaredPageOutcomeDescriptorCache(
-  value: DeclaredPageOutcomeDescriptor['cache'],
-): void {
-  switch (value) {
-    case 'consumer-defined-permanent':
-    case 'private-no-cache':
-    case 'private-no-store':
-    case 'public':
-    case 'varies-by-locale-preference':
-      return;
-    default: {
-      const unhandled: never = value;
-      throw new Error(`Unhandled member ${String(unhandled)}`);
-    }
-  }
-}
-
-export function declaredPageOutcomeDescriptorRobots(
-  value: DeclaredPageOutcomeDescriptor['robots'],
-): void {
-  switch (value) {
-    case 'noindex':
-    case 'noindex, nofollow':
-    case undefined:
-      return;
-    default: {
-      const unhandled: never = value;
-      throw new Error(`Unhandled member ${String(unhandled)}`);
-    }
-  }
-}
-
 export function documentSocialProjectionCard(
   value: DocumentSocialProjection['card'],
 ): void {
@@ -304,10 +274,10 @@ export function extensionDescriptorKind(
   }
 }
 
-export function extractLocaleChangeResultStatusCancelledSupersededFailedStatus(
+export function extractLocaleChangeResultStatusCancelledFailedSupersededStatus(
   value: Extract<
     LocaleChangeResult,
-    { readonly status: 'cancelled' | 'superseded' | 'failed' }
+    { readonly status: 'cancelled' | 'failed' | 'superseded' }
   >['status'],
 ): void {
   switch (value) {
@@ -336,55 +306,17 @@ export function extractMessagePatternPartObjectKind(
   }
 }
 
-export function extractRenderableResolutionStatusUnsupportedLocaleNotFoundStatus(
-  value: Extract<
-    RenderableResolution,
-    { readonly status: 'unsupported-locale' | 'not-found' }
-  >['status'],
-): void {
-  switch (value) {
-    case 'not-found':
-    case 'unsupported-locale':
-      return;
-    default: {
-      const unhandled: never = value;
-      throw new Error(`Unhandled member ${String(unhandled)}`);
-    }
-  }
-}
-
-export function extractReturnTypeLocalizationSelectPluralOkTrueValue(
-  value: Extract<
-    ReturnType<Localization['selectPlural']>,
-    { readonly ok: true }
-  >['value'],
-): void {
-  switch (value) {
-    case 'few':
-    case 'many':
-    case 'one':
-    case 'other':
-    case 'two':
-    case 'zero':
-      return;
-    default: {
-      const unhandled: never = value;
-      throw new Error(`Unhandled member ${String(unhandled)}`);
-    }
-  }
-}
-
-export function extractReturnTypeLocalizedInputResultStatusIncompleteInvalidAmbiguousOutOfRangeUnsupportedCapabilityPolicyRejectedStatus(
+export function extractReturnTypeLocalizedInputResultStatusAmbiguousIncompleteInvalidOutOfRangePolicyRejectedUnsupportedCapabilityStatus(
   value: Extract<
     ReturnType<LocalizedInput['result']>,
     {
       readonly status:
+        | 'ambiguous'
         | 'incomplete'
         | 'invalid'
-        | 'ambiguous'
         | 'out-of-range'
-        | 'unsupported-capability'
-        | 'policy-rejected';
+        | 'policy-rejected'
+        | 'unsupported-capability';
     }
   >['status'],
 ): void {
@@ -413,6 +345,44 @@ export function extractReturnTypeResolveLocalizedAssetStatusReadyRepresentationK
     case 'fixed-language':
     case 'language-independent':
     case 'locale-bound':
+      return;
+    default: {
+      const unhandled: never = value;
+      throw new Error(`Unhandled member ${String(unhandled)}`);
+    }
+  }
+}
+
+export function extractReturnTypeSelectPluralOkTrueValue(
+  value: Extract<
+    ReturnType<typeof selectPlural>,
+    { readonly ok: true }
+  >['value'],
+): void {
+  switch (value) {
+    case 'few':
+    case 'many':
+    case 'one':
+    case 'other':
+    case 'two':
+    case 'zero':
+      return;
+    default: {
+      const unhandled: never = value;
+      throw new Error(`Unhandled member ${String(unhandled)}`);
+    }
+  }
+}
+
+export function extractRouteResolutionStatusNotFoundUnsupportedLocaleStatus(
+  value: Extract<
+    RouteResolution,
+    { readonly status: 'not-found' | 'unsupported-locale' }
+  >['status'],
+): void {
+  switch (value) {
+    case 'not-found':
+    case 'unsupported-locale':
       return;
     default: {
       const unhandled: never = value;
@@ -1059,8 +1029,8 @@ export function localizedPartKind(value: LocalizedPart['kind']): void {
   }
 }
 
-export function localizedPlainDateInputProfileOrder(
-  value: LocalizedPlainDateInputProfile['order'],
+export function localizedPlainDateInputPatternOrder(
+  value: LocalizedPlainDateInputPattern['order'],
 ): void {
   switch (value) {
     case 'day-month-year':
@@ -1074,8 +1044,8 @@ export function localizedPlainDateInputProfileOrder(
   }
 }
 
-export function localizedPlainTimeInputProfilePrecision(
-  value: LocalizedPlainTimeInputProfile['precision'],
+export function localizedPlainTimeInputPatternPrecision(
+  value: LocalizedPlainTimeInputPattern['precision'],
 ): void {
   switch (value) {
     case 'fraction':
@@ -1178,22 +1148,6 @@ export function messageVariantKeyKind(value: MessageVariantKey['kind']): void {
   switch (value) {
     case 'catchall':
     case 'literal':
-      return;
-    default: {
-      const unhandled: never = value;
-      throw new Error(`Unhandled member ${String(unhandled)}`);
-    }
-  }
-}
-
-export function nonNullableParametersLocalizationEvaluateText0ContractResultKind(
-  value: NonNullable<
-    Parameters<Localization['evaluateText']>[0]['__contract']
-  >['resultKind'],
-): void {
-  switch (value) {
-    case 'plain':
-    case 'structured':
       return;
     default: {
       const unhandled: never = value;
@@ -1479,6 +1433,23 @@ export function routeHistoricalOutcomeKind(
   }
 }
 
+export function routeHttpDescriptorCache(
+  value: RouteHttpDescriptor['cache'],
+): void {
+  switch (value) {
+    case 'consumer-defined-permanent':
+    case 'private-no-cache':
+    case 'private-no-store':
+    case 'public':
+    case 'varies-by-locale-preference':
+      return;
+    default: {
+      const unhandled: never = value;
+      throw new Error(`Unhandled member ${String(unhandled)}`);
+    }
+  }
+}
+
 export function routeHttpDescriptorStatus(
   value: RouteHttpDescriptor['status'],
 ): void {
@@ -1526,13 +1497,13 @@ export function routeResolutionStatus(value: RouteResolution['status']): void {
   }
 }
 
-export function runtimeIdentifierSegmentDescriptorSyntax(
-  value: RuntimeIdentifierSegmentDescriptor['syntax'],
+export function routeSeoProjectionRobots(
+  value: RouteSeoProjection['robots'],
 ): void {
   switch (value) {
-    case 'ascii-token':
-    case 'lower-kebab':
-    case 'unicode-token':
+    case 'noindex':
+    case 'noindex, nofollow':
+    case undefined:
       return;
     default: {
       const unhandled: never = value;
@@ -1590,6 +1561,35 @@ export function scopeReadinessStatus(value: ScopeReadiness['status']): void {
     case 'idle':
     case 'loading':
     case 'ready':
+      return;
+    default: {
+      const unhandled: never = value;
+      throw new Error(`Unhandled member ${String(unhandled)}`);
+    }
+  }
+}
+
+export function semanticFamilySegmentSyntax(
+  value: SemanticFamilySegment['syntax'],
+): void {
+  switch (value) {
+    case 'ascii-token':
+    case 'lower-kebab':
+    case 'unicode-token':
+      return;
+    default: {
+      const unhandled: never = value;
+      throw new Error(`Unhandled member ${String(unhandled)}`);
+    }
+  }
+}
+
+export function semanticFamilyResultKind(
+  value: SemanticFamily['resultKind'],
+): void {
+  switch (value) {
+    case 'plain':
+    case 'structured':
       return;
     default: {
       const unhandled: never = value;

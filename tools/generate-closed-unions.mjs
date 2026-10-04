@@ -263,6 +263,21 @@ function compareValues(left, right) {
     : order.indexOf(typeof left) - order.indexOf(typeof right);
 }
 
+/**
+ * Whether `here` is the better way to write a place than `previous`: a published name, or else the
+ * shortest text, or else the first in code unit order, and between two packages that publish one
+ * name the first specifier. One order for every choice between two paths, so the file depends on
+ * what the declarations say and not on the order they say it in.
+ */
+function preferred(here, previous) {
+  if (previous === undefined) return true;
+  if (here.named !== previous.named) return here.named;
+  if (here.text.length !== previous.text.length)
+    return here.text.length < previous.text.length;
+  if (here.text !== previous.text) return here.text < previous.text;
+  return here.from.specifier < previous.from.specifier;
+}
+
 function record(values, nullish, here) {
   values.sort(compareValues);
   const key = values.map((value) => JSON.stringify(value)).join('|');
@@ -270,17 +285,9 @@ function record(values, nullish, here) {
     unreached.set(key, values);
     return;
   }
-  const previous = found.get(key)?.written;
   // One union reached by several paths is kept under its published name, or else its shortest path,
   // so the file does not move when a longer way to the same union is added.
-  if (
-    previous === undefined ||
-    (here.named && !previous.named) ||
-    (here.named === previous.named &&
-      (here.text.length < previous.text.length ||
-        (here.text.length === previous.text.length &&
-          here.text < previous.text)))
-  ) {
+  if (preferred(here, found.get(key)?.written)) {
     const carried = here.stripped ? [] : nullish;
     found.set(key, {
       written: here,
@@ -389,7 +396,13 @@ function walk(positions) {
         if (own === undefined) return undefined;
         const type = checker.getTypeOfSymbol(own);
         const units = type.isUnion() ? type.types : [type];
-        return units.every(isLiteral) ? units : undefined;
+        // In value order. The checker lists a union's members in the order it first met them, which
+        // follows the order of the declarations.
+        return units.every(isLiteral)
+          ? [...units].sort((left, right) =>
+              compareValues(valueOf(left), valueOf(right)),
+            )
+          : undefined;
       });
       if (tags.includes(undefined)) continue;
       const all = tags.flat().map(literalText);
@@ -414,10 +427,13 @@ function walk(positions) {
       steps <= DEPTH,
       `${written.text} is ${steps} steps below a published name, more than the ${DEPTH} the walk follows.`,
     );
-    const seen = visited.get(type) ?? new Set();
+    // Walked again when a better way to write it arrives. The packager chooses the order of the
+    // declarations, and a type walked only from whichever export came first would name the unions
+    // below it after that export.
+    const seen = visited.get(type) ?? new Map();
     const key = `${direction}:${here.reached}`;
-    if (seen.has(key)) return;
-    visited.set(type, seen.add(key));
+    if (!preferred(here, seen.get(key))) return;
+    visited.set(type, seen.set(key, here));
     if (type.isUnion()) {
       visitUnion(type, direction, here, steps);
     } else if (type.flags & OBJECT) {
