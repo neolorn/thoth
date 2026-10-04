@@ -8,8 +8,9 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { relative, resolve } from 'node:path';
 
+import { buildStatsFiles } from './build-stats.mjs';
 import { plants as packageStructurePlants } from './package-structure-plants.mjs';
 import {
   editJson,
@@ -23,6 +24,16 @@ import {
   developmentNode,
   nodeFloors,
 } from './supported-versions.mjs';
+
+// The minimal consumer's module graph, in whichever file its Angular wrote it.
+const MINIMAL_OUTPUT =
+  'tmp/focused-package-consumer-verification/minimal-runtime-consumer/dist/minimal';
+const editMinimalStats = (edit) => (root) => {
+  const [file = resolve(root, MINIMAL_OUTPUT, 'stats.json')] = buildStatsFiles(
+    resolve(root, MINIMAL_OUTPUT),
+  );
+  return editJson(relative(root, file), edit)(root);
+};
 
 const plantText = (path, find, replace) => (root) =>
   editText(root, path, replaceOnce(find, replace));
@@ -521,19 +532,16 @@ export const stageSelfTests = Object.freeze({
     plants: [
       {
         id: 'entry-point-grew',
-        plant: editJson(
-          'tmp/focused-package-consumer-verification/minimal-runtime-consumer/dist/minimal/stats.json',
-          (stats) => {
-            const input = Object.values(stats.outputs)
-              .flatMap(({ inputs }) => Object.entries(inputs ?? {}))
-              .find(([path]) =>
-                path.endsWith(
-                  'node_modules/@neolorn/equator/fesm2022/neolorn-equator-core.mjs',
-                ),
-              );
-            input[1].bytesInOutput += 100;
-          },
-        ),
+        plant: editMinimalStats((stats) => {
+          const input = Object.values(stats.outputs)
+            .flatMap(({ inputs }) => Object.entries(inputs ?? {}))
+            .find(([path]) =>
+              path.endsWith(
+                'node_modules/@neolorn/equator/fesm2022/neolorn-equator-core.mjs',
+              ),
+            );
+          input[1].bytesInOutput += 100;
+        }),
         refusal:
           /docs\/reference\/cost\.md is not what the builds measure now/u,
       },
@@ -552,19 +560,16 @@ export const stageSelfTests = Object.freeze({
       // page of zeros, which a page generated the same way would agree with.
       {
         id: 'entry-point-attributed-to-nothing',
-        plant: editJson(
-          'tmp/focused-package-consumer-verification/minimal-runtime-consumer/dist/minimal/stats.json',
-          (stats) => {
-            for (const output of Object.values(stats.outputs)) {
-              output.inputs = Object.fromEntries(
-                Object.entries(output.inputs ?? {}).map(([path, value]) => [
-                  path.replace('/@neolorn/equator/', '/@neolorn/elsewhere/'),
-                  value,
-                ]),
-              );
-            }
-          },
-        ),
+        plant: editMinimalStats((stats) => {
+          for (const output of Object.values(stats.outputs)) {
+            output.inputs = Object.fromEntries(
+              Object.entries(output.inputs ?? {}).map(([path, value]) => [
+                path.replace('/@neolorn/equator/', '/@neolorn/elsewhere/'),
+                value,
+              ]),
+            );
+          }
+        }),
         refusal:
           /Minimal consumer: no input of the build was attributed to @neolorn\/equator\./u,
       },

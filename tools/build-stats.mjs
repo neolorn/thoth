@@ -1,10 +1,10 @@
 /**
  * The module graph an Angular build wrote with `--stats-json`, whichever way it was written.
  *
- * `@angular/build` writes one `stats.json` for an application built for the browser alone. For an
- * application with a server it writes one file there too through 22.1, and from 22.2 writes
- * `browser-stats.json` and `server-stats.json` beside each other. The rows of the consumer matrix
- * install both sides of that change, so the readers ask here and get one graph either way.
+ * `@angular/build` writes one `stats.json` through 22.1, whether or not the application has a
+ * server. From 22.2 it writes `browser-stats.json`, and `server-stats.json` beside it for an
+ * application with a server. The rows of the consumer matrix install both sides of that change, so
+ * the readers ask here and get one graph either way.
  *
  * The two files are merged rather than one of them chosen. A browser output and a server output
  * never share a name, the first being `.js` and the second `.mjs`, and an input both builds read is
