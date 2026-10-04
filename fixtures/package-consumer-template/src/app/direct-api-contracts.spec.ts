@@ -145,6 +145,12 @@ describe('route and SEO contracts, called directly', () => {
         indexing: 'indexable',
       },
       {
+        id: 'route:deferred',
+        path: 'deferred',
+        parameterNames: [],
+        indexing: 'non-indexable',
+      },
+      {
         id: 'route:drawn-sheet',
         path: 'drawn-sheet',
         parameterNames: [],

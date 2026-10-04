@@ -86,6 +86,11 @@ export async function readConsumerAddresses(consumerRoot) {
     localeInOrigin: policy === 'locale-host',
     /** The least the deployment keeps any page as, where the table says it declares a floor. */
     pageCaching: table.pageCaching,
+    /**
+     * The mode the consumer declares for its navigations, where the table says it declares one
+     * other than the default.
+     */
+    navigationMode: table.navigationMode,
     /** The absolute URL `x-default` points at, where the table says the policy declares one. */
     xDefault: table.xDefault,
     /** The first path segments the policy leaves to whatever serves them. */

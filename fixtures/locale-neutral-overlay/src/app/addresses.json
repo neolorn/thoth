@@ -22,9 +22,20 @@
     "lazy": {
       "en-US": "/lazy"
     },
+    "deferred": {
+      "en-US": "/deferred"
+    },
     "item": {
       "en-US": "/items/42",
       "ar-EG": "/عناصر/42"
+    },
+    "withdrawn item": {
+      "en-US": "/items/410",
+      "ar-EG": "/عناصر/410"
+    },
+    "unreachable item": {
+      "en-US": "/items/503",
+      "ar-EG": "/عناصر/503"
     },
     "article": {
       "en-US": "/articles/handbook",

@@ -26,4 +26,6 @@ export const publishedRoutes = [
     prerender: [{ sheet: 'values' }],
   },
   { routeId: 'route:drawn-sheet', renderMode: RenderMode.Client },
+  // Spelled alike in every locale, so it is rendered on request, as `/second` is.
+  { routeId: 'route:deferred', renderMode: RenderMode.Server },
 ] as const;

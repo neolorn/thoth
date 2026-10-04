@@ -243,6 +243,11 @@ declaration to, and a file written from a render that declared an absence is ser
 successful page, so declaring one during a build fails the build instead. Render that route on
 demand.
 
+A route your render table leaves to the browser draws nothing on the server, so no page there can
+declare. Your renderer declares for it and passes the application shell as the document. The
+response carries the declared status with the caching and indexing that go with it, and the shell is
+sent as you passed it: its head is written in the browser, when the page draws.
+
 A response carrying a declaration is private and not stored, whatever the address is normally
 classified as, so a content network does not hold your maintenance page under the page's own key
 and keep serving it after you recover.

@@ -841,8 +841,17 @@
     {
       "spec": "04-message-authoring-and-catalogs.spec.md",
       "section": "3. Catalog composition",
-      "statement": "A release MUST NOT require those concerns to coincide, and MUST NOT refuse a scope for its name or its breadth.",
+      "statement": "A release MUST NOT require those concerns to coincide, and MUST NOT refuse a scope for its breadth, or for its name unless the name is reserved.",
       "checks": ["assurance:scope-refused-for-its-name"]
+    },
+    {
+      "spec": "04-message-authoring-and-catalogs.spec.md",
+      "section": "3. Catalog composition",
+      "statement": "A release MUST refuse a scope with a reserved name at generation, with a diagnostic that names the path it could not write, and MUST NOT write one generated module over another.",
+      "checks": [
+        "assurance:scope-named-as-a-generated-module-admitted",
+        "assurance:scope-named-as-a-device-admitted"
+      ]
     },
     {
       "spec": "04-message-authoring-and-catalogs.spec.md",
@@ -1550,6 +1559,14 @@
     },
     {
       "spec": "06-runtime-and-angular.spec.md",
+      "section": "9. Scope readiness",
+      "statement": "In such a render a release MUST load a scope a route names as progressive before the render completes, as it loads a required one.",
+      "checks": [
+        "assurance-runtime:progressive-scope-left-out-of-a-first-render"
+      ]
+    },
+    {
+      "spec": "06-runtime-and-angular.spec.md",
       "section": "10. Server rendering, transfer, and hydration",
       "statement": "A release MUST NOT emit a meaningful localized representation before the primary locale and the startup scopes of that request are ready.",
       "checks": ["assurance-runtime:bootstrap-does-not-wait-for-localization"]
@@ -1903,6 +1920,15 @@
       "section": "5. Navigation and HTTP outcomes",
       "statement": "A release MUST NOT read a status a renderer did not declare as a declaration, because an accidental failure and a deliberate one arriving as the same value cannot be told apart.",
       "checks": ["assurance:undeclared-error-read-as-declaration"]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "5. Navigation and HTTP outcomes",
+      "statement": "A release MUST send the document a declaration carries as the renderer gave it, with the status, the classification, and the indexing of the declared outcome on the response, and MUST NOT write into that document.",
+      "checks": [
+        "assurance:declared-document-not-sent-as-given",
+        "assurance:renderer-declaration-ignored"
+      ]
     },
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
@@ -4036,6 +4062,15 @@
       "checks": [
         "assurance:watch-ignores-an-unnamed-event",
         "assurance:watch-skips-startup-reconciliation"
+      ]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
+      "section": "13. Incremental state and watch",
+      "statement": "Where a cycle rereads the inputs and finds the inputs fingerprint of the cycle before it, or the refusal that cycle gave them where no fingerprint could be taken, a release MUST generate nothing and report nothing, unless something other than its inputs stopped that cycle.",
+      "checks": [
+        "assurance:watch-repeats-a-cycle-over-unchanged-inputs",
+        "assurance:watch-settles-a-cycle-its-inputs-did-not-decide"
       ]
     },
     {

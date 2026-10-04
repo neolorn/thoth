@@ -239,6 +239,14 @@ arrives as a declaration by accident. A release MUST NOT read a status a rendere
 declare as a declaration, because an accidental failure and a deliberate one arriving as the same
 value cannot be told apart.
 
+A renderer that declares may send a document with the declaration, and which document is the
+consumer application's choice. For a route the render table leaves to the browser it is ordinarily
+the application shell, the one the route is answered with when nothing is declared, because no page
+is drawn on the server that could declare for itself. A release MUST send the document a declaration
+carries as the renderer gave it, with the status, the classification, and the indexing of the
+declared outcome on the response, and MUST NOT write into that document. The head of a shell is
+written by the browser that draws the page, under section 12.
+
 A declaration is also made from inside a render, which is where the fact is discovered. A release
 MUST carry it from the render to the response over a channel the two already share, MUST NOT carry
 it in a header or anywhere else a client can write or a response can expose, and MUST treat a render

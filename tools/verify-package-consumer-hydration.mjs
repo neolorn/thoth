@@ -12,8 +12,12 @@ import { listenForBrowsers } from './browser-reachable-port.mjs';
 import {
   closePageWithItsContext,
   createCallBound,
+  replaceUnansweringBrowser,
+  replacementSignature,
+  stepClosingItsOwnPages,
 } from './browser-call-bound.mjs';
 import { recordOccurrence } from './gate-occurrences.mjs';
+import { descendantsOf, readProcesses } from './process-tree.mjs';
 import {
   openCapabilityEvidence,
   recordCapabilityClaim,
@@ -161,6 +165,7 @@ const prerenderedViews = Object.freeze({
   second: 'second',
   article: 'article',
   'exercise values': 'exercise',
+  deferred: 'lazy',
 });
 // The page the checks of a prerendered file load, because a policy decides which pages can be
 // written once for every visitor.
@@ -261,6 +266,14 @@ if (selfTest === 'assertion') {
   // Thrown inside the try below rather than here. The two above exercise the process-level
   // handlers and must escape everything; this one exercises the block that reports a failure the
   // run did catch, and that block only runs for a failure inside the try.
+} else if (
+  selfTest === 'unanswering-browser' ||
+  selfTest === 'unanswering-browser-process'
+) {
+  // Planted where each row first closes a page and context of its own: both closes are left
+  // outstanding, and under the second value the browser's own close as well, so the row replaces a
+  // real browser, by ending real processes under the second value, and has to finish in the fresh
+  // one. A run by hand; it passes, with one occurrence recorded for each engine.
 } else if (selfTest !== undefined) {
   assert.fail(`Unknown EQUATOR_ASSURANCE_SELF_TEST value: ${selfTest}`);
 }
@@ -493,9 +506,9 @@ async function serveBrowserAsset(request, response, browserRoot) {
   // line for a non-ASCII address.** `/ar-eg/articles/%D8%AF...` then misses the manifest entry the
   // same build wrote under the decoded name and falls through to here, and without this line to
   // `readFile` on a directory, which is `EISDIR` rather than `ENOENT` and answers 500.
-  // `@angular/ssr` 22.1.7 decodes before the lookup (`buildServerAssetPathFromRequest`,
-  // `ssr.mjs:1379-1382`) and answers that address itself, `200` with `ng-server-context="ssg"`,
-  // without reaching this function.
+  // `@angular/ssr` from 22.1.7 decodes before the lookup
+  // (`AngularServerApp.buildServerAssetPathFromRequest`, read at 22.2.1) and answers that address
+  // itself, `200` with `ng-server-context="ssg"`, without reaching this function.
   //
   // The line stays, because what it meets is a requirement on the host and not a workaround for a
   // framework defect. A static file server or a CDN serving this build has no engine in front of it
@@ -573,8 +586,8 @@ const origin = `http://127.0.0.1:${address.port}`;
 // comes from it for the reason a deployment's does: every document passes through it, whether the
 // browser asked for that address or was redirected there. A route in the browser misses the second
 // kind, because Playwright calls a route handler only for the first address of a navigation that
-// redirects (`playwright-core/types/types.d.ts:4009`). The application's own server cannot add it,
-// because the policy hashes the document's inline scripts and the headers are sent before the body
+// redirects (Playwright 1.63.0, the documentation of `Page.route`). The application's own server
+// cannot add it, because the policy hashes the document's inline scripts and the headers are sent before the body
 // (`writeNodeResponse` in `@neolorn/equator/http` sets every header before it reads a chunk).
 //
 // The checks of what the application answers read `origin` directly, without the edge, because
@@ -1428,6 +1441,41 @@ async function launchBrowserRow(row, options = {}) {
       { cause: error },
     );
   }
+}
+
+/**
+ * End the processes of a browser whose own close did not settle.
+ *
+ * Playwright gives a launched `Browser` no call that ends its process; only a `BrowserServer` has
+ * `kill`. So they are found as the processes under this one, which starts no other: its servers
+ * listen in this process, and the only other browser a row launches lives inside the one stage
+ * that launches it. Read again afterwards, because a process that was signalled is not yet one
+ * that has ended, and the launch that follows should not share the machine with it.
+ */
+async function endBrowserProcesses() {
+  const under = async () => {
+    const { processes, reader } = await readProcesses();
+    return descendantsOf(processes, process.pid, new Set([reader]));
+  };
+  for (const { pid } of await under()) {
+    try {
+      process.kill(pid, 'SIGKILL');
+    } catch (error) {
+      // Gone between the reading and the signal, which is the outcome wanted.
+      if (error.code !== 'ESRCH') throw error;
+    }
+  }
+  const deadline = Date.now() + callTimeoutMs;
+  let left = await under();
+  while (left.length > 0 && Date.now() < deadline) {
+    await new Promise((resolveWait) => setTimeout(resolveWait, 250));
+    left = await under();
+  }
+  assert.deepEqual(
+    left.map(({ pid }) => pid),
+    [],
+    `The browser's processes were signalled to end and are still running after ${callTimeoutMs}ms`,
+  );
 }
 
 async function assertTrustedTypesPolicy(page, response, row) {
@@ -4097,6 +4145,254 @@ async function verifyRenderingModes(row, context, diagnostics) {
 }
 
 /**
+ * A declared outcome at a route the browser draws. The item page is RenderMode.Client, so the
+ * server has no page that could declare for itself, and `server.ts` declares what became of two
+ * items with the application shell as the document. The response carries the declared outcome, the
+ * shell arrives as the one the item page is always answered with, and the browser draws the page
+ * from it (section 5 of `specs/07-routing-rendering-and-seo.spec.md`).
+ *
+ * The shells are compared as the application answered them, asked of it directly, because the edge
+ * these browsers load through adds its own nonce and style to every document.
+ */
+async function verifyDeclaredShells(row, context, diagnostics) {
+  const locale = 'en-US';
+  // The installed core, whose descriptor the request handler composes each response with.
+  const { pageGone, pageOperationalFailure, pageOutcomeHttpDescriptor } =
+    await import(
+      pathToFileURL(
+        resolve(
+          consumerRoot,
+          'node_modules/@neolorn/equator/fesm2022/neolorn-equator-core.mjs',
+        ),
+      ).href
+    );
+  const item = await answer(addresses.path('item', locale), { locale });
+  assert.equal(item.status, 200, `${row.label}: item was not answered`);
+  const shell = await item.text();
+  assert.doesNotMatch(
+    shell,
+    /\bng-server-context=/u,
+    `${row.label}: item is RenderMode.Client, and the server rendered it`,
+  );
+  // What the address resolved to on its own, which each declaration is composed onto.
+  const resolved = {
+    status: item.status,
+    contentLanguage: item.headers.get('content-language') ?? undefined,
+    robots: item.headers.get('x-robots-tag') ?? undefined,
+  };
+
+  const drawn = async (outcomePage, declaration, declared) => {
+    const check = sectionCheck(row, `${outcomePage}, drawn by the browser`);
+    const described = pageOutcomeHttpDescriptor(declaration, resolved);
+    const direct = await answer(addresses.path(outcomePage, locale), {
+      locale,
+    });
+    assert.equal(
+      direct.status,
+      described.status,
+      `${check}: server.ts declared ${declared} with the application shell, and the application answered ${direct.status}`,
+    );
+    assert.equal(
+      await direct.text(),
+      shell,
+      `${check}: the shell sent with ${declared} is not the shell item is answered with, so something was written into it`,
+    );
+
+    const page = boundCalls(await context.newPage(), 'page');
+    attachBrowserDiagnostics(page, diagnostics);
+    page.setDefaultTimeout(15_000);
+    page.setDefaultNavigationTimeout(20_000);
+    const response = await visitFor(context, outcomePage, locale, (url) => {
+      expectedErrorDocuments.add(url);
+      return navigateWithScriptGate(page, url, async () => {
+        await page.waitForSelector('app-root', { state: 'attached' });
+        assert.equal(
+          await page.locator('[data-route-view]').count(),
+          0,
+          `${check}: the page shows a route before its scripts run`,
+        );
+      });
+    });
+    const fields = response?.headers() ?? {};
+    assert.deepEqual(
+      {
+        status: response?.status(),
+        contentLanguage: fields['content-language'],
+        robots: fields['x-robots-tag'],
+        cacheControl: fields['cache-control'],
+      },
+      {
+        status: described.status,
+        contentLanguage: described.contentLanguage,
+        robots: described.robots,
+        cacheControl: 'private, no-store',
+      },
+      `${check}: the answer is not the response pageOutcomeHttpDescriptor describes for ${declared} at an address that resolved to item`,
+    );
+    const answered = await response.text();
+    assert.doesNotMatch(
+      answered,
+      /\bng-server-context=/u,
+      `${check}: the route is RenderMode.Client, and the server rendered it`,
+    );
+    await page.waitForSelector('[data-route-view="item"]');
+    const rendered = await clientRenderContext(page, answered);
+    assert.equal(
+      rendered.platform,
+      'browser',
+      `${check}: drawn on the ${rendered.platform} platform`,
+    );
+    await collectPolicyDiagnostics(page, diagnostics);
+    await page.close();
+    // No engine: the status and the fields are the server's, and the engine only drew the shell
+    // they came with.
+    return {
+      check,
+      fields,
+      observed: {
+        platform: rendered.platform,
+        document: rendered.document,
+        policy: rendered.policy,
+      },
+    };
+  };
+
+  const withdrawn = await drawn(
+    'withdrawn item',
+    pageGone(),
+    'declarePageOutcome(pageGone())',
+  );
+  recordCapabilityClaim(
+    withdrawn.check,
+    'outcome:declarePageOutcome',
+    withdrawn.observed,
+  );
+  recordCapabilityClaim(
+    withdrawn.check,
+    'outcome:pageOutcomeHttpDescriptor',
+    withdrawn.observed,
+  );
+
+  const unreachable = await drawn(
+    'unreachable item',
+    pageOperationalFailure(503),
+    'declareOperationalFailure with a 503',
+  );
+  assert.equal(
+    unreachable.fields['retry-after'],
+    '120',
+    `${unreachable.check}: the Retry-After the declared failure carried did not reach the response`,
+  );
+  recordCapabilityClaim(
+    unreachable.check,
+    'outcome:declareOperationalFailure',
+    unreachable.observed,
+  );
+  recordCapabilityClaim(
+    unreachable.check,
+    'outcome:pageOutcomeHttpDescriptor',
+    unreachable.observed,
+  );
+}
+
+/**
+ * The scopes `app.config.ts` names for a route, on pages the browser adopts.
+ *
+ * The root component shows on every page whether the lazy page's scope is ready. The exercise
+ * route names it in `requiredScopes` and the dossier route names it in `progressiveScopes`, and
+ * neither route's own code asks for it, so on each the page says whether the option was honoured.
+ * A page the browser adopts is its first render, with no earlier view to keep on screen, so the
+ * progressive scope is ready there as the required one is (section 9 of
+ * `specs/06-runtime-and-angular.spec.md`). Home names the scope nowhere and is the control.
+ *
+ * Read once the page has settled, so what is read is what the browser's own runtime holds and not
+ * only the text the server wrote.
+ */
+async function verifyNamedRouteScopes(row, context, diagnostics) {
+  const locale = 'en-US';
+  const adopted = async (routePage, view) => {
+    const page = boundCalls(await context.newPage(), 'page');
+    attachBrowserDiagnostics(page, diagnostics);
+    page.setDefaultTimeout(15_000);
+    page.setDefaultNavigationTimeout(20_000);
+    await visitFor(context, routePage, locale, (url) =>
+      navigateWithScriptGate(page, url, async () => {
+        await page.waitForSelector(`[data-route-view="${view}"]`, {
+          state: 'attached',
+        });
+        await holdServerElements(page);
+      }),
+    );
+    const observed = await measuredContext(page);
+    assert.ok(
+      observed.adoptedElements > 0,
+      `${row.label} kept none of the ${routePage} page's server elements`,
+    );
+    await page.waitForFunction(
+      () => document.documentElement.dataset['settled'] === 'true',
+    );
+    const readiness = (
+      await page.locator('[data-lazy-readiness]').textContent()
+    )?.trim();
+    const changeMode = (
+      await page.locator('[data-change-mode]').textContent()
+    )?.trim();
+    await collectPolicyDiagnostics(page, diagnostics);
+    await page.close();
+    return { observed, readiness, changeMode };
+  };
+
+  const home = await adopted('home', 'home');
+  assert.equal(
+    home.readiness,
+    'idle',
+    `${row.label}: home names the lazy scope in no option and its route table entry lists none, and the adopted page does not show it idle`,
+  );
+
+  const sheet = await adopted('exercise', 'exercise');
+  assert.equal(
+    sheet.readiness,
+    'ready',
+    `${row.label}: requiredScopes names the lazy scope for the exercise route, and the adopted sheet shows it ${sheet.readiness}`,
+  );
+  recordCapabilityClaim(
+    sectionCheck(row, 'a required scope, adopted'),
+    'declaration:RouteLocalizationOptions.requiredScopes',
+    sheet.observed,
+  );
+
+  // The mode the adopted page's own navigation ran its locale transaction in, which the root
+  // component shows once the browser has made that navigation. `route-transitions.ts` declares it,
+  // and the address table names it where a row declares one other than the default, so only there
+  // does the page show the option, and only there is it claimed.
+  const declaredMode = addresses.navigationMode ?? 'coordinated';
+  assert.equal(
+    sheet.changeMode,
+    declaredMode,
+    `${row.label}: route-transitions.ts declares mode ${declaredMode}, and the navigation the browser made on the adopted sheet ran in ${sheet.changeMode}`,
+  );
+  if (addresses.navigationMode !== undefined) {
+    recordCapabilityClaim(
+      sectionCheck(row, 'the declared mode, adopted'),
+      'declaration:RouteLocalizationOptions.mode',
+      sheet.observed,
+    );
+  }
+
+  const dossier = await adopted('dossier', 'dossier');
+  assert.equal(
+    dossier.readiness,
+    'ready',
+    `${row.label}: progressiveScopes names the lazy scope for the dossier route, the adopted page is a first render with no earlier view, and it shows the scope ${dossier.readiness}`,
+  );
+  recordCapabilityClaim(
+    sectionCheck(row, 'a progressive scope, adopted'),
+    'declaration:RouteLocalizationOptions.progressiveScopes',
+    dossier.observed,
+  );
+}
+
+/**
  * The exercise sheet as a client render draws it, in each locale the build serves: the server
  * answers its route with the application shell, and every line is held to what this engine's own
  * formatters write, as the other sheets are.
@@ -5028,13 +5324,38 @@ async function returnCookies(isolated, to) {
   const cookies = await isolated.cookies();
   await to.clearCookies();
   if (cookies.length > 0) await to.addCookies(cookies);
+  returnedCookies = cookies;
 }
+
+/** What the planted stall closes in place of a page, a context or a browser: nothing, ever. */
+class NeverClosing {
+  close() {
+    return new Promise(() => {});
+  }
+  evaluate() {
+    return Promise.resolve();
+  }
+}
+/** The engines whose row has met the planted stall, which each row meets once. */
+const stalledEngines = new Set();
 
 /**
  * Close a page and its own context. A close the browser never finishes is recorded as an
- * occurrence and ended by closing the context; a context that does not close either fails the row.
+ * occurrence and ended by closing the context; a context whose close does not settle either is
+ * thrown as an unanswering browser, which the row replaces.
  */
 async function closeIsolated(isolatedPage, isolated) {
+  if (
+    selfTest?.startsWith('unanswering-browser') &&
+    !stalledEngines.has(browserDiagnostics.engine)
+  ) {
+    stalledEngines.add(browserDiagnostics.engine);
+    await closePageWithItsContext(
+      boundCalls(new NeverClosing(), 'page'),
+      boundCalls(new NeverClosing(), 'context'),
+      () => assert.fail('The planted context closed'),
+    );
+  }
   await closePageWithItsContext(isolatedPage, isolated, (error) =>
     recordOccurrence({
       kind: 'page-close-unsettled',
@@ -5130,7 +5451,12 @@ async function verifyLocalizedNotFound(row, context, diagnostics) {
   }
   await returnCookies(missingBrowserContext, context);
   await closeIsolated(missing, missingBrowserContext);
+}
 
+// Apart from the check above, so each ends by closing its own page and context: a browser that
+// stops answering there is replaced after a check that passed, and the next one runs in the fresh
+// browser.
+async function verifyUnprefixedNotFound(context, diagnostics) {
   // An address with no prefix that nothing serves in any locale, which is what a hand-written
   // `href` to a page that does not exist produces. Spec 07 section 15: a 404 where it stands, in
   // the default locale, with no negotiation, and with no canonical or alternate relationship,
@@ -6198,45 +6524,104 @@ async function verifyDynamicArticle(row, page) {
  * the failure block can read the page a failing row was on.
  */
 async function verifyBrowserRow(row) {
-  enterStage(`${row.id}-browser-launch`);
   const evidence = browserRowEvidence(row);
   evidence.outcome = 'started';
   browserDiagnostics = createBrowserDiagnostics(row);
-  const diagnostics = browserDiagnostics;
-  browser = await launchBrowserRow(row);
-  evidence.version = browser.version();
-  context = boundCalls(await browser.newContext(), 'context');
-  await recordPolicyViolations(context);
-  page = boundCalls(await context.newPage(), 'page');
-  page.setDefaultTimeout(15_000);
-  page.setDefaultNavigationTimeout(20_000);
+  let diagnostics = browserDiagnostics;
+  let events;
+  let trustedTypes;
 
-  // Attached before the first navigation, so a bound tripping in any stage describes what the row
-  // was doing rather than only naming the stage.
-  attachBrowserDiagnostics(page, diagnostics);
-  const events = logOf(page);
+  // The row's browser, its context and its page, brought to where the stages after the opening
+  // expect them. A function, because a browser replaced part of the way through the row is opened
+  // the same way, through the same launch.
+  const openRow = async () => {
+    enterStage(`${row.id}-browser-launch`);
+    browser = await launchBrowserRow(row);
+    evidence.version = browser.version();
+    context = boundCalls(await browser.newContext(), 'context');
+    await recordPolicyViolations(context);
+    page = boundCalls(await context.newPage(), 'page');
+    page.setDefaultTimeout(15_000);
+    page.setDefaultNavigationTimeout(20_000);
 
-  let releaseScripts;
-  const scriptGate = new Promise((resolveGate) => {
-    releaseScripts = resolveGate;
-  });
-  releaseScriptRequests = releaseScripts;
+    // Attached before the first navigation, so a bound tripping in any stage describes what the
+    // row was doing rather than only naming the stage.
+    attachBrowserDiagnostics(page, diagnostics);
+    events = logOf(page);
 
-  await page.route('**/*.js', async (route) => {
-    await scriptGate;
-    await route.continue();
-  });
+    let releaseScripts;
+    const scriptGate = new Promise((resolveGate) => {
+      releaseScripts = resolveGate;
+    });
+    releaseScriptRequests = releaseScripts;
 
-  const trustedTypes = await verifyHydration(row, page, releaseScripts, events);
+    await page.route('**/*.js', async (route) => {
+      await scriptGate;
+      await route.continue();
+    });
 
-  enterStage(`${row.id}-event-replay`);
-  await page.locator('[data-counter]').click();
-  await page.waitForFunction(() =>
-    document.querySelector('[data-counter]')?.textContent?.includes('count 1'),
-  );
+    trustedTypes = await verifyHydration(row, page, releaseScripts, events);
+
+    enterStage(`${row.id}-event-replay`);
+    await page.locator('[data-counter]').click();
+    await page.waitForFunction(() =>
+      document
+        .querySelector('[data-counter]')
+        ?.textContent?.includes('count 1'),
+    );
+  };
+  await openRow();
+
+  // A browser that left a page's close and then its context's close outstanding is not answering,
+  // and the checks of the step that met it had passed. It is ended, the occurrence is recorded,
+  // and the row is opened again in a fresh one, so the stages that follow run there.
+  const replaceBrowser = async (unanswering) => {
+    const stage = verificationStage;
+    enterStage(`${row.id}-browser-replacement`);
+    // A copy, taken before the browser is ended: its pages go on writing to the one they were
+    // attached with, and what a browser reports while its process is ended is not the
+    // application's.
+    browserDiagnostics = structuredClone(diagnostics);
+    diagnostics = browserDiagnostics;
+    const stalled = browser;
+    context = undefined;
+    page = undefined;
+    await replaceUnansweringBrowser({
+      browser:
+        selfTest === 'unanswering-browser-process'
+          ? boundCalls(new NeverClosing(), 'browser')
+          : stalled,
+      endProcess: endBrowserProcesses,
+      record: ({ processEnded }) =>
+        recordOccurrence({
+          kind: 'browser-replaced',
+          signature: replacementSignature({
+            stage,
+            timeoutMs: callTimeoutMs,
+            processEnded,
+          }),
+          detail: unanswering.message.split('\n')[0],
+        }),
+      launch: openRow,
+    });
+    // The step that met the stall had handed its cookies back to a context that went with the
+    // browser, and the stages that follow read them from the row's.
+    if (returnedCookies !== undefined) {
+      await context.clearCookies();
+      if (returnedCookies.length > 0) await context.addCookies(returnedCookies);
+    }
+    enterStage(stage);
+  };
 
   enterStage(`${row.id}-localized-not-found`);
-  await verifyLocalizedNotFound(row, context, diagnostics);
+  await stepClosingItsOwnPages(
+    () => verifyLocalizedNotFound(row, context, diagnostics),
+    replaceBrowser,
+  );
+  await stepClosingItsOwnPages(
+    () => verifyUnprefixedNotFound(context, diagnostics),
+    replaceBrowser,
+  );
 
   enterStage(`${row.id}-route-deferred-scope`);
   await verifyRouteDeferredScope(row, context, diagnostics);
@@ -6421,6 +6806,12 @@ async function verifyBrowserRow(row) {
   enterStage(`${row.id}-declared-outcomes`);
   await verifyDeclaredOutcomes(row, context, diagnostics);
 
+  enterStage(`${row.id}-declared-shells`);
+  await verifyDeclaredShells(row, context, diagnostics);
+
+  enterStage(`${row.id}-named-route-scopes`);
+  await verifyNamedRouteScopes(row, context, diagnostics);
+
   enterStage(`${row.id}-locale-aliases`);
   await verifyLocaleAliases(row, context, diagnostics);
 
@@ -6460,6 +6851,8 @@ async function verifyBrowserRow(row) {
 let browser;
 let context;
 let page;
+/** The cookies the last step with a context of its own handed back to the row's. */
+let returnedCookies;
 let releaseScriptRequests = () => {};
 let verificationFailure;
 let verificationDiagnostics;
@@ -6771,8 +7164,9 @@ try {
   // The build writes the page at the decoded spelling on disk while the browser asks for it encoded.
   // An `@angular/ssr` that looks it up without decoding keeps its key percent-encoded and misses
   // the asset the same build produced, leaving the address to the fixture's directory fallback.
-  // 22.1.7 decodes first (`baf1ca1`, `ssr.mjs:1379-1382`) and serves this address from its own
-  // prerendered file: 200, `ng-server-context="ssg"`.
+  // From 22.1.7 it decodes first (`baf1ca1`; `AngularServerApp.buildServerAssetPathFromRequest`,
+  // read at 22.2.1) and serves this address from its own prerendered file: 200,
+  // `ng-server-context="ssg"`.
   //
   // The assertion does not move with the version. It says the address serves, in the language it
   // claims, from whichever half of this deployment answers, which is the deployment requirement in

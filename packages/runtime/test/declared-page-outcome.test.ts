@@ -85,6 +85,10 @@ const rendersPage: LocaleRenderer = ({ locale }) =>
     headers: { 'content-type': 'text/html' },
   });
 
+/** What a server answers for a route it leaves to the browser: a document with no page in it. */
+const SHELL =
+  '<!doctype html><html><head><title>Application</title></head><body><app-root></app-root></body></html>';
+
 const get = (handler: ReturnType<typeof handlerWith>, path: string) =>
   handler(new Request(`https://site.example${path}`));
 
@@ -282,6 +286,50 @@ describe('a renderer that states the outcome instead of the page', () => {
     expect(await response.text()).toContain('gone missing');
     claimCapability('outcome:declarePageOutcome', { policy: POLICY });
     claimCapability('outcome:pageAbsent', { policy: POLICY });
+  });
+
+  /**
+   * A route drawn in the browser has no page on the server to declare from, so its renderer
+   * declares and sends the application shell. Section 5 of
+   * `specs/07-routing-rendering-and-seo.spec.md` has the response carry the declared outcome and
+   * the shell arrive as the renderer gave it.
+   */
+  it('sends the application shell a removal was declared with, as the renderer gave it', async () => {
+    const response = await get(
+      handlerWith(() =>
+        declarePageOutcome(
+          pageGone(),
+          new Response(SHELL, { headers: { 'content-type': 'text/html' } }),
+        ),
+      ),
+      '/en-us/second',
+    );
+
+    expect(response.status).toBe(410);
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(response.headers.get('x-robots-tag')).toBe('noindex');
+    expect(await response.text()).toBe(SHELL);
+    claimCapability('outcome:declarePageOutcome', { policy: POLICY });
+  });
+
+  it('sends the application shell a failure was declared with, as the renderer gave it', async () => {
+    const response = await get(
+      handlerWith(() =>
+        declareOperationalFailure(
+          new Response(SHELL, {
+            status: 503,
+            headers: { 'content-type': 'text/html', 'retry-after': '120' },
+          }),
+        ),
+      ),
+      '/en-us/second',
+    );
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(response.headers.get('retry-after')).toBe('120');
+    expect(await response.text()).toBe(SHELL);
+    claimCapability('outcome:declareOperationalFailure', { policy: POLICY });
   });
 
   it('declares an outcome with nothing to draw', async () => {

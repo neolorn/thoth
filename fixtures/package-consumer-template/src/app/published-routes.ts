@@ -43,4 +43,6 @@ export const publishedRoutes = [
     prerender: [{ sheet: 'values' }],
   },
   { routeId: 'route:drawn-sheet', renderMode: RenderMode.Client },
+  // The one page the build writes whose messages are in a scope its own route brings in.
+  { routeId: 'route:deferred', renderMode: RenderMode.Prerender },
 ] as const;

@@ -380,6 +380,65 @@ describe('Equator Router transaction integration', () => {
   });
 
   /**
+   * Before any navigation has landed there is no page to keep on screen, so a scope named as
+   * progressive is loaded ahead of the first one, as a required scope is.
+   *
+   * Section 9 of `specs/06-runtime-and-angular.spec.md` requires it of a server render, a prerender
+   * and the first render in a browser, which are all a first navigation. The mode is progressive,
+   * where a later navigation lands first, so what holds this one is that it is the first.
+   */
+  it('holds the first navigation for the scope progressiveScopes names', async () => {
+    const lazyScope = { providerId: lazyProviderId, scopeId: lazyScopeId };
+    await configureRouterIntegration({
+      mode: 'progressive',
+      progressiveScopes: { 'route:second': [lazyScope] },
+    });
+    const localization = TestBed.inject(Localization);
+    const router = TestBed.inject(Router);
+    const controller = TestBed.inject(LocalizationTestingController);
+    let completed = 0;
+    const counting = router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd) completed += 1;
+    });
+    onTestFinished(() => counting.unsubscribe());
+    await localization.initialize();
+
+    const held = controller.deferNext(lazyScope, 'en-US');
+    let landed = false;
+    const navigation = router
+      .navigateByUrl(pagePath('second', 'en-US'))
+      .then((arrived) => {
+        landed = true;
+        return arrived;
+      });
+    // Whichever happens first. A navigation that lands without asking for the scope never starts
+    // the load, and waiting on the load alone would report that as a timeout.
+    expect(
+      await Promise.race([
+        held.started.then(() => 'the scope was asked for'),
+        navigation.then(() => 'the navigation landed'),
+      ]),
+      'the first navigation, with no page before it to keep on screen',
+    ).toBe('the scope was asked for');
+    for (let hop = 0; hop < 10; hop += 1) await Promise.resolve();
+    expect(
+      landed,
+      'the first navigation finished before the scope progressiveScopes names had loaded',
+    ).toBe(false);
+
+    held.release();
+    await expect(navigation).resolves.toBe(true);
+    expect(router.url).toBe('/second');
+    expect(localization.scopeReadiness(lazyScope)().status).toBe('ready');
+    // The navigation held is the first, so nothing was reached by a client navigation.
+    claimCapability('declaration:RouteLocalizationOptions.progressiveScopes', {
+      policy: routePolicy,
+      platform: TestBed.inject(PLATFORM_ID) as string,
+      clientNavigations: completed - 1,
+    });
+  });
+
+  /**
    * An address the projection does not contain is not a localization failure: the
    * locale resolved and only the page is unknown, so the navigation completes and the application
    * answers. Throwing here abandoned it, and no application's not-found page ever rendered.

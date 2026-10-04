@@ -71,7 +71,7 @@ It takes about three hours on a machine with 32 logical processors, most of it i
 
 The suite runs below normal priority and uses at most half of the machine's logical processors, counting its stages and the workers their test runners start. Set `EQUATOR_VERIFY_PROCESSORS` to a number of logical processors to give it a different share. It does not start a stage while less than a quarter of the machine's memory is free, and only one run goes at a time.
 
-When a browser engine never finishes closing a page in a browser row, the suite closes that page's browser context instead and carries on. The verdict line and the attempt ledger count each time it did, so a rising rate shows there.
+When a browser engine never finishes closing a page in a browser row, the suite closes that page's browser context instead and carries on. When the context does not close either, the suite closes that browser, ends its process if the browser's own close does not finish, and runs the rest of the row in a fresh one. The verdict line and the attempt ledger count each time it did either, so a rising rate shows there.
 
 Three commands are maintenance rather than checks:
 

@@ -709,6 +709,16 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/declared-page-outcome.test.ts',
   },
   {
+    id: 'declared-document-not-sent-as-given',
+    invariant:
+      'The document a renderer sends with a declared outcome reaches the response as the renderer gave it.',
+    source: 'packages/runtime/http/src/handler.ts',
+    find: '    return new Response(rendered.body, {\n      status: effective.status,',
+    replace:
+      '    return new Response(carriesDeclaration ? null : rendered.body, {\n      status: effective.status,',
+    caughtBy: 'packages/runtime/test/declared-page-outcome.test.ts',
+  },
+  {
     id: 'page-outcome-channel-unread',
     invariant:
       "A page's declared outcome reaches the response over the channel the render shares with the handler.",
@@ -1455,6 +1465,24 @@ export const injections = Object.freeze([
     find: '    if (exact.has(input.path) || existing !== undefined) {',
     replace: '    if (exact.has(input.path)) {',
     caughtBy: 'packages/toolkit/test/artifact-output.test.ts',
+  },
+  {
+    id: 'scope-named-as-a-generated-module-admitted',
+    invariant:
+      'A scope whose name is that of a generated module is refused, and neither module is written over the other.',
+    source: 'packages/toolkit/src/output-plan.ts',
+    find: '    if (exact.has(input.path) || existing !== undefined) {',
+    replace: '    if (input.path.length === 0) {',
+    caughtBy: 'packages/toolkit/test/scope-names-reserved.test.ts',
+  },
+  {
+    id: 'scope-named-as-a-device-admitted',
+    invariant:
+      'A scope whose name a platform reserves for a device is refused, because that platform gives the name to no file.',
+    source: 'packages/toolkit/src/output-plan.ts',
+    find: "      segment.normalize('NFC') !== segment ||\n      windowsReservedName.test(segment)",
+    replace: "      segment.normalize('NFC') !== segment",
+    caughtBy: 'packages/toolkit/test/scope-names-reserved.test.ts',
   },
   {
     id: 'recovery-payload-not-minimal',
@@ -3632,6 +3660,24 @@ export const injections = Object.freeze([
     find: "      closed = new Promise((resolveClosed) => {\n        closing.once('close', () => resolveClosed());\n      });\n      closing.close();\n",
     replace: '      void closing;\n',
     caughtBy: 'packages/toolkit/test/watch-foreground.test.ts',
+  },
+  {
+    id: 'watch-repeats-a-cycle-over-unchanged-inputs',
+    invariant:
+      'A watch cycle that rereads the inputs the cycle before it settled generates nothing and reports nothing.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '      if (inputs === settledInputs) return;\n',
+    replace: '',
+    caughtBy: 'packages/toolkit/test/watch-unchanged-inputs.test.ts',
+  },
+  {
+    id: 'watch-settles-a-cycle-its-inputs-did-not-decide',
+    invariant:
+      'A watch cycle stopped by something other than its inputs runs again on the next event, over the same inputs.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '      if (decidedByInputs) settledInputs = inputs;',
+    replace: '      settledInputs = inputs;',
+    caughtBy: 'packages/toolkit/test/watch-unchanged-inputs.test.ts',
   },
   {
     id: 'watch-skips-startup-reconciliation',

@@ -133,6 +133,10 @@ export interface RouteLocalizationOptions {
    *
    * The page renders without them and picks them up when they arrive, which is the right shape for
    * text below the fold or behind an interaction.
+   *
+   * A render with no page before it loads them ahead of itself, as it loads `requiredScopes`: a
+   * server render, a prerender, and the first render in a browser. The document a server sends
+   * therefore carries them, and they arrive alongside only on a navigation after the first.
    */
   readonly progressiveScopes?:
     | readonly LocalizationScope[]
@@ -454,6 +458,13 @@ export class RouteLocalization {
   private readonly pending = new Map<number, PendingRoute>();
   private commitPromise: Promise<LocaleChangeResult> | undefined;
   private restoringUrl = false;
+  /**
+   * Whether a navigation has landed, so a view is on screen for the next one to replace.
+   *
+   * False through a server render and a prerender, which are one navigation each, and through the
+   * first navigation in a browser.
+   */
+  private landed = false;
   /** The language the document currently states, as against the locale that is committed. */
   private documentLocale: string | undefined;
 
@@ -534,6 +545,7 @@ export class RouteLocalization {
     });
     const subscription = this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {
+        this.landed = true;
         const pending = this.pending.get(event.id);
         if (pending !== undefined) {
           this.pending.delete(event.id);
@@ -721,14 +733,24 @@ export class RouteLocalization {
     // What this route needs, and what the application additionally asked for. The derived set is
     // the reason a deferred scope is safe to defer: the route's code arrives when it activates and
     // its messages arrive with it, without anything listing scopes per route.
-    const scopes = mergeScopes(
-      derivedScopes(this.options.projection, resolution.routeId),
-      configuredScopes(this.options.requiredScopes, resolution.routeId),
-    );
-    const progressiveScopes = configuredScopes(
+    //
+    // A scope named as progressive arrives beside a navigation because the page before it stays on
+    // screen meanwhile. Before the first navigation has landed there is no such page: a server
+    // render or a prerender would end without the scope, and the first render in a browser would
+    // draw without it. So there it is loaded ahead of the render, as a required one is, which
+    // section 9 of `specs/06-runtime-and-angular.spec.md` requires.
+    const named = configuredScopes(
       this.options.progressiveScopes,
       resolution.routeId,
     );
+    const scopes = mergeScopes(
+      derivedScopes(this.options.projection, resolution.routeId),
+      configuredScopes(this.options.requiredScopes, resolution.routeId),
+      this.landed ? [] : named,
+    );
+    const progressiveScopes: readonly LocalizationScope[] = this.landed
+      ? named
+      : [];
     await Promise.all(
       scopes.map((scope) =>
         this.localization.preloadScope(scope, resolution.locale),

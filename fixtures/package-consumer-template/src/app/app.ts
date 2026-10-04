@@ -101,7 +101,7 @@ import { FeatureLabReadiness } from './readiness';
         <p data-inert-text>{{ inertText() }}</p>
         <p data-pipe>{{ messages.appTitle | localize }}</p>
         <!-- An attribute is where the ordinary ways of putting a message in a template run out. -->
-        <div data-label [localizedLabel]="messages.appTitle"></div>
+        <section data-label [localizedLabel]="messages.appTitle"></section>
         <img
           data-label-alt
           alt="static alt"
@@ -253,6 +253,7 @@ import { FeatureLabReadiness } from './readiness';
           </button>
         }
         <p data-lazy-readiness>{{ lazyReadiness().status }}</p>
+        <p data-change-mode>{{ changeMode() }}</p>
         <p data-lazy-message>{{ lazyText() }}</p>
         <section
           data-ssr-probe
@@ -337,6 +338,13 @@ export class App {
     () => this.localization.snapshot()?.primaryLocale ?? 'uninitialized',
   );
   protected readonly targetLocale = this.localization.targetLocale;
+  /**
+   * The mode the last locale transaction ran in. On a page nobody has switched yet that is the
+   * transaction its own navigation made, so the page says which mode the router was given.
+   */
+  protected readonly changeMode = computed(
+    () => this.localization.lastResult()?.mode ?? 'none',
+  );
   protected readonly localeChoices = this.localization.localeChoices;
   /** The locale a switch would move to, which is the one that is not current. */
   protected readonly progressiveTarget = computed(() =>

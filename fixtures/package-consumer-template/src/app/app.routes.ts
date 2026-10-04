@@ -267,14 +267,23 @@ export const routes = [
     data: { equatorRouteId: 'item', equatorIndexing: 'non-indexable' },
   },
   {
-    // The only lazy boundary with a scope of its own, and therefore the only reason any scope of
-    // this application is not a startup scope.
+    // A lazy boundary with a scope of its own, which is the reason a scope of this application is
+    // not a startup scope.
     path: 'lazy',
     loadComponent: () =>
       import('./lazy-route').then((module) => module.FeatureLabLazyRoute),
     // Declared per visitor so the served application answers one page from a route declaration
     // that the toolkit read out of this file.
     data: { equatorIndexing: 'non-indexable', equatorCaching: 'per-visitor' },
+  },
+  {
+    // The same page at a route every visitor may be given, so a build can write it. A per-visitor
+    // route is refused by a build, and this is where the scope a route brings in is shown reaching
+    // a page written ahead of any request.
+    path: 'deferred',
+    loadComponent: () =>
+      import('./lazy-route').then((module) => module.FeatureLabLazyRoute),
+    data: { equatorIndexing: 'non-indexable' },
   },
   {
     path: 'articles/:slug',

@@ -212,6 +212,14 @@ newly activated scope behind its readiness boundary or keep its previous compati
 NOT publish a partial scope, and MUST NOT present a catalog from an unrelated locale as the
 committed target.
 
+A consumer application may name further scopes for a route, as required or as progressive. A
+required scope holds the navigation as a derived one does. A progressive scope arrives alongside a
+navigation made in progressive mode, while the view before it stays on screen. A render with no
+earlier view has nothing to keep on screen: a server render, a prerender, and the first render in a
+browser. In such a render a release MUST load a scope a route names as progressive before the render
+completes, as it loads a required one. A progressive scope differs from a required one only on a
+later navigation.
+
 ## 10. Server rendering, transfer, and hydration
 
 Server rendering and prerendering use a request-local context. A release MUST NOT emit a

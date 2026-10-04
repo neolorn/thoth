@@ -30,9 +30,14 @@ import {
   provideLocalizedRouter,
 } from '@neolorn/equator/router';
 import { provideLocalization } from '#i18n';
+import {
+  providerId as lazyProviderId,
+  scopeId as lazyScopeId,
+} from '#i18n/lazy';
 import { messages } from '#i18n/shell';
 
 import { routes } from './app.routes';
+import { routeTransitions } from './route-transitions';
 import { localeCookie } from './locale-cookie';
 import { overlayLocale } from './overlay-locale';
 import { runtimeExtensions } from './runtime-extensions';
@@ -151,6 +156,35 @@ const OUTCOME_DOCUMENTS = {
 } as const;
 
 /**
+ * The lazy page's scope, named for routes whose own code never asks for it.
+ *
+ * The root component shows whether this scope is ready on every page, so on each route below the
+ * page itself says whether the option that names it there was honoured. Only the scope's identity
+ * is read here. Reading one of its messages would put it in the first render's bundle and make it a
+ * startup scope, which no option could then be seen to load.
+ */
+const LAZY_SCOPE = Object.freeze({
+  providerId: lazyProviderId,
+  scopeId: lazyScopeId,
+});
+
+/**
+ * Scopes a route needs ready before it is shown, beyond the ones its own code brings in. The
+ * exercise sheet is drawn on request and written by the build, so one route shows both.
+ */
+const REQUIRED_SCOPES = { exercise: [LAZY_SCOPE] } as const;
+
+/**
+ * Scopes a route may be shown ahead of. The dossier is drawn on request and the article is written
+ * by the build, and in both the first render has no page before it to keep on screen, so the scope
+ * is loaded before either is sent.
+ */
+const PROGRESSIVE_SCOPES = {
+  dossier: [LAZY_SCOPE],
+  article: [LAZY_SCOPE],
+} as const;
+
+/**
  * What a screen reader hears when the language changes: the page's title, in the language just
  * arrived at. Equator's own wording names the language, which a reader who chose it already knows;
  * the title says where they are. Equator asks for the wording once it has written the head, so the
@@ -184,6 +218,9 @@ export const appConfig: ApplicationConfig = {
         origin: SITE_ORIGIN,
         documentMetadata: ROUTE_DOCUMENTS,
         outcomeDocuments: OUTCOME_DOCUMENTS,
+        ...routeTransitions,
+        requiredScopes: REQUIRED_SCOPES,
+        progressiveScopes: PROGRESSIVE_SCOPES,
         // What no catalog can hold: the article's own title, and the preview image URL. Everything
         // static is above, so this is down to the two facts that are genuinely dynamic and the one
         // that is genuinely this deployment's.

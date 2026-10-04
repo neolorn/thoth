@@ -1,6 +1,6 @@
 /**
  * The bound on every Playwright call a browser row makes, and the teardown that survives a page
- * the browser never finishes closing.
+ * the browser never finishes closing, or a browser that stops answering its closes altogether.
  *
  * Kept apart from the row so its self-test drives the same bound the rows run under, with objects
  * of its own in place of a browser.
@@ -11,6 +11,11 @@ import assert from 'node:assert/strict';
 /** A call that was still outstanding when its bound tripped. */
 export class UnsettledCall extends Error {
   name = 'UnsettledCall';
+}
+
+/** A browser that left the close of a page, and then of that page's context, outstanding. */
+export class UnansweringBrowser extends Error {
+  name = 'UnansweringBrowser';
 }
 
 // The argument itself is the name. A line number would name this file, which is not where the wait
@@ -134,30 +139,85 @@ export function createCallBound({ timeoutMs, describe }) {
  * Firefox under Playwright has been seen acknowledging a page's close and never reporting the page
  * detached, after every check on the page had passed, so the close never settles. That is the
  * driver's teardown failing rather than a verification, and closing the context disposes of the
- * page with it. `record` is handed the unsettled close and returns what it recorded; the result is
- * that record, or `undefined` when the page closed. A context that does not close either means the
- * browser is not answering, and that throws, naming both.
+ * page with it. `record` is handed the unsettled close once the context has closed and returns what
+ * it recorded; the result is that record, or `undefined` when the page closed. A context whose
+ * close does not settle either means the browser is not answering, and that throws an
+ * `UnansweringBrowser` naming both, with nothing recorded: what the caller does about the browser
+ * is the occurrence. A context that fails to close in any other way is the row's failure.
  *
  * Only for a page whose context holds nothing else: closing a context the row goes on using would
  * turn a teardown into a failure of whatever runs next.
  */
 export async function closePageWithItsContext(page, context, record) {
-  let occurrence;
   try {
     await page.close();
   } catch (error) {
     if (!(error instanceof UnsettledCall)) throw error;
-    occurrence = record(error);
     try {
       await context.close();
     } catch (contextError) {
-      throw new Error(
-        `${error.message}\n\nThe page's own context was closed in its place, and that did not settle either:\n${contextError.message}`,
-        { cause: contextError },
-      );
+      const message = `${error.message}\n\nThe page's own context was closed in its place, and that did not settle either:\n${contextError.message}`;
+      throw contextError instanceof UnsettledCall
+        ? new UnansweringBrowser(message, { cause: contextError })
+        : new Error(message, { cause: contextError });
     }
-    return occurrence;
+    return record(error);
   }
   await context.close();
   return undefined;
+}
+
+/**
+ * Run a step of a row that ends by closing a page and a context of its own.
+ *
+ * The close is the step's last act, so an `UnansweringBrowser` out of it means every check of the
+ * step passed and only the browser's teardown is outstanding. `replace` is handed that error and
+ * puts a fresh browser in the stalled one's place, and the row goes on with the step after this
+ * one. Anything else a step throws is the row's failure.
+ */
+export async function stepClosingItsOwnPages(step, replace) {
+  try {
+    await step();
+  } catch (error) {
+    if (!(error instanceof UnansweringBrowser)) throw error;
+    await replace(error);
+  }
+}
+
+/**
+ * How a replaced browser is named where occurrences are counted: the stage it stalled in, the bound
+ * both closes ran past, and whether its process had to be ended.
+ */
+export const replacementSignature = ({ stage, timeoutMs, processEnded }) =>
+  `${stage}: page.close and then context.close did not settle within ${timeoutMs}ms, so the browser was closed${
+    processEnded
+      ? ', which did not settle either, so its process was ended,'
+      : ''
+  } and a fresh one launched in its place`;
+
+/**
+ * End a browser that has stopped answering, and start another in its place.
+ *
+ * `browser.close()` runs under the same bound as every other call. Where it does not settle
+ * either, `endProcess` ends the browser's process, which is all that is left: the browser is
+ * already not answering the driver. `record` is handed whether that was needed and records the
+ * occurrence, before the launch, so a launch that fails still leaves it. Resolves to what `launch`
+ * resolves to. A close that fails in any other way is the row's failure, and nothing is launched.
+ */
+export async function replaceUnansweringBrowser({
+  browser,
+  endProcess,
+  record,
+  launch,
+}) {
+  let processEnded = false;
+  try {
+    await browser.close();
+  } catch (error) {
+    if (!(error instanceof UnsettledCall)) throw error;
+    await endProcess();
+    processEnded = true;
+  }
+  record({ processEnded });
+  return launch();
 }

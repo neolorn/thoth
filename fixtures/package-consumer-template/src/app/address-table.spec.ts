@@ -34,8 +34,11 @@ const routed = {
   home: 'route:_index',
   second: 'route:second',
   lazy: 'route:lazy',
+  deferred: 'route:deferred',
   'drawn sheet': 'route:drawn-sheet',
   item: 'item',
+  'withdrawn item': 'item',
+  'unreachable item': 'item',
   article: 'article',
   topic: 'topic',
   'unfiled topic': 'topic',
@@ -44,6 +47,16 @@ const routed = {
   dossier: 'dossier',
   'withdrawn dossier': 'dossier',
   'unreachable dossier': 'dossier',
+} as const;
+
+/**
+ * The item each item page names: one the browser draws as it is, and two the server answers for
+ * before the browser draws anything.
+ */
+const items = {
+  item: 42,
+  'withdrawn item': 410,
+  'unreachable item': 503,
 } as const;
 
 /**
@@ -93,6 +106,13 @@ const build = (page: RoutedPage, locale: string): string => {
         'route:lazy',
         locale,
       );
+    case 'deferred':
+      return buildLocalizedRoute(
+        routePolicy,
+        appRouteProjection,
+        'route:deferred',
+        locale,
+      );
     case 'drawn sheet':
       return buildLocalizedRoute(
         routePolicy,
@@ -101,12 +121,14 @@ const build = (page: RoutedPage, locale: string): string => {
         locale,
       );
     case 'item':
+    case 'withdrawn item':
+    case 'unreachable item':
       return buildLocalizedRoute(
         routePolicy,
         appRouteProjection,
         'item',
         locale,
-        { id: 42 },
+        { id: items[page] },
       );
     case 'article':
       return buildLocalizedRoute(

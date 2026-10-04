@@ -50,6 +50,16 @@ export const injections = Object.freeze([
     ].join('\n'),
   },
   {
+    id: 'progressive-scope-left-out-of-a-first-render',
+    invariant:
+      'A render with no earlier view loads a scope its route names as progressive before it completes, as it loads a required one.',
+    // The consumer's route-localization spec holds the scope's load open across the first
+    // navigation, which lands without waiting once the scope goes back to arriving alongside it.
+    source: 'packages/runtime/router/src/route-localization.ts',
+    find: '      this.landed ? [] : named,',
+    replace: '      [],',
+  },
+  {
     id: 'not-found-abandons-the-navigation',
     invariant:
       "A not-found commits its locale and lets the application's own routing answer, rather than throwing.",

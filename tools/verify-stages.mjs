@@ -161,7 +161,8 @@ const declared = Object.freeze([
   },
   // Drives the browser rows' call bound and page teardown with objects of its own in place of a
   // browser: a page whose close never settles is closed with its context and recorded where this
-  // gate reads occurrences, and a context that does not close either fails the row.
+  // gate reads occurrences, and a browser whose context does not close either is ended, recorded
+  // there too, and replaced by a fresh one that the rest of the row runs in.
   { id: 'verify:browser-teardown:self-test', reads: ['source:tools'] },
   // Plants a document and a map beside it and requires the reader to find each planted statement
   // and the map to refuse each planted defect, so the stage below cannot pass by reading nothing.
@@ -531,13 +532,20 @@ const declared = Object.freeze([
   // Runs the stage below over a copy of the built runtime, once unchanged and once per defect
   // `stage-plants.mjs` plants for it: a heap check that cannot be measured, and a catalog admitted
   // again on every request. Each has to be refused by name.
+  //
+  // Both run alone. Several of the budgets are growth ratios of wall-clock medians, and a median
+  // taken while other stages hold the processors measures them as well: the planted quadratic
+  // `variants-rescanned` reads 14.1x against a limit of 9x with nothing beside it, and passed with
+  // twelve stages running. A reading the load can move is evidence only of the load.
   {
     id: 'verify:cost-budget:self-test',
     reads: ['consumer:package', 'dist:runtime'],
+    exclusive: true,
   },
   {
     id: 'verify:cost-budget',
     reads: ['consumer:package', 'dist:runtime'],
+    exclusive: true,
     needs: [
       {
         on: 'verify:cost-budget:self-test',
@@ -651,8 +659,8 @@ const declared = Object.freeze([
     reads: ['consumer:package', 'source:packages', 'source:tools'],
   },
   // The browser rows run alone: serial among themselves and not overlapped with anything else
-  // either. This is the one exclusion that is declared rather than derived: they share no artefact,
-  // and what they contend for is the machine's browsers, which no read or write records.
+  // either. Like the cost budget's, this exclusion is declared rather than derived: they share no
+  // artefact, and what they contend for is the machine's browsers, which no read or write records.
   //
   // Alone rather than merely serial, because that is what the evidence covers. The Firefox row's
   // arming failure measures 3 in 40, [0.026, 0.199], on the row run by itself, and a rate measured

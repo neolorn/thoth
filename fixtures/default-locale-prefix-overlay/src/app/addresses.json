@@ -1,6 +1,6 @@
 {
   "policy": "default-locale-prefix",
-  "prerendered": ["second", "article", "exercise values"],
+  "prerendered": ["second", "article", "exercise values", "deferred"],
   "xDefault": "https://site.example/",
   "localeNeutralRoots": ["assets"],
   "revalidateSuccess": false,
@@ -25,10 +25,25 @@
       "ar-EG": "/ar-eg/lazy",
       "en-Arab-XB": "/en-arab-xb/lazy"
     },
+    "deferred": {
+      "en-US": "/deferred",
+      "ar-EG": "/ar-eg/deferred",
+      "en-Arab-XB": "/en-arab-xb/deferred"
+    },
     "item": {
       "en-US": "/items/42",
       "ar-EG": "/ar-eg/عناصر/42",
       "en-Arab-XB": "/en-arab-xb/items/42"
+    },
+    "withdrawn item": {
+      "en-US": "/items/410",
+      "ar-EG": "/ar-eg/عناصر/410",
+      "en-Arab-XB": "/en-arab-xb/items/410"
+    },
+    "unreachable item": {
+      "en-US": "/items/503",
+      "ar-EG": "/ar-eg/عناصر/503",
+      "en-Arab-XB": "/en-arab-xb/items/503"
     },
     "article": {
       "en-US": "/articles/handbook",

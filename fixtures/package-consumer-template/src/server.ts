@@ -108,6 +108,17 @@ function shortDocument(locale: string, init?: ResponseInit): Response {
 const dossiers = new DossierStore();
 
 /**
+ * Items this deployment answers for before any page is drawn: one withdrawn for good, and one whose
+ * record the catalogue cannot reach.
+ *
+ * The item page is drawn in the browser, so nothing on the server renders it and nothing there can
+ * declare what became of an item. The server knows before it answers, so it declares, and the
+ * document it sends is the application shell the item page is always answered with.
+ */
+const WITHDRAWN_ITEMS: ReadonlySet<number> = new Set([410]);
+const UNREACHABLE_ITEMS: ReadonlySet<number> = new Set([503]);
+
+/**
  * Exported because the server seat takes the same options: a test that builds its seat from this
  * object asserts what this deployment answers rather than what a copy of its configuration would.
  */
@@ -140,6 +151,25 @@ export const localeRequestOptions: LocaleRequestHandlerOptions = {
             headers: { 'Retry-After': '120' },
           }),
         );
+      }
+    }
+    // An item's standing is known before the shell is sent, and the shell is all this server has
+    // for a page the browser draws. It is sent as the engine returns it: the status, the caching
+    // and the indexing are the declaration's, and the head is the browser's to write.
+    if (resolution.status === 'success' && resolution.routeId === 'item') {
+      const id = resolution.parameters['id'];
+      const withdrawn = typeof id === 'number' && WITHDRAWN_ITEMS.has(id);
+      const unreachable = typeof id === 'number' && UNREACHABLE_ITEMS.has(id);
+      if (withdrawn || unreachable) {
+        const shell = await engine.handle(request, createProbeContext(request));
+        if (shell !== null) {
+          if (withdrawn) return declarePageOutcome(pageGone(), shell);
+          const headers = new Headers(shell.headers);
+          headers.set('Retry-After', '120');
+          return declareOperationalFailure(
+            new Response(shell.body, { status: 503, headers }),
+          );
+        }
       }
     }
     // Every answer the router writes a head for is rendered by the application: a page, and the

@@ -1569,6 +1569,8 @@ function verifyRouteDeclarations() {
     ['unavailable topic', ''],
     ['withdrawn dossier', ''],
     ['unreachable dossier', ''],
+    ['withdrawn item', ''],
+    ['unreachable item', ''],
   ];
   const answers = serverAnswers(
     asked.map(([page, query]) => ({
@@ -1768,8 +1770,219 @@ function verifyRouteDeclarations() {
     'outcome:declareOperationalFailure',
     observed('unreachable dossier'),
   );
+
+  // The item page is drawn in the browser, so what the server has for it is the application shell,
+  // and server.ts declares what became of an item with that shell as the document. The response
+  // carries the declared outcome, and the shell arrives as the one item is answered with, which
+  // section 5 of `specs/07-routing-rendering-and-seo.spec.md` requires: nothing is written into it.
+  // No claim is made here, because nothing in these answers shows a browser drawing the page; the
+  // browser row claims it.
+  const shell = answered.get('item').body;
+  assert.doesNotMatch(
+    shell,
+    /\bng-server-context=/u,
+    'item is RenderMode.Client, and the server rendered it',
+  );
+  assert.equal(
+    status('withdrawn item'),
+    410,
+    `server.ts declared declarePageOutcome(pageGone()) with the application shell for the withdrawn item and was answered ${status('withdrawn item')}`,
+  );
+  assert.equal(header('withdrawn item', 'content-language'), locale);
+  assert.equal(header('withdrawn item', 'x-robots-tag'), 'noindex');
+  assert.equal(header('withdrawn item', 'cache-control'), 'private, no-store');
+  assert.equal(
+    answered.get('withdrawn item').body,
+    shell,
+    'the shell sent with the removal declared for the withdrawn item is not the shell item is answered with',
+  );
+  assert.equal(
+    status('unreachable item'),
+    503,
+    `server.ts declared declareOperationalFailure with the application shell and a 503 for the unreachable item and was answered ${status('unreachable item')}`,
+  );
+  assert.equal(header('unreachable item', 'content-language'), locale);
+  assert.equal(
+    header('unreachable item', 'cache-control'),
+    'private, no-store',
+  );
+  assert.equal(header('unreachable item', 'retry-after'), '120');
+  // An operational failure says nothing about the address, so the item's own indexing stands.
+  assert.equal(header('unreachable item', 'x-robots-tag'), 'noindex');
+  assert.equal(
+    answered.get('unreachable item').body,
+    shell,
+    'the shell sent with the failure declared for the unreachable item is not the shell item is answered with',
+  );
 }
 verifyRouteDeclarations();
+
+/**
+ * The scopes a route is shown with beyond the startup ones, read off documents no browser has
+ * touched: what the server drew on request and what the build wrote.
+ *
+ * The root component shows on every page whether the lazy page's scope is ready, so each document
+ * says for itself whether that scope had loaded before the render that produced it completed.
+ * `app.config.ts` names the scope in `requiredScopes` for the exercise sheet and in
+ * `progressiveScopes` for the dossier and the article, and the generated route table lists it in
+ * the deferred page's `scopes`. Home names it nowhere and is the control: a scope loaded there
+ * would be loaded everywhere, and no page could then show an option loading it.
+ */
+function verifyRouteScopes() {
+  const locale = INIT_REQUEST.defaultLocale;
+  const asked = ['exercise', 'dossier', 'home'];
+  const answers = serverAnswers(
+    asked.map((page) => ({
+      origin: addresses.origin(locale),
+      path: addresses.path(page, locale),
+    })),
+  );
+  const drawn = new Map(asked.map((page, index) => [page, answers[index]]));
+  for (const page of asked) {
+    assert.equal(drawn.get(page).status, 200, `${page} was not answered`);
+    assert.match(
+      drawn.get(page).body,
+      /\bng-server-context="ssr"/u,
+      `${page} was not rendered for the request`,
+    );
+  }
+  const { policy } = sheetInDocument(drawn.get('exercise').body);
+  // What the page says of the lazy scope, or nothing where the page does not say.
+  const readiness = (html) =>
+    new JSDOM(html).window.document
+      .querySelector('[data-lazy-readiness]')
+      ?.textContent?.trim();
+  // What the build wrote for a page in a locale, where it prerenders the page there.
+  const written = (page, each) => {
+    const file = prerenderedFile(page, each);
+    if (file === undefined) return undefined;
+    const path = resolve(
+      consumerRoot,
+      builds.output(addresses.origin(each)),
+      'browser',
+      file,
+    );
+    assert.ok(existsSync(path), `The build wrote no ${page} in ${each}`);
+    const document = readFileSync(path, 'utf8');
+    assert.match(
+      document,
+      /\bng-server-context="ssg"/u,
+      `${page} in ${each} was not written by the build`,
+    );
+    return document;
+  };
+
+  assert.equal(
+    readiness(drawn.get('home').body),
+    'idle',
+    'home names the lazy scope in no option and its route table entry lists none, and the page the server drew does not show it idle',
+  );
+
+  assert.equal(
+    readiness(drawn.get('exercise').body),
+    'ready',
+    'requiredScopes names the lazy scope for the exercise route, and the server completed the render before it had loaded',
+  );
+  recordCapabilityClaim(
+    `${consumerName}: a required scope, rendered on request`,
+    'declaration:RouteLocalizationOptions.requiredScopes',
+    { document: drawn.get('exercise').body, policy },
+  );
+  assert.equal(
+    readiness(drawn.get('dossier').body),
+    'ready',
+    'progressiveScopes names the lazy scope for the dossier route, a server render has no earlier view to keep on screen, and the server completed the render before the scope had loaded',
+  );
+  recordCapabilityClaim(
+    `${consumerName}: a progressive scope, rendered on request`,
+    'declaration:RouteLocalizationOptions.progressiveScopes',
+    { document: drawn.get('dossier').body, policy },
+  );
+
+  // The mode the page's own navigation ran its locale transaction in, which the root component
+  // shows. `route-transitions.ts` declares it, and the address table names it where a row declares
+  // one other than the default, so only there does the page show the option rather than what a
+  // navigation does without it, and only there is the option claimed.
+  const changeMode = (html) =>
+    new JSDOM(html).window.document
+      .querySelector('[data-change-mode]')
+      ?.textContent?.trim();
+  const declaredMode = addresses.navigationMode ?? 'coordinated';
+  assert.equal(
+    changeMode(drawn.get('exercise').body),
+    declaredMode,
+    `route-transitions.ts declares mode ${declaredMode}, and the navigation the server made for the exercise sheet did not run in it`,
+  );
+  if (addresses.navigationMode !== undefined) {
+    recordCapabilityClaim(
+      `${consumerName}: the declared mode, rendered on request`,
+      'declaration:RouteLocalizationOptions.mode',
+      { document: drawn.get('exercise').body, policy },
+    );
+  }
+
+  // What the lazy page says once its scope is there, in the locales whose wording is held here.
+  const lazyStatus = new Map([
+    ['en-US', 'Lazy scope ready.'],
+    ['ar-EG', 'النطاق الكسول جاهز.'],
+  ]);
+  for (const each of INIT_REQUEST.locales) {
+    const sheet = written('exercise values', each);
+    if (sheet !== undefined) {
+      assert.equal(
+        readiness(sheet),
+        'ready',
+        `requiredScopes names the lazy scope for the exercise route, and the build wrote the sheet in ${each} before it had loaded`,
+      );
+      recordCapabilityClaim(
+        `${consumerName}: a required scope in ${each}, prerendered`,
+        'declaration:RouteLocalizationOptions.requiredScopes',
+        { document: sheet, policy },
+      );
+      assert.equal(
+        changeMode(sheet),
+        declaredMode,
+        `route-transitions.ts declares mode ${declaredMode}, and the navigation the build made for the exercise sheet in ${each} did not run in it`,
+      );
+      if (addresses.navigationMode !== undefined) {
+        recordCapabilityClaim(
+          `${consumerName}: the declared mode in ${each}, prerendered`,
+          'declaration:RouteLocalizationOptions.mode',
+          { document: sheet, policy },
+        );
+      }
+    }
+    const article = written('article', each);
+    if (article !== undefined) {
+      assert.equal(
+        readiness(article),
+        'ready',
+        `progressiveScopes names the lazy scope for the article route, a prerender has no earlier view to keep on screen, and the build wrote the article in ${each} before the scope had loaded`,
+      );
+      recordCapabilityClaim(
+        `${consumerName}: a progressive scope in ${each}, prerendered`,
+        'declaration:RouteLocalizationOptions.progressiveScopes',
+        { document: article, policy },
+      );
+    }
+    const deferred = written('deferred', each);
+    if (deferred !== undefined && lazyStatus.has(each)) {
+      assert.equal(
+        new JSDOM(deferred).window.document
+          .querySelector('[data-route-view="lazy"]')
+          ?.textContent?.trim(),
+        lazyStatus.get(each),
+        `the generated route table's scopes name the lazy scope for the deferred route, and the page the build wrote in ${each} does not show the message that scope holds`,
+      );
+      recordCapabilityClaim(
+        `${consumerName}: a route's own scope in ${each}, prerendered`,
+        'declaration:GeneratedRouteProjectionEntry.scopes',
+        { document: deferred, policy },
+      );
+    }
+  }
+}
+verifyRouteScopes();
 
 /**
  * What each page's head says, declared once per route in `documentMetadata` and once per outcome
@@ -1941,9 +2154,10 @@ function verifyAddressDeclarations() {
   let next = 1;
 
   // The build writes the head of every page it prerenders with the same policy, so the pages it
-  // offers to an index carry the same x-default. The exercise sheet is not one of them.
+  // offers to an index carry the same x-default. The exercise sheet and the deferred page are
+  // declared non-indexable, so neither is one of them.
   for (const page of addresses.prerendered.filter(
-    (each) => each !== 'exercise values',
+    (each) => each !== 'exercise values' && each !== 'deferred',
   )) {
     for (const each of INIT_REQUEST.locales) {
       if (!addresses.has(page, each)) continue;
@@ -2653,12 +2867,9 @@ async function verifyWatchEvents(cliPath, catalogFile, catalog, policy) {
   let pending = '';
   let stderr = '';
   let aliveAfterFailure = false;
-  // Each edit waits for the outcome of the one before it rather than for a count of events, because
-  // a read can itself be an event: where the platform records access times, reading an input not
-  // read for a while is reported as a change, so any cycle can schedule another over the same
-  // input. `specs/10-compiler-and-tooling.spec.md` section 13 makes events hints, so that cycle is
-  // the watch working. It repeats the outcome before it, and is the only extra cycle the assertion
-  // below lets through.
+  // Each edit waits for the outcome of the one before it rather than for a count of events, so an
+  // event nobody expected is left for the assertion below to name with the whole list beside it,
+  // and does not move the edits out of step first.
   let step = 'start';
   const completed = new Promise((resolvePromise, rejectPromise) => {
     // One bound on silence and one on the whole, as `verifyWatchCommand` has, for its reason.
@@ -2739,15 +2950,12 @@ async function verifyWatchEvents(cliPath, catalogFile, catalog, policy) {
       `equator watch --json printed an event its schema refuses: ${JSON.stringify(validate.errors)}\n${JSON.stringify(event)}`,
     );
   }
-  // What a cycle saw, as its event reports it: the input a generation read, or why it refused it.
-  const outcome = (event) =>
-    `${event.status} ${event.result?.inputFingerprint ?? JSON.stringify(event.diagnostics)}`;
-  const repeated = (event, index) =>
-    index > 0 && outcome(event) === outcome(events[index - 1]);
+  // One event for startup and one for each of the two edits. A read can itself raise a filesystem
+  // event where the platform records access times, and
+  // `specs/10-compiler-and-tooling.spec.md` section 13 has a cycle over unchanged inputs report
+  // nothing, so an event beyond these three is a cycle no edit caused.
   assert.deepEqual(
-    events
-      .filter((event, index) => !repeated(event, index))
-      .map(({ status }) => status),
+    events.map(({ status }) => status),
     ['success', 'diagnostic-failure', 'success'],
     `${JSON.stringify(events)}\n${stderr}`,
   );
