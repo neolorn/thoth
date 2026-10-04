@@ -150,13 +150,14 @@ assert.equal(
 );
 // Every spec file in every engine, read from the run's own report, because a file an engine did
 // not collect passes by not running. The reporter marks a passed file and names the project, which
-// the builder names after the engine.
+// the builder names after the engine. The reporter sets the project off with a coloured badge where
+// it writes colour and with a bar on each side where it does not, so both are read.
 for (const engine of engines) {
   for (const file of specFiles) {
     assert.match(
       tested.output,
       new RegExp(
-        `✓\\s+\\S+ \\(${engine}\\)\\s+${file.replaceAll('.', '\\.')} \\(`,
+        `✓\\s+\\|?\\S+ \\(${engine}\\)\\|?\\s+${file.replaceAll('.', '\\.')} \\(`,
         'u',
       ),
       `${file} did not pass in ${engine}:\n${tested.output}`,
