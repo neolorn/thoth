@@ -8,16 +8,16 @@ import { DocumentLocalization } from '@neolorn/equator';
  * The one writer of `document.title` once a navigation has ended.
  *
  * Angular emits `NavigationEnd` and then calls `titleStrategy.updateTitle(...)` synchronously in
- * the same `tap` (`@angular/router` 22.1.3, `_router-chunk.mjs:3964-3965`). Equator has written the
- * title long before that (`applyDocument` runs inside the canonical route resolver, before
+ * the same `tap` (`@angular/router` 22.2.1, `NavigationTransitions.setupNavigations`). Equator has
+ * written the title long before that (`applyDocument` runs inside the canonical route resolver, before
  * activation) so the last write of every navigation belongs to whatever holds this token.
- * `DefaultTitleStrategy` writes whenever the route tree declares a `title` (`:3403-3407`), which
+ * `DefaultTitleStrategy` writes whenever the route tree declares a `title` (`updateTitle`), which
  * means a consumer following Angular's own documented route-title API silently replaces every
  * localized title with an English one. Nothing throws, nothing warns, and the page looks like
  * Equator simply failed to translate.
  *
  * **This is installed by the consumer, not by `provideLocalizedRouter`.** `TitleStrategy` is
- * `providedIn: 'root'` with `factory: () => inject(DefaultTitleStrategy)` (`:3382`), and a raw
+ * provided in root with `factory: () => inject(DefaultTitleStrategy)` (its `ɵprov`), and a raw
  * provider entry is the documented way to replace it. Angular ships no `withTitleStrategy()` router
  * feature to claim it through, so taking the token from inside `provideLocalizedRouter` would
  * silently replace a provider an application had set on purpose. `provideLocalizedRouter` warns in
@@ -26,8 +26,8 @@ import { DocumentLocalization } from '@neolorn/equator';
  *
  * The fallback is Angular's behaviour exactly, not a narrowed version of it. For a route Equator
  * has no title for, this writes what `DefaultTitleStrategy` would have written, including its
- * `newTitle || ''` for an empty one (`@angular/platform-browser` 22.1.3,
- * `platform-browser.mjs:134-136`). `Title` is not injected to do it: that service lives in
+ * `newTitle || ''` for an empty one (`@angular/platform-browser` 22.2.1,
+ * `Title.setTitle`). `Title` is not injected to do it: that service lives in
  * `@angular/platform-browser`, which is not a peer of this package, and all it does is assign
  * `document.title`, which is also how `DocumentLocalization` writes.
  */

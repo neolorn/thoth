@@ -636,16 +636,16 @@ describe('the sub-path an application is deployed under', () => {
     //
     // The absolute ones are not hypothetical and they are not a browser shape. On a server
     // `PlatformLocation.getBaseHrefFromDOM()` returns the `<base>` attribute exactly as written
-    // (`@angular/platform-server` 22.1.3, `_server-chunk.mjs:61`) while the browser adapter
-    // resolves it to a path first (`platform-browser`, `_browser-chunk.mjs:57-59`). Measured on a
+    // (`@angular/platform-server` 22.2.1, `DominoAdapter.getBaseHref`) while the browser adapter
+    // resolves it to a path first (`BrowserDomAdapter.getBaseHref`, same version). Measured on a
     // real `renderApplication`: a document declaring `<base href="https://example.com/app/">`
     // yields that whole string inside the application injector. A strip that only understood paths
     // would work in every test, work in the browser, and put section 14.7's defect back on exactly
     // the deployments that prerender, where nobody sees the wrong language until it is on disk.
     //
     // `/index.html` and the protocol-relative form are here because Angular's own `Location`
-    // reduces both (`@angular/common` 22.1.3, `_location-chunk.mjs:239`), and a base this disagreed
-    // with `Location` about would be an address one half of the runtime accepts and the other does
+    // reduces both (`@angular/common` 22.2.1, the `Location` constructor), and a base this
+    // disagreed with `Location` about would be an address one half of the runtime accepts and the other does
     // not.
     for (const spelling of [
       '/app',
@@ -677,7 +677,7 @@ describe('the sub-path an application is deployed under', () => {
 
   it('treats a matrix parameter on the base as the boundary Angular treats it as', () => {
     // `;` ends a segment for the Router, which puts its own matrix parameters there, and Angular's
-    // `_stripBasePath` lists it beside `/`, `?` and `#` (`_location-chunk.mjs:361`). What comes
+    // `_stripBasePath` lists it beside `/`, `?` and `#` (`@angular/common` 22.2.1). What comes
     // back is application-rooted, because that is what every reader of this expects.
     expect(withoutBasePath('/app;view=grid', '/app')).toBe('/;view=grid');
   });

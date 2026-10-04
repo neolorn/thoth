@@ -282,9 +282,9 @@ describe('catalog and lifetime admission', () => {
  *
  * Seeding the transfer with `TestBed.inject(TransferState).set(...)` and then injecting
  * `Localization`, which reads it, never lets the runtime see the value. `TestBed.inject` of
- * anything calls `finalize()`, which runs the app initializers (Angular 22.1.3,
- * `testing.mjs:720`), and Equator's initializer injects `Localization`, whose factory reads the
- * transfer at construction. The first `inject` in such a test builds the runtime against an empty
+ * anything calls `finalize()`, which runs the app initializers (`@angular/core/testing` 22.2.1,
+ * `TestBedCompiler.finalize`), and Equator's initializer injects `Localization`, whose factory
+ * reads the transfer at construction. The first `inject` in such a test builds the runtime against an empty
  * store, and the `set` on the line above the assertion runs after the read it is seeding: the test
  * asserts a fallback the sanitizer has nothing to do with, and passes for whatever the sanitizer
  * does.

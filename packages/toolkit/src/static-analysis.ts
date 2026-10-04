@@ -1457,7 +1457,7 @@ function hiddenCause(
  * What a route's own declarations give one key of its data.
  *
  * Angular writes a resolver's result over the route's own data (`runResolve`,
- * `@angular/router/fesm2022/_router-chunk.mjs:3306-3320`), so a resolver that may supply the key
+ * `@angular/router` 22.2.1), so a resolver that may supply the key
  * decides it, and it does so only when the page is visited.
  */
 function routeDataReading(
@@ -1518,9 +1518,9 @@ type RouterStrategyReading = 'always' | 'emptyOnly' | 'absent' | 'unreadable';
  * What `node` sets the router's inheritance strategy to, or nothing where it configures no router.
  *
  * Angular's router reads the strategy from `ROUTER_CONFIGURATION`
- * (`@angular/router/fesm2022/_router-chunk.mjs:3719-3722`), and three public calls provide that
- * token: `withRouterConfig`, `RouterModule.forRoot`, and a provider of the token itself
- * (`_router_module-chunk.mjs:1707-1713`, `:1782-1797`). Each is recognized by what its symbol
+ * (`@angular/router` 22.2.1, `NavigationTransitions.paramsInheritanceStrategy`), and three public
+ * calls provide that token: `withRouterConfig`, `RouterModule.forRoot`, and a provider of the
+ * token itself. Each is recognized by what its symbol
  * resolves to, so a consumer's own function of the same name configures nothing.
  */
 function routerInheritanceStrategy(
@@ -1997,8 +1997,7 @@ interface RouteNode {
   readonly read: (field: string) => RouteDataReading;
   /**
    * Whether Angular gives the route its parent's data under either strategy: its own path is
-   * empty, or its parent renders no component (`getInherited`,
-   * `@angular/router/fesm2022/_router-chunk.mjs:1511-1547`).
+   * empty, or its parent renders no component (`getInherited`, `@angular/router` 22.2.1).
    */
   readonly inheritsUnderEitherStrategy: boolean;
   /**
@@ -2027,13 +2026,13 @@ const PRIMARY_OUTLET = 'primary';
 /**
  * A child route as Angular meets it where its parent has consumed the last segment of an address:
  * whether it can render there, and what decides that (`Recognizer.processSegment`,
- * `@angular/router/fesm2022/_router-chunk.mjs:3066-3080`).
+ * `@angular/router` 22.2.1).
  */
 interface RouteChild {
   readonly node: RouteNode;
   /**
    * What matches an address with nothing left in it. An empty path does, and so does a wildcard
-   * (`defaultUrlMatcher`, `:58-98`). A `matcher` is a function the build cannot run, and a `path`
+   * (`defaultUrlMatcher`). A `matcher` is a function the build cannot run, and a `path`
    * that is not a string literal is one Equator does not name.
    */
   readonly matches:
@@ -2637,11 +2636,11 @@ function analyzeRoutes(
         )
       );
     });
-  // Angular's rule for what decides a route's address. `match`
-  // (`@angular/router/fesm2022/_router-chunk.mjs:2864-2879`) matches an empty `path` without
+  // Angular's rule for what decides a route's address. `match` (`@angular/router` 22.2.1) matches
+  // an empty `path` without
   // consuming a segment whatever else the route carries, and any other route by its `matcher` when
   // it has one and by its `path` otherwise. `validateNode` refuses a route with neither, and one
-  // with a `matcher` beside a non-empty `path` (`:2785-2792`), in a development build only.
+  // with a `matcher` beside a non-empty `path`, in a development build only.
   const routeAddress = (object: ts.ObjectLiteralExpression): RouteAddress => {
     const path = setter(object, 'path');
     const matcher = setter(object, 'matcher');
@@ -2667,7 +2666,7 @@ function analyzeRoutes(
       : { kind: 'literal', path: literalPath };
   };
   // Only an empty path and a bare wildcard match an address with nothing left in it
-  // (`defaultUrlMatcher`, `@angular/router/fesm2022/_router-chunk.mjs:58-98`), so a `path` Equator
+  // (`defaultUrlMatcher`, `@angular/router` 22.2.1), so a `path` Equator
   // does not name is still known to match nothing there when the `const` it names says so.
   const matchesNothingLeft = (
     object: ts.ObjectLiteralExpression,
@@ -2709,7 +2708,7 @@ function analyzeRoutes(
             : undefined;
     return outlet === '' ? PRIMARY_OUTLET : outlet;
   };
-  // An empty list guards nothing (`runCanMatchGuards`, `:2606-2608`).
+  // An empty list guards nothing (`runCanMatchGuards`, `@angular/router` 22.2.1).
   const guardedOf = (
     object: ts.ObjectLiteralExpression,
   ): boolean | undefined => {
@@ -2922,9 +2921,9 @@ function analyzeRoutes(
 
       // Angular's own rule, restated where it runs.
       //
-      // `validateNode` throws on a route carrying none of these
-      // (`@angular/router/fesm2022/_router-chunk.mjs:2788`), and both of its call sites sit inside
-      // `if (typeof ngDevMode === 'undefined' || ngDevMode)`. A production build validates no route
+      // `validateNode` throws on a route carrying none of these (`@angular/router` 22.2.1), and
+      // every throw in it sits inside `if (typeof ngDevMode === 'undefined' || ngDevMode)`, the
+      // condition both calls of `validateConfig` carry too. A production build validates no route
       // config at all: a route nothing can render ships, and surfaces only for whoever next runs a
       // development build. Equator reads the same table at generate time, before either build, and
       // is the only thing standing between such a route and the projection, which would otherwise

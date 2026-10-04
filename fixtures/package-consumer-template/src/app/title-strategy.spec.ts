@@ -27,10 +27,10 @@ import { localeInPath, localeOrigin, pagePath } from './addresses';
  * Who writes `document.title` last, in both of the configurations an application can be in.
  *
  * Angular emits `NavigationEnd` and then calls `titleStrategy.updateTitle(...)` synchronously in
- * the same `tap` (`@angular/router` 22.1.3, `_router-chunk.mjs:3964-3965`). Equator writes the
- * title during route resolution, before activation, so Angular's strategy always writes afterwards.
- * `DefaultTitleStrategy` writes whenever the route tree declares a title (`:3403-3407`), and
- * `app.routes.ts` declares one, in English, on `second`.
+ * the same `tap` (`@angular/router` 22.2.1, `NavigationTransitions.setupNavigations`). Equator
+ * writes the title during route resolution, before activation, so Angular's strategy always writes
+ * afterwards. `DefaultTitleStrategy` writes whenever the route tree declares a title
+ * (`updateTitle`), and `app.routes.ts` declares one, in English, on `second`.
  *
  * So the failure this file is written against is not "Equator's provider is missing". It is
  * "another string replaced the localized title and nothing said so", and every assertion here reads

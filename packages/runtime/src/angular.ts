@@ -88,10 +88,10 @@ import {
  * head that advertises addresses the same build will not resolve.
  *
  * **The precedence is Angular's, not a choice made here.** The explicit token first, then the
- * document's own `<base href>`: `PathLocationStrategy` composes it that way (`@angular/common`
- * 22.1.3, `_location-chunk.mjs:70`) and `@angular/ssr` 22.1.7 reads the same two in the same order
- * when it extracts routes to prerender (`ssr.mjs:773-775`). Measured on both surfaces rather than
- * assumed symmetric: on a server the document's value comes back as the raw attribute, so an
+ * document's own `<base href>`: `PathLocationStrategy` composes it that way in its constructor
+ * (`@angular/common` 22.2.1) and `@angular/ssr` 22.2.1 reads the same two in the same order when it
+ * extracts routes to prerender (`getRoutesFromAngularRouterConfig`). Measured on both surfaces
+ * rather than assumed symmetric: on a server the document's value comes back as the raw attribute, so an
  * absolute `<base href>` stays absolute, where a browser resolves it to a path first. Every reader
  * here hands the value to `withoutBasePath`, `withBasePath` or `projectRouteSeo`, and all three
  * reduce it through one normalizer that accepts either spelling.

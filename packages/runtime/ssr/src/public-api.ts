@@ -10,8 +10,8 @@
 // **Why the policy and projection are arguments and not read from DI.** They cannot be. This is
 // called in `app.config.server.ts` at module scope, where no injector exists, and
 // `withRoutes(routes: ServerRoute[])` takes a concrete array at call time rather than a factory
-// (`@angular/ssr` 22.1.7, `ssr.mjs:296-306`). Its own token is private, `SERVER_ROUTES_CONFIG`
-// is constructed at `ssr.mjs:295` and is not in the module's export list, so a factory-based
+// (`@angular/ssr` 22.2.1, `withRoutes`). Its own token is private: `SERVER_ROUTES_CONFIG` is
+// a constant of that module and is not in the module's export list, so a factory-based
 // install would mean naming a private API, which the fundamental rules forbid without approval.
 // The client can do this because `ROUTES` is public and the Router reads it at injection time.
 //

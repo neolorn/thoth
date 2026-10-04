@@ -3781,8 +3781,8 @@ export function localizedServerRoutes<
             : {
                 // The declared values are asked for before anything is awaited, so a function that
                 // reads the build's injector still runs inside the context this is called in:
-                // `@angular/ssr` 22.1.7 awaits it inside `runInInjectionContext`
-                // (`ssr.mjs:661`), and an injection context does not survive an await.
+                // `@angular/ssr` 22.2.1 awaits it inside `runInInjectionContext`
+                // (`handleSSGRoute`), and an injection context does not survive an await.
                 getPrerenderParams: () =>
                   declaredValues().then((values) =>
                     prerenderParameters(projection, route, locale, values),
@@ -5021,9 +5021,9 @@ function followPermanentRedirect(
  * The declared base href reduced to the path it means, by the steps Angular reduces it by.
  *
  * The three that follow are `Location`'s own, in its order: a trailing `/index.html` goes, then one
- * trailing slash, then the origin of an absolute base. `@angular/common` 22.1.3,
- * `_location-chunk.mjs:239`, `this._basePath = _stripOrigin(stripTrailingSlash(_stripIndexHtml(
- * baseHref)))`, with the three at `:20`, `:366` and `:369`. Matching them is not deference; it is
+ * trailing slash, then the origin of an absolute base. `@angular/common` 22.2.1, the `Location`
+ * constructor: `this._basePath = _stripOrigin(stripTrailingSlash(_stripIndexHtml(baseHref)))`, the
+ * three being functions of the same module. Matching them is not deference; it is
  * the only way this cannot disagree with `Location.normalize`, which strips the same base off the
  * same address a few frames away, and a disagreement there is an address one half of the runtime
  * accepts and the other does not.
@@ -5032,8 +5032,9 @@ function followPermanentRedirect(
  * Measured on a real `renderApplication` at `@angular/platform-server` 22.1.3: a document declaring
  * `<base href="https://example.com/app/">` yields exactly that string from
  * `PlatformLocation.getBaseHrefFromDOM()` on the server, because the server DOM adapter returns the
- * attribute unresolved (`_server-chunk.mjs:61`). The browser adapter resolves it first
- * (`new URL(href, document.baseURI).pathname`, `platform-browser` `_browser-chunk.mjs:57-59`) so
+ * attribute unresolved (`DominoAdapter.getBaseHref`, read at 22.2.1). The browser adapter resolves
+ * it first (`new URL(url, document.baseURI).pathname`, `@angular/platform-browser` 22.2.1,
+ * `BrowserDomAdapter.getBaseHref`) so
  * the same document is a path in one place and a URL in the other. Reading only the first spelling
  * puts the sub-path defect of section 14.7 back for exactly the deployments that prerender.
  *
@@ -5083,7 +5084,7 @@ export function withoutBasePath(address: string, baseHref: string): string {
   if (rest === '') return '/';
   if (rest.startsWith('/')) return rest;
   // `;` is a boundary because the Router's matrix parameters make it one, and because Angular's
-  // `_stripBasePath` lists it beside `/`, `?` and `#` (`_location-chunk.mjs:361`). Restored with a
+  // `_stripBasePath` lists it beside `/`, `?` and `#` (`@angular/common` 22.2.1). Restored with a
   // leading slash: what leaves here is an application-rooted address, and every reader wants one.
   return /^[?#;]/u.test(rest) ? `/${rest}` : address;
 }

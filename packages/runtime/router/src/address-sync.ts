@@ -19,7 +19,8 @@ import {
  * **What the trigger shape missed.** A `popstate` onto a history entry whose canonical route is the
  * one already active is skipped by the Router (`NavigationSkipped`, code
  * `IgnoredSameUrlNavigation`) and a skipped navigation never reaches `setBrowserUrl`, so nothing
- * writes the address (`@angular/router` 22.1.3, `_router-chunk.mjs:3804-3810` and `:4336`). The
+ * writes the address (`@angular/router` 22.2.1, `NavigationTransitions.setupNavigations` and
+ * `HistoryStateManager.handleRouterEvent`). The
  * entry it returned to was written before a locale change, in the previous language, and it stays
  * on screen while the page renders in the current one: an English page at an Arabic address, which
  * is the same incoherence a sub-path deployment produced from the other direction.
