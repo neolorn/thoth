@@ -17,6 +17,10 @@ export default {
     fileParallelism: false,
     maxWorkers: 1,
     minWorkers: 1,
+    // The deadline ends a test that hangs. At the runner's default of five seconds it also ends
+    // the first test of a file on a machine busy with something else, where creating the first
+    // component and loading its catalogs has taken longer than that.
+    testTimeout: 30_000,
     // The builder keeps a runner configuration's reporters only while its own `reporters` option
     // is unset, which `angular.json` leaves it.
     reporters: capabilityClaimsReporters({ consumer: true }),
