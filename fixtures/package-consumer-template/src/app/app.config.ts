@@ -175,9 +175,10 @@ const LAZY_SCOPE = Object.freeze({
 const REQUIRED_SCOPES = { exercise: [LAZY_SCOPE] } as const;
 
 /**
- * Scopes a route may be shown ahead of. The dossier is drawn on request and the article is written
+ * Scopes a route names as progressive. The dossier is drawn on request and the article is written
  * by the build, and in both the first render has no page before it to keep on screen, so the scope
- * is loaded before either is sent.
+ * is loaded before either is sent. A later navigation waits for the scope in coordinated mode and
+ * lands ahead of it in progressive mode, which `route-transitions.ts` decides.
  */
 const PROGRESSIVE_SCOPES = {
   dossier: [LAZY_SCOPE],

@@ -1476,6 +1476,12 @@
     {
       "spec": "06-runtime-and-angular.spec.md",
       "section": "7. Locale transitions",
+      "statement": "A scope a coordinated change names as progressive is required by that change, and a release MUST load and admit it before the candidate commits.",
+      "checks": ["assurance:progressive-scope-left-out-of-a-coordinated-change"]
+    },
+    {
+      "spec": "06-runtime-and-angular.spec.md",
+      "section": "7. Locale transitions",
       "statement": "In progressive mode a release MAY commit the primary locale and the ready scopes while registered regions finish independently, and MUST expose each region's transition identity, readiness, outcome, supplying locale, and direction.",
       "checks": ["assurance-runtime:progressive-participants-never-start"]
     },
@@ -1556,6 +1562,14 @@
       "section": "9. Scope readiness",
       "statement": "A release MUST hold a newly activated scope behind its readiness boundary or keep its previous compatible content, MUST NOT publish a partial scope, and MUST NOT present a catalog from an unrelated locale as the committed target.",
       "checks": ["assurance-runtime:superseded-scope-load-published"]
+    },
+    {
+      "spec": "06-runtime-and-angular.spec.md",
+      "section": "9. Scope readiness",
+      "statement": "A coordinated change commits only once everything the view renders is ready, so in coordinated mode a release MUST load a scope a route names as progressive before the navigation completes, as it loads a required one.",
+      "checks": [
+        "assurance:progressive-scope-left-out-of-a-coordinated-navigation"
+      ]
     },
     {
       "spec": "06-runtime-and-angular.spec.md",

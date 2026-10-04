@@ -1383,7 +1383,12 @@ export interface LocaleChangeOptions {
   readonly mode?: LocaleChangeMode;
   /** Scopes that must be loaded before the change commits, beyond the ones already required. */
   readonly requiredScopes?: readonly LocalizationScope[];
-  /** Scopes to load alongside the change rather than ahead of it. */
+  /**
+   * Scopes to load alongside a `progressive` change rather than ahead of it.
+   *
+   * A `coordinated` change loads them before it commits, as it loads `requiredScopes`, and the
+   * snapshot it commits lists them as required.
+   */
   readonly progressiveScopes?: readonly LocalizationScope[];
   /**
    * The route the new snapshot is to carry.

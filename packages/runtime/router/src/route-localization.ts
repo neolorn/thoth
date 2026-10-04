@@ -66,6 +66,7 @@ import {
   isBoundDocumentMessage,
   type RouteDocumentField,
 } from './document-messages.js';
+import { navigationScopes } from './navigation-scopes.js';
 import { LocalizedPageOutcome } from './page-outcome.js';
 import { LANGUAGE_FIELD, addVaryField, setHeader } from './response-headers.js';
 import { LocalizedRouteParameters } from './route-parameters.js';
@@ -128,15 +129,18 @@ export interface RouteLocalizationOptions {
     | readonly LocalizationScope[]
     | Readonly<Record<string, readonly LocalizationScope[]>>;
   /**
-   * Scopes loaded alongside the navigation rather than ahead of it, either globally or per route
-   * id.
+   * Scopes loaded alongside a navigation made in `progressive` mode rather than ahead of it, either
+   * globally or per route id.
    *
    * The page renders without them and picks them up when they arrive, which is the right shape for
    * text below the fold or behind an interaction.
    *
-   * A render with no page before it loads them ahead of itself, as it loads `requiredScopes`: a
-   * server render, a prerender, and the first render in a browser. The document a server sends
-   * therefore carries them, and they arrive alongside only on a navigation after the first.
+   * In `coordinated` mode, which is the default, a navigation waits for them as it waits for
+   * `requiredScopes`, so the page it lands on has them.
+   *
+   * A render with no page before it loads them ahead of itself in either mode: a server render, a
+   * prerender, and the first render in a browser. The document a server sends therefore carries
+   * them, and they arrive alongside only on a navigation after the first.
    */
   readonly progressiveScopes?:
     | readonly LocalizationScope[]
@@ -273,18 +277,6 @@ function derivedScopes(
 ): readonly LocalizationScope[] {
   const entry = projection.generated.routes.find(({ id }) => id === routeId);
   return entry?.scopes ?? Object.freeze([]);
-}
-
-function mergeScopes(
-  ...groups: readonly (readonly LocalizationScope[])[]
-): readonly LocalizationScope[] {
-  const merged = new Map<string, LocalizationScope>();
-  for (const group of groups) {
-    for (const scope of group) {
-      merged.set(`${scope.providerId}\u0000${scope.scopeId}`, scope);
-    }
-  }
-  return Object.freeze([...merged.values()]);
 }
 
 function navigationDiagnostic(message: string): LocalizationDiagnostic {
@@ -733,24 +725,19 @@ export class RouteLocalization {
     // What this route needs, and what the application additionally asked for. The derived set is
     // the reason a deferred scope is safe to defer: the route's code arrives when it activates and
     // its messages arrive with it, without anything listing scopes per route.
-    //
-    // A scope named as progressive arrives beside a navigation because the page before it stays on
-    // screen meanwhile. Before the first navigation has landed there is no such page: a server
-    // render or a prerender would end without the scope, and the first render in a browser would
-    // draw without it. So there it is loaded ahead of the render, as a required one is, which
-    // section 9 of `specs/06-runtime-and-angular.spec.md` requires.
-    const named = configuredScopes(
-      this.options.progressiveScopes,
-      resolution.routeId,
-    );
-    const scopes = mergeScopes(
-      derivedScopes(this.options.projection, resolution.routeId),
-      configuredScopes(this.options.requiredScopes, resolution.routeId),
-      this.landed ? [] : named,
-    );
-    const progressiveScopes: readonly LocalizationScope[] = this.landed
-      ? named
-      : [];
+    const { held: scopes, alongside: progressiveScopes } = navigationScopes({
+      mode: this.options.mode ?? 'coordinated',
+      landed: this.landed,
+      derived: derivedScopes(this.options.projection, resolution.routeId),
+      required: configuredScopes(
+        this.options.requiredScopes,
+        resolution.routeId,
+      ),
+      progressive: configuredScopes(
+        this.options.progressiveScopes,
+        resolution.routeId,
+      ),
+    });
     await Promise.all(
       scopes.map((scope) =>
         this.localization.preloadScope(scope, resolution.locale),

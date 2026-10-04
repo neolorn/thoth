@@ -2197,7 +2197,7 @@ class LocalizationInternal {
     // switch would answer that request with `superseded` and the scope would simply not be there.
     // Folded in whatever the caller passed, because the caller of `changeLocale` and the caller of
     // `ensureScope` are usually not the same code and neither knows about the other.
-    const required = this.normalizeScopes(
+    const carried = this.normalizeScopes(
       this.withOutstandingRequiredScopes(
         options.requiredScopes ??
           this.active?.publicSnapshot.requiredScopes ??
@@ -2209,10 +2209,16 @@ class LocalizationInternal {
       options.progressiveScopes ?? [],
       'progressiveScopes',
     );
-    const requiredIdentities = new Set(required.map(scopeIdentity));
-    if (
-      progressive.some((scope) => requiredIdentities.has(scopeIdentity(scope)))
-    ) {
+    // A coordinated change makes its progressive scopes required, and the next change carries
+    // them forward as such. Naming the same scope as progressive again is then the same request
+    // and not a contradiction, so there only the scopes this call states as required are compared.
+    const statedRequired = new Set(
+      (mode === 'coordinated'
+        ? this.normalizeScopes(options.requiredScopes ?? [], 'requiredScopes')
+        : carried
+      ).map(scopeIdentity),
+    );
+    if (progressive.some((scope) => statedRequired.has(scopeIdentity(scope)))) {
       throw new LocalizationError(
         operationalDiagnostic(
           'invalid-configuration',
@@ -2220,6 +2226,19 @@ class LocalizationInternal {
         ),
       );
     }
+    // A coordinated change commits once everything it names is ready, so a scope named as
+    // progressive is prepared with the required ones: section 7 of
+    // `specs/06-runtime-and-angular.spec.md`.
+    const carriedIdentities = new Set(carried.map(scopeIdentity));
+    const required =
+      mode === 'coordinated'
+        ? Object.freeze([
+            ...carried,
+            ...progressive.filter(
+              (scope) => !carriedIdentities.has(scopeIdentity(scope)),
+            ),
+          ])
+        : carried;
     const requiredParticipants =
       mode === 'coordinated'
         ? this.participantCoordinator.required()

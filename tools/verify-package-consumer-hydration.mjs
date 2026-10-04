@@ -4343,6 +4343,10 @@ async function verifyDeclaredShells(row, context, diagnostics) {
  * progressive scope is ready there as the required one is (section 9 of
  * `specs/06-runtime-and-angular.spec.md`). Home names the scope nowhere and is the control.
  *
+ * The dossier is then reached by the router from home, where the scope is idle. A coordinated
+ * navigation waits for the scope and a progressive one lands first and the scope follows, so in
+ * both the page is given until its deadline to show it ready.
+ *
  * Read once the page has settled, so what is read is what the browser's own runtime holds and not
  * only the text the server wrote.
  */
@@ -4428,6 +4432,53 @@ async function verifyNamedRouteScopes(row, context, diagnostics) {
     'declaration:RouteLocalizationOptions.progressiveScopes',
     dossier.observed,
   );
+
+  const navigated = boundCalls(await context.newPage(), 'page');
+  attachBrowserDiagnostics(navigated, diagnostics);
+  navigated.setDefaultTimeout(15_000);
+  await visitFor(context, 'home', locale, (url) => navigated.goto(url));
+  await navigated.waitForFunction(
+    () => document.documentElement.dataset['clientReady'] === 'true',
+  );
+  const readinessShown = async () =>
+    (await navigated.locator('[data-lazy-readiness]').textContent())?.trim();
+  assert.equal(
+    await readinessShown(),
+    'idle',
+    `${row.label}: home names the lazy scope in no option, and before the client navigation the page does not show it idle`,
+  );
+  await throughHistory(navigated, addresses.shownPath('dossier', locale));
+  await navigated.waitForSelector('[data-route-view="dossier"]', {
+    state: 'attached',
+  });
+  // A scope that never arrives ends the wait at the page's deadline, and the assertion below names
+  // what was shown.
+  await navigated
+    .waitForFunction(
+      () =>
+        document.querySelector('[data-lazy-readiness]')?.textContent?.trim() ===
+        'ready',
+    )
+    .catch(() => undefined);
+  const reached = await readinessShown();
+  assert.equal(
+    reached,
+    'ready',
+    `${row.label}: progressiveScopes names the lazy scope for the dossier route, a client navigation in ${declaredMode} mode reached it from home, and the page shows the scope ${reached}`,
+  );
+  const { engine, policy, clientNavigations } =
+    await measuredContext(navigated);
+  assert.ok(
+    clientNavigations > 0,
+    `${row.label} reached the dossier without a client navigation`,
+  );
+  recordCapabilityClaim(
+    sectionCheck(row, 'a progressive scope by client navigation'),
+    'declaration:RouteLocalizationOptions.progressiveScopes',
+    { engine, policy, clientNavigations },
+  );
+  await collectPolicyDiagnostics(navigated, diagnostics);
+  await navigated.close();
 }
 
 /**

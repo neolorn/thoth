@@ -1023,6 +1023,25 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/document-message-binding.test.ts',
   },
   {
+    id: 'progressive-scope-left-out-of-a-coordinated-navigation',
+    invariant:
+      'In coordinated mode a navigation waits for a scope its route names as progressive, as it waits for a required one.',
+    source: 'packages/runtime/router/src/navigation-scopes.ts',
+    find: "  const alongside = input.landed && input.mode === 'progressive';",
+    replace: '  const alongside = input.landed;',
+    caughtBy: 'packages/runtime/test/coordinated-progressive-scopes.test.ts',
+  },
+  {
+    id: 'progressive-scope-left-out-of-a-coordinated-change',
+    invariant:
+      'A coordinated locale change loads a scope it names as progressive before it commits, as it loads a required one.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '              (scope) => !carriedIdentities.has(scopeIdentity(scope)),',
+    replace:
+      '              (scope) => carriedIdentities.has(scopeIdentity(scope)),',
+    caughtBy: 'packages/runtime/test/coordinated-progressive-scopes.test.ts',
+  },
+  {
     id: 'social-locale-written-as-a-language-tag',
     invariant: 'The social locale is written in the language_TERRITORY form.',
     source: 'packages/runtime/core/src/locale-profile.ts',

@@ -146,7 +146,9 @@ A locale change is one transaction. Its mode is coordinated or progressive.
 
 In coordinated mode a release MUST validate the request, resolve the route and formatting
 context, load and admit every required scope, wait for every required participant, build one
-candidate snapshot, and keep the current view rendered and usable until that candidate commits.
+candidate snapshot, and keep the current view rendered and usable until that candidate commits. A
+scope a coordinated change names as progressive is required by that change, and a release MUST load
+and admit it before the candidate commits.
 
 In progressive mode a release MAY commit the primary locale and the ready scopes while
 registered regions finish independently, and MUST expose each region's transition identity,
@@ -214,11 +216,13 @@ committed target.
 
 A consumer application may name further scopes for a route, as required or as progressive. A
 required scope holds the navigation as a derived one does. A progressive scope arrives alongside a
-navigation made in progressive mode, while the view before it stays on screen. A render with no
-earlier view has nothing to keep on screen: a server render, a prerender, and the first render in a
-browser. In such a render a release MUST load a scope a route names as progressive before the render
-completes, as it loads a required one. A progressive scope differs from a required one only on a
-later navigation.
+navigation made in progressive mode, while the view before it stays on screen. A coordinated change
+commits only once everything the view renders is ready, so in coordinated mode a release MUST load a
+scope a route names as progressive before the navigation completes, as it loads a required one. A
+render with no earlier view has nothing to keep on screen: a server render, a prerender, and the
+first render in a browser. In such a render a release MUST load a scope a route names as progressive
+before the render completes, as it loads a required one. A progressive scope differs from a required
+one only on a later navigation made in progressive mode.
 
 ## 10. Server rendering, transfer, and hydration
 
