@@ -64,6 +64,7 @@ import {
 } from './exercise-sheet.mjs';
 import { expectations, unmetExpectations } from './negative-expectations.mjs';
 import { readBuildStats } from './build-stats.mjs';
+import { consumerSpecsEnvironment } from './consumer-specs-environment.mjs';
 import { locateNode, withNodeFirst } from './node-runtimes.mjs';
 import {
   INIT_REQUEST,
@@ -785,23 +786,7 @@ ${negativeOutput}`,
 // the terminal was told to draw. Both lines are matched loosely because a skipped file or case puts
 // `| n skipped` between the count and the total: a spec written for an address only some URL
 // policies have is skipped under the others, and is still collected.
-// Node 25 turned on its own Web Storage, and without a storage file its `localStorage` is
-// undefined. Vitest 4 keeps a global Node already defines instead of taking jsdom's, so the specs
-// would read Node's rather than the browser's jsdom stands in for. Vitest 5 takes jsdom's
-// (vitest-dev/vitest#10293), and Angular 22's test builder accepts Vitest 4 only. So the specs'
-// process turns Node's off where Node has it. The server bundle keeps it, as a server on that Node
-// does.
-const tested = run(
-  ['test'],
-  0,
-  'localStorage' in globalThis
-    ? {
-        NODE_OPTIONS: [process.env.NODE_OPTIONS, '--no-experimental-webstorage']
-          .filter(Boolean)
-          .join(' '),
-      }
-    : {},
-);
+const tested = run(['test'], 0, consumerSpecsEnvironment());
 const testedOutput = `${tested.stdout}\n${tested.stderr}`.replaceAll(
   /\u001B\[[0-9;]*m/gu,
   '',
@@ -3660,19 +3645,13 @@ runEmbedded(
   ['build'],
   'build',
 );
-// Its specs, with Node's own Web Storage turned off for the reason feature-lab's are, and counted
-// from its sources the same way, so a spec that is not collected fails here.
+// Its specs, in the environment feature-lab's run in, and counted from its sources the same way,
+// so a spec that is not collected fails here.
 const embeddedTested = runEmbedded(
   resolve(consumerRoot, 'node_modules/@angular/cli/bin/ng.js'),
   ['test'],
   'unit tests',
-  'localStorage' in globalThis
-    ? {
-        NODE_OPTIONS: [process.env.NODE_OPTIONS, '--no-experimental-webstorage']
-          .filter(Boolean)
-          .join(' '),
-      }
-    : {},
+  consumerSpecsEnvironment(),
 );
 const embeddedSpecFiles = (
   await readdir(resolve(embeddedRoot, 'src'), { recursive: true })

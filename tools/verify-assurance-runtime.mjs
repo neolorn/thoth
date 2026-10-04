@@ -31,6 +31,7 @@ import {
 } from './refresh-consumer-packages.mjs';
 
 import { gateVerdict, verdictOf } from './assurance-runner.mjs';
+import { consumerSpecsEnvironment } from './consumer-specs-environment.mjs';
 import { injections } from './assurance-runtime-injections.mjs';
 import { steps } from './verify-stages.mjs';
 
@@ -40,7 +41,7 @@ const consumerRoot = resolve(
   'tmp/package-consumer-verification/package-consumer',
 );
 
-function run(command, args, cwd) {
+function run(command, args, cwd, environment = {}) {
   const windows = process.platform === 'win32';
   return spawnSync(
     windows ? (process.env.ComSpec ?? 'cmd.exe') : command,
@@ -48,7 +49,7 @@ function run(command, args, cwd) {
     {
       cwd,
       encoding: 'utf8',
-      env: { ...process.env, CI: 'true', NO_COLOR: '1' },
+      env: { ...process.env, CI: 'true', NO_COLOR: '1', ...environment },
       maxBuffer: 16_777_216,
       timeout: 600_000,
     },
@@ -137,6 +138,7 @@ function suiteVerdict(suite, caughtWhen) {
       'pnpm',
       ['test', '--reporters=json', `--output-file=${reportPath}`],
       consumerRoot,
+      consumerSpecsEnvironment(),
     );
     return verdictOf({ reportPath, status: result.status });
   }
