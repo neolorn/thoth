@@ -415,8 +415,11 @@ Watch is an explicit foreground process. A release MUST NOT require a daemon, an
 service, an install hook, or a background workspace process for it. Startup performs a full
 reconciliation; filesystem events are hints, so a release MUST debounce, reread content,
 detect a missed or overflowed event, and widen to a full bounded reconciliation where it is
-uncertain. The latest accepted input wins, every accepted generation goes through the output
-transaction, and a release MUST NOT let watch poll a remote resource or migrate topology.
+uncertain. Where a cycle rereads the inputs and finds the inputs fingerprint of the cycle before it,
+or the refusal that cycle gave them where no fingerprint could be taken, a release MUST generate
+nothing and report nothing, unless something other than its inputs stopped that cycle. The latest
+accepted input wins, every accepted generation goes through the output transaction, and a release
+MUST NOT let watch poll a remote resource or migrate topology.
 
 ## 14. Build integration and the first run
 

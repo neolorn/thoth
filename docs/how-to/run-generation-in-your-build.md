@@ -25,7 +25,7 @@ where your build runs `generate`.
 ## Work with a watcher
 
 `equator watch` reconciles both in one foreground process, so a saved catalog is regenerated without
-a second command.
+a second command. A save that leaves every input as it was starts no generation and prints nothing.
 
 ## Read the exit code
 

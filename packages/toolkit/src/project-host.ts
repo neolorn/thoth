@@ -393,6 +393,9 @@ export interface WatchProjectOptions extends ProjectSelection {
    *
    * The only way to see a pass's diagnostics: the watch returns once, at the end, and by then every
    * pass but the last is over. It must not throw.
+   *
+   * An event that finds the inputs as the pass before it left them is not a pass: nothing is
+   * generated and this is not called. Saving a file without changing it is the ordinary case.
    */
   readonly onCycle?: (cycle: WatchCycle) => void;
 }
@@ -1971,10 +1974,10 @@ async function compileProjectFromDiskInternalCore(
   selection: ProjectSelection & {
     readonly requireCompleteTargets?: boolean;
   } = {},
+  loaded?: ToolkitResult<LoadedProject>,
 ): Promise<ToolkitResult<LoadedProjectCompilation>> {
-  const project = await loadProject(selection, {
-    requirePackageSetup: true,
-  });
+  const project =
+    loaded ?? (await loadProject(selection, { requirePackageSetup: true }));
   if (!project.ok) return project;
   const compiled = await compileLoadedProject(
     project.value,
@@ -1993,9 +1996,12 @@ async function compileProjectFromDiskInternal(
   selection: ProjectSelection & {
     readonly requireCompleteTargets?: boolean;
   } = {},
+  loaded?: ToolkitResult<LoadedProject>,
 ): Promise<ToolkitResult<LoadedProjectCompilation>> {
   const sink = selection.observability;
-  if (sink === undefined) return compileProjectFromDiskInternalCore(selection);
+  if (sink === undefined) {
+    return compileProjectFromDiskInternalCore(selection, loaded);
+  }
   emitToolkitEvent(sink, {
     code: TOOLKIT_EVENT_CODES.compilation,
     phase: 'integration',
@@ -2003,7 +2009,7 @@ async function compileProjectFromDiskInternal(
   });
   let result: ToolkitResult<LoadedProjectCompilation>;
   try {
-    result = await compileProjectFromDiskInternalCore(selection);
+    result = await compileProjectFromDiskInternalCore(selection, loaded);
   } catch (error) {
     emitToolkitEvent(sink, {
       code: TOOLKIT_EVENT_CODES.compilation,
@@ -2154,14 +2160,28 @@ async function revalidatedInputFingerprint(
     .inputFingerprint;
 }
 
+/**
+ * A generation, and whether the inputs alone decided how it ended.
+ *
+ * One that published, or that loading or compiling refused, ends the same way whenever it is given
+ * the same inputs. One stopped after that, by a translation-state record it could not read or an
+ * output transaction that withheld, depends on something else in the owner, so the same inputs can
+ * end differently the next time.
+ */
+interface GenerationOutcome {
+  readonly result: ToolkitResult<GenerateProjectResult>;
+  readonly decidedByInputs: boolean;
+}
+
 async function generateProjectCore(
-  options: GenerateProjectOptions = {},
-): Promise<ToolkitResult<GenerateProjectResult>> {
-  const compiled = await compileProjectFromDiskInternal(options);
-  if (!compiled.ok) return compiled;
+  options: GenerateProjectOptions,
+  loaded: ToolkitResult<LoadedProject> | undefined,
+): Promise<GenerationOutcome> {
+  const compiled = await compileProjectFromDiskInternal(options, loaded);
+  if (!compiled.ok) return { result: compiled, decidedByInputs: true };
   const { project, compilation } = compiled.value;
   const recorded = await readTranslationState(project.ownerRoot);
-  if (!recorded.ok) return recorded;
+  if (!recorded.ok) return { result: recorded, decidedByInputs: false };
   const publication = await applyOutputPlan({
     ownerRoot: project.ownerRoot,
     generatedRoot: project.generatedRoot,
@@ -2173,7 +2193,7 @@ async function generateProjectCore(
     revalidateInputFingerprint: () =>
       revalidatedInputFingerprint(project.ownerRoot, options),
   });
-  if (!publication.ok) return publication;
+  if (!publication.ok) return { result: publication, decidedByInputs: false };
 
   // The record only moves forward when output is actually published. A dry run must observe
   // staleness without recording that it observed it, or the next real run would see nothing.
@@ -2216,15 +2236,18 @@ async function generateProjectCore(
       ]);
     }
   }
-  return toolkitSuccess(
-    Object.freeze({ ...compiled.value, publication: publication.value }),
-    [
-      ...compiled.diagnostics,
-      ...publication.diagnostics,
-      ...cacheDiagnostics,
-      ...staleDiagnostics,
-    ],
-  );
+  return {
+    result: toolkitSuccess(
+      Object.freeze({ ...compiled.value, publication: publication.value }),
+      [
+        ...compiled.diagnostics,
+        ...publication.diagnostics,
+        ...cacheDiagnostics,
+        ...staleDiagnostics,
+      ],
+    ),
+    decidedByInputs: true,
+  };
 }
 
 /**
@@ -2239,16 +2262,29 @@ async function generateProjectCore(
 export async function generateProject(
   options: GenerateProjectOptions = {},
 ): Promise<ToolkitResult<GenerateProjectResult>> {
+  return (await generateFromInputs(options)).result;
+}
+
+/**
+ * A generation over inputs the caller has already loaded, or over the ones on disk when it has not.
+ *
+ * Watch loads the inputs to decide whether a cycle has anything to do, and a generation that
+ * loaded them again would read every input twice on each edit.
+ */
+async function generateFromInputs(
+  options: GenerateProjectOptions,
+  loaded?: ToolkitResult<LoadedProject>,
+): Promise<GenerationOutcome> {
   const sink = options.observability;
-  if (sink === undefined) return generateProjectCore(options);
+  if (sink === undefined) return generateProjectCore(options, loaded);
   emitToolkitEvent(sink, {
     code: TOOLKIT_EVENT_CODES.compilation,
     phase: 'generation',
     status: 'started',
   });
-  let result: ToolkitResult<GenerateProjectResult>;
+  let outcome: GenerationOutcome;
   try {
-    result = await generateProjectCore(options);
+    outcome = await generateProjectCore(options, loaded);
   } catch (error) {
     emitToolkitEvent(sink, {
       code: TOOLKIT_EVENT_CODES.compilation,
@@ -2257,6 +2293,7 @@ export async function generateProject(
     });
     throw error;
   }
+  const { result } = outcome;
   if (result.ok) {
     emitToolkitEvent(sink, {
       code: TOOLKIT_EVENT_CODES.compilation,
@@ -2275,7 +2312,7 @@ export async function generateProject(
       ...(diagnosticCode === undefined ? {} : { diagnosticCode }),
     });
   }
-  return result;
+  return outcome;
 }
 
 /**
@@ -3049,12 +3086,26 @@ function watchIgnored(
 }
 
 /**
+ * What a watch cycle holds against the cycle before it: the inputs fingerprint a generation runs
+ * on, or the refusal where the inputs are refused before one can be taken.
+ *
+ * A refusal stands in for the fingerprint because a refused load generates nothing, so its
+ * diagnostics are all the cycle would report, and the same ones twice report nothing new.
+ */
+function watchedInputs(loaded: ToolkitResult<LoadedProject>): string {
+  return loaded.ok
+    ? fingerprintCompilerInputs(compileRequest(loaded.value)).inputFingerprint
+    : JSON.stringify(loaded.diagnostics);
+}
+
+/**
  * Watching an owner, without becoming something that has to be installed.
  *
  * `specs/10-compiler-and-tooling.spec.md` section 13 makes this an explicit foreground process
  * with no daemon, account, service or install hook behind it, and treats filesystem events as
- * hints: startup reconciles fully, content is reread, and an uncertain or overflowed event
- * widens back to a full bounded reconciliation rather than trusting what the platform reported.
+ * hints: startup reconciles fully, content is reread, an uncertain or overflowed event widens
+ * back to a full bounded reconciliation rather than trusting what the platform reported, and a
+ * cycle that rereads the inputs the cycle before it settled reports nothing and generates nothing.
  */
 export async function watchProject(
   options: WatchProjectOptions,
@@ -3078,6 +3129,10 @@ export async function watchProject(
   // against a plain read of the variable.
   const isRunning = (): boolean => running;
   let pending = false;
+  // An event says something may have changed, and reading an input can itself raise one where the
+  // platform records access times. Kept only where the inputs alone decided how the cycle ended, so
+  // a cycle that something else stopped runs again on the next event.
+  let settledInputs: string | undefined;
   let stopping = false;
   let watcherError: Error | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -3110,16 +3165,30 @@ export async function watchProject(
     }
     running = true;
     try {
-      const result = await generateProject({
+      const selection = {
         cwd: location.value.ownerRoot,
         project: location.value.ownerRoot,
-        ...(options.observability === undefined
-          ? {}
-          : { observability: options.observability }),
+      };
+      const loaded = await loadProject(selection, {
+        requirePackageSetup: true,
       });
+      const inputs = watchedInputs(loaded);
+      if (inputs === settledInputs) return;
+      settledInputs = undefined;
+      const { result, decidedByInputs } = await generateFromInputs(
+        {
+          ...selection,
+          ...(options.observability === undefined
+            ? {}
+            : { observability: options.observability }),
+        },
+        loaded,
+      );
+      if (decidedByInputs) settledInputs = inputs;
       cycles += 1;
       options.onCycle?.(Object.freeze({ sequence: cycles, result }));
     } catch (error) {
+      settledInputs = undefined;
       cycles += 1;
       options.onCycle?.(
         Object.freeze({
