@@ -412,7 +412,10 @@ Cache entries are owner-partitioned, bounded, disposable, and integrity-checked,
 ignore and recompute corrupt or incompatible state rather than fail on it.
 
 Watch is an explicit foreground process. A release MUST NOT require a daemon, an account, a
-service, an install hook, or a background workspace process for it. Startup performs a full
+service, an install hook, or a background workspace process for it. Once a stopped watch has
+returned, a release MUST deliver no further event and MUST leave the watcher holding no reference
+that keeps the process alive; the event loop releases the operating system handle shortly after,
+and the host reports no event for that release. Startup performs a full
 reconciliation; filesystem events are hints, so a release MUST debounce, reread content,
 detect a missed or overflowed event, and widen to a full bounded reconciliation where it is
 uncertain. Where a cycle rereads the inputs and finds the inputs fingerprint of the cycle before it,

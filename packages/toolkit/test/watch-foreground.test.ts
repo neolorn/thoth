@@ -7,8 +7,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { initializeProject, watchProject } from '../src/project-host.js';
 
 /**
- * Watch is the calling process, for exactly as long as the caller keeps it, and nothing of it
- * remains once the caller stops it.
+ * Watch is the calling process, for exactly as long as the caller keeps it. Once a stopped watch
+ * has returned, no cycle is delivered, the watcher holds no reference that keeps the process alive,
+ * and the event loop releases the operating system handle shortly after.
  *
  * Observed through the process's own list of active resources, where the platform watcher shows up
  * while it is open. A watcher left open after the call returns is a background process in all but

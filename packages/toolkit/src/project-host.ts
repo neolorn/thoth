@@ -3106,6 +3106,10 @@ function watchedInputs(loaded: ToolkitResult<LoadedProject>): string {
  * hints: startup reconciles fully, content is reread, an uncertain or overflowed event widens
  * back to a full bounded reconciliation rather than trusting what the platform reported, and a
  * cycle that rereads the inputs the cycle before it settled reports nothing and generates nothing.
+ *
+ * Once the returned promise resolves after a stop, no further cycle is delivered and the watcher
+ * holds no reference that keeps the process alive. The operating system handle is released by the
+ * event loop shortly after: Node reports no event for that release, so it cannot be awaited.
  */
 export async function watchProject(
   options: WatchProjectOptions,

@@ -4058,6 +4058,12 @@
     {
       "spec": "10-compiler-and-tooling.spec.md",
       "section": "13. Incremental state and watch",
+      "statement": "Once a stopped watch has returned, a release MUST deliver no further event and MUST leave the watcher holding no reference that keeps the process alive; the event loop releases the operating system handle shortly after, and the host reports no event for that release.",
+      "checks": ["assurance:watch-leaves-its-watcher-open"]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
+      "section": "13. Incremental state and watch",
       "statement": "Startup performs a full reconciliation; filesystem events are hints, so a release MUST debounce, reread content, detect a missed or overflowed event, and widen to a full bounded reconciliation where it is uncertain.",
       "checks": [
         "assurance:watch-ignores-an-unnamed-event",
