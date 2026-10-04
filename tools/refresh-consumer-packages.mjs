@@ -25,7 +25,9 @@ import { existsSync, rmSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const ARGUMENTS = Object.freeze(['install', '--offline', '--frozen-lockfile']);
+import { OFFLINE_INSTALL } from './offline-store.mjs';
+
+const ARGUMENTS = OFFLINE_INSTALL;
 
 /**
  * What the child process ran, for a failure that has to say what it ran.

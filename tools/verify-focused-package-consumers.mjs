@@ -28,8 +28,9 @@ import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
+import { builtPackageLocator } from './built-package.mjs';
 import { readBuildStats } from './build-stats.mjs';
-import { withOfflineStoreRemedy } from './offline-store.mjs';
+import { OFFLINE_INSTALL, withOfflineStoreRemedy } from './offline-store.mjs';
 import { unselectedCapabilitiesIn } from './unselected-capabilities.mjs';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -122,10 +123,8 @@ await cp(templateRoot, consumerRoot, { recursive: true });
 
 const manifestPath = resolve(consumerRoot, 'package.json');
 const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-const packageLocator = (outputRoot) => {
-  const path = relative(consumerRoot, resolve(workspaceRoot, outputRoot));
-  return `file:${path.replaceAll('\\', '/')}`;
-};
+const packageLocator = (outputRoot) =>
+  builtPackageLocator(consumerRoot, workspaceRoot, outputRoot);
 manifest.dependencies['@neolorn/equator'] = packageLocator('dist/runtime');
 manifest.devDependencies['@neolorn/equator-toolkit'] =
   packageLocator('dist/toolkit');
@@ -133,7 +132,7 @@ await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 
 const generatedRoot = resolve(consumerRoot, 'src/generated/i18n');
 await assert.rejects(lstat(generatedRoot), { code: 'ENOENT' });
-pnpm(['install', '--offline', '--frozen-lockfile']);
+pnpm([...OFFLINE_INSTALL]);
 
 const firstGeneration = parseMachineResult(
   pnpm(['exec', 'equator', 'generate', '--json']),

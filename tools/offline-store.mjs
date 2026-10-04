@@ -13,6 +13,24 @@
  * is confidently wrong is worse than no remedy at all.
  */
 
+/**
+ * The install every consumer gate runs.
+ *
+ * pnpm checks a lockfile against its supply-chain policy before it installs from one, and keeps a
+ * record of the lockfiles it has checked. The check reads registry metadata, so an offline install
+ * that does not find its lockfile in that record fails with `ERR_PNPM_NO_OFFLINE_META` while the
+ * store holds every package, and installs that start together have each missed a record that was
+ * there. `stage:consumer-store` fetches from these same lockfiles with the network there, which is
+ * where pnpm can run the check, so the offline install is told the lockfile is one already checked
+ * and does not depend on the record.
+ */
+export const OFFLINE_INSTALL = Object.freeze([
+  'install',
+  '--offline',
+  '--frozen-lockfile',
+  '--trust-lockfile',
+]);
+
 const OFFLINE_STORE_MISS = /ERR_PNPM_NO_OFFLINE_(?:TARBALL|META)/u;
 
 /** The one sentence, so the four gates that can hit this do not each write their own. */

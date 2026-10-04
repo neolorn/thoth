@@ -112,7 +112,7 @@ const declared = Object.freeze([
   // of its own under `tmp`, which is not an artefact any other stage can see.
   {
     id: 'verify:standards-sources:self-test',
-    reads: [],
+    reads: ['source:packages'],
   },
   // Cheap, and it runs before anything derives from a vendored file: a source that no longer matches
   // its recorded digest makes every downstream result meaningless rather than wrong. The empty list
@@ -172,7 +172,7 @@ const declared = Object.freeze([
   // proven able to fail by the assurance stages in the same run.
   {
     id: 'verify:normative-map',
-    reads: ['source:specs', 'source:tools'],
+    reads: ['source:packages', 'source:specs', 'source:tools'],
     needs: [
       {
         on: 'verify:normative-map:self-test',
@@ -302,7 +302,7 @@ const declared = Object.freeze([
   // of its own under `tmp`, which is not an artefact any other stage can see.
   {
     id: 'verify:format-shapes:self-test',
-    reads: ['dist:runtime', 'dist:toolkit'],
+    reads: ['dist:runtime', 'dist:toolkit', 'source:packages'],
   },
   // The declarations a consumer of the built packages sees are the shapes a stamp promises, so the
   // record is compared with them rather than with the source they were emitted from.

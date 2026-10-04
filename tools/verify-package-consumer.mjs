@@ -71,7 +71,7 @@ import {
   PSEUDO_LOCALES,
 } from './package-consumer-locales.mjs';
 import { compareVersions } from './supported-versions.mjs';
-import { withOfflineStoreRemedy } from './offline-store.mjs';
+import { OFFLINE_INSTALL, withOfflineStoreRemedy } from './offline-store.mjs';
 
 import {
   resolveAngularVersion,
@@ -238,7 +238,7 @@ assert.equal(
   'The consumer is installed with a package manager other than the one it names.',
 );
 
-run(['install', '--offline', '--frozen-lockfile']);
+run([...OFFLINE_INSTALL]);
 
 // The Node the consumer's own tools start on, asked of the consumer. A row whose tools ran on
 // another Node would otherwise pass and leave only its claims to say so.

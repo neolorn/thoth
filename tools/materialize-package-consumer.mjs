@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { cp, lstat, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { dirname, relative, resolve, sep } from 'node:path';
+import { dirname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { builtPackageLocator } from './built-package.mjs';
 import {
   resolveAngularVersion,
   resolveConsumerProfile,
@@ -107,10 +108,8 @@ for (const dependencySet of [manifest.dependencies, manifest.devDependencies]) {
 manifest.dependencies.rxjs = consumerProfile.rxjs;
 manifest.devDependencies.typescript = consumerProfile.typescript;
 
-const packageLocator = (outputRoot) => {
-  const path = relative(consumerRoot, resolve(workspaceRoot, outputRoot));
-  return `file:${path.replaceAll('\\', '/')}`;
-};
+const packageLocator = (outputRoot) =>
+  builtPackageLocator(consumerRoot, workspaceRoot, outputRoot);
 
 manifest.dependencies['@neolorn/equator'] = packageLocator('dist/runtime');
 manifest.devDependencies['@neolorn/equator-toolkit'] =

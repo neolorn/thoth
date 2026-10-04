@@ -55,6 +55,7 @@ import { cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { builtPackageLocator } from './built-package.mjs';
 import {
   consumerProfiles,
   resolveRowVersion,
@@ -306,8 +307,7 @@ const contains = (whole, part) => {
 async function pointAtTheDistributables(root) {
   const manifestPath = resolve(root, 'package.json');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-  const locate = (output) =>
-    `file:${relative(root, resolve(workspaceRoot, output)).replaceAll('\\', '/')}`;
+  const locate = (output) => builtPackageLocator(root, workspaceRoot, output);
   manifest.dependencies['@neolorn/equator'] = locate('dist/runtime');
   manifest.devDependencies['@neolorn/equator-toolkit'] = locate('dist/toolkit');
   await writeFile(
