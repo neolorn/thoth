@@ -928,12 +928,15 @@ export const stageSelfTests = Object.freeze({
           /FAIL +a number at the bound is accepted, and one beyond it is refused at a cost that does not grow/u,
       },
       {
-        // Selection that reads every variant again for each variant it considers.
+        // Selection that reads every variant again for each variant it considers. The reading is
+        // a built-in's scan and not a loop written here, because how soon the engine optimizes a
+        // planted loop decided whether its cost showed: the same plant measured 39x on one run and
+        // 6.3x on another.
         id: 'variants-rescanned',
         plant: plantMatching(
           runtimeBundle,
           /(for \(const variant of body\[(["'])variants\2\]\) \{)(\s*tick\(environment\);)/u,
-          '$1 for (const other of body[$2variants$2]) void other;$3',
+          '$1 for (let scan = 0; scan < 4; scan += 1) void body[$2variants$2].includes(undefined);$3',
         ),
         measures: ['evaluating a message is linear in its variants'],
         refusal: /FAIL +evaluating a message is linear in its variants/u,

@@ -539,7 +539,7 @@ const declared = Object.freeze([
   // twelve stages running. A reading the load can move is evidence only of the load.
   {
     id: 'verify:cost-budget:self-test',
-    reads: ['consumer:package', 'dist:runtime'],
+    reads: ['consumer:package', 'dist:runtime', 'source:packages'],
     exclusive: true,
   },
   {
@@ -630,7 +630,12 @@ const declared = Object.freeze([
   // of its own under `tmp`, which is not an artefact any other stage can see.
   {
     id: 'verify:message-format-conformance:self-test',
-    reads: ['consumer:package', 'dist:runtime', 'source:tools'],
+    reads: [
+      'consumer:package',
+      'dist:runtime',
+      'source:packages',
+      'source:tools',
+    ],
     writes: ['report:temp'],
   },
   {
