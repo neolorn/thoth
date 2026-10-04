@@ -61,7 +61,14 @@ configuration.
 A scope is a provider-local catalog and typing namespace, and it is the default compilation and
 loading boundary. It may line up with a feature, an owner, a completeness boundary, or a release
 boundary. A release MUST NOT require those concerns to coincide, and MUST NOT refuse a scope
-for its name or its breadth.
+for its breadth, or for its name unless the name is reserved.
+
+A scope's generated module takes the scope's name, and it sits beside the modules a release
+generates for every owner, in the one namespace a consumer application imports generated modules
+from. A scope name is reserved where no module of its own can exist: the name of one of those
+generated modules, and a name a supported platform reserves for a device and gives to no file. A
+release MUST refuse a scope with a reserved name at generation, with a diagnostic that names the
+path it could not write, and MUST NOT write one generated module over another.
 
 Messages that belong to a consumer's own interface form the build-known catalog input set. A
 consumer's domain records are runtime data from a release's point of view, wherever they are stored,
