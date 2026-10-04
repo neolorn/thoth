@@ -31,9 +31,16 @@ const describeArgument = (target) =>
 /**
  * `boundCalls(target, kind)` wraps every method of `target` so a call that returns a thenable
  * rejects with an `UnsettledCall` once `timeoutMs` passes, naming the method, its first argument
- * and what `describe()` says the row was doing.
+ * and what `describe()` says the row was doing. `adopt(target)` is handed each object once, before
+ * its methods are wrapped, and `annotate(target)` supplies what a failed call's message ends with,
+ * so a wait that fails can say what its page was still waiting for.
  */
-export function createCallBound({ timeoutMs, describe }) {
+export function createCallBound({
+  timeoutMs,
+  describe,
+  adopt = () => {},
+  annotate = () => '',
+}) {
   // The walk has to actually reach the calls this exists for. Asserting it means a Playwright
   // release that moves them fails loudly here, rather than going quiet with a page whose close or
   // evaluate nothing bounds.
@@ -68,6 +75,7 @@ export function createCallBound({ timeoutMs, describe }) {
     }
     const wrapped = new Set();
     boundNames.set(target, wrapped);
+    adopt(target);
     for (
       let level = Object.getPrototypeOf(target);
       level !== null && level !== Object.prototype;
@@ -120,6 +128,7 @@ export function createCallBound({ timeoutMs, describe }) {
               },
               (error) => {
                 clearTimeout(timer);
+                if (error instanceof Error) error.message += annotate(this);
                 throw error;
               },
             );

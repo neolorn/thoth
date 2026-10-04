@@ -335,9 +335,40 @@ assert.ok(
   `EQUATOR_ASSURANCE_CALL_TIMEOUT_MS must be a positive whole number of milliseconds, not ${JSON.stringify(process.env.EQUATOR_ASSURANCE_CALL_TIMEOUT_MS)}`,
 );
 
+// A wait that fails with no console error, no page error and no failed request says nothing about
+// a request the page started and never saw answered, which is what a held or lost script looks
+// like. So every page keeps the requests it has outstanding, and a failed call on it lists them.
+const outstandingRequests = new WeakMap();
+
+function watchRequests(target) {
+  if (typeof target.goto !== 'function' || typeof target.on !== 'function') {
+    return;
+  }
+  const outstanding = new Map();
+  outstandingRequests.set(target, outstanding);
+  target.on('request', (request) => outstanding.set(request, Date.now()));
+  target.on('requestfinished', (request) => outstanding.delete(request));
+  target.on('requestfailed', (request) => outstanding.delete(request));
+}
+
+function outstandingRequestsNote(page) {
+  const outstanding = outstandingRequests.get(page);
+  if (outstanding === undefined) return '';
+  const now = Date.now();
+  const listed = [...outstanding].map(
+    ([request, started]) =>
+      `${request.method()} ${request.url()} (${request.resourceType()}, ${now - started}ms)`,
+  );
+  return `\nRequests the page had started and not seen finish: ${
+    listed.length === 0 ? 'none' : `\n  ${listed.join('\n  ')}`
+  }`;
+}
+
 const boundCalls = createCallBound({
   timeoutMs: callTimeoutMs,
   describe: () => describeActivity(),
+  adopt: watchRequests,
+  annotate: outstandingRequestsNote,
 });
 
 // Heavy diagnostics, off unless asked for.
@@ -3078,9 +3109,14 @@ async function navigateWithScriptGate(page, url, beforeScripts) {
   const gate = new Promise((resolveGate) => {
     releaseScripts = resolveGate;
   });
-  const routeHandler = async (route) => {
-    await gate;
-    await route.continue();
+  // The route is removed only once every request it holds has been continued. `page.unroute` does
+  // not wait for a handler that is still running, and a script the page asks for as the navigation
+  // settles is in exactly that handler.
+  const held = new Set();
+  const routeHandler = (route) => {
+    const continued = gate.then(() => route.continue());
+    held.add(continued);
+    return continued.finally(() => held.delete(continued));
   };
   await page.route('**/*.js', routeHandler);
   const navigation = page.goto(url, { waitUntil: 'load' });
@@ -3095,6 +3131,7 @@ async function navigateWithScriptGate(page, url, beforeScripts) {
     return await navigation;
   } finally {
     releaseScripts();
+    await Promise.allSettled([...held]);
     await page.unroute('**/*.js', routeHandler);
   }
 }
@@ -5869,10 +5906,19 @@ async function verifyEmbeddedPanel(row, languages) {
       )
       .catch(() => undefined);
     const shown = await embeddedPanel(page);
+    const scripts = await page.evaluate(() =>
+      performance
+        .getEntriesByType('resource')
+        .filter((entry) => entry.name.endsWith('.js'))
+        .map(
+          (entry) =>
+            `${entry.name.split('/').at(-1)} (${Math.round(entry.responseEnd)}ms)`,
+        ),
+    );
     assert.deepEqual(
       [shown.document, shown.locale],
       [['en', 'ltr'], locale],
-      `${check}: the panel is not in ${locale}, or withoutDocumentLocale did not leave the host page's lang alone`,
+      `${check}: the panel is not in ${locale}, or withoutDocumentLocale did not leave the host page's lang alone${outstandingRequestsNote(page)}\nScripts the page loaded: ${scripts.join(', ')}`,
     );
     return shown;
   };
