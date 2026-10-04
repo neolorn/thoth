@@ -1548,8 +1548,10 @@ const EQUATOR_RENDERED = Object.freeze([
 ]);
 // The values Equator writes onto elements it does not render: the lang attributes on the root and
 // on each message, and the ARIA states and labels its directives put on their hosts. These rules
-// read a value without asking which element holds it, so they run over the whole document.
+// read a value, or whether the host's role allows the attribute at all, without judging the host
+// itself, so they run over the whole document.
 const WRITTEN_VALUE_RULES = Object.freeze([
+  'aria-prohibited-attr',
   'aria-valid-attr',
   'aria-valid-attr-value',
   'html-has-lang',
