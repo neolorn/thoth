@@ -541,6 +541,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/built-locale-addresses.test.ts',
   },
   {
+    id: 'partly-written-locale-table-compared',
+    invariant:
+      'A locale table with an entry the build cannot read is not compared with the configuration.',
+    source: 'packages/toolkit/src/static-analysis.ts',
+    find: '    table.properties.every((item) => propertyName(item) !== undefined)',
+    replace: '    table.properties.length >= 0',
+    caughtBy: 'packages/toolkit/test/derived-locale-policy.test.ts',
+  },
+  {
     id: 'build-origin-not-required',
     invariant:
       'A build under a locale-host policy is refused unless it is told which origin it answers at.',

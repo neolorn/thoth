@@ -1071,16 +1071,41 @@ function routePolicyDeclaration(
       ...common,
     });
   }
-  const table = objectProperty(argument, factory.localeOption);
-  const defaultLocale = objectProperty(argument, 'defaultLocale');
+  // A spread written after an option can replace it, since the later one wins, and what the
+  // spread holds is not evaluated. An option with a spread after it is therefore one the running
+  // application may not be using, and it is left unread rather than compared.
+  const option = (name: string): ts.Expression | undefined => {
+    let written = false;
+    for (const item of argument.properties) {
+      if (written && ts.isSpreadAssignment(item)) return undefined;
+      if (propertyName(item) === name) written = true;
+    }
+    return objectProperty(argument, name);
+  };
+  const table = option(factory.localeOption);
+  const defaultLocale = option('defaultLocale');
   const locales: string[] = [];
   const claimed = new Map<string, ClaimedRouteSegment>();
   const claim = (segment: string, kind: ClaimedRouteSegment['kind']): void => {
     if (!claimed.has(segment)) claimed.set(segment, { segment, kind });
   };
+  // The locale table is read whole or not at all. An entry that is spread in, computed, or written
+  // in shorthand names a locale this cannot see without evaluating something, and reading the
+  // rest as the whole table reports the unseen locales as configured with no address, which is an
+  // error raised against an application that addresses them.
   if (factory.localesAre === 'elements') {
-    locales.push(...literalElements(table));
-  } else if (table !== undefined && ts.isObjectLiteralExpression(table)) {
+    if (
+      table !== undefined &&
+      ts.isArrayLiteralExpression(table) &&
+      table.elements.every((element) => ts.isStringLiteralLike(element))
+    ) {
+      locales.push(...literalElements(table));
+    }
+  } else if (
+    table !== undefined &&
+    ts.isObjectLiteralExpression(table) &&
+    table.properties.every((item) => propertyName(item) !== undefined)
+  ) {
     for (const item of table.properties) {
       const name = propertyName(item);
       if (name === undefined) continue;
@@ -1094,7 +1119,7 @@ function routePolicyDeclaration(
   // Aliases are claimed by their key, the older spelling, and neutral roots by their own text.
   // Both are leading segments the resolver reads before it reads a route, which is the only thing
   // that puts them in this list.
-  const aliases = objectProperty(argument, 'aliases');
+  const aliases = option('aliases');
   if (
     factory.valuesArePrefixes &&
     aliases !== undefined &&
@@ -1105,12 +1130,10 @@ function routePolicyDeclaration(
       if (name !== undefined) claim(name, 'locale alias');
     }
   }
-  for (const root of literalElements(
-    objectProperty(argument, 'localeNeutralRoots'),
-  )) {
+  for (const root of literalElements(option('localeNeutralRoots'))) {
     claim(root, 'locale-neutral root');
   }
-  const omitOption = objectProperty(argument, 'omitDefaultPrefix');
+  const omitOption = option('omitDefaultPrefix');
   return Object.freeze({
     locales: Object.freeze(locales),
     claimedSegments: Object.freeze(

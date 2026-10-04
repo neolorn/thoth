@@ -107,6 +107,11 @@ serves and does not. A generated nonproduction locale is the one exemption in bo
 because its existence is decided by the build while the policy is a source file that is the same in
 every build.
 
+A build compares the two from the policy as its source declares it, and only where the whole locale
+table is written there with nothing after it that can replace it. A release MUST NOT compare a
+locale table it read in part, because the locales it could not read would be reported as configured
+and unaddressed in an application that addresses them.
+
 Under a locale-specific origin policy the locale is carried by the origin, and three things follow.
 A release MUST be told which origin this build answers at, MUST require it to be one of the
 policy's own including its scheme, and MUST refuse a missing or unnamed origin at configuration,
