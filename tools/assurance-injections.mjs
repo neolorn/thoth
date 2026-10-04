@@ -4356,7 +4356,7 @@ export const injections = Object.freeze([
     invariant:
       'An unreadable translation-state record stops generate before any output is published.',
     source: 'packages/toolkit/src/project-host.ts',
-    find: '  const recorded = await readTranslationState(project.ownerRoot);\n  if (!recorded.ok) return recorded;\n  const publication = await applyOutputPlan({',
+    find: '  const recorded = await readTranslationState(project.ownerRoot);\n  if (!recorded.ok) return { result: recorded, decidedByInputs: false };\n  const publication = await applyOutputPlan({',
     replace:
       '  const recorded = await readTranslationState(project.ownerRoot);\n  const publication = await applyOutputPlan({',
     caughtBy: 'packages/toolkit/test/translation-state-unreadable.test.ts',
