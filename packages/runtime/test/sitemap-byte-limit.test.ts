@@ -18,6 +18,10 @@ import {
  * after the published name, ahead of its extension where it has one.
  */
 
+// A case that builds a sitemap at the byte limit takes many times longer where the source is
+// instrumented, so it carries its own bound in place of the default one.
+const CEILING_CASE_MS = 300_000;
+
 const LIMIT = 52_428_800;
 
 /** Reads any segment as itself, so a page is as long as its values. */
@@ -170,39 +174,52 @@ function sized(total: number): {
 }
 
 describe('a set of pages at the size limit', () => {
-  it('is one file at exactly the limit', () => {
-    const { pages, fraction } = sized(LIMIT);
-    const files = build(pages, fraction);
-    expect(
-      files.map(({ name, kind, urls, bytes }) => ({ name, kind, urls, bytes })),
-    ).toStrictEqual([
-      {
-        name: 'sitemap.xml',
-        kind: 'urlset',
-        urls: pages.length + 1,
-        bytes: LIMIT,
-      },
-    ]);
-  });
+  it(
+    'is one file at exactly the limit',
+    () => {
+      const { pages, fraction } = sized(LIMIT);
+      const files = build(pages, fraction);
+      expect(
+        files.map(({ name, kind, urls, bytes }) => ({
+          name,
+          kind,
+          urls,
+          bytes,
+        })),
+      ).toStrictEqual([
+        {
+          name: 'sitemap.xml',
+          kind: 'urlset',
+          urls: pages.length + 1,
+          bytes: LIMIT,
+        },
+      ]);
+    },
+    CEILING_CASE_MS,
+  );
 
-  it('is two files and an index at one byte more', () => {
-    const { pages, fraction, envelope } = sized(LIMIT + 1);
-    // A name whose only dot is its first character has no extension, so the parts are numbered at
-    // its end.
-    const files = build(pages, fraction, '.sitemap');
-    expect(files.map(({ name, kind, urls }) => ({ name, kind, urls }))).toEqual(
-      [
+  it(
+    'is two files and an index at one byte more',
+    () => {
+      const { pages, fraction, envelope } = sized(LIMIT + 1);
+      // A name whose only dot is its first character has no extension, so the parts are numbered at
+      // its end.
+      const files = build(pages, fraction, '.sitemap');
+      expect(
+        files.map(({ name, kind, urls }) => ({ name, kind, urls })),
+      ).toEqual([
         { name: '.sitemap-1', kind: 'urlset', urls: pages.length },
         { name: '.sitemap-2', kind: 'urlset', urls: 1 },
         { name: '.sitemap', kind: 'index', urls: 2 },
-      ],
-    );
-    const [first, second] = files;
-    expect(first?.bytes).toBeLessThanOrEqual(LIMIT);
-    // The two parts hold the same entries as the one document would have, and each carries the
-    // declaration and the root element again.
-    expect((first?.bytes ?? 0) + (second?.bytes ?? 0)).toBe(
-      LIMIT + 1 + envelope,
-    );
-  });
+      ]);
+      const [first, second] = files;
+      expect(first?.bytes).toBeLessThanOrEqual(LIMIT);
+      // The two parts hold the same entries as the one document would have, and each carries the
+      // declaration and the root element again.
+      expect((first?.bytes ?? 0) + (second?.bytes ?? 0)).toBe(
+        LIMIT + 1 + envelope,
+      );
+    },
+    CEILING_CASE_MS,
+  );
 });

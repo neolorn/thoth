@@ -50,6 +50,10 @@ const MALFORMED = {
 
 const MISMATCH = { ...MALFORMED, reason: 'integrity-mismatch' };
 
+// A case that builds a catalog at the largest size admitted takes many times longer where the source is
+// instrumented, so it carries its own bound in place of the default one.
+const CEILING_CASE_MS = 300_000;
+
 const FINGERPRINT = `sha256-${'A'.repeat(43)}`;
 
 /** The one input of the greeting, which the source declares with a description. */
@@ -273,20 +277,24 @@ describe('a catalog whose content is sound', () => {
   });
 
   // The title's text is lengthened until the catalog measures exactly what one may.
-  it('is admitted at the decoded size a catalog may have', async () => {
-    const room =
-      RUNTIME_LIMITS.catalogBytes - richCatalog().resources.decodedBytes;
-    const candidate = sealed((catalog) => {
-      messageOf(catalog, 'title').body['pattern'] = [
-        `Catalog store${'e'.repeat(room)}`,
-      ];
-    });
+  it(
+    'is admitted at the decoded size a catalog may have',
+    async () => {
+      const room =
+        RUNTIME_LIMITS.catalogBytes - richCatalog().resources.decodedBytes;
+      const candidate = sealed((catalog) => {
+        messageOf(catalog, 'title').body['pattern'] = [
+          `Catalog store${'e'.repeat(room)}`,
+        ];
+      });
 
-    expect(candidate.catalog.resources.decodedBytes).toBe(
-      RUNTIME_LIMITS.catalogBytes,
-    );
-    expect(await admission(candidate)).toBeUndefined();
-  });
+      expect(candidate.catalog.resources.decodedBytes).toBe(
+        RUNTIME_LIMITS.catalogBytes,
+      );
+      expect(await admission(candidate)).toBeUndefined();
+    },
+    CEILING_CASE_MS,
+  );
 
   it('counts a selection’s output parts from its variants, whatever else the body carries', async () => {
     const edit: CatalogEdit = (catalog) => {
@@ -453,20 +461,24 @@ describe('a catalog whose measures or bytes are not what was recorded', () => {
 
   // A size past the ceiling is not a size a catalog can have, so there is nothing to compare the
   // recorded one with: the refusal is for shape, whatever the summary says.
-  it('is malformed, not mismatched, when it measures one byte past the ceiling and records the ceiling', async () => {
-    const room =
-      RUNTIME_LIMITS.catalogBytes - richCatalog().resources.decodedBytes;
-    const edit: CatalogEdit = (catalog) => {
-      messageOf(catalog, 'title').body['pattern'] = [
-        `Catalog store${'e'.repeat(room + 1)}`,
-      ];
-      catalog.resources.decodedBytes = RUNTIME_LIMITS.catalogBytes;
-    };
+  it(
+    'is malformed, not mismatched, when it measures one byte past the ceiling and records the ceiling',
+    async () => {
+      const room =
+        RUNTIME_LIMITS.catalogBytes - richCatalog().resources.decodedBytes;
+      const edit: CatalogEdit = (catalog) => {
+        messageOf(catalog, 'title').body['pattern'] = [
+          `Catalog store${'e'.repeat(room + 1)}`,
+        ];
+        catalog.resources.decodedBytes = RUNTIME_LIMITS.catalogBytes;
+      };
 
-    expect(await admission(sealed(edit, { measure: false }))).toMatchObject(
-      MALFORMED,
-    );
-  });
+      expect(await admission(sealed(edit, { measure: false }))).toMatchObject(
+        MALFORMED,
+      );
+    },
+    CEILING_CASE_MS,
+  );
 
   it('is an integrity mismatch when its bytes are not the ones the digest was taken over', async () => {
     const candidate = sealed(() => undefined);
