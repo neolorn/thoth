@@ -1819,35 +1819,11 @@
     },
     {
       "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "CallExpression",
-      "original": "this.cache.delete(key);",
-      "replacement": ";",
-      "category": "equivalent",
-      "reason": "The delete only moves the key to the end of the map. Nothing reads the map order: evict() sorts the unpinned entries by lastUsed (catalog-runtime.ts 1116-1117), and each touch gives a strictly larger lastUsed, so insertion order breaks no tie."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
       "mutator": "StringLiteral",
       "original": "'A generated local catalog module could not be loaded.'",
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "Only the text of the load-failure diagnostic message changes; the code, outcome, reason and identities the tests assert are the same."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "AssignmentOperator",
-      "original": "this.clock += 1",
-      "replacement": "this.clock -= 1",
-      "category": "equivalent",
-      "reason": "The entry's lastUsed is overwritten by touch() two lines later (catalog-runtime.ts 1214, 1100), which leaves it equal to the largest value handed out so far instead of two above it. An entry already holding that value was set into the map earlier, the sort at 1116-1117 is stable, and every later touch is larger still, so the eviction order is the same."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "CallExpression",
-      "original": "this.cache.set(key, entry);",
-      "replacement": ";",
-      "category": "equivalent",
-      "reason": "touch() at catalog-runtime.ts 1214 deletes the key and sets the same entry (1101-1102) before anything reads the cache."
     },
     {
       "file": "packages/runtime/src/catalog-runtime.ts",

@@ -4716,10 +4716,20 @@ export const injections = Object.freeze([
     invariant:
       'A catalog being acquired is pinned before the cache evicts to its bound, so the entry a caller is about to hold is never the one evicted.',
     source: 'packages/runtime/src/catalog-runtime.ts',
-    find: '          this.cache.set(key, entry);\n        }\n        return catalog;',
+    find: '        if (!this.disposed) this.retain(key, catalog);\n        return catalog;',
     replace:
-      '          this.cache.set(key, entry);\n          this.evict();\n        }\n        return catalog;',
+      '        if (!this.disposed) {\n          this.retain(key, catalog);\n          this.evict();\n        }\n        return catalog;',
     caughtBy: 'packages/runtime/test/cache-events.test.ts',
+  },
+  {
+    id: 'offered-catalog-forgets-its-leases',
+    invariant:
+      'A catalog offered for an identity that is already cached keeps the entry and the leases on it, so a held catalog is never the one evicted.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: '    let entry = this.cache.get(key);\n    if (entry === undefined) {',
+    replace:
+      '    let entry: CachedCatalog | undefined;\n    if (entry === undefined) {',
+    caughtBy: 'packages/runtime/test/catalog-store-cache-and-admission.test.ts',
   },
   {
     id: 'territory-split-takes-the-first-region',

@@ -264,15 +264,78 @@ describe('the cache’s bound', () => {
     second.release();
   });
 
-  it('can let go of a catalog whose lease was released after a transfer replaced it', async () => {
-    const { store, events } = storeOver({ maximumEntries: 1 });
+  it('holds a leased catalog a transfer offers again, until the lease is released', async () => {
+    let loads = 0;
+    const { store, events } = storeOver({
+      maximumEntries: 1,
+      loaders: {
+        ...loadersFor(compiled()),
+        [catalogKey('shell', 'en-US')]: () => {
+          loads += 1;
+          return catalogOf('shell', 'en-US');
+        },
+      },
+    });
 
     const lease = await store.acquire(scope('shell'), 'en-US', live());
     await store.seed(catalogOf('shell', 'en-US'));
+    // Past the bound of one: the catalog nobody holds is the one let go.
+    await store.preload(scope('shell'), 'ar-EG', live());
+
+    expect(events).toStrictEqual([evicted('shell', 'ar-EG', 1)]);
+    const again = await store.acquire(scope('shell'), 'en-US', live());
+    expect(loads).toBe(1);
+    again.release();
+
     lease.release();
     await store.preload(scope('shell'), 'ar-EG', live());
 
-    expect(events).toStrictEqual([evicted('shell', 'en-US', 1)]);
+    expect(events).toStrictEqual([
+      evicted('shell', 'ar-EG', 1),
+      evicted('shell', 'en-US', 1),
+    ]);
+    expect(store.cachedCount).toBe(1);
+  });
+
+  it('holds a leased catalog whose own load finishes after a transfer supplied it', async () => {
+    let finish!: () => void;
+    const held = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const { store, events } = storeOver({
+      maximumEntries: 1,
+      loaders: {
+        ...loadersFor(compiled()),
+        [catalogKey('shell', 'en-US')]: () =>
+          held.then(() => catalogOf('shell', 'en-US')),
+      },
+    });
+
+    const loading = store.preload(scope('shell'), 'en-US', live());
+    await store.seed(catalogOf('shell', 'en-US'));
+    const lease = await store.acquire(scope('shell'), 'en-US', live());
+    finish();
+    await loading;
+    await store.preload(scope('shell'), 'ar-EG', live());
+
+    expect(events).toStrictEqual([evicted('shell', 'ar-EG', 1)]);
+    expect(store.cachedCount).toBe(1);
+
+    lease.release();
+    await store.preload(scope('shell'), 'ar-EG', live());
+
+    expect(events.at(-1)).toStrictEqual(evicted('shell', 'en-US', 1));
+  });
+
+  it('gives back nothing to a store disposed while the lease was held', async () => {
+    const { store, events } = storeOver({ maximumEntries: 1 });
+
+    const lease = await store.acquire(scope('shell'), 'en-US', live());
+    store.dispose();
+    lease.release();
+
+    expect(store.cachedCount).toBe(0);
+    expect(events).toStrictEqual([]);
   });
 
   /**

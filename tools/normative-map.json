@@ -1304,7 +1304,8 @@
       "statement": "Eviction is automatic and takes the least recently used unpinned entry, and a release MUST NOT evict a pinned one.",
       "checks": [
         "assurance-runtime:unpinned-catalogs-never-evicted",
-        "assurance:load-evicts-before-the-pin"
+        "assurance:load-evicts-before-the-pin",
+        "assurance:offered-catalog-forgets-its-leases"
       ]
     },
     {

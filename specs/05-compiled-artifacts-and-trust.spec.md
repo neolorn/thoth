@@ -208,7 +208,9 @@ catalog identity. A release MUST join a second request for a catalog already loa
 first rather than start a second load.
 
 An entry acquired for use is pinned for as long as it is held. Eviction is automatic and takes the
-least recently used unpinned entry, and a release MUST NOT evict a pinned one.
+least recently used unpinned entry, and a release MUST NOT evict a pinned one. A catalog offered for
+an identity that is already cached, by a transfer or by a load that finishes after one, counts as a
+use of the entry already there and leaves the leases on it in force.
 
 A release MUST NOT turn a failed load into a cache entry, and MUST release everything a
 disposed context cached.

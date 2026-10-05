@@ -1096,10 +1096,26 @@ export class LocalCatalogStore {
     return artifact;
   }
 
-  private touch(key: string, entry: CachedCatalog): void {
+  private touch(entry: CachedCatalog): void {
     entry.lastUsed = this.clock += 1;
-    this.cache.delete(key);
-    this.cache.set(key, entry);
+  }
+
+  /**
+   * The cache entry for a catalog identity, counted as used, and made where there is none.
+   *
+   * An entry carries the count of the leases on it. A catalog offered for an identity that is
+   * already cached was admitted for the same address, so it is the same content, and the entry
+   * stays with its leases: `specs/05-compiled-artifacts-and-trust.spec.md` section 9 never lets go
+   * of a catalog that is held, and a fresh entry would have forgotten who holds it.
+   */
+  private retain(key: string, catalog: CompiledCatalog): CachedCatalog {
+    let entry = this.cache.get(key);
+    if (entry === undefined) {
+      entry = { catalog, pins: 0, lastUsed: 0 };
+      this.cache.set(key, entry);
+    }
+    this.touch(entry);
+    return entry;
   }
 
   /**
@@ -1155,7 +1171,7 @@ export class LocalCatalogStore {
     const key = catalogIdentity(scope.providerId, scope.scopeId, locale);
     const cached = this.cache.get(key);
     if (cached !== undefined) {
-      this.touch(key, cached);
+      this.touch(cached);
       return Promise.resolve(cached.catalog);
     }
     const existing = this.inFlight.get(key);
@@ -1176,17 +1192,10 @@ export class LocalCatalogStore {
       })
       .then((candidate) => admitCatalog(candidate, artifact))
       .then((catalog) => {
-        if (!this.disposed) {
-          const entry: CachedCatalog = {
-            catalog,
-            pins: 0,
-            lastUsed: (this.clock += 1),
-          };
-          // Not evicted here: a caller acquiring this catalog pins it after the load settles, and
-          // evicting first would drop the entry that caller is about to hold. Each caller evicts
-          // once what it holds is pinned.
-          this.cache.set(key, entry);
-        }
+        // Not evicted here: a caller acquiring this catalog pins it after the load settles, and
+        // evicting first would drop the entry that caller is about to hold. Each caller evicts
+        // once what it holds is pinned.
+        if (!this.disposed) this.retain(key, catalog);
         return catalog;
       })
       .finally(() => this.inFlight.delete(key));
@@ -1205,13 +1214,8 @@ export class LocalCatalogStore {
       signal,
     );
     this.assertActive();
-    let entry = this.cache.get(key);
-    if (entry === undefined) {
-      entry = { catalog, pins: 0, lastUsed: (this.clock += 1) };
-      this.cache.set(key, entry);
-    }
+    const entry = this.retain(key, catalog);
     entry.pins += 1;
-    this.touch(key, entry);
     let released = false;
     return Object.freeze({
       key,
@@ -1219,8 +1223,9 @@ export class LocalCatalogStore {
       release: () => {
         if (released) return;
         released = true;
-        const current = this.cache.get(key);
-        if (current !== undefined && current.pins > 0) current.pins -= 1;
+        // The entry this lease pinned, which is still the cached one unless the store was
+        // disposed: a pinned entry is never let go of and never replaced.
+        entry.pins -= 1;
         this.evict();
       },
     });
@@ -1288,11 +1293,7 @@ export class LocalCatalogStore {
     if (aborted(operationSignal)) {
       throw operationSignal.reason ?? new DOMException('Aborted', 'AbortError');
     }
-    this.cache.set(key, {
-      catalog,
-      pins: 0,
-      lastUsed: (this.clock += 1),
-    });
+    this.retain(key, catalog);
     this.evict();
   }
 
