@@ -51,7 +51,7 @@ import {
   plainTime,
   timeZone,
 } from './formatting';
-import { FormatterCache } from './evaluator';
+import { FormatterCache, formattingLocale } from './evaluator';
 import { RUNTIME_LIMITS, codePointLengthAtMost } from './runtime-safety';
 
 interface NumberSyntax {
@@ -110,24 +110,47 @@ function failed<Value>(
   message: string,
   context: FormattingContext,
   reason?: LocalizationDiagnostic['reason'],
+  code: LocalizationDiagnostic['code'] = status === 'unsupported-capability'
+    ? 'unsupported-input-capability'
+    : 'invalid-localized-input',
 ): LocalizedInputResult<Value> {
   return Object.freeze({
     status,
     text,
-    diagnostic: diagnostic(
-      status === 'unsupported-capability'
-        ? 'unsupported-input-capability'
-        : 'invalid-localized-input',
-      message,
-      context,
-      reason,
-    ),
+    diagnostic: diagnostic(code, message, context, reason),
   });
 }
 
 function valid<Value>(text: string, value: Value): LocalizedInputResult<Value> {
   return Object.freeze({ status: 'valid', text, value });
 }
+
+/**
+ * What is wrong with the numbering system a context declares, if anything.
+ *
+ * Decided once, before a field is read or written, because the platform does not decide it the
+ * same way everywhere: a number formatter throws on a malformed identifier and quietly writes the
+ * locale's own digits for a well-formed one it has no data for. A field that went on would give a
+ * caller who asked for one set of digits another.
+ */
+function numberingSystemRefusal(
+  context: FormattingContext,
+): 'malformed' | 'unavailable' | undefined {
+  const numberingSystem: unknown = context.numberingSystem;
+  if (numberingSystem === undefined) return undefined;
+  if (typeof numberingSystem !== 'string') return 'malformed';
+  try {
+    new Intl.Locale('und', { numberingSystem });
+  } catch {
+    return 'malformed';
+  }
+  return formattingLocale(context) === undefined ? 'unavailable' : undefined;
+}
+
+const malformedNumberingSystem =
+  'The numbering system of the formatting context is not a numbering system identifier.';
+const unavailableNumberingSystem =
+  'This runtime has no data for the numbering system of the formatting context.';
 
 function canonicalInput(text: string): string {
   return text.normalize('NFC');
@@ -223,15 +246,12 @@ function numberSyntax(context: FormattingContext): NumberSyntax {
   return syntax;
 }
 
+/** One spelling of a marker around a number: what stands before the digits and what after. */
 interface AffixPattern {
   readonly prefix: string;
   readonly suffix: string;
-}
-
-interface ProfileAffixes {
-  readonly positive: AffixPattern;
-  readonly negative: AffixPattern;
-  readonly available: boolean;
+  /** Whether the spelling carries the locale's minus sign. */
+  readonly negative: boolean;
 }
 
 function withoutLeadingSignMarks(value: string, syntax: NumberSyntax): string {
@@ -274,13 +294,23 @@ function stripSign(value: string, syntax: NumberSyntax): StrippedSign {
   return Object.freeze({ body: value, negative: false, explicit: false });
 }
 
-function affixPattern(parts: readonly Intl.NumberFormatPart[]): AffixPattern {
+/**
+ * The spelling of a marker around the number in one formatted amount.
+ *
+ * Nothing when the amount is written without its number, as Arabic writes one day and two days, or
+ * without the marker. Such a spelling has no place for digits, so there is nothing to read a number
+ * from, and taking it as an affix would match every text.
+ */
+function affixPattern(
+  parts: readonly Intl.NumberFormatPart[],
+  marker: Intl.NumberFormatPartTypes,
+): AffixPattern | undefined {
   const first = parts.findIndex(({ type }) => numericPartTypes.has(type));
-  let last = -1;
+  if (first < 0 || !parts.some(({ type }) => type === marker)) return undefined;
+  let last = first;
   for (const [index, part] of parts.entries()) {
     if (numericPartTypes.has(part.type)) last = index;
   }
-  if (first < 0 || last < first) return { prefix: '', suffix: '' };
   return Object.freeze({
     prefix: parts
       .slice(0, first)
@@ -290,61 +320,115 @@ function affixPattern(parts: readonly Intl.NumberFormatPart[]): AffixPattern {
       .slice(last + 1)
       .map(({ value }) => value)
       .join(''),
+    negative: parts.some(({ type }) => type === 'minusSign'),
   });
 }
 
+/**
+ * Counts that between them fall in every plural category of every language the supported hosts
+ * have plural rules for: the whole numbers to a hundred, a million for the category the Romance
+ * languages keep for it, and two fractions for the categories that only a fraction selects.
+ */
+const pluralCategoryCounts: readonly number[] = Object.freeze([
+  ...Array.from({ length: 101 }, (_, count) => count),
+  1_000_000,
+  0.1,
+  1.5,
+]);
+
+const profileAffixCache = new Map<string, readonly AffixPattern[]>();
+
+/**
+ * Every spelling of the profile's marker the locale writes beside a number, longest first.
+ *
+ * A unit is spelled by plural category (`1 day`, `5 days`), so one amount is formatted for each
+ * category the locale's plural rules give and each spelling it produces is kept. A person types
+ * whichever the amount calls for, and a field that learned only the spelling of one would refuse
+ * every other amount. The spellings come from the host's formatter because that is what writes the
+ * field: a table of them here would be a second copy of the host's locale data.
+ *
+ * Longest first, so that `-5 days` is taken as the negative spelling and not as the positive one
+ * around `-5`.
+ *
+ * Empty when the locale has no spelling of the marker that carries a number.
+ */
 function profileAffixes(
   profile: LocalizedInputProfile,
   context: FormattingContext,
-): ProfileAffixes {
-  const unavailable = Object.freeze({
-    positive: Object.freeze({ prefix: '', suffix: '' }),
-    negative: Object.freeze({ prefix: '', suffix: '' }),
-    available: false,
-  });
+): readonly AffixPattern[] {
+  let style: Intl.NumberFormatOptions;
+  let marker: Intl.NumberFormatPartTypes;
+  let counts: readonly number[];
+  if (profile.kind === 'money') {
+    style = { style: 'currency', currency: profile.currency };
+    marker = 'currency';
+    counts = [1];
+  } else if (profile.kind === 'measurement') {
+    style = { style: 'unit', unit: profile.unit };
+    marker = 'unit';
+    counts = pluralCategoryCounts;
+  } else if (profile.kind === 'percent') {
+    style = { style: 'percent' };
+    marker = 'percentSign';
+    counts = [0.01];
+  } else {
+    return [];
+  }
+  const cacheKey = JSON.stringify([
+    context.locale,
+    context.numberingSystem,
+    style,
+  ]);
+  const cached = profileAffixCache.get(cacheKey);
+  if (cached !== undefined) {
+    profileAffixCache.delete(cacheKey);
+    profileAffixCache.set(cacheKey, cached);
+    return cached;
+  }
+  const learned = new Map<string, AffixPattern>();
   try {
-    const common = {
+    const formatter = inputFormatterCache.number(context.locale, {
+      ...style,
       ...(context.numberingSystem === undefined
         ? {}
         : { numberingSystem: context.numberingSystem }),
-    };
-    let formatter: Intl.NumberFormat | undefined;
-    let marker: Intl.NumberFormatPartTypes | undefined;
-    if (profile.kind === 'money') {
-      formatter = inputFormatterCache.number(context.locale, {
-        ...common,
-        style: 'currency',
-        currency: profile.currency,
-      });
-      marker = 'currency';
-    } else if (profile.kind === 'measurement') {
-      formatter = inputFormatterCache.number(context.locale, {
-        ...common,
-        style: 'unit',
-        unit: profile.unit,
-      });
-      marker = 'unit';
-    } else if (profile.kind === 'percent') {
-      formatter = inputFormatterCache.number(context.locale, {
-        ...common,
-        style: 'percent',
-      });
-      marker = 'percentSign';
-    }
-    if (formatter === undefined || marker === undefined) return unavailable;
-    const magnitude = profile.kind === 'percent' ? 0.01 : 1;
-    const positiveParts = formatter.formatToParts(magnitude);
-    const negativeParts = formatter.formatToParts(-magnitude);
-    return Object.freeze({
-      positive: affixPattern(positiveParts),
-      negative: affixPattern(negativeParts),
-      available:
-        positiveParts.some(({ type }) => type === marker) &&
-        negativeParts.some(({ type }) => type === marker),
     });
+    const rules = inputFormatterCache.plural(context.locale, {});
+    const categories = new Set<string>();
+    for (const count of counts) {
+      const category = rules.select(count);
+      if (categories.has(category)) continue;
+      const positive = affixPattern(formatter.formatToParts(count), marker);
+      if (positive === undefined) continue;
+      categories.add(category);
+      learned.set(JSON.stringify(positive), positive);
+      const negative = affixPattern(formatter.formatToParts(-count), marker);
+      // A spelling of a negative amount that shows no minus sign says nothing of the sign, so no
+      // sign is read from it.
+      if (negative?.negative === true) {
+        learned.set(JSON.stringify(negative), negative);
+      }
+    }
   } catch {
-    return unavailable;
+    // A currency or unit the platform refuses has no spelling to learn; the field then reads a
+    // bare number, or refuses where the profile requires the marker.
+    learned.clear();
   }
+  const affixes = Object.freeze(
+    [...learned.values()].sort(
+      (left, right) =>
+        right.prefix.length +
+        right.suffix.length -
+        (left.prefix.length + left.suffix.length),
+    ),
+  );
+  profileAffixCache.set(cacheKey, affixes);
+  while (profileAffixCache.size > 64) {
+    const oldest = profileAffixCache.keys().next().value as string | undefined;
+    if (oldest === undefined) break;
+    profileAffixCache.delete(oldest);
+  }
+  return affixes;
 }
 
 function stripAffix(value: string, affix: AffixPattern): string | undefined {
@@ -498,7 +582,7 @@ function parseNumeric(
     (profile.kind === 'money' && profile.requireCurrency === true) ||
     (profile.kind === 'measurement' && profile.requireUnit === true) ||
     (profile.kind === 'percent' && profile.requirePercentSign === true);
-  if (requireAffix && !affixes.available) {
+  if (requireAffix && affixes.length === 0) {
     return failed(
       'unsupported-capability',
       text,
@@ -508,17 +592,13 @@ function parseNumeric(
   }
   let negative = false;
   let affixMatches = false;
-  if (affixes.available) {
-    const negativeBody = stripAffix(working, affixes.negative);
-    const positiveBody = stripAffix(working, affixes.positive);
-    if (negativeBody !== undefined) {
-      working = negativeBody;
-      negative = true;
-      affixMatches = true;
-    } else if (positiveBody !== undefined) {
-      working = positiveBody;
-      affixMatches = true;
-    }
+  for (const affix of affixes) {
+    const body = stripAffix(working, affix);
+    if (body === undefined) continue;
+    working = body;
+    negative = affix.negative;
+    affixMatches = true;
+    break;
   }
   if (requireAffix && !affixMatches) {
     return failed(
@@ -1924,6 +2004,26 @@ export function parseLocalizedInput<Profile extends LocalizedInputProfile>(
       context,
     ) as LocalizedInputResult<LocalizedInputValue<Profile>>;
   }
+  const refusal = numberingSystemRefusal(context);
+  if (refusal === 'malformed') {
+    return failed(
+      'policy-rejected',
+      text,
+      malformedNumberingSystem,
+      context,
+      undefined,
+      'invalid-configuration',
+    );
+  }
+  if (refusal === 'unavailable') {
+    return failed(
+      'unsupported-capability',
+      text,
+      unavailableNumberingSystem,
+      context,
+      'native-capability-rejected',
+    );
+  }
   let result: LocalizedInputResult<unknown>;
   switch (profile.kind) {
     case 'plain-date':
@@ -2422,6 +2522,25 @@ export function formatLocalizedInput<Profile extends LocalizedInputProfile>(
       'The invariant value does not match the declared localized input profile.',
       context,
     );
+  }
+  const refusal = numberingSystemRefusal(context);
+  if (refusal !== undefined) {
+    return Object.freeze({
+      ok: false,
+      diagnostic:
+        refusal === 'malformed'
+          ? diagnostic(
+              'invalid-configuration',
+              malformedNumberingSystem,
+              context,
+            )
+          : diagnostic(
+              'unsupported-formatting-capability',
+              unavailableNumberingSystem,
+              context,
+              'native-capability-rejected',
+            ),
+    });
   }
   switch (profile.kind) {
     case 'decimal':

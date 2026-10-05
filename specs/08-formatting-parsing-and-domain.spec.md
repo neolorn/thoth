@@ -165,6 +165,17 @@ A money, measurement, or percent field reads a number typed with its marker or w
 refuses the bare number only where the field's profile requires the marker. A duration field refuses
 a leading sign unless its profile allows or requires one.
 
+A marker is read in each spelling the host's formatter writes beside a number in the field's locale,
+so a measurement field reads its unit in the spelling of every plural category the locale has:
+`1 day` and `5 days` in English. A spelling the locale writes with no number in it, as Arabic writes
+one day and two days, is not read, and a value the locale writes that way is reported instead of
+written. A number is negative only where the text carries the locale's minus sign.
+
+A field is read and written under the numbering system its formatting context declares. A context
+whose numbering system is not a numbering system identifier, the empty string among them, is refused
+as an invalid configuration, and one the host has no digits for is refused as an unsupported
+capability. Neither is read as a context that declares none.
+
 A numeric field is written back in the spelling its profile reads. Where the profile declares a
 precision the value is written to it, and a value the precision would round is reported instead of
 written. Where it declares none the value is written with every fraction digit it has, and a rounder

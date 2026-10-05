@@ -4970,93 +4970,12 @@
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "UnaryOperator",
-      "original": "-1",
-      "replacement": "+1",
-      "category": "equivalent",
-      "reason": "last is assigned inside the loop whenever a numeric part exists, and when none exists first is -1 and line 283 returns before last is read, so its initial value is never observed."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "LogicalOperator",
-      "original": "first < 0 || last < first",
-      "replacement": "first < 0 && last < first",
-      "category": "unstated-behavior",
-      "reason": "The branch is reached only where a locale writes one of a unit with no number, so the affix is empty and any text matches it; what such a locale should read is not stated, and a case would fix the present reading in place."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "first < 0 || last < first",
-      "replacement": "false",
-      "category": "unstated-behavior",
-      "reason": "The branch is reached only where a locale writes one of a unit with no number, so the affix is empty and any text matches it; what such a locale should read is not stated, and a case would fix the present reading in place."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "last < first",
-      "replacement": "false",
-      "category": "unstated-behavior",
-      "reason": "The branch is reached only where a locale writes one of a unit with no number, so the affix is empty and any text matches it; what such a locale should read is not stated, and a case would fix the present reading in place."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ObjectLiteral",
-      "original": "{\n    positive: Object.freeze({ prefix: '', suffix: '' }),\n    negative: Object.freeze({ prefix: '', suffix: '' }),\n    available: false,\n  }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "The unavailable value is only ever tested for a truthy available on lines 501 and 511; an object without the key reads as false there and positive and negative are never read when it is."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
       "mutator": "StringLiteral",
       "original": "''",
       "replacement": "\"Stryker was here!\"",
       "category": "equivalent",
-      "reason": "unavailable.positive is never read: lines 512-513 read the affixes only when available is true, which unavailable never is. unavailable.negative is never read: lines 512-513 read the affixes only when available is true, which unavailable never is. the default applies only to a two-field text, which passes line 1087 only at minute precision, where the seconds field is never read the initial value is read only at fraction precision, where line 1119 has replaced it the default applies only at minute precision, where lines 1144, 1151 and 1163 do not read the seconds digits the default applies only outside fraction precision, where lines 1145, 1152 and 1165 do not read the fraction digits fractionField is read only on line 1123, under precision === 'fraction', and line 1119 has assigned it by then, so its initial text is never read. secondDigits takes its default only under precision 'minute', where the list holds two fields, and lines 1144, 1151 and 1163 read it only under another precision. fractionDigits takes its default only where precision is not 'fraction', and lines 1146, 1153 and 1166 read it only under precision 'fraction'. The fraction field is read only where the profile reads a fraction, and on that path it is assigned from the split seconds field before it is read, so its starting text is never seen. The default applies only where the profile reads hours and minutes alone, and every later read of the seconds digits is behind a test that the precision is not minute. The default applies only where the profile reads no fraction, and every later read of the fraction digits is behind a test that the precision is fraction.",
-      "count": 9
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ObjectLiteral",
-      "original": "{ prefix: '', suffix: '' }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "unavailable.positive is never read: lines 512-513 read the affixes only when available is true, which unavailable never is. unavailable.negative is never read: lines 512-513 read the affixes only when available is true, which unavailable never is.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "marker === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "formatter and marker are assigned together in each branch on lines 313-333, so one is undefined exactly when the other is and testing either, or both, selects the same profiles."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "LogicalOperator",
-      "original": "formatter === undefined || marker === undefined",
-      "replacement": "formatter === undefined && marker === undefined",
-      "category": "equivalent",
-      "reason": "formatter and marker are assigned together in each branch on lines 313-333, so one is undefined exactly when the other is and testing either, or both, selects the same profiles."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "formatter === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "formatter and marker are assigned together in each branch on lines 313-333, so one is undefined exactly when the other is and testing either, or both, selects the same profiles."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "formatter === undefined || marker === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "formatter is undefined only for a profile with no affix contract; skipping the early return then calls formatToParts on undefined, and the catch on lines 345-347 returns the same unavailable value."
+      "reason": "The default applies only to a two-field text, which passes line 1087 only at minute precision, where the seconds field is never read the initial value is read only at fraction precision, where line 1119 has replaced it the default applies only at minute precision, where lines 1144, 1151 and 1163 do not read the seconds digits the default applies only outside fraction precision, where lines 1145, 1152 and 1165 do not read the fraction digits fractionField is read only on line 1123, under precision === 'fraction', and line 1119 has assigned it by then, so its initial text is never read. secondDigits takes its default only under precision 'minute', where the list holds two fields, and lines 1144, 1151 and 1163 read it only under another precision. fractionDigits takes its default only where precision is not 'fraction', and lines 1146, 1153 and 1166 read it only under precision 'fraction'. The fraction field is read only where the profile reads a fraction, and on that path it is assigned from the split seconds field before it is read, so its starting text is never seen. The default applies only where the profile reads hours and minutes alone, and every later read of the seconds digits is behind a test that the precision is not minute. The default applies only where the profile reads no fraction, and every later read of the fraction digits is behind a test that the precision is fraction.",
+      "count": 7
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5073,40 +4992,6 @@
       "replacement": "\"\"",
       "category": "equivalent",
       "reason": "The mutant renders a percent profile at 1 instead of 0.01, which is 100% instead of 1%; the affix is everything outside the numeric parts and is the same for both (measured over the 454 languages this host has number data for, under their default, latn, arab and arabext digits)."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "positiveParts.some(({ type }) => type === marker) &&\n        negativeParts.some(({ type }) => type === marker)",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "Every currency, unit and percent rendering has its marker part (measured over every currency and unit this host lists in 466 locales, under default and arab digits), so available is true for every formatter that was built, with any of these conditions."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "LogicalOperator",
-      "original": "positiveParts.some(({ type }) => type === marker) &&\n        negativeParts.some(({ type }) => type === marker)",
-      "replacement": "positiveParts.some(({\n  type\n}) => type === marker) || negativeParts.some(({\n  type\n}) => type === marker)",
-      "category": "equivalent",
-      "reason": "Every currency, unit and percent rendering has its marker part (measured over every currency and unit this host lists in 466 locales, under default and arab digits), so available is true for every formatter that was built, with any of these conditions."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "type === marker",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "Every currency, unit and percent rendering has its marker part (measured over every currency and unit this host lists in 466 locales, under default and arab digits), so available is true for every formatter that was built, with any of these conditions. Every currency, unit and percent rendering has its marker part and at least one other part (measured over every currency and unit this host lists in 466 locales, under default and arab digits), so the test holds on the negative rendering either way.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "EqualityOperator",
-      "original": "type === marker",
-      "replacement": "type !== marker",
-      "category": "equivalent",
-      "reason": "Every currency, unit and percent rendering has its marker part (measured over every currency and unit this host lists in 466 locales, under default and arab digits), so available is true for every formatter that was built, with any of these conditions. Every currency, unit and percent rendering has its marker part and at least one other part (measured over every currency and unit this host lists in 466 locales, under default and arab digits), so the test holds on the negative rendering either way.",
-      "count": 2
     },
     {
       "file": "packages/runtime/src/localized-input.ts",

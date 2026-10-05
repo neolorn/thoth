@@ -10,9 +10,9 @@ import {
 /**
  * Writing a date and time under a context the platform cannot spell digits for.
  *
- * `formatLocalizedInput` returns the text or a reported failure. A numbering system that is not
- * well-formed is one the platform refuses outright, and a form writing its value back has a result
- * to branch on there and nothing to catch.
+ * `formatLocalizedInput` returns the text or a reported failure. A locale that is not a language
+ * tag and a numbering system that is not well-formed are both refused outright by the platform, and
+ * a form writing its value back has a result to branch on there and nothing to catch.
  */
 
 const PROFILE: LocalizedInputProfile = {
@@ -21,6 +21,25 @@ const PROFILE: LocalizedInputProfile = {
   time: { hourCycle: 'h23', precision: 'minute', separator: ':' },
   separator: ' ',
 };
+
+describe('a date and time written under a locale that is not a language tag', () => {
+  it('is reported as a failure and not thrown', () => {
+    const written = formatLocalizedInput(
+      plainDateTime(plainDate(2024, 1, 2), plainTime(13, 45)),
+      PROFILE,
+      { locale: 'not a locale' },
+    );
+
+    expect(written).toMatchObject({
+      ok: false,
+      diagnostic: {
+        code: 'invalid-localized-input',
+        outcome: 'operational-failure',
+        targetLocale: 'not a locale',
+      },
+    });
+  });
+});
 
 describe('a date and time written under a malformed numbering system', () => {
   it('is reported as a failure and not thrown', () => {
@@ -38,7 +57,7 @@ describe('a date and time written under a malformed numbering system', () => {
     expect(written).toMatchObject({
       ok: false,
       diagnostic: {
-        code: 'invalid-localized-input',
+        code: 'invalid-configuration',
         outcome: 'operational-failure',
         targetLocale: 'en-US',
       },
