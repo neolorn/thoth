@@ -173,6 +173,9 @@ A duration field's pattern names its units from the seven a duration value holds
 weeks, days, hours, minutes, and seconds. A profile that names any other unit is refused as an
 invalid profile, whatever the text.
 
+An instant field reads the machine syntax its profile names. RFC 3339 is the one syntax a release
+reads, and a profile that names another, or none, is refused as an invalid profile.
+
 A release MUST NOT locale-parse a domain code, an enum value, an identifier, a route or cache
 key, an authorization value, a protocol field, or a machine timestamp.
 

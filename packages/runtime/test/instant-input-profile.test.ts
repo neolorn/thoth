@@ -157,6 +157,32 @@ describe('an instant read from RFC 3339 text', () => {
   });
 });
 
+describe('the syntax an instant profile names', () => {
+  const OTHER: readonly (readonly [string, object])[] = [
+    ['a syntax other than RFC 3339', { kind: 'instant', syntax: 'iso-week' }],
+    ['no syntax', { kind: 'instant' }],
+    ['a syntax in another case', { kind: 'instant', syntax: 'RFC3339' }],
+    ['a syntax that is not text', { kind: 'instant', syntax: 3339 }],
+  ];
+
+  for (const [title, profile] of OTHER) {
+    it(`refuses a profile naming ${title}`, () => {
+      expect(read('2024-01-02T03:04:05Z', profile)).toMatchObject({
+        status: 'policy-rejected',
+        diagnostic: { code: 'invalid-localized-input' },
+      });
+      // The profile is judged before the text, so an empty field fares no better.
+      expect(read('', profile).status).toBe('policy-rejected');
+    });
+
+    it(`does not write under a profile naming ${title}`, () => {
+      expect(write(instant(nanoseconds(SECONDS)), profile)).toMatchObject(
+        REFUSED_WRITE,
+      );
+    });
+  }
+});
+
 describe('the length of instant text', () => {
   it('reports 64 unreadable characters as invalid when no limit is declared', () => {
     expect(read('x'.repeat(64)).status).toBe('invalid');

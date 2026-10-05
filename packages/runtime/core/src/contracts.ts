@@ -2301,7 +2301,7 @@ export interface LocalizedDurationInputProfile {
  */
 export interface LocalizedInstantInputProfile {
   readonly kind: 'instant';
-  /** Which syntax is accepted. */
+  /** Which syntax is accepted. A profile naming any other is refused as invalid. */
   readonly syntax: 'rfc3339';
   /** The most characters that will be read. */
   readonly maximumCharacters?: number;

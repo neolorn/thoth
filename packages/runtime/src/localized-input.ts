@@ -1768,6 +1768,18 @@ function parseRfc3339(
   context: FormattingContext,
 ) {
   const source = canonicalInput(text);
+  // A profile is authored, and the syntax it names is read as what was written: one this reader
+  // does not implement is refused, because reading RFC 3339 under another name would accept text
+  // the profile never contracted.
+  const syntax: unknown = profile.syntax;
+  if (syntax !== 'rfc3339') {
+    return failed(
+      'policy-rejected',
+      text,
+      'The declared localized instant profile is invalid.',
+      context,
+    );
+  }
   if ([...source].length > (profile.maximumCharacters ?? 64)) {
     return failed(
       'policy-rejected',
