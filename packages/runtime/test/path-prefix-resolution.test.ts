@@ -409,3 +409,27 @@ describe('the default locale written without its prefix', () => {
     });
   });
 });
+
+describe('a projection changed after it was checked', () => {
+  it('matches no address at a route whose codec is gone', () => {
+    // A projection is checked once and kept, so one changed afterwards is met where it is read.
+    for (const emptied of [undefined, {}, { article: {} }]) {
+      const projection: {
+        -readonly [
+          Key in keyof RouteRuntimeProjection
+        ]: RouteRuntimeProjection[Key];
+      } = { ...PROJECTION };
+      const asked = () =>
+        resolveLocalizedRoute('/en-us/articles/hello', PREFIXED, projection);
+      expect(asked()).toMatchObject({ status: 'success', routeId: 'article' });
+      if (emptied === undefined) delete projection.parameters;
+      else projection.parameters = emptied;
+      expect(asked()).toStrictEqual({
+        status: 'not-found',
+        httpStatus: 404,
+        presentationLocale: 'en-US',
+        requestedLocale: 'en-US',
+      });
+    }
+  });
+});

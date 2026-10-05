@@ -472,14 +472,6 @@
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "codec === undefined",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "A parameter segment comes from a generated path, whose codecs the projection check requires, or from a localized path, which the check holds to the same parameter names, so the codec table and its entry for the route are always present here."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
       "mutator": "StringLiteral",
       "original": "`Historical replacement ${path} requires parameter ${name}.`",
       "replacement": "``",
@@ -617,22 +609,6 @@
       "replacement": "false",
       "category": "equivalent",
       "reason": "The parsed target is internal, and every reader takes parsed.fragment by value and tests it against undefined (lines 2336, 2673, 2808, 2949 and 3159), so a present key holding undefined reads the same as an absent one."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "OptionalChaining",
-      "original": "projection.parameters?.[route.id]?.[name]",
-      "replacement": "projection.parameters?.[route.id][name]",
-      "category": "unreachable",
-      "reason": "A parameter segment comes from a generated path, whose codecs lines 1815 to 1825 require, or from a localized path, which lines 1843 and 1844 hold to the same parameter names, so the codec table and its entry for the route are always present here."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "OptionalChaining",
-      "original": "projection.parameters?.[route.id]",
-      "replacement": "projection.parameters[route.id]",
-      "category": "unreachable",
-      "reason": "A parameter segment comes from a generated path, whose codecs lines 1815 to 1825 require, or from a localized path, which lines 1843 and 1844 hold to the same parameter names, so the codec table and its entry for the route are always present here."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",

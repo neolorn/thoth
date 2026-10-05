@@ -74,6 +74,11 @@ URL built against an identity that does not exist or a parameter contract that i
 rather than throw from a function whose declared result is a string, and MUST require a projection
 containing a parameterized route to supply that route's codecs.
 
+A projection is checked once, when a release is first handed it, and the result is kept for as
+long as the object exists. A projection changed after that check is read as it then stands. A
+release MUST NOT guess a spelling for a route whose codec has been removed since: the route matches
+no address, and building or prerendering its address is refused as a configuration error.
+
 ## 3. Locale URL policies
 
 A release publishes three policy kinds: a locale path prefix, locale-specific origins, and

@@ -2960,6 +2960,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/request-context-locale.test.ts',
   },
   {
+    id: 'route-matched-without-its-codec',
+    invariant:
+      'A route whose codec was removed from a projection after it was checked matches no address.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '      if (codec === undefined) {\n        matched = false;',
+    replace: '      if (codec === undefined) {\n        matched = true;',
+    caughtBy: 'packages/runtime/test/path-prefix-resolution.test.ts',
+  },
+  {
     id: 'unserved-policy-kind-narrowed-anyway',
     invariant:
       'A locale URL policy of a kind Equator does not serve is refused where it is narrowed, naming the kinds that are served.',
