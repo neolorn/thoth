@@ -1673,6 +1673,12 @@
     {
       "spec": "06-runtime-and-angular.spec.md",
       "section": "11. Effects, persistence, and disposal",
+      "statement": "A release MUST report every scope of a destroyed context as failed with the typed disposed failure, one that was ready when the context was destroyed included, and MUST NOT go on reporting the readiness the scope had.",
+      "checks": ["assurance:destroyed-context-reports-a-scope-as-it-was"]
+    },
+    {
+      "spec": "06-runtime-and-angular.spec.md",
+      "section": "11. Effects, persistence, and disposal",
       "statement": "A release MUST NOT start further work in a context that was destroyed by a hook or a participant it told of a commit: no progressive scope load, no participant preparation, and no return to the ready state.",
       "checks": ["assurance:destroyed-context-keeps-working-after-its-commit"]
     },

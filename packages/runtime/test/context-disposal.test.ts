@@ -213,6 +213,29 @@ describe('disposing a context', () => {
     expect(localization.lifecycle()).toBe('failed');
   });
 
+  it('leaves a scope that was ready failed as disposed, to a reader from before and to a later one', async () => {
+    const { localization } = runtime();
+    await localization.initialize();
+    const shell = localization.scopeReadiness(scope('shell'));
+    expect(shell()).toMatchObject({ status: 'ready', targetLocale: 'en-US' });
+
+    localization.dispose();
+
+    // The signal read before the disposal answers for it, as one asked for afterwards does.
+    for (const readiness of [
+      shell(),
+      localization.scopeReadiness(scope('shell'))(),
+    ]) {
+      expect(readiness).toMatchObject({
+        scope: scope('shell'),
+        status: 'failed',
+        supplyingLocales: [],
+        diagnostic: { code: 'disposed' },
+      });
+      expect(readiness.transitionId).toBeUndefined();
+    }
+  });
+
   it('ends the change it interrupted as cancelled, with the change named', async () => {
     const { localization } = runtime({
       hold: [catalogKey('shell', 'ar-EG')],

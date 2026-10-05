@@ -2913,6 +2913,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/locale-change-interruptions.test.ts',
   },
   {
+    id: 'destroyed-context-reports-a-scope-as-it-was',
+    invariant:
+      'A scope of a destroyed context reads as failed with the disposed failure, not as the readiness it had.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '    this.disposedWith.set(reason.diagnostic);',
+    replace: '    void reason;',
+    caughtBy: 'packages/runtime/test/context-disposal.test.ts',
+  },
+  {
     id: 'unreadable-recovery-message-replaces-the-failure',
     invariant:
       'A recovery message that cannot be evaluated is left out, and the initialization still ends with the failure that stopped it.',

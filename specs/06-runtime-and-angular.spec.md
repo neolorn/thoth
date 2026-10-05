@@ -296,6 +296,10 @@ Work that is waiting when its context is destroyed ends with the typed disposed 
 initialization, a scope request, including one waiting for a change that overtook it, and a
 participant retry. A locale change in flight ends as cancelled.
 
+A destroyed context holds no catalog, so no scope in it is ready. A release MUST report every
+scope of a destroyed context as failed with the typed disposed failure, one that was ready when the
+context was destroyed included, and MUST NOT go on reporting the readiness the scope had.
+
 A context may be destroyed from a hook or a participant that is being told of a commit. That commit
 stands: the change it belongs to ends as committed with the snapshot the hooks were told of, and its
 choice is remembered as for any committed change. A release MUST NOT start further work in a context

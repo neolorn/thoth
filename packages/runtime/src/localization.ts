@@ -1052,6 +1052,10 @@ class LocalizationInternal {
   private readonly scopeReadinessValue = signal<
     Readonly<Record<string, ScopeReadiness>>
   >(Object.freeze({}));
+  /** Set by the disposal, and what every scope's readiness then reads as. */
+  private readonly disposedWith = signal<LocalizationDiagnostic | undefined>(
+    undefined,
+  );
   private readonly store: LocalCatalogStore;
   private readonly formatterCache: FormatterCache;
   private readonly extensions: RuntimeExtensions;
@@ -2946,8 +2950,20 @@ class LocalizationInternal {
   scopeReadiness(scopeValue: LocalizationScope): Signal<ScopeReadiness> {
     const scope = this.assertScope(scopeValue);
     const key = scopeIdentity(scope);
-    return computed(
-      () =>
+    return computed(() => {
+      const disposed = this.disposedWith();
+      // The disposal released what a ready scope held, so its last report would name catalogs the
+      // context no longer has.
+      if (disposed !== undefined) {
+        return Object.freeze({
+          scope,
+          targetLocale: this.defaultLocale,
+          status: 'failed',
+          supplyingLocales: Object.freeze([]),
+          diagnostic: disposed,
+        });
+      }
+      return (
         this.scopeReadinessValue()[key] ??
         Object.freeze({
           scope,
@@ -2957,8 +2973,9 @@ class LocalizationInternal {
             this.defaultLocale,
           status: 'idle',
           supplyingLocales: Object.freeze([]),
-        }),
-    );
+        })
+      );
+    });
   }
 
   private evaluate(
@@ -3158,6 +3175,7 @@ class LocalizationInternal {
     this.publish(undefined, []);
     this.targetLocaleValue.set(undefined);
     this.lifecycleValue.set('failed');
+    this.disposedWith.set(reason.diagnostic);
   }
 }
 
