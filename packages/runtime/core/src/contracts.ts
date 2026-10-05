@@ -582,6 +582,9 @@ export interface MessageFunctionInvocation {
    * nothing, and the same message would give two answers depending on which function it names. The
    * narrowing is Equator's: a descriptor says which options a function accepts, and inheritance
    * must not be a way for a name it never declared to arrive anyway.
+   *
+   * An option written as a variable whose input was omitted or is null is absent: its name is not a
+   * key here, and an option the operand carried under that name stands.
    */
   readonly options: Readonly<Record<string, unknown>>;
   /** The locale being rendered in. */
