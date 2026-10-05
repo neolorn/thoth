@@ -6853,15 +6853,6 @@
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "profile.maximumFractionDigits === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "an undefined maximumFractionDigits member is read by Intl.NumberFormat as an absent one formatMoney spreads the member into the options of Intl.NumberFormat, which reads an undefined maximumFractionDigits as an absent one, and the formatter cache key is built with JSON.stringify, which drops it, so a money profile with no declared precision is written the same either way (measured on Node 26.10 for four locales). formatMeasurement spreads the member into the options of Intl.NumberFormat, which reads an undefined maximumFractionDigits as an absent one, and the formatter cache key is built with JSON.stringify, which drops it, so a measurement profile with no declared precision is written the same either way (measured on Node 26.10 for four locales). formatPercent spreads the member into the options of Intl.NumberFormat, which reads an undefined maximumFractionDigits as an absent one, and the formatter cache key is built with JSON.stringify, which drops it, so a percent profile with no declared precision is written the same either way (measured on Node 26.10 for four locales). formatPercentagePoints spreads the member into the options of Intl.NumberFormat, which reads an undefined maximumFractionDigits as an absent one, and the formatter cache key is built with JSON.stringify, which drops it, so a percentage-points profile with no declared precision is written the same either way (measured on Node 26.10 for four locales).",
-      "count": 5
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
       "mutator": "StringLiteral",
       "original": "'The invariant time cannot be represented by the declared localized input profile.'",
       "replacement": "\"\"",

@@ -2352,6 +2352,53 @@ function formatRfc3339(
 }
 
 /**
+ * The grouping and precision a numeric value is written with.
+ *
+ * A profile that declares a precision is written to it, so a value carrying more is rounded and
+ * the re-read reports it. A profile that declares none reads every fraction digit typed, so the
+ * value is written with every one it has: the platform's default precision would round a value the
+ * same profile had read. The style's own default is kept as a floor, which is what leaves a whole
+ * amount of money showing the places its currency shows.
+ */
+function numericWritingOptions(
+  profile: Extract<
+    LocalizedInputProfile,
+    {
+      readonly kind:
+        'decimal' | 'money' | 'measurement' | 'percent' | 'percentage-points';
+    }
+  >,
+  amount: DecimalValue,
+  context: FormattingContext,
+  style: Intl.NumberFormatOptions,
+  shownFurtherLeft = 0,
+): { useGrouping: boolean; maximumFractionDigits: number } {
+  const useGrouping = profile.allowGrouping ?? false;
+  if (profile.maximumFractionDigits !== undefined) {
+    return {
+      useGrouping,
+      maximumFractionDigits: profile.maximumFractionDigits,
+    };
+  }
+  const mark = amount.value.indexOf('.');
+  const carried =
+    mark < 0 ? 0 : amount.value.length - mark - 1 - shownFurtherLeft;
+  let shownByDefault = 0;
+  try {
+    shownByDefault = inputFormatterCache
+      .number(context.locale, style)
+      .resolvedOptions().maximumFractionDigits as number;
+  } catch {
+    // A locale, currency or unit the platform refuses is reported by the formatter this precision
+    // is handed to, with the diagnostic that belongs to it.
+  }
+  return {
+    useGrouping,
+    maximumFractionDigits: Math.max(carried, shownByDefault),
+  };
+}
+
+/**
  * Writes an exact value back out in the spelling the same profile would read.
  *
  * The other half of the round trip: what this writes, parsing reads, and what parsing read, this
@@ -2379,60 +2426,77 @@ export function formatLocalizedInput<Profile extends LocalizedInputProfile>(
   switch (profile.kind) {
     case 'decimal':
       return verifyFormattedInput(
-        formatNumber(value as DecimalValue, context, {
-          useGrouping: profile.allowGrouping ?? false,
-          ...(profile.maximumFractionDigits === undefined
-            ? {}
-            : { maximumFractionDigits: profile.maximumFractionDigits }),
-        }),
+        formatNumber(
+          value as DecimalValue,
+          context,
+          numericWritingOptions(profile, value as DecimalValue, context, {}),
+        ),
         value as LocalizedInputValue<LocalizedInputProfile>,
         profile,
         context,
       );
     case 'money':
       return verifyFormattedInput(
-        formatMoney(value as MoneyValue, context, {
-          useGrouping: profile.allowGrouping ?? false,
-          ...(profile.maximumFractionDigits === undefined
-            ? {}
-            : { maximumFractionDigits: profile.maximumFractionDigits }),
-        }),
+        formatMoney(
+          value as MoneyValue,
+          context,
+          numericWritingOptions(
+            profile,
+            (value as MoneyValue).amount,
+            context,
+            { style: 'currency', currency: profile.currency },
+          ),
+        ),
         value as LocalizedInputValue<LocalizedInputProfile>,
         profile,
         context,
       );
     case 'measurement':
       return verifyFormattedInput(
-        formatMeasurement(value as MeasurementValue, context, {
-          useGrouping: profile.allowGrouping ?? false,
-          ...(profile.maximumFractionDigits === undefined
-            ? {}
-            : { maximumFractionDigits: profile.maximumFractionDigits }),
-        }),
+        formatMeasurement(
+          value as MeasurementValue,
+          context,
+          numericWritingOptions(
+            profile,
+            (value as MeasurementValue).amount,
+            context,
+            { style: 'unit', unit: profile.unit },
+          ),
+        ),
         value as LocalizedInputValue<LocalizedInputProfile>,
         profile,
         context,
       );
     case 'percent':
       return verifyFormattedInput(
-        formatPercent(value as PercentValue, context, {
-          useGrouping: profile.allowGrouping ?? false,
-          ...(profile.maximumFractionDigits === undefined
-            ? {}
-            : { maximumFractionDigits: profile.maximumFractionDigits }),
-        }),
+        formatPercent(
+          value as PercentValue,
+          context,
+          numericWritingOptions(
+            profile,
+            (value as PercentValue).amount,
+            context,
+            { style: 'percent' },
+            // The percent style shows a fraction as a hundred times itself, two digits further left.
+            profile.scale === 'fractional' ? 2 : 0,
+          ),
+        ),
         value as LocalizedInputValue<LocalizedInputProfile>,
         profile,
         context,
       );
     case 'percentage-points':
       return verifyFormattedInput(
-        formatPercentagePoints(value as PercentagePointsValue, context, {
-          useGrouping: profile.allowGrouping ?? false,
-          ...(profile.maximumFractionDigits === undefined
-            ? {}
-            : { maximumFractionDigits: profile.maximumFractionDigits }),
-        }),
+        formatPercentagePoints(
+          value as PercentagePointsValue,
+          context,
+          numericWritingOptions(
+            profile,
+            (value as PercentagePointsValue).amount,
+            context,
+            {},
+          ),
+        ),
         value as LocalizedInputValue<LocalizedInputProfile>,
         profile,
         context,

@@ -348,6 +348,115 @@ describe('a number written for a field', () => {
     });
   }
 
+  // A profile that declares no precision reads every fraction digit typed, so it writes every one
+  // the value has, and keeps the fraction digits the locale shows for a rounder value.
+  const UNDECLARED: readonly (readonly [
+    string,
+    () => unknown,
+    object,
+    string,
+    FormattingContext?,
+  ])[] = [
+    [
+      'a number to five places',
+      () => decimal('1.23456'),
+      { kind: 'decimal' },
+      '1.23456',
+    ],
+    [
+      'a number to sixteen places',
+      () => decimal('0.1234567890123456'),
+      { kind: 'decimal' },
+      '0.1234567890123456',
+    ],
+    [
+      'a number to five places in Arabic digits',
+      () => decimal('1.23456'),
+      { kind: 'decimal' },
+      '١٫٢٣٤٥٦',
+      ARABIC_DIGITS,
+    ],
+    [
+      'money to three places',
+      () => money(decimal('1.005'), 'USD'),
+      { kind: 'money', currency: 'USD' },
+      '$1.005',
+    ],
+    [
+      'money to one place in the two the currency shows',
+      () => money(decimal('5.5'), 'USD'),
+      { kind: 'money', currency: 'USD' },
+      '$5.50',
+    ],
+    [
+      'whole money in the two places the currency shows',
+      () => money(decimal('5'), 'USD'),
+      { kind: 'money', currency: 'USD' },
+      '$5.00',
+    ],
+    [
+      'whole money in a currency that shows no places',
+      () => money(decimal('5'), 'JPY'),
+      { kind: 'money', currency: 'JPY' },
+      '¥5',
+    ],
+    [
+      'a fraction of a currency that shows no places',
+      () => money(decimal('5.5'), 'JPY'),
+      { kind: 'money', currency: 'JPY' },
+      '¥5.5',
+    ],
+    [
+      'a quantity to five places',
+      () => measurement(decimal('1.23456'), 'kilometer'),
+      { kind: 'measurement', unit: 'kilometer' },
+      '1.23456 km',
+    ],
+    [
+      'a fraction as a percentage to three places',
+      () => percent(decimal('0.12345'), 'fractional'),
+      { kind: 'percent', scale: 'fractional' },
+      '12.345%',
+    ],
+    [
+      'a fraction as a percentage below one',
+      () => percent(decimal('0.005'), 'fractional'),
+      { kind: 'percent', scale: 'fractional' },
+      '0.5%',
+    ],
+    [
+      'a tenth as a whole percentage',
+      () => percent(decimal('0.1'), 'fractional'),
+      { kind: 'percent', scale: 'fractional' },
+      '10%',
+    ],
+    [
+      'a percentage to two places',
+      () => percent(decimal('12.34'), 'percent-unit'),
+      { kind: 'percent', scale: 'percent-unit' },
+      '12.34%',
+    ],
+    [
+      'percentage points to five places',
+      () => percentagePoints(decimal('1.23456')),
+      { kind: 'percentage-points' },
+      '1.23456',
+    ],
+  ];
+
+  for (const [title, value, profile, text, context] of UNDECLARED) {
+    it(`writes ${title} when no precision is declared`, () => {
+      expect(written(value(), profile, context ?? EN)).toBe(text);
+      expect(
+        parseLocalizedInput(
+          text,
+          profile as LocalizedInputProfile,
+          context ?? EN,
+        ),
+      ).toMatchObject({ status: 'valid', value: value() });
+    });
+  }
+
   const ROUNDED: readonly (readonly [string, () => unknown, object])[] = [
     [
       'a number',

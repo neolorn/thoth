@@ -165,6 +165,11 @@ A money, measurement, or percent field reads a number typed with its marker or w
 refuses the bare number only where the field's profile requires the marker. A duration field refuses
 a leading sign unless its profile allows or requires one.
 
+A numeric field is written back in the spelling its profile reads. Where the profile declares a
+precision the value is written to it, and a value the precision would round is reported instead of
+written. Where it declares none the value is written with every fraction digit it has, and a rounder
+value keeps the fraction digits the locale shows for its kind.
+
 Temporal parsing uses declared patterns or generated field profiles. A release MUST NOT use
 the platform's permissive date parser, host coercion, a guessed field order, natural-language
 guessing, or the host's implicit time zone as a correctness path.
