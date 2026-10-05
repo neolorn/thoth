@@ -1,0 +1,262 @@
+/**
+ * What disposing a context ends, releases and leaves readable.
+ *
+ * `specs/06-runtime-and-angular.spec.md` section 11: disposal releases what the context holds and
+ * what its adapters and participants hold, once, and one adapter failing to release does not keep
+ * the others from being asked. Section 5 leaves a disposed context with nothing current: no
+ * snapshot, no target, and a lifecycle that is not `ready`. Section 7 ends a change the disposal
+ * interrupted as cancelled, because nothing superseded it and nothing failed.
+ */
+import { describe, expect, it } from 'vitest';
+
+import type { LocalizationCommitHook } from '../src/localization.js';
+
+import { PROVIDER, catalogKey, rejectionOf } from './catalog-store-harness.js';
+import {
+  observed,
+  participant,
+  runtime,
+  until,
+} from './transaction-runtime-harness.js';
+
+/** A hook that writes down when it is released. */
+const releasing = (events: string[], name: string): LocalizationCommitHook => ({
+  apply: () => undefined,
+  dispose: () => void events.push(`${name} dispose`),
+});
+
+describe('disposing a context', () => {
+  it('releases each adapter once, however often it is asked', async () => {
+    const events: string[] = [];
+    const { localization } = runtime({
+      options: { commitHooks: [releasing(events, 'hook')] },
+    });
+    await localization.initialize();
+
+    localization.dispose();
+    expect(() => localization.dispose()).not.toThrow();
+
+    expect(events).toStrictEqual(['hook dispose']);
+  });
+
+  it('releases the adapters last first', async () => {
+    const events: string[] = [];
+    const { localization } = runtime({
+      options: {
+        commitHooks: [releasing(events, 'first'), releasing(events, 'second')],
+      },
+    });
+    await localization.initialize();
+
+    localization.dispose();
+
+    expect(events).toStrictEqual(['second dispose', 'first dispose']);
+  });
+
+  it('reports nothing for an adapter that has nothing to release', async () => {
+    const watched = observed();
+    const { localization } = runtime({
+      options: {
+        commitHooks: [{ apply: () => undefined }],
+        observability: watched.emitter,
+      },
+    });
+    await localization.initialize();
+
+    localization.dispose();
+
+    expect(watched.phase('integration')).toStrictEqual([]);
+  });
+
+  it('reports an adapter that failed to release against the snapshot it was released under, and releases the rest', async () => {
+    const events: string[] = [];
+    const watched = observed();
+    const failing: LocalizationCommitHook = {
+      apply: () => undefined,
+      dispose: () => {
+        throw new Error('the adapter under test failed to release');
+      },
+    };
+    const { localization } = runtime({
+      options: {
+        commitHooks: [releasing(events, 'first'), failing],
+        observability: watched.emitter,
+      },
+    });
+    const snapshot = await localization.initialize();
+
+    expect(() => localization.dispose()).not.toThrow();
+
+    expect(events).toStrictEqual(['first dispose']);
+    expect(watched.phase('integration')).toStrictEqual([
+      {
+        status: 'failed',
+        reason: 'internal-invariant',
+        targetLocale: 'en-US',
+        snapshotId: snapshot.id,
+      },
+    ]);
+  });
+
+  it('releases the rest after an adapter failed to release, with no emitter to report it to', async () => {
+    const events: string[] = [];
+    const { localization } = runtime({
+      options: {
+        commitHooks: [
+          releasing(events, 'first'),
+          {
+            apply: () => undefined,
+            dispose: () => {
+              throw new Error('the adapter under test failed to release');
+            },
+          },
+        ],
+      },
+    });
+    await localization.initialize();
+
+    expect(() => localization.dispose()).not.toThrow();
+
+    expect(events).toStrictEqual(['first dispose']);
+    expect(localization.snapshot()).toBeUndefined();
+  });
+
+  it('reports an adapter that failed to release against no snapshot when there never was one', () => {
+    const watched = observed();
+    const { localization } = runtime({
+      options: {
+        commitHooks: [
+          {
+            apply: () => undefined,
+            dispose: () => {
+              throw new Error('the adapter under test failed to release');
+            },
+          },
+        ],
+        observability: watched.emitter,
+      },
+    });
+
+    localization.dispose();
+
+    expect(watched.phase('integration')).toStrictEqual([
+      { status: 'failed', reason: 'internal-invariant' },
+    ]);
+  });
+
+  it('releases each participant once', async () => {
+    const region = participant('region');
+    let released = 0;
+    const { localization } = runtime();
+    localization.registerParticipant({
+      ...region.value,
+      dispose: () => {
+        released += 1;
+      },
+    });
+    await localization.initialize();
+
+    localization.dispose();
+    localization.dispose();
+
+    expect(released).toBe(1);
+  });
+
+  it('lets go of the catalogs its snapshot held, which a cache with no room for them then drops', async () => {
+    const watched = observed();
+    const { localization } = runtime({
+      setup: { maximumCachedCatalogs: 1 },
+      options: { observability: watched.emitter },
+    });
+    await localization.initialize();
+    await localization.changeLocale('ar-EG');
+    const before = watched.phase('cache').length;
+
+    localization.dispose();
+
+    // Both catalogs were held by the snapshot and so over the bound. Released one after the
+    // other, the first has no room and the second is the one catalog the bound allows.
+    expect(watched.phase('cache').slice(before)).toStrictEqual([
+      {
+        status: 'succeeded',
+        providerId: PROVIDER,
+        scopeId: 'shell',
+        targetLocale: 'ar-EG',
+        count: 1,
+      },
+    ]);
+  });
+
+  it('leaves no snapshot, no target and a lifecycle that is not ready', async () => {
+    const { localization, release } = runtime({
+      hold: [catalogKey('shell', 'ar-EG')],
+    });
+    await localization.initialize();
+    const change = localization.changeLocale('ar-EG');
+    await until(() => localization.targetLocale() === 'ar-EG');
+
+    localization.dispose();
+
+    expect(localization.snapshot()).toBeUndefined();
+    expect(localization.targetLocale()).toBeUndefined();
+    expect(localization.lifecycle()).toBe('failed');
+    expect(localization.ready()).toBe(false);
+    release(catalogKey('shell', 'ar-EG'));
+    await change;
+    expect(localization.targetLocale()).toBeUndefined();
+    expect(localization.lifecycle()).toBe('failed');
+  });
+
+  it('ends the change it interrupted as cancelled, with the change named', async () => {
+    const { localization } = runtime({
+      hold: [catalogKey('shell', 'ar-EG')],
+    });
+    await localization.initialize();
+    const change = localization.changeLocale('ar-EG');
+    await until(() => localization.targetLocale() === 'ar-EG');
+
+    localization.dispose();
+
+    await expect(change).resolves.toMatchObject({
+      status: 'cancelled',
+      transitionId: 1,
+      targetLocale: 'ar-EG',
+      diagnostic: { code: 'cancelled', targetLocale: 'ar-EG', transitionId: 1 },
+    });
+  });
+
+  it('ends the initialization it interrupted as disposed, and leaves no target behind', async () => {
+    const { localization, release } = runtime({
+      hold: [catalogKey('shell', 'en-US')],
+    });
+    const initialization = rejectionOf(() => localization.initialize());
+    await until(() => localization.targetLocale() === 'en-US');
+
+    localization.dispose();
+    release(catalogKey('shell', 'en-US'));
+
+    await expect(initialization).resolves.toMatchObject({ code: 'disposed' });
+    expect(localization.targetLocale()).toBeUndefined();
+    expect(localization.lifecycle()).toBe('failed');
+  });
+});
+
+describe('a method called on an object that only inherits from a context', () => {
+  it('is refused by the library and not by a read of nothing', () => {
+    const { localization } = runtime();
+    // The state of a context is held against the context itself, so an object that has its
+    // methods and is not it has none.
+    const inheriting = Object.create(localization) as typeof localization;
+    let thrown: unknown;
+
+    try {
+      void inheriting.initialize();
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(Error);
+    expect(thrown).not.toBeInstanceOf(TypeError);
+    localization.dispose();
+  });
+});
