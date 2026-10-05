@@ -9,7 +9,7 @@ This page is generated from the packages and is not edited by hand.
 
 Everything an application component and its bootstrap need.
 
-Publishes 215 name(s).
+Publishes 216 name(s).
 
 Composable from here: `provideLocalizationSetup`, `withExtensions`, `withFormattingContext`, `withLocaleAnnouncement`, `withLocaleSources`, `withLocalizationClock`, `withObservability`, `withOverlayLocale`, `withPersistence`, `withRecoveryMessage`, `withRelativeTimePolicy`, `withRouting`, `withoutDocumentLocale`.
 

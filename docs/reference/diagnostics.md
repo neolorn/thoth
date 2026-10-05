@@ -328,7 +328,7 @@ codes below, where there is one.
 
 Declared as `RUNTIME_EVENT_CODES.initialization`.
 
-Initializing the localization context: `started`, then `succeeded` with the committed locale and snapshot, or `failed` with the reason. `cancelled` means the context was disposed while it was initializing.
+Initializing the localization context: `started`, then `succeeded` with the committed locale and snapshot, or `failed` with the reason. `cancelled` means the context was disposed while it was initializing. `unavailable`, with the reason, is reported beside `failed` when the recovery message for the failure could not be evaluated.
 
 ### EQ-E2002
 
@@ -364,7 +364,7 @@ Carrying the committed localization from a server render to the browser, under p
 
 Declared as `RUNTIME_EVENT_CODES.integration`.
 
-An integration failed, with the reason and, where one is responsible, the participant: preparing the required participants for a change, applying the commit hooks and committing the participants, a commit hook's `committed` callback, or a commit hook's `dispose` when the context is disposed. The status is always `failed`.
+An integration failed, with the reason and, where one is responsible, the participant: preparing the required participants for a change, applying the commit hooks and committing the participants, a commit hook's `committed` callback, a commit hook's `dispose` when the context is disposed, or a participant's `commit`, `discard`, `rollback` or `dispose` that answered with a promise. The status is always `failed`.
 
 ### EQ-E2008
 
@@ -380,7 +380,7 @@ another outcome.
 
 ### cancelled
 
-A pending locale change was cancelled with `cancelTransition()`, or participant work was cancelled with it. A catalog load or participant attempt stopped by disposal reports `cancelled` as its status and `disposed` as its reason.
+A pending locale change was cancelled with `cancelTransition()` or ended by disposal, or participant work was cancelled with it or prepared for a change that did not commit. A catalog load or participant attempt stopped by disposal reports `cancelled` as its status and `disposed` as its reason.
 
 ### catalog-admission-failed
 
@@ -400,7 +400,7 @@ A document effect of a locale change was refused or failed: a localized title, d
 
 ### internal-invariant
 
-A failure with no more specific code. An error that is not a `LocalizationError`, such as one thrown by a persistence store or a commit hook, is reported under this code. The runtime also raises it when a set of coordinated participants ends with no outcome, and when a server render has no committed snapshot to transfer.
+A failure with no more specific code. An error that is not a `LocalizationError`, such as one thrown by a persistence store or a commit hook, is reported under this code. The runtime also raises it when a server render has no committed snapshot to transfer.
 
 ### invalid-configuration
 
@@ -424,7 +424,7 @@ The message has no representation in the requested locale, outcome `localized-re
 
 ### participant-contract-rejected
 
-A participant returned no report, or metadata that is invalid or outside its bounds.
+A participant returned no report, or metadata that is invalid or outside its bounds, or answered `commit`, `discard`, `rollback` or `dispose` with a promise, where the answer has to be synchronous.
 
 ### participant-failed
 
