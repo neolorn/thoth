@@ -4331,6 +4331,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/rich-slot-projection-binding.test.ts',
   },
   {
+    id: 'generated-value-snapshot-failure-untyped',
+    invariant:
+      'A generated configuration or catalog set that is not inert data is refused as a configuration failure, not with the bare error of the copy.',
+    source: 'packages/runtime/src/runtime-safety.ts',
+    find: "    throw new LocalizationError(\n      operationalDiagnostic('invalid-configuration', message),\n      { cause },\n    );",
+    replace: '    throw cause;',
+    caughtBy: 'packages/runtime/test/generated-values-not-inert.test.ts',
+  },
+  {
     id: 'extension-descriptor-snapshot-failure-untyped',
     invariant:
       'An extension descriptor that is not inert data is refused as invalid-configuration, as any other malformed descriptor is.',

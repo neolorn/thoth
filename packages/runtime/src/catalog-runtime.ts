@@ -24,6 +24,7 @@ import {
   hasOwn,
   isDataRecord,
   safeDiagnosticIdentifier,
+  snapshotGeneratedJson,
   snapshotInertJson,
   waitForSignal,
   type InertJsonSnapshot,
@@ -982,16 +983,24 @@ export class LocalCatalogStore {
     contextTimeZone = false,
     private readonly observability?: LocalizationEventEmitter,
   ) {
-    const admittedConfiguration = snapshotInertJson(configuration, {
-      maximumDepth: 32,
-      maximumNodes: 250_000,
-      maximumCodeUnits: 4_194_304,
-    }).value as AsReceived<GeneratedConfiguration, 'generatedAbi'>;
-    const admittedDescriptor = snapshotInertJson(descriptor, {
-      maximumDepth: 32,
-      maximumNodes: RUNTIME_LIMITS.jsonNodes,
-      maximumCodeUnits: RUNTIME_LIMITS.transferBytes,
-    }).value as ReceivedCatalogSetDescriptor;
+    const admittedConfiguration = snapshotGeneratedJson(
+      configuration,
+      {
+        maximumDepth: 32,
+        maximumNodes: 250_000,
+        maximumCodeUnits: 4_194_304,
+      },
+      'Generated localization configuration must be inert data.',
+    ).value as AsReceived<GeneratedConfiguration, 'generatedAbi'>;
+    const admittedDescriptor = snapshotGeneratedJson(
+      descriptor,
+      {
+        maximumDepth: 32,
+        maximumNodes: RUNTIME_LIMITS.jsonNodes,
+        maximumCodeUnits: RUNTIME_LIMITS.transferBytes,
+      },
+      'Generated catalog set must be inert data.',
+    ).value as ReceivedCatalogSetDescriptor;
     this.loaders = copyLoaders(loaders);
     this.artifacts = assertDescriptor(
       admittedConfiguration,

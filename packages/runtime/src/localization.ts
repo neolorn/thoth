@@ -99,7 +99,7 @@ import {
   hasOwn,
   isDataRecord,
   safeDiagnosticIdentifier,
-  snapshotInertJson,
+  snapshotGeneratedJson,
 } from './runtime-safety';
 import {
   LocaleResolution,
@@ -1099,11 +1099,15 @@ class LocalizationInternal {
     readonly options: LocalizationRuntimeOptions,
   ) {
     this.observability = options.observability;
-    const configuration = snapshotInertJson(options.setup.configuration, {
-      maximumDepth: 32,
-      maximumNodes: 250_000,
-      maximumCodeUnits: 4_194_304,
-    }).value as unknown as AsReceived<
+    const configuration = snapshotGeneratedJson(
+      options.setup.configuration,
+      {
+        maximumDepth: 32,
+        maximumNodes: 250_000,
+        maximumCodeUnits: 4_194_304,
+      },
+      'Generated localization configuration must be inert data.',
+    ).value as unknown as AsReceived<
       typeof options.setup.configuration,
       'generatedAbi'
     >;

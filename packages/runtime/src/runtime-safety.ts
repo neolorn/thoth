@@ -137,6 +137,30 @@ export function isRecord(
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/**
+ * The inert copy of a value a generated module supplied, or the configuration failure where it
+ * is not inert data.
+ *
+ * The copy refuses with a bare `TypeError`, which is right for a caller that decides what the
+ * refusal means. A generated configuration or catalog set has one meaning for it: the runtime was
+ * constructed from something the toolkit did not write, which is what every other fault in those
+ * values is reported as.
+ */
+export function snapshotGeneratedJson(
+  value: unknown,
+  limits: Parameters<typeof snapshotInertJson>[1],
+  message: string,
+): ReturnType<typeof snapshotInertJson> {
+  try {
+    return snapshotInertJson(value, limits);
+  } catch (cause) {
+    throw new LocalizationError(
+      operationalDiagnostic('invalid-configuration', message),
+      { cause },
+    );
+  }
+}
+
 /** Orders two keys by code point, for a table whose order has to be the same on every run. */
 export function compareCodePoint(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
