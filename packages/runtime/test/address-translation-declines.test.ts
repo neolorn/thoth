@@ -150,28 +150,3 @@ describe('the origin an address is read at under a host policy', () => {
     expect(toInternalPath('/second', contextFor(HOSTS))).toBe('/second');
   });
 });
-
-describe('a host policy whose origins are not addresses', () => {
-  // A policy written out by hand rather than built, with bare host names where origins belong.
-  // The address it builds has no path a route table could match, so there is nothing to rewrite
-  // the given one to.
-  const bare: LocaleUrlPolicy = {
-    kind: 'locale-host',
-    defaultLocale: 'en-US',
-    locales: { 'en-US': 'en.site.example', 'ar-EG': 'ar.site.example' },
-    origins: { 'en.site.example': 'en-US', 'ar.site.example': 'ar-EG' },
-    localeNeutralRoots: [],
-  };
-
-  it('hands an address back inbound', () => {
-    expect(toInternalPath('/second?page=2', contextFor(bare))).toBe(
-      '/second?page=2',
-    );
-  });
-
-  it('hands an address back outbound', () => {
-    expect(toExternalPath('/second?page=2', 'ar-EG', contextFor(bare))).toBe(
-      '/second?page=2',
-    );
-  });
-});

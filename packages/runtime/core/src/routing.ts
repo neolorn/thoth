@@ -1182,9 +1182,11 @@ function builtLocales(
   policy: LocaleUrlPolicy,
   configuration: GeneratedConfiguration,
 ): ReadonlySet<string> {
+  // Every provider that narrows a policy reaches this first, so the policy is held to its tables
+  // before any of them is read.
+  assertLocalePolicy(policy);
   const built = new Set(configuration.locales.map(canonicalLocale));
-  const defaultLocale = canonicalLocale(policy.defaultLocale);
-  if (!built.has(defaultLocale)) {
+  if (!built.has(policy.defaultLocale)) {
     routeError(
       `This policy makes ${JSON.stringify(policy.defaultLocale)} the default locale and the generated configuration passed alongside it lists ${configuration.locales.map((locale) => JSON.stringify(locale)).join(', ')}. Pass the same generated configuration the application's own \`provideLocalization()\` received, or add the locale to it.`,
     );
@@ -1301,19 +1303,6 @@ export function builtLocalePolicy(
   policy: LocaleUrlPolicy,
   configuration: GeneratedConfiguration,
 ): LocaleUrlPolicy {
-  // Decided before any table is read. A kind this build does not serve has none of the tables the
-  // narrowing below reads, so reading on would fail on a missing table and name it rather than the
-  // kind, and every provider that narrows a policy reaches this first.
-  const kind: unknown = (policy as { readonly kind?: unknown }).kind;
-  if (
-    kind !== 'path-prefix' &&
-    kind !== 'locale-neutral' &&
-    kind !== 'locale-host'
-  ) {
-    routeError(
-      `Equator does not serve a ${JSON.stringify(kind)} locale URL policy. It serves "path-prefix", "locale-neutral" and "locale-host".`,
-    );
-  }
   const built = builtLocales(policy, configuration);
   const retain = <Value extends string>(
     table: Readonly<Record<string, Value>>,
@@ -1409,7 +1398,6 @@ export function createPathPrefixLocalePolicy(
         `Route locale alias ${JSON.stringify(alias)} is invalid or colliding.`,
       );
     }
-    occupied.add(alias);
     aliases[alias] = target;
   }
   const xDefaultPath = trustedXDefaultPath(options.xDefaultPath);
@@ -1503,20 +1491,163 @@ function trustedXDefaultPath(value: string | undefined): string | undefined {
   ) {
     routeError('x-default must be an origin-relative trusted path.');
   }
-  try {
-    if (
-      new URL(value, 'https://site.invalid').origin !== 'https://site.invalid'
-    ) {
-      routeError('x-default cannot change origin.');
-    }
-  } catch (cause) {
+  return value;
+}
+
+/** The policies already held to the tables a constructor writes, so each is read once. */
+const CHECKED_POLICIES = new WeakSet<object>();
+
+/** A table's entries where it is an object whose every value is text, and nothing otherwise. */
+function textEntries(
+  table: unknown,
+): readonly (readonly [string, string])[] | undefined {
+  if (typeof table !== 'object' || table === null || Array.isArray(table)) {
+    return undefined;
+  }
+  const entries = Object.entries(table);
+  return entries.every(
+    (entry): entry is [string, string] => typeof entry[1] === 'string',
+  )
+    ? entries
+    : undefined;
+}
+
+/**
+ * Refuses a policy whose tables are not ones a constructor writes.
+ *
+ * A policy is a plain object of a public type, so an application can write one out instead of
+ * calling a constructor, and a build narrows one into another. Everything that reads a policy
+ * relies on what the constructors establish: canonical locale tags, a default locale among them,
+ * a prefix or an origin that is safe to publish, and a table that reads an address back to the
+ * locale it was written for. A table that breaks one of those reads a prefix as a locale it has no
+ * address for, or sends an address to itself, so it is refused where a policy is first read, as a
+ * constructor refuses the options behind it.
+ */
+function assertLocalePolicy(policy: LocaleUrlPolicy): void {
+  if (CHECKED_POLICIES.has(policy)) return;
+  // Decided before any table is read. A kind this build does not serve has none of the tables read
+  // below, so reading on would name a missing table rather than the kind.
+  const kind: unknown = (policy as { readonly kind?: unknown }).kind;
+  if (
+    kind !== 'path-prefix' &&
+    kind !== 'locale-neutral' &&
+    kind !== 'locale-host'
+  ) {
     routeError(
-      'x-default must be a valid origin-relative path.',
-      'malformed-input',
-      cause,
+      `Equator does not serve a ${JSON.stringify(kind)} locale URL policy. It serves "path-prefix", "locale-neutral" and "locale-host".`,
     );
   }
-  return value;
+  const refuse = (problem: string): never =>
+    routeError(
+      `This ${policy.kind} locale URL policy ${problem}, which no policy constructor writes. Build the policy with its constructor, which checks each table against the others.`,
+    );
+  const locales = textEntries(policy.locales);
+  if (locales === undefined || locales.length === 0) {
+    return refuse('names no locales');
+  }
+  for (const [locale] of locales) {
+    if (canonicalizeLanguageTag(locale) !== locale) {
+      refuse(
+        `names the locale ${JSON.stringify(locale)} in a spelling that is not canonical`,
+      );
+    }
+  }
+  const defaultLocale: unknown = policy.defaultLocale;
+  if (
+    typeof defaultLocale !== 'string' ||
+    !Object.hasOwn(policy.locales, defaultLocale)
+  ) {
+    refuse(
+      `makes ${JSON.stringify(defaultLocale)} its default locale and does not name it among its locales`,
+    );
+  }
+  const roots: unknown = policy.localeNeutralRoots;
+  if (
+    !Array.isArray(roots) ||
+    new Set(roots).size !== roots.length ||
+    !roots.every((root) => typeof root === 'string' && validPrefix(root))
+  ) {
+    return refuse(
+      `lists ${JSON.stringify(roots)} as its locale-neutral roots, which are not distinct path segments`,
+    );
+  }
+  if (policy.kind === 'locale-neutral') {
+    if (locales.some(([, spelling]) => spelling !== '')) {
+      refuse('gives a locale a spelling in the address');
+    }
+    assertXDefaultPath(policy.xDefaultPath);
+  } else if (policy.kind === 'locale-host') {
+    const origins = textEntries(policy.origins);
+    for (const [locale, origin] of locales) {
+      if (
+        trustedOrigin(origin, `Origin for ${locale}`).origin !== origin ||
+        ownEntry(policy.origins, origin) !== locale
+      ) {
+        refuse(
+          `serves ${locale} at ${JSON.stringify(origin)}, which is not a normalized origin its origin table reads back as that locale`,
+        );
+      }
+    }
+    if (origins?.length !== locales.length) {
+      refuse('reads an origin no locale is served at');
+    }
+    const xDefaultUrl: unknown = policy.xDefaultUrl;
+    if (
+      xDefaultUrl !== undefined &&
+      (typeof xDefaultUrl !== 'string' ||
+        trustedOrigin(xDefaultUrl, 'x-default URL').origin !== xDefaultUrl)
+    ) {
+      refuse(
+        `names ${JSON.stringify(xDefaultUrl)} as its x-default, which is not a normalized origin`,
+      );
+    }
+  } else {
+    const prefixes = textEntries(policy.prefixes);
+    const aliases = textEntries(policy.aliases);
+    for (const [locale, prefix] of locales) {
+      if (
+        !validPrefix(prefix) ||
+        roots.includes(prefix) ||
+        ownEntry(policy.prefixes, prefix) !== locale
+      ) {
+        refuse(
+          `spells ${locale} as ${JSON.stringify(prefix)}, which is not a path segment its prefix table reads back as that locale`,
+        );
+      }
+    }
+    if (prefixes?.length !== locales.length) {
+      refuse('reads a prefix no locale is spelled with');
+    }
+    if (aliases === undefined) return refuse('carries no alias table');
+    for (const [alias, target] of aliases) {
+      if (
+        !validPrefix(alias) ||
+        roots.includes(alias) ||
+        Object.hasOwn(policy.prefixes, alias) ||
+        !Object.hasOwn(policy.locales, target)
+      ) {
+        refuse(
+          `reads the alias ${JSON.stringify(alias)} as ${JSON.stringify(target)}, which is not a free path segment naming one of its locales`,
+        );
+      }
+    }
+    if (typeof (policy.omitDefaultPrefix as unknown) !== 'boolean') {
+      refuse(
+        'does not say whether the default locale is written with its prefix',
+      );
+    }
+    assertXDefaultPath(policy.xDefaultPath);
+  }
+  CHECKED_POLICIES.add(policy);
+}
+
+/** Holds a written-out x-default path to what `trustedXDefaultPath` accepts from options. */
+function assertXDefaultPath(value: unknown): void {
+  if (value === undefined) return;
+  if (typeof value !== 'string') {
+    routeError('x-default must be an origin-relative trusted path.');
+  }
+  trustedXDefaultPath(value);
 }
 
 /**
@@ -1623,6 +1754,7 @@ export function createHostLocalePolicy(
  * that keeps saying the truth.
  */
 export function allowedLocaleHosts(policy: LocaleUrlPolicy): readonly string[] {
+  assertLocalePolicy(policy);
   if (policy.kind !== 'locale-host') return Object.freeze([]);
   return Object.freeze(
     Object.keys(policy.origins).map((origin) => new URL(origin).hostname),
@@ -2371,7 +2503,6 @@ function anotherLocaleSpelling(
 ): RouteResolution | undefined {
   const corrections = new Map<string, string>();
   for (const other of Object.keys(policy.locales)) {
-    if (other === locale) continue;
     const match = matchRoute(routeSegments, projection, other);
     if (match === undefined) continue;
     const built = localizedRouteSegments(
@@ -2393,7 +2524,7 @@ function anotherLocaleSpelling(
     const path =
       policy.kind === 'path-prefix'
         ? pathPrefixCanonicalPath(policy, locale, segments)
-        : `${policy.locales[locale]}${routeText.length === 0 ? '/' : `/${routeText}`}`;
+        : `${policy.locales[locale]}/${routeText}`;
     corrections.set(`${path}${parsed.canonicalSuffix}`, match.route.id);
   }
   if (corrections.size !== 1) return undefined;
@@ -2412,10 +2543,9 @@ function anotherLocaleSpelling(
 /**
  * The locale prefix this policy puts in front of a route's own segments, or nothing.
  *
- * Nothing is two different situations and the callers separate them: the default locale under
- * `omitDefaultPrefix`, which is the design, and a locale the policy never gave a prefix, which is
- * a mistake. What they share is the only thing this answers: whether the address the caller is
- * about to build begins with a segment the policy owns or with a segment the route owns.
+ * Nothing is the default locale under `omitDefaultPrefix` and every locale of a policy that is not
+ * path-prefix. What this answers is whether the address the caller is about to build begins with a
+ * segment the policy owns or with a segment the route owns.
  */
 function emittedLocalePrefix(
   policy: LocaleUrlPolicy,
@@ -2461,19 +2591,14 @@ function claimedLeadingSegment(
     });
   }
   if (policy.kind !== 'path-prefix') return undefined;
+  // A policy's prefixes and aliases are lower case, so the folded segment is the key.
   const folded = segment.toLowerCase();
-  const matching = (
-    table: Readonly<Record<string, string>>,
-  ): string | undefined =>
-    Object.keys(table).find((candidate) => candidate.toLowerCase() === folded);
-  const prefix = matching(policy.prefixes);
-  if (prefix !== undefined) {
-    return Object.freeze({ spelling: prefix, kind: 'locale prefix' as const });
+  if (Object.hasOwn(policy.prefixes, folded)) {
+    return Object.freeze({ spelling: folded, kind: 'locale prefix' as const });
   }
-  const alias = matching(policy.aliases);
-  return alias === undefined
-    ? undefined
-    : Object.freeze({ spelling: alias, kind: 'locale alias' as const });
+  return Object.hasOwn(policy.aliases, folded)
+    ? Object.freeze({ spelling: folded, kind: 'locale alias' as const })
+    : undefined;
 }
 
 /**
@@ -2521,45 +2646,30 @@ function pathPrefixCanonicalPath(
   segments: readonly string[],
 ): string {
   const prefix = emittedLocalePrefix(policy, locale);
-  if (prefix === undefined && locale !== policy.defaultLocale) {
-    return routeError('The route locale has no configured prefix.');
-  }
   const path = encodedSegments(segments);
   return prefix === undefined
-    ? path.length === 0
-      ? '/'
-      : `/${path}`
+    ? `/${path}`
     : `/${prefix}${path.length === 0 ? '' : `/${path}`}`;
 }
 
 /**
- * The locale an entry redirect should send an unprefixed request to.
+ * The preference a request states, where it names a locale the policy serves.
  *
- * Under a path-prefix policy the URL is authoritative whenever it carries a prefix, so this is
- * consulted only where the URL states nothing: the locale-entry redirect. It was not consulted
- * at all before: `resolveLocalizedRoute` accepted a resolution context and then dropped it
- * before the prefix branch, so a request resolved to `ar-EG` produced the identical redirect to
- * `/en-us` as a request that resolved to nothing.
- *
- * An unsupported preference is ignored rather than turned into an error. In a locale-neutral
- * policy `context.locale` is the request's stated locale and an unsupported value is a 404; here
- * it is a preference about a URL that is itself perfectly valid, and answering 404 for a site's
- * home page because a preference was unusable is the worse failure by a wide margin.
+ * Read only where the address states no locale: the entry redirect of a path-prefix policy, and an
+ * address more than one locale spells under a locale-neutral one. A preference that names no served
+ * locale chooses none and is not an error, because it is a preference about an address that is
+ * itself valid, and answering 404 for a home page because a preference was unusable is the worse
+ * failure by a wide margin.
  */
-function preferredEntryLocale(
-  policy: PathPrefixLocalePolicy,
-  context: RouteResolutionContext,
+function servedPreference(
+  policy: PathPrefixLocalePolicy | LocaleNeutralPolicy,
+  requested: string | undefined,
 ): string | undefined {
-  if (context.locale === undefined) return undefined;
-  let requested: string;
-  try {
-    requested = canonicalLocale(context.locale);
-  } catch {
-    return undefined;
-  }
-  return ownEntry(policy.locales, requested) === undefined
-    ? undefined
-    : requested;
+  const locale =
+    requested === undefined ? undefined : canonicalizeLanguageTag(requested);
+  return locale !== undefined && Object.hasOwn(policy.locales, locale)
+    ? locale
+    : undefined;
 }
 
 function resolvePathPrefixRoute(
@@ -2590,167 +2700,135 @@ function resolvePathPrefixRoute(
       presentationLocale: policy.defaultLocale,
     });
   }
-  let locale: string | undefined;
-  let routeSegments: readonly string[];
-  let prefixCorrection = false;
-  const prefixed =
-    first === undefined ? undefined : ownEntry(policy.prefixes, first);
-  if (prefixed !== undefined) {
-    locale = prefixed;
-    routeSegments = parsed.segments.slice(1);
-  } else {
-    const casePrefix =
-      first === undefined
-        ? undefined
-        : Object.keys(policy.prefixes).find(
-            (prefix) => prefix.toLowerCase() === first.toLowerCase(),
-          );
-    const alias =
-      first === undefined
-        ? undefined
-        : Object.keys(policy.aliases).find(
-            (candidate) => candidate.toLowerCase() === first.toLowerCase(),
-          );
-    const aliasLocale = alias === undefined ? undefined : policy.aliases[alias];
-    if (casePrefix !== undefined) {
-      locale = policy.prefixes[casePrefix];
-      routeSegments = parsed.segments.slice(1);
-      prefixCorrection = true;
-    } else if (aliasLocale !== undefined) {
-      locale = aliasLocale;
-      routeSegments = parsed.segments.slice(1);
-      prefixCorrection = true;
-    } else {
-      const unprefixedMatch = matchRoute(
+  // A policy's prefixes and aliases are lower case, so a prefix written in another case reads
+  // through the folded segment as an alias does, and the comparison with the canonical address
+  // below corrects both.
+  const folded = first?.toLowerCase() ?? '';
+  const locale =
+    ownEntry(policy.prefixes, folded) ?? ownEntry(policy.aliases, folded);
+  if (locale === undefined) {
+    const unprefixedMatch = matchRoute(
+      parsed.segments,
+      projection,
+      policy.defaultLocale,
+    );
+    if (unprefixedMatch === undefined) {
+      const historical = historicalResolution(
         parsed.segments,
-        projection,
         policy.defaultLocale,
+        parsed,
+        policy,
+        projection,
       );
-      if (unprefixedMatch === undefined) {
-        const historical = historicalResolution(
-          parsed.segments,
-          policy.defaultLocale,
-          parsed,
-          policy,
-          projection,
-        );
-        if (historical !== undefined) return historical;
-        if (first !== undefined && localeIntent(first)) {
-          return Object.freeze({
-            status: 'unsupported-locale',
-            httpStatus: 404,
-            presentationLocale: policy.defaultLocale,
-            requestedLocale: first,
-          });
-        }
-        // Nothing is served at this address in any locale, so there is no page to negotiate a
-        // locale for: sending the visitor to a prefixed spelling of it would answer a second
-        // address that is missing too. It is a 404 where it stands, in the default locale, and the
-        // application's own `**` route renders it because the address is handed to the router
-        // unchanged.
+      if (historical !== undefined) return historical;
+      if (first !== undefined && localeIntent(first)) {
         return Object.freeze({
-          status: 'not-found',
+          status: 'unsupported-locale',
           httpStatus: 404,
           presentationLocale: policy.defaultLocale,
+          requestedLocale: first,
         });
       }
-      const prefix = policy.locales[policy.defaultLocale] as string;
-      if (policy.omitDefaultPrefix) {
-        const canonicalPath = pathPrefixCanonicalPath(
-          policy,
-          policy.defaultLocale,
-          unprefixedMatch.canonicalSegments,
-        );
-        if (
-          parsed.trailingSlash ||
-          unprefixedMatch.corrected ||
-          target !== `${canonicalPath}${parsed.canonicalSuffix}`
-        ) {
-          return Object.freeze({
-            status: 'redirect',
-            reason: 'canonical-correction',
-            httpStatus: 308,
-            cache: 'consumer-defined-permanent',
-            locale: policy.defaultLocale,
-            routeId: unprefixedMatch.route.id,
-            location: `${canonicalPath}${parsed.canonicalSuffix}`,
-          });
-        }
-        return Object.freeze({
-          status: 'success',
-          locale: policy.defaultLocale,
-          direction: directionForLocale(policy.defaultLocale),
-          routeId: unprefixedMatch.route.id,
-          parameters: unprefixedMatch.parameters,
-          canonicalPath,
-          query: parsed.query,
-          ...(parsed.fragment === undefined
-            ? {}
-            : { fragment: parsed.fragment }),
-          indexing: unprefixedMatch.route.indexing ?? 'indexable',
-          ...(unprefixedMatch.route.caching === undefined
-            ? {}
-            : { caching: unprefixedMatch.route.caching }),
-        });
-      }
-      const preferred = preferredEntryLocale(policy, context);
-      // Never public, whether or not a preference was consulted.
-      //
-      // Keyed off the address rather than off `context.locale === undefined`, which asks about the
-      // request. Cacheability is a question about the address. A cache key is the target URI
-      // unless the stored response names a varying header, and an entry address states no locale,
-      // so the answer a preference produced and the answer it did not share one key. Marking the
-      // second `public` lets a shared cache store it and hand it to a visitor who would have got
-      // the first; marking the first `private` prevents nothing, because that request is served
-      // from the cache and never arrives here. `private` keeps a response from being stored. It
-      // does not evict one already held.
-      //
-      // `Vary` is not available as the alternative. Equator never sees the request, the host reads
-      // the preference and passes a locale in, so Equator cannot name the header that varied, and
-      // for a cookie-borne preference `private` is the right answer regardless.
-      //
-      // `no-cache` rather than `no-store`, because the answer depends on request state and is not
-      // sensitive. RFC 9111 section 5.2.2.4 lets a browser keep it and requires a request to the
-      // server before any reuse, and with no validator on a redirect that request is a full one, so
-      // a visitor who changes preference is sent where the new one points. Section 5.2.2.5 is for a
-      // response that must not be retained at all, which a locale redirect is not.
-      const cache = 'private-no-cache' as const;
-      if (preferred !== undefined && preferred !== policy.defaultLocale) {
-        const localized = localizedRouteSegments(
-          projection,
-          unprefixedMatch.route,
-          preferred,
-          unprefixedMatch.parameters,
-        );
-        if (localized.ok) {
-          return Object.freeze({
-            status: 'redirect',
-            reason: 'locale-entry',
-            httpStatus: 307,
-            cache,
-            locale: preferred,
-            routeId: unprefixedMatch.route.id,
-            location: `${pathPrefixCanonicalPath(policy, preferred, localized.segments)}${parsed.canonicalSuffix}`,
-          });
-        }
-      }
+      // Nothing is served at this address in any locale, so there is no page to negotiate a
+      // locale for: sending the visitor to a prefixed spelling of it would answer a second
+      // address that is missing too. It is a 404 where it stands, in the default locale, and the
+      // application's own `**` route renders it because the address is handed to the router
+      // unchanged.
       return Object.freeze({
-        status: 'redirect',
-        reason: 'locale-entry',
-        httpStatus: 307,
-        cache,
-        locale: policy.defaultLocale,
-        routeId: unprefixedMatch.route.id,
-        location: `/${prefix}${unprefixedMatch.canonicalSegments.length === 0 ? '' : `/${encodedSegments(unprefixedMatch.canonicalSegments)}`}${parsed.canonicalSuffix}`,
+        status: 'not-found',
+        httpStatus: 404,
+        presentationLocale: policy.defaultLocale,
       });
     }
+    const prefix = policy.locales[policy.defaultLocale] as string;
+    if (policy.omitDefaultPrefix) {
+      const canonicalPath = pathPrefixCanonicalPath(
+        policy,
+        policy.defaultLocale,
+        unprefixedMatch.canonicalSegments,
+      );
+      // A trailing slash, a segment in another case and a parameter its codec spells differently
+      // each leave the request spelled unlike the canonical address.
+      if (target !== `${canonicalPath}${parsed.canonicalSuffix}`) {
+        return Object.freeze({
+          status: 'redirect',
+          reason: 'canonical-correction',
+          httpStatus: 308,
+          cache: 'consumer-defined-permanent',
+          locale: policy.defaultLocale,
+          routeId: unprefixedMatch.route.id,
+          location: `${canonicalPath}${parsed.canonicalSuffix}`,
+        });
+      }
+      return Object.freeze({
+        status: 'success',
+        locale: policy.defaultLocale,
+        direction: directionForLocale(policy.defaultLocale),
+        routeId: unprefixedMatch.route.id,
+        parameters: unprefixedMatch.parameters,
+        canonicalPath,
+        query: parsed.query,
+        ...(parsed.fragment === undefined ? {} : { fragment: parsed.fragment }),
+        indexing: unprefixedMatch.route.indexing ?? 'indexable',
+        ...(unprefixedMatch.route.caching === undefined
+          ? {}
+          : { caching: unprefixedMatch.route.caching }),
+      });
+    }
+    const preferred = servedPreference(policy, context.locale);
+    // Never public, whether or not a preference was consulted.
+    //
+    // Keyed off the address rather than off `context.locale === undefined`, which asks about the
+    // request. Cacheability is a question about the address. A cache key is the target URI
+    // unless the stored response names a varying header, and an entry address states no locale,
+    // so the answer a preference produced and the answer it did not share one key. Marking the
+    // second `public` lets a shared cache store it and hand it to a visitor who would have got
+    // the first; marking the first `private` prevents nothing, because that request is served
+    // from the cache and never arrives here. `private` keeps a response from being stored. It
+    // does not evict one already held.
+    //
+    // `Vary` is not available as the alternative. Equator never sees the request, the host reads
+    // the preference and passes a locale in, so Equator cannot name the header that varied, and
+    // for a cookie-borne preference `private` is the right answer regardless.
+    //
+    // `no-cache` rather than `no-store`, because the answer depends on request state and is not
+    // sensitive. RFC 9111 section 5.2.2.4 lets a browser keep it and requires a request to the
+    // server before any reuse, and with no validator on a redirect that request is a full one, so
+    // a visitor who changes preference is sent where the new one points. Section 5.2.2.5 is for a
+    // response that must not be retained at all, which a locale redirect is not.
+    const cache = 'private-no-cache' as const;
+    if (preferred !== undefined && preferred !== policy.defaultLocale) {
+      const localized = localizedRouteSegments(
+        projection,
+        unprefixedMatch.route,
+        preferred,
+        unprefixedMatch.parameters,
+      );
+      if (localized.ok) {
+        return Object.freeze({
+          status: 'redirect',
+          reason: 'locale-entry',
+          httpStatus: 307,
+          cache,
+          locale: preferred,
+          routeId: unprefixedMatch.route.id,
+          location: `${pathPrefixCanonicalPath(policy, preferred, localized.segments)}${parsed.canonicalSuffix}`,
+        });
+      }
+    }
+    return Object.freeze({
+      status: 'redirect',
+      reason: 'locale-entry',
+      httpStatus: 307,
+      cache,
+      locale: policy.defaultLocale,
+      routeId: unprefixedMatch.route.id,
+      location: `/${prefix}${unprefixedMatch.canonicalSegments.length === 0 ? '' : `/${encodedSegments(unprefixedMatch.canonicalSegments)}`}${parsed.canonicalSuffix}`,
+    });
   }
-  const match = matchRoute(
-    routeSegments,
-    projection,
-    locale ?? policy.defaultLocale,
-  );
-  if (locale !== undefined && match === undefined) {
+  const routeSegments = parsed.segments.slice(1);
+  const match = matchRoute(routeSegments, projection, locale);
+  if (match === undefined) {
     const historical = historicalResolution(
       routeSegments,
       locale,
@@ -2767,17 +2845,16 @@ function resolvePathPrefixRoute(
       projection,
     );
     if (spelled !== undefined) return spelled;
-  }
-  if (locale === undefined || match === undefined) {
     // The address stated a locale and the projection has no route at it. Those are two different
     // facts and only the second one is a miss: `specs/07-routing-rendering-and-seo.spec.md`
     // section 5 puts it as "the locale resolved, and only the page is unknown", and requires
     // resolution to commit the locale and yield no route context.
     //
     // `requestedLocale` is what carries that, and it is set only where the *address* named the
-    // locale: a prefix this policy recognises. It is absent when the address named none and
-    // `presentationLocale` is merely the default, because a caller asking "what locale does this
-    // URL state" must be able to tell those apart and get nothing back for the second.
+    // locale: a prefix this policy recognises. It is absent from the answers above for an address
+    // that named none, where `presentationLocale` is merely the default, because a caller asking
+    // "what locale does this URL state" must be able to tell those apart and get nothing back for
+    // the second.
     //
     // Found through `loadChildren`: routes discovered inside a lazily loaded module are not in the
     // projection, so every one of their localized addresses lands here, and the page rendered in
@@ -2786,8 +2863,8 @@ function resolvePathPrefixRoute(
     return Object.freeze({
       status: 'not-found',
       httpStatus: 404,
-      presentationLocale: locale ?? policy.defaultLocale,
-      ...(locale === undefined ? {} : { requestedLocale: locale }),
+      presentationLocale: locale,
+      requestedLocale: locale,
     });
   }
   const canonicalPath = pathPrefixCanonicalPath(
@@ -2795,12 +2872,9 @@ function resolvePathPrefixRoute(
     locale,
     match.canonicalSegments,
   );
-  if (
-    prefixCorrection ||
-    parsed.trailingSlash ||
-    match.corrected ||
-    target !== `${canonicalPath}${parsed.canonicalSuffix}`
-  ) {
+  // A prefix in another case, an alias, a trailing slash, a segment in another case and a parameter
+  // its codec spells differently each leave the request spelled unlike the canonical address.
+  if (target !== `${canonicalPath}${parsed.canonicalSuffix}`) {
     return Object.freeze({
       status: 'redirect',
       reason: 'canonical-correction',
@@ -2943,10 +3017,9 @@ function resolveLocaleNeutralRoute(
   }
   const { locale, match } = negotiated(spelling, preferred);
   const canonicalPath = neutralPath(match);
-  if (
-    parsed.trailingSlash ||
-    target !== `${canonicalPath}${parsed.canonicalSuffix}`
-  ) {
+  // A trailing slash is one of the spellings this comparison corrects: no canonical path ends in
+  // one that a longer request path ends in.
+  if (target !== `${canonicalPath}${parsed.canonicalSuffix}`) {
     return Object.freeze({
       status: 'redirect',
       reason: 'canonical-correction',
@@ -3021,34 +3094,20 @@ function neutralSpellers(
     .map(({ locale }) => locale);
 }
 
-/** The preference, where it names a locale the policy serves; one that names none chooses none. */
-function servedPreference(
-  policy: LocaleNeutralPolicy,
-  requested: string | undefined,
-): string | undefined {
-  if (requested === undefined) return undefined;
-  try {
-    const locale = canonicalLocale(requested);
-    return ownEntry(policy.locales, locale) === undefined ? undefined : locale;
-  } catch {
-    return undefined;
-  }
-}
-
 /** The preferred locale where it is one of the candidates, and the first candidate otherwise. */
 function negotiated<Candidate extends { readonly locale: string }>(
   candidates: readonly Candidate[],
   preferred: string | undefined,
 ): Candidate {
-  const chosen =
-    candidates.find(({ locale }) => locale === preferred) ?? candidates[0];
-  if (chosen === undefined) routeError('Nothing to negotiate among.');
-  return chosen;
+  // Both callers hand over the locales that read an address, after the case where none does.
+  return (
+    candidates.find(({ locale }) => locale === preferred) ??
+    (candidates[0] as Candidate)
+  );
 }
 
 function neutralPath(match: RouteMatch): string {
-  const routeText = encodedSegments(match.canonicalSegments);
-  return routeText.length === 0 ? '/' : `/${routeText}`;
+  return `/${encodedSegments(match.canonicalSegments)}`;
 }
 
 function resolveHostRoute(
@@ -3076,19 +3135,16 @@ function resolveHostRoute(
     originValue = absolute.origin;
     requestTarget = absolute.target;
   }
-  const origin =
-    originValue === undefined
-      ? policy.locales[policy.defaultLocale]
-      : (() => {
-          try {
-            return new URL(originValue).origin;
-          } catch {
-            return undefined;
-          }
-        })();
-  const locale =
-    origin === undefined ? undefined : ownEntry(policy.origins, origin);
-  if (origin === undefined || locale === undefined) {
+  // With no origin stated the address is read at the default locale's.
+  let locale: string | undefined = policy.defaultLocale;
+  if (originValue !== undefined) {
+    try {
+      locale = ownEntry(policy.origins, new URL(originValue).origin);
+    } catch {
+      locale = undefined;
+    }
+  }
+  if (locale === undefined) {
     return Object.freeze({
       status: 'malformed',
       httpStatus: 400,
@@ -3148,14 +3204,11 @@ function resolveHostRoute(
       requestedLocale: locale,
     });
   }
-  const routeText = encodedSegments(match.canonicalSegments);
-  const canonicalPath = routeText.length === 0 ? '/' : `/${routeText}`;
-  const canonicalUrl = `${policy.locales[locale]}${canonicalPath === '/' ? '/' : canonicalPath}`;
-  if (
-    parsed.trailingSlash ||
-    match.corrected ||
-    requestTarget !== `${canonicalPath}${parsed.canonicalSuffix}`
-  ) {
+  const canonicalPath = `/${encodedSegments(match.canonicalSegments)}`;
+  const canonicalUrl = `${policy.locales[locale]}${canonicalPath}`;
+  // A trailing slash, a segment in another case and a parameter its codec spells differently each
+  // leave the request spelled unlike the canonical address, so the one comparison corrects all.
+  if (requestTarget !== `${canonicalPath}${parsed.canonicalSuffix}`) {
     return Object.freeze({
       status: 'redirect',
       reason: 'canonical-correction',
@@ -3211,6 +3264,7 @@ export function resolveLocalizedRoute<
   projection: Projection,
   context: RouteResolutionContext = {},
 ): LocalizedRouteResolution<Projection> {
+  assertLocalePolicy(policy);
   return resolveRouteTarget(
     target,
     policy,
@@ -3284,6 +3338,7 @@ export function localeFromRoute(
   policy: LocaleUrlPolicy,
   projection: RouteRuntimeProjection,
 ): string | undefined {
+  assertLocalePolicy(policy);
   const target = requestTarget(context);
   if (target === undefined) return undefined;
   if (policy.kind === 'locale-neutral') {
@@ -3351,6 +3406,7 @@ export function resolveInitialRouteLocale(
   policy: LocaleUrlPolicy,
   projection: RouteRuntimeProjection,
 ): string {
+  assertLocalePolicy(policy);
   const target = requestTarget(context);
   if (target === undefined) return policy.defaultLocale;
   const origin =
@@ -4098,6 +4154,7 @@ function localizedRouteAddress(
       readonly locale: string;
       readonly segments: readonly string[];
     } {
+  assertLocalePolicy(policy);
   const projection = validateRouteProjection(projectionValue);
   const locale = canonicalLocale(localeValue);
   const policyValue = policy.locales[locale];
@@ -4176,13 +4233,11 @@ function localizedRouteAddress(
       address: `${pathPrefixCanonicalPath(policy, locale, serialized)}${suffix}`,
     });
   }
-  const path = routeText.length === 0 ? '/' : `/${routeText}`;
+  // What stands before the path is the locale's origin under a host policy and nothing under a
+  // locale-neutral one, which is what each policy's table holds for the locale.
   return Object.freeze({
     ok: true as const,
-    address:
-      policy.kind === 'locale-host'
-        ? `${policyValue}${path}${suffix}`
-        : `${path}${suffix}`,
+    address: `${policyValue}/${routeText}${suffix}`,
   });
 }
 
@@ -4257,6 +4312,7 @@ export function localizedRouteAddresses(
   projection: RouteRuntimeProjection,
   spellings?: LocalizedParameterSpellings,
 ): Readonly<Record<string, string>> {
+  assertLocalePolicy(policy);
   const addresses: Record<string, string> = {};
   for (const locale of Object.keys(policy.locales)) {
     try {
@@ -4393,6 +4449,7 @@ export function projectRouteSeo(
   addresses?: Readonly<Record<string, string>>,
   baseHref = '',
 ): RouteSeoProjection {
+  assertLocalePolicy(policy);
   const site = trustedOrigin(origin, 'SEO projection origin');
   const indexing = resolution.indexing;
   if (indexing !== 'indexable') {
@@ -4668,6 +4725,7 @@ export function projectSitemap(
     baseHref = '',
     fileName = 'sitemap.xml',
   } = options;
+  assertLocalePolicy(policy);
   const site = trustedOrigin(origin, 'sitemap origin');
   const entries: SitemapEntry[] = [];
   const published = new Set<string>();
@@ -4970,8 +5028,7 @@ export interface LocalizedAddressContext {
  */
 function defaultPrefix(policy: LocaleUrlPolicy): string {
   if (policy.kind !== 'path-prefix' || policy.omitDefaultPrefix) return '';
-  const prefix = policy.locales[policy.defaultLocale];
-  return prefix === undefined || prefix === '' ? '' : `/${prefix}`;
+  return `/${policy.locales[policy.defaultLocale] as string}`;
 }
 
 function splitSuffix(url: string): readonly [string, string] {
@@ -5001,11 +5058,13 @@ function readAt(context: LocalizedAddressContext): RouteResolutionContext {
 function originLocale(context: LocalizedAddressContext): string | undefined {
   const { policy, origin } = context;
   if (policy.kind !== 'locale-host' || origin === undefined) return undefined;
+  let stated: string;
   try {
-    return policy.origins[new URL(origin).origin];
+    stated = new URL(origin).origin;
   } catch {
     return undefined;
   }
+  return ownEntry(policy.origins, stated);
 }
 
 /**
@@ -5181,8 +5240,7 @@ export function toInternalPath(
   if (!canonical.ok) return external;
   // Under a host policy the default locale's address is absolute, on that locale's origin, and the
   // route table matches its path.
-  const path = pathOnlyTarget(canonical.address);
-  if (path === undefined) return external;
+  const path = pathOnlyTarget(canonical.address) as string;
   return `${dropPrefix(path, defaultPrefix(policy))}${suffix}`;
 }
 
@@ -5236,6 +5294,5 @@ export function toExternalPath(
   // there is nothing to rewrite the URL to.
   if (!localized.ok) return internal;
   // Under a host policy the address is absolute, and the document is already at its origin.
-  const path = pathOnlyTarget(localized.address);
-  return path === undefined ? internal : `${path}${suffix}`;
+  return `${pathOnlyTarget(localized.address) as string}${suffix}`;
 }

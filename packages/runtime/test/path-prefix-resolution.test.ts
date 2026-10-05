@@ -230,6 +230,17 @@ describe('an address under a locale prefix', () => {
     );
   });
 
+  it('is corrected in one hop where the prefix and a segment both need it', () => {
+    for (const target of ['/AR/THANI', '/AR-EG/Thani/', '/ar/THANI/']) {
+      expect(resolve(target)).toStrictEqual(
+        correction('ar-EG', 'second', '/ar-eg/thani'),
+      );
+    }
+    expect(resolve('/EN-US/SECOND?page=2')).toStrictEqual(
+      correction('en-US', 'second', '/en-us/second?page=2'),
+    );
+  });
+
   it('is refused where the policy names a locale it gave no prefix', () => {
     // A table written by hand can read a prefix as a locale it cannot write an address for. The
     // answer is a configuration error and not an address without a prefix, which would be read as

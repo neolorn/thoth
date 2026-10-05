@@ -366,9 +366,8 @@ export const injections = Object.freeze([
     invariant:
       "A locale-entry redirect's destination is spelled in the locale it resolved to.",
     source: 'packages/runtime/core/src/routing.ts',
-    find: '          unprefixedMatch.route,\n          preferred,',
-    replace:
-      '          unprefixedMatch.route,\n          policy.defaultLocale,',
+    find: '        unprefixedMatch.route,\n        preferred,',
+    replace: '        unprefixedMatch.route,\n        policy.defaultLocale,',
   },
   {
     id: 'restored-page-never-checked',
@@ -400,9 +399,9 @@ export const injections = Object.freeze([
     invariant:
       'A prefix or alias correction is combined with every other correction the address needs into a single 308.',
     source: 'packages/runtime/core/src/routing.ts',
-    find: '    match.canonicalSegments,\n  );\n  if (\n    prefixCorrection ||',
+    find: '    locale,\n    match.canonicalSegments,\n  );',
     replace:
-      '    prefixCorrection ? routeSegments : match.canonicalSegments,\n  );\n  if (\n    prefixCorrection ||',
+      "    locale,\n    ownEntry(policy.prefixes, first ?? '') === undefined\n      ? routeSegments\n      : match.canonicalSegments,\n  );",
   },
   {
     id: 'variant-navigation-kept-as-written',

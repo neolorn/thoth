@@ -536,7 +536,7 @@ export const injections = Object.freeze([
     invariant:
       "A generated configuration that omits the policy's default locale is refused.",
     source: 'packages/runtime/core/src/routing.ts',
-    find: '  if (!built.has(defaultLocale)) {',
+    find: '  if (!built.has(policy.defaultLocale)) {',
     replace: '  if (false) {',
     caughtBy: 'packages/runtime/test/built-locale-addresses.test.ts',
   },
@@ -723,9 +723,9 @@ export const injections = Object.freeze([
     id: 'locale-entry-answered-302',
     invariant: 'Locale entry is answered 307.',
     source: 'packages/runtime/core/src/routing.ts',
-    find: '        httpStatus: 307,\n        cache,\n        locale: policy.defaultLocale,',
+    find: '      httpStatus: 307,\n      cache,\n      locale: policy.defaultLocale,',
     replace:
-      '        httpStatus: 302,\n        cache,\n        locale: policy.defaultLocale,',
+      '      httpStatus: 302,\n      cache,\n      locale: policy.defaultLocale,',
     caughtBy: 'packages/runtime/test/http-handler.test.ts',
   },
   {
@@ -733,8 +733,8 @@ export const injections = Object.freeze([
     invariant:
       'An address that names a locale the site does not serve is answered as unsupported locale intent, never in another locale.',
     source: 'packages/runtime/core/src/routing.ts',
-    find: '        if (first !== undefined && localeIntent(first)) {',
-    replace: '        if (false) {',
+    find: '    if (first !== undefined && localeIntent(first)) {',
+    replace: '    if (false) {',
     caughtBy: 'packages/runtime/test/built-locale-addresses.test.ts',
   },
   {
@@ -825,9 +825,9 @@ export const injections = Object.freeze([
     invariant:
       'A locale-entry redirect is private and revalidated whether or not a preference was consulted.',
     source: 'packages/runtime/core/src/routing.ts',
-    find: "      const cache = 'private-no-cache' as const;",
+    find: "  const cache = 'private-no-cache' as const;",
     replace:
-      "      const cache = preferred === undefined ? 'public' : 'private-no-cache';",
+      "  const cache = preferred === undefined ? 'public' : 'private-no-cache';",
     caughtBy: 'packages/runtime/test/route-cache-headers.test.ts',
   },
   {
@@ -1244,9 +1244,9 @@ export const injections = Object.freeze([
     invariant:
       'A missing page under a supported locale is a 404 in that locale, not a redirect.',
     source: 'packages/runtime/core/src/routing.ts',
-    find: "    return Object.freeze({\n      status: 'not-found',\n      httpStatus: 404,\n      presentationLocale: locale ?? policy.defaultLocale,",
+    find: "losing the locale.\n    return Object.freeze({\n      status: 'not-found',\n      httpStatus: 404,\n      presentationLocale: locale,",
     replace:
-      "    return Object.freeze({\n      status: 'redirect',\n      reason: 'replacement',\n      httpStatus: 308,\n      location: '/',\n      locale: locale ?? policy.defaultLocale,\n      presentationLocale: locale ?? policy.defaultLocale,",
+      "losing the locale.\n    return Object.freeze({\n      status: 'redirect',\n      reason: 'replacement',\n      httpStatus: 308,\n      location: '/',\n      locale,\n      presentationLocale: locale,",
     caughtBy: 'packages/runtime/test/locale-of-an-unprojected-address.test.ts',
   },
   {
@@ -2941,6 +2941,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/toolkit/test/route-identity.test.ts',
   },
   {
+    id: 'written-out-policy-table-read-unchecked',
+    invariant:
+      'A policy written out as an object is held to the tables a constructor writes, so a prefix table that reads a prefix as another locale is refused wherever the policy is read.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '        ownEntry(policy.prefixes, prefix) !== locale',
+    replace: '        false',
+    caughtBy: 'packages/runtime/test/written-out-locale-policies.test.ts',
+  },
+  {
     id: 'unserved-policy-kind-narrowed-anyway',
     invariant:
       'A locale URL policy of a kind Equator does not serve is refused where it is narrowed, naming the kinds that are served.',
@@ -4477,9 +4486,9 @@ export const injections = Object.freeze([
     invariant:
       'An address that states no locale and that nothing serves in any locale is a 404 where it stands, not a locale entry.',
     source: 'packages/runtime/core/src/routing.ts',
-    find: "        // unchanged.\n        return Object.freeze({\n          status: 'not-found',\n          httpStatus: 404,\n          presentationLocale: policy.defaultLocale,\n        });",
+    find: "      // unchanged.\n      return Object.freeze({\n        status: 'not-found',\n        httpStatus: 404,\n        presentationLocale: policy.defaultLocale,\n      });",
     replace:
-      "        // unchanged.\n        if (!policy.omitDefaultPrefix) {\n          const entryLocale =\n            preferredEntryLocale(policy, context) ?? policy.defaultLocale;\n          return Object.freeze({\n            status: 'redirect',\n            reason: 'locale-entry',\n            httpStatus: 307,\n            cache: 'private-no-cache',\n            locale: entryLocale,\n            location: `/${policy.locales[entryLocale]}/${encodedSegments(parsed.segments)}`,\n          });\n        }\n        return Object.freeze({\n          status: 'not-found',\n          httpStatus: 404,\n          presentationLocale: policy.defaultLocale,\n        });",
+      "      // unchanged.\n      if (!policy.omitDefaultPrefix) {\n        const entryLocale =\n          servedPreference(policy, context.locale) ?? policy.defaultLocale;\n        return Object.freeze({\n          status: 'redirect',\n          reason: 'locale-entry',\n          httpStatus: 307,\n          cache: 'private-no-cache',\n          locale: entryLocale,\n          location: `/${policy.locales[entryLocale]}/${encodedSegments(parsed.segments)}`,\n        });\n      }\n      return Object.freeze({\n        status: 'not-found',\n        httpStatus: 404,\n        presentationLocale: policy.defaultLocale,\n      });",
     caughtBy: 'packages/runtime/test/locale-of-an-unprojected-address.test.ts',
   },
   {

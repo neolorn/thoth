@@ -92,6 +92,17 @@ A release MUST refuse a policy kind it does not serve at configuration time, nam
 kinds it does serve, and MUST NOT warn and continue, because a diagnostic that starts anyway is
 silent in production and leaves the application in a state no rule describes.
 
+A policy is a plain value, and a consumer application may write one out instead of calling a
+constructor. A release MUST hold a policy to the tables a constructor writes wherever it reads one,
+and MUST refuse one that departs from them as a configuration error: a locale that is not a
+canonical tag, a default locale the policy does not name, a prefix, alias, or locale-neutral root
+that is not a path segment or repeats another, an origin that is not a normalized HTTP origin, or a
+prefix or origin table that does not read each address back to the locale it was written for. A
+table that disagrees with its inverse reads a prefix as a locale it has no address for, or sends an
+address to itself. A prefix, an alias, and a locale-neutral root are each one to 63 lowercase ASCII
+letters, digits, and hyphens that begin and end with a letter or a digit, and any such text is
+accepted, a word such as `undefined` included.
+
 The policy states intent and the build decides which locales exist. A release MUST intersect
 the declared policy with the generated configuration once, into a narrowed policy, and MUST resolve,
 publish, and provide from that value alone, so a site added later inherits the intersection rather

@@ -303,14 +303,6 @@
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "CallExpression",
-      "original": "occupied.add(alias);",
-      "replacement": ";",
-      "category": "equivalent",
-      "reason": "Alias names are the keys of one object and so distinct, and nothing reads `occupied` after this loop, so recording an alias changes no later check."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
       "mutator": "StringLiteral",
       "original": "`${label} must be a trusted absolute HTTP origin.`",
       "replacement": "``",
@@ -340,22 +332,6 @@
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The literal is the text of the refusal message for an x-default path that is not origin-relative; the refusal is asserted by its code and outcome, and nothing compares the wording."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n    if (\n      new URL(value, 'https://site.invalid').origin !== 'https://site.invalid'\n    ) {\n      routeError('x-default cannot change origin.');\n    }\n  }",
-      "replacement": "{}",
-      "category": "unreachable",
-      "reason": "The guard on lines 1499 to 1502 leaves a value that starts with one slash and holds no backslash, tab or newline, which the URL parser reads as a path on the base origin, so this check never refuses."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "new URL(value, 'https://site.invalid').origin !== 'https://site.invalid'",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "The guard on lines 1499 to 1502 leaves a value that starts with one slash and holds no backslash, tab or newline, which the URL parser reads as a path on the base origin, so the origins never differ."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -480,15 +456,6 @@
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "path.length === 0",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "An empty path splits into one empty segment, which the segment pattern on line 1881 refuses, so the same condition refuses it without this operand. for an empty path the other branch, `/${path}`, is also \"/\"",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
       "mutator": "StringLiteral",
       "original": "`Historical route path ${JSON.stringify(path)} is unsafe or colliding.`",
       "replacement": "``",
@@ -541,8 +508,7 @@
       "original": "locale === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With no locale presentationPath looks a localized table up under the key undefined, and line 1841 refuses any key that is not a canonical locale tag, so the lookup misses and the route keeps its own path. every path into line 2734 assigns locale from a prefix or an alias (lines 2585, 2602, 2606) and the remaining branch returns (lines 2609 to 2732), so locale is never undefined here",
-      "count": 3
+      "reason": "With no locale presentationPath looks a localized table up under the key undefined, and the projection check refuses any key that is not a canonical locale tag, so the lookup misses and the route keeps its own path."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -598,8 +564,8 @@
       "original": "{\n    return undefined;\n  }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "The catch block is the last statement of decodeBounded, so leaving it without a return ends the function, which yields the undefined the block returned. falling out of the catch leaves requested unassigned, ownEntry(policy.locales, undefined) on line 2546 finds no own entry, and the function returns the same undefined The catch is the last statement of servedPreference, so an empty block falls off the end of the function and returns the same undefined.",
-      "count": 3
+      "reason": "The catch block is the last statement of decodeBounded, so leaving it without a return ends the function, which yields the undefined the block returned.",
+      "count": 1
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -686,31 +652,6 @@
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "other === locale",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "both callers (lines 2748 and 3116) reach this only after matchRoute missed in this locale, so without the skip the same lookup misses again and line 2362 continues"
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "routeText.length === 0",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "for an empty routeText the other branch, `/${routeText}`, is also \"/\" For an empty route text the other arm writes a slash followed by nothing, which is the same single slash. With an empty `routeText` the other arm, `/${routeText}`, is the same string \"/\".",
-      "count": 4
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ObjectLiteral",
-      "original": "{ spelling: prefix, kind: 'locale prefix' as const }",
-      "replacement": "{}",
-      "category": "message-wording",
-      "reason": "the claim is only tested for being defined; its spelling and kind are read on line 2485 alone, to word the refusal message"
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
       "mutator": "StringLiteral",
       "original": "`/${segments.join('/')}`",
       "replacement": "``",
@@ -736,22 +677,6 @@
     {
       "file": "packages/runtime/core/src/routing.ts",
       "mutator": "StringLiteral",
-      "original": "'The route locale has no configured prefix.'",
-      "replacement": "\"\"",
-      "category": "message-wording",
-      "reason": "the text of the configuration error; the test asserts that it is thrown and its code"
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "context.locale === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "without the early return an undefined locale reaches canonicalLocale inside the try on line 2542, canonicalizeLanguageTag throws on it, and the catch returns the same undefined"
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "StringLiteral",
       "original": "'The request target is structurally unsafe or outside bounds.'",
       "replacement": "\"\"",
       "category": "message-wording",
@@ -769,92 +694,11 @@
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "BooleanLiteral",
-      "original": "true",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "a prefix in another case or an alias is never the canonical prefix (createPathPrefixLocalePolicy, lines 1372 to 1414, writes prefixes as the inverse of locales and refuses an alias that repeats a prefix), so target !== canonical path on line 2788 is already true and redirects without the flag",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "parsed.trailingSlash ||\n          unprefixedMatch.corrected",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "the last clause, target !== canonical path plus suffix, is already true whenever this one is: a trailing slash, a case-folded segment and a re-serialized parameter each make the written target differ from the canonical spelling, so the condition has the same value without it"
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "LogicalOperator",
-      "original": "parsed.trailingSlash ||\n          unprefixedMatch.corrected",
-      "replacement": "parsed.trailingSlash && unprefixedMatch.corrected",
-      "category": "equivalent",
-      "reason": "the last clause, target !== canonical path plus suffix, is already true whenever this one is: a trailing slash, a case-folded segment and a re-serialized parameter each make the written target differ from the canonical spelling, so the condition has the same value without it"
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
       "mutator": "ConditionalExpression",
       "original": "preferred !== policy.defaultLocale",
       "replacement": "true",
       "category": "equivalent",
       "reason": "a preference for the default locale then builds the redirect on lines 2712 to 2720 from localizedRouteSegments in the default locale, which are the matched canonical segments, behind the same prefix: the same locale, route and location as lines 2723 to 2731, and a failure to build falls through to those lines"
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "locale !== undefined",
-      "replacement": "true",
-      "category": "unreachable",
-      "reason": "every path into line 2734 assigns locale from a prefix or an alias (lines 2585, 2602, 2606) and the remaining branch returns (lines 2609 to 2732), so locale is never undefined here"
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "prefixCorrection ||\n    parsed.trailingSlash",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "the last clause, target !== canonical path plus suffix on line 2788, is already true whenever any of the first three is: a prefix in another case or an alias is never the canonical prefix createPathPrefixLocalePolicy writes (lines 1372 to 1414), and a trailing slash, a case-folded segment or a re-serialized parameter each change the path, so the condition has the same value without them"
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "LogicalOperator",
-      "original": "prefixCorrection ||\n    parsed.trailingSlash",
-      "replacement": "prefixCorrection && parsed.trailingSlash",
-      "category": "equivalent",
-      "reason": "the last clause, target !== canonical path plus suffix on line 2788, is already true whenever any of the first three is: a prefix in another case or an alias is never the canonical prefix createPathPrefixLocalePolicy writes (lines 1372 to 1414), and a trailing slash, a case-folded segment or a re-serialized parameter each change the path, so the condition has the same value without them"
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "prefixCorrection ||\n    parsed.trailingSlash ||\n    match.corrected",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "the last clause, target !== canonical path plus suffix on line 2788, is already true whenever any of the first three is: a prefix in another case or an alias is never the canonical prefix createPathPrefixLocalePolicy writes (lines 1372 to 1414), and a trailing slash, a case-folded segment or a re-serialized parameter each change the path, so the condition has the same value without them"
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "LogicalOperator",
-      "original": "prefixCorrection ||\n    parsed.trailingSlash ||\n    match.corrected",
-      "replacement": "(prefixCorrection || parsed.trailingSlash) && match.corrected",
-      "category": "equivalent",
-      "reason": "the last clause, target !== canonical path plus suffix on line 2788, is already true whenever any of the first three is: a prefix in another case or an alias is never the canonical prefix createPathPrefixLocalePolicy writes (lines 1372 to 1414), and a trailing slash, a case-folded segment or a re-serialized parameter each change the path, so the condition has the same value without them"
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "requested === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "An absent preference then reaches canonicalLocale, where tag.toLowerCase() throws inside the try on line 3011, and the catch on line 3014 returns the same undefined."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "chosen === undefined",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "Neither caller passes an empty list: line 2898 filters the matches for those equal to matches[0], which is one of them, and line 2925 is past the return for an empty spelling list on line 2887."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -866,20 +710,12 @@
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n            return undefined;\n          }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "The catch ends the arrow function that starts on line 3063, so an empty block returns the same undefined for an origin that does not parse."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
       "mutator": "ConditionalExpression",
       "original": "origin === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "An origin that did not parse is then looked up in policy.origins and may find a locale, and the first operand on line 3072 still answers malformed for the undefined origin. An undefined origin leaves the locale undefined on line 3071, and the second operand of this condition refuses an undefined locale with the same answer. It then passes an origin field holding undefined, and resolveHostRoute reads context.origin on line 3041 as the same undefined an absent field gives; no other policy reads the field. Both states the guard excludes end in the catch on line 4980, which returns undefined as the guard does: a policy without `origins` throws on the index, and an undefined origin throws in `new URL`.",
-      "count": 5
+      "reason": "The two request readers then pass an origin field holding undefined, and resolveHostRoute reads context.origin as the same undefined an absent field gives; no other policy reads the field. In originLocale an undefined origin throws in `new URL` inside the try, and the catch returns undefined as the guard does.",
+      "count": 3
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -888,30 +724,6 @@
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The text of the message a malformed resolution carries for a person to read; callers and tests read its code and outcome, and nothing compares the wording."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "canonicalPath === '/'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The condition chooses between a slash and a canonicalPath that is itself a slash whenever the condition holds, so both arms write the same text."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "parsed.trailingSlash ||\n    match.corrected",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Each of the two operands implies the third on line 3138: a trailing slash is set only for a path longer than the root (line 2129) and a canonical path has none, and a corrected match has a canonical segment unlike the one requested (lines 2246 and 2253)."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "LogicalOperator",
-      "original": "parsed.trailingSlash ||\n    match.corrected",
-      "replacement": "parsed.trailingSlash && match.corrected",
-      "category": "equivalent",
-      "reason": "Each of the two operands implies the third on line 3138, which still redirects: a canonical path never ends in a slash a request path longer than the root ends in (line 2129), and a corrected match differs from the request in a segment (lines 2246 and 2253)."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -995,7 +807,7 @@
       "original": "localizedPath.length === 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The root route then yields one empty segment instead of none; encodedSegments writes either as the empty text every address is built from, and no policy a factory builds claims an empty leading segment, because validPrefix on line 1156 refuses an empty prefix, alias or root."
+      "reason": "The root route then yields one empty segment instead of none; encodedSegments writes either as the empty text every address is built from, and no policy claims an empty leading segment, because validPrefix refuses an empty prefix, alias or root in a constructed policy and in a written-out one."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -1111,14 +923,6 @@
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "policy.kind === 'locale-host'",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "Only a locale-neutral policy reaches the other arm, path-prefix having returned on line 4148, and its `policy.locales` values are the empty string (typed on line 337, written on line 1539), so `${policyValue}${path}` is `path`."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
       "mutator": "StringLiteral",
       "original": "'SEO projection origin'",
       "replacement": "\"\"",
@@ -1168,35 +972,10 @@
     {
       "file": "packages/runtime/core/src/routing.ts",
       "mutator": "ConditionalExpression",
-      "original": "prefix === undefined || prefix === ''",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "createPathPrefixLocalePolicy holds every prefix to validPrefix, at least one character (lines 1156 and 1376), and refuses a default locale outside the set (line 1388), so the default locale's prefix is never undefined or empty once line 4946 has let a policy through."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "LogicalOperator",
-      "original": "prefix === undefined || prefix === ''",
-      "replacement": "prefix === undefined && prefix === ''",
-      "category": "unreachable",
-      "reason": "createPathPrefixLocalePolicy holds every prefix to validPrefix, at least one character (lines 1156 and 1376), and refuses a default locale outside the set (line 1388), so the default locale's prefix is never undefined or empty once line 4946 has let a policy through."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "prefix === undefined",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "createPathPrefixLocalePolicy holds every prefix to validPrefix, at least one character (lines 1156 and 1376), and refuses a default locale outside the set (line 1388), so the default locale's prefix is never undefined or empty once line 4946 has let a policy through."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
       "original": "prefix === ''",
       "replacement": "false",
-      "category": "unreachable",
-      "reason": "createPathPrefixLocalePolicy holds every prefix to validPrefix, at least one character (lines 1156 and 1376), and refuses a default locale outside the set (line 1388), so the default locale's prefix is never undefined or empty once line 4946 has let a policy through. With an empty prefix the general branch returns the same path: `startsWith('')` holds, `slice(0)` is the path, and the path is never empty because line 5158 takes it from pathOnlyTarget, which begins with \"/\".",
-      "count": 2
+      "category": "equivalent",
+      "reason": "With an empty prefix the general branch of dropPrefix returns the same path: `startsWith('')` holds, `slice(0)` is the path, and the path is never empty because toInternalPath takes it from pathOnlyTarget, which begins with a slash."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -1212,7 +991,7 @@
       "original": "policy.kind !== 'locale-host' || origin === undefined",
       "replacement": "policy.kind !== 'locale-host' && origin === undefined",
       "category": "equivalent",
-      "reason": "Both states the guard excludes end in the catch on line 4980, which returns undefined as the guard does: a policy without `origins` throws on the index, and an undefined origin throws in `new URL`."
+      "reason": "Both states the guard excludes return undefined as the guard does: for a policy with no origin table ownEntry answers undefined, and an undefined origin throws in `new URL` inside the try."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -1220,7 +999,7 @@
       "original": "policy.kind !== 'locale-host' || origin === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "Both states the guard excludes end in the catch on line 4980, which returns undefined as the guard does: a policy without `origins` throws on the index, and an undefined origin throws in `new URL`."
+      "reason": "Both states the guard excludes return undefined as the guard does: for a policy with no origin table ownEntry answers undefined, and an undefined origin throws in `new URL` inside the try."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -1228,7 +1007,7 @@
       "original": "policy.kind !== 'locale-host'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "Both states the guard excludes end in the catch on line 4980, which returns undefined as the guard does: a policy without `origins` throws on the index, and an undefined origin throws in `new URL`."
+      "reason": "Both states the guard excludes return undefined as the guard does: for a policy with no origin table ownEntry answers undefined, and an undefined origin throws in `new URL` inside the try."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -1243,8 +1022,8 @@
       "mutator": "ConditionalExpression",
       "original": "pathOnly === '/' && prefix !== ''",
       "replacement": "false",
-      "category": "equivalent",
-      "reason": "Without the special case the root is resolved as the prefix followed by \"/\", which answers a 308 correction to the bare prefix, and followPermanentRedirect on line 5189 follows it to the same resolution."
+      "category": "performance-only",
+      "reason": "Without the special case the root is resolved as the prefix followed by a slash, which answers a 308 correction to the bare prefix, and followPermanentRedirect follows it to the same resolution, so the special case saves one resolution and changes no answer."
     },
     {
       "file": "packages/runtime/forms/src/caret.ts",
