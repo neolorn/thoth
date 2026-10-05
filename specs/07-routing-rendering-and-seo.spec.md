@@ -110,7 +110,7 @@ every build.
 A build compares the two from the policy as its source declares it, and only where the whole locale
 table is written there with nothing after it that can replace it. A release MUST NOT compare a
 locale table it read in part, because the locales it could not read would be reported as configured
-and unaddressed in an application that addresses them.
+and unaddressed in an application that addresses them. A release MUST name, in an advisory that blocks no build, each option of the policy it did not read, and MUST say there that neither comparison was made for what those options hold, because a build that stays silent about a policy it could not read is read as a build that found the policy right.
 
 Under a locale-specific origin policy the locale is carried by the origin, and three things follow.
 A release MUST be told which origin this build answers at, MUST require it to be one of the

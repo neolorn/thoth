@@ -1687,6 +1687,7 @@ export function toolkitDiagnosticCode(value: ToolkitDiagnosticCode): void {
     case 'EQ1414':
     case 'EQ1415':
     case 'EQ1416':
+    case 'EQ1417':
     case 'EQ1501':
     case 'EQ1502':
     case 'EQ1503':

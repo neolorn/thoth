@@ -550,6 +550,16 @@ export const injections = Object.freeze([
     caughtBy: 'packages/toolkit/test/derived-locale-policy.test.ts',
   },
   {
+    id: 'unread-policy-options-unreported',
+    invariant:
+      'A policy option the build did not read is named in an advisory, with the two comparisons it was left out of.',
+    source: 'packages/toolkit/src/compiler.ts',
+    find: '  if (policyLocales !== undefined && policyLocales.unreadOptions.length > 0) {',
+    replace:
+      '  if (policyLocales !== undefined && policyLocales.unreadOptions.length < 0) {',
+    caughtBy: 'packages/toolkit/test/derived-locale-policy.test.ts',
+  },
+  {
     id: 'build-origin-not-required',
     invariant:
       'A build under a locale-host policy is refused unless it is told which origin it answers at.',

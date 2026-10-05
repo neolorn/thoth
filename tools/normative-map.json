@@ -1780,6 +1780,12 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "3. Locale URL policies",
+      "statement": "A release MUST name, in an advisory that blocks no build, each option of the policy it did not read, and MUST say there that neither comparison was made for what those options hold, because a build that stays silent about a policy it could not read is read as a build that found the policy right.",
+      "checks": ["assurance:unread-policy-options-unreported"]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "3. Locale URL policies",
       "statement": "A release MUST be told which origin this build answers at, MUST require it to be one of the policy's own including its scheme, and MUST refuse a missing or unnamed origin at configuration, because otherwise every request answers 400, a prerender writes no files, and the build still succeeds.",
       "checks": [
         "assurance-runtime:router-origin-accepted-unnamed",

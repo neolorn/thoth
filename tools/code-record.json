@@ -64,7 +64,8 @@
     "EQ1803",
     "EQ1804",
     "EQ1805",
-    "EQ1806"
+    "EQ1806",
+    "EQ1417"
   ],
   "toolkitEvents": {
     "EQ-E1001": "compilation",

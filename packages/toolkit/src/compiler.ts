@@ -744,6 +744,27 @@ function compileProjectCore(
     }
   }
 
+  // A policy the comparison above and the one below could not read whole.
+  //
+  // Both stay silent about an option they did not read, because reporting what a constant or a
+  // spread might hold would block an application that is right. Silence alone reads as agreement,
+  // so the build says which options it left unchecked. Advisory, because building a policy from
+  // values a build cannot see is not a mistake.
+  if (policyLocales !== undefined && policyLocales.unreadOptions.length > 0) {
+    const names = policyLocales.unreadOptions.map((name) => `\`${name}\``);
+    const one = names.length === 1;
+    const listed = one
+      ? names[0]
+      : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+    diagnostics.push(
+      toolkitDiagnostic(
+        'EQ1417',
+        `This owner's locale URL policy takes ${listed} from something the build does not evaluate: a constant, a function, a spread, or a key that is not a literal. EQ1408 and EQ1409 were not checked for what ${one ? 'it holds' : 'they hold'}, so a locale with no address or no catalogs, a different default locale, or a route that begins with a segment the policy claims is not reported there. Write ${one ? 'it' : 'them'} out as literals in the call that builds the policy to have both checked.`,
+        { path: ['routes', policyLocales.sourcePath], severity: 'info' },
+      ),
+    );
+  }
+
   // A canonical route whose leading segment is one the policy already owns.
   //
   // The policy claims the first segment of an address before any route does: a locale prefix names

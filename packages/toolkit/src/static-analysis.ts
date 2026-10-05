@@ -966,6 +966,13 @@ export interface RoutePolicyDeclaration {
   readonly omitDefaultPrefix: boolean;
   /** The locale the policy treats as the default, when it names one. */
   readonly defaultLocale?: string;
+  /**
+   * The options of the call that were not read, by name: the locale table, `defaultLocale`,
+   * `aliases` and `localeNeutralRoots`, each listed when it, or an entry in it, comes from a
+   * constant, a function, a spread or a key that is not a literal. Empty for a policy written out
+   * whole. What these hold was compared with nothing.
+   */
+  readonly unreadOptions: readonly string[];
   /** The file the policy is declared in. */
   readonly sourcePath: string;
   /** Where the declaration begins, as characters from the start of that file. */
@@ -1063,27 +1070,58 @@ function routePolicyDeclaration(
     start: node.getStart(sourceFile),
     end: node.getEnd(),
   };
+  // The options the comparisons read, in the order a report names them. `aliases` exists only
+  // where the table's values are prefixes.
+  const compared = [
+    factory.localeOption,
+    'defaultLocale',
+    ...(factory.valuesArePrefixes ? ['aliases'] : []),
+    'localeNeutralRoots',
+  ];
   if (argument === undefined || !ts.isObjectLiteralExpression(argument)) {
     return Object.freeze({
       locales: Object.freeze([]),
       claimedSegments: Object.freeze([]),
       omitDefaultPrefix: factory.omitDefaultPrefix ?? false,
+      unreadOptions: Object.freeze(compared),
       ...common,
     });
   }
+  const unread = new Set<string>();
+  // A spread or a computed key can set an option the call never spells, so an option that is not
+  // written is absent only where the call has neither.
+  const canHideAnOption = argument.properties.some(
+    (item) =>
+      ts.isSpreadAssignment(item) || ts.isComputedPropertyName(item.name),
+  );
   // A spread written after an option can replace it, since the later one wins, and what the
   // spread holds is not evaluated. An option with a spread after it is therefore one the running
   // application may not be using, and it is left unread rather than compared.
   const option = (name: string): ts.Expression | undefined => {
     let written = false;
     for (const item of argument.properties) {
-      if (written && ts.isSpreadAssignment(item)) return undefined;
-      if (propertyName(item) === name) written = true;
+      if (written && ts.isSpreadAssignment(item)) {
+        unread.add(name);
+        return undefined;
+      }
+      if (
+        item.name !== undefined &&
+        (ts.isIdentifier(item.name) || ts.isStringLiteralLike(item.name)) &&
+        item.name.text === name
+      ) {
+        written = true;
+      }
     }
-    return objectProperty(argument, name);
+    const value = objectProperty(argument, name);
+    // Written in shorthand or as a method, or not written where something else may supply it.
+    if (value === undefined && (written || canHideAnOption)) unread.add(name);
+    return value;
   };
   const table = option(factory.localeOption);
   const defaultLocale = option('defaultLocale');
+  if (defaultLocale !== undefined && !ts.isStringLiteralLike(defaultLocale)) {
+    unread.add('defaultLocale');
+  }
   const locales: string[] = [];
   const claimed = new Map<string, ClaimedRouteSegment>();
   const claim = (segment: string, kind: ClaimedRouteSegment['kind']): void => {
@@ -1100,6 +1138,8 @@ function routePolicyDeclaration(
       table.elements.every((element) => ts.isStringLiteralLike(element))
     ) {
       locales.push(...literalElements(table));
+    } else if (table !== undefined) {
+      unread.add(factory.localeOption);
     }
   } else if (
     table !== undefined &&
@@ -1111,26 +1151,40 @@ function routePolicyDeclaration(
       if (name === undefined) continue;
       locales.push(name);
       const value = (item as ts.PropertyAssignment).initializer;
-      if (factory.valuesArePrefixes && ts.isStringLiteralLike(value)) {
-        claim(value.text, 'locale prefix');
-      }
+      if (!factory.valuesArePrefixes) continue;
+      if (ts.isStringLiteralLike(value)) claim(value.text, 'locale prefix');
+      // The locale is read and its prefix is not, so no route was held against that prefix.
+      else unread.add(factory.localeOption);
     }
+  } else if (table !== undefined) {
+    unread.add(factory.localeOption);
   }
   // Aliases are claimed by their key, the older spelling, and neutral roots by their own text.
   // Both are leading segments the resolver reads before it reads a route, which is the only thing
   // that puts them in this list.
-  const aliases = option('aliases');
-  if (
-    factory.valuesArePrefixes &&
-    aliases !== undefined &&
-    ts.isObjectLiteralExpression(aliases)
-  ) {
-    for (const item of aliases.properties) {
-      const name = propertyName(item);
-      if (name !== undefined) claim(name, 'locale alias');
+  if (factory.valuesArePrefixes) {
+    const aliases = option('aliases');
+    if (aliases !== undefined && ts.isObjectLiteralExpression(aliases)) {
+      for (const item of aliases.properties) {
+        const name = propertyName(item);
+        if (name !== undefined) claim(name, 'locale alias');
+        else unread.add('aliases');
+      }
+    } else if (aliases !== undefined) {
+      unread.add('aliases');
     }
   }
-  for (const root of literalElements(option('localeNeutralRoots'))) {
+  const roots = option('localeNeutralRoots');
+  if (
+    roots !== undefined &&
+    !(
+      ts.isArrayLiteralExpression(roots) &&
+      roots.elements.every((element) => ts.isStringLiteralLike(element))
+    )
+  ) {
+    unread.add('localeNeutralRoots');
+  }
+  for (const root of literalElements(roots)) {
     claim(root, 'locale-neutral root');
   }
   const omitOption = option('omitDefaultPrefix');
@@ -1146,6 +1200,7 @@ function routePolicyDeclaration(
     ...(defaultLocale !== undefined && ts.isStringLiteralLike(defaultLocale)
       ? { defaultLocale: defaultLocale.text }
       : {}),
+    unreadOptions: Object.freeze(compared.filter((name) => unread.has(name))),
     ...common,
   });
 }

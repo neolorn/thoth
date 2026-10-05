@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { diagnosticsBlock } from '../src/diagnostics.js';
 import { generateProject } from '../src/index.js';
 
 /**
@@ -193,6 +194,8 @@ interface Reading {
   readonly defaultLocale: boolean;
   /** Which of the three claimed segments a route was reported as colliding with. */
   readonly claimed: readonly string[];
+  /** The options the advisory names as not read, in the order it names them. */
+  readonly unread: readonly string[];
 }
 
 const quoted = (text: string): string[] =>
@@ -227,6 +230,15 @@ async function reading(policySource: string): Promise<Reading> {
       )
       .map(([, kind]) => kind)
       .sort(),
+    unread: generated.diagnostics
+      .filter(({ code }) => code === 'EQ1417')
+      .flatMap(({ summary }) =>
+        [
+          ...(summary.split(' from something')[0] ?? '').matchAll(
+            /`([^`]+)`/gu,
+          ),
+        ].map((match) => match[1] ?? ''),
+      ),
   };
 }
 
@@ -235,13 +247,22 @@ const EVERYTHING: Reading = {
   noCatalogs: ['de-DE'],
   defaultLocale: true,
   claimed: ['alias', 'neutral root', 'prefix'],
+  unread: [],
 };
+
+const EVERY_OPTION = [
+  'locales',
+  'defaultLocale',
+  'aliases',
+  'localeNeutralRoots',
+];
 
 const NOTHING: Reading = {
   noAddress: [],
   noCatalogs: [],
   defaultLocale: false,
   claimed: [],
+  unread: EVERY_OPTION,
 };
 
 afterEach(async () => {
@@ -335,6 +356,7 @@ describe('one option the call does not spell out is the part that goes unread', 
     const expected: Reading = {
       ...NOTHING,
       claimed: ['alias', 'neutral root'],
+      unread: ['locales'],
     };
     expect(
       await reading(
@@ -377,7 +399,11 @@ describe('one option the call does not spell out is the part that goes unread', 
           '});',
         ].join('\n'),
       ),
-    ).toEqual({ ...EVERYTHING, claimed: ['alias', 'neutral root'] });
+    ).toEqual({
+      ...EVERYTHING,
+      claimed: ['alias', 'neutral root'],
+      unread: ['locales'],
+    });
   });
 
   it('a default locale held in a constant is not compared', async () => {
@@ -393,7 +419,11 @@ describe('one option the call does not spell out is the part that goes unread', 
           '});',
         ].join('\n'),
       ),
-    ).toEqual({ ...EVERYTHING, defaultLocale: false });
+    ).toEqual({
+      ...EVERYTHING,
+      defaultLocale: false,
+      unread: ['defaultLocale'],
+    });
   });
 
   it('aliases and locale-neutral roots held in constants claim nothing', async () => {
@@ -410,7 +440,11 @@ describe('one option the call does not spell out is the part that goes unread', 
           '});',
         ].join('\n'),
       ),
-    ).toEqual({ ...EVERYTHING, claimed: ['prefix'] });
+    ).toEqual({
+      ...EVERYTHING,
+      claimed: ['prefix'],
+      unread: ['aliases', 'localeNeutralRoots'],
+    });
   });
 
   it('options spread in beside a literal table leave the table read and the rest unread', async () => {
@@ -428,7 +462,12 @@ describe('one option the call does not spell out is the part that goes unread', 
           '});',
         ].join('\n'),
       ),
-    ).toEqual({ ...EVERYTHING, defaultLocale: false, claimed: ['prefix'] });
+    ).toEqual({
+      ...EVERYTHING,
+      defaultLocale: false,
+      claimed: ['prefix'],
+      unread: ['defaultLocale', 'aliases', 'localeNeutralRoots'],
+    });
   });
 });
 
@@ -482,6 +521,7 @@ describe('an option a later spread can replace is not read', () => {
       ...EVERYTHING,
       defaultLocale: false,
       claimed: ['neutral root', 'prefix'],
+      unread: ['defaultLocale', 'aliases'],
     });
   });
 });
@@ -497,6 +537,7 @@ describe('a locale table written partly as literals is not read', () => {
   const UNREAD_TABLE: Reading = {
     ...NOTHING,
     claimed: ['alias', 'neutral root'],
+    unread: ['locales'],
   };
 
   it('a table with entries spread into it', async () => {
@@ -559,7 +600,7 @@ describe('a locale table written partly as literals is not read', () => {
           '});',
         ].join('\n'),
       ),
-    ).toEqual({ ...NOTHING, noAddress: ['fr-FR'] });
+    ).toEqual({ ...NOTHING, noAddress: ['fr-FR'], unread: [] });
     expect(
       await reading(
         [
@@ -570,6 +611,42 @@ describe('a locale table written partly as literals is not read', () => {
           '});',
         ].join('\n'),
       ),
-    ).toEqual(NOTHING);
+    ).toEqual({ ...NOTHING, unread: ['locales'] });
+  });
+});
+
+describe('a policy the build did not read whole is said to be unchecked', () => {
+  it('advises without blocking, at the file the policy is written in', async () => {
+    const generated = await generateProject({
+      project: await project(
+        [
+          `const LOCALES = ${TABLE};`,
+          'export const routePolicy = createPathPrefixLocalePolicy({',
+          "  defaultLocale: 'ar-EG',",
+          '  locales: LOCALES,',
+          '});',
+        ].join('\n'),
+      ),
+    });
+    const advisories = generated.diagnostics.filter(
+      ({ code }) => code === 'EQ1417',
+    );
+    expect(advisories).toHaveLength(1);
+    expect(advisories[0]?.severity).toBe('info');
+    expect(advisories[0]?.summary).toContain('EQ1408');
+    expect(advisories[0]?.summary).toContain('EQ1409');
+    expect(JSON.stringify(advisories[0])).toContain('src/app.ts');
+    expect(diagnosticsBlock(advisories)).toBe(false);
+  });
+
+  it('says nothing about a policy written as literals', async () => {
+    const generated = await generateProject({
+      project: await project(
+        `export const routePolicy = createPathPrefixLocalePolicy(${LITERAL_OPTIONS});`,
+      ),
+    });
+    expect(
+      generated.diagnostics.filter(({ code }) => code === 'EQ1417'),
+    ).toEqual([]);
   });
 });

@@ -174,11 +174,11 @@ A route loads a file through a lazy boundary that something in the initial bundl
 
 ### EQ1408
 
-The configuration and the locale URL policy disagree: a configured locale with no address, an address with no catalogs, two different default locales, or more than one policy for Equator to read. The policy is read from the options written as literals in the call that builds it. The locale table is compared only when every entry in it is written out, so a table taken from a constant or a function, or one with an entry that is spread in or has a computed key, is not compared, and neither is a default locale that is not a literal. An option with a spread written after it in that call is not read, because the spread can replace it. The running application then drops a policy locale that has no catalogs and refuses a policy whose default locale the configuration lacks; a configured locale with no address and a different default locale go unreported.
+The configuration and the locale URL policy disagree: a configured locale with no address, an address with no catalogs, two different default locales, or more than one policy for Equator to read. The policy is read from the options written as literals in the call that builds it. The locale table is compared only when every entry in it is written out, so a table taken from a constant or a function, or one with an entry that is spread in or has a computed key, is not compared, and neither is a default locale that is not a literal. An option with a spread written after it in that call is not read, because the spread can replace it. The running application then drops a policy locale that has no catalogs and refuses a policy whose default locale the configuration lacks; a configured locale with no address and a different default locale go unreported. EQ1417 names the options that were not read.
 
 ### EQ1409
 
-A route's leading segment is one this owner has already claimed for a locale, so the route and the locale compete for the same address. The claimed segments are the prefixes, aliases and locale-neutral roots written as literals in the call that builds the policy; one taken from a constant, a spread or a function is not read, no prefix is read from a locale table that is not written out whole, and nothing is read from an option with a spread written after it in that call. The running application refuses such an address when it builds one that carries no locale prefix.
+A route's leading segment is one this owner has already claimed for a locale, so the route and the locale compete for the same address. The claimed segments are the prefixes, aliases and locale-neutral roots written as literals in the call that builds the policy; one taken from a constant, a spread or a function is not read, no prefix is read from a locale table that is not written out whole, and nothing is read from an option with a spread written after it in that call. The running application refuses such an address when it builds one that carries no locale prefix. EQ1417 names the options that were not read.
 
 ### EQ1410
 
@@ -207,6 +207,10 @@ A route names its addresses in a way Angular refuses: neither a `path` nor a `ma
 ### EQ1416
 
 The router's inheritance strategy cannot be read: a `paramsInheritanceStrategy` the build cannot read as a string literal or a `const` bound to one, or more than one router configuration where one sets it. Every child route is read as inheriting its parent's data, which is Angular's default.
+
+### EQ1417
+
+The locale URL policy is not written out whole, so EQ1408 and EQ1409 were not checked for part of it. The advisory names each option of the call that builds the policy that the build did not read: the locale table, `defaultLocale`, `aliases` or `localeNeutralRoots`, where it or an entry in it comes from a constant, a function, a spread or a key that is not a literal, or has a spread written after it. It does not block a build. Write the named options as literals in the call to have them compared.
 
 ## The compiled artifacts
 
