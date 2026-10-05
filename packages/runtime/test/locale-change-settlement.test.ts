@@ -21,6 +21,7 @@ import {
   HEADING,
   LAZY,
   SHELL,
+  TITLE,
   UNCOMPILED,
   observed,
   participant,
@@ -335,42 +336,40 @@ describe('what a change starts beside itself', () => {
   });
 
   it('drops a progressive scope that loaded for a locale a later change has left', async () => {
+    // The lazy scope is the one the view requires here, and the shell arrives beside the change.
     const { localization, release, loads } = await ready({
       hold: [catalogKey('shell', 'ar-EG')],
       setup: { maximumCachedCatalogs: 1 },
+      options: { bootstrapScopes: [LAZY] },
     });
-    // Nothing required, so that the change back commits in fewer turns than the abandoned load
-    // takes to be told it was abandoned.
     await localization.changeLocale('ar-EG', {
       mode: 'progressive',
-      requiredScopes: [],
-      progressiveScopes: [LAZY, SHELL],
+      progressiveScopes: [SHELL],
     });
-    await expect
-      .poll(() => localization.scopeReadiness(LAZY)().status)
-      .toBe('ready');
+    await until(
+      () => localization.scopeReadiness(SHELL)().status === 'loading',
+    );
 
-    const back = await localization.changeLocale('en-US', {
-      requiredScopes: [],
-    });
+    const back = await localization.changeLocale('en-US');
     release(catalogKey('shell', 'ar-EG'));
     await settled();
 
     expect(back).toMatchObject({
       status: 'committed',
-      snapshot: { primaryLocale: 'en-US', loadedScopes: [] },
+      snapshot: { primaryLocale: 'en-US', loadedScopes: [LAZY] },
     });
     expect(localization.snapshot()).toMatchObject({
       primaryLocale: 'en-US',
-      loadedScopes: [],
+      loadedScopes: [LAZY],
     });
-    expect(diagnosticOf(() => localization.text(HEADING))).toMatchObject({
+    expect(diagnosticOf(() => localization.text(TITLE))).toMatchObject({
       code: 'scope-unavailable',
     });
 
-    // What was dropped is also let go of: the cache has room for one catalog nobody holds, so the
-    // Arabic one is loaded again when a change next asks for it.
-    await localization.changeLocale('ar-EG', { requiredScopes: [LAZY] });
+    // What was dropped is also let go of: the cache has room for one catalog nobody holds, and the
+    // Arabic shell took it when it was dropped, so the Arabic lazy catalog is loaded again when a
+    // change next asks for it.
+    await localization.changeLocale('ar-EG');
     expect(loads[catalogKey('lazy', 'ar-EG')]).toBe(2);
     localization.dispose();
   });

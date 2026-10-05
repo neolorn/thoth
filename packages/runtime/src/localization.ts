@@ -206,6 +206,30 @@ function isGeneratedLocaleFallbacks(
   });
 }
 
+/**
+ * Whether some locale inherits from itself through the chains of the locales it names.
+ *
+ * Inheritance leads towards root and never back, so a table that holds a ring was not resolved
+ * from one set of parents and says nothing a reader can be served from.
+ */
+function inheritsThroughItself(
+  chains: Readonly<Record<string, readonly string[]>>,
+): boolean {
+  const parents = new Map(Object.entries(chains));
+  const settled = new Set<string>();
+  const open = new Set<string>();
+  const visit = (locale: string): boolean => {
+    if (settled.has(locale)) return false;
+    if (open.has(locale)) return true;
+    open.add(locale);
+    const ring = (parents.get(locale) ?? []).some(visit);
+    open.delete(locale);
+    settled.add(locale);
+    return ring;
+  };
+  return [...parents.keys()].some(visit);
+}
+
 export interface LocalizationRuntimeOptions {
   readonly setup: LocalizationSetup;
   readonly bootstrapScopes: readonly LocalizationScope[];
@@ -871,8 +895,10 @@ function transitionKey(
   participantRevision: number,
   route?: LocalizationRouteSnapshot | null,
 ): string {
+  // Joined with a control character, which `freezeScope` refuses in an identifier, so that no
+  // scope can be named like a list of others.
   const scopes = (values: readonly LocalizationScope[]) =>
-    values.map(scopeIdentity).sort().join(',');
+    values.map(scopeIdentity).sort().join('\u0001');
   const routeKey =
     route === undefined
       ? 'preserve'
@@ -1095,8 +1121,10 @@ class LocalizationInternal {
       configuration.locales.some(
         (locale) =>
           typeof locale !== 'string' ||
-          locale.length === 0 ||
-          locale.length > 128,
+          locale.length > 128 ||
+          // Section 3 of `specs/03-locale-identity-and-resolution.spec.md`: a locale identity is
+          // a well-formed tag in its canonical form, which also rules out the empty string.
+          canonicalizeLanguageTag(locale) !== locale,
       ) ||
       new Set(configuration.locales).size !== configuration.locales.length ||
       !configuration.locales.includes(configuration.sourceLocale) ||
@@ -1118,10 +1146,11 @@ class LocalizationInternal {
           configuration.locales,
         )) ||
       (configuration.localeFallbacks !== undefined &&
-        !isGeneratedLocaleFallbacks(
+        (!isGeneratedLocaleFallbacks(
           configuration.localeFallbacks,
           configuration.locales,
-        )) ||
+        ) ||
+          inheritsThroughItself(configuration.localeFallbacks))) ||
       (configuration.pseudoLocales !== undefined &&
         !ɵisGeneratedPseudoLocales(
           configuration.pseudoLocales,
@@ -2303,11 +2332,14 @@ class LocalizationInternal {
     // switch would answer that request with `superseded` and the scope would simply not be there.
     // Folded in whatever the caller passed, because the caller of `changeLocale` and the caller of
     // `ensureScope` are usually not the same code and neither knows about the other.
+    // A change that names no required scope adds none to the ones already required, whether it
+    // leaves the list out or gives an empty one.
+    const named = options.requiredScopes ?? [];
     const carried = this.normalizeScopes(
       this.withOutstandingRequiredScopes(
-        options.requiredScopes ??
-          this.active?.publicSnapshot.requiredScopes ??
-          this.bootstrapScopes,
+        Array.isArray(named) && named.length === 0
+          ? (this.active?.publicSnapshot.requiredScopes ?? this.bootstrapScopes)
+          : named,
       ),
       'requiredScopes',
     );

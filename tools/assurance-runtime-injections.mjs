@@ -1109,8 +1109,8 @@ export const injections = Object.freeze([
     invariant:
       'A locale change loads the scopes the current view already requires in the target locale, startup scopes included, before it commits.',
     source: 'packages/runtime/src/localization.ts',
-    find: '        options.requiredScopes ??\n          this.active?.publicSnapshot.requiredScopes ??\n          this.bootstrapScopes,',
-    replace: '        options.requiredScopes ?? [],',
+    find: '          ? (this.active?.publicSnapshot.requiredScopes ?? this.bootstrapScopes)\n          : named,',
+    replace: '          ? []\n          : named,',
   },
   {
     id: 'superseded-scope-load-published',

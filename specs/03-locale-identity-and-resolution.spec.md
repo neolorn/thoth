@@ -31,6 +31,10 @@ pinned LDML release, and the pinned ECMA-402 behavior. Canonicalization:
 - applies the registered deprecated aliases of the pinned data;
 - rejects a malformed form such as `en_US` at a trusted configuration or authoring boundary.
 
+A generated configuration states each locale it serves in canonical form. The runtime refuses a
+configuration whose locale list holds a malformed tag or a tag in any other form, because no request
+could ever resolve to such a locale.
+
 Canonicalization MUST be deterministic across the toolkit, the server, and the browser. A difference
 between runtimes MUST NOT change an identity anything compares, stores, or exchanges.
 
@@ -64,7 +68,9 @@ at every step rather than only at the first, so a consumer may redirect a locale
 whole family inherits through.
 
 A declaration for a locale that no configured locale inherits through is an error, and so is one
-whose chain returns to a locale already in it.
+whose chain returns to a locale already in it. The runtime refuses a generated configuration whose
+chains lead a locale back to itself through the locales it names, as it refuses any other
+inconsistent table.
 
 ## 5. Aliases
 

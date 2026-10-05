@@ -152,6 +152,10 @@ candidate snapshot, and keep the current view rendered and usable until that can
 scope a coordinated change names as progressive is required by that change, and a release MUST load
 and admit it before the candidate commits.
 
+A change that names no required scope, by leaving the list out or by giving an empty one, requires
+the scopes already required: those of the committed snapshot, or the startup scopes when nothing is
+committed yet.
+
 In progressive mode a release MAY commit the primary locale and the ready scopes while
 registered regions finish independently, and MUST expose each region's transition identity,
 readiness, outcome, supplying locale, and direction. A release MUST NOT decide whether such a

@@ -33,6 +33,8 @@ const LAZY = scope('lazy');
  * is the identities of the other two written one after the other.
  */
 const JOINED = scope(`lazy${PROVIDER}:shell`);
+/** As `JOINED`, with the comma a list of identities might be written with between the two. */
+const LISTED = scope(`lazy,${PROVIDER}:shell`);
 
 // Compiled on first use, so that importing this file runs none of the library.
 let fixture: CompiledSet | undefined;
@@ -42,6 +44,7 @@ const compiled = (): CompiledSet =>
     (configuration as Record<string, unknown>)['scopes'] = [
       ...configuration.scopes,
       { ...row, scopeId: JOINED.scopeId },
+      { ...row, scopeId: LISTED.scopeId },
     ];
   }));
 
@@ -175,6 +178,21 @@ describe('two locale changes asked for while the first is in flight', () => {
     localization.dispose();
   });
 
+  it('are two when one scope is named like a list of two others', async () => {
+    const { localization } = await ready();
+    const first = localization.changeLocale('ar-EG', {
+      requiredScopes: [LAZY, SHELL],
+    });
+    const second = localization.changeLocale('ar-EG', {
+      requiredScopes: [LISTED],
+    });
+
+    expect(second).not.toBe(first);
+    await expect(first).resolves.toMatchObject({ status: 'superseded' });
+    await second;
+    localization.dispose();
+  });
+
   it('are two when they carry different routes', async () => {
     const { localization } = await ready();
     const first = localization.changeLocale('ar-EG', {
@@ -233,6 +251,29 @@ describe('a change to the locale already committed', () => {
     localization.dispose();
   });
 
+  it('keeps the scopes already required when it names none, by an empty list as by no list', async () => {
+    const { localization } = await ready();
+    const widened = await localization.changeLocale('en-US', {
+      requiredScopes: [SHELL, LAZY],
+    });
+
+    const unnamed = await localization.changeLocale('en-US', {
+      requiredScopes: [],
+    });
+    const moved = await localization.changeLocale('ar-EG', {
+      requiredScopes: [],
+    });
+
+    expect(unnamed.status === 'committed' && unnamed.snapshot).toBe(
+      widened.status === 'committed' && widened.snapshot,
+    );
+    expect(moved).toMatchObject({
+      status: 'committed',
+      snapshot: { requiredScopes: [SHELL, LAZY], loadedScopes: [SHELL, LAZY] },
+    });
+    localization.dispose();
+  });
+
   it('prepares the scopes again when one of them differs', async () => {
     const { localization } = await ready();
     await localization.changeLocale('en-US', { requiredScopes: [SHELL, LAZY] });
@@ -282,29 +323,17 @@ describe('the locale options of a switcher', () => {
     localization.dispose();
   });
 
-  it('name a locale that is not a well formed tag by its first subtag and by itself', () => {
-    // A locale list is checked for shape and not for grammar, and an option that threw here
-    // would take the whole switcher with it.
+  it('name a locale the host has no name for by the tag itself', () => {
     const { localization } = runtime({
-      locales: ['en-US', 'ar-EG', 'not_a_tag-region'],
+      locales: ['en-US', 'ar-EG', 'en-x-region'],
     });
 
     expect(
       localization
         .localeChoices()
-        .map(({ locale, language, selfName, direction }) => [
-          locale,
-          language,
-          selfName,
-          direction,
-        ])
+        .map(({ locale, language, direction }) => [locale, language, direction])
         .at(-1),
-    ).toStrictEqual([
-      'not_a_tag-region',
-      'not_a_tag',
-      'not_a_tag-region',
-      'ltr',
-    ]);
+    ).toStrictEqual(['en-x-region', 'en', 'ltr']);
     localization.dispose();
   });
 

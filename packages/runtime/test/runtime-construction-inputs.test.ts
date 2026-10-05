@@ -139,6 +139,11 @@ describe('the locale list of a generated configuration', () => {
     ['holds an empty member', ['en-US', 'ar-EG', '']],
     ['names a locale twice', ['en-US', 'ar-EG', 'ar-EG']],
     ['leaves out the source locale', ['ar-EG']],
+    // `specs/03-locale-identity-and-resolution.spec.md` section 3: a locale identity is a well
+    // formed tag in its canonical form, and a malformed one is rejected at this boundary.
+    ['holds a member that is not a language tag', ['en-US', 'ar-EG', 'en_GB']],
+    ['holds a tag in another case', ['en-US', 'ar-EG', 'fr-fr']],
+    ['holds a tag the pinned data replaces', ['en-US', 'ar-EG', 'iw-IL']],
   ])('is refused when it %s', (_label, locales) => {
     expect(fieldRefusal('locales', locales)).toMatchObject(REFUSED);
   });
@@ -157,7 +162,8 @@ describe('the locale list of a generated configuration', () => {
     const locales = (length: number) => [
       'en-US',
       'ar-EG',
-      `en-x-${'a'.repeat(length - 5)}`,
+      // Private use subtags of eight letters each, which is as long as a subtag may be.
+      `en-x-${'abcdefgh-'.repeat(14)}`.slice(0, length - 1) + 'z',
     ];
     expect(fieldRefusal('locales', locales(128))).toBeUndefined();
     expect(fieldRefusal('locales', locales(129))).toMatchObject(REFUSED);
@@ -353,13 +359,40 @@ describe('the generated fallback chains', () => {
     ).toBeUndefined();
   });
 
-  it('admits a chain for every locale', () => {
+  const among = (locales: readonly string[], table: unknown) =>
+    refusal((configuration) => {
+      assign(configuration, 'locales', locales);
+      assign(configuration, 'localeFallbacks', table);
+    });
+
+  it('admits chains that lead to one locale by different ways', () => {
     expect(
-      fieldRefusal('localeFallbacks', {
+      among(['en-US', 'ar-EG', 'fr-FR', 'fr-CA'], {
         'ar-EG': ['en-US'],
-        'en-US': ['ar-EG'],
+        'fr-FR': ['en-US'],
+        'fr-CA': ['fr-FR', 'en-US'],
       }),
     ).toBeUndefined();
+  });
+
+  it.each<readonly [string, readonly string[], unknown]>([
+    [
+      'two locales that inherit from each other',
+      ['en-US', 'ar-EG'],
+      { 'ar-EG': ['en-US'], 'en-US': ['ar-EG'] },
+    ],
+    [
+      'three locales that inherit in a ring',
+      ['en-US', 'ar-EG', 'fr-FR'],
+      { 'ar-EG': ['en-US'], 'en-US': ['fr-FR'], 'fr-FR': ['ar-EG'] },
+    ],
+    [
+      'a ring behind a locale that is not part of it',
+      ['en-US', 'ar-EG', 'fr-FR', 'fr-CA'],
+      { 'fr-CA': ['fr-FR'], 'fr-FR': ['ar-EG'], 'ar-EG': ['fr-FR'] },
+    ],
+  ])('are refused when they hold %s', (_label, locales, table) => {
+    expect(among(locales, table)).toMatchObject(REFUSED);
   });
 
   it.each<readonly [string, unknown]>([
