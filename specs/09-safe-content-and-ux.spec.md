@@ -331,6 +331,9 @@ through the calling context's own registry, so a binding belonging to another co
 installed in this one is refused, and MUST refuse a generated required descriptor whose trusted
 binding is absent or not byte-for-byte compatible.
 
+A release MUST refuse a descriptor that is not inert data, whether a binding carries it or a
+catalog requires it, with the typed configuration failure it gives any other malformed descriptor.
+
 A diagnostic about a security refusal MUST name a stable bounded cause category, and a release MUST
 NOT put a secret, a credential, a cookie, a token, a source or message body, a parameter, a slot
 payload, or unsafe text in one. The codes themselves and their stability are

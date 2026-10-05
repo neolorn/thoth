@@ -235,6 +235,117 @@ describe('the identity a descriptor carries', () => {
     expectRefused(() => admit([signed(SEGMENT)]));
   });
 
+  describe('that is not inert data', () => {
+    class Declared {
+      readonly kind = 'identifier-segment';
+      readonly id = 'test:state';
+      readonly syntax = 'lower-kebab';
+      readonly maximumLength = 32;
+    }
+    const holding = (fields: Fields, change: Fields): Fields => ({
+      ...signed(fields),
+      ...change,
+    });
+    const cyclic = (): Fields => {
+      const descriptor: Record<string, unknown> = { ...signed(SEGMENT) };
+      descriptor['self'] = descriptor;
+      return descriptor;
+    };
+
+    const NOT_INERT: readonly (readonly [string, () => unknown])[] = [
+      ['nothing at all', () => undefined],
+      ['a function', () => handler],
+      ['an instance of a class', () => new Declared()],
+      ['a symbol', () => Symbol('test:state')],
+      ['a big integer', () => 32n],
+      [
+        'a field that is not a finite number',
+        () => holding(FORMAT, { maximumOutputLength: Infinity }),
+      ],
+      [
+        'a field that is not a number at all',
+        () => holding(SEGMENT, { maximumLength: Number.NaN }),
+      ],
+      [
+        'a field that is negative zero',
+        () => holding(SEGMENT, { maximumLength: -0 }),
+      ],
+      [
+        'a field that is a function',
+        () => holding(SEGMENT, { syntax: handler }),
+      ],
+      [
+        'a field that is undefined',
+        () => holding(FUNCTION, { options: undefined }),
+      ],
+      [
+        'a field that is an instance of a class',
+        () => holding(FUNCTION, { options: new Declared() }),
+      ],
+      [
+        'a field read through an accessor',
+        () =>
+          Object.defineProperty({ ...signed(SEGMENT) }, 'syntax', {
+            get: () => 'lower-kebab',
+            enumerable: true,
+          }),
+      ],
+      [
+        'a field named by a symbol',
+        () => holding(SEGMENT, { [Symbol('extra')]: 1 }),
+      ],
+      ['a field that holds the descriptor itself', cyclic],
+      [
+        'text that is not well-formed Unicode',
+        () => holding(FORMAT, { inputType: String.fromCharCode(0xd800) }),
+      ],
+      [
+        'a list with a hole in it',
+        () => holding(SLOT, { options: { tone: new Array<string>(2) } }),
+      ],
+    ];
+
+    it.each(NOT_INERT)(
+      'refuses a binding whose descriptor is %s',
+      (_label, descriptor) => {
+        const failure = refusalOf(() =>
+          defineRuntimeExtensions([
+            { descriptor: descriptor() } as unknown as RuntimeExtensionBinding,
+          ]),
+        );
+        expect(failure.diagnostic.code).toBe('invalid-configuration');
+        expect(failure.diagnostic.outcome).toBe('operational-failure');
+      },
+    );
+
+    it.each(NOT_INERT)(
+      'refuses a catalog whose required descriptor is %s',
+      (_label, descriptor) => {
+        expectRefused(
+          () =>
+            new RuntimeExtensions(
+              [],
+              [descriptor() as unknown as RuntimeExtensionDescriptor],
+            ),
+        );
+      },
+    );
+
+    it('keeps what made the descriptor unreadable as the cause of the refusal', () => {
+      const failure = refusalOf(() =>
+        admit({ ...signed(SEGMENT), maximumLength: Infinity }),
+      );
+      expect(failure.cause).toBeInstanceOf(TypeError);
+    });
+
+    it('gives the refusal of a readable descriptor no cause', () => {
+      const failure = refusalOf(() =>
+        admit(signed({ ...SEGMENT, maximumLength: 0 })),
+      );
+      expect(Object.hasOwn(failure, 'cause')).toBe(false);
+    });
+  });
+
   it('refuses a kind Equator does not define, whichever handler comes with it', () => {
     const descriptor = signed({ kind: 'collation-adapter', id: 'test:sort' });
     expectRefused(() => admit(descriptor));

@@ -36,26 +36,38 @@ const extensionValueTypes = new Set([
   'string',
 ]);
 
-function descriptorSnapshot(value: unknown) {
-  return snapshotInertJson(value, {
-    maximumDepth: 16,
-    maximumNodes: 100_000,
-    maximumCodeUnits: 1_048_576,
-  });
-}
-
 function key(descriptor: RuntimeExtensionDescriptor): string {
   return `${descriptor.kind}\u0000${descriptor.id}`;
 }
 
-function invalid(message: string): never {
+function invalid(
+  message: string,
+  options?: { readonly cause: unknown },
+): never {
   throw new LocalizationError(
     Object.freeze({
       code: 'invalid-configuration',
       outcome: 'operational-failure',
       message,
     }),
+    options,
   );
+}
+
+const NOT_INERT = 'Runtime extension descriptor must be inert data.';
+
+function descriptorSnapshot(value: unknown) {
+  try {
+    return snapshotInertJson(value, {
+      maximumDepth: 16,
+      maximumNodes: 100_000,
+      maximumCodeUnits: 1_048_576,
+    });
+  } catch (cause) {
+    // The snapshot refuses with a bare TypeError, and an application composing its extensions is
+    // told of every other malformed descriptor through the typed configuration failure.
+    return invalid(NOT_INERT, { cause });
+  }
 }
 
 function validBound(value: unknown, maximum: number): value is number {
@@ -126,7 +138,7 @@ function validOptions(value: unknown, rich: boolean): boolean {
 function normalizeDescriptor(candidate: unknown): RuntimeExtensionDescriptor {
   const snapshot = descriptorSnapshot(candidate);
   if (!isDataRecord(snapshot.value)) {
-    return invalid('Runtime extension descriptor must be inert data.');
+    return invalid(NOT_INERT);
   }
   const descriptor = snapshot.value;
   if (
