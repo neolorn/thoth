@@ -263,6 +263,30 @@ describe('date text that does not fit the pattern', () => {
     );
   });
 
+  it('reports a day or a month too large to be a date as a date that does not exist', () => {
+    // Twenty digits is past what a number holds exactly, and four hundred is past every number.
+    for (const field of ['9'.repeat(20), '9'.repeat(400)]) {
+      for (const text of [`2024-01-${field}`, `2024-${field}-01`]) {
+        expect(read(text, { ...ISO, maximumCharacters: 500 })).toMatchObject({
+          status: 'out-of-range',
+          diagnostic: { reason: 'malformed-input' },
+        });
+      }
+    }
+  });
+
+  it('refuses a bound whose fields are not whole numbers', () => {
+    for (const bound of [
+      rawDate(2024.5, 1, 2),
+      rawDate(2024, 1.5, 2),
+      rawDate(2024, 1, 2.5),
+    ]) {
+      expect(read('2024-01-02', { ...ISO, minimum: bound }).status).toBe(
+        'policy-rejected',
+      );
+    }
+  });
+
   it('reads the year by its position in a day-first field', () => {
     expect(
       read('02/01/24', { ...ISO, order: 'day-month-year', separator: '/' })

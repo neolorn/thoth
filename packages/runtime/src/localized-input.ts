@@ -545,9 +545,6 @@ function parseNumeric(
     );
   }
   if (
-    (profile.maximumCharacters !== undefined &&
-      (!Number.isSafeInteger(profile.maximumCharacters) ||
-        profile.maximumCharacters < 1)) ||
     (profile.maximumFractionDigits !== undefined &&
       (!Number.isSafeInteger(profile.maximumFractionDigits) ||
         profile.maximumFractionDigits < 0)) ||
@@ -805,15 +802,9 @@ function validGregorianDateFields(
   month: number,
   day: number,
 ): boolean {
-  if (
-    !Number.isSafeInteger(year) ||
-    !Number.isSafeInteger(month) ||
-    !Number.isSafeInteger(day)
-  ) {
-    return false;
-  }
+  // A field that is not a whole number, or is too large for a date, leaves the probe unable to
+  // report the same field back, so the comparison below refuses it with the dates that do not exist.
   const probe = new Date(0);
-  probe.setUTCHours(0, 0, 0, 0);
   probe.setUTCFullYear(year, month - 1, day);
   return (
     probe.getUTCFullYear() === year &&
@@ -922,17 +913,14 @@ function parsePlainDate(
       context,
     );
   }
-  const numbers = values.map((value) => Number(value));
+  // The pattern was held to the three orders, and each names the year, the month and the day once.
   const order = profile.order.split('-');
-  const byField = Object.fromEntries(
-    order.map((name, index) => [name, numbers[index]]),
-  ) as Readonly<Record<string, number | undefined>>;
-  if (
-    byField['year'] === undefined ||
-    byField['month'] === undefined ||
-    byField['day'] === undefined ||
-    (values[order.indexOf('year')] as string).length !== 4
-  ) {
+  const digitsOf = (name: string): string =>
+    values[order.indexOf(name)] as string;
+  const year = Number(digitsOf('year'));
+  const month = Number(digitsOf('month'));
+  const day = Number(digitsOf('day'));
+  if (digitsOf('year').length !== 4) {
     return failed(
       'invalid',
       text,
@@ -941,21 +929,10 @@ function parsePlainDate(
     );
   }
   try {
-    if (
-      !validGregorianDateFields(
-        byField['year'],
-        byField['month'],
-        byField['day'],
-      )
-    ) {
+    if (!validGregorianDateFields(year, month, day)) {
       throw new Error('The declared civil date does not exist.');
     }
-    const value = plainDate(
-      byField['year'],
-      byField['month'],
-      byField['day'],
-      calendar,
-    );
+    const value = plainDate(year, month, day, calendar);
     if (
       (profile.minimum !== undefined &&
         comparePlainDate(value, profile.minimum) < 0) ||
@@ -1960,15 +1937,9 @@ function parseRfc3339(
   const date = new Date(0);
   date.setUTCHours(hour, minute, second, 0);
   date.setUTCFullYear(year, month - 1, day);
+  // A date that exists in a four-digit year, moved by at most fourteen hours, is a whole number of
+  // milliseconds well inside what a number holds exactly.
   const milliseconds = date.getTime() - offsetMinutes * 60_000;
-  if (!Number.isSafeInteger(milliseconds)) {
-    return failed(
-      'unsupported-capability',
-      text,
-      'The instant is outside the supported native range.',
-      context,
-    );
-  }
   const fractionNanoseconds = BigInt((fraction + '000000000').slice(0, 9));
   return valid(
     text,
@@ -2199,7 +2170,9 @@ function localizedDurationText(
   }
   if (!validDurationPattern(profile, syntax)) return undefined;
   try {
-    const canonical = duration(
+    // Throws for a value that is not a duration: one written by hand with a field that is not a
+    // whole number from zero up, or a sign that disagrees with its fields.
+    duration(
       {
         years: value.years,
         months: value.months,
@@ -2211,12 +2184,6 @@ function localizedDurationText(
       },
       value.sign,
     );
-    if (
-      canonical.sign !== value.sign ||
-      canonical.seconds.value !== value.seconds.value
-    ) {
-      return undefined;
-    }
   } catch {
     return undefined;
   }
@@ -2420,18 +2387,9 @@ function formatRfc3339(
     seconds -= 1n;
     fraction += billion;
   }
-  const milliseconds = seconds * 1_000n;
-  const nativeMilliseconds = Number(milliseconds);
-  if (
-    !Number.isSafeInteger(nativeMilliseconds) ||
-    BigInt(nativeMilliseconds) !== milliseconds
-  ) {
-    return formattingPolicyFailure(
-      'The instant is outside the exact native RFC 3339 formatting range.',
-      context,
-    );
-  }
-  const date = new Date(nativeMilliseconds);
+  // A count of milliseconds too large to hold exactly is also past the range of a date, so the date
+  // below is not a time at all and the same refusal covers it.
+  const date = new Date(Number(seconds * 1_000n));
   const year = date.getUTCFullYear();
   if (!Number.isFinite(date.getTime()) || year < 0 || year > 9999) {
     return formattingPolicyFailure(

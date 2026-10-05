@@ -5053,30 +5053,6 @@
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "profile.maximumCharacters !== undefined &&\n      (!Number.isSafeInteger(profile.maximumCharacters) ||\n        profile.maximumCharacters < 1)",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "parseNumeric is called only from parseLocalizedInput (line 1933), which has already refused any maximumCharacters that is not a safe integer above zero through validCharacterLimit (lines 693-700 and 1895), so this clause is never true here."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "LogicalOperator",
-      "original": "!Number.isSafeInteger(profile.maximumCharacters) ||\n        profile.maximumCharacters < 1",
-      "replacement": "!Number.isSafeInteger(profile.maximumCharacters) && profile.maximumCharacters < 1",
-      "category": "unreachable",
-      "reason": "parseLocalizedInput refuses any maximumCharacters that is not a safe integer above zero (validCharacterLimit, lines 693-700 and 1895) before parseNumeric runs, so both operands are always false here and either connective gives false."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "profile.maximumCharacters < 1",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "parseLocalizedInput refuses a maximumCharacters below 1 (validCharacterLimit, lines 693-700 and 1895) before parseNumeric runs, so this comparison is never true here."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
       "mutator": "StringLiteral",
       "original": "'The localized input profile is invalid.'",
       "replacement": "\"\"",
@@ -5237,46 +5213,6 @@
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "!Number.isSafeInteger(year) ||\n    !Number.isSafeInteger(month) ||\n    !Number.isSafeInteger(day)",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "a field that is not a safe integer makes the probe date invalid, so the comparison on lines 739-741 returns false as well"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "LogicalOperator",
-      "original": "!Number.isSafeInteger(year) ||\n    !Number.isSafeInteger(month) ||\n    !Number.isSafeInteger(day)",
-      "replacement": "(!Number.isSafeInteger(year) || !Number.isSafeInteger(month)) && !Number.isSafeInteger(day)",
-      "category": "equivalent",
-      "reason": "a field that is not a safe integer makes the probe date invalid, so the comparison on lines 739-741 returns false as well"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "LogicalOperator",
-      "original": "!Number.isSafeInteger(year) ||\n    !Number.isSafeInteger(month)",
-      "replacement": "!Number.isSafeInteger(year) && !Number.isSafeInteger(month)",
-      "category": "equivalent",
-      "reason": "a field that is not a safe integer makes the probe date invalid, so the comparison on lines 739-741 returns false as well"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "!Number.isSafeInteger(year) ||\n    !Number.isSafeInteger(month)",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "a field that is not a safe integer makes the probe date invalid, so the comparison on lines 739-741 returns false as well"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "MethodExpression",
-      "original": "probe.setUTCHours(0, 0, 0, 0)",
-      "replacement": "probe.setUTCMinutes(0, 0, 0, 0)",
-      "category": "equivalent",
-      "reason": "the probe is new Date(0), whose UTC hour, minute, second and millisecond are already zero"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
       "mutator": "LogicalOperator",
       "original": "probe.getUTCFullYear() === year &&\n    probe.getUTCMonth() === month - 1 &&\n    probe.getUTCDate() === day",
       "replacement": "probe.getUTCFullYear() === year && probe.getUTCMonth() === month - 1 || probe.getUTCDate() === day",
@@ -5395,62 +5331,6 @@
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "LogicalOperator",
-      "original": "byField['year'] === undefined ||\n    byField['month'] === undefined ||\n    byField['day'] === undefined",
-      "replacement": "(byField['year'] === undefined || byField['month'] === undefined) && byField['day'] === undefined",
-      "category": "unreachable",
-      "reason": "line 773 admits only the three orders, each naming year, month and day, and lines 828 and 836-844 leave exactly three numeric fields, so no field is undefined"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "byField['year'] === undefined ||\n    byField['month'] === undefined",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "line 773 admits only the three orders, each naming year, month and day, and lines 828 and 836-844 leave exactly three numeric fields, so no field is undefined"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "byField['year'] === undefined ||\n    byField['month'] === undefined ||\n    byField['day'] === undefined",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "line 773 admits only the three orders, each naming year, month and day, and lines 828 and 836-844 leave exactly three numeric fields, so no field is undefined"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "byField['year'] === undefined",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "line 773 admits only the three orders, each naming year, month and day, and lines 828 and 836-844 leave exactly three numeric fields, so no field is undefined"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "LogicalOperator",
-      "original": "byField['year'] === undefined ||\n    byField['month'] === undefined",
-      "replacement": "byField['year'] === undefined && byField['month'] === undefined",
-      "category": "unreachable",
-      "reason": "line 773 admits only the three orders, each naming year, month and day, and lines 828 and 836-844 leave exactly three numeric fields, so no field is undefined"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "byField['month'] === undefined",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "line 773 admits only the three orders, each naming year, month and day, and lines 828 and 836-844 leave exactly three numeric fields, so no field is undefined"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "byField['day'] === undefined",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "line 773 admits only the three orders, each naming year, month and day, and lines 828 and 836-844 leave exactly three numeric fields, so no field is undefined"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -6073,14 +5953,6 @@
     {
       "file": "packages/runtime/src/localized-input.ts",
       "mutator": "ConditionalExpression",
-      "original": "!Number.isSafeInteger(milliseconds)",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "line 1777 admits only a four-digit year and line 1840 an offset of at most 14 hours, which keeps the millisecond count within 2.6e14, far inside the safe integers"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
       "original": "!validTimePattern(profile)",
       "replacement": "false",
       "category": "equivalent",
@@ -6190,38 +6062,6 @@
       "replacement": "true",
       "category": "equivalent",
       "reason": "validTimePattern (lines 953-970, checked on line 2002) admits a day period exactly when the hour cycle is h11 or h12, which is exactly when period is set, so the two operands are always equal"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "canonical.sign !== value.sign ||\n      canonical.seconds.value !== value.seconds.value",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "duration() returns the sign and the seconds object it was given or throws, so neither comparison is ever true"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "LogicalOperator",
-      "original": "canonical.sign !== value.sign ||\n      canonical.seconds.value !== value.seconds.value",
-      "replacement": "canonical.sign !== value.sign && canonical.seconds.value !== value.seconds.value",
-      "category": "equivalent",
-      "reason": "duration() returns the sign and the seconds object it was given or throws, so neither comparison is ever true"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "canonical.sign !== value.sign",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "duration() returns the sign and the seconds object it was given or throws, so neither comparison is ever true"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "canonical.seconds.value !== value.seconds.value",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "duration() returns the sign and the seconds object it was given or throws, so neither comparison is ever true"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -6628,38 +6468,6 @@
       "file": "packages/runtime/src/localized-input.ts",
       "mutator": "StringLiteral",
       "original": "'The invariant value cannot round-trip through the declared localized input profile.'",
-      "replacement": "\"\"",
-      "category": "message-wording",
-      "reason": "the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "!Number.isSafeInteger(nativeMilliseconds) ||\n    BigInt(nativeMilliseconds) !== milliseconds",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "a millisecond count that is not a safe integer is past the platform date range of 8.64e15, so line 2318 returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "BigInt(nativeMilliseconds) !== milliseconds",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "a safe-integer millisecond count converts back to the same BigInt, so this operand is never true"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n    return formattingPolicyFailure(\n      'The instant is outside the exact native RFC 3339 formatting range.',\n      context,\n    );\n  }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "a millisecond count that is not a safe integer is past the platform date range of 8.64e15, so line 2318 returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "StringLiteral",
-      "original": "'The instant is outside the exact native RFC 3339 formatting range.'",
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code"
