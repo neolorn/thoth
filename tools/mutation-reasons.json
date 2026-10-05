@@ -968,14 +968,6 @@
     {
       "file": "packages/runtime/http/src/handler.ts",
       "mutator": "ConditionalExpression",
-      "original": "first !== undefined",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "With no first segment the mutant asks `localeNeutralRoots.includes(undefined)`, which is false for a list of strings, and falls through to line 761 as the original does; the roots are strings by LocaleUrlPolicy and by the policy constructors."
-    },
-    {
-      "file": "packages/runtime/http/src/handler.ts",
-      "mutator": "ConditionalExpression",
       "original": "resolution.status === 'success' || resolution.status === 'redirect'",
       "replacement": "true",
       "category": "equivalent",
@@ -2779,14 +2771,6 @@
     },
     {
       "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "calendar === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "With the first clause gone an undefined calendar yields { calendar: undefined }, which Intl.DateTimeFormat and the cache key both read as absent; the only caller that spreads the result over a context, formatZonedDateTime, passes value.calendar, which zonedDateTime always sets (in zonedDateTime default), and the plain-date callers have refused every non-iso8601 calendar first (in plainDateMilliseconds and formatPlainDateTime)."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
       "original": "'Native Date cannot safely construct non-ISO plain-date fields.'",
       "replacement": "\"\"",
@@ -2856,22 +2840,6 @@
       "replacement": "{}",
       "category": "equivalent",
       "reason": "The catch block returns undefined and an empty block falls off the end of the function, which also returns undefined."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "start > at",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "The mutant only adds empty literals between adjacent placeholders: a leading one is trimmed (in trimToPopulated), the run scan steps over literals (in removeEmptyFields), a merge with an empty literal returns the other text (in coalesceLiterals), and an empty literal writes no part (in formatPersonName)."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "EqualityOperator",
-      "original": "start > at",
-      "replacement": "start >= at",
-      "category": "equivalent",
-      "reason": "The mutant only adds empty literals between adjacent placeholders: a leading one is trimmed (in trimToPopulated), the run scan steps over literals (in removeEmptyFields), a merge with an empty literal returns the other text (in coalesceLiterals), and an empty literal writes no part (in formatPersonName)."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
