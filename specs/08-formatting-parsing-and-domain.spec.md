@@ -245,6 +245,14 @@ whichever casing or separator convention the originating system uses, and a serv
 it spells its codes does not orphan an application's translations. The transformation encodes
 nothing about any particular error taxonomy.
 
+A word is a run of ASCII letters and ASCII digits, and a new word also starts where an uppercase
+ASCII letter follows a lowercase ASCII letter or a digit. A release MUST read every other
+character as a separator, a letter outside ASCII included, and MUST read the code as it is given,
+with no Unicode normalization, because a message identifier is written in ASCII letters and digits
+alone. A code with no word in it, and a code with a word that begins with a digit, derive no
+identifier a catalog can hold; such a code pairs with no message by name and is answered the way
+any code without a message is.
+
 Nothing is written per code. A release MUST NOT require a mapping line per code, because that
 is a line every new code needs and eventually does not get, and what the reader then sees is a
 generic apology instead of what went wrong. An explicit binding stays available for what a

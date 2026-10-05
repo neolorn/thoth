@@ -30,6 +30,7 @@ describe('the message identifier a code derives', () => {
     ['insufficientStock', 'insufficient-stock'],
     ['Payment.Declined', 'payment-declined'],
     ['ORDER_2_EXPIRED', 'order-2-expired'],
+    ['step2Failed', 'step2-failed'],
   ])('reads %s as %s', (code, expected) => {
     expect(issueMessageId(code)).toBe(expected);
   });
@@ -70,6 +71,17 @@ describe('the message identifier a code derives', () => {
     expect(issueMessageId('v9Beta')).toBe('v9-beta');
   });
 
+  it('reads only ASCII letters and digits, whichever way another letter is encoded', () => {
+    const composed = `caf${String.fromCharCode(0xe9)}`;
+    const decomposed = `cafe${String.fromCharCode(0x301)}`;
+
+    expect(issueMessageId(composed)).toBe('caf');
+    expect(issueMessageId(decomposed)).toBe('cafe');
+    expect(issueMessageId(`${composed}Closed`)).toBe('caf-closed');
+    expect(issueMessageId(`stra${String.fromCharCode(0xdf)}e`)).toBe('stra-e');
+    expect(issueMessageId(String.fromCharCode(0x661, 0x662))).toBe('');
+  });
+
   it('answers with the empty identifier for a code with nothing usable in it', () => {
     expect(issueMessageId('')).toBe('');
     expect(issueMessageId('._-')).toBe('');
@@ -86,11 +98,22 @@ describe('the member of a group a code names', () => {
   });
 
   it('is found where its identity ends in the derived identifier', () => {
-    const message = handle('shell:shell:issue.order-2-expired');
+    const message = handle('shell:shell:issue.step2-failed');
 
-    expect(issueMessage({ order2Expired: message }, 'ORDER_2_EXPIRED')).toBe(
+    expect(issueMessage({ step2Failed: message }, 'STEP2_FAILED')).toBe(
       message,
     );
+    expect(issueMessage({ step2Failed: message }, 'step2Failed')).toBe(message);
+  });
+
+  it('is nothing for a code with a word that begins with a digit, which no catalog can hold', () => {
+    // The only identity that ends in the derived identifier is one generation never writes, so a
+    // member that carries a real identity under the derived name is another message.
+    const message = handle('shell:shell:issue.order2-expired');
+
+    expect(
+      issueMessage({ order2Expired: message }, 'ORDER_2_EXPIRED'),
+    ).toBeUndefined();
   });
 
   it('is not a member that holds nothing', () => {

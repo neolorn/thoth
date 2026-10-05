@@ -15,20 +15,27 @@ import { GENERATED_ABI, type PlainMessageHandle } from '@neolorn/equator/core';
  *   INSUFFICIENT_STOCK   -> insufficient-stock
  *   insufficientStock    -> insufficient-stock
  *   Payment.Declined     -> payment-declined
- *   ORDER_2_EXPIRED      -> order-2-expired
+ *   step2Failed          -> step2-failed
  *
- * Word boundaries are every run of characters that is neither a letter nor a digit, plus the
- * position where a lowercase letter or a digit is followed by an uppercase letter. That second
- * rule is what makes `insufficientStock` and `INSUFFICIENT_STOCK` the same message: a service
- * that changes how it spells its codes should not orphan an application's translations.
+ * Word boundaries are every run of characters that is neither an ASCII letter nor an ASCII digit,
+ * plus the position where a lowercase ASCII letter or a digit is followed by an uppercase ASCII
+ * letter. That second rule is what makes `insufficientStock` and `INSUFFICIENT_STOCK` the same
+ * message: a service that changes how it spells its codes should not orphan an application's
+ * translations.
  *
- * A code with nothing usable in it yields the empty string, and the caller treats that the way it
- * treats any code no message answers.
+ * Only ASCII letters and digits are read, because those are the characters a message identifier is
+ * written in. Every other character separates words, a letter outside ASCII included, and a code
+ * is read as it is given, with no Unicode normalization: an accented letter sent as one character
+ * is a separator, and sent as a letter and a combining mark it is that letter and a separator.
+ *
+ * A code with nothing usable in it yields the empty string, and a code with a word that begins
+ * with a digit, `ORDER_2_EXPIRED` as `order-2-expired`, yields an identifier no catalog can hold.
+ * The caller treats both the way it treats any code no message answers.
  */
 export function issueMessageId(code: string): string {
   const words: string[] = [];
   let current = '';
-  let previous = '';
+  let afterLowerOrDigit = false;
   for (const character of code) {
     const upper = character >= 'A' && character <= 'Z';
     const lower = character >= 'a' && character <= 'z';
@@ -36,20 +43,16 @@ export function issueMessageId(code: string): string {
     if (!upper && !lower && !digit) {
       if (current.length > 0) words.push(current);
       current = '';
-      previous = '';
+      afterLowerOrDigit = false;
       continue;
     }
-    const boundary =
-      upper &&
-      current.length > 0 &&
-      ((previous >= 'a' && previous <= 'z') ||
-        (previous >= '0' && previous <= '9'));
+    const boundary = upper && afterLowerOrDigit;
     if (boundary) {
       words.push(current);
       current = '';
     }
     current += upper ? character.toLowerCase() : character;
-    previous = character;
+    afterLowerOrDigit = !upper;
   }
   if (current.length > 0) words.push(current);
   return words.join('-');
@@ -63,15 +66,12 @@ export function issueMessageId(code: string): string {
  * call site, because the two only work if they agree.
  */
 function memberName(messageId: string): string {
-  const [first, ...rest] = messageId.split('-');
-  return [
-    first ?? '',
-    ...rest.map((word) =>
-      word.length === 0
-        ? word
-        : `${word[0]?.toUpperCase() ?? ''}${word.slice(1)}`,
-    ),
-  ].join('');
+  return messageId
+    .split('-')
+    .map((word, index) =>
+      index === 0 ? word : `${word.charAt(0).toUpperCase()}${word.slice(1)}`,
+    )
+    .join('');
 }
 
 function isPlainHandle(value: unknown): value is PlainMessageHandle {

@@ -3046,6 +3046,12 @@
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "9. External issue codes",
+      "statement": "A release MUST read every other character as a separator, a letter outside ASCII included, and MUST read the code as it is given, with no Unicode normalization, because a message identifier is written in ASCII letters and digits alone.",
+      "checks": ["assurance:issue-code-letter-outside-ascii-read-as-a-word"]
+    },
+    {
+      "spec": "08-formatting-parsing-and-domain.spec.md",
+      "section": "9. External issue codes",
       "statement": "A release MUST NOT require a mapping line per code, because that is a line every new code needs and eventually does not get, and what the reader then sees is a generic apology instead of what went wrong.",
       "checks": ["assurance-runtime:issue-convention-not-consulted"]
     },

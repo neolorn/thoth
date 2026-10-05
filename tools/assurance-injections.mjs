@@ -4006,6 +4006,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/issue-presentation.test.ts',
   },
   {
+    id: 'issue-code-letter-outside-ascii-read-as-a-word',
+    invariant:
+      'An issue code is read in ASCII letters and digits alone, so a letter outside ASCII separates words and the derived identifier is one a catalog can hold.',
+    source: 'packages/runtime/src/issue-convention.ts',
+    find: "    const lower = character >= 'a' && character <= 'z';",
+    replace: '    const lower = /\\p{Ll}/u.test(character);',
+    caughtBy: 'packages/runtime/test/issue-code-message-pairing.test.ts',
+  },
+  {
     id: 'issue-message-accepted-by-name-alone',
     invariant:
       "A message found by an issue code's name is accepted only when its own identity ends in the derived identifier.",
