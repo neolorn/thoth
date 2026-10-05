@@ -743,9 +743,9 @@ export const injections = Object.freeze([
     invariant:
       "A date-time message input is a Date or an epoch number; a string is refused rather than handed to the platform's date parser.",
     source: 'packages/runtime/src/evaluator.ts',
-    find: "    return typeof value === 'string' && contract.enum.includes(value);\n  }\n  switch (contract.type) {\n    case 'boolean':\n      return typeof value === 'boolean';\n    case 'date-time':\n      return (\n",
+    find: "    return (contract.enum as readonly unknown[]).includes(value);\n  }\n  switch (contract.type) {\n    case 'boolean':\n      return typeof value === 'boolean';\n    case 'date-time':\n      return (\n",
     replace:
-      "    return typeof value === 'string' && contract.enum.includes(value);\n  }\n  switch (contract.type) {\n    case 'boolean':\n      return typeof value === 'boolean';\n    case 'date-time':\n      return (\n        typeof value === 'string' ||\n",
+      "    return (contract.enum as readonly unknown[]).includes(value);\n  }\n  switch (contract.type) {\n    case 'boolean':\n      return typeof value === 'boolean';\n    case 'date-time':\n      return (\n        typeof value === 'string' ||\n",
   },
   {
     id: 'unknown-issue-presented-as-known',

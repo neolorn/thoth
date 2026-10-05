@@ -3729,9 +3729,9 @@ export const injections = Object.freeze([
     invariant:
       'A value is matched against a closed literal set exactly, without case folding, trimming or string conversion.',
     source: 'packages/runtime/src/evaluator.ts',
-    find: "    return typeof value === 'string' && contract.enum.includes(value);",
+    find: '    return (contract.enum as readonly unknown[]).includes(value);',
     replace:
-      '    return contract.enum.includes(String(value).trim().toLowerCase());',
+      '    return (contract.enum as readonly unknown[]).includes(String(value).trim().toLowerCase());',
     caughtBy: 'packages/runtime/test/closed-literal-set.test.ts',
   },
   {
@@ -3739,7 +3739,7 @@ export const injections = Object.freeze([
     invariant:
       "A string outside an input's closed literal set is refused as invalid-message-input and never interpolated.",
     source: 'packages/runtime/src/evaluator.ts',
-    find: "    return typeof value === 'string' && contract.enum.includes(value);",
+    find: '    return (contract.enum as readonly unknown[]).includes(value);',
     replace: "    return typeof value === 'string';",
     caughtBy: 'packages/runtime/test/closed-literal-set.test.ts',
   },
