@@ -1,7 +1,7 @@
 {
   "categories": {
     "message-wording": "The literal is text a person reads in a message, and nothing compares it. The suites assert codes and outcomes and leave wording free to improve.",
-    "equivalent": "For every input the changed code behaves as the original does; the reason says what makes it so at that site. An input is data: a value that answers the same on every read of it.",
+    "equivalent": "For every input the changed code behaves as the original does; the reason says what makes it so at that site. An input is data: a value that answers the same on every read of it. Text is a string: an object written to answer a string method with code of its own is not an input.",
     "performance-only": "The change alters how much work is done and never a result.",
     "unreachable": "The branch guards a state no caller can produce; the reason names the lines that make it so.",
     "out-of-reach-in-a-unit-test": "The only input that tells the change apart is too large to build in every case that reaches the line."
@@ -121,14 +121,6 @@
       "category": "equivalent",
       "reason": "`charAt` past the end is the empty string, which none of the skip patterns matches, so the loop stops at the same index without the bound. At the end `charAt` is empty and the index moves one past the end; the `slice` after it and every later read are bounded by the length, so the name and the list are the same. The one extra pass at the end appends `charAt` of the end, which is the empty string, and the step after the loop leaves the index past the end either way. The one extra pass at the end appends the empty string to the argument, and the outer loop then ends as it would have.",
       "count": 4
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "at < value.length",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "`charAt` past the end is the empty string, which none of the skip patterns on lines 969, 974, 978 and 998 matches, so the loop stops at the same index without the bound."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -621,14 +613,6 @@
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "preferred !== policy.defaultLocale",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "a preference for the default locale then builds the redirect on lines 2712 to 2720 from localizedRouteSegments in the default locale, which are the matched canonical segments, behind the same prefix: the same locale, route and location as lines 2723 to 2731, and a failure to build falls through to those lines"
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
       "mutator": "StringLiteral",
       "original": "'The host-localized request URL is malformed.'",
       "replacement": "\"\"",
@@ -891,7 +875,7 @@
       "replacement": "\"Stryker was here!\"",
       "category": "equivalent",
       "reason": "The stand-in for an absent Accept-Language goes straight to parseAcceptLanguage, which drops any range not matching /^[A-Za-z0-9-]+$/ (core/src/locale-negotiation.ts:53-60); the replacement text has spaces and '!', so both yield an empty list and the same negotiation. The literal is the constant tail of the once-per-pair key for an absence or a removal; the key is only ever tested for membership in `reported`, the resolution and outcome before it keep keys distinct, and a constant tail cannot make two of them collide or one of them match 'empty-render'. The stand-in for an absent Sec-Purpose is read only by /prefetch|prerender/iu on line 742, which matches neither the empty string nor the replacement text, so the request is classified the same.",
-      "count": 3
+      "count": 2
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
