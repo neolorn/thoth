@@ -1,7 +1,7 @@
 {
   "categories": {
     "message-wording": "The literal is text a person reads in a message, and nothing compares it. The suites assert codes and outcomes and leave wording free to improve.",
-    "equivalent": "For every input the changed code behaves as the original does; the reason says what makes it so at that site.",
+    "equivalent": "For every input the changed code behaves as the original does; the reason says what makes it so at that site. An input is data: a value that answers the same on every read of it.",
     "performance-only": "The change alters how much work is done and never a result.",
     "unreachable": "The branch guards a state no caller can produce; the reason names the lines that make it so.",
     "out-of-reach-in-a-unit-test": "The only input that tells the change apart is too large to build in every case that reaches the line."
@@ -862,30 +862,6 @@
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "LogicalOperator",
-      "original": "policy.kind !== 'locale-host' || origin === undefined",
-      "replacement": "policy.kind !== 'locale-host' && origin === undefined",
-      "category": "equivalent",
-      "reason": "Both states the guard excludes return undefined as the guard does: for a policy with no origin table ownEntry answers undefined, and an undefined origin throws in `new URL` inside the try."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "policy.kind !== 'locale-host' || origin === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Both states the guard excludes return undefined as the guard does: for a policy with no origin table ownEntry answers undefined, and an undefined origin throws in `new URL` inside the try."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "policy.kind !== 'locale-host'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Both states the guard excludes return undefined as the guard does: for a policy with no origin table ownEntry answers undefined, and an undefined origin throws in `new URL` inside the try."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
       "mutator": "ConditionalExpression",
       "original": "resolution.status !== 'redirect'",
       "replacement": "false",
@@ -1004,14 +980,6 @@
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The phrase is interpolated into the console warning on line 723 and nothing compares or returns it; the suite asserts that the report is written, how often, and that it names the address and the statuses."
-    },
-    {
-      "file": "packages/runtime/http/src/handler.ts",
-      "mutator": "ConditionalExpression",
-      "original": "declaration.outcome === 'operational-failure'",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "For an absence or a removal the mutant ends the identity with `undefined` (they carry no status) where the original ends it with nothing, and the outcome name earlier in the key already keeps those identities apart from each other and from every failure's, so the same reports are written and the same ones suppressed."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
@@ -3143,8 +3111,7 @@
       "original": "[]",
       "replacement": "[\"Stryker was here\"]",
       "category": "equivalent",
-      "reason": "The array is spread into the options position of the Error constructor, which installs a cause only from an object; a string there leaves the error without one, as the empty spread does. An extra first token that is not a populated field sits before every field, and trimToPopulated (in trimToPopulated) drops everything before the first populated field or returns nothing at all.",
-      "count": 2
+      "reason": "The array is spread into the options position of the Error constructor, which installs a cause only from an object; a string there leaves the error without one, as the empty spread does."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -3903,14 +3870,6 @@
       "replacement": "true",
       "category": "equivalent",
       "reason": "A plain handle evaluated against a plain message always yields a result of kind 'text', so the other branch is never taken."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "this.initialization === initialization",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "initialize returns the attempt in flight (1940), so no newer attempt can replace this.initialization before this one settles and the comparison is always true."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -6221,46 +6180,6 @@
       "replacement": "index <= value.length",
       "category": "equivalent",
       "reason": "The extra turn reads charCodeAt(length), which is NaN and is in neither surrogate range, so the answer is the same."
-    },
-    {
-      "file": "packages/runtime/src/runtime-safety.ts",
-      "mutator": "EqualityOperator",
-      "original": "left < right",
-      "replacement": "left <= right",
-      "category": "equivalent",
-      "reason": "The keys of one record are distinct, so the comparator is never given two equal keys and <= answers as < does."
-    },
-    {
-      "file": "packages/runtime/src/runtime-safety.ts",
-      "mutator": "ConditionalExpression",
-      "original": "left > right",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "The keys of one record are distinct, so the comparator is never given two equal keys: once the first test has failed the left key is the greater one, and the changed test still answers 1."
-    },
-    {
-      "file": "packages/runtime/src/runtime-safety.ts",
-      "mutator": "ConditionalExpression",
-      "original": "left > right",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The comparator then answers 0 where it answered 1. On the engine the suites run on the canonical text is the same: measured with every rotation of seven keys and with two hundred keys scattered and reversed (inert-data-snapshot.test.ts), all of which complete and pass under this mutant. ECMA-262 leaves the order implementation-defined for a comparator that is not consistent, so this holds for the pinned engine and is not claimed for another."
-    },
-    {
-      "file": "packages/runtime/src/runtime-safety.ts",
-      "mutator": "EqualityOperator",
-      "original": "left > right",
-      "replacement": "left >= right",
-      "category": "equivalent",
-      "reason": "The keys of one record are distinct, so the comparator is never given two equal keys: once the first test has failed the left key is the greater one, and the changed test still answers 1."
-    },
-    {
-      "file": "packages/runtime/src/runtime-safety.ts",
-      "mutator": "EqualityOperator",
-      "original": "left > right",
-      "replacement": "left <= right",
-      "category": "equivalent",
-      "reason": "The comparator then answers 0 where it answered 1. On the engine the suites run on the canonical text is the same: measured with every rotation of seven keys and with two hundred keys scattered and reversed (inert-data-snapshot.test.ts), all of which complete and pass under this mutant. ECMA-262 leaves the order implementation-defined for a comparator that is not consistent, so this holds for the pinned engine and is not claimed for another."
     },
     {
       "file": "packages/runtime/src/runtime-safety.ts",
