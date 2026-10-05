@@ -41,7 +41,7 @@ import {
 } from './gate-occurrences.mjs';
 import { readTrace, traceDrift } from './trace-drift.mjs';
 import { holdHeavyJobLock } from './heavy-job-lock.mjs';
-import { claimsFile, safeName, steps } from './verify-stages.mjs';
+import { claimsFile, safeName, steps as everyStep } from './verify-stages.mjs';
 import { attemptLedgerPath, workingRoot } from './working-state.mjs';
 
 /**
@@ -93,17 +93,46 @@ const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const tracerPath = resolve(workspaceRoot, 'tools/trace-artefacts.cjs')
   .split(sep)
   .join('/');
-const runDirectory = resolve(workingRoot, 'verify-run');
+const serial = process.argv.includes('--serial');
+const planOnly = process.argv.includes('--plan');
+const resuming = process.argv.includes('--resume');
+const keepTrees = process.argv.includes('--keep-trees');
+/**
+ * `--only <stage>[,<stage>...]` runs the named stages and what they need, and nothing else.
+ *
+ * It is the gate's own runner over part of the graph: the same work trees made the same way, the
+ * same environment handed to a stage, the same trace and the same drift check. That is the point of
+ * it. A stage run by its script in the checkout an engineer is sitting in has a terminal, no
+ * tracer, the checkout's own caches and nothing beside it, so it shows the stage's logic and not
+ * the stage as the gate runs it.
+ *
+ * It is not a gate run and cannot become one. It works in folders of its own, so the trees and the
+ * summary of a gate run are left as they were for a resume, it writes no line to the attempt
+ * ledger, and its verdict line says how many of the stages it ran.
+ */
+const onlyAt = process.argv.indexOf('--only');
+const only =
+  onlyAt === -1
+    ? undefined
+    : (process.argv[onlyAt + 1] ?? '').split(',').filter((id) => id !== '');
+if (only !== undefined && resuming) {
+  throw new Error(
+    'A run of named stages starts in fresh trees and has nothing to resume. Leave out --resume, or run the gate.',
+  );
+}
+const runDirectory = resolve(
+  workingRoot,
+  only === undefined ? 'verify-run' : 'verify-only-run',
+);
 const occurrencesFile = (id) =>
   resolve(runDirectory, `${safeName(id)}.occurrences.jsonl`);
 // Logs, traces and the summary stay in the repository the engineer is sitting in, not in the
 // worktrees, because the worktrees are removed at the end of the run and the evidence is the part
 // worth keeping.
-const treesRoot = resolve(workingRoot, 'verify-trees');
-const serial = process.argv.includes('--serial');
-const planOnly = process.argv.includes('--plan');
-const resuming = process.argv.includes('--resume');
-const keepTrees = process.argv.includes('--keep-trees');
+const treesRoot = resolve(
+  workingRoot,
+  only === undefined ? 'verify-trees' : 'verify-only-trees',
+);
 
 const git = (...args) =>
   execFileSync('git', args, { cwd: workspaceRoot, maxBuffer: 1 << 28 })
@@ -160,8 +189,8 @@ const signatureOf = (output) => {
 // The graph
 // ---------------------------------------------------------------------------------------------
 
-const position = new Map(steps.map((step, index) => [step.id, index]));
-const stepById = new Map(steps.map((step) => [step.id, step]));
+const position = new Map(everyStep.map((step, index) => [step.id, index]));
+const stepById = new Map(everyStep.map((step) => [step.id, step]));
 const readsOf = (step) => step.reads ?? [];
 const writesOf = (step) => step.writes ?? [];
 
@@ -179,16 +208,22 @@ const scoped = (step, artefact) => `${treeOf(step)} ${artefact}`;
 
 // The same question pointed at the gate rather than at a search. A typo in either id would leave
 // `gates` empty and every stage would run exactly as it did before, with nothing to notice.
-const gates = steps.filter(({ gate }) => gate === true).map(({ id }) => id);
+const gates = everyStep.filter(({ gate }) => gate === true).map(({ id }) => id);
 if (gates.length !== 6) {
   throw new Error(
     `Expected six gate stages and found ${gates.length} (${gates.join(', ') || 'none'}). Without them every stage below runs whatever the cheap checks said.`,
   );
 }
 
-const dependencies = new Map(steps.map(({ id }) => [id, new Set()]));
+const dependencies = new Map(everyStep.map(({ id }) => [id, new Set()]));
+// What a stage cannot run without, which is less than what it is scheduled after: the first phase,
+// its declared needs, and the earlier producers of what it reads or adds to. `--only` follows these.
+const requirements = new Map(everyStep.map(({ id }) => [id, new Set()]));
 
-for (const step of steps) {
+for (const step of everyStep) {
+  if (step.gate !== true)
+    for (const id of gates) requirements.get(step.id).add(id);
+  for (const { on } of step.needs ?? []) requirements.get(step.id).add(on);
   if (step.gate !== true)
     for (const id of gates) dependencies.get(step.id).add(id);
   for (const { on, why } of step.needs ?? []) {
@@ -215,7 +250,7 @@ for (const step of steps) {
  * `verify:consumer-refresh` from rewriting `dist` under the stages still reading it.
  */
 const artefacts = new Map();
-for (const step of steps) {
+for (const step of everyStep) {
   for (const artefact of [...readsOf(step), ...writesOf(step)]) {
     if (!artefacts.has(scoped(step, artefact)))
       artefacts.set(scoped(step, artefact), { readers: [], writers: [] });
@@ -233,11 +268,19 @@ for (const { readers, writers } of artefacts.values()) {
       if (other !== writer && earlier(other, writer))
         dependencies.get(writer).add(other);
     }
+    // A later producer builds on what the earlier ones left, and a reader that came before it
+    // only has to be out of the way.
+    for (const other of writers) {
+      if (other !== writer && earlier(other, writer))
+        requirements.get(writer).add(other);
+    }
   }
   for (const reader of readers) {
     for (const writer of writers) {
-      if (writer !== reader && earlier(writer, reader))
+      if (writer !== reader && earlier(writer, reader)) {
         dependencies.get(reader).add(writer);
+        requirements.get(reader).add(writer);
+      }
     }
   }
 }
@@ -260,7 +303,36 @@ const visit = (id, trail) => {
   visiting.delete(id);
   visited.add(id);
 };
-for (const { id } of steps) visit(id, []);
+for (const { id } of everyStep) visit(id, []);
+
+// The stages this run is over: all of them, or the named ones and what they need.
+const selected = new Set();
+if (only !== undefined) {
+  const unknown = only.filter((id) => !stepById.has(id));
+  if (only.length === 0 || unknown.length > 0) {
+    throw new Error(
+      only.length === 0
+        ? '--only names no stage. Usage: node tools/verify.mjs --only <stage>[,<stage>...]'
+        : `--only names ${unknown.join(', ')}, which ${unknown.length === 1 ? 'is not a stage' : 'are not stages'}. node tools/verify.mjs --plan lists them.`,
+    );
+  }
+  const select = (id) => {
+    if (selected.has(id)) return;
+    selected.add(id);
+    for (const needed of requirements.get(id)) select(needed);
+  };
+  for (const id of only) select(id);
+  // An edge to a stage this run leaves out has nothing to wait for.
+  for (const [id, required] of dependencies) {
+    for (const other of [...required]) {
+      if (!selected.has(id) || !selected.has(other)) required.delete(other);
+    }
+  }
+}
+const steps =
+  only === undefined
+    ? everyStep
+    : everyStep.filter(({ id }) => selected.has(id));
 
 // `--plan` prints the graph this run would be scheduled on and stops. It is for reading the edges,
 // not for deciding whether to check them: the drift check runs inside every gate and is not
@@ -534,10 +606,14 @@ const budget = processorBudget();
  *
  * Two runs would each take the whole budget, which is the overload the budget exists to prevent,
  * and they would share `tmp/verify-run` and the ledger besides. The lock is the one every heavy job
- * takes (`heavy-job-lock.mjs`), so a mutation run is refused while a
+ * takes (`heavy-job-lock.mjs`), so a mutation run and a run of named stages are refused while a
  * gate is going, and the gate while one of them is.
  */
-const heavyJob = await holdHeavyJobLock('the gate');
+const heavyJob = await holdHeavyJobLock(
+  only === undefined
+    ? 'the gate'
+    : `a run of the gate stages ${only.join(', ')}`,
+);
 
 /**
  * Below normal, for the gate and everything it starts.
@@ -745,6 +821,10 @@ if (resuming) {
   }
 }
 
+// Fresh, because a tree an earlier run of named stages left holds what that run built, and the
+// question this one answers is what the stages do starting from the commit.
+if (only !== undefined) releaseTrees(wanted.map(treePath));
+
 const provisionStartedAt = Date.now();
 const treesInUse = new Map();
 for (const tree of wanted) {
@@ -921,17 +1001,20 @@ const occurrences = collectOccurrences(
 
 // Every attempt is an occurrence. A resume that passes does not erase the failure it resumed from,
 // and a recurring failure is only measurable if each of its occurrences was written down.
-appendFileSync(
-  attemptLedgerPath,
-  `${JSON.stringify({
-    at: new Date().toISOString(),
-    mode: resuming ? 'resume' : serial ? 'serial' : 'graph',
-    attempt,
-    commit,
-    failures,
-    occurrences: ledgerOccurrences(occurrences),
-  })}\n`,
-);
+// A run of named stages is not an attempt at the gate, and the ledger counts those.
+if (only === undefined) {
+  appendFileSync(
+    attemptLedgerPath,
+    `${JSON.stringify({
+      at: new Date().toISOString(),
+      mode: resuming ? 'resume' : serial ? 'serial' : 'graph',
+      attempt,
+      commit,
+      failures,
+      occurrences: ledgerOccurrences(occurrences),
+    })}\n`,
+  );
+}
 
 for (const step of failed) {
   const tail = results.get(step.id).output.trimEnd().split('\n').slice(-25);
@@ -1011,7 +1094,7 @@ const serialSeconds = steps.reduce(
   0,
 );
 process.stdout.write(
-  `\n${resuming ? `resumed run (attempt ${attempt})` : serial ? 'serial run' : 'graph run'}: ` +
+  `\n${only !== undefined ? 'run of named stages' : resuming ? `resumed run (attempt ${attempt})` : serial ? 'serial run' : 'graph run'}: ` +
     `${wallSeconds}s wall, ${serialSeconds}s of stage time, ` +
     `peak ${scheduler.peakStages} stages and ${scheduler.peakProcessors} of ${budget} processors scheduled, ` +
     `${peakMeasured.toFixed(1)} measured over ${samples} readings, ${lowered.size} process(es) lowered to the gate's priority\n` +
@@ -1022,7 +1105,15 @@ writeFileSync(
   resolve(runDirectory, 'summary.json'),
   `${JSON.stringify(
     {
-      mode: resuming ? 'resume' : serial ? 'serial' : 'graph',
+      mode:
+        only !== undefined
+          ? 'only'
+          : resuming
+            ? 'resume'
+            : serial
+              ? 'serial'
+              : 'graph',
+      only,
       attempt,
       commit,
       failures,
@@ -1083,7 +1174,8 @@ const red =
  */
 const KEPT_FROM_A_GREEN_RUN = new Map([['release:packages', 'release']]);
 
-if (!red) {
+// Only the gate's verdict is what a release is cut on, so only the gate keeps the archives.
+if (!red && only === undefined) {
   for (const [artefact, directory] of KEPT_FROM_A_GREEN_RUN) {
     const producers = steps.filter((step) =>
       (step.writes ?? []).includes(artefact),
@@ -1123,11 +1215,17 @@ if (keepTrees || red) {
  * every reason is on the same line as the word RED, and nothing prints after it.
  */
 const recorded = verdictOccurrences(occurrences);
+// Said on the verdict line, because that line is what gets quoted, and a green over some of the
+// stages quoted without this reads as the gate's.
+const scope =
+  only === undefined
+    ? ''
+    : ` (${steps.length} of the gate's ${everyStep.length} stages; not a gate run)`;
 process.stdout.write(
   red
     ? `=== RED  ${counts.pass} passed, ${counts.fail} failed, ${counts.skip} skipped, ` +
-        `${untraced.length} untraced, ${drift.length} drifted${recorded}\n`
-    : `=== GREEN  ${counts.pass} passed, ${counts.fail} failed, ${counts.skip} skipped${recorded}\n`,
+        `${untraced.length} untraced, ${drift.length} drifted${recorded}${scope}\n`
+    : `=== GREEN  ${counts.pass} passed, ${counts.fail} failed, ${counts.skip} skipped${recorded}${scope}\n`,
 );
 
 process.exitCode = red ? 1 : 0;

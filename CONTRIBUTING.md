@@ -70,7 +70,15 @@ pnpm run verify
 
 It takes about three hours on a machine with 32 logical processors, most of it in `verify:assurance:runtime`, which rebuilds the runtime once for each behavior it removes. Run it on the finished change before opening a pull request. If a stage cannot run in your environment, say so in the pull request.
 
-The suite runs below normal priority and uses at most half of the machine's logical processors, counting its stages and the workers their test runners start. Set `EQUATOR_VERIFY_PROCESSORS` to a number of logical processors to give it a different share. It does not start a stage while less than a quarter of the machine's memory is free. Only one heavy job goes at a time: the suite and a mutation run (`pnpm run mutation`, `pnpm run mutation:toolkit`) take the same lock, and the second to start stops with the name of the first.
+To run some of its stages the way the suite runs them, name them:
+
+```sh
+node tools/verify.mjs --only verify:consumer,verify:cost-reference
+```
+
+This runs the named stages and the stages they need, on the committed tree, in fresh work trees of its own. `node tools/verify.mjs --plan` lists the stages. A stage that passes when its script is run in your checkout can still fail in the suite, which runs it in a fresh work tree without a terminal; this shows that before the full run does.
+
+The suite runs below normal priority and uses at most half of the machine's logical processors, counting its stages and the workers their test runners start. Set `EQUATOR_VERIFY_PROCESSORS` to a number of logical processors to give it a different share. It does not start a stage while less than a quarter of the machine's memory is free. Only one heavy job goes at a time: the suite, a run of named stages, and a mutation run (`pnpm run mutation`, `pnpm run mutation:toolkit`) take the same lock, and the second to start stops with the name of the first.
 
 When a browser engine never finishes closing a page in a browser row, the suite closes that page's browser context instead and carries on. When the context does not close either, the suite closes that browser, ends its process if the browser's own close does not finish, and runs the rest of the row in a fresh one. The verdict line and the attempt ledger count each time it did either, so a rising rate shows there.
 
