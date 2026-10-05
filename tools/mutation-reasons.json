@@ -1644,54 +1644,6 @@
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "ConditionalExpression",
-      "original": "left > right",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "The keys of one options object are distinct, so the comparator on this line is never given two equal names; once left < right is false, left > right is always true."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "EqualityOperator",
-      "original": "left < right",
-      "replacement": "left <= right",
-      "category": "equivalent",
-      "reason": "The keys of one options object are distinct, so the comparator on this line is never given two equal names; with unequal names <= and < agree."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "EqualityOperator",
-      "original": "left < right",
-      "replacement": "left >= right",
-      "category": "equivalent",
-      "reason": "The keys of one options object are distinct, so the comparator on this line is never given two equal names; this comparator is negative exactly when left > right, and the sort in this runtime reads only whether the result is negative, so the entries come out in one fixed (descending) order whatever order they arrived in; the cache key is still independent of the order the options were written in, which is all a caller can observe (measured on Node 26.10: 23,600 shuffles of 2 to 300 keys, one order every time)."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "ConditionalExpression",
-      "original": "left > right",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The keys of one options object are distinct, so the comparator on this line is never given two equal names; this comparator stays negative exactly when left < right, and the sort in this runtime reads only whether the result is negative, so the sorted order is the original one (measured on Node 26.10: 23,600 shuffles of 2 to 300 keys, one order every time)."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "EqualityOperator",
-      "original": "left > right",
-      "replacement": "left >= right",
-      "category": "equivalent",
-      "reason": "The keys of one options object are distinct, so the comparator on this line is never given two equal names; with unequal names >= and > agree."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "EqualityOperator",
-      "original": "left > right",
-      "replacement": "left <= right",
-      "category": "equivalent",
-      "reason": "The keys of one options object are distinct, so the comparator on this line is never given two equal names; this comparator stays negative exactly when left < right, and the sort in this runtime reads only whether the result is negative, so the sorted order is the original one (measured on Node 26.10: 23,600 shuffles of 2 to 300 keys, one order every time)."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
       "mutator": "StringLiteral",
       "original": "'Formatter cache capacity exceeds the fixed runtime ceiling.'",
       "replacement": "\"\"",

@@ -262,11 +262,14 @@ function unsupportedFormatting(
 }
 
 function stableOptions(options: Readonly<Record<string, unknown>>): string {
+  // No comparator is handed to the sort. Its own order is the order of the names as strings, which
+  // is total over the distinct names of one object, so the key never rests on how an engine reads
+  // a comparator's answer.
   return JSON.stringify(
     Object.fromEntries(
-      Object.entries(options).sort(([left], [right]) =>
-        left < right ? -1 : left > right ? 1 : 0,
-      ),
+      Object.keys(options)
+        .sort()
+        .map((name) => [name, options[name]]),
     ),
   );
 }
