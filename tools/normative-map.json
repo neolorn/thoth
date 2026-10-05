@@ -1132,6 +1132,12 @@
     {
       "spec": "05-compiled-artifacts-and-trust.spec.md",
       "section": "1. Non-executable representation",
+      "statement": "MessageFormat's syntax gives every expression a literal, a variable, or a function, so a release MUST refuse an expression that names neither an operand nor a function with a typed failure, and MUST NOT print it as empty text.",
+      "checks": ["assurance:empty-expression-printed-as-nothing"]
+    },
+    {
+      "spec": "05-compiled-artifacts-and-trust.spec.md",
+      "section": "1. Non-executable representation",
       "statement": "A release MUST refuse a candidate carrying a function, a getter, a setter, a prototype other than the plain object prototype, a cycle, an import reference, a template, or a dynamically compiled expression, rather than evaluate around it.",
       "checks": ["assurance-runtime:inert-snapshot-reads-accessors"]
     },

@@ -286,14 +286,32 @@ describe('the function of a compiled expression', () => {
 });
 
 /**
- * An expression that names neither an operand nor a function is read as an expression with
- * nothing to print. The toolkit's parser has no way to write one.
+ * MessageFormat's grammar gives every expression a literal, a variable or a function, and the
+ * pinned conformance suite lists the source `{}` among its syntax errors. The toolkit's parser has
+ * no way to write an expression with neither, and the loader does not read inside a body, so the
+ * evaluator is where one is refused.
  */
 describe('a compiled expression with neither an operand nor a function', () => {
-  it('prints nothing', () => {
-    expect(
+  it('is refused where it is printed', () => {
+    expectMalformed(() =>
       renderArtifact({ body: patternBody(['a', expression(), 'b']) }),
-    ).toBe('ab');
+    );
+  });
+
+  it('is refused where a declaration binds it', () => {
+    expectMalformed(() =>
+      renderArtifact({
+        body: patternBody(['a'], [local('nothing', expression())]),
+      }),
+    );
+  });
+
+  it('is still an expression when it names only a function', () => {
+    expect(
+      renderArtifact({
+        body: patternBody([expression(undefined, { name: 'string' })]),
+      }),
+    ).toBe('');
   });
 });
 

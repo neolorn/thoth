@@ -1182,26 +1182,30 @@ function resolveExpression(
   if (!isRecord(expression) || expression['kind'] !== 'expression') {
     return invalidMessage('A compiled message expression is invalid.');
   }
-  const referenced =
-    expression['operand'] === undefined
-      ? undefined
-      : readReference(expression['operand'], environment);
-  const raw =
-    referenced === undefined ? undefined : referencedOperand(referenced);
   if (expression['function'] === undefined) {
+    // MessageFormat's grammar gives every expression a literal, a variable or a function, so an
+    // expression with no function has an operand. One with neither is read as the missing
+    // reference it is and refused there, since printing it as empty text would be a guess.
+    const named = readReference(expression['operand'], environment);
     // A bare `{$foo}` is the declaration's resolved value, not a fresh reading of its operand.
     // `.local $n = {$v :number minimumFractionDigits=2}` followed by `{{bar {$n}}}` printed `4.2`
     // where the declaration had already produced `4.20`, and `.local $w = {world :string u:dir=ltr}`
     // lost the isolation the author had asked for by name. Selection read the resolved value and
     // formatting did not, so a message could choose the right variant and print the wrong number in
     // it.
-    if (referenced?.kind === 'variable') return referenced.value;
+    if (named.kind === 'variable') return named.value;
     return plainResolved(
-      raw,
+      named.raw,
       environment.formatting.locale,
       directionForLocale(environment.formatting.locale),
     );
   }
+  const referenced =
+    expression['operand'] === undefined
+      ? undefined
+      : readReference(expression['operand'], environment);
+  const raw =
+    referenced === undefined ? undefined : referencedOperand(referenced);
   if (!isRecord(expression['function'])) {
     return invalidMessage('A compiled message function is invalid.');
   }

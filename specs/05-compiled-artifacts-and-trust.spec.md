@@ -20,6 +20,11 @@ Each compiled message carries its identifier, whether it is a message or a delib
 whether its result is plain or structured, its source fingerprint, its effective inputs, its
 effective slots, and a body.
 
+A body is refused where it is evaluated when it holds something the toolkit could not have written.
+MessageFormat's syntax gives every expression a literal, a variable, or a function, so a release
+MUST refuse an expression that names neither an operand nor a function with a typed failure, and
+MUST NOT print it as empty text.
+
 A compiled catalog is JSON. A release MUST refuse a candidate carrying a function, a getter,
 a setter, a prototype other than the plain object prototype, a cycle, an import reference, a
 template, or a dynamically compiled expression, rather than evaluate around it.

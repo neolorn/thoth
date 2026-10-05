@@ -4349,6 +4349,16 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/function-option-resolution.test.ts',
   },
   {
+    id: 'empty-expression-printed-as-nothing',
+    invariant:
+      'A compiled expression that names neither an operand nor a function is refused as invalid-rich-message and is never printed as empty text.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: "    const named = readReference(expression['operand'], environment);",
+    replace:
+      "    const named =\n      expression['operand'] === undefined\n        ? ({ kind: 'literal', raw: '' } as const)\n        : readReference(expression['operand'], environment);",
+    caughtBy: 'packages/runtime/test/compiled-body-refusals.test.ts',
+  },
+  {
     id: 'scope-refused-for-its-name',
     invariant:
       'Every scope name the identity grammar admits compiles to its own module, whatever its length or number of parts.',
