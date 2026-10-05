@@ -487,7 +487,7 @@ export function measurement(
 /**
  * A proportion, with the scale it is written on stated rather than assumed.
  *
- * `fractional`, the default, means a half is `0.5`. `percentage` means a half is `50`. The two
+ * `fractional`, the default, means a half is `0.5`. `percent-unit` means a half is `50`. The two
  * differ by a factor of a hundred and look identical in a database column, so the value carries
  * which one it is and the formatter does the conversion once.
  */
