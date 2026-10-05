@@ -517,7 +517,8 @@ locale through the route's codecs. A release MUST fail the build for a value wit
 representation in some locale rather than omit it, because omitting it ships a page that exists in
 one language and is missing in another. A release MUST fail the build the same way for a value
 whose spelling in some locale is not one safe path segment, because the build writes a file at the
-address that spelling completes.
+address that spelling completes. The address is a built one, so the check of section 2 applies to
+it: a spelling the codec does not read back as itself fails the build as well.
 
 A set of values that has to be fetched cannot be written where the render table is declared, and a
 release that took only values written in place would limit prerendering to sets small enough to

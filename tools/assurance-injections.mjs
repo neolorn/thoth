@@ -960,6 +960,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/route-parameters-and-x-default.test.ts',
   },
   {
+    id: 'prerender-spelling-not-read-back',
+    invariant:
+      'A prerender parameter value whose spelling the codec does not read back as that spelling fails the build.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '        !read.ok ||\n        read.value === undefined ||\n        codec.serialize(read.value, context) !== text\n',
+    replace: '        false\n',
+    caughtBy: 'packages/runtime/test/prerender-parameter-segments.test.ts',
+  },
+  {
     id: 'unsafe-prerender-spelling-enumerated',
     invariant:
       'A prerender parameter value some locale spells as anything but one safe path segment fails the build.',

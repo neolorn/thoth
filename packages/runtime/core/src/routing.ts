@@ -4118,10 +4118,8 @@ function prerenderParameters(
       if (codec === undefined) {
         routeError(`Route ${route.id} has no codec for parameter ${name}.`);
       }
-      const text = codec.serialize(
-        value[name],
-        parameterContext(route.id, name, locale),
-      );
+      const context = parameterContext(route.id, name, locale);
+      const text = codec.serialize(value[name], context);
       if (text === undefined) {
         // The value has no spelling in this locale. Silently dropping it would ship a build
         // where the page exists in one language and 404s in the other.
@@ -4140,6 +4138,19 @@ function prerenderParameters(
       if (!safeParameterSegment(text)) {
         routeError(
           `Route ${route.id} parameter ${name} is spelled ${JSON.stringify(text)} in ${locale}, which is not one safe path segment, so it cannot be rendered ahead of time.`,
+        );
+      }
+      // The address is one the build writes, so the codec has to read back what it wrote, as it
+      // does for every other address that is built: a page rendered at a spelling its own route
+      // does not resolve is a file no request is answered from.
+      const read = codec.parse(text, context);
+      if (
+        !read.ok ||
+        read.value === undefined ||
+        codec.serialize(read.value, context) !== text
+      ) {
+        routeError(
+          `Route ${route.id} parameter ${name} is spelled ${JSON.stringify(text)} in ${locale}, which its codec does not read back as that spelling, so it cannot be rendered ahead of time.`,
         );
       }
       serialized[name] = text;

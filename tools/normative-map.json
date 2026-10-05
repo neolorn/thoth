@@ -1758,7 +1758,10 @@
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "2. Route identity and parameters",
       "statement": "For every locale the policy names, a release MUST check that serializing a value and parsing the result back succeeds and serializes to the same text, MUST run that check on every build, and MUST refuse where the address is built, naming the route, the parameter, and the locale.",
-      "checks": ["assurance:codec-round-trip-unchecked"]
+      "checks": [
+        "assurance:codec-round-trip-unchecked",
+        "assurance:prerender-spelling-not-read-back"
+      ]
     },
     {
       "spec": "07-routing-rendering-and-seo.spec.md",

@@ -106,3 +106,59 @@ describe('a prerender value a codec spells as something other than one safe segm
     },
   );
 });
+
+describe('a prerender value whose spelling the codec does not read back', () => {
+  /** What asking an entry for its values answers under a codec of the case's own. */
+  const enumeratedWith = async (
+    codec: RouteParameterCodec<string>,
+    slug: string,
+  ) => {
+    const [entry] = localizedServerRoutes(
+      PREFIXED,
+      { ...PROJECTION, parameters: { article: { slug: codec } } },
+      CONFIGURATION,
+      [{ routeId: 'article', renderMode: 'prerender', prerender: [{ slug }] }],
+      { canonicalRenderMode: 'server' },
+    );
+    try {
+      return await entry?.getPrerenderParams?.();
+    } catch (error) {
+      if (error instanceof LocalizationError) return error.diagnostic;
+      throw error;
+    }
+  };
+
+  const refused = {
+    code: 'invalid-configuration',
+    message: expect.stringMatching(/article.*slug.*en-US/su) as unknown,
+  };
+
+  it('is refused where the codec cannot parse what it wrote', async () => {
+    const writesOnly: RouteParameterCodec<string> = {
+      parse: () => ({ ok: false }),
+      serialize: (value: string) => value,
+    };
+    expect(await enumeratedWith(writesOnly, 'handbook')).toMatchObject(refused);
+  });
+
+  it('is refused where the codec parses it to nothing', async () => {
+    const readsNothing = {
+      parse: () => ({ ok: true, value: undefined }),
+      serialize: (value: string) => value,
+    } as unknown as RouteParameterCodec<string>;
+    expect(await enumeratedWith(readsNothing, 'handbook')).toMatchObject(
+      refused,
+    );
+  });
+
+  it('is refused where the codec reads it back as another spelling', async () => {
+    const lowers: RouteParameterCodec<string> = {
+      parse: (value: string) => ({ ok: true, value: value.toLowerCase() }),
+      serialize: (value: string) => value,
+    };
+    expect(await enumeratedWith(lowers, 'handbook')).toEqual([
+      { slug: 'handbook' },
+    ]);
+    expect(await enumeratedWith(lowers, 'Handbook')).toMatchObject(refused);
+  });
+});
