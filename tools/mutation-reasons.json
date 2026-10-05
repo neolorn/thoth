@@ -1627,23 +1627,6 @@
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "ArrayDeclaration",
-      "original": "[]",
-      "replacement": "[\"Stryker was here\"]",
-      "category": "equivalent",
-      "reason": "The array is spread as the Error options only when no cause was given, and Error installs a cause only from an options object, so one string argument installs nothing, exactly as no argument does. The empty list is the match list of a function whose selector is not exact; line 1350 sets its selects to false and selectPattern refuses it on line 1564 before match or betterThan can read the list. The list is spread into the second argument of LocalizationError, which hands it to Error as its options, and Error installs a cause only from an object that has one, so a string there leaves the error as it was; measured on the pinned Node with Object.hasOwn. The list is the keys of a custom function that does not select, and selectPattern refuses a value whose selects is false (lines 1564 to 1570) before selectorsMatch or selectorsCompare, the only readers of match and betterThan, are reached.",
-      "count": 4
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "ConditionalExpression",
-      "original": "cause === undefined",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "None of the three callers of unsupportedFormatting (lines 1017, 1118 and 1127) passes a cause, so the test is always true and the empty list is always the one spread."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
       "mutator": "StringLiteral",
       "original": "'Formatter cache capacity exceeds the fixed runtime ceiling.'",
       "replacement": "\"\"",
@@ -1680,9 +1663,8 @@
       "mutator": "ArrowFunction",
       "original": "() => false",
       "replacement": "() => undefined",
-      "category": "equivalent",
-      "reason": "betterThan is read only as the boolean return of selectorsCompare (line 1535), whose one caller negates it on line 1584, so undefined and false select the same variant. A date value sets selects to false on line 1158 and selectPattern refuses such a selector on line 1564 before selectorsMatch can offer it a key, so match is never called on it. A date value sets selects to false on line 1158 and selectPattern refuses such a selector on line 1564, so selectorsCompare never reaches its betterThan.",
-      "count": 3
+      "category": "unreachable",
+      "reason": "This is betterThan of a value that selects as text. selectorsCompare asks it only about two different keys that both match, and match is equality with one string, so no two different keys both match and it is never called."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -1821,22 +1803,6 @@
       "category": "equivalent",
       "reason": "The mutant writes an id property holding undefined when only u:dir was given; every value passed to applyUnicodeOptions is built on lines 1219, 1233, 1245 and 1340 without an id, and the one reader, valuePart (line 1643), compares it with undefined, so no part gains or loses an id. The mutant gives the slot frame an id of undefined, and freezeSlot leaves an undefined id out of the part again on line 1698.",
       "count": 2
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "ConditionalExpression",
-      "original": "typeof value === 'string'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The mutant applies String to a value that is already a string, which returns the same string."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "StringLiteral",
-      "original": "'string'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "The mutant makes the test false for every value, so String is applied to a value that is already a string, which returns the same string."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -2050,74 +2016,10 @@
     {
       "file": "packages/runtime/src/evaluator.ts",
       "mutator": "ConditionalExpression",
-      "original": "environment.formatting.hourCycle === undefined ||\n    (functionName !== 'date' && resolved['hour12'] !== undefined)",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The clause only decides whether the context's hourCycle is sent beside hour12, and ECMA-402 lets hour12 win when both are present (measured on this Node for en-US and ja-JP), while an hourCycle of undefined is read by Intl.DateTimeFormat and by the cache key as absent, so every input formats the same text."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "LogicalOperator",
-      "original": "environment.formatting.hourCycle === undefined ||\n    (functionName !== 'date' && resolved['hour12'] !== undefined)",
-      "replacement": "environment.formatting.hourCycle === undefined && functionName !== 'date' && resolved['hour12'] !== undefined",
-      "category": "equivalent",
-      "reason": "The clause only decides whether the context's hourCycle is sent beside hour12, and ECMA-402 lets hour12 win when both are present (measured on this Node for en-US and ja-JP), while an hourCycle of undefined is read by Intl.DateTimeFormat and by the cache key as absent, so every input formats the same text."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "ConditionalExpression",
       "original": "environment.formatting.hourCycle === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "The clause only decides whether the context's hourCycle is sent beside hour12, and ECMA-402 lets hour12 win when both are present (measured on this Node for en-US and ja-JP), while an hourCycle of undefined is read by Intl.DateTimeFormat and by the cache key as absent, so every input formats the same text."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "ConditionalExpression",
-      "original": "functionName !== 'date' && resolved['hour12'] !== undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The clause only decides whether the context's hourCycle is sent beside hour12, and ECMA-402 lets hour12 win when both are present (measured on this Node for en-US and ja-JP), while an hourCycle of undefined is read by Intl.DateTimeFormat and by the cache key as absent, so every input formats the same text."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "ConditionalExpression",
-      "original": "functionName !== 'date'",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "The clause only decides whether the context's hourCycle is sent beside hour12, and ECMA-402 lets hour12 win when both are present (measured on this Node for en-US and ja-JP), while an hourCycle of undefined is read by Intl.DateTimeFormat and by the cache key as absent, so every input formats the same text."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "EqualityOperator",
-      "original": "functionName !== 'date'",
-      "replacement": "functionName === 'date'",
-      "category": "equivalent",
-      "reason": "The clause only decides whether the context's hourCycle is sent beside hour12, and ECMA-402 lets hour12 win when both are present (measured on this Node for en-US and ja-JP), while an hourCycle of undefined is read by Intl.DateTimeFormat and by the cache key as absent, so every input formats the same text."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "StringLiteral",
-      "original": "'date'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "The clause only decides whether the context's hourCycle is sent beside hour12, and ECMA-402 lets hour12 win when both are present (measured on this Node for en-US and ja-JP), while an hourCycle of undefined is read by Intl.DateTimeFormat and by the cache key as absent, so every input formats the same text."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "ConditionalExpression",
-      "original": "resolved['hour12'] !== undefined",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "The clause only decides whether the context's hourCycle is sent beside hour12, and ECMA-402 lets hour12 win when both are present (measured on this Node for en-US and ja-JP), while an hourCycle of undefined is read by Intl.DateTimeFormat and by the cache key as absent, so every input formats the same text."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "StringLiteral",
-      "original": "'hour12'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "The clause only decides whether the context's hourCycle is sent beside hour12, and ECMA-402 lets hour12 win when both are present (measured on this Node for en-US and ja-JP), while an hourCycle of undefined is read by Intl.DateTimeFormat and by the cache key as absent, so every input formats the same text."
+      "reason": "With the context cycle undefined the mutant spreads hourCycle: undefined, which Intl.DateTimeFormat reads as absent and JSON.stringify drops from the cache key in stableOptions."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -2298,14 +2200,6 @@
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "ConditionalExpression",
-      "original": "value.functionName === undefined",
-      "replacement": "false",
-      "category": "message-wording",
-      "reason": "The condition chooses between two texts for the same refusal of a selector that cannot select, on lines 1567 and 1568; the code and outcome are the same on both sides."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
       "mutator": "StringLiteral",
       "original": "'A message variant is invalid.'",
       "replacement": "\"\"",
@@ -2319,22 +2213,6 @@
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The literal is the text of the refusal raised when the pattern of the chosen variant is not a list; the suite compares its code and outcome and nothing reads the text."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n    return invalidMessage(\n      'A select message has no matching catch-all variant.',\n    );\n  }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "Without the refusal selectPattern returns undefined, and evaluateCandidateInternal refuses a pattern that is not a list on line 2131 with the same code, outcome and no reason."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "ConditionalExpression",
-      "original": "bestPattern === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Without the refusal selectPattern returns undefined, and evaluateCandidateInternal refuses a pattern that is not a list on line 2131 with the same code, outcome and no reason."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",

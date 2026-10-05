@@ -190,6 +190,50 @@ describe('what a date function is given', () => {
     ).toBe('00:04');
   });
 
+  // The context's cycle is sent to the formatter beside the message's `hour12`, and ECMA-402's
+  // CreateDateTimeFormat sets the cycle aside whenever `hour12` is given.
+  it.each([
+    ['a 24-hour context', 'h23', 'true', /^3:04\sPM$/u],
+    ['a 12-hour context', 'h12', 'false', /^15:04$/u],
+  ] as const)(
+    'formats by the hour12 the message writes in %s',
+    (_label, hourCycle, hour12, expected) => {
+      expect(
+        renderArtifact(
+          {
+            body: patternBody([
+              annotated(variable('when'), 'time', { hour12: literal(hour12) }),
+            ]),
+            inputs: WHEN,
+          },
+          { when },
+          undefined,
+          { locale: 'en-US', timeZone: 'UTC', hourCycle },
+        ),
+      ).toMatch(expected);
+    },
+  );
+
+  it.each([
+    ['h23', '15:04'],
+    ['h12', /^3:04\sPM$/u],
+  ] as const)(
+    'formats by the context cycle %s where the message writes no hour12',
+    (hourCycle, expected) => {
+      expect(
+        renderArtifact(
+          {
+            body: patternBody([annotated(variable('when'), 'time')]),
+            inputs: WHEN,
+          },
+          { when },
+          undefined,
+          { locale: 'en-US', timeZone: 'UTC', hourCycle },
+        ),
+      ).toMatch(expected);
+    },
+  );
+
   it('prints a date in a left-to-right message with nothing around it', () => {
     expect(
       renderArtifact(

@@ -162,6 +162,15 @@ describe('what the string projection of parts is held to', () => {
     );
   });
 
+  it('refuses with nothing behind the refusal, since nothing was thrown at it', () => {
+    const failure = refusalOf(() =>
+      projectLocalizedParts([
+        text('a'.repeat(RUNTIME_LIMITS.outputCodePoints + 1)),
+      ]),
+    );
+    expect(Object.hasOwn(failure, 'cause')).toBe(false);
+  });
+
   it('projects as many parts as the part ceiling and refuses one more', () => {
     const empty = text('');
     const projecting = (parts: number): string =>

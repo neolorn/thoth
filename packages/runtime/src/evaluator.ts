@@ -109,19 +109,24 @@ interface ResolvedValue {
    */
   readonly options?: Readonly<Record<string, unknown>>;
   /**
-   * Whether `.match` may select on this value at all.
+   * How `.match` selects on this value, and absent where it may not select on it at all.
    *
    * MessageFormat divides its functions into formatters and selectors, and a `.match` over a
    * formatter is a *Bad Selector*: the specification requires the error and requires the selector
-   * to match nothing but the catch-all. `match` returning `false` for every key produces the
+   * to match nothing but the catch-all. A `match` returning `false` for every key produces the
    * second half of that on its own and swallows the first, and a formatter that inherits another
    * function's `match`, as `:currency` and `:unit` would inherit the numeric one, picks a keyed
    * variant nobody can see is wrong.
    *
-   * So it is stated rather than implied. The toolkit refuses such a message at compile time and
-   * this is what stands behind that for a compiled message that did not come from this toolkit.
+   * So a formatter carries no selection rather than one that answers no. The toolkit refuses such
+   * a message at compile time and this is what stands behind that for a compiled message that did
+   * not come from this toolkit.
    */
-  readonly selects: boolean;
+  readonly selection?: ValueSelection;
+}
+
+/** The two operations MessageFormat's pattern selection asks of a selector's resolved value. */
+interface ValueSelection {
   /**
    * MF2 `Match(rv, k)`: does this value match one already-normalized variant key?
    *
@@ -176,7 +181,7 @@ function invalidMessage(
       message,
       ...(reason === undefined ? {} : { reason }),
     }),
-    ...(cause === undefined ? [] : [{ cause }]),
+    cause === undefined ? undefined : { cause },
   );
 }
 
@@ -192,7 +197,7 @@ function invalidInput(
       message,
       ...(reason === undefined ? {} : { reason }),
     }),
-    ...(cause === undefined ? [] : [{ cause }]),
+    cause === undefined ? undefined : { cause },
   );
 }
 
@@ -248,7 +253,6 @@ export function formattingLocale(
 function unsupportedFormatting(
   message: string,
   reason?: LocalizationDiagnostic['reason'],
-  cause?: unknown,
 ): never {
   throw new LocalizationError(
     Object.freeze({
@@ -257,7 +261,6 @@ function unsupportedFormatting(
       message,
       ...(reason === undefined ? {} : { reason }),
     }),
-    ...(cause === undefined ? [] : [{ cause }]),
   );
 }
 
@@ -552,10 +555,11 @@ function plainResolved(
     isolate: false,
     // ":string" "provides string selection and formatting", and an unannotated selector is
     // resolved through this same path. The suite writes no Bad Selector case for either.
-    selects: true,
-    match: (key: string) => key === compare,
-    // ":string" ranks nothing: every key that matches is the same key.
-    betterThan: () => false,
+    selection: Object.freeze({
+      match: (key: string) => key === compare,
+      // ":string" ranks nothing: every key that matches is the same key.
+      betterThan: () => false,
+    }),
   });
 }
 
@@ -770,7 +774,7 @@ function optionText(
 ): Readonly<Record<string, string>> {
   const text: Record<string, string> = {};
   for (const [name, value] of Object.entries(source)) {
-    text[name] = typeof value === 'string' ? value : String(value);
+    text[name] = String(value);
   }
   return text;
 }
@@ -1047,11 +1051,9 @@ function numericResolved(
       cause,
     );
   }
-  const text = formatter.format(value);
-  const selectionValue = functionName === 'percent' ? value * 100 : value;
   return Object.freeze({
     raw: value,
-    text,
+    text: formatter.format(value),
     functionName,
     options: resolvedNumberOptions(functionName, declared),
     locale: environment.formatting.locale,
@@ -1059,7 +1061,24 @@ function numericResolved(
     // Equator formatted this text, in this locale, so it runs the way the locale runs. No sniff.
     contentDirection: directionForLocale(environment.formatting.locale),
     isolate: false,
-    selects: NUMERIC_SELECTOR_FUNCTIONS.has(functionName),
+    ...(NUMERIC_SELECTOR_FUNCTIONS.has(functionName)
+      ? {
+          selection: numericSelection(
+            functionName === 'percent' ? value * 100 : value,
+            sourceOptions['select'],
+            environment,
+          ),
+        }
+      : {}),
+  });
+}
+
+function numericSelection(
+  selectionValue: number,
+  select: unknown,
+  environment: EvaluationEnvironment,
+): ValueSelection {
+  return Object.freeze({
     match: (key: string) => {
       if (NUMBER_LITERAL.test(key)) {
         // "Exact Literal Match Serialization": for an integer with no fraction or significant-digit
@@ -1070,9 +1089,8 @@ function numericResolved(
       if (!PLURAL_KEYWORDS.has(key)) return false;
       // "Rule Selection": `select=exact` disables keyword selection entirely, so no category key
       // matches rather than the cardinal table being consulted as a fallback.
-      if (sourceOptions['select'] === 'exact') return false;
-      const pluralType =
-        sourceOptions['select'] === 'ordinal' ? 'ordinal' : 'cardinal';
+      if (select === 'exact') return false;
+      const pluralType = select === 'ordinal' ? 'ordinal' : 'cardinal';
       // The variants are written in the supplying catalog's language, so its plural rules choose
       // among them, under fallback too; the value itself is still formatted for the reader.
       return (
@@ -1114,11 +1132,10 @@ function dateResolved(
     ...(environment.formatting.calendar === undefined
       ? {}
       : { calendar: environment.formatting.calendar }),
-    // `hour12` and `hourCycle` describe the same thing and ECMA-402 lets the first win. Dropping
-    // the context's cycle when the message writes `hour12` says so, rather than sending both and
-    // relying on the precedence rule staying where it is.
-    ...(environment.formatting.hourCycle === undefined ||
-    (functionName !== 'date' && resolved['hour12'] !== undefined)
+    // Sent beside a `hour12` the message writes as well. The two describe the same thing, and
+    // ECMA-402's CreateDateTimeFormat sets the cycle aside whenever `hour12` is given, so the
+    // message's choice is the one that formats.
+    ...(environment.formatting.hourCycle === undefined
       ? {}
       : { hourCycle: environment.formatting.hourCycle }),
     // The message's own options, mapped by the function the compiler calls with the same input.
@@ -1165,12 +1182,8 @@ function dateResolved(
     isolate: false,
     // Carried so a later annotation can read the three date/time override options off it, which is
     // what `timeZone=input` names and what a `:datetime` feeding a `:time` would otherwise lose.
+    // No selection: MF2 gives date and time values no Match, so a `.match` on one is a Bad Selector.
     options: resolved,
-    // Date and time values do not support selection: MF2 gives them no Match, so a `.match` on one
-    // is a Bad Selector and only the catch-all can be chosen.
-    selects: false,
-    match: () => false,
-    betterThan: () => false,
   });
 }
 
@@ -1342,11 +1355,6 @@ function resolveExpression(
           `Custom message function :${name} returned an invalid or unbounded result.`,
         );
       }
-      // Narrowed to `string[]` by the guard above; read once so `match` and `betterThan` are
-      // answering from the same list rather than re-reading an object the extension still holds.
-      const matching: readonly string[] = selectsExactly
-        ? Object.freeze([...(selectKeys as readonly string[])])
-        : Object.freeze([]);
       const resultValue = result['value'] ?? operand;
       if (!matchesExtensionType(resultValue, binding.descriptor.resultType)) {
         return invalidMessage(
@@ -1364,18 +1372,33 @@ function resolveExpression(
           // same as a built-in one. `u:dir` overrides this where the extension knows better.
           contentDirection: directionForLocale(environment.formatting.locale),
           isolate: false,
-          selects: selectsExactly,
           options: resolvedOptions,
-          match: (key: string) => matching.includes(key),
-          // MF2 BetterThan, read off the order the function gave: it is only asked about two keys
-          // that both match, so the earlier of the two is the one the function preferred.
-          betterThan: (left: string, right: string) =>
-            matching.indexOf(left) < matching.indexOf(right),
+          // The guard above holds the keys to a list of strings wherever the descriptor selects.
+          ...(selectsExactly
+            ? { selection: listedSelection(selectKeys as readonly string[]) }
+            : {}),
         }),
         unicode,
       );
     }
   }
+}
+
+/**
+ * Selection over the keys a registered function answered with, best first.
+ *
+ * The list is copied once, so `match` and `betterThan` answer from the same keys rather than
+ * re-reading an object the extension still holds.
+ */
+function listedSelection(keys: readonly string[]): ValueSelection {
+  const matching = Object.freeze([...keys]);
+  return Object.freeze({
+    match: (key: string) => matching.includes(key),
+    // MF2 BetterThan, read off the order the function gave: it is only asked about two keys that
+    // both match, so the earlier of the two is the one the function preferred.
+    betterThan: (left: string, right: string) =>
+      matching.indexOf(left) < matching.indexOf(right),
+  });
 }
 
 function initializeEnvironment(
@@ -1515,14 +1538,14 @@ function variantKeys(
 
 /** MF2 `SelectorsMatch`: every key that is not the catch-all matches its own selector. */
 function selectorsMatch(
-  selectors: readonly ResolvedValue[],
+  selectors: readonly ValueSelection[],
   keys: VariantKeys,
   environment: EvaluationEnvironment,
 ): boolean {
   for (const [index, key] of keys.entries()) {
     tick(environment);
     if (key === undefined) continue;
-    if (!(selectors[index] as ResolvedValue).match(key)) return false;
+    if (!(selectors[index] as ValueSelection).match(key)) return false;
   }
   return true;
 }
@@ -1534,7 +1557,7 @@ function selectorsMatch(
  * differ, so an earlier selector outranks a later one.
  */
 function selectorsCompare(
-  selectors: readonly ResolvedValue[],
+  selectors: readonly ValueSelection[],
   keys: VariantKeys,
   against: VariantKeys,
   environment: EvaluationEnvironment,
@@ -1549,7 +1572,7 @@ function selectorsCompare(
     }
     if (other === undefined) return true;
     if (key === other) continue;
-    return (selectors[index] as ResolvedValue).betterThan(key, other);
+    return (selectors[index] as ValueSelection).betterThan(key, other);
   }
   return false;
 }
@@ -1578,14 +1601,13 @@ function selectPattern(
     if (typeof name !== 'string') invalidMessage('A selector name is invalid.');
     const value = environment.values.get(name);
     if (value === undefined) invalidMessage(`Selector ${name} is unavailable.`);
-    if (!value.selects) {
+    if (value.selection === undefined) {
+      // Only an annotated value lacks a selection: an unannotated one is text, which selects.
       invalidMessage(
-        value.functionName === undefined
-          ? `Selector ${name} resolved to a value that does not support selection.`
-          : `Selector ${name} was annotated with :${value.functionName}, which formats but does not select.`,
+        `Selector ${name} was annotated with :${String(value.functionName)}, which formats but does not select.`,
       );
     }
-    return value;
+    return value.selection;
   });
   let bestPattern: readonly unknown[] | undefined;
   let bestKeys: VariantKeys | undefined;
@@ -2140,14 +2162,14 @@ function evaluateCandidateInternal(
   if (!isRecord(message.body))
     invalidMessage('Compiled message body is invalid.');
   applyDeclarations(message.body['declarations'], environment);
-  const pattern =
+  const pattern: readonly unknown[] =
     message.body['kind'] === 'pattern'
-      ? message.body['pattern']
+      ? Array.isArray(message.body['pattern'])
+        ? message.body['pattern']
+        : invalidMessage('Compiled message pattern is invalid.')
       : message.body['kind'] === 'select'
         ? selectPattern(message.body, environment)
         : invalidMessage('Compiled message body kind is invalid.');
-  if (!Array.isArray(pattern))
-    invalidMessage('Compiled message pattern is invalid.');
   const parts = evaluatePattern(
     pattern,
     message.slots,
