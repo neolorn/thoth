@@ -437,6 +437,48 @@ export const stageSelfTests = Object.freeze({
       },
     ],
   },
+  'verify:mutation-reasons': {
+    script: 'tools/verify-mutation-reasons.mjs',
+    inputs: ['tools/mutation-reasons.json', ...packageSourceRoots()],
+    plants: [
+      {
+        id: 'recorded-text-gone-from-its-file',
+        plant: editJson('tools/mutation-reasons.json', (record) => {
+          record.survivors[0].original = `${record.survivors[0].original} planted`;
+        }),
+        refusal:
+          /the text the mutant replaced is in the file 0 time\(s\), the entry counts/u,
+      },
+      {
+        id: 'recorded-under-an-undeclared-category',
+        plant: editJson('tools/mutation-reasons.json', (record) => {
+          record.survivors[0].category = 'planted';
+        }),
+        refusal: /the category planted is not one the file declares/u,
+      },
+      {
+        id: 'recorded-without-a-reason',
+        plant: editJson('tools/mutation-reasons.json', (record) => {
+          record.survivors[0].reason = 'Equivalent.';
+        }),
+        refusal: /the reason is not written/u,
+      },
+      {
+        id: 'recorded-twice',
+        plant: editJson('tools/mutation-reasons.json', (record) => {
+          record.survivors.push({ ...record.survivors[0] });
+        }),
+        refusal: /the same mutant is listed twice/u,
+      },
+      {
+        id: 'recorded-in-a-file-that-is-gone',
+        plant: editJson('tools/mutation-reasons.json', (record) => {
+          record.survivors[0].file = 'packages/runtime/src/planted.ts';
+        }),
+        refusal: /the file does not exist/u,
+      },
+    ],
+  },
   'verify:locale-profile': {
     script: 'tools/generate-locale-profile.mjs',
     args: ['--check'],

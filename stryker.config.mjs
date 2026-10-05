@@ -27,16 +27,23 @@
  *
  * ## The reading as it stands
  *
- * On the runner, at 18,051 mutants: 1h43m, 4,125 killed, 35 timed out, 1,865 survived, 12,026 with
- * no coverage, 69.05% covered. The same mutants on a 32-thread machine: 15m12s, 4,077 killed, 237
- * timed out, 1,711 survived, 71.60% covered. Prefer the runner's figure. The population is
- * identical and the scores are not, because 24 workers make mutants time out that four workers run
- * to a verdict, and a timeout is scored as a kill, so the local score is the inflated one.
+ * On a 32-thread machine at 16 workers, at 20,087 mutants: 1h26m, 13,895 killed, 432 timed out,
+ * 1,873 survived, 3,884 with no coverage, 88.44% covered. A timeout is scored as a kill, and more
+ * workers make more mutants time out, so a reading taken at a higher worker count scores higher on
+ * the same tree and is the inflated one.
  *
- * The survivors sit where the first reading found them, with `core/src/routing.ts` down from 625 to
- * 406 where the refusal tests below landed: `routing.ts` (406), `evaluator.ts` (359),
- * `localized-input.ts` (217), `formatting.ts` (213), `runtime-safety.ts` (167), `extensions.ts`
- * (153), `http/src/handler.ts` (73). Seven files hold 1,588 of the 1,865.
+ * **A survivor is a verdict only where every test planned for it ran.** The runner stops a
+ * mutant's tests at the first failure, and a run that is cut short with no failure recorded is
+ * scored as survived with fewer tests completed than planned. 575 of the 1,873 were like that. Run
+ * again over their lines with `--disableBail`, most of them are killed, so read `testsCompleted`
+ * against `coveredBy` before reading a survivor, and settle the short ones that way.
+ *
+ * **The survivors that stay are recorded.** `tools/mutation-reasons.json` lists each mutant no test
+ * could notice, with its category and a sentence about that site, and
+ * `node tools/verify-mutation-reasons.mjs --report tmp/mutation/report.json` fails on a survivor
+ * with a verdict that the file does not list. The gate holds the file to the source it describes,
+ * so a recorded line cannot be edited without the record being looked at. A survivor is answered
+ * with a test first; the file is for the rest.
  *
  * ## The first reading of the report
  *

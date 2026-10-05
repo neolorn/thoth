@@ -180,6 +180,25 @@ const declared = Object.freeze([
       },
     ],
   },
+  // Runs the stage below over a copy of what it reads, once unchanged and once per defect
+  // `stage-plants.mjs` plants for it, and requires each to be refused by name.
+  {
+    id: 'verify:mutation-reasons:self-test',
+    reads: ['source:packages', 'source:tools'],
+  },
+  // The mutants recorded as ones no test could notice, held to the source they describe. It reads
+  // no mutation report, which is produced on request and outside this gate, so what it refuses is
+  // a record whose text has left the file it names.
+  {
+    id: 'verify:mutation-reasons',
+    reads: ['source:packages', 'source:tools'],
+    needs: [
+      {
+        on: 'verify:mutation-reasons:self-test',
+        why: 'A stage nobody has seen refuse the defects it exists for is indistinguishable from one that reads nothing.',
+      },
+    ],
+  },
   { id: 'verify:person-names', reads: ['source:packages'] },
   // The two suites run at the same time, and with a shared vitest results cache both would hash the
   // empty project name and overwrite each other's record. Each has its own `cacheDir`, so the

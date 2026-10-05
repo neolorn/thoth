@@ -27,6 +27,8 @@
     "generate:format-shapes": "node ./tools/generate-format-shapes.mjs",
     "verify:format-shapes:self-test": "node ./tools/verify-stage-self-test.mjs verify:format-shapes",
     "verify:format-shapes": "node ./tools/generate-format-shapes.mjs --check",
+    "verify:mutation-reasons:self-test": "node ./tools/verify-stage-self-test.mjs verify:mutation-reasons",
+    "verify:mutation-reasons": "node ./tools/verify-mutation-reasons.mjs",
     "verify:person-names": "node ./tools/generate-person-names.mjs --check",
     "verify:standards-sources:self-test": "node ./tools/verify-stage-self-test.mjs verify:standards-sources",
     "verify:standards-sources": "node ./tools/verify-standards-sources.mjs",
