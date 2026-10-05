@@ -177,6 +177,29 @@ export function holdDown(above, priority, lowered, set) {
   return findings;
 }
 
+/**
+ * Raises each process of `tree` that runs below `floor` to `priority`, and answers how many it
+ * raised. `floor` is in the reading's own units (`levelInReading`).
+ *
+ * A process that cannot be raised is left where it is and is not a finding: one that has ended
+ * between the reading and the call, and, off Windows, any process at all, since a process without
+ * privilege cannot take back a priority (`setpriority(2)`, `EACCES`). A run lifted to normal
+ * priority loses nothing it was promised by a process that stays below it.
+ */
+export function liftUp(tree, floor, priority, set) {
+  let raised = 0;
+  for (const entry of tree) {
+    if (entry.priority >= floor) continue;
+    try {
+      set(entry.pid, priority);
+      raised += 1;
+    } catch {
+      // Left below: see above.
+    }
+  }
+  return raised;
+}
+
 /** A level as `os.setPriority` takes it and `os.getPriority` answers it. */
 export const levelForSystem = (level) =>
   level === 'normal'

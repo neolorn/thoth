@@ -22,8 +22,10 @@
  *   what such a stage reports is a time or a browser's answer within a bound, and a working
  *   machine's foreground load starves a process below normal for long enough to move both. Nothing
  *   runs beside it, so it takes nothing from another stage. `verify.mjs` starts each stage at its
- *   level, checks it as it starts, and samples the whole tree while it runs.
+ *   level, checks it as it starts, and samples the whole tree while it runs. A file can lift the
+ *   whole run to normal priority while it goes (`priorityLifted`).
  */
+import { readFileSync } from 'node:fs';
 import { availableParallelism } from 'node:os';
 
 export const PROCESSORS_VARIABLE = 'EQUATOR_VERIFY_PROCESSORS';
@@ -49,9 +51,35 @@ export function processorBudget(
   return value;
 }
 
-/** The priority a stage runs at: normal where it runs alone, below normal otherwise. */
-export const stagePriority = (step) =>
-  step.exclusive === true ? 'normal' : 'below-normal';
+export const PRIORITY_FILE_VARIABLE = 'EQUATOR_VERIFY_PRIORITY_FILE';
+
+const readText = (path) => readFileSync(path, 'utf8');
+
+/**
+ * Whether the run is lifted to normal priority at this moment.
+ *
+ * A run takes hours, and the machine it shares with someone's work by day is often left to it
+ * overnight. A level fixed when the run starts fits one of the two, so it can be changed while the
+ * run goes: `EQUATOR_VERIFY_PRIORITY_FILE` names a file, and while its text is `normal` every
+ * stage runs at normal priority. Any other text, and a file that is missing or cannot be read,
+ * leaves each stage at its own level, so a fault in the file never raises anything.
+ */
+export function priorityLifted(environment = process.env, read = readText) {
+  const path = environment[PRIORITY_FILE_VARIABLE];
+  if (path === undefined || path === '') return false;
+  try {
+    return read(path).trim() === 'normal';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The priority a stage runs at: normal where it runs alone or the run is lifted, below normal
+ * otherwise.
+ */
+export const stagePriority = (step, lifted = false) =>
+  lifted || step.exclusive === true ? 'normal' : 'below-normal';
 
 /**
  * A stage's share: what it declares, and never more than the whole budget. A stage that runs alone

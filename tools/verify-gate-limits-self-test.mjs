@@ -16,7 +16,7 @@
  * too: a process under it above its priority must be named, and the processors a window reports
  * must be the CPU time the tree used in it. The budget's default and each stage's declared share are
  * checked against the real declarations too, so a share nobody can be handed fails here rather
- * than in a run.
+ * than in a run. So is the file that lifts a run to normal priority while it goes.
  *
  * The lock every heavy job takes is driven here as well (`heavy-job-lock.mjs`): a second job is
  * refused by the first one's name, a job the holder started runs under the holder's lock, and a
@@ -30,6 +30,7 @@ import { resolve } from 'node:path';
 import {
   createScheduler,
   MEMORY_FLOOR,
+  priorityLifted,
   processorBudget,
   PROCESSORS_VARIABLE,
   stagePriority,
@@ -41,6 +42,7 @@ import {
   descendantsOf,
   holdDown,
   levelInReading,
+  liftUp,
   processorsBetween,
   startAtPriority,
 } from './process-tree.mjs';
@@ -236,6 +238,54 @@ for (const step of declaredSteps) {
     `${step.id} runs at ${stagePriority(step)} priority.`,
   );
 }
+// A run lifted to normal priority while it goes. The file is read each time it is asked, every
+// stage is at normal while its text says so, and any other text, a file that cannot be read and
+// no file named each leave a stage at its own level.
+assert.equal(stagePriority({ id: 'b' }, true), 'normal');
+const liftedBy = (text) =>
+  priorityLifted({ EQUATOR_VERIFY_PRIORITY_FILE: 'level' }, () => {
+    if (text === undefined) throw new Error('ENOENT');
+    return text;
+  });
+assert.deepEqual(
+  [
+    liftedBy('normal'),
+    liftedBy('normal\r\n'),
+    liftedBy('stage'),
+    liftedBy(''),
+    liftedBy(undefined),
+    priorityLifted({}, () => 'normal'),
+    priorityLifted({ EQUATOR_VERIFY_PRIORITY_FILE: '' }, () => 'normal'),
+  ],
+  [true, true, false, false, false, false, false],
+  'The run is lifted by something other than a named file whose text is normal.',
+);
+// Under a lift the processes below normal are raised to it; one at or above it is left, and one
+// that cannot be raised is left and is not counted.
+const lifts = [];
+assert.equal(
+  liftUp(
+    [
+      { pid: 11, priority: 6 },
+      { pid: 12, priority: 8 },
+      { pid: 13, priority: 10 },
+      { pid: 66, priority: 6 },
+    ],
+    levelInReading('normal', 'win32'),
+    0,
+    (pid, priority) => {
+      if (pid === 66) throw new Error('gone');
+      lifts.push([pid, priority]);
+    },
+  ),
+  1,
+  'A lift did not count the one process it raised.',
+);
+assert.deepEqual(
+  lifts,
+  [[11, 0]],
+  'A lift raised something other than the process below normal priority.',
+);
 assert.deepEqual(
   [
     levelInReading('normal', 'win32'),

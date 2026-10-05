@@ -17,6 +17,7 @@ import {
   createScheduler,
   MEMORY_FLOOR,
   processorBudget,
+  priorityLifted,
   PROCESSORS_VARIABLE,
   runnerEnvironment,
   stagePriority,
@@ -27,6 +28,7 @@ import {
   holdDown,
   levelForSystem,
   levelInReading,
+  liftUp,
   processorsBetween,
   readProcesses,
   startAtPriority,
@@ -529,7 +531,7 @@ const runStep = (id, timeoutSeconds, root, processors) =>
     const nodeOptions = [process.env.NODE_OPTIONS, `--require "${tracerPath}"`]
       .filter((part) => part !== undefined && part !== '')
       .join(' ');
-    const level = stagePriority(stepById.get(id));
+    const level = stagePriority(stepById.get(id), priorityLifted());
     const child = startAtPriority(level, () =>
       spawn(pnpmCommand, commandArguments, {
         cwd: root,
@@ -662,8 +664,12 @@ const checkStarted = (id, pid, level) => {
     );
   }
 };
-/** The level nothing under the gate may exceed now: normal while a stage that runs alone runs. */
+/**
+ * The level nothing under the gate may exceed now: normal while a stage that runs alone runs, and
+ * while the run is lifted to it.
+ */
 const levelNow = () =>
+  priorityLifted() ||
   [...scheduler.running.keys()].some(
     (id) => stagePriority(stepById.get(id)) === 'normal',
   )
@@ -872,6 +878,8 @@ process.stdout.write(
 const SAMPLE_SECONDS = 15;
 const overBudget = [];
 const lowered = new Set();
+let liftedAtLastReading = false;
+let raisedWhileLifted = 0;
 let peakMeasured = 0;
 let samples = 0;
 let sampling = true;
@@ -898,6 +906,20 @@ const sampler = (async () => {
       new Set([reading.reader]),
     );
     samples += 1;
+    // A lifted run is raised to normal, stages already running included. What was lowered before a
+    // lift, or raised during one, was moved by the gate and not by the process itself, so the
+    // record of lowered processes starts again on either side of it.
+    const lifted = priorityLifted();
+    if (lifted !== liftedAtLastReading) lowered.clear();
+    liftedAtLastReading = lifted;
+    if (lifted) {
+      raisedWhileLifted += liftUp(
+        tree,
+        levelInReading('normal'),
+        levelForSystem('normal'),
+        setPriority,
+      );
+    }
     // A reading takes long enough for a stage to end and the next to start. A process is held to
     // below normal only where no stage at normal priority ran on either side of the reading, so
     // one that has just started is never lowered by a reading taken before it.
@@ -1135,7 +1157,7 @@ process.stdout.write(
   `\n${only !== undefined ? 'run of named stages' : resuming ? `resumed run (attempt ${attempt})` : serial ? 'serial run' : 'graph run'}: ` +
     `${wallSeconds}s wall, ${serialSeconds}s of stage time, ` +
     `peak ${scheduler.peakStages} stages and ${scheduler.peakProcessors} of ${budget} processors scheduled, ` +
-    `${peakMeasured.toFixed(1)} measured over ${samples} readings, ${lowered.size} process(es) lowered to their stage's priority\n` +
+    `${peakMeasured.toFixed(1)} measured over ${samples} readings, ${lowered.size} process(es) lowered to their stage's priority${raisedWhileLifted > 0 ? `, ${raisedWhileLifted} raised while the run was lifted to normal priority` : ''}\n` +
     `logs and traces: ${runDirectory}\n`,
 );
 
