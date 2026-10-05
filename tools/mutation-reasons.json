@@ -26,51 +26,11 @@
     },
     {
       "file": "packages/runtime/core/src/locale-negotiation.ts",
-      "mutator": "ConditionalExpression",
-      "original": "range.length === 0",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "An empty range is dropped either way, because the pattern on line 58 requires at least one character, so parseAcceptLanguage never returns one."
-    },
-    {
-      "file": "packages/runtime/core/src/locale-negotiation.ts",
-      "mutator": "ConditionalExpression",
-      "original": "range === '*'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The wildcard is dropped either way, because the pattern on line 58 admits letters, digits and hyphens only, so parseAcceptLanguage never returns it."
-    },
-    {
-      "file": "packages/runtime/core/src/locale-negotiation.ts",
-      "mutator": "StringLiteral",
-      "original": "'*'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "With the literal emptied the clause tests for the empty range, which line 55 already drops, and the wildcard it no longer names is still dropped by the pattern on line 58, so the returned list is the same."
-    },
-    {
-      "file": "packages/runtime/core/src/locale-negotiation.ts",
-      "mutator": "ConditionalExpression",
-      "original": "left.quality === right.quality",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "For two entries of equal weight the mutant answers right.quality - left.quality, which is 0, and Array.prototype.sort is stable, so they keep header order, which is the order the index difference states."
-    },
-    {
-      "file": "packages/runtime/core/src/locale-negotiation.ts",
-      "mutator": "ArithmeticOperator",
-      "original": "left.index - right.index",
-      "replacement": "left.index + right.index",
-      "category": "equivalent",
-      "reason": "Measured on Node 26.10.0, not derived from the language: over 200,000 random lists of up to the 32 ranges line 51 admits, sorting with the sum and with the difference gave the same order, and in 2.4 million tie comparisons the engine passed the later entry first every time, where both forms are positive. The order under an inconsistent comparator is engine-defined."
-    },
-    {
-      "file": "packages/runtime/core/src/locale-negotiation.ts",
       "mutator": "EqualityOperator",
       "original": "separator < 0",
       "replacement": "separator <= 0",
       "category": "equivalent",
-      "reason": "A candidate that begins with a hyphen truncates to the empty string in the original and to undefined in the mutant, and the loop on line 187 ends on either before asking canonicalize, so the caller sees the same candidates asked and the same answer."
+      "reason": "The two forms differ only for a candidate that begins with a hyphen, which truncateSubtag answers with the empty string in the original and with undefined in the mutant. Its one caller, the lookup loop of negotiateLocale, stops on either before asking canonicalize, so the same candidates are asked and the same locale is answered. This follows from the code alone and holds on every engine."
     },
     {
       "file": "packages/runtime/core/src/locale-negotiation.ts",
@@ -81,20 +41,12 @@
       "reason": "An emptied catch block falls off the end of maximizedScript, which answers undefined, the value the block returned."
     },
     {
-      "file": "packages/runtime/core/src/locale-negotiation.ts",
-      "mutator": "ConditionalExpression",
-      "original": "canonical !== undefined",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "The supported set holds strings only, so supported.has(undefined) is false and a candidate canonicalize rejects is not answered with or without the guard."
-    },
-    {
       "file": "packages/runtime/core/src/locale-profile.ts",
       "mutator": "ConditionalExpression",
       "original": "locale === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "openGraphLocale(undefined) reaches new Intl.Locale(undefined), which throws a TypeError (measured on Node 26.10.0) that openGraphLocale catches on line 106 and answers undefined, the value the guard assigns."
+      "reason": "Without the guard openGraphLocale is asked about undefined and reaches new Intl.Locale(undefined). The ECMA-402 Intl.Locale constructor throws a TypeError for a tag that is neither a String nor an Object, openGraphLocale catches it and answers undefined, the value the guard assigns. The TypeError was measured on Node 22.22.3, 24.15.0, 26.0.0 and 26.10.0."
     },
     {
       "file": "packages/runtime/core/src/locale-profile.ts",
@@ -102,7 +54,7 @@
       "original": "alternate.hreflang === 'x-default'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "new Intl.Locale(\"x-default\") throws a RangeError (measured on Node 26.10.0), so openGraphLocale answers undefined for it and line 142 skips it: the returned list never contains the routing default with or without this clause."
+      "reason": "Without the clause \"x-default\" goes on to openGraphLocale and to new Intl.Locale, which throws a RangeError for it on every conforming engine: the tag must match unicode_locale_id, whose language subtag is two, three or five to eight letters (UTS 35), and \"x\" is one. openGraphLocale answers undefined and the next test skips it. The RangeError was measured on Node 22.22.3, 24.15.0, 26.0.0 and 26.10.0. The clause stays because it says why the entry is skipped."
     },
     {
       "file": "packages/runtime/core/src/locale-profile.ts",
@@ -110,7 +62,7 @@
       "original": "'x-default'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "With the literal emptied, \"x-default\" goes on to openGraphLocale, which answers undefined for it because Intl.Locale refuses it (measured on Node 26.10.0), and line 142 skips it; an empty hreflang is skipped by either path."
+      "reason": "With the literal emptied the clause skips an empty hreflang, which new Intl.Locale also refuses with a RangeError, and \"x-default\" goes on to openGraphLocale, which answers undefined for it because the tag does not match unicode_locale_id (UTS 35: a language subtag is two, three or five to eight letters). Both are skipped by either path on every conforming engine; measured on Node 22.22.3, 24.15.0, 26.0.0 and 26.10.0."
     },
     {
       "file": "packages/runtime/core/src/page-outcome.ts",
@@ -951,43 +903,11 @@
     },
     {
       "file": "packages/runtime/forms/src/caret.ts",
-      "mutator": "LogicalOperator",
-      "original": "agreed < previousVisible.length &&\n    agreed < nextVisible.length",
-      "replacement": "agreed < previousVisible.length || agreed < nextVisible.length",
-      "category": "equivalent",
-      "reason": "The two forms differ only when exactly one bound holds, and then one side of the comparison on line 83 is undefined and the other a character, so the loop stops at the same index and remapCaret returns the same offset."
-    },
-    {
-      "file": "packages/runtime/forms/src/caret.ts",
-      "mutator": "ConditionalExpression",
-      "original": "agreed < previousVisible.length",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "An index past the end of either array reads undefined, which never equals a character of the other array, so the comparison on line 83 stops the loop at the same index with or without this bound and remapCaret returns the same offset."
-    },
-    {
-      "file": "packages/runtime/forms/src/caret.ts",
       "mutator": "EqualityOperator",
       "original": "agreed < previousVisible.length",
       "replacement": "agreed <= previousVisible.length",
       "category": "equivalent",
-      "reason": "An index past the end of either array reads undefined, which never equals a character of the other array, so the comparison on line 83 stops the loop at the same index with or without this bound and remapCaret returns the same offset."
-    },
-    {
-      "file": "packages/runtime/forms/src/caret.ts",
-      "mutator": "EqualityOperator",
-      "original": "agreed < nextVisible.length",
-      "replacement": "agreed <= nextVisible.length",
-      "category": "equivalent",
-      "reason": "An index past the end of either array reads undefined, which never equals a character of the other array, so the comparison on line 83 stops the loop at the same index with or without this bound and remapCaret returns the same offset."
-    },
-    {
-      "file": "packages/runtime/forms/src/caret.ts",
-      "mutator": "ConditionalExpression",
-      "original": "agreed < nextVisible.length",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "An index past the end of either array reads undefined, which never equals a character of the other array, so the comparison on line 83 stops the loop at the same index with or without this bound and remapCaret returns the same offset."
+      "reason": "The mutant takes one more step only when the index equals the length of the previous text. If the next text is longer, a missing element is compared with a character and the walk stops where the original does. Otherwise both elements are missing, the count becomes the length plus one, and the next test stops it. remapCaret reads the count only in `before <= agreed`, and before is at most the length, so the same offset is returned. Reading past the end of an array is undefined in the language itself, so this holds on every engine."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",

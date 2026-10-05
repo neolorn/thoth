@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   localeProfile,
@@ -10,11 +10,25 @@ import {
  * A locale with no territory, and the alternates a page lists beside its own locale.
  *
  * Open Graph's `language_TERRITORY` has two parts, so a tag that maximizes to no territory has no
- * spelling there. `tlh-Latn` is one: the likely-subtags data gives Klingon a script when asked and
- * no region.
+ * spelling there. Which tags those are is the platform's likely-subtags data, and it differs from
+ * one release of that data to the next, so these cases do not ask the platform: maximizing the one
+ * tag below answers the tag as it was written, and every other tag is maximized as usual.
  */
 
 const NO_TERRITORY = 'tlh-Latn';
+
+beforeEach(() => {
+  const maximize = Intl.Locale.prototype.maximize;
+  vi.spyOn(Intl.Locale.prototype, 'maximize').mockImplementation(function (
+    this: Intl.Locale,
+  ) {
+    return this.baseName === NO_TERRITORY ? this : maximize.call(this);
+  });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('a locale that maximizes to no territory', () => {
   it('has a profile with no region member', () => {

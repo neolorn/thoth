@@ -51,10 +51,10 @@ export function parseAcceptLanguage(header: string): readonly string[] {
   for (const part of header.split(',', MAXIMUM_RANGES)) {
     const [rangeText, ...parameters] = part.split(';');
     const range = rangeText?.trim() ?? '';
+    // The pattern is also what drops an empty range and `*`: it asks for at least one character
+    // and admits no asterisk.
     if (
-      range.length === 0 ||
       range.length > MAXIMUM_RANGE_LENGTH ||
-      range === '*' ||
       !/^[A-Za-z0-9-]+$/u.test(range)
     ) {
       continue;
@@ -72,16 +72,12 @@ export function parseAcceptLanguage(header: string): readonly string[] {
     if (quality <= 0) continue;
     entries.push({ range, quality });
   }
-  // Stable sort by descending quality: equal qualities keep header order, which is the order the
-  // client wrote them in and the only tie-break information available.
+  // Sorted by descending quality. `Array.prototype.sort` is stable, so equal qualities keep header
+  // order, which is the order the client wrote them in and the only tie-break information
+  // available.
   return Object.freeze(
     entries
-      .map((entry, index) => ({ ...entry, index }))
-      .sort((left, right) =>
-        left.quality === right.quality
-          ? left.index - right.index
-          : right.quality - left.quality,
-      )
+      .sort((left, right) => right.quality - left.quality)
       .map(({ range }) => range),
   );
 }

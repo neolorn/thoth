@@ -2242,8 +2242,8 @@ export const injections = Object.freeze([
     invariant:
       'Language ranges are tried in the order of their quality values, with header order breaking a tie.',
     source: 'packages/runtime/core/src/locale-negotiation.ts',
-    find: '          : right.quality - left.quality,',
-    replace: '          : left.index - right.index,',
+    find: '      .sort((left, right) => right.quality - left.quality)',
+    replace: '',
     caughtBy: 'packages/runtime/test/locale-negotiation.test.ts',
   },
   {

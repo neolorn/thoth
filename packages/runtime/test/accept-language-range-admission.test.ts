@@ -113,6 +113,13 @@ describe('the supported locale a range is answered with', () => {
     );
   });
 
+  it('goes on to the next range when a candidate is not a tag and the list holds a non-locale', () => {
+    // A list written by hand can hold an entry that is no text at all. A candidate that is not a
+    // tag is not that entry, so the range is passed over and the next one answers.
+    const supported = [undefined, 'en'] as unknown as readonly string[];
+    expect(negotiateLocale(['-x', 'en'], supported, canonicalize)).toBe('en');
+  });
+
   it('answers nothing for a range with no language subtag', () => {
     expect(negotiateLocale([''], [''], canonicalize)).toBeUndefined();
   });

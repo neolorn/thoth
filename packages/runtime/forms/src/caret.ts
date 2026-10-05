@@ -77,9 +77,10 @@ export function remapCaret(
   const nextVisible = visibleCharacters(next);
   const before = visibleCharacters(previous.slice(0, offset)).length;
   let agreed = 0;
+  // One bound ends the walk for both texts: past the end of the next one there is no character,
+  // and that equals none of the previous one's.
   while (
     agreed < previousVisible.length &&
-    agreed < nextVisible.length &&
     previousVisible[agreed] === nextVisible[agreed]
   ) {
     agreed += 1;
