@@ -294,6 +294,11 @@ of at most thirty-two locales beside it. A release MUST NOT guess a fallback cha
 return either a ready result naming the representation it selected and whether it fell back, or an
 unavailable result naming the exhausted policy.
 
+A descriptor, a selection request, and a participant report are checked where they are used,
+whoever built them. A release MUST refuse one whose identity, locale, language, direction, variant
+list, fallback, representation, or status is not what its declaration allows, a value of another
+type where text or a list is declared included, with the typed `invalid-configuration` failure.
+
 A government, legal, official, historical, registration, tax, certificate, or comparable authentic
 artifact preserves its original content and its actual language unless the authority behind it
 supplies a distinct localized variant, and a release MUST NOT treat authenticity as a missing

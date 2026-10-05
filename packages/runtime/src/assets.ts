@@ -18,6 +18,7 @@ import {
   type LocalizedText,
 } from '@neolorn/equator/core';
 import { languageForLocale } from './evaluator';
+import { isRecord } from './runtime-safety';
 
 /**
  * Copy that describes an asset, either as finished text or as the parts a template places.
@@ -267,29 +268,41 @@ function invalidAsset(message: string): never {
   );
 }
 
-function validIdentity(value: string): boolean {
-  return /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(value);
+// Every reader below takes its value as `unknown` and asks for text first. A descriptor, a request
+// or a report can reach this module from a file or from untyped code, where a field holds whatever
+// was written there, and a pattern test or a length read on such a value either throws something
+// that is not a refusal or reads the value as the text it prints as.
+
+function validIdentity(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(value)
+  );
 }
 
-function validOpaqueIdentity(value: string | undefined): boolean {
+function validOpaqueIdentity(value: unknown): boolean {
   return (
     value === undefined ||
-    (value.length > 0 &&
+    (typeof value === 'string' &&
+      value.length > 0 &&
       value.length <= 256 &&
       !/[\u0000-\u001f\u007f]/u.test(value))
   );
 }
 
-function canonicalLocale(locale: string): boolean {
-  if (locale.length === 0 || locale.length > 64) return false;
-  return canonicalizeLanguageTag(locale) === locale;
+function canonicalLocale(locale: unknown): locale is string {
+  return (
+    typeof locale === 'string' &&
+    locale.length <= 64 &&
+    canonicalizeLanguageTag(locale) === locale
+  );
 }
 
 function validDirection(direction: unknown): direction is LocaleDirection {
   return direction === 'ltr' || direction === 'rtl';
 }
 
-function assertDescriptorBase(id: string): void {
+function assertDescriptorBase(id: unknown): void {
   if (!validIdentity(id)) {
     invalidAsset(
       'Asset identities must be bounded invariant application-owned codes.',
@@ -301,6 +314,9 @@ function freezeFallback<Source>(
   fallback: LocalizedAssetFallback<Source> | undefined,
 ): LocalizedAssetFallback<Source> | undefined {
   if (fallback === undefined) return undefined;
+  if (!isRecord(fallback)) {
+    return invalidAsset('A localized asset fallback is invalid.');
+  }
   if (fallback.kind === 'language-independent') {
     return Object.freeze({
       kind: 'language-independent',
@@ -328,6 +344,12 @@ function freezeMetadata(
   metadata: LocalizedAssetMetadata | undefined,
 ): LocalizedAssetMetadata {
   if (metadata === undefined) return Object.freeze({});
+  // Asked of the value as it arrived, so the answer does not replace the declared fields with the
+  // open record the test is written against.
+  const received: unknown = metadata;
+  if (!isRecord(received)) {
+    return invalidAsset('Localized asset metadata is invalid.');
+  }
   return Object.freeze({
     ...(metadata.alt === undefined ? {} : { alt: metadata.alt }),
     ...(metadata.caption === undefined ? {} : { caption: metadata.caption }),
@@ -371,23 +393,39 @@ export function localizedAsset<Source>(
   fallback?: LocalizedAssetFallback<Source>,
 ): VariantAssetDescriptor<Source> {
   assertDescriptorBase(id);
-  if (variants.length === 0 || variants.length > 256) {
-    invalidAsset('Localized assets require one to 256 explicit variants.');
-  }
-  const seen = new Set<string>();
-  const normalized = variants
-    .map((variant) => {
-      if (!canonicalLocale(variant.locale) || seen.has(variant.locale)) {
-        return invalidAsset(
-          'Localized asset variants require unique canonical locales.',
-        );
-      }
-      seen.add(variant.locale);
-      return Object.freeze({ locale: variant.locale, source: variant.source });
-    })
-    .sort((left, right) =>
-      left.locale < right.locale ? -1 : left.locale > right.locale ? 1 : 0,
+  if (
+    !Array.isArray(variants) ||
+    variants.length === 0 ||
+    variants.length > 256
+  ) {
+    return invalidAsset(
+      'Localized assets require one to 256 explicit variants.',
     );
+  }
+  const byLocale = new Map<string, LocalizedAssetVariant<Source>>();
+  for (const variant of variants as readonly unknown[]) {
+    if (
+      !isRecord(variant) ||
+      !canonicalLocale(variant['locale']) ||
+      byLocale.has(variant['locale'])
+    ) {
+      return invalidAsset(
+        'Localized asset variants require unique canonical locales.',
+      );
+    }
+    byLocale.set(
+      variant['locale'],
+      Object.freeze({
+        locale: variant['locale'],
+        source: variant['source'] as Source,
+      }),
+    );
+  }
+  // Sorted as text by the default order, which the language defines by code unit for every engine,
+  // so two descriptors carrying the same variants hold them in the same order wherever they run.
+  const normalized = [...byLocale.keys()]
+    .sort()
+    .map((locale) => byLocale.get(locale) as LocalizedAssetVariant<Source>);
   const normalizedFallback = freezeFallback(fallback);
   return Object.freeze({
     kind: 'localized-variants',
@@ -428,10 +466,12 @@ export function fixedLanguageAsset<Source>(
 function localeSequence(
   request: LocalizedAssetResolutionRequest,
 ): readonly string[] {
-  if (!canonicalLocale(request.targetLocale)) {
-    return invalidAsset('Asset selection requires a canonical target locale.');
+  const fallbacks: unknown =
+    request.fallbackLocales === undefined ? [] : request.fallbackLocales;
+  if (!Array.isArray(fallbacks)) {
+    return invalidAsset('Asset fallback policy must be a list of locales.');
   }
-  const values = [request.targetLocale, ...(request.fallbackLocales ?? [])];
+  const values: readonly unknown[] = [request.targetLocale, ...fallbacks];
   if (values.length > 33) {
     return invalidAsset('Asset selection exceeds the explicit fallback bound.');
   }
@@ -439,7 +479,9 @@ function localeSequence(
   const normalized: string[] = [];
   for (const locale of values) {
     if (!canonicalLocale(locale)) {
-      return invalidAsset('Asset fallback policy contains an invalid locale.');
+      return invalidAsset(
+        'Asset selection requires a canonical target locale and canonical fallback locales.',
+      );
     }
     if (!seen.has(locale)) {
       seen.add(locale);
@@ -468,6 +510,11 @@ export function resolveLocalizedAsset<Source>(
   descriptor: LocalizedAssetDescriptor<Source>,
   request: LocalizedAssetResolutionRequest,
 ): ResolvedLocalizedAsset<Source> {
+  if (!isRecord(descriptor) || !isRecord(request)) {
+    return invalidAsset(
+      'Asset selection requires a declared descriptor and a request.',
+    );
+  }
   assertDescriptorBase(descriptor.id);
   const attemptedLocales = localeSequence(request);
   const common = {
@@ -587,6 +634,9 @@ function participantIdentity(input: DynamicAssetParticipantBase) {
 function participantRepresentation(
   value: DynamicAssetParticipantRepresentation,
 ): LocalizationParticipantRepresentation {
+  if (!isRecord(value)) {
+    return invalidAsset('Dynamic asset representation metadata is invalid.');
+  }
   switch (value.kind) {
     case 'locale-bound':
       if (!canonicalLocale(value.supplyingLocale)) {
@@ -623,6 +673,9 @@ function participantRepresentation(
         language: value.language,
         direction: value.direction,
       });
+    default:
+      // The three kinds are all the type holds, and the one a caller wrote is what is read here.
+      return invalidAsset('Dynamic asset representation kind is invalid.');
   }
 }
 
@@ -643,6 +696,9 @@ const participantFailureReasons =
 export function dynamicAssetParticipantReport(
   input: DynamicAssetParticipantReportInput,
 ): LocalizationParticipantReport {
+  if (!isRecord(input)) {
+    return invalidAsset('A dynamic asset participant report is invalid.');
+  }
   const identity = participantIdentity(input);
   switch (input.status) {
     case 'ready':
@@ -682,5 +738,8 @@ export function dynamicAssetParticipantReport(
         reason: input.reason,
         identity,
       });
+    default:
+      // The four statuses are all the type holds, and the one a caller wrote is what is read here.
+      return invalidAsset('Dynamic asset report status is invalid.');
   }
 }

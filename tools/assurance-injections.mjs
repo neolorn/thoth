@@ -4732,6 +4732,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/catalog-store-cache-and-admission.test.ts',
   },
   {
+    id: 'asset-locale-of-another-type-not-refused',
+    invariant:
+      'A locale, a language or an identity of another type is refused as invalid configuration wherever an asset is declared, selected or reported.',
+    source: 'packages/runtime/src/assets.ts',
+    find: "    typeof locale === 'string' &&\n    locale.length <= 64 &&",
+    replace: '    (locale as string).length <= 64 &&',
+    caughtBy: 'packages/runtime/test/asset-declaration-and-selection.test.ts',
+  },
+  {
     id: 'territory-split-takes-the-first-region',
     invariant:
       'A region CLDR split into several becomes the one likely subtags give the language, not the first of the list.',

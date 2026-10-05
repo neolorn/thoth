@@ -906,3 +906,328 @@ describe('a report about a dynamic asset', () => {
     },
   );
 });
+
+/**
+ * Values of another type, where a declaration, a request or a report expected one of its own.
+ *
+ * A typed caller cannot write these. A descriptor read from a file, a request built from a query,
+ * or a report assembled by untyped code can, and each is refused with the one typed failure this
+ * module raises, so a caller that handles a refusal handles all of them.
+ */
+const NOT_TEXT: readonly (readonly [string, unknown])[] = [
+  ['absent', undefined],
+  ['null', null],
+  ['a number', 42],
+  ['a list of one tag', ['en-US']],
+  ['a record', { locale: 'en-US' }],
+];
+
+const NOT_A_RECORD: readonly (readonly [string, unknown])[] = [
+  ['null', null],
+  ['text', 'en-US'],
+  ['a number', 42],
+  ['a list', []],
+];
+
+describe('a value of another type', () => {
+  const logo = neutralAsset('asset.logo', SOURCE);
+  const cover = localizedAsset('asset.cover', [
+    { locale: 'en-US', source: SOURCE },
+  ]);
+  const written = (fields: object) =>
+    ({ id: 'asset.cover', ...fields }) as never;
+  const reported = (fields: object) =>
+    ({ assetId: 'asset.cover', ...fields }) as never;
+
+  it.each(NOT_TEXT)('is refused as an asset identity when %s', (_label, id) => {
+    expect(refusalCode(() => neutralAsset(id as never, SOURCE))).toBe(REFUSED);
+    expect(
+      refusalCode(() =>
+        resolveLocalizedAsset(
+          { kind: 'neutral', id, source: SOURCE } as never,
+          { targetLocale: 'en-US' },
+        ),
+      ),
+    ).toBe(REFUSED);
+    expect(
+      refusalCode(() =>
+        dynamicAssetParticipantReport({
+          assetId: id,
+          status: 'unavailable',
+        } as never),
+      ),
+    ).toBe(REFUSED);
+  });
+
+  it.each(NOT_TEXT)(
+    'is refused as the language of a fixed-language asset when %s',
+    (_label, language) => {
+      expect(
+        refusalCode(() =>
+          fixedLanguageAsset('doc.deed', SOURCE, language as never, 'ltr'),
+        ),
+      ).toBe(REFUSED);
+      expect(
+        refusalCode(() =>
+          resolveLocalizedAsset(
+            written({
+              kind: 'fixed-language',
+              source: SOURCE,
+              language,
+              direction: 'ltr',
+            }),
+            { targetLocale: 'en-US' },
+          ),
+        ),
+      ).toBe(REFUSED);
+    },
+  );
+
+  it.each(NOT_TEXT)(
+    'is refused as the locale of a variant when %s',
+    (_label, locale) => {
+      expect(
+        refusalCode(() =>
+          localizedAsset('asset.cover', [{ locale, source: SOURCE }] as never),
+        ),
+      ).toBe(REFUSED);
+    },
+  );
+
+  it.each(NOT_TEXT)(
+    'is refused as the language of a declared fallback when %s',
+    (_label, language) => {
+      const fallback = {
+        kind: 'fixed-language',
+        source: OTHER,
+        language,
+        direction: 'rtl',
+      };
+      expect(
+        refusalCode(() =>
+          localizedAsset(
+            'asset.cover',
+            [{ locale: 'en-US', source: SOURCE }],
+            fallback as never,
+          ),
+        ),
+      ).toBe(REFUSED);
+      expect(
+        refusalCode(() =>
+          resolveLocalizedAsset(
+            written({
+              kind: 'localized-variants',
+              variants: [{ locale: 'en-US', source: SOURCE }],
+              fallback,
+            }),
+            { targetLocale: 'ar-EG' },
+          ),
+        ),
+      ).toBe(REFUSED);
+    },
+  );
+
+  it.each(NOT_TEXT)(
+    'is refused as the target locale of a selection when %s',
+    (_label, targetLocale) => {
+      expect(
+        refusalCode(() =>
+          resolveLocalizedAsset(logo, { targetLocale } as never),
+        ),
+      ).toBe(REFUSED);
+    },
+  );
+
+  it.each(NOT_TEXT.filter(([, value]) => value !== undefined))(
+    'is refused as a fallback locale of a selection when %s',
+    (_label, fallback) => {
+      expect(
+        refusalCode(() =>
+          resolveLocalizedAsset(logo, {
+            targetLocale: 'ar-EG',
+            fallbackLocales: ['fr-FR', fallback],
+          } as never),
+        ),
+      ).toBe(REFUSED);
+    },
+  );
+
+  it.each(NOT_TEXT)(
+    'is refused as the supplying locale or the language of a report when %s',
+    (_label, locale) => {
+      expect(
+        refusalCode(() =>
+          dynamicAssetParticipantReport(
+            reported({
+              status: 'ready',
+              representation: { kind: 'locale-bound', supplyingLocale: locale },
+            }),
+          ),
+        ),
+      ).toBe(REFUSED);
+      expect(
+        refusalCode(() =>
+          dynamicAssetParticipantReport(
+            reported({
+              status: 'ready',
+              representation: {
+                kind: 'fixed-language',
+                language: locale,
+                direction: 'ltr',
+              },
+            }),
+          ),
+        ),
+      ).toBe(REFUSED);
+    },
+  );
+
+  it.each(NOT_TEXT.filter(([, value]) => value !== undefined))(
+    'is refused as a representation or revision identity when %s',
+    (_label, identity) => {
+      for (const field of ['representationId', 'revision']) {
+        expect(
+          refusalCode(() =>
+            dynamicAssetParticipantReport(
+              reported({ status: 'unavailable', [field]: identity }),
+            ),
+          ),
+        ).toBe(REFUSED);
+      }
+    },
+  );
+
+  it.each(NOT_TEXT)(
+    'is refused as the code of a domain outcome when %s',
+    (_label, code) => {
+      expect(
+        refusalCode(() =>
+          dynamicAssetParticipantReport(
+            reported({ status: 'domain-outcome', code }),
+          ),
+        ),
+      ).toBe(REFUSED);
+    },
+  );
+
+  it.each([...NOT_A_RECORD, ['absent', undefined] as const])(
+    'is refused as a descriptor, a request or a report when %s',
+    (_label, value) => {
+      expect(
+        refusalCode(() =>
+          resolveLocalizedAsset(value as never, { targetLocale: 'en-US' }),
+        ),
+      ).toBe(REFUSED);
+      expect(
+        refusalCode(() => resolveLocalizedAsset(logo, value as never)),
+      ).toBe(REFUSED);
+      expect(
+        refusalCode(() => dynamicAssetParticipantReport(value as never)),
+      ).toBe(REFUSED);
+    },
+  );
+
+  it.each([
+    ['absent', undefined],
+    ['null', null],
+    ['text', 'en-US'],
+    ['a record shaped like a list', { length: 1, 0: { locale: 'en-US' } }],
+  ])('is refused as the variants of a localized asset when %s', (_l, value) => {
+    expect(
+      refusalCode(() => localizedAsset('asset.cover', value as never)),
+    ).toBe(REFUSED);
+    expect(
+      refusalCode(() =>
+        resolveLocalizedAsset(
+          written({ kind: 'localized-variants', variants: value }),
+          { targetLocale: 'en-US' },
+        ),
+      ),
+    ).toBe(REFUSED);
+  });
+
+  it.each(NOT_A_RECORD)(
+    'is refused as one variant when %s',
+    (_label, value) => {
+      expect(
+        refusalCode(() => localizedAsset('asset.cover', [value] as never)),
+      ).toBe(REFUSED);
+    },
+  );
+
+  it.each(NOT_A_RECORD)(
+    'is refused as a declared fallback when %s',
+    (_label, fallback) => {
+      expect(
+        refusalCode(() =>
+          localizedAsset(
+            'asset.cover',
+            [{ locale: 'en-US', source: SOURCE }],
+            fallback as never,
+          ),
+        ),
+      ).toBe(REFUSED);
+    },
+  );
+
+  it.each([
+    ['text', 'fr-FR'],
+    ['a number', 42],
+    ['a record', { 0: 'fr-FR' }],
+    ['null', null],
+  ])('is refused as the fallback list of a selection when %s', (_l, value) => {
+    expect(
+      refusalCode(() =>
+        resolveLocalizedAsset(cover, {
+          targetLocale: 'ar-EG',
+          fallbackLocales: value,
+        } as never),
+      ),
+    ).toBe(REFUSED);
+  });
+
+  it.each(NOT_A_RECORD)(
+    'is refused as the descriptive copy of a selection when %s',
+    (_label, metadata) => {
+      expect(
+        refusalCode(() =>
+          resolveLocalizedAsset(logo, {
+            targetLocale: 'en-US',
+            metadata,
+          } as never),
+        ),
+      ).toBe(REFUSED);
+    },
+  );
+
+  it.each([...NOT_A_RECORD, ['absent', undefined] as const])(
+    'is refused as the representation of a ready report when %s',
+    (_label, representation) => {
+      expect(
+        refusalCode(() =>
+          dynamicAssetParticipantReport(
+            reported({ status: 'ready', representation }),
+          ),
+        ),
+      ).toBe(REFUSED);
+    },
+  );
+
+  it('is refused as a representation kind or a report status outside the declared ones', () => {
+    expect(
+      refusalCode(() =>
+        dynamicAssetParticipantReport(
+          reported({ status: 'ready', representation: { kind: 'other' } }),
+        ),
+      ),
+    ).toBe(REFUSED);
+    expect(
+      refusalCode(() =>
+        dynamicAssetParticipantReport(reported({ status: 'pending' })),
+      ),
+    ).toBe(REFUSED);
+    expect(refusalCode(() => dynamicAssetParticipantReport(reported({})))).toBe(
+      REFUSED,
+    );
+  });
+});

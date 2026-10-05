@@ -1074,14 +1074,6 @@
     },
     {
       "file": "packages/runtime/src/assets.ts",
-      "mutator": "ConditionalExpression",
-      "original": "locale.length === 0",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "An empty locale still answers false: canonicalizeLanguageTag refuses an empty subtag (core/src/language-tag.ts lines 65 and 66) and returns undefined, which never equals the locale."
-    },
-    {
-      "file": "packages/runtime/src/assets.ts",
       "mutator": "StringLiteral",
       "original": "'Asset identities must be bounded invariant application-owned codes.'",
       "replacement": "\"\"",
@@ -1095,6 +1087,22 @@
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The literal is the text of the refusal for an invalid fixed-language fallback; the caller is given the code and outcome, and nothing compares this text."
+    },
+    {
+      "file": "packages/runtime/src/assets.ts",
+      "mutator": "StringLiteral",
+      "original": "'A localized asset fallback is invalid.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The literal is the text of the refusal for a declared fallback that is not a record; the caller is given the code and outcome, and nothing compares this text."
+    },
+    {
+      "file": "packages/runtime/src/assets.ts",
+      "mutator": "StringLiteral",
+      "original": "'Localized asset metadata is invalid.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The literal is the text of the refusal for descriptive copy that is not a record; the caller is given the code and outcome, and nothing compares this text."
     },
     {
       "file": "packages/runtime/src/assets.ts",
@@ -1114,46 +1122,6 @@
     },
     {
       "file": "packages/runtime/src/assets.ts",
-      "mutator": "EqualityOperator",
-      "original": "left.locale < right.locale",
-      "replacement": "left.locale <= right.locale",
-      "category": "equivalent",
-      "reason": "Line 380 refuses two variants on one locale, so the comparator never sees equal locales and this operand answers exactly as the original for every pair it is given."
-    },
-    {
-      "file": "packages/runtime/src/assets.ts",
-      "mutator": "ConditionalExpression",
-      "original": "left.locale > right.locale",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "Line 380 refuses two variants on one locale, so the comparator never sees equal locales and this operand answers exactly as the original for every pair it is given."
-    },
-    {
-      "file": "packages/runtime/src/assets.ts",
-      "mutator": "EqualityOperator",
-      "original": "left.locale > right.locale",
-      "replacement": "left.locale >= right.locale",
-      "category": "equivalent",
-      "reason": "Line 380 refuses two variants on one locale, so the comparator never sees equal locales and this operand answers exactly as the original for every pair it is given."
-    },
-    {
-      "file": "packages/runtime/src/assets.ts",
-      "mutator": "ConditionalExpression",
-      "original": "left.locale > right.locale",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The comparator answers zero where it should answer a positive number for a greater locale, and the order a sort gives under such a comparator is defined by the engine: on the development Node, 180,000 orders of 2 to 256 locales sorted the same with both forms. The reason holds for that engine and is not derived from the language."
-    },
-    {
-      "file": "packages/runtime/src/assets.ts",
-      "mutator": "EqualityOperator",
-      "original": "left.locale > right.locale",
-      "replacement": "left.locale <= right.locale",
-      "category": "equivalent",
-      "reason": "The comparator answers zero where it should answer a positive number for a greater locale, and the order a sort gives under such a comparator is defined by the engine: on the development Node, 180,000 orders of 2 to 256 locales sorted the same with both forms. The reason holds for that engine and is not derived from the language."
-    },
-    {
-      "file": "packages/runtime/src/assets.ts",
       "mutator": "StringLiteral",
       "original": "'A fixed-language asset requires valid language metadata.'",
       "replacement": "\"\"",
@@ -1162,27 +1130,11 @@
     },
     {
       "file": "packages/runtime/src/assets.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n    return invalidAsset('Asset selection requires a canonical target locale.');\n  }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "The target locale is the first value the loop at lines 440 to 443 checks, so a non-canonical target is still refused with the same invalid-configuration error; the caller sees only a different message, which nothing compares."
-    },
-    {
-      "file": "packages/runtime/src/assets.ts",
-      "mutator": "ConditionalExpression",
-      "original": "!canonicalLocale(request.targetLocale)",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The target locale is the first value the loop at lines 440 to 443 checks, so a non-canonical target is still refused with the same invalid-configuration error; the caller sees only a different message, which nothing compares."
-    },
-    {
-      "file": "packages/runtime/src/assets.ts",
       "mutator": "StringLiteral",
-      "original": "'Asset selection requires a canonical target locale.'",
+      "original": "'Asset fallback policy must be a list of locales.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The literal is the text of the refusal for a non-canonical target locale; the caller is given the code and outcome, and nothing compares this text."
+      "reason": "The literal is the text of the refusal for a fallback policy that is not a list; the caller is given the code and outcome, and nothing compares this text."
     },
     {
       "file": "packages/runtime/src/assets.ts",
@@ -1195,10 +1147,18 @@
     {
       "file": "packages/runtime/src/assets.ts",
       "mutator": "StringLiteral",
-      "original": "'Asset fallback policy contains an invalid locale.'",
+      "original": "'Asset selection requires a canonical target locale and canonical fallback locales.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The literal is the text of the refusal for a non-canonical fallback locale; the caller is given the code and outcome, and nothing compares this text."
+      "reason": "The literal is the text of the refusal for a target or fallback locale that is not canonical; the caller is given the code and outcome, and nothing compares this text."
+    },
+    {
+      "file": "packages/runtime/src/assets.ts",
+      "mutator": "StringLiteral",
+      "original": "'Asset selection requires a declared descriptor and a request.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The literal is the text of the refusal for a descriptor or a request that is not a record; the caller is given the code and outcome, and nothing compares this text."
     },
     {
       "file": "packages/runtime/src/assets.ts",
@@ -1227,6 +1187,14 @@
     {
       "file": "packages/runtime/src/assets.ts",
       "mutator": "StringLiteral",
+      "original": "'Dynamic asset representation metadata is invalid.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The literal is the text of the refusal for a representation that is not a record; the caller is given the code and outcome, and nothing compares this text."
+    },
+    {
+      "file": "packages/runtime/src/assets.ts",
+      "mutator": "StringLiteral",
       "original": "'Dynamic localized assets require a canonical supplying locale.'",
       "replacement": "\"\"",
       "category": "message-wording",
@@ -1251,10 +1219,34 @@
     {
       "file": "packages/runtime/src/assets.ts",
       "mutator": "StringLiteral",
+      "original": "'Dynamic asset representation kind is invalid.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The literal is the text of the refusal for a representation kind outside the three; the caller is given the code and outcome, and nothing compares this text."
+    },
+    {
+      "file": "packages/runtime/src/assets.ts",
+      "mutator": "StringLiteral",
+      "original": "'A dynamic asset participant report is invalid.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The literal is the text of the refusal for a report that is not a record; the caller is given the code and outcome, and nothing compares this text."
+    },
+    {
+      "file": "packages/runtime/src/assets.ts",
+      "mutator": "StringLiteral",
       "original": "'Dynamic asset failure reason is invalid.'",
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The message of the refusal for a failure reason outside the closed set; the suite asserts the invalid-configuration code and the outcome beside it."
+    },
+    {
+      "file": "packages/runtime/src/assets.ts",
+      "mutator": "StringLiteral",
+      "original": "'Dynamic asset report status is invalid.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The literal is the text of the refusal for a report status outside the four; the caller is given the code and outcome, and nothing compares this text."
     },
     {
       "file": "packages/runtime/src/catalog-runtime.ts",

@@ -3633,6 +3633,12 @@
     {
       "spec": "09-safe-content-and-ux.spec.md",
       "section": "14. Typography, icons, and assets",
+      "statement": "A release MUST refuse one whose identity, locale, language, direction, variant list, fallback, representation, or status is not what its declaration allows, a value of another type where text or a list is declared included, with the typed `invalid-configuration` failure.",
+      "checks": ["assurance:asset-locale-of-another-type-not-refused"]
+    },
+    {
+      "spec": "09-safe-content-and-ux.spec.md",
+      "section": "14. Typography, icons, and assets",
       "statement": "A government, legal, official, historical, registration, tax, certificate, or comparable authentic artifact preserves its original content and its actual language unless the authority behind it supplies a distinct localized variant, and a release MUST NOT treat authenticity as a missing translation.",
       "checks": [
         "assurance-runtime:fixed-language-asset-reported-as-a-fallback"
