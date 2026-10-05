@@ -725,6 +725,12 @@ MUST keep it a 404 rather than redirect to a homepage or a guessed route. An unk
 route is a direct 404 rather than a locale negotiation, and a release MUST emit no canonical or
 alternate relationship for it.
 
+The body a renderer draws and the content language of the response name one locale. A release MUST
+hand a renderer the locale the response's content language names: the resolved locale at a page,
+the locale a prefix or an origin states at a missing or removed page under it, the negotiated
+locale at a missing locale-neutral address, and the default locale at an address under a prefix
+policy that states no locale the policy serves.
+
 A completed coordinated representation tells one story. The canonical route locale, the content
 language, the root language and direction, the visible messages, the title and description, the
 social metadata, the localized structured-data fields, the route projection, the catalog snapshot,

@@ -4447,6 +4447,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/locale-of-an-unprojected-address.test.ts',
   },
   {
+    id: 'handler-draws-a-missing-page-in-the-default-locale',
+    invariant:
+      'A renderer is handed the locale the response names in Content-Language, so a missing page under a served prefix is drawn in that locale.',
+    source: 'packages/runtime/http/src/handler.ts',
+    find: '        : resolution.presentationLocale;',
+    replace: '        : policy.defaultLocale;',
+    caughtBy: 'packages/runtime/test/handler-render-locale.test.ts',
+  },
+  {
     id: 'handler-reads-accept-language-by-exact-tag',
     invariant:
       "The request handler negotiates Accept-Language through the runtime's own negotiation, so a regional variant reaches its language's served locale and a weight above 1 counts as 1.",

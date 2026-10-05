@@ -2606,6 +2606,12 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "15. Error presentation and coherence",
+      "statement": "A release MUST hand a renderer the locale the response's content language names: the resolved locale at a page, the locale a prefix or an origin states at a missing or removed page under it, the negotiated locale at a missing locale-neutral address, and the default locale at an address under a prefix policy that states no locale the policy serves.",
+      "checks": ["assurance:handler-draws-a-missing-page-in-the-default-locale"]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "15. Error presentation and coherence",
       "statement": "An unknown unprefixed route is a direct 404 rather than a locale negotiation, and a release MUST emit no canonical or alternate relationship for it.",
       "checks": ["assurance:unknown-unprefixed-address-negotiated"]
     },

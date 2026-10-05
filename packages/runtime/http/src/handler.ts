@@ -96,8 +96,10 @@ export interface LocaleRequestOutcome {
   /**
    * The locale this response is in, which is what the document should be rendered in.
    *
-   * For an address that names no locale and no preference that could be honoured, this is the
-   * policy's default rather than nothing, so a renderer always has a language to write in.
+   * It is the locale `Content-Language` names on the response. At a missing or removed page under a
+   * prefix or an origin the policy serves it is that locale. For an address that names no locale
+   * the policy serves and no preference that could be honoured, it is the policy's default rather
+   * than nothing, so a renderer always has a language to write in.
    */
   readonly locale: string;
 }
@@ -481,6 +483,13 @@ export function createLocaleRequestHandler(
     // missing page, it answers the page it does not have as unchanged.
     const handed =
       resolution.status === 'success' ? request : withoutPreconditions(request);
+    // The locale the response says it is in, so the body and `Content-Language` name one locale: a
+    // missing or removed page under a prefix or an origin the policy serves is drawn in that
+    // locale, and an address that states no served locale in the default.
+    const drawnIn =
+      resolution.status === 'success'
+        ? resolution.locale
+        : resolution.presentationLocale;
     // Opened before the render and closed by the take below, so the render has a channel to
     // declare into and nothing else does. A declaration against a request this never opened is a
     // request that was replaced between here and the render, which the declaring side reports.
@@ -488,7 +497,7 @@ export function createLocaleRequestHandler(
     const result = await options.render({
       request: handed,
       resolution,
-      locale: settled ?? policy.defaultLocale,
+      locale: drawnIn,
     });
     // Taken whether or not the renderer wrapped its answer, because the page declares from inside
     // the render and the renderer's own return says nothing about that.
@@ -558,7 +567,7 @@ export function createLocaleRequestHandler(
     options.ɵobserve?.({
       request,
       resolution,
-      locale: settled ?? policy.defaultLocale,
+      locale: drawnIn,
       declared,
       carried: carriesDeclaration,
       declined: false,
