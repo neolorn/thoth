@@ -17,7 +17,7 @@ import {
   type LocalizationParticipantReport,
 } from '@neolorn/equator/core';
 
-import { rejectionOf } from './catalog-store-harness.js';
+import { diagnosticOf, rejectionOf } from './catalog-store-harness.js';
 import {
   FORMATTING,
   READY,
@@ -489,6 +489,45 @@ describe('an attempt overtaken by a newer one for the same region', () => {
     expect(region.registration.state()).toMatchObject({
       current: { targetLocale: 'fr-FR', transitionId: 2 },
     });
+    coordinator.dispose();
+  });
+
+  it('is refused at commit without disturbing what the newer attempt committed', async () => {
+    const coordinator = new ParticipantCoordinator();
+    const log: string[] = [];
+    const region = recorded(coordinator, log, 'region');
+
+    const older = await coordinator.prepareRequired(
+      coordinator.required(),
+      'ar-EG',
+      FORMATTING,
+      1,
+      live(),
+    );
+    const newer = await coordinator.prepareRequired(
+      coordinator.required(),
+      'fr-FR',
+      FORMATTING,
+      2,
+      live(),
+    );
+    coordinator.commitPrepared(newer);
+    const committed = region.registration.state();
+
+    expect(diagnosticOf(() => coordinator.commitPrepared(older))).toMatchObject(
+      {
+        code: 'superseded',
+        transitionId: 2,
+      },
+    );
+
+    // The page shows what the newer change committed, and the region's last attempt is that one.
+    expect(region.registration.state()).toBe(committed);
+    expect(committed).toMatchObject({
+      current: { targetLocale: 'fr-FR', transitionId: 2 },
+      attempt: { status: 'ready', targetLocale: 'fr-FR', transitionId: 2 },
+    });
+    expect(log).toStrictEqual(['commit region 2', 'discard region 1 ready']);
     coordinator.dispose();
   });
 

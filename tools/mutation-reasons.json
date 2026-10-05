@@ -7692,14 +7692,6 @@
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
-      "mutator": "CallExpression",
-      "original": "item.adapter.stateValue.set(item.previousState);",
-      "replacement": ";",
-      "category": "unstated-behavior",
-      "reason": "Restoring the previous state changes nothing wherever the runtime reaches this line, and in the one coordinator sequence where it differs it drops a later commit; which of the two is meant is not stated, and a case would fix one in place."
-    },
-    {
-      "file": "packages/runtime/src/participant-runtime.ts",
       "mutator": "StringLiteral",
       "original": "'The localization participant is not registered.'",
       "replacement": "\"\"",

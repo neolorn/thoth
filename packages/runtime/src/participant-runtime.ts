@@ -98,7 +98,6 @@ export interface PreparedParticipant {
 
 interface InternalPreparedParticipant extends PreparedParticipant {
   readonly adapter: ParticipantAdapter;
-  readonly previousState: LocalizationParticipantState;
   readonly unlink: () => void;
   readonly clearDeadline: () => void;
   finalized: boolean;
@@ -1027,7 +1026,6 @@ export class ParticipantCoordinator {
         adapter,
         context,
         report,
-        previousState,
         unlink: linked.unlink,
         clearDeadline,
         finalized: false,
@@ -1254,15 +1252,21 @@ export class ParticipantCoordinator {
       }
       for (const item of internal) {
         if (item.finalized) continue;
-        item.adapter.stateValue.set(item.previousState);
-        this.setAttempt(item.adapter, {
-          status:
-            item === failed ? abortDiagnosticStatus(diagnostic) : 'cancelled',
-          targetLocale: item.context.targetLocale,
-          transitionId: item.context.transitionId,
-          report: item.report,
-          diagnostic,
-        });
+        // A newer attempt of the same participant may have prepared, and committed, since this
+        // one did. What the page shows and how that attempt ended are the newer one's to say.
+        if (
+          item.adapter.stateValue().attempt.transitionId ===
+          item.context.transitionId
+        ) {
+          this.setAttempt(item.adapter, {
+            status:
+              item === failed ? abortDiagnosticStatus(diagnostic) : 'cancelled',
+            targetLocale: item.context.targetLocale,
+            transitionId: item.context.transitionId,
+            report: item.report,
+            diagnostic,
+          });
+        }
         this.discard(item.adapter, item.context, item.report);
         this.cleanup(item);
       }
