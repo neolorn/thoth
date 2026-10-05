@@ -32,14 +32,17 @@ import {
   MEMORY_FLOOR,
   processorBudget,
   PROCESSORS_VARIABLE,
+  stagePriority,
   runnerEnvironment,
   stageProcessors,
 } from './gate-resources.mjs';
 import {
-  aboveRoot,
+  aboveLevel,
   descendantsOf,
   holdDown,
+  levelInReading,
   processorsBetween,
+  startAtPriority,
 } from './process-tree.mjs';
 import { takeHeavyJobLock } from './heavy-job-lock.mjs';
 import { steps as declaredSteps } from './verify-stages.mjs';
@@ -204,14 +207,88 @@ const reading = (cpu) => [
   { pid: 99, ppid: 1, priority: 13, cpuSeconds: 500 },
 ];
 assert.deepEqual(
-  aboveRoot(reading([0, 0, 0]), 10, new Set([14])).map(({ pid }) => pid),
+  aboveLevel(reading([0, 0, 0]), 10, 6, new Set([14])).map(({ pid }) => pid),
   [13],
-  'A process under the gate above its priority was not named, or one outside the tree or the reader was.',
+  'A process under the gate above its stage priority was not named, or one outside the tree or the reader was.',
+);
+assert.deepEqual(
+  aboveLevel(reading([0, 0, 0]), 10, 8, new Set([14])),
+  [],
+  'A process at normal priority was named while a stage that runs at normal priority ran.',
 );
 assert.equal(
-  aboveRoot(reading([0, 0, 0]), 7),
+  aboveLevel(reading([0, 0, 0]), 7, 6),
   undefined,
   'A reading without the gate in it read as a clean one.',
+);
+
+// The two levels. A stage that runs alone runs at normal priority, and every other stage below it.
+assert.equal(stagePriority({ id: 'a', exclusive: true }), 'normal');
+assert.equal(stagePriority({ id: 'b' }), 'below-normal');
+for (const step of declaredSteps) {
+  const alone =
+    /^verify:(browser-assurance(:|$)(?!self-test)|browser-specs$|cost-budget(:self-test)?$)/u.test(
+      step.id,
+    );
+  assert.equal(
+    stagePriority(step),
+    alone ? 'normal' : 'below-normal',
+    `${step.id} runs at ${stagePriority(step)} priority.`,
+  );
+}
+assert.deepEqual(
+  [
+    levelInReading('normal', 'win32'),
+    levelInReading('below-normal', 'win32'),
+    levelInReading('normal', 'linux'),
+    levelInReading('below-normal', 'linux'),
+  ],
+  [8, 6, 0, -10],
+  'A level is not read in the units a process reading uses.',
+);
+// How a stage is started at its level, with the platform and the priority call planted. On Windows
+// the gate is below normal and a child takes its parent's class, so the gate stands at normal for
+// the length of the start and no longer. Elsewhere a process cannot take back a priority it gave
+// up, so the gate keeps its own and lowers the stage it has just started.
+const started = (level, platform, start = () => ({ pid: 77 })) => {
+  const priorityCalls = [];
+  let outcome;
+  try {
+    outcome = startAtPriority(level, start, {
+      platform,
+      set: (...call) => priorityCalls.push(call),
+    });
+  } catch (error) {
+    outcome = error.message;
+  }
+  return { priorityCalls, outcome };
+};
+assert.deepEqual(
+  started('normal', 'win32', () => 'the child'),
+  { priorityCalls: [[0], [10]], outcome: 'the child' },
+  'On Windows a normal stage was not started with the gate at normal, or the gate was left there.',
+);
+assert.deepEqual(
+  started('normal', 'win32', () => {
+    throw new Error('no such command');
+  }),
+  { priorityCalls: [[0], [10]], outcome: 'no such command' },
+  'A start that failed left the gate at normal priority.',
+);
+assert.deepEqual(
+  started('below-normal', 'win32').priorityCalls,
+  [],
+  'On Windows a stage below normal was started by anything but inheritance.',
+);
+assert.deepEqual(
+  started('below-normal', 'linux').priorityCalls,
+  [[77, 10]],
+  'Off Windows a stage below normal was not lowered as it started.',
+);
+assert.deepEqual(
+  started('normal', 'linux').priorityCalls,
+  [],
+  'Off Windows a normal stage had its priority changed.',
 );
 const before = descendantsOf(reading([1, 2, 3]), 10, new Set([14]));
 const after = descendantsOf(

@@ -18,8 +18,11 @@
  *   ever one browser row at a time, and the cost budget and its self-test, whose readings are
  *   wall-clock times that anything running beside them would be part of.
  *
- * Priority is not here: the gate lowers its own and every process it starts inherits it, which
- * `verify.mjs` checks on each stage it starts and samples across the whole tree while it runs.
+ * - **Priority.** Below normal, except for a stage that runs alone, which runs at normal priority:
+ *   what such a stage reports is a time or a browser's answer within a bound, and a working
+ *   machine's foreground load starves a process below normal for long enough to move both. Nothing
+ *   runs beside it, so it takes nothing from another stage. `verify.mjs` starts each stage at its
+ *   level, checks it as it starts, and samples the whole tree while it runs.
  */
 import { availableParallelism } from 'node:os';
 
@@ -45,6 +48,10 @@ export function processorBudget(
   }
   return value;
 }
+
+/** The priority a stage runs at: normal where it runs alone, below normal otherwise. */
+export const stagePriority = (step) =>
+  step.exclusive === true ? 'normal' : 'below-normal';
 
 /**
  * A stage's share: what it declares, and never more than the whole budget. A stage that runs alone

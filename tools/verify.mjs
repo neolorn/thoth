@@ -8,13 +8,7 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import {
-  constants,
-  freemem,
-  getPriority,
-  setPriority,
-  totalmem,
-} from 'node:os';
+import { freemem, getPriority, setPriority, totalmem } from 'node:os';
 import { basename, dirname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -25,13 +19,17 @@ import {
   processorBudget,
   PROCESSORS_VARIABLE,
   runnerEnvironment,
+  stagePriority,
 } from './gate-resources.mjs';
 import {
-  aboveRoot,
+  aboveLevel,
   descendantsOf,
   holdDown,
+  levelForSystem,
+  levelInReading,
   processorsBetween,
   readProcesses,
+  startAtPriority,
 } from './process-tree.mjs';
 import {
   OCCURRENCES_FILE_VARIABLE,
@@ -531,46 +529,49 @@ const runStep = (id, timeoutSeconds, root, processors) =>
     const nodeOptions = [process.env.NODE_OPTIONS, `--require "${tracerPath}"`]
       .filter((part) => part !== undefined && part !== '')
       .join(' ');
-    const child = spawn(pnpmCommand, commandArguments, {
-      cwd: root,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: {
-        ...process.env,
-        NODE_OPTIONS: nodeOptions,
-        // Read and removed by the tracer in the first node process it reaches. When that is a
-        // script entry of `pnpm`, its workspace scan is the runner's work, not the stage's, and
-        // attributing it to the stage gave three stages an undeclared read of `source:packages` on
-        // the runs where pnpm happened not to skip that scan.
-        EQUATOR_TRACE_LAUNCHER: '1',
-        // The stage's share of the processor budget, in the settings its runners size themselves by.
-        ...runnerEnvironment(processors),
-        // What a stage starts runs under this run's lock and is not refused by it.
-        ...heavyJob.environment,
-        // The trace goes to the repository, because the tree it describes is about to be removed.
-        EQUATOR_TRACE_FILE: resolve(runDirectory, `${safeName(id)}.jsonl`),
-        // Traced against the tree the stage actually ran in, so a path resolves to the same
-        // artefact name wherever it was touched. That is what makes the drift check mean the same
-        // thing in a private tree as in the shared one.
-        EQUATOR_TRACE_ROOT: root,
-        EQUATOR_NODE_COMPATIBILITY_ROOT: nodeRuntimesRoot,
-        EQUATOR_NPM_CACHE: npmCacheRoot,
-        // Set to undefined rather than left out, so one set in the caller's shell reaches no stage.
-        [CLAIMS_FILE_VARIABLE]: claims ? claimsFile(root, id) : undefined,
-        // In the repository beside the trace, for the same reason.
-        [OCCURRENCES_FILE_VARIABLE]: occurrencesFile(id),
-        // Temporary, and a deliberate trade against an instrument's own cost rather than a lapse.
-        //
-        // The five page-side wrappers behind this switch cover the hot paths (element scrolling,
-        // focus, and the two selection methods) and they were turned off because their cost moved
-        // the failure *rate*, which made them useless for measuring one. This hunt is not measuring
-        // a rate. It is trying to catch one occurrence with the wrappers on, and for that a higher
-        // rate is welcome. So they run on unattended gate runs, where the occurrences happen, and
-        // this line comes out the moment one is caught with them installed.
-        EQUATOR_ASSURANCE_TRACE_CALLS: '1',
-      },
-    });
+    const level = stagePriority(stepById.get(id));
+    const child = startAtPriority(level, () =>
+      spawn(pnpmCommand, commandArguments, {
+        cwd: root,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: {
+          ...process.env,
+          NODE_OPTIONS: nodeOptions,
+          // Read and removed by the tracer in the first node process it reaches. When that is a
+          // script entry of `pnpm`, its workspace scan is the runner's work, not the stage's, and
+          // attributing it to the stage gave three stages an undeclared read of `source:packages` on
+          // the runs where pnpm happened not to skip that scan.
+          EQUATOR_TRACE_LAUNCHER: '1',
+          // The stage's share of the processor budget, in the settings its runners size themselves by.
+          ...runnerEnvironment(processors),
+          // What a stage starts runs under this run's lock and is not refused by it.
+          ...heavyJob.environment,
+          // The trace goes to the repository, because the tree it describes is about to be removed.
+          EQUATOR_TRACE_FILE: resolve(runDirectory, `${safeName(id)}.jsonl`),
+          // Traced against the tree the stage actually ran in, so a path resolves to the same
+          // artefact name wherever it was touched. That is what makes the drift check mean the same
+          // thing in a private tree as in the shared one.
+          EQUATOR_TRACE_ROOT: root,
+          EQUATOR_NODE_COMPATIBILITY_ROOT: nodeRuntimesRoot,
+          EQUATOR_NPM_CACHE: npmCacheRoot,
+          // Set to undefined rather than left out, so one set in the caller's shell reaches no stage.
+          [CLAIMS_FILE_VARIABLE]: claims ? claimsFile(root, id) : undefined,
+          // In the repository beside the trace, for the same reason.
+          [OCCURRENCES_FILE_VARIABLE]: occurrencesFile(id),
+          // Temporary, and a deliberate trade against an instrument's own cost rather than a lapse.
+          //
+          // The five page-side wrappers behind this switch cover the hot paths (element scrolling,
+          // focus, and the two selection methods) and they were turned off because their cost moved
+          // the failure *rate*, which made them useless for measuring one. This hunt is not measuring
+          // a rate. It is trying to catch one occurrence with the wrappers on, and for that a higher
+          // rate is welcome. So they run on unattended gate runs, where the occurrences happen, and
+          // this line comes out the moment one is caught with them installed.
+          EQUATOR_ASSURANCE_TRACE_CALLS: '1',
+        },
+      }),
+    );
 
-    checkInherited(id, child.pid);
+    checkStarted(id, child.pid, level);
 
     let output = '';
     let timedOut = false;
@@ -626,24 +627,27 @@ const heavyJob = await holdHeavyJobLock(
 );
 
 /**
- * Below normal, for the gate and everything it starts.
+ * Below normal for every stage but one that runs alone, which runs at normal priority
+ * (`stagePriority`).
  *
- * Set on the gate's own process, because a child created without a priority class of its own
- * receives its parent's when that is below normal or idle (`CreateProcess`, `dwCreationFlags`), and
- * Linux carries a nice value across `fork` and `execve` (`setpriority(2)`). What each stage's first process received is
- * read back as it starts, and the whole tree is read while the run goes, so a process that raises
- * its own priority is lowered again rather than assumed not to exist.
+ * On Windows the gate's own process is set below normal, because a child created without a priority
+ * class of its own receives its parent's when that is below normal or idle (`CreateProcess`,
+ * `dwCreationFlags`); elsewhere each stage is lowered as it starts (`startAtPriority`), and a nice
+ * value is carried across `fork` and `execve` (`setpriority(2)`). What each stage's first process
+ * received is read back as it starts, and the whole tree is read while the run goes, so a process
+ * that raises its own priority is lowered again rather than assumed not to exist.
  */
-const PRIORITY = constants.priority.PRIORITY_BELOW_NORMAL;
-setPriority(PRIORITY);
-const gatePriority = getPriority();
-if (gatePriority !== PRIORITY) {
-  throw new Error(
-    `The gate asked for priority ${PRIORITY} and has ${gatePriority}, so nothing it starts would run below normal.`,
-  );
+if (process.platform === 'win32') {
+  const own = levelForSystem('below-normal');
+  setPriority(own);
+  if (getPriority() !== own) {
+    throw new Error(
+      `The gate asked for priority ${own} and has ${getPriority()}, so nothing it starts would run below normal.`,
+    );
+  }
 }
 const priorityFindings = [];
-const checkInherited = (id, pid) => {
+const checkStarted = (id, pid, level) => {
   if (pid === undefined) return;
   let priority;
   try {
@@ -652,12 +656,19 @@ const checkInherited = (id, pid) => {
     // Gone before it could be read. The tree reading below still covers what it started.
     return;
   }
-  if (priority !== gatePriority) {
+  if (priority !== levelForSystem(level)) {
     priorityFindings.push(
-      `${id}: its first process ${pid} runs at priority ${priority}, not the gate's ${gatePriority}.`,
+      `${id}: its first process ${pid} runs at priority ${priority}, not the ${levelForSystem(level)} a stage at ${level} priority starts at.`,
     );
   }
 };
+/** The level nothing under the gate may exceed now: normal while a stage that runs alone runs. */
+const levelNow = () =>
+  [...scheduler.running.keys()].some(
+    (id) => stagePriority(stepById.get(id)) === 'normal',
+  )
+    ? 'normal'
+    : 'below-normal';
 
 const commit = requireCommittedTree();
 const summaryPath = resolve(runDirectory, 'summary.json');
@@ -851,7 +862,8 @@ process.stdout.write(
 /**
  * The whole tree, read while the run goes.
  *
- * Every process under the gate found above the gate's priority is lowered to it (`holdDown`), and
+ * Every process under the gate found above the running stages' priority is lowered to it
+ * (`holdDown`), and
  * every window is checked for more processors in use than the budget. A process that cannot be
  * held down, and a window over budget, are findings that turn the run red, because a run that took
  * more of the machine than it was allowed was not run within its limits, whatever its stages said.
@@ -870,6 +882,7 @@ const sampler = (async () => {
   let previousAt;
   while (sampling) {
     const readAt = Date.now();
+    const levelBefore = levelNow();
     let reading;
     try {
       reading = await readProcesses();
@@ -885,9 +898,17 @@ const sampler = (async () => {
       new Set([reading.reader]),
     );
     samples += 1;
-    const above = aboveRoot(
+    // A reading takes long enough for a stage to end and the next to start. A process is held to
+    // below normal only where no stage at normal priority ran on either side of the reading, so
+    // one that has just started is never lowered by a reading taken before it.
+    const level =
+      levelBefore === 'normal' || levelNow() === 'normal'
+        ? 'normal'
+        : 'below-normal';
+    const above = aboveLevel(
       reading.processes,
       process.pid,
+      levelInReading(level),
       new Set([reading.reader]),
     );
     if (above === undefined) {
@@ -896,7 +917,12 @@ const sampler = (async () => {
       );
       return;
     }
-    for (const finding of holdDown(above, gatePriority, lowered, setPriority)) {
+    for (const finding of holdDown(
+      above,
+      levelForSystem(level),
+      lowered,
+      setPriority,
+    )) {
       priorityFindings.push(`${finding}, while ${runningNow()} ran.`);
     }
     if (previous !== undefined) {
@@ -1072,8 +1098,8 @@ if (drift.length > 0) {
 if (priorityFindings.length > 0) {
   process.stdout.write(
     `\n=== PRIORITY (${priorityFindings.length})\n` +
-      'The gate runs below normal so the machine stays usable, and these processes could not be held\n' +
-      "there. Find what sets their priority and keep it at the gate's.\n",
+      'The gate runs below normal so the machine stays usable, and a stage that runs alone at normal\n' +
+      "priority. These processes could not be held to their stage's. Find what sets their priority.\n",
   );
   for (const line of priorityFindings) process.stdout.write(`  ${line}\n`);
 }
@@ -1109,7 +1135,7 @@ process.stdout.write(
   `\n${only !== undefined ? 'run of named stages' : resuming ? `resumed run (attempt ${attempt})` : serial ? 'serial run' : 'graph run'}: ` +
     `${wallSeconds}s wall, ${serialSeconds}s of stage time, ` +
     `peak ${scheduler.peakStages} stages and ${scheduler.peakProcessors} of ${budget} processors scheduled, ` +
-    `${peakMeasured.toFixed(1)} measured over ${samples} readings, ${lowered.size} process(es) lowered to the gate's priority\n` +
+    `${peakMeasured.toFixed(1)} measured over ${samples} readings, ${lowered.size} process(es) lowered to their stage's priority\n` +
     `logs and traces: ${runDirectory}\n`,
 );
 

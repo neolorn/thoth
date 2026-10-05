@@ -1,18 +1,20 @@
 /**
  * The processes under one process, with each one's priority and the CPU time it has used.
  *
- * The gate lowers its own priority and relies on every process it starts inheriting it, which
- * Windows does for a parent at below-normal or idle priority when the child is created without a
- * priority class of its own (`CreateProcess`, `dwCreationFlags`), and which Linux does for a nice
- * value across `fork` and `execve` (`setpriority(2)`). A child can still set its own, so the gate
- * reads the whole tree while it runs rather than trusting the rule: a process above the gate's priority is a
- * finding, and so is a stretch of time in which the tree used more processors than its budget.
+ * The gate starts each stage at a priority and relies on every process the stage starts inheriting
+ * it, which Windows does for a parent at below-normal or idle priority when the child is created
+ * without a priority class of its own (`CreateProcess`, `dwCreationFlags`), and which Linux does
+ * for a nice value across `fork` and `execve` (`setpriority(2)`). A child can still set its own,
+ * so the gate reads the whole tree while it runs rather than trusting the rule: a process above its
+ * stage's priority is a finding, and so is a stretch of time in which the tree used more processors
+ * than its budget.
  *
  * One reading is a list; the rate comes from two. A process that starts and ends between two
  * readings is not seen at all, so the processors a window reports are a floor, never an
  * overestimate.
  */
 import { execFile } from 'node:child_process';
+import { constants, setPriority } from 'node:os';
 
 /** Runs a reader and answers its output with its own process id, so a caller can leave it out. */
 const runFile = (file, args) =>
@@ -168,22 +170,70 @@ export function holdDown(above, priority, lowered, set) {
       lowered.add(key);
     } catch (error) {
       findings.push(
-        `process ${entry.pid} under the gate runs at priority ${entry.priority}, above the gate's, and could not be lowered: ${error.message}`,
+        `process ${entry.pid} under the gate runs at priority ${entry.priority}, above its stage's, and could not be lowered: ${error.message}`,
       );
     }
   }
   return findings;
 }
 
+/** A level as `os.setPriority` takes it and `os.getPriority` answers it. */
+export const levelForSystem = (level) =>
+  level === 'normal'
+    ? constants.priority.PRIORITY_NORMAL
+    : constants.priority.PRIORITY_BELOW_NORMAL;
+
 /**
- * The processes under `root` that run above it, compared in the reading's own units: a Windows base
- * priority, or a negated nice value. Empty when `root` is not in the reading, which the caller
- * treats as a failed reading rather than a clean one.
+ * A level in a reading's own units: the base priority Windows gives a thread of normal priority in
+ * that class (8 in the normal class, 6 in the below-normal one), or a negated nice value.
  */
-export function aboveRoot(processes, root, exclude = new Set()) {
-  const own = processes.find(({ pid }) => pid === root);
-  if (own === undefined) return undefined;
+export const levelInReading = (level, platform = process.platform) =>
+  platform === 'win32'
+    ? level === 'normal'
+      ? 8
+      : 6
+    : 0 - levelForSystem(level);
+
+/**
+ * Starts a stage at `level`; `start` creates its first process and answers it.
+ *
+ * On Windows the gate runs below normal and a child created without a class of its own takes its
+ * parent's, so a stage below normal inherits, and for a normal stage the gate stands at normal for
+ * the length of the start. Elsewhere a process without privilege can lower a priority and never
+ * raise one again (`setpriority(2)`, `EACCES`), its own included, so the gate keeps the priority it
+ * was started with and lowers a below-normal stage's first process as soon as it exists. That
+ * process has not run long enough to start another by then, and one that had would be found and
+ * lowered by the next reading of the tree.
+ */
+export function startAtPriority(
+  level,
+  start,
+  { platform = process.platform, set = setPriority } = {},
+) {
+  if (platform === 'win32') {
+    if (level !== 'normal') return start();
+    set(levelForSystem('normal'));
+    try {
+      return start();
+    } finally {
+      set(levelForSystem('below-normal'));
+    }
+  }
+  const child = start();
+  if (level !== 'normal' && child?.pid !== undefined) {
+    set(child.pid, levelForSystem(level));
+  }
+  return child;
+}
+
+/**
+ * The processes under `root` that run above `ceiling`, which is in the reading's own units
+ * (`levelInReading`). Undefined when `root` is not in the reading, which the caller treats as a
+ * failed reading rather than a clean one.
+ */
+export function aboveLevel(processes, root, ceiling, exclude = new Set()) {
+  if (!processes.some(({ pid }) => pid === root)) return undefined;
   return descendantsOf(processes, root, exclude).filter(
-    (entry) => entry.priority > own.priority,
+    (entry) => entry.priority > ceiling,
   );
 }
