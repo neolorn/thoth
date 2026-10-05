@@ -4,7 +4,6 @@
     "equivalent": "For every input the changed code behaves as the original does; the reason says what makes it so at that site.",
     "performance-only": "The change alters how much work is done and never a result.",
     "unreachable": "The branch guards a state no caller can produce; the reason names the lines that make it so.",
-    "unstated-behavior": "Only an input whose handling the specification does not state tells the change apart, and a case for it would fix that handling in place.",
     "out-of-reach-in-a-unit-test": "The only input that tells the change apart is too large to build in every case that reaches the line."
   },
   "survivors": [
