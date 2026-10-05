@@ -164,9 +164,7 @@ function isGeneratedLocaleFormatting(
   value: unknown,
   locales: readonly string[],
 ): boolean {
-  if (!isDataRecord(value) || Object.keys(value).length > locales.length) {
-    return false;
-  }
+  if (!isDataRecord(value)) return false;
   return Object.entries(value).every(([locale, entry]) => {
     if (!locales.includes(locale) || !isDataRecord(entry)) return false;
     return Object.entries(entry).every(([key, option]) => {
@@ -190,15 +188,14 @@ function isGeneratedLocaleFallbacks(
   value: unknown,
   locales: readonly string[],
 ): boolean {
-  if (!isDataRecord(value) || Object.keys(value).length > locales.length) {
-    return false;
-  }
+  if (!isDataRecord(value)) return false;
   return Object.entries(value).every(([locale, chain]) => {
     if (!locales.includes(locale) || !Array.isArray(chain)) return false;
-    if (chain.length === 0 || chain.length > locales.length) return false;
-    const seen = new Set<string>([locale]);
-    return chain.every((parent) => {
-      if (typeof parent !== 'string' || !locales.includes(parent)) return false;
+    if (chain.length === 0) return false;
+    // A member that is not a string is not in the locale list, so the one test refuses both.
+    const seen = new Set<unknown>([locale]);
+    return chain.every((parent: unknown) => {
+      if (!(locales as readonly unknown[]).includes(parent)) return false;
       if (seen.has(parent)) return false;
       seen.add(parent);
       return true;
@@ -839,12 +836,22 @@ interface TransferSnapshot {
 
 const internals = new WeakMap<Localization, LocalizationInternal>();
 
+/**
+ * The signal of work the runtime has no reason of its own to stop.
+ *
+ * A participant that prepares on its own is stopped by the coordinator, which is told of every
+ * newer locale intent and of disposal and names the participant when it stops it.
+ */
+const UNINTERRUPTED = new AbortController().signal;
+
 function freezeScope(scope: LocalizationScope): LocalizationScope {
   const properties = isDataRecord(scope)
     ? Object.getOwnPropertyDescriptors(scope)
     : undefined;
-  const providerId = properties?.['providerId'];
-  const scopeId = properties?.['scopeId'];
+  // Read from the descriptors, so that an accessor is seen as the absence of a value and is
+  // refused with everything else that is not a string.
+  const providerId: unknown = properties?.['providerId']?.value;
+  const scopeId: unknown = properties?.['scopeId']?.value;
   if (
     !isDataRecord(scope) ||
     !hasExactKeys(
@@ -859,20 +866,14 @@ function freezeScope(scope: LocalizationScope): LocalizationScope {
         'startup',
       ],
     ) ||
-    providerId === undefined ||
-    providerId.get !== undefined ||
-    providerId.set !== undefined ||
-    typeof providerId.value !== 'string' ||
-    providerId.value.length === 0 ||
-    providerId.value.length > 256 ||
-    scopeId === undefined ||
-    scopeId.get !== undefined ||
-    scopeId.set !== undefined ||
-    typeof scopeId.value !== 'string' ||
-    scopeId.value.length === 0 ||
-    scopeId.value.length > 128 ||
-    /[\u0000-\u001f\u007f]/u.test(String(providerId.value)) ||
-    /[\u0000-\u001f\u007f]/u.test(String(scopeId.value))
+    typeof providerId !== 'string' ||
+    providerId.length === 0 ||
+    providerId.length > 256 ||
+    typeof scopeId !== 'string' ||
+    scopeId.length === 0 ||
+    scopeId.length > 128 ||
+    /[\u0000-\u001f\u007f]/u.test(providerId) ||
+    /[\u0000-\u001f\u007f]/u.test(scopeId)
   ) {
     throw new LocalizationError(
       operationalDiagnostic(
@@ -881,10 +882,7 @@ function freezeScope(scope: LocalizationScope): LocalizationScope {
       ),
     );
   }
-  return Object.freeze({
-    providerId: providerId.value as string,
-    scopeId: scopeId.value as string,
-  });
+  return Object.freeze({ providerId, scopeId });
 }
 
 function transitionKey(
@@ -918,13 +916,8 @@ function sameScopes(
 }
 
 function releaseActivations(activations: Iterable<ScopeActivation>): void {
-  const released = new Set<CatalogLease>();
   for (const activation of activations) {
-    for (const lease of activation.leases) {
-      if (released.has(lease)) continue;
-      released.add(lease);
-      lease.release();
-    }
+    for (const lease of activation.leases) lease.release();
   }
 }
 
@@ -1113,11 +1106,9 @@ class LocalizationInternal {
     if (
       configuration.generatedAbi !== GENERATED_ABI ||
       !Array.isArray(configuration.locales) ||
-      configuration.locales.length === 0 ||
       configuration.locales.length > 512 ||
       !Array.isArray(configuration.scopes) ||
       configuration.scopes.length === 0 ||
-      configuration.scopes.length > 250_000 ||
       configuration.locales.some(
         (locale) =>
           typeof locale !== 'string' ||
@@ -1135,7 +1126,6 @@ class LocalizationInternal {
         ([alias, locale]) =>
           alias.length === 0 ||
           alias.length > 128 ||
-          typeof locale !== 'string' ||
           !configuration.locales.includes(locale),
       ) ||
       // Checked on the same terms as the aliases above, and for the same reason: a generated table
@@ -1495,11 +1485,7 @@ class LocalizationInternal {
   }
 
   private beginOperation(): AbortController {
-    this.assertActive();
     const controller = new AbortController();
-    if (this.lifetimeController.signal.aborted) {
-      controller.abort(this.lifetimeController.signal.reason);
-    }
     this.operationControllers.add(controller);
     return controller;
   }
@@ -1704,13 +1690,11 @@ class LocalizationInternal {
         code: RUNTIME_EVENT_CODES.catalog,
         phase: 'catalog',
         status:
-          diagnostic.code === 'scope-unavailable'
-            ? 'unavailable'
-            : diagnostic.code === 'cancelled' || diagnostic.code === 'disposed'
-              ? 'cancelled'
-              : diagnostic.code === 'superseded'
-                ? 'superseded'
-                : 'failed',
+          diagnostic.code === 'cancelled' || diagnostic.code === 'disposed'
+            ? 'cancelled'
+            : diagnostic.code === 'superseded'
+              ? 'superseded'
+              : 'failed',
         reason: diagnostic.code,
         targetLocale,
         providerId: scope.providerId,
@@ -1723,9 +1707,7 @@ class LocalizationInternal {
       (result) => (result as PromiseFulfilledResult<CatalogLease>).value,
     );
     const supplyingLocales = Object.freeze(
-      leases
-        .map((lease) => lease.catalog.key.catalogLocale)
-        .filter((locale, index, all) => all.indexOf(locale) === index),
+      leases.map((lease) => lease.catalog.key.catalogLocale),
     );
     this.updateReadiness(scope, {
       targetLocale,
@@ -1859,14 +1841,11 @@ class LocalizationInternal {
       formatting: this.formatting(targetLocale),
       ...(route === undefined ? {} : { route: Object.freeze({ ...route }) }),
     });
-    let released = false;
     return {
       active: { publicSnapshot, scopes },
       transitionId,
       participants,
       release: () => {
-        if (released) return;
-        released = true;
         this.participantCoordinator.discardPrepared(participants);
         releaseActivations(activations);
       },
@@ -1874,7 +1853,6 @@ class LocalizationInternal {
   }
 
   private commit(prepared: PreparedSnapshot): LocalizationSnapshot {
-    this.assertActive();
     const previous = this.active;
     const applied: LocalizationCommitHook[] = [];
     try {
@@ -2149,16 +2127,12 @@ class LocalizationInternal {
       .finally(() => {
         if (this.initialization === initialization)
           this.initialization = undefined;
-        if (this.initializationController === controller) {
-          this.initializationController = undefined;
-        }
       });
     this.initialization = initialization;
     return initialization;
   }
 
   retry(): Promise<LocalizationSnapshot> {
-    this.assertActive();
     if (this.lifecycleValue() !== 'failed') {
       throw new LocalizationError(
         operationalDiagnostic(
@@ -2174,7 +2148,6 @@ class LocalizationInternal {
     participant: LocalizationParticipant,
     options: LocalizationParticipantOptions = {},
   ): LocalizationParticipantRegistration {
-    this.assertActive();
     const registration = this.participantCoordinator.register(
       participant,
       options,
@@ -2213,7 +2186,6 @@ class LocalizationInternal {
   private async retryParticipant(
     participantId: string,
   ): Promise<LocalizationParticipantState> {
-    this.assertActive();
     if (this.pending !== undefined) await this.pending.promise;
     if (this.active === undefined) await this.initialize();
     const active = this.committed();
@@ -2223,20 +2195,13 @@ class LocalizationInternal {
     if (registration === undefined) {
       return this.participantCoordinator.state(participantId);
     }
-    const controller = new AbortController();
-    const transitionId = (this.nextTransitionId += 1);
-    this.progressiveControllers.add(controller);
-    try {
-      return await this.participantCoordinator.runIndependent(
-        registration,
-        active.publicSnapshot.primaryLocale,
-        active.publicSnapshot.formatting,
-        transitionId,
-        controller.signal,
-      );
-    } finally {
-      this.progressiveControllers.delete(controller);
-    }
+    return this.participantCoordinator.runIndependent(
+      registration,
+      active.publicSnapshot.primaryLocale,
+      active.publicSnapshot.formatting,
+      (this.nextTransitionId += 1),
+      UNINTERRUPTED,
+    );
   }
 
   private startIndependentParticipants(
@@ -2245,9 +2210,6 @@ class LocalizationInternal {
     formatting: FormattingContext,
     transitionId: number,
   ): void {
-    if (registrations.length === 0) return;
-    const controller = new AbortController();
-    this.progressiveControllers.add(controller);
     void Promise.allSettled(
       registrations.map((registration) =>
         this.participantCoordinator.runIndependent(
@@ -2255,10 +2217,10 @@ class LocalizationInternal {
           locale,
           formatting,
           transitionId,
-          controller.signal,
+          UNINTERRUPTED,
         ),
       ),
-    ).finally(() => this.progressiveControllers.delete(controller));
+    );
   }
 
   /**
@@ -2407,7 +2369,6 @@ class LocalizationInternal {
           ),
         );
       }
-      this.progressiveControllers.clear();
     };
     // An initialization in flight is not work an earlier intent started, so the change waits for
     // it and overtakes nothing until it has settled: section 7 of
@@ -2493,7 +2454,7 @@ class LocalizationInternal {
           const unloadedProgressive = progressive.filter(
             (scope) => !this.active?.scopes.has(scopeIdentity(scope)),
           );
-          if (mode === 'progressive' && unloadedProgressive.length > 0) {
+          if (unloadedProgressive.length > 0) {
             void this.loadProgressive(locale, unloadedProgressive, id);
           }
           this.startIndependentParticipants(
@@ -2566,7 +2527,7 @@ class LocalizationInternal {
         const unloadedProgressive = progressive.filter(
           (scope) => !this.active?.scopes.has(scopeIdentity(scope)),
         );
-        if (mode === 'progressive' && unloadedProgressive.length > 0) {
+        if (unloadedProgressive.length > 0) {
           void this.loadProgressive(locale, unloadedProgressive, id);
         }
         this.startIndependentParticipants(
@@ -2669,7 +2630,7 @@ class LocalizationInternal {
     // The test is the transaction's identity rather than the committed locale's name. Testing the
     // name is i18next's rule and carries i18next's blind spot: two transactions to the same locale
     // are the same string, so a load belonging to the first publishes into the second.
-    if (this.committedTransitionId !== requestedAgainst || this.disposed) {
+    if (this.committedTransitionId !== requestedAgainst) {
       releaseActivations(
         results
           .filter(
@@ -2746,8 +2707,10 @@ class LocalizationInternal {
    * observing, which is the property that made two publishers wrong rather than merely untidy.
    */
   private commitScopeActivation(activation: ScopeActivation): void {
+    // A disposed context has no snapshot to land a scope in, and what was loaded for it is let
+    // go of here, whichever request brought it.
     const current = this.active;
-    if (current === undefined || this.disposed) {
+    if (current === undefined) {
       releaseActivations([activation]);
       return;
     }
@@ -2940,7 +2903,7 @@ class LocalizationInternal {
         this.nextTransitionId,
         controller.signal,
       );
-      if (this.disposed || controller.signal.aborted) {
+      if (controller.signal.aborted) {
         releaseActivations([activation]);
         throw new LocalizationError(
           operationalDiagnostic(
@@ -3096,10 +3059,8 @@ class LocalizationInternal {
         ),
       );
     }
-    const result = this.evaluate(handle, inputs);
-    if (result.kind !== 'text')
-      throw new Error('Equator text invariant failed.');
-    return result;
+    // The evaluator answers in the kind the handle states, or refuses the handle.
+    return this.evaluate(handle, inputs) as LocalizedText;
   }
 
   evaluateParts(handle: MessageHandle, inputs?: unknown): LocalizedParts {
@@ -3111,10 +3072,8 @@ class LocalizationInternal {
         ),
       );
     }
-    const result = this.evaluate(handle, inputs);
-    if (result.kind !== 'parts')
-      throw new Error('Equator parts invariant failed.');
-    return result;
+    // The evaluator answers in the kind the handle states, or refuses the handle.
+    return this.evaluate(handle, inputs) as LocalizedParts;
   }
 
   createChild(options: ChildLocalizationOptions = {}): Localization {

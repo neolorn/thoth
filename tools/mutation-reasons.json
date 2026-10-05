@@ -4058,93 +4058,12 @@
     },
     {
       "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "Object.keys(value).length > locales.length",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Every key must be one of the locales (line 170) and the locales are distinct (line 1085), so a table with more keys than locales is refused by the per-entry check anyway. Every key must be one of the locales (line 196) and the locales are distinct (line 1085), so a table with more keys than locales is refused by the per-entry check anyway.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "chain.length > locales.length",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Chain members must be distinct shipped locales other than the key (lines 198-203), so a chain as long as the locale list or longer is refused by the member check anyway."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "EqualityOperator",
-      "original": "chain.length > locales.length",
-      "replacement": "chain.length >= locales.length",
-      "category": "equivalent",
-      "reason": "A chain exactly as long as the locale list must repeat a member, name its own locale or name an unshipped one, and lines 198-203 refuse each of those."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "typeof parent !== 'string'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The locale list holds only strings (line 1081), so a parent that is not a string fails locales.includes(parent) in the same condition."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
       "mutator": "ArrayDeclaration",
       "original": "[]",
       "replacement": "[\"Stryker was here\"]",
       "category": "equivalent",
       "reason": "catalogConsultationOrder keeps only chain members the store has an artifact for (evaluator.ts 1985-1987), so a default chain naming a locale nothing was compiled for adds no catalog and no inherited locale. The coordinator keys transferred records by participantId (participant-runtime.ts 643-647) and reads them only by a registered string id (line 707), so a default entry with no participantId is never read. The default only stands in for an absent list inside Array.isArray, and any array answers that the same way. seed returns without effect for a value that is not a data record (catalog-runtime.ts 1255), so a default list holding a string seeds nothing. The placeholder string in the queue default has no committed method and publish reads entries only through the optional call, so it is skipped. The placeholder string in the applied list has no rollback method and the list is walked only through the optional call inside a try block, so it is skipped. The recovery handle is plain, and a plain message refuses markup before slot contracts are read (evaluator.ts:1735), so the slots list is never consulted. The synthetic recovery catalog's requiredExtensions is never read by evaluateCandidate or findEvaluationCandidate, which use only key, generatedAbi, messages and resources.maximumMessage.outputParts. The handle is built here and handed only to findEvaluationCandidate and evaluateCandidate, and evaluator.ts never reads a handle inputNames list. The handle is built here and handed only to findEvaluationCandidate and evaluateCandidate, and evaluator.ts never reads a handle slotNames list. With no commit hooks the loop visits one string, which has no dispose, and the optional call on 2940 skips it.",
       "count": 11
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "providerId === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Past isDataRecord and hasExactKeys on lines 809-821 providerId is an own property (runtime-safety.ts 207), so its descriptor is never undefined here."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "providerId.get !== undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "An accessor descriptor has no value, so a provider identifier behind a getter is refused by the typeof clause on line 825."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "providerId.set !== undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "An accessor descriptor has no value, so a provider identifier behind a setter is refused by the typeof clause on line 825."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "scopeId === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Past isDataRecord and hasExactKeys on lines 809-821 scopeId is an own property (runtime-safety.ts 207), so its descriptor is never undefined here."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "scopeId.get !== undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "An accessor descriptor has no value, so a scope identifier behind a getter is refused by the typeof clause on line 831."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "scopeId.set !== undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "An accessor descriptor has no value, so a scope identifier behind a setter is refused by the typeof clause on line 831."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -4169,22 +4088,6 @@
       "replacement": "\"\"",
       "category": "equivalent",
       "reason": "The key part for a request that clears the route only has to differ from the other two forms, and the empty string differs from \"preserve\" and from a route key, which always holds two separators."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "released.has(lease)",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "A lease releases once and ignores later calls (catalog-runtime.ts 1219-1221), so releasing one a second time changes nothing."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "CallExpression",
-      "original": "released.add(lease);",
-      "replacement": ";",
-      "category": "equivalent",
-      "reason": "Without the record of released leases a lease shared by two activations is released twice, and release is idempotent (catalog-runtime.ts 1219-1221)."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -4237,34 +4140,10 @@
     {
       "file": "packages/runtime/src/localization.ts",
       "mutator": "ConditionalExpression",
-      "original": "configuration.locales.length === 0",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "An empty locale list cannot include the source locale, so line 1086 refuses it inside the same condition."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
       "original": "configuration.scopes.length === 0",
       "replacement": "false",
       "category": "equivalent",
       "reason": "With no scopes every later path refuses with the same code: invalid extensions (extensions.ts 51-58), an empty or non-list bootstrapScopes on lines 1152-1154, and any non-empty list exceeds the empty scope map on line 1375."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "configuration.scopes.length > 250_000",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "snapshotInertJson on lines 1063-1066 admits at most 250,000 nodes, so a configuration with more than 250,000 scopes throws there before this clause is read."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "EqualityOperator",
-      "original": "configuration.scopes.length > 250_000",
-      "replacement": "configuration.scopes.length >= 250_000",
-      "category": "unreachable",
-      "reason": "snapshotInertJson on lines 1063-1066 admits at most 250,000 nodes, and a configuration with exactly 250,000 scopes already holds more nodes than that, so it throws before this clause is read."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -4349,23 +4228,6 @@
     },
     {
       "file": "packages/runtime/src/localization.ts",
-      "mutator": "CallExpression",
-      "original": "this.assertActive();",
-      "replacement": ";",
-      "category": "unreachable",
-      "reason": "beginOperation is called only from preloadScope after its own synchronous assertActive (2663) and from ensureScope after assertActive (2686) with an active snapshot that dispose clears (2959), so the context is never disposed here. Both callers of commit check disposal first (1965, and 2371-2373 after dispose aborted the pending controller at 2929), so the context is never disposed here. A disposed context has lifecycle failed and no snapshot, so retry goes on to initialize(true), whose own assertActive (1936) raises the same disposed diagnostic. ParticipantCoordinator.register asserts its own disposed flag (participant-runtime.ts:664), which dispose sets (2927), with the same disposed diagnostic. A registration's retry rejects in the coordinator once dispose has cleared its adapters (participant-runtime.ts:740), before retryParticipant is called.",
-      "count": 5
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "this.lifetimeController.signal.aborted",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "lifetimeController is aborted only by dispose (2926), and both callers of beginOperation have just asserted the context is not disposed (2663, 2686)."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
       "mutator": "BlockStatement",
       "original": "{\n    this.operationControllers.delete(controller);\n  }",
       "replacement": "{}",
@@ -4423,35 +4285,11 @@
     },
     {
       "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "diagnostic.code === 'scope-unavailable'",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "A rejected lease carries scope-unavailable only from LocalCatalogStore.artifact (catalog-runtime.ts:1094) for a locale with no artifact, and acquireScope asks only for locales store.has admitted (1518-1523) after refusing a missing source catalog at 1557."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
       "mutator": "StringLiteral",
       "original": "'scope-unavailable'",
       "replacement": "\"\"",
       "category": "unreachable",
       "reason": "A rejected lease carries scope-unavailable only from LocalCatalogStore.artifact (catalog-runtime.ts:1094) for a locale with no artifact, and acquireScope asks only for locales store.has admitted (1518-1523) after refusing a missing source catalog at 1557."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "MethodExpression",
-      "original": "leases\n        .map((lease) => lease.catalog.key.catalogLocale)\n        .filter((locale, index, all) => all.indexOf(locale) === index)",
-      "replacement": "leases.map(lease => lease.catalog.key.catalogLocale)",
-      "category": "equivalent",
-      "reason": "order.locales is already free of repeats (evaluator.ts:1985-1993) and each lease is for one of its locales, so the filter removes nothing."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "all.indexOf(locale) === index",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "order.locales is already free of repeats (evaluator.ts:1985-1993) and each lease is for one of its locales, so the filter removes nothing."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -4461,22 +4299,6 @@
       "category": "message-wording",
       "reason": "The label is used only inside the message text of the scope-list diagnostics that normalizeScopes builds.",
       "count": 3
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "released",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Each prepared snapshot is released at one site per path (1798, 1966, 2372) and discardPrepared and lease.release are themselves idempotent, so the guard never changes an outcome."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "BooleanLiteral",
-      "original": "true",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Each prepared snapshot is released at one site per path (1798, 1966, 2372) and discardPrepared and lease.release are themselves idempotent, so the guard never changes an outcome."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -4553,38 +4375,6 @@
     },
     {
       "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "this.initializationController === controller",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "initializationController is read only by dispose to abort it, and aborting the controller of a settled attempt reaches no listener, so clearing it or not changes nothing observable."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "this.initializationController === controller",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "initializationController is read only by dispose to abort it, and aborting the controller of a settled attempt reaches no listener, so clearing it or not changes nothing observable."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "EqualityOperator",
-      "original": "this.initializationController === controller",
-      "replacement": "this.initializationController !== controller",
-      "category": "equivalent",
-      "reason": "initializationController is read only by dispose to abort it, and aborting the controller of a settled attempt reaches no listener, so clearing it or not changes nothing observable."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n          this.initializationController = undefined;\n        }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "initializationController is read only by dispose to abort it, and aborting the controller of a settled attempt reaches no listener, so clearing it or not changes nothing observable."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
       "mutator": "StringLiteral",
       "original": "'retry() is available only after initialization failure.'",
       "replacement": "\"\"",
@@ -4602,45 +4392,11 @@
     },
     {
       "file": "packages/runtime/src/localization.ts",
-      "mutator": "CallExpression",
-      "original": "this.progressiveControllers.add(controller);",
-      "replacement": ";",
-      "category": "equivalent",
-      "reason": "progressiveControllers is read only at 2261-2271 and in dispose, and both are preceded by participantCoordinator.supersedeAll (2260) or dispose (2927) aborting the same participant work, so a controller missing from or left in the set changes nothing observable.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n      this.progressiveControllers.delete(controller);\n    }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "progressiveControllers is read only at 2261-2271 and in dispose, and both are preceded by participantCoordinator.supersedeAll (2260) or dispose (2927) aborting the same participant work, so a controller missing from or left in the set changes nothing observable."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "CallExpression",
-      "original": "this.progressiveControllers.delete(controller);",
-      "replacement": ";",
-      "category": "equivalent",
-      "reason": "progressiveControllers is read only at 2261-2271 and in dispose, and both are preceded by participantCoordinator.supersedeAll (2260) or dispose (2927) aborting the same participant work, so a controller missing from or left in the set changes nothing observable."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "registrations.length === 0",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "With no progressive registration the remaining code makes a controller and prepares an empty list, which calls no participant and publishes nothing."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
       "mutator": "ArrowFunction",
       "original": "() => this.progressiveControllers.delete(controller)",
       "replacement": "() => undefined",
       "category": "equivalent",
-      "reason": "progressiveControllers is read only at 2261-2271 and in dispose, and both are preceded by participantCoordinator.supersedeAll (2260) or dispose (2927) aborting the same participant work, so a controller missing from or left in the set changes nothing observable. A controller left in the set is only ever aborted and the set cleared (2261-2271, 2933-2935), and its loads have settled by then, so the abort reaches nothing.",
-      "count": 2
+      "reason": "A controller left in the set after its loads settled is only ever aborted, by a newer locale intent or by dispose, and an abort after every load it was handed to has settled reaches no listener."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -4679,9 +4435,8 @@
       "mutator": "CallExpression",
       "original": "this.progressiveControllers.clear();",
       "replacement": ";",
-      "category": "equivalent",
-      "reason": "progressiveControllers is read only at 2261-2271 and in dispose, and both are preceded by participantCoordinator.supersedeAll (2260) or dispose (2927) aborting the same participant work, so a controller missing from or left in the set changes nothing observable. Clears a set that nothing reads after disposal: changeLocale, the only reader, refuses first (2142).",
-      "count": 2
+      "category": "performance-only",
+      "reason": "Clears a set that nothing reads after disposal: changeLocale, the only other reader, is refused by assertActive before it reaches the set, and dispose returns at once the second time."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -4731,33 +4486,6 @@
       "file": "packages/runtime/src/localization.ts",
       "mutator": "ConditionalExpression",
       "original": "unloadedProgressive.length > 0",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "A coordinated change makes its progressive scopes required (2233-2241) and they are loaded once it is committed, so only a progressive change can reach this with a scope left to load, and loadProgressive over an empty list acquires and publishes nothing (2489-2516).",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "LogicalOperator",
-      "original": "mode === 'progressive' && unloadedProgressive.length > 0",
-      "replacement": "mode === 'progressive' || unloadedProgressive.length > 0",
-      "category": "equivalent",
-      "reason": "A coordinated change makes its progressive scopes required (2233-2241) and they are loaded once it is committed, so only a progressive change can reach this with a scope left to load, and loadProgressive over an empty list acquires and publishes nothing (2489-2516).",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "mode === 'progressive'",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "A coordinated change makes its progressive scopes required (2233-2241) and they are loaded once it is committed, so only a progressive change can reach this with a scope left to load, and loadProgressive over an empty list acquires and publishes nothing (2489-2516).",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "mode === 'progressive' && unloadedProgressive.length > 0",
       "replacement": "true",
       "category": "equivalent",
       "reason": "A coordinated change makes its progressive scopes required (2233-2241) and they are loaded once it is committed, so only a progressive change can reach this with a scope left to load, and loadProgressive over an empty list acquires and publishes nothing (2489-2516).",
@@ -4815,30 +4543,6 @@
     {
       "file": "packages/runtime/src/localization.ts",
       "mutator": "ConditionalExpression",
-      "original": "current === undefined || this.disposed",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "Both callers return or throw on disposal in the same synchronous turn (2502-2512 and 2705-2713) and only dispose clears what is current (2959), so neither operand can hold here."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "LogicalOperator",
-      "original": "current === undefined || this.disposed",
-      "replacement": "current === undefined && this.disposed",
-      "category": "unreachable",
-      "reason": "Both callers return or throw on disposal in the same synchronous turn (2502-2512 and 2705-2713) and only dispose clears what is current (2959), so neither operand can hold here."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "current === undefined",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "Both callers return or throw on disposal in the same synchronous turn (2502-2512 and 2705-2713) and only dispose clears what is current (2959), so neither operand can hold here."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
       "original": "locale !== source",
       "replacement": "true",
       "category": "equivalent",
@@ -4860,14 +4564,6 @@
       "category": "performance-only",
       "reason": "finishOperation only removes the controller from a set that dispose aborts and clears (2930-2932); the operation has ended, so nothing listens for that abort.",
       "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "LogicalOperator",
-      "original": "this.disposed || controller.signal.aborted",
-      "replacement": "this.disposed && controller.signal.aborted",
-      "category": "equivalent",
-      "reason": "This controller is aborted only by dispose (2930-2931), which sets disposed first (2919) in the same synchronous turn, so the two operands are always equal here."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -4959,14 +4655,6 @@
     },
     {
       "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "result.kind !== 'text'",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "evaluateText admits only a plain handle (2851) and the evaluator refuses a handle whose result kind is not its message's and answers text for a plain message (evaluator.ts 2096-2104, 2117-2119, 2146-2148)."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
       "mutator": "StringLiteral",
       "original": "'Plain messages must be evaluated with text().'",
       "replacement": "\"\"",
@@ -4975,19 +4663,11 @@
     },
     {
       "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "result.kind !== 'parts'",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "evaluateParts admits only a structured handle (2866) and the evaluator refuses a handle whose result kind is not its message's and answers parts for a structured message (evaluator.ts 2096-2104, 2117-2119, 2146-2148)."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
       "mutator": "CallExpression",
       "original": "this.operationControllers.clear();",
       "replacement": ";",
       "category": "performance-only",
-      "reason": "Clears a set that nothing reads after disposal: beginOperation refuses first (1402) and dispose returns at once the second time (2918)."
+      "reason": "Clears a set that nothing reads after disposal: preloadScope and ensureScope, the callers of beginOperation, are refused by assertActive before they reach it, and dispose returns at once the second time."
     },
     {
       "file": "packages/runtime/src/localization.ts",

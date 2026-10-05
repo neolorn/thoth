@@ -70,6 +70,31 @@ describe('a route restated for the current locale', () => {
     localization.dispose();
   });
 
+  it('is ignored while the context is being disposed', async () => {
+    // An adapter is released before the snapshot is withdrawn, so one that restates an address
+    // as it goes would otherwise be handed a snapshot by a context that is on its way out.
+    const applied: (string | undefined)[] = [];
+    const made = runtime({
+      options: {
+        commitHooks: [
+          {
+            apply: () => undefined,
+            committed: (snapshot) =>
+              void applied.push(snapshot.route?.canonicalPath),
+            dispose: () =>
+              made.localization.ɵrestateRoute(route('/en-us/late')),
+          },
+        ],
+      },
+    });
+    await made.localization.initialize();
+    made.localization.ɵrestateRoute(route('/en-us'));
+
+    made.localization.dispose();
+
+    expect(applied).toStrictEqual([undefined, '/en-us']);
+  });
+
   it('publishes nothing when it is the route already committed', async () => {
     const { localization } = await ready();
     const addresses = { 'en-US': '/en-us/about', 'ar-EG': '/ar-eg/about' };

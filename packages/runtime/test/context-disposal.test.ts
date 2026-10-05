@@ -10,6 +10,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { LocalizationCommitHook } from '../src/localization.js';
+import type { LocalizationEventEmitter } from '../src/observability.js';
 
 import {
   PROVIDER,
@@ -296,6 +297,107 @@ describe('a context disposed by the hook that is told of its first snapshot', ()
       rejectionOf(() => registration.retry()),
     ).resolves.toMatchObject({ code: 'disposed' });
     expect(region.calls).toStrictEqual([]);
+  });
+});
+
+describe('a disposed context asked for more work', () => {
+  it('refuses a retry, a registration and a registration retry as disposed', async () => {
+    const region = participant('region');
+    const { localization } = runtime();
+    const registration = localization.registerParticipant(region.value);
+    await localization.initialize();
+    localization.dispose();
+
+    await expect(
+      rejectionOf(() => localization.retry()),
+    ).resolves.toMatchObject({ code: 'disposed' });
+    await expect(
+      rejectionOf(() => registration.retry()),
+    ).resolves.toMatchObject({ code: 'disposed' });
+    await expect(
+      rejectionOf(() =>
+        Promise.resolve().then(() =>
+          localization.registerParticipant(participant('late').value),
+        ),
+      ),
+    ).resolves.toMatchObject({ code: 'disposed' });
+  });
+
+  it('refuses a scope request, a preload and a change as disposed', async () => {
+    const { localization, loads } = runtime();
+    await localization.initialize();
+    localization.dispose();
+
+    await expect(
+      rejectionOf(() => localization.ensureScope(scope('lazy'))),
+    ).resolves.toMatchObject({ code: 'disposed' });
+    await expect(
+      rejectionOf(() => localization.preloadScope(scope('lazy'), 'ar-EG')),
+    ).resolves.toMatchObject({ code: 'disposed' });
+    await expect(
+      rejectionOf(() => localization.changeLocale('ar-EG')),
+    ).resolves.toMatchObject({ code: 'disposed' });
+    expect(loads[catalogKey('lazy', 'en-US')]).toBeUndefined();
+    expect(loads[catalogKey('lazy', 'ar-EG')]).toBeUndefined();
+  });
+});
+
+describe('a context disposed in the turn a scope finished loading', () => {
+  // An observer is told of a finished load before the runtime does anything with it, so one that
+  // disposes the context there leaves the runtime holding catalogs for a context that is gone.
+  const leavingWhenLoaded = () => {
+    const rejections: unknown[] = [];
+    const watched = observed();
+    const emitter: LocalizationEventEmitter = {
+      emit: (input) => {
+        watched.emitter.emit(input);
+        if (
+          input.phase === 'catalog' &&
+          input.status === 'succeeded' &&
+          input.scopeId === 'lazy'
+        ) {
+          made.localization.dispose();
+        }
+      },
+    };
+    const made = runtime({ options: { observability: emitter } });
+    return { ...made, watched, rejections };
+  };
+
+  it('drops a scope that was loading beside a change, and fails nothing', async () => {
+    const { localization, watched, rejections } = leavingWhenLoaded();
+    const record = (reason: unknown): void => void rejections.push(reason);
+    process.on('unhandledRejection', record);
+    await localization.initialize();
+    await localization.changeLocale('ar-EG', {
+      mode: 'progressive',
+      progressiveScopes: [scope('lazy')],
+    });
+
+    await expect.poll(() => localization.snapshot()).toBeUndefined();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    process.off('unhandledRejection', record);
+
+    // The load ended well and was reported so, and nothing after it found the context gone the
+    // hard way.
+    expect(rejections).toStrictEqual([]);
+    expect(
+      watched
+        .phase('catalog')
+        .filter(({ scopeId }) => scopeId === 'lazy')
+        .map(({ status }) => status),
+    ).toStrictEqual(['started', 'succeeded']);
+    expect(localization.snapshot()).toBeUndefined();
+  });
+
+  it('refuses as disposed the request that asked for the scope', async () => {
+    const { localization } = leavingWhenLoaded();
+    await localization.initialize();
+
+    await expect(
+      rejectionOf(() => localization.ensureScope(scope('lazy'))),
+    ).resolves.toMatchObject({ code: 'disposed' });
+    expect(localization.snapshot()).toBeUndefined();
   });
 });
 

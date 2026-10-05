@@ -1416,9 +1416,9 @@ export const injections = Object.freeze([
     invariant:
       "A progressive region's failure leaves the commit it followed in place.",
     source: 'packages/runtime/src/localization.ts',
-    find: '          controller.signal,\n        ),\n      ),\n    ).finally(() => this.progressiveControllers.delete(controller));',
+    find: '          UNINTERRUPTED,\n        ),\n      ),\n    );\n  }',
     replace:
-      "          controller.signal,\n        ),\n      ),\n    )\n      .then((results) => {\n        if (\n          results.some(\n            (settled) =>\n              settled.status === 'fulfilled' &&\n              settled.value.attempt.status === 'failed',\n          )\n        ) {\n          this.activeValue.set(undefined);\n        }\n      })\n      .finally(() => this.progressiveControllers.delete(controller));",
+      "          UNINTERRUPTED,\n        ),\n      ),\n    ).then((results) => {\n      if (\n        results.some(\n          (settled) =>\n            settled.status === 'fulfilled' &&\n            settled.value.attempt.status === 'failed',\n        )\n      ) {\n        this.activeValue.set(undefined);\n      }\n    });\n  }",
   },
   {
     id: 'progressive-region-holds-the-change',
