@@ -10,7 +10,7 @@
 
 **Equator** is an open-source localization framework for Angular applications, with support for [MessageFormat 2](https://www.unicode.org/reports/tr35/tr35-messageFormat.html) messages, localized routing, locale-aware formatting and parsing, server-side rendering and prerendering, and [XLIFF 2.2](https://docs.oasis-open.org/xliff/xliff-core/v2.2/xliff-core-v2.2.html) interchange. It is built on [Unicode CLDR](https://cldr.unicode.org/) locale data and designed to be standards-compliant, type-safe, and derived from the application's own sources rather than from hand-maintained registries.
 
-Equator is delivered as two packages. [`@neolorn/equator`](./packages/runtime/) is the runtime: locale resolution, message evaluation, formatting through `Intl`, and the Angular integration for routing, forms, and server rendering. [`@neolorn/equator-toolkit`](./packages/toolkit/) is the compiler and the `equator` command line: it compiles YAML catalogs into typed modules under `#i18n`, analyzes the application's templates and routes to derive scopes and localized addresses, validates catalogs against the MessageFormat 2 specification, and exchanges translations in XLIFF.
+Equator is delivered as two packages. [`@neolorn/equator`](./packages/runtime/) is the runtime: locale resolution, message evaluation, formatting through `Intl`, and the Angular integration for routing, forms, and server rendering. [`@neolorn/equator-toolkit`](./packages/toolkit/) is the compiler and the `equator` command line: it compiles YAML catalogs into typed modules under `#i18n`, analyzes the application's templates and routes to derive scopes and localized addresses, and validates catalogs against the MessageFormat 2 specification. Its `exportXliff22` and `importXliff22` functions exchange translations in XLIFF 2.2.
 
 For a detailed description of the architecture and the contracts between the two packages, see the [specifications](./specs/README.md).
 
@@ -54,7 +54,7 @@ For a detailed description of the architecture and the contracts between the two
   - Five extension contracts, declared once and validated at build: message functions, identifier segments, rich slot kinds, formatting adapters, and parsing adapters.
   - Observability sinks for runtime outcomes, with bounded cardinality and no content in events.
 - **Interchange and tooling**
-  - XLIFF 2.2 export and import with translation-state tracking.
+  - XLIFF 2.2 export and import through the toolkit's `exportXliff22` and `importXliff22` functions, with translation-state tracking.
   - The `equator` command line: `init`, `generate`, `check`, `watch`, `format`, `clean`, `uninstall`, and `migrate`, with options derived from the configuration schema.
   - Release-completeness checks per locale, with a per-locale in-progress declaration.
   - Diagnostics with stable codes and a generated [reference](./docs/reference/diagnostics.md); JSON Schemas published for every file format.

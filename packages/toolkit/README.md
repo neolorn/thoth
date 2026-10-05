@@ -18,7 +18,7 @@
   - Stable exit codes, `--json` machine output, and `--dry-run` on every command that writes.
   - Release-completeness and freshness checks, with a per-locale in-progress declaration.
 - **Interchange**
-  - [XLIFF 2.2](https://docs.oasis-open.org/xliff/xliff-core/v2.2/xliff-core-v2.2.html) export and import, with translation-state tracking and the authored notes carried alongside each message.
+  - [XLIFF 2.2](https://docs.oasis-open.org/xliff/xliff-core/v2.2/xliff-core-v2.2.html) export and import through `exportXliff22` and `importXliff22`, with translation-state tracking and the authored notes carried alongside each message.
   - JSON Schemas published for every file format the toolkit reads or writes.
 - **Diagnostics**
   - Stable codes, listed in `DIAGNOSTICS.md` inside this package and in the [diagnostics reference](https://github.com/neolorn/equator/blob/main/docs/reference/diagnostics.md).
