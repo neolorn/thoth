@@ -7,6 +7,7 @@ import type {
 } from '@neolorn/equator/core';
 import { defineExtensionRegistry } from '../../toolkit/src/extensions.js';
 import { defineRuntimeExtensions } from '../src/extensions.js';
+import { refusalOf } from './compiled-artifact-harness.js';
 
 /**
  * An extension carries no field it could use to step outside the rules.
@@ -48,26 +49,30 @@ describe('a runtime extension', () => {
       { maximumEvaluationSteps: Number.MAX_SAFE_INTEGER },
       { trusted: true },
     ]) {
-      expect(() =>
-        defineRuntimeExtensions([
-          {
-            descriptor: { ...descriptor, ...extra },
-            evaluate,
-          } as unknown as RuntimeExtensionBinding,
-        ]),
-      ).toThrow(/descriptor is invalid/u);
+      expect(
+        refusalOf(() =>
+          defineRuntimeExtensions([
+            {
+              descriptor: { ...descriptor, ...extra },
+              evaluate,
+            } as unknown as RuntimeExtensionBinding,
+          ]),
+        ).diagnostic.code,
+      ).toBe('invalid-configuration');
     }
   });
 
   it('is refused when its binding carries a field beside the handler', () => {
-    expect(() =>
-      defineRuntimeExtensions([
-        {
-          descriptor,
-          evaluate,
-          skipValidation: true,
-        } as unknown as RuntimeExtensionBinding,
-      ]),
-    ).toThrow(/binding shape is invalid/u);
+    expect(
+      refusalOf(() =>
+        defineRuntimeExtensions([
+          {
+            descriptor,
+            evaluate,
+            skipValidation: true,
+          } as unknown as RuntimeExtensionBinding,
+        ]),
+      ).diagnostic.code,
+    ).toBe('invalid-configuration');
   });
 });

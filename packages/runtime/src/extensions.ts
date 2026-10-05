@@ -123,7 +123,6 @@ function validOptions(value: unknown, rich: boolean): boolean {
         values.some(
           (item) =>
             !['string', 'number', 'boolean'].includes(typeof item) ||
-            (typeof item === 'number' && !Number.isFinite(item)) ||
             (typeof item === 'string' &&
               codePointLengthAtMost(item, 128) === undefined),
         ) ||
@@ -144,8 +143,7 @@ function normalizeDescriptor(candidate: unknown): RuntimeExtensionDescriptor {
   if (
     descriptor['profile'] !== EXTENSION_DESCRIPTOR_PROFILE ||
     typeof descriptor['id'] !== 'string' ||
-    !/^[a-z][a-z0-9-]{0,31}:[a-z][a-z0-9-]{0,63}$/u.test(descriptor['id']) ||
-    typeof descriptor['fingerprint'] !== 'string'
+    !/^[a-z][a-z0-9-]{0,31}:[a-z][a-z0-9-]{0,63}$/u.test(descriptor['id'])
   ) {
     return invalid('Runtime extension descriptor identity is invalid.');
   }
@@ -295,16 +293,10 @@ function normalizeBinding(candidate: unknown): RuntimeExtensionBinding {
   if (!isDataRecord(candidate)) {
     return invalid('Runtime extension binding must be a plain data object.');
   }
+  // Read as property descriptors so that no accessor of the candidate runs. A missing descriptor
+  // and one behind an accessor both read as no value, which is not inert data.
   const properties = Object.getOwnPropertyDescriptors(candidate);
-  const descriptorProperty = properties['descriptor'];
-  if (
-    descriptorProperty === undefined ||
-    descriptorProperty.get !== undefined ||
-    descriptorProperty.set !== undefined
-  ) {
-    return invalid('Runtime extension binding descriptor must be inert.');
-  }
-  const descriptor = normalizeDescriptor(descriptorProperty.value);
+  const descriptor = normalizeDescriptor(properties['descriptor']?.value);
   if (descriptor.kind === 'identifier-segment') {
     if (!hasExactKeys(candidate, ['descriptor'])) {
       return invalid('Runtime extension binding shape is invalid.');
@@ -322,13 +314,10 @@ function normalizeBinding(candidate: unknown): RuntimeExtensionBinding {
   if (!hasExactKeys(candidate, ['descriptor', handlerName])) {
     return invalid('Runtime extension binding shape is invalid.');
   }
-  const handler = properties[handlerName];
-  if (
-    handler === undefined ||
-    handler.get !== undefined ||
-    handler.set !== undefined ||
-    typeof handler.value !== 'function'
-  ) {
+  // The check above has required the handler as an own property, and one behind an accessor has
+  // no value to be a function.
+  const handler = properties[handlerName] as PropertyDescriptor;
+  if (typeof handler.value !== 'function') {
     return invalid('Runtime extension binding handler is invalid.');
   }
   return Object.freeze({
@@ -382,6 +371,10 @@ export function defineRuntimeExtensions(
  * than over its identity, so a descriptor that changed shape under the same name is caught.
  */
 export class RuntimeExtensions {
+  /**
+   * Held under the kind and the id together. An id cannot hold the separator, so a binding found
+   * under a kind's key is of that kind and the lookups below narrow it without asking again.
+   */
   private readonly bindings: ReadonlyMap<string, RuntimeExtensionBinding>;
 
   constructor(
@@ -408,30 +401,26 @@ export class RuntimeExtensions {
   }
 
   messageFunction(id: string): RuntimeMessageFunctionBinding | undefined {
-    const binding = this.bindings.get(`message-function\u0000${id}`);
-    return binding?.descriptor.kind === 'message-function'
-      ? (binding as RuntimeMessageFunctionBinding)
-      : undefined;
+    return this.bindings.get(`message-function\u0000${id}`) as
+      RuntimeMessageFunctionBinding | undefined;
   }
 
   formattingAdapter(id: string): RuntimeFormattingAdapterBinding | undefined {
-    const binding = this.bindings.get(`formatting-adapter\u0000${id}`);
-    return binding?.descriptor.kind === 'formatting-adapter'
-      ? (binding as RuntimeFormattingAdapterBinding)
-      : undefined;
+    return this.bindings.get(`formatting-adapter\u0000${id}`) as
+      RuntimeFormattingAdapterBinding | undefined;
   }
 
   parsingAdapter(id: string): RuntimeParsingAdapterBinding | undefined {
-    const binding = this.bindings.get(`parsing-adapter\u0000${id}`);
-    return binding?.descriptor.kind === 'parsing-adapter'
-      ? (binding as RuntimeParsingAdapterBinding)
-      : undefined;
+    return this.bindings.get(`parsing-adapter\u0000${id}`) as
+      RuntimeParsingAdapterBinding | undefined;
   }
 
   projectSlot(part: LocalizedSlotPart): string | undefined {
-    const binding = this.bindings.get(`rich-slot-kind\u0000${part.slotKind}`);
-    if (binding?.descriptor.kind !== 'rich-slot-kind') return undefined;
-    const value = (binding as RuntimeRichSlotKindBinding).projectText(part);
+    const binding = this.bindings.get(
+      `rich-slot-kind\u0000${part.slotKind}`,
+    ) as RuntimeRichSlotKindBinding | undefined;
+    if (binding === undefined) return undefined;
+    const value: unknown = binding.projectText(part);
     if (
       typeof value !== 'string' ||
       codePointLengthAtMost(value, RUNTIME_LIMITS.outputCodePoints) ===

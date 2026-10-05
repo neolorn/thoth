@@ -2393,35 +2393,11 @@
     },
     {
       "file": "packages/runtime/src/extensions.ts",
-      "mutator": "ConditionalExpression",
-      "original": "typeof item === 'number' && !Number.isFinite(item)",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "A descriptor is copied by descriptorSnapshot on line 127 before validOptions runs, and snapshotInertJson (runtime-safety.ts lines 281-289) throws for any number that is not finite, so no option value reaching this clause is a non-finite number."
-    },
-    {
-      "file": "packages/runtime/src/extensions.ts",
-      "mutator": "StringLiteral",
-      "original": "'number'",
-      "replacement": "\"\"",
-      "category": "unreachable",
-      "reason": "A descriptor is copied by descriptorSnapshot on line 127 before validOptions runs, and snapshotInertJson (runtime-safety.ts lines 281-289) throws for any number that is not finite, so no option value reaching this clause is a non-finite number."
-    },
-    {
-      "file": "packages/runtime/src/extensions.ts",
       "mutator": "StringLiteral",
       "original": "'Runtime extension descriptor must be inert data.'",
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The literal is the message of an invalid-configuration diagnostic; the suite asserts its code and outcome and nothing compares the text."
-    },
-    {
-      "file": "packages/runtime/src/extensions.ts",
-      "mutator": "ConditionalExpression",
-      "original": "typeof descriptor['fingerprint'] !== 'string'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "A fingerprint that is not a string never equals the sha256 string compared on line 276, so the descriptor is refused either way with code invalid-configuration and outcome operational-failure; the caller sees only a different message."
     },
     {
       "file": "packages/runtime/src/extensions.ts",
@@ -2437,7 +2413,15 @@
       "original": "[]",
       "replacement": "[\"Stryker was here\"]",
       "category": "equivalent",
-      "reason": "Every kind that can leave valid true assigns inputKeys in its own case; the initial list is read only after an unmatched kind, where valid is false and line 266 refuses before line 268 reads it."
+      "reason": "Every kind that can leave valid true assigns inputKeys in its own case; the initial list is read only after an unmatched kind, where valid is false and the refusal that follows the switch comes before the loop that reads it."
+    },
+    {
+      "file": "packages/runtime/src/extensions.ts",
+      "mutator": "StringLiteral",
+      "original": "'Runtime extension descriptor is invalid.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The literal is the message of an invalid-configuration diagnostic; the suite asserts its code and outcome and nothing compares the text."
     },
     {
       "file": "packages/runtime/src/extensions.ts",
@@ -2458,66 +2442,11 @@
     {
       "file": "packages/runtime/src/extensions.ts",
       "mutator": "StringLiteral",
-      "original": "'Runtime extension binding descriptor must be inert.'",
+      "original": "'Runtime extension binding shape is invalid.'",
       "replacement": "\"\"",
+      "count": 2,
       "category": "message-wording",
       "reason": "The literal is the message of an invalid-configuration diagnostic; the suite asserts its code and outcome and nothing compares the text."
-    },
-    {
-      "file": "packages/runtime/src/extensions.ts",
-      "mutator": "ConditionalExpression",
-      "original": "handler === undefined ||\n    handler.get !== undefined ||\n    handler.set !== undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "hasExactKeys on line 310 has already required the handler as an own property, so it is never undefined, and an accessor property has no value, so typeof handler.value on line 318 refuses it through the same branch with the same diagnostic."
-    },
-    {
-      "file": "packages/runtime/src/extensions.ts",
-      "mutator": "LogicalOperator",
-      "original": "handler === undefined ||\n    handler.get !== undefined",
-      "replacement": "handler === undefined && handler.get !== undefined",
-      "category": "equivalent",
-      "reason": "hasExactKeys on line 310 has already required the handler as an own property, so it is never undefined, and an accessor property has no value, so typeof handler.value on line 318 refuses it through the same branch with the same diagnostic."
-    },
-    {
-      "file": "packages/runtime/src/extensions.ts",
-      "mutator": "ConditionalExpression",
-      "original": "handler === undefined ||\n    handler.get !== undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "hasExactKeys on line 310 has already required the handler as an own property, so it is never undefined, and an accessor property has no value, so typeof handler.value on line 318 refuses it through the same branch with the same diagnostic."
-    },
-    {
-      "file": "packages/runtime/src/extensions.ts",
-      "mutator": "LogicalOperator",
-      "original": "handler === undefined ||\n    handler.get !== undefined ||\n    handler.set !== undefined",
-      "replacement": "(handler === undefined || handler.get !== undefined) && handler.set !== undefined",
-      "category": "equivalent",
-      "reason": "hasExactKeys on line 310 has already required the handler as an own property, so it is never undefined, and an accessor property has no value, so typeof handler.value on line 318 refuses it through the same branch with the same diagnostic."
-    },
-    {
-      "file": "packages/runtime/src/extensions.ts",
-      "mutator": "ConditionalExpression",
-      "original": "handler === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "hasExactKeys on line 310 has already required the handler as an own property, so it is never undefined, and an accessor property has no value, so typeof handler.value on line 318 refuses it through the same branch with the same diagnostic."
-    },
-    {
-      "file": "packages/runtime/src/extensions.ts",
-      "mutator": "ConditionalExpression",
-      "original": "handler.get !== undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "A handler declared with a getter has no value in its property descriptor, so typeof handler.value on line 318 refuses it through the same branch with the same diagnostic."
-    },
-    {
-      "file": "packages/runtime/src/extensions.ts",
-      "mutator": "ConditionalExpression",
-      "original": "handler.set !== undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "A handler declared with a setter has no value in its property descriptor, so typeof handler.value on line 318 refuses it through the same branch with the same diagnostic."
     },
     {
       "file": "packages/runtime/src/extensions.ts",
@@ -2545,27 +2474,11 @@
     },
     {
       "file": "packages/runtime/src/extensions.ts",
-      "mutator": "ConditionalExpression",
-      "original": "binding?.descriptor.kind === 'message-function'",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "The map key is built from descriptor.kind on line 381, so a binding found under the message-function key always has that kind, and when none is found both forms return undefined."
-    },
-    {
-      "file": "packages/runtime/src/extensions.ts",
-      "mutator": "ConditionalExpression",
-      "original": "binding?.descriptor.kind === 'formatting-adapter'",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "The map key is built from descriptor.kind on line 381, so a binding found under the formatting-adapter key always has that kind, and when none is found both forms return undefined."
-    },
-    {
-      "file": "packages/runtime/src/extensions.ts",
-      "mutator": "ConditionalExpression",
-      "original": "binding?.descriptor.kind === 'parsing-adapter'",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "The map key is built from descriptor.kind on line 381, so a binding found under the parsing-adapter key always has that kind, and when none is found both forms return undefined."
+      "mutator": "StringLiteral",
+      "original": "`Required runtime extension ${admitted.kind}/${admitted.id} is missing or fingerprint-incompatible.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The literal is the message of an invalid-configuration diagnostic; the suite asserts its code and outcome and nothing compares the text."
     },
     {
       "file": "packages/runtime/src/extensions.ts",

@@ -9,6 +9,7 @@ import {
   RuntimeExtensions,
   defineRuntimeExtensions,
 } from '../src/extensions.js';
+import { refusalOf } from './compiled-artifact-harness.js';
 
 /**
  * What an identifier-segment binding carries.
@@ -54,19 +55,21 @@ describe('an identifier-segment binding', () => {
   it('refuses a handler, since nothing would ever call it', () => {
     const descriptor = segment();
 
-    expect(() =>
-      defineRuntimeExtensions([
-        {
-          descriptor,
-          canonicalize: (value: string) => value,
-        } as unknown as RuntimeExtensionBinding,
-      ]),
-    ).toThrow('Runtime extension binding shape is invalid.');
+    expect(
+      refusalOf(() =>
+        defineRuntimeExtensions([
+          {
+            descriptor,
+            canonicalize: (value: string) => value,
+          } as unknown as RuntimeExtensionBinding,
+        ]),
+      ).diagnostic.code,
+    ).toBe('invalid-configuration');
   });
 
   it('is still required where a catalog names the segment type', () => {
-    expect(() => new RuntimeExtensions([], [segment()])).toThrow(
-      'Required runtime extension identifier-segment/test:state is missing or fingerprint-incompatible.',
-    );
+    expect(
+      refusalOf(() => new RuntimeExtensions([], [segment()])).diagnostic.code,
+    ).toBe('invalid-configuration');
   });
 });
