@@ -2829,6 +2829,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/route-cache-headers.test.ts',
   },
   {
+    id: 'locale-neutral-correction-names-another-locale-route',
+    invariant:
+      'A correction under a locale-neutral policy names the locale and the route its location resolves to for the same request.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '        routeId: settled.match.route.id,',
+    replace: '        routeId: nearest.match.route.id,',
+    caughtBy: 'packages/runtime/test/locale-neutral-correction-route.test.ts',
+  },
+  {
     id: 'locale-self-name-read-from-the-engine',
     invariant:
       'A locale option carries the self-name the build generated, and asks the engine only for a locale the build has no name for.',

@@ -2127,6 +2127,14 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "6. Canonicalization, query, and fragment",
+      "statement": "A release MUST report the locale and the route that the location resolves to for the same request, including under a locale-neutral policy where two locales read the corrected spelling as two different routes.",
+      "checks": [
+        "assurance:locale-neutral-correction-names-another-locale-route"
+      ]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "6. Canonicalization, query, and fragment",
       "statement": "Where the internal address it is handed is such a variant, a parameter spelled as another locale spells it among them, a release MUST write the canonical address the correction names rather than the variant, because the variant is an address the release then answers with a correction or, where the locale is in the host, with a not-found.",
       "checks": ["assurance:variant-internal-address-written-as-given"]
     },

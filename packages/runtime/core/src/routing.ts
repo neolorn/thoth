@@ -2900,20 +2900,25 @@ function resolveLocaleNeutralRoute(
       // No locale spells the address as written, and the first that reads it in the policy's order
       // is the one it is corrected to, so the location is the same whatever the request prefers.
       const location = `${neutralPath(nearest.match)}${parsed.canonicalSuffix}`;
+      // The locale and the route are the ones the corrected address resolves to: one reading among
+      // the locales that spell it, chosen as the resolution below chooses. Two locales can read one
+      // spelling as two routes, and a route taken from the first of them beside a locale taken from
+      // the preference would name a page the reader is not sent to.
+      const settled = negotiated(
+        matches.filter(
+          ({ match }) =>
+            encodedSegments(match.canonicalSegments) ===
+            encodedSegments(nearest.match.canonicalSegments),
+        ),
+        preferred,
+      );
       return Object.freeze({
         status: 'redirect',
         reason: 'canonical-correction',
         httpStatus: 308,
         cache: 'consumer-defined-permanent',
-        locale: negotiated(
-          matches.filter(
-            ({ match }) =>
-              encodedSegments(match.canonicalSegments) ===
-              encodedSegments(nearest.match.canonicalSegments),
-          ),
-          preferred,
-        ).locale,
-        routeId: nearest.match.route.id,
+        locale: settled.locale,
+        routeId: settled.match.route.id,
         location,
       });
     }

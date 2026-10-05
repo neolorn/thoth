@@ -354,6 +354,10 @@ user-independent one-to-one variant of one final canonical URL, and MUST combine
 locale, static-segment, slash, alias, and query corrections into a single hop. A release MUST
 NOT case-fold or rewrite a dynamic identity except through its codec or a declared mapping.
 
+A correction names a locale and a route beside its location. A release MUST report the locale and
+the route that the location resolves to for the same request, including under a locale-neutral
+policy where two locales read the corrected spelling as two different routes.
+
 An address a release writes, for a link or for the address bar, is the canonical one. Where the
 internal address it is handed is such a variant, a parameter spelled as another locale spells it
 among them, a release MUST write the canonical address the correction names rather than the
