@@ -1428,11 +1428,26 @@ function canonicalDecimalContract(value: DecimalValue | undefined): boolean {
   }
 }
 
+/** The units a duration field may name, in the order a duration value holds them. */
+const durationFieldNames = Object.freeze([
+  'years',
+  'months',
+  'weeks',
+  'days',
+  'hours',
+  'minutes',
+  'seconds',
+] as const);
+
 function validDurationField(field: LocalizedDurationInputField): boolean {
   const minimumIntegerDigits = field.minimumIntegerDigits ?? 1;
   const maximumIntegerDigits = field.maximumIntegerDigits ?? 15;
   const maximumFractionDigits = field.maximumFractionDigits ?? 0;
+  // A pattern is authored, and its unit is read as what was written: a name outside the seven has
+  // no member of a duration value to fill.
+  const name: unknown = field.field;
   return (
+    (durationFieldNames as readonly unknown[]).includes(name) &&
     Number.isSafeInteger(minimumIntegerDigits) &&
     minimumIntegerDigits >= 1 &&
     minimumIntegerDigits <= 15 &&
@@ -1468,8 +1483,6 @@ function validDurationPattern(
   if (
     !validCharacterLimit(profile.maximumCharacters) ||
     !Array.isArray(profile.pattern) ||
-    profile.pattern.length < 1 ||
-    profile.pattern.length > 31 ||
     !['forbidden', 'optional', 'required'].includes(profile.sign ?? 'forbidden')
   ) {
     return false;
@@ -1732,31 +1745,21 @@ function parseDurationInput(
       context,
     );
   }
-  try {
-    return valid(
-      text,
-      duration(
-        {
-          years: integer('years'),
-          months: integer('months'),
-          weeks: integer('weeks'),
-          days: integer('days'),
-          hours: integer('hours'),
-          minutes: integer('minutes'),
-          seconds: values.get('seconds') ?? decimal('0'),
-        },
-        hasValue ? (negative ? -1 : 1) : 0,
-      ),
-    );
-  } catch {
-    return failed(
-      'out-of-range',
-      text,
-      'The localized duration is outside the supported invariant range.',
-      context,
-      'malformed-input',
-    );
-  }
+  return valid(
+    text,
+    duration(
+      {
+        years: integer('years'),
+        months: integer('months'),
+        weeks: integer('weeks'),
+        days: integer('days'),
+        hours: integer('hours'),
+        minutes: integer('minutes'),
+        seconds: values.get('seconds') ?? decimal('0'),
+      },
+      hasValue ? (negative ? -1 : 1) : 0,
+    ),
+  );
 }
 
 function parseRfc3339(
@@ -2101,17 +2104,8 @@ function localizedDurationText(
       )
       .map(({ field }) => field),
   );
-  const allFields = [
-    'years',
-    'months',
-    'weeks',
-    'days',
-    'hours',
-    'minutes',
-    'seconds',
-  ] as const;
   if (
-    allFields.some(
+    durationFieldNames.some(
       (field) =>
         !declaredFields.has(field) &&
         durationFieldAmount(value, field).value !== '0',

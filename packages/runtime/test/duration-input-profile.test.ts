@@ -348,14 +348,11 @@ describe('a duration pattern that does not hold together', () => {
     ['two units in a row', pattern({ field: 'hours' }, { field: 'minutes' })],
     ['one unit twice', pattern({ field: 'hours' }, ':', { field: 'hours' })],
     ['no unit at all', pattern('h')],
-    [
-      'a pattern of 33 positions',
-      pattern(
-        ...Array.from({ length: 33 }, (_, index) =>
-          index % 2 === 0 ? 'a' : { field: `unit${index}` },
-        ),
-      ),
-    ],
+    ['a unit outside the seven', pattern({ field: 'centuries' })],
+    ['a unit named in the singular', pattern({ field: 'hour' })],
+    ['a unit that is not text', pattern({ field: 7 })],
+    ['a unit left out', pattern({})],
+    ['a unit named by a list', pattern({ field: ['hours'] })],
     ['a minimum width of zero', field({ minimumIntegerDigits: 0 })],
     [
       'a minimum width of 16',

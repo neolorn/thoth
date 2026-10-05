@@ -169,6 +169,10 @@ Temporal parsing uses declared patterns or generated field profiles. A release M
 the platform's permissive date parser, host coercion, a guessed field order, natural-language
 guessing, or the host's implicit time zone as a correctness path.
 
+A duration field's pattern names its units from the seven a duration value holds: years, months,
+weeks, days, hours, minutes, and seconds. A profile that names any other unit is refused as an
+invalid profile, whatever the text.
+
 A release MUST NOT locale-parse a domain code, an enum value, an identifier, a route or cache
 key, an authorization value, a protocol field, or a machine timestamp.
 

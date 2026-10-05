@@ -5935,22 +5935,6 @@
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "profile.pattern.length < 1",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "an empty pattern declares no unit and is refused on line 1512"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "EqualityOperator",
-      "original": "profile.pattern.length > 31",
-      "replacement": "profile.pattern.length >= 31",
-      "category": "unstated-behavior",
-      "reason": "Thirty-one positions can be reached only with duration unit names outside the declared ones, which the profile does not refuse; a case at the bound would fix the acceptance of made-up units in place."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
       "mutator": "ArithmeticOperator",
       "original": "index - 1",
       "replacement": "index + 1",
@@ -6381,7 +6365,7 @@
     {
       "file": "packages/runtime/src/localized-input.ts",
       "mutator": "ConditionalExpression",
-      "original": "allFields.some(\n      (field) =>\n        !declaredFields.has(field) &&\n        durationFieldAmount(value, field).value !== '0',\n    )",
+      "original": "durationFieldNames.some(\n      (field) =>\n        !declaredFields.has(field) &&\n        durationFieldAmount(value, field).value !== '0',\n    )",
       "replacement": "false",
       "category": "equivalent",
       "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (lines 2278-2289) returns the same invalid-localized-input failure; only the message differs"
@@ -6389,8 +6373,8 @@
     {
       "file": "packages/runtime/src/localized-input.ts",
       "mutator": "MethodExpression",
-      "original": "allFields.some(\n      (field) =>\n        !declaredFields.has(field) &&\n        durationFieldAmount(value, field).value !== '0',\n    )",
-      "replacement": "allFields.every(field => !declaredFields.has(field) && durationFieldAmount(value, field).value !== '0')",
+      "original": "durationFieldNames.some(\n      (field) =>\n        !declaredFields.has(field) &&\n        durationFieldAmount(value, field).value !== '0',\n    )",
+      "replacement": "durationFieldNames.every(field => !declaredFields.has(field) && durationFieldAmount(value, field).value !== '0')",
       "category": "equivalent",
       "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (lines 2278-2289) returns the same invalid-localized-input failure; only the message differs"
     },
