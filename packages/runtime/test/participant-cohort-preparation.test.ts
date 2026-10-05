@@ -589,6 +589,55 @@ describe('an attempt overtaken by a newer one for the same region', () => {
     coordinator.dispose();
   });
 
+  it('is cancelled with its cohort without ending the newer attempt', async () => {
+    const coordinator = new ParticipantCoordinator();
+    const log: string[] = [];
+    const neighbour = deferred<LocalizationParticipantReport>();
+    const answer = deferred<LocalizationParticipantReport>();
+    let asked = 0;
+    const region = recorded(coordinator, log, 'region', () =>
+      asked++ === 0 ? READY : answer.promise,
+    );
+    recorded(coordinator, log, 'sidebar', () => neighbour.promise);
+    const [alone] = coordinator.required();
+
+    const cohort = rejectionOf(() =>
+      coordinator.prepareRequired(
+        coordinator.required(),
+        'ar-EG',
+        FORMATTING,
+        1,
+        live(),
+      ),
+    );
+    await pause();
+    const newer = coordinator.prepareRequired(
+      [alone!],
+      'fr-FR',
+      FORMATTING,
+      2,
+      live(),
+    );
+    neighbour.reject(new Error('the sidebar is down'));
+    await cohort;
+
+    expect(region.registration.state().attempt).toStrictEqual({
+      status: 'preparing',
+      targetLocale: 'fr-FR',
+      transitionId: 2,
+    });
+    answer.resolve(READY);
+    coordinator.commitPrepared(await newer);
+
+    expect(region.registration.state().attempt.status).toBe('ready');
+    expect(log).toStrictEqual([
+      'discard sidebar 1 unanswered',
+      'discard region 1 ready',
+      'commit region 2',
+    ]);
+    coordinator.dispose();
+  });
+
   it('is refused at commit without disturbing what the newer attempt committed', async () => {
     const coordinator = new ParticipantCoordinator();
     const log: string[] = [];

@@ -7389,39 +7389,7 @@
       "original": "left.id < right.id",
       "replacement": "left.id <= right.id",
       "category": "equivalent",
-      "reason": "The two answers differ only for equal identities, and the adapters are the values of a Map keyed by identity (line 625, guarded at line 678), so the comparator never sees two equal ones."
-    },
-    {
-      "file": "packages/runtime/src/participant-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "left.id > right.id",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "The two answers differ only for equal identities, and the adapters are the values of a Map keyed by identity (line 625, guarded at line 678), so the comparator never sees two equal ones."
-    },
-    {
-      "file": "packages/runtime/src/participant-runtime.ts",
-      "mutator": "EqualityOperator",
-      "original": "left.id > right.id",
-      "replacement": "left.id >= right.id",
-      "category": "equivalent",
-      "reason": "The two answers differ only for equal identities, and the adapters are the values of a Map keyed by identity (line 625, guarded at line 678), so the comparator never sees two equal ones."
-    },
-    {
-      "file": "packages/runtime/src/participant-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "left.id > right.id",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The comparator answers 0 where it answered 1, and the sort of the installed Node reads only whether the answer is negative: 260,000 random orders of 2 to 128 distinct identities sorted the same under both (work/m15/sortprobe.mjs, Node 26.10.0). Measured on this engine, not derived from the language standard."
-    },
-    {
-      "file": "packages/runtime/src/participant-runtime.ts",
-      "mutator": "EqualityOperator",
-      "original": "left.id > right.id",
-      "replacement": "left.id <= right.id",
-      "category": "equivalent",
-      "reason": "For distinct identities this comparator answers 0 where it answered 1, and the sort of the installed Node reads only whether the answer is negative: 260,000 random orders of 2 to 128 distinct identities sorted the same under both (work/m15/sortprobe.mjs, Node 26.10.0). Measured on this engine, not derived from the language standard."
+      "reason": "The two answers differ only for equal identities, and the adapters are the values of a Map keyed by identity, so the comparator never sees two equal ones."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -7523,22 +7491,6 @@
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "prepared.finalized",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Every caller checks finalized before it calls cleanup (lines 1099, 1129, 1143 and 1215), and running the steps again on a finalized item clears a cleared timer, removes a removed listener and finds no work to delete."
-    },
-    {
-      "file": "packages/runtime/src/participant-runtime.ts",
-      "mutator": "CallExpression",
-      "original": "prepared.clearDeadline();",
-      "replacement": ";",
-      "category": "equivalent",
-      "reason": "A prepared item exists only after line 991 has cleared the deadline timer, so by the time cleanup runs the timer is already undefined and the call does nothing."
-    },
-    {
-      "file": "packages/runtime/src/participant-runtime.ts",
       "mutator": "StringLiteral",
       "original": "'New participant work superseded an older attempt.'",
       "replacement": "\"\"",
@@ -7584,7 +7536,7 @@
       "original": "adapter.work !== work",
       "replacement": "false",
       "category": "unreachable",
-      "reason": "The work is replaced only after its controller is aborted (lines 895 and 927) and deleted by another attempt only when cleanup finds the same transition identity on it (line 882); the runtime gives each preparation of a participant its own identity (localization.ts lines 1944, 2092 and 2259), so a replaced work is always an aborted one and the second clause decides alone."
+      "reason": "A participant's work is replaced only by a newer preparation, which aborts its controller first, and is deleted only by the preparation that started it or by the prepared item that holds it, neither of which exists while this preparation is still waiting. A work that is no longer the participant's is therefore always an aborted one and the second clause decides alone."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -7620,22 +7572,6 @@
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "!item.finalized",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "The items in the list were made by prepareOne inside this call and have been handed to nobody, so none is finalized and the condition is true for every one."
-    },
-    {
-      "file": "packages/runtime/src/participant-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "unavailable === undefined",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "The branch is entered only when a failure or an unavailable report exists (line 1071) and a failure has already been thrown on line 1104, so unavailable is always defined here."
-    },
-    {
-      "file": "packages/runtime/src/participant-runtime.ts",
       "mutator": "StringLiteral",
       "original": "'A required localized representation is unavailable.'",
       "replacement": "\"\"",
@@ -7648,7 +7584,7 @@
       "original": "this.adapters.get(item.adapter.id) !== item.adapter",
       "replacement": "false",
       "category": "unreachable",
-      "reason": "A registration leaves the map only through unregister (line 763) or dispose (lines 1341 and 1290), and both abort the controller of the work in flight first, so an item whose adapter is gone has an aborted signal and the third clause refuses it with the same reason; the exception needs two preparations of one participant under one transition identity, which the runtime never issues (localization.ts lines 1944, 2092 and 2259)."
+      "reason": "A registration leaves the map only through unregister or dispose, and both first abort the controller of the participant's current work. A prepared item that is not finalized either holds that work or holds one a newer preparation aborted when it replaced it, so an item whose adapter is gone has an aborted signal and the third clause refuses it with the same reason."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -7709,26 +7645,10 @@
     {
       "file": "packages/runtime/src/participant-runtime.ts",
       "mutator": "ConditionalExpression",
-      "original": "attempt.status === 'idle'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "An idle attempt carries no target locale (line 558), so the clause on line 1314 leaves it out when this one does not."
-    },
-    {
-      "file": "packages/runtime/src/participant-runtime.ts",
-      "mutator": "StringLiteral",
-      "original": "'idle'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "An idle attempt carries no target locale (line 558), so the clause on line 1314 leaves it out when this one does not."
-    },
-    {
-      "file": "packages/runtime/src/participant-runtime.ts",
-      "mutator": "ConditionalExpression",
       "original": "attempt.targetLocale === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "Only the idle attempt lacks a target locale: every other attempt is written with one by lines 566 to 576, 838, and 1176, and idle is already left out by the first clause."
+      "reason": "Only the idle attempt lacks a target locale, and idle is already left out by the first clause."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -7736,7 +7656,7 @@
       "original": "attempt.transitionId === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "Only the idle attempt lacks a transition identity: every other attempt is written with one by lines 566 to 576, 838, and 1176, and idle is already left out by the first clause."
+      "reason": "Only the idle attempt lacks a transition identity, and idle is already left out by the first clause."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -7754,6 +7674,22 @@
       "replacement": ";",
       "category": "equivalent",
       "reason": "The map is read only by register (line 707), which refuses on a disposed coordinator (line 664), so clearing it releases memory and changes no result."
+    },
+    {
+      "file": "packages/runtime/src/participant-runtime.ts",
+      "mutator": "ConditionalExpression",
+      "original": "attempt.status === 'idle'",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "An idle attempt carries no target locale, so the clause on the target locale leaves it out when this one does not. The clause is written because a transfer record's attempt has no idle status, and the comparison is what narrows the type."
+    },
+    {
+      "file": "packages/runtime/src/participant-runtime.ts",
+      "mutator": "StringLiteral",
+      "original": "'idle'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "An idle attempt carries no target locale, so the clause on the target locale leaves it out when this one does not. The clause is written because a transfer record's attempt has no idle status, and the comparison is what narrows the type."
     },
     {
       "file": "packages/runtime/src/persistence.ts",

@@ -100,7 +100,6 @@ interface InternalPreparedParticipant extends PreparedParticipant {
   readonly adapter: ParticipantAdapter;
   readonly work: ParticipantWork;
   readonly unlink: () => void;
-  readonly clearDeadline: () => void;
   finalized: boolean;
 }
 
@@ -645,9 +644,9 @@ export class ParticipantCoordinator {
       this.registryVersion();
       return Object.freeze(
         [...this.adapters.values()]
-          .sort((left, right) =>
-            left.id < right.id ? -1 : left.id > right.id ? 1 : 0,
-          )
+          // The identities are the keys of one map, so no two are equal and the comparator has
+          // no tie to report.
+          .sort((left, right) => (left.id < right.id ? -1 : 1))
           .map((adapter) => adapter.stateValue()),
       );
     },
@@ -931,9 +930,7 @@ export class ParticipantCoordinator {
   }
 
   private cleanup(prepared: InternalPreparedParticipant): void {
-    if (prepared.finalized) return;
     prepared.finalized = true;
-    prepared.clearDeadline();
     prepared.unlink();
     if (this.latest(prepared)) delete prepared.adapter.work;
   }
@@ -1049,7 +1046,6 @@ export class ParticipantCoordinator {
         report,
         work,
         unlink: linked.unlink,
-        clearDeadline,
         finalized: false,
       };
       clearDeadline();
@@ -1124,60 +1120,58 @@ export class ParticipantCoordinator {
     const failure = settled.find(
       (result): result is PromiseRejectedResult => result.status === 'rejected',
     );
-    if (failure !== undefined || unavailable !== undefined) {
-      for (const item of prepared) {
-        if (item === unavailable) {
-          this.setAttempt(item.adapter, {
-            status: 'unavailable',
-            targetLocale,
-            transitionId,
-            report: item.report,
-          });
-        } else {
-          this.setAttempt(item.adapter, {
-            status: 'cancelled',
-            targetLocale,
-            transitionId,
-            report: item.report,
-            diagnostic: participantDiagnostic(
-              failure === undefined
-                ? 'participant-unavailable'
-                : 'participant-failed',
-              'The coordinated participant cohort did not commit.',
-              item.adapter.id,
-              item.context,
-              failure === undefined
-                ? 'localized-representation-unavailable'
-                : 'operational-failure',
-            ),
-          });
-        }
-        if (!item.finalized) {
-          this.discard(item.adapter, item.context, item.report);
-          this.cleanup(item);
-        }
+    const refusal =
+      failure !== undefined
+        ? { reason: failure.reason as unknown }
+        : unavailable !== undefined
+          ? {
+              reason: new LocalizationError(
+                participantDiagnostic(
+                  'participant-unavailable',
+                  'A required localized representation is unavailable.',
+                  unavailable.adapter.id,
+                  unavailable.context,
+                  'localized-representation-unavailable',
+                ),
+              ),
+            }
+          : undefined;
+    if (refusal === undefined) return Object.freeze(prepared);
+    for (const item of prepared) {
+      // The attempt of a newer preparation is that preparation's to end.
+      if (this.latest(item)) {
+        this.setAttempt(
+          item.adapter,
+          item === unavailable
+            ? {
+                status: 'unavailable',
+                targetLocale,
+                transitionId,
+                report: item.report,
+              }
+            : {
+                status: 'cancelled',
+                targetLocale,
+                transitionId,
+                report: item.report,
+                diagnostic: participantDiagnostic(
+                  failure === undefined
+                    ? 'participant-unavailable'
+                    : 'participant-failed',
+                  'The coordinated participant cohort did not commit.',
+                  item.adapter.id,
+                  item.context,
+                  failure === undefined
+                    ? 'localized-representation-unavailable'
+                    : 'operational-failure',
+                ),
+              },
+        );
       }
-      if (failure !== undefined) throw failure.reason;
-      if (unavailable === undefined) {
-        throw new LocalizationError({
-          code: 'internal-invariant',
-          outcome: 'operational-failure',
-          message: 'The participant cohort ended without a terminal outcome.',
-          targetLocale,
-          transitionId,
-        });
-      }
-      throw new LocalizationError(
-        participantDiagnostic(
-          'participant-unavailable',
-          'A required localized representation is unavailable.',
-          unavailable.adapter.id,
-          unavailable.context,
-          'localized-representation-unavailable',
-        ),
-      );
+      this.discard(item.adapter, item.context, item.report);
+      this.cleanup(item);
     }
-    return Object.freeze(prepared);
+    throw refusal.reason;
   }
 
   discardPrepared(prepared: readonly PreparedParticipant[]): void {
@@ -1383,6 +1377,8 @@ export class ParticipantCoordinator {
       [...this.adapters.values()].map((adapter) => {
         const state = adapter.stateValue();
         const attempt = state.attempt;
+        // A record's attempt has no idle status. An idle attempt also lacks a target locale, and the
+        // comparison is here for the type it narrows.
         const transferableAttempt =
           attempt.status === 'idle' ||
           attempt.status === 'cancelled' ||
