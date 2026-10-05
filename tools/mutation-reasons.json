@@ -4850,82 +4850,10 @@
     {
       "file": "packages/runtime/src/localized-input.ts",
       "mutator": "ConditionalExpression",
-      "original": "value.kind === 'plain-date' &&\n        value.calendar === (profile.calendar ?? 'iso8601')",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "a value that is not a plain date in the profile calendar is written as text that does not read back to it, and the identity comparison in verifyFormattedInput, which names the kind and the calendar, returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "LogicalOperator",
-      "original": "value.kind === 'plain-date' &&\n        value.calendar === (profile.calendar ?? 'iso8601')",
-      "replacement": "value.kind === 'plain-date' || value.calendar === (profile.calendar ?? 'iso8601')",
-      "category": "equivalent",
-      "reason": "a value that is not a plain date in the profile calendar is written as text that does not read back to it, and the identity comparison in verifyFormattedInput, which names the kind and the calendar, returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "value.kind === 'plain-date'",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "a value that is not a plain date in the profile calendar is written as text that does not read back to it, and the identity comparison in verifyFormattedInput, which names the kind and the calendar, returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "value.calendar === (profile.calendar ?? 'iso8601')",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "the text reads back in the profile calendar, so the identity comparison in verifyFormattedInput, which names the calendar, returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "value.kind === 'plain-time'",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "a value of another kind has no clock fields, so localizedTimeText returns undefined or text that does not read back, and formatLocalizedInput and verifyFormattedInput returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "value.date.calendar === (profile.date.calendar ?? 'iso8601')",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "the text reads back in the profile calendar, so the identity comparison in verifyFormattedInput, which names the calendar, returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
       "original": "value.kind === 'time-zone'",
       "replacement": "true",
       "category": "equivalent",
       "reason": "a value of another kind has no zone identity, so timeZone throws inside the try in localizedTimeZoneText and formatLocalizedInput returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "value.kind === 'duration'",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "a value of another kind has no sign, so duration() throws inside the try in localizedDurationText and formatLocalizedInput returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "case 'money':\n      return `money:${value.currency}:${value.amount.value}`;",
-      "replacement": "case 'money':",
-      "category": "equivalent",
-      "reason": "without its own case the value falls through to the next one, which writes the same amount for both sides; the currency was matched in valueMatchesProfile and the parsed side carries the profile currency"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "case 'measurement':\n      return `measurement:${value.unit}:${value.amount.value}`;",
-      "replacement": "case 'measurement':",
-      "category": "equivalent",
-      "reason": "without its own case the value falls through to the next one, which writes the same amount for both sides; the unit was matched in valueMatchesProfile and the parsed side carries the profile unit"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
