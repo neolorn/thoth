@@ -13,6 +13,7 @@
 // entry point's graph rather than beside it, and the primary re-exports it from here. That is the
 // layering the right way up: the base does not depend on the integration.
 import {
+  allowedLocaleHosts,
   builtLocalePolicy,
   canonicalizeLanguageTag,
   negotiateLocale,
@@ -331,6 +332,9 @@ export function createLocaleRequestHandler(
     options.configuration === undefined
       ? options.policy
       : builtLocalePolicy(options.policy, options.configuration);
+  // Read once here, so a policy written out with tables no constructor writes is refused where the
+  // handler is made, and no request reads a table before the policy has been held to them.
+  allowedLocaleHosts(policy);
   const cookie = options.cookie ?? {};
   // The attributes are settled once, so the cookie that is checked is the cookie that is written.
   const stored =

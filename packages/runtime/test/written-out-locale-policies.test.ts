@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { createLocaleRequestHandler } from '../http/src/handler.js';
 import {
   addressSelectsLocale,
   allowedLocaleHosts,
@@ -575,5 +576,31 @@ describe('every reading of a policy', () => {
       code: 'invalid-configuration',
       message: expect.stringContaining('ar-EG') as unknown,
     });
+  });
+});
+
+describe('a request handler given a written-out policy', () => {
+  it('refuses a broken table where the handler is made, with or without a configuration', () => {
+    const broken = written(PREFIXED, {
+      prefixes: { 'en-us': 'en-US', 'ar-eg': 'en-US' },
+    });
+    const cache = { successMaxAge: 600, permanentRedirectMaxAge: 86_400 };
+    for (const configuration of [undefined, CONFIGURATION]) {
+      const made = (policy: LocaleUrlPolicy) => () =>
+        createLocaleRequestHandler({
+          policy,
+          projection: PROJECTION,
+          cache,
+          ...(configuration === undefined ? {} : { configuration }),
+        });
+      expect(refusal(made(PREFIXED))).toBeUndefined();
+      expect(refusal(made(broken))).toMatchObject({
+        code: 'invalid-configuration',
+        message: expect.stringContaining('ar-EG') as unknown,
+      });
+      expect(
+        refusal(made(written(PREFIXED, { locales: undefined }))),
+      ).toMatchObject({ code: 'invalid-configuration' });
+    }
   });
 });
