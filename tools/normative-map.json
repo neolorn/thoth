@@ -2682,6 +2682,12 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "16. Security and cache boundaries",
+      "statement": "A release MUST read every directive the page's value spells, including one that follows another with no comma between them, so a value written `max-age=60 no-store` is not stored, because RFC 9111 section 5.2.2.5 has that directive forbid storing any part of the response.",
+      "checks": ["assurance:cache-directive-after-a-missing-comma-dropped"]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "16. Security and cache boundaries",
       "statement": "A release MUST add the page's varying fields to its own, except a cookie, which raises the page to per visitor instead, and a wildcard, which stands alone.",
       "checks": [
         "assurance:cookie-vary-leaves-the-page-shared",

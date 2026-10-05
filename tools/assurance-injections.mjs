@@ -4486,6 +4486,16 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/query-and-fragment-separators.test.ts',
   },
   {
+    id: 'cache-directive-after-a-missing-comma-dropped',
+    invariant:
+      "A directive that follows another with no comma between them in a page's Cache-Control is still read, so no-store is never lost to a max-age.",
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '    if (name.length > 0) found.push([name, argument]);',
+    replace:
+      "    while (at < value.length && value.charAt(at) !== ',') at += 1;\n    if (name.length > 0) found.push([name, argument]);",
+    caughtBy: 'packages/runtime/test/page-cache-control-grammar.test.ts',
+  },
+  {
     id: 'migration-sink-unreachable',
     invariant:
       'Applying an authored change plan is public, so a consumer can hand it the observability sink the migration events are reported to.',

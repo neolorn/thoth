@@ -66,18 +66,26 @@ describe("how a page's Cache-Control is read", () => {
     expect(pageSaid('private="a, no-store"')).toBe('private, no-cache');
   });
 
-  it('leaves out what follows a directive before the next comma, and reads on from there', () => {
-    // Text between an argument and the next comma is not a directive, whatever it spells.
-    expect(pageSaid('max-age=60 no-store')).toBe(
-      'public, max-age=60, must-revalidate',
+  it('reads a directive that follows another with no comma between them', () => {
+    // RFC 9111 section 5.2.2.5 has no-store forbid storing any part of the response, so a value
+    // that left out a comma cannot be read as leaving out the directive after it.
+    expect(pageSaid('max-age=60 no-store')).toBe('private, no-store');
+    expect(pageSaid('max-age=60 private')).toBe('private, no-cache');
+    expect(pageSaid('max-age="60" no-store')).toBe('private, no-store');
+    expect(pageSaid('public no-store')).toBe('private, no-store');
+    expect(pageSaid('max-age=600 s-maxage=30 no-transform')).toBe(
+      'public, max-age=600, must-revalidate, s-maxage=30, no-transform',
     );
     expect(pageSaid('max-age=60 no-store, no-transform')).toBe(
-      'public, max-age=60, must-revalidate, no-transform',
-    );
-    // The same after a quoted argument: reading resumes after its closing quote, so the second
-    // quoted text is not an argument and the comma inside it separates directives.
-    expect(pageSaid('no-transform="a,"="x, no-store, y"')).toBe(
       'private, no-store, no-transform',
+    );
+  });
+
+  it('reads quoted text as an argument wherever it stands, never as directives', () => {
+    // The second quoted text follows an equals sign with no name before it, so it is the argument
+    // of a directive that has none, and the commas inside it separate nothing.
+    expect(pageSaid('no-transform="a,"="x, no-store, y"')).toBe(
+      'public, max-age=600, must-revalidate, no-transform',
     );
   });
 

@@ -956,7 +956,9 @@ function statedCaching(value: string | undefined): StatedCaching {
  *
  * RFC 9111 section 5.2 compares names case-insensitively and lets an argument be a token or a
  * quoted string, and a quoted string can hold a comma, so this reads the value rather than
- * splitting it.
+ * splitting it. White space separates directives as a comma does: a value that left a comma out
+ * still names every directive it spells, so `max-age=60 no-store` is read as both and the one
+ * section 5.2.2.5 has forbid storing the response is never read past.
  */
 function cacheDirectives(
   value: string,
@@ -992,8 +994,6 @@ function cacheDirectives(
         }
       }
     }
-    // Whatever follows a directive before the next comma is not part of the grammar.
-    while (at < value.length && value.charAt(at) !== ',') at += 1;
     if (name.length > 0) found.push([name, argument]);
     skip(/[\s,]/u);
   }

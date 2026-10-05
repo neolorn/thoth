@@ -783,7 +783,10 @@ which other responses share its address. Not stored raises the level to not stor
 revalidation before reuse raises it to per visitor, a shorter lifetime shortens the shared one, and
 a directive forbidding transformation is kept. A release MUST NOT carry a directive that lengthens
 or widens reuse, and MUST read a lifetime given twice or not as a whole number as stale, as RFC 9111
-section 4.2.1 offers. A release MUST add the page's varying fields to its own, except a cookie, which
+section 4.2.1 offers. A release MUST read every directive the page's value spells, including one that
+follows another with no comma between them, so a value written `max-age=60 no-store` is not stored,
+because RFC 9111 section 5.2.2.5 has that directive forbid storing any part of the response. A
+release MUST add the page's varying fields to its own, except a cookie, which
 raises the page to per visitor instead, and a wildcard, which stands alone.
 
 ## 17. Primary references

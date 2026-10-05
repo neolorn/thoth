@@ -168,8 +168,8 @@
       "original": "at < value.length",
       "replacement": "at <= value.length",
       "category": "equivalent",
-      "reason": "`charAt` past the end is the empty string, which none of the skip patterns on lines 969, 974, 978 and 998 matches, so the loop stops at the same index without the bound. At the end `charAt` is empty and the index moves one past the end; the `slice` on line 973 and every later read are bounded by the length, so the name and the list are the same. The one extra pass at the end appends `charAt` of the end, which is the empty string, and line 987 leaves the index past the end either way. The one extra pass at the end appends the empty string to the argument, and the loops on lines 996 and 970 then end as they would have. The one extra step moves the index one past the end, where the outer loop on line 970 ends exactly as it would have at the end.",
-      "count": 5
+      "reason": "`charAt` past the end is the empty string, which none of the skip patterns matches, so the loop stops at the same index without the bound. At the end `charAt` is empty and the index moves one past the end; the `slice` after it and every later read are bounded by the length, so the name and the list are the same. The one extra pass at the end appends `charAt` of the end, which is the empty string, and the step after the loop leaves the index past the end either way. The one extra pass at the end appends the empty string to the argument, and the outer loop then ends as it would have.",
+      "count": 4
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
