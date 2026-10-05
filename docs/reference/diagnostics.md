@@ -404,7 +404,7 @@ A failure with no more specific code. An error that is not a `LocalizationError`
 
 ### invalid-configuration
 
-The configuration, the generated artifacts, or the call do not fit together. Among the cases: the generated configuration and catalog set disagree, a generated scope, catalog descriptor or loader map is malformed or over its ceiling, a scope's source catalog is missing, `maximumCachedCatalogs` is out of range, required and progressive scopes overlap, the generated message handles were built for another runtime, a route declaration or parameter codec cannot be used, or `retry()` is called when initialization has not failed. In the browser, a transferred server snapshot that is not accepted is reported under this code.
+The configuration, the generated artifacts, or the call do not fit together. Among the cases: the generated configuration and catalog set disagree, a generated scope, catalog descriptor or loader map is malformed or over its ceiling, a scope's source catalog is missing, `maximumCachedCatalogs` is out of range, required and progressive scopes overlap, the generated message handles were built for another runtime, a route declaration or parameter codec cannot be used, the `numberingSystem` handed to `parseLocalizedInput` or `formatLocalizedInput` is not a well-formed identifier, or `retry()` is called when initialization has not failed. In the browser, a transferred server snapshot that is not accepted is reported under this code.
 
 ### invalid-localized-input
 
