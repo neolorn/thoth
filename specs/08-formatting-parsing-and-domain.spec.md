@@ -191,6 +191,9 @@ Temporal parsing uses declared patterns or generated field profiles. A release M
 the platform's permissive date parser, host coercion, a guessed field order, natural-language
 guessing, or the host's implicit time zone as a correctness path.
 
+The character limit of a date-time field is the field's own and bounds the whole text. Its date and
+time halves carry no limit of their own, so a half is as long as the field's limit leaves room for.
+
 A duration field's pattern names its units from the seven a duration value holds: years, months,
 weeks, days, hours, minutes, and seconds. A profile that names any other unit is refused as an
 invalid profile, whatever the text.

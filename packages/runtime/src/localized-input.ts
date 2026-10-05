@@ -1308,6 +1308,20 @@ function validPlainDateTimeBoundary(
   );
 }
 
+/**
+ * The pattern of one half of a date-time field, held to the field's limit.
+ *
+ * The limit of a date-time field is the field's own. A half is a part of text the field has already
+ * measured, so it takes the field's limit and none of its own: a date or a time alone is held to a
+ * shorter default, which would refuse a half the field's limit has room for.
+ */
+function dateTimeHalf<Pattern extends object>(
+  pattern: Pattern,
+  profile: Extract<LocalizedInputProfile, { readonly kind: 'plain-date-time' }>,
+): Pattern & { readonly maximumCharacters: number } {
+  return { ...pattern, maximumCharacters: profile.maximumCharacters ?? 128 };
+}
+
 function parsePlainDateTimeInput(
   text: string,
   profile: Extract<LocalizedInputProfile, { readonly kind: 'plain-date-time' }>,
@@ -1315,10 +1329,12 @@ function parsePlainDateTimeInput(
 ): LocalizedInputResult<PlainDateTimeValue> {
   const source = canonicalInput(text);
   const calendar = profile.date.calendar ?? 'iso8601';
+  const date = dateTimeHalf(profile.date, profile);
+  const time = dateTimeHalf(profile.time, profile);
   if (
     !validCharacterLimit(profile.maximumCharacters) ||
-    !validDatePattern(profile.date) ||
-    !validTimePattern(profile.time) ||
+    !validDatePattern(date) ||
+    !validTimePattern(time) ||
     !validPatternLiteral(profile.separator) ||
     profile.separator === profile.date.separator ||
     !validPlainDateTimeBoundary(profile.minimum, calendar) ||
@@ -1351,17 +1367,13 @@ function parsePlainDateTimeInput(
       context,
     );
   }
-  const dateResult = parsePlainDate(
-    source.slice(0, boundary),
-    profile.date,
-    context,
-  );
+  const dateResult = parsePlainDate(source.slice(0, boundary), date, context);
   if (dateResult.status !== 'valid') {
     return dateResult as LocalizedInputResult<PlainDateTimeValue>;
   }
   const timeResult = parsePlainTime(
     source.slice(boundary + profile.separator.length),
-    profile.time,
+    time,
     context,
   );
   if (timeResult.status !== 'valid') {
@@ -2658,7 +2670,11 @@ export function formatLocalizedInput<Profile extends LocalizedInputProfile>(
     }
     case 'plain-date-time': {
       const dateTime = value as PlainDateTimeValue;
-      const timeText = localizedTimeText(dateTime.time, profile.time, context);
+      const timeText = localizedTimeText(
+        dateTime.time,
+        dateTimeHalf(profile.time, profile),
+        context,
+      );
       if (timeText === undefined) {
         return formattingPolicyFailure(
           'The invariant date-time cannot be represented by the declared localized input profile.',

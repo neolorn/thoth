@@ -347,6 +347,62 @@ describe('the length of date-time text', () => {
       read(text(129), { ...long(3), maximumCharacters: 129 }),
     ).toMatchObject({ status: 'valid', value });
   });
+
+  // The limit is the field's. A half is a part of the text the field already measured, so it is as
+  // long as the field's limit leaves room for.
+  const roomy = { ...long(32), maximumCharacters: 200 };
+
+  it('reads a time half longer than a time field would read alone', () => {
+    const half = `01${colon}05${colon}09${'~'.repeat(8)}${'p'.repeat(32)}`;
+    expect(half.length).toBeGreaterThan(64);
+    expect(read(`2024${dash}01${dash}02${joiner}${half}`, roomy)).toMatchObject(
+      {
+        status: 'valid',
+        value,
+      },
+    );
+  });
+
+  it('reads a date half longer than a date field would read alone', () => {
+    const half = `2024${dash}01${dash}${'2'.padStart(27, '0')}`;
+    expect(half).toHaveLength(65);
+    expect(
+      read(`${half}${joiner}01${colon}05${colon}09${'~'.repeat(8)}pp`, {
+        ...long(2),
+        maximumCharacters: 200,
+      }),
+    ).toMatchObject({ status: 'valid', value });
+  });
+
+  it('writes a moment whose time half is longer than a time field would write alone', () => {
+    const written = write(value, roomy);
+    expect(written).toMatchObject({ ok: true });
+    expect(
+      read((written as { value: { text: string } }).value.text, roomy),
+    ).toMatchObject({ status: 'valid', value });
+  });
+
+  it('reports a long half that is not a time as what it is, and not as over a limit', () => {
+    expect(
+      read(`2024${dash}01${dash}02${joiner}${'x'.repeat(70)}`, long(2)).status,
+    ).toBe('incomplete');
+  });
+
+  it('takes no limit from a half', () => {
+    const limited = long(2) as { date: object; time: object };
+    for (const limit of [3, -1, 'none']) {
+      const profile = {
+        ...limited,
+        date: { ...limited.date, maximumCharacters: limit },
+        time: { ...limited.time, maximumCharacters: limit },
+      };
+      expect(read(text(128), profile)).toMatchObject({
+        status: 'valid',
+        value,
+      });
+      expect(write(value, profile)).toMatchObject({ ok: true });
+    }
+  });
 });
 
 describe('a date-time written in the spelling its profile reads', () => {

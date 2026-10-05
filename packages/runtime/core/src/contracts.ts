@@ -2224,7 +2224,10 @@ export interface LocalizedPlainDateTimeInputProfile {
   readonly minimum?: PlainDateTimeValue;
   /** The latest moment accepted. */
   readonly maximum?: PlainDateTimeValue;
-  /** The most characters that will be read. */
+  /**
+   * The most characters that will be read, across both halves and what joins them. Defaults to
+   * 128. The halves have no limit of their own.
+   */
   readonly maximumCharacters?: number;
 }
 
