@@ -534,6 +534,8 @@ function parseNumeric(
     (profile.maximumFractionDigits !== undefined &&
       (!Number.isSafeInteger(profile.maximumFractionDigits) ||
         profile.maximumFractionDigits < 0)) ||
+    !canonicalDecimalContract(profile.minimum) ||
+    !canonicalDecimalContract(profile.maximum) ||
     (profile.minimum !== undefined &&
       profile.maximum !== undefined &&
       compareDecimal(profile.minimum, profile.maximum) > 0) ||
