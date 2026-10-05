@@ -671,6 +671,24 @@ describe('what a formatted plain date carries', () => {
     expect(Object.keys(diagnostic)).not.toContain('reason');
   });
 
+  it('is refused, and not thrown, for a year the platform has no date for', () => {
+    // `plainDate` refuses this year, so the value is one written as an object.
+    const diagnostic = refusal(
+      formatPlainDate(
+        {
+          kind: 'plain-date',
+          year: 300_000,
+          month: 3,
+          day: 14,
+          calendar: 'iso8601',
+        },
+        EN,
+      ),
+    );
+    expect(diagnostic.code).toBe('unsupported-formatting-capability');
+    expect(Object.keys(diagnostic)).not.toContain('reason');
+  });
+
   it('is refused in a numbering system with no data', () => {
     expect(
       refusal(

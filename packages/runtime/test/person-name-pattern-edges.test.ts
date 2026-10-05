@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   type FormattingResult,
   type PersonNameProfileSet,
+  type PersonNameValue,
 } from '@neolorn/equator/core';
 import { formatPersonName, personName } from '../src/formatting.js';
 
@@ -96,6 +97,15 @@ const text = (result: FormattingResult): string => {
 
 const EN = Object.freeze({ locale: 'en' });
 
+/**
+ * A name written as an object, the way one read from storage or built by other code arrives.
+ * `personName` would refuse the languages and the parts these cases need.
+ */
+const written = (
+  language: string,
+  fields: PersonNameValue['fields'],
+): PersonNameValue => ({ kind: 'person-name', language, fields });
+
 describe('the order a name is written in', () => {
   it('is given-first when the call asks for it, whatever the lists say', () => {
     const set = profileSet([marked('en', { surnameFirst: ['ja'] })]);
@@ -118,6 +128,25 @@ describe('the order a name is written in', () => {
       text(
         formatPersonName(
           personName('en', { given: 'Mary', surname: 'Hamish' }),
+          EN,
+          {},
+          set,
+        ),
+      ),
+    ).toBe('Mary[en/givenFirst]Hamish');
+    claimCapability('format:formatPersonName');
+  });
+
+  it('is the order of every language for a name whose language begins with a separator', () => {
+    // The walk up the name's language stops at its first separator. Past it there is no language
+    // left, and an empty entry in a list is not a language to match.
+    const set = profileSet([
+      marked('en', { givenFirst: ['und'], surnameFirst: [''] }),
+    ]);
+    expect(
+      text(
+        formatPersonName(
+          written('-x', { given: 'Mary', surname: 'Hamish' }),
           EN,
           {},
           set,
@@ -166,20 +195,35 @@ describe('the row a name is formatted by', () => {
   });
 
   it('is the interface row when the name language has no script to compare', () => {
-    // `qaa` is reserved for private use, so the platform's likely-subtag data gives it no script.
-    // A host whose data did assign one would format this by the `qaa` row, correctly.
-    expect(new Intl.Locale('qaa').maximize().script).toBeUndefined();
-    const set = profileSet([marked('en'), marked('qaa')]);
+    // `ja_JP` is not a tag any platform reads, so no host has a script for it, and the name's own
+    // row is passed over although the set carries one.
+    const set = profileSet([marked('en'), marked('ja_JP')]);
     expect(
       text(
         formatPersonName(
-          personName('qaa', { given: 'Mary', surname: 'Hamish' }),
+          written('ja_JP', { given: 'Mary', surname: 'Hamish' }),
           EN,
           {},
           set,
         ),
       ),
     ).toBe('Mary[en/givenFirst]Hamish');
+    claimCapability('format:formatPersonName');
+  });
+
+  it('is the row of the name language when its script is not the interface script', () => {
+    // The control for the case above: with a language every platform reads, the name's row is used.
+    const set = profileSet([marked('en'), marked('ja')]);
+    expect(
+      text(
+        formatPersonName(
+          personName('ja', { given: 'Mary', surname: 'Hamish' }),
+          EN,
+          { order: 'given-first' },
+          set,
+        ),
+      ),
+    ).toBe('Mary[ja/givenFirst]Hamish');
     claimCapability('format:formatPersonName');
   });
 
@@ -428,9 +472,10 @@ describe('the ceiling on the parts of a formatted name', () => {
 
   it('refuses a name of more parts than the ceiling whose text is within it', () => {
     // Two halves of one character, held in two fields: each pair is two parts and one code point,
-    // so the parts pass the ceiling while the text is half of it.
+    // so the parts pass the ceiling while the text is half of it. `personName` refuses half a
+    // character, so the name is one written as an object.
     const result = formatPersonName(
-      personName('en', {
+      written('en', {
         given: String.fromCharCode(0xd83d),
         surname: String.fromCharCode(0xde00),
       }),

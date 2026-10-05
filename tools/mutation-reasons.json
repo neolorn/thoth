@@ -3337,30 +3337,6 @@
     },
     {
       "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "end > 0",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "When end reaches 0 the second operand reads charCodeAt(-1), which is NaN and never equals 0x30, so the loop stops at the same value with or without the bound."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "EqualityOperator",
-      "original": "end > 0",
-      "replacement": "end >= 0",
-      "category": "equivalent",
-      "reason": "At end 0 the second operand reads charCodeAt(-1), which is NaN and never equals 0x30, so the loop stops at 0 either way."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "end === fraction.length",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "slice(0, fraction.length) is a string equal to fraction, so always slicing returns the same value; the branch only avoids the copy."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
       "original": "'A decimal must use base-10 digits without exponent, grouping, or a plus sign.'",
       "replacement": "\"\"",
@@ -3382,54 +3358,6 @@
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The literal is the message of the plain-date field refusal, which a person reads and nothing compares; the refusal's code and outcome are asserted."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "MethodExpression",
-      "original": "probe.setUTCHours(0, 0, 0, 0)",
-      "replacement": "probe.setUTCMinutes(0, 0, 0, 0)",
-      "category": "equivalent",
-      "reason": "probe is new Date(0) from line 220, already midnight UTC, so setting its hours or its minutes to zero changes nothing."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "LogicalOperator",
-      "original": "probe.getUTCFullYear() !== year ||\n      probe.getUTCMonth() !== month - 1 ||\n      probe.getUTCDate() !== day",
-      "replacement": "(probe.getUTCFullYear() !== year || probe.getUTCMonth() !== month - 1) && probe.getUTCDate() !== day",
-      "category": "equivalent",
-      "reason": "setUTCFullYear with a month of 1 to 12 and a day of 1 to 31 either lands on the date asked for or overflows the day into the next month (or yields an invalid date, where all three getters are NaN), so the month and the day clauses each fail exactly when any of the three does and lines 211 to 214 bound the fields that make it so."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "probe.getUTCFullYear() !== year ||\n      probe.getUTCMonth() !== month - 1",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "setUTCFullYear with a month of 1 to 12 and a day of 1 to 31 either lands on the date asked for or overflows the day into the next month (or yields an invalid date, where all three getters are NaN), so the month and the day clauses each fail exactly when any of the three does and lines 211 to 214 bound the fields that make it so."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "LogicalOperator",
-      "original": "probe.getUTCFullYear() !== year ||\n      probe.getUTCMonth() !== month - 1",
-      "replacement": "probe.getUTCFullYear() !== year && probe.getUTCMonth() !== month - 1",
-      "category": "equivalent",
-      "reason": "setUTCFullYear with a month of 1 to 12 and a day of 1 to 31 either lands on the date asked for or overflows the day into the next month (or yields an invalid date, where all three getters are NaN), so the month and the day clauses each fail exactly when any of the three does and lines 211 to 214 bound the fields that make it so."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "probe.getUTCFullYear() !== year",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "setUTCFullYear with a month of 1 to 12 and a day of 1 to 31 either lands on the date asked for or overflows the day into the next month (or yields an invalid date, where all three getters are NaN), so the month and the day clauses each fail exactly when any of the three does and lines 211 to 214 bound the fields that make it so."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "probe.getUTCMonth() !== month - 1",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "setUTCFullYear with a month of 1 to 12 and a day of 1 to 31 either lands on the date asked for or overflows the day into the next month (or yields an invalid date, where all three getters are NaN), so the month and the day clauses each fail exactly when any of the three does and lines 211 to 214 bound the fields that make it so."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -3595,14 +3523,6 @@
     {
       "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
-      "original": "'percentage-points'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "The semantic passed to numberResult here is discarded: formatPercentagePoints reads only text and parts from that result and rebuilds the value through success with its own semantic on line 892."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "StringLiteral",
       "original": "'The instant is outside the native Date range.'",
       "replacement": "\"\"",
       "category": "message-wording",
@@ -3650,14 +3570,6 @@
     },
     {
       "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ObjectLiteral",
-      "original": "{\n    year: 'numeric',\n    month: 'numeric',\n    day: 'numeric',\n  }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "An empty options object makes Intl.DateTimeFormat default to numeric year, month and day, which is what this default spells out; measured identical through resolvedOptions on this host (ICU 78.3), and the standard that defines the default is not among the pinned sources, so it was not read from one."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
       "original": "'The native number-range capability is unavailable.'",
       "replacement": "\"\"",
@@ -3690,43 +3602,11 @@
     },
     {
       "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ArithmeticOperator",
-      "original": "RUNTIME_LIMITS.outputCodePoints - aggregateCharacters",
-      "replacement": "RUNTIME_LIMITS.outputCodePoints + aggregateCharacters",
-      "category": "equivalent",
-      "reason": "Without the running subtraction a list whose items total more than the output ceiling is admitted here and refused by success on line 704 with the same code, outcome and absent reason, because its joined text is at least as long as its items; only the message and the work done differ."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "AssignmentOperator",
-      "original": "aggregateCharacters += length",
-      "replacement": "aggregateCharacters -= length",
-      "category": "equivalent",
-      "reason": "With the total counted downward the per-item bound stays 4,096 and an over-long total is refused by success on line 704 instead, with the same code, outcome and absent reason; only the message and the work done differ."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
       "original": "'The list exceeds Equator formatting resource bounds.'",
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The literal is the message of the list bounds refusal; it is read by a person and nothing compares, parses or returns it as data apart from the diagnostic's message field."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "typeof first?.segment === 'string'",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "A segment the segmenter yields is always a string, and for an empty string the forced read of first.segment throws into the catch on line 1646, which returns what the fallback arm returns."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "OptionalChaining",
-      "original": "first?.segment",
-      "replacement": "first.segment",
-      "category": "equivalent",
-      "reason": "first is undefined only for an empty string, and the TypeError the unguarded read throws is caught on line 1646, which returns the same first code point or empty string as the fallback arm."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -3754,62 +3634,6 @@
     },
     {
       "file": "packages/runtime/src/formatting.ts",
-      "mutator": "OptionalChaining",
-      "original": "tag.split('-')[0]?.toLowerCase",
-      "replacement": "tag.split('-')[0].toLowerCase",
-      "category": "equivalent",
-      "reason": "String.prototype.split always returns at least one element, so the first element is never undefined and the optional call never short-circuits."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "EqualityOperator",
-      "original": "boundary <= 0",
-      "replacement": "boundary < 0",
-      "category": "unreachable",
-      "reason": "A boundary of zero needs a name language that begins with a hyphen, and nameLocale is value.language, which personName sets only from canonicalizeLanguageTag (lines 566 to 572 and 601); a canonical tag never begins with a separator."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "prefix === undefined && core === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "With the early return gone a name carrying neither prefix nor core yields an empty string instead of undefined, and personNameFieldText gives both the same empty text (line 1914 for undefined; monogram, initials and casing of an empty string are empty)."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "OptionalChaining",
-      "original": "words[0]?.word",
-      "replacement": "words[0].word",
-      "category": "equivalent",
-      "reason": "Line 1879 has returned when there are no words, so words[0] is always defined here."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "OptionalChaining",
-      "original": "words[at]?.word",
-      "replacement": "words[at].word",
-      "category": "equivalent",
-      "reason": "The loop on line 1884 keeps at below words.length, so words[at] is always defined."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "OptionalChaining",
-      "original": "words[at - 1]?.separator",
-      "replacement": "words[at - 1].separator",
-      "category": "equivalent",
-      "reason": "The loop on line 1884 starts at 1 and stays below words.length, so words[at - 1] is always defined."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "field === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "String.prototype.split always returns at least one element, so field is never undefined and the second clause decides alone."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
       "mutator": "ConditionalExpression",
       "original": "start > at",
       "replacement": "true",
@@ -3823,46 +3647,6 @@
       "replacement": "start >= at",
       "category": "equivalent",
       "reason": "The mutant only adds empty literals between adjacent placeholders: a leading one is trimmed (line 1984), the run scan steps over literals (line 2009), a merge with an empty literal returns the other text (lines 2031 to 2034), and an empty literal writes no part (line 2148)."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "EqualityOperator",
-      "original": "at < pattern.length",
-      "replacement": "at <= pattern.length",
-      "category": "equivalent",
-      "reason": "A literal after the last placeholder follows every field, so trimToPopulated (line 1984) removes it whether it was pushed, pushed empty or not pushed."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "at < pattern.length",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "A literal after the last placeholder follows every field, so trimToPopulated (line 1984) removes it whether it was pushed, pushed empty or not pushed."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "at < pattern.length",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "A literal after the last placeholder follows every field, so trimToPopulated (line 1984) removes it whether it was pushed, pushed empty or not pushed."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "EqualityOperator",
-      "original": "at < pattern.length",
-      "replacement": "at >= pattern.length",
-      "category": "equivalent",
-      "reason": "A literal after the last placeholder follows every field, so trimToPopulated (line 1984) removes it whether it was pushed, pushed empty or not pushed."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "first < 0",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "With no populated field first is -1 and lastIndexOf is -1, so the slice on line 1984 is slice(-1, 0), which is empty like the early return."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -3882,75 +3666,11 @@
     },
     {
       "file": "packages/runtime/src/formatting.ts",
-      "mutator": "OptionalChaining",
-      "original": "previous?.kind",
-      "replacement": "previous.kind",
-      "category": "equivalent",
-      "reason": "previous is undefined only for the first token, which trimToPopulated (line 1984) guarantees is a field, so the first clause is already true and previous.kind is never read."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "previous.text.length === 0",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "No literal token is empty (lines 1959, 1966 and 1969 push only non-empty text, and a merge of non-empty literals is non-empty), so this arm is never taken."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "token.text.length === 0",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "No literal token is empty (lines 1959, 1966 and 1969), and for an empty one previous.text.endsWith would be true and choose the same arm."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
       "original": "`Person-name data profile ${JSON.stringify(profiles.profile)} is not the one this runtime reads (${JSON.stringify(PERSON_NAME_ROOT.profile)}). Regenerate this application against a matching Equator.`",
       "replacement": "``",
       "category": "message-wording",
       "reason": "The literal is the message of the profile-version refusal; it is read by a person and nothing compares, parses or returns it as data apart from the diagnostic's message field."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "selected !== undefined",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "For an undefined cell the remaining clause, undefined >= 0, is false, so the referring cell is read exactly as before."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "index !== undefined && index >= 0",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "An index that is undefined or negative reads profile.patterns at a position an array of patterns does not have, which is undefined, the same value the guarded arm yields; line 2106 then refuses as before."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "index >= 0",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "An index that is undefined or negative reads profile.patterns at a position an array of patterns does not have, which is undefined, the same value the guarded arm yields; line 2106 then refuses as before."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "LogicalOperator",
-      "original": "index !== undefined && index >= 0",
-      "replacement": "index !== undefined || index >= 0",
-      "category": "equivalent",
-      "reason": "An index that is undefined or negative reads profile.patterns at a position an array of patterns does not have, which is undefined, the same value the guarded arm yields; line 2106 then refuses as before."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "index !== undefined",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "An index that is undefined or negative reads profile.patterns at a position an array of patterns does not have, which is undefined, the same value the guarded arm yields; line 2106 then refuses as before."
     },
     {
       "file": "packages/runtime/src/formatting.ts",

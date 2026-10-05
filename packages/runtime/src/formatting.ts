@@ -136,8 +136,9 @@ function normalizeInteger(value: string, label: string): string {
  */
 function withoutTrailingZeros(fraction: string): string {
   let end = fraction.length;
-  while (end > 0 && fraction.charCodeAt(end - 1) === 0x30) end -= 1;
-  return end === fraction.length ? fraction : fraction.slice(0, end);
+  // Before the first code unit there is none to read, which is not a zero, so the walk ends there.
+  while (fraction.charCodeAt(end - 1) === 0x30) end -= 1;
+  return fraction.slice(0, end);
 }
 
 function normalizeDecimal(value: string): string {
@@ -218,13 +219,11 @@ export function plainDate(
   }
   if (calendar === 'iso8601') {
     const probe = new Date(0);
-    probe.setUTCHours(0, 0, 0, 0);
     probe.setUTCFullYear(year, month - 1, day);
-    if (
-      probe.getUTCFullYear() !== year ||
-      probe.getUTCMonth() !== month - 1 ||
-      probe.getUTCDate() !== day
-    ) {
+    // With the month held to twelve and the day to thirty-one above, a date that does not exist
+    // runs over into the next month and one outside the platform's range is no date at all. Either
+    // way the day read back is not the day asked for, and for a date that exists it is.
+    if (probe.getUTCDate() !== day) {
       return invalidCanonicalValue('An ISO plain date does not exist.');
     }
   }
@@ -547,8 +546,9 @@ const personNameFieldKeys: readonly PersonNameFieldKey[] = Object.freeze([
  * ask for, and at least one part must be given.
  *
  * Every part is trimmed and normalized. Throws for a language tag that is not canonical, for a
- * part longer than a name, and for text carrying control or direction-override characters, which
- * are the ones that make a rendered name read as something other than what it says.
+ * part longer than a name, for text carrying control or direction-override characters, which
+ * are the ones that make a rendered name read as something other than what it says, and for text
+ * that is not well-formed Unicode because it carries half of a surrogate pair.
  */
 export function personName(
   language: string,
@@ -583,7 +583,9 @@ export function personName(
     if (
       text.length === 0 ||
       [...text].length > 256 ||
-      /[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/u.test(text)
+      // The last range is a surrogate with no partner: under the unicode flag a pair is one
+      // character outside it, so only half of one matches.
+      /[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069\ud800-\udfff]/u.test(text)
     ) {
       return invalidCanonicalValue(
         `Person-name field ${field} contains unsafe or invalid text.`,
@@ -732,6 +734,7 @@ function numberResult(
   context: FormattingContext,
   options: Intl.NumberFormatOptions,
   cache: FormatterCache,
+  trailingParts: readonly LocalizedFormatPart[] = [],
 ): FormattingResult {
   const number = nativeNumber(amount, context);
   if (typeof number !== 'number') return number;
@@ -746,9 +749,12 @@ function numberResult(
     return success(
       semantic,
       formatter.format(number),
-      formatter
-        .formatToParts(number)
-        .map(({ type, value }) => Object.freeze({ kind: type, value })),
+      [
+        ...formatter
+          .formatToParts(number)
+          .map(({ type, value }) => Object.freeze({ kind: type, value })),
+        ...trailingParts,
+      ],
       source,
       context,
     );
@@ -879,27 +885,19 @@ export function formatPercentagePoints(
   context: FormattingContext,
   options: Intl.NumberFormatOptions = {},
 ): FormattingResult {
-  const formatted = numberResult(
+  return numberResult(
     'percentage-points',
     value,
     value.amount,
     context,
     options,
     sharedFormatters,
-  );
-  if (!formatted.ok) return formatted;
-  return success(
-    'percentage-points',
-    formatted.value.text,
     [
-      ...formatted.value.parts,
       Object.freeze({
         kind: 'semantic-unit' as const,
         value: 'percentage-points',
       }),
     ],
-    value,
-    context,
   );
 }
 
@@ -1497,20 +1495,15 @@ export function formatList(
   context: FormattingContext,
   options: Intl.ListFormatOptions = {},
 ): FormattingResult {
-  let aggregateCharacters = 0;
+  // The length of the whole list is held by the ceiling on every formatted result.
   const bounded =
     Array.isArray(values) &&
     values.length <= 100 &&
-    values.every((value) => {
-      if (typeof value !== 'string') return false;
-      const length = codePointLengthAtMost(
-        value,
-        Math.min(4_096, RUNTIME_LIMITS.outputCodePoints - aggregateCharacters),
-      );
-      if (length === undefined) return false;
-      aggregateCharacters += length;
-      return true;
-    });
+    values.every(
+      (value) =>
+        typeof value === 'string' &&
+        codePointLengthAtMost(value, 4_096) !== undefined,
+    );
   if (!bounded) {
     return unsupported(
       'The list exceeds Equator formatting resource bounds.',
@@ -1635,14 +1628,12 @@ function firstGrapheme(
   cache: FormatterCache,
 ): string {
   try {
-    const first = cache
+    for (const { segment } of cache
       .segmenter(language, { granularity: 'grapheme' })
-      .segment(value)
-      [Symbol.iterator]()
-      .next().value as { readonly segment?: unknown } | undefined;
-    return typeof first?.segment === 'string'
-      ? first.segment
-      : ([...value][0] ?? '');
+      .segment(value)) {
+      return segment;
+    }
+    return '';
   } catch {
     return [...value][0] ?? '';
   }
@@ -1757,7 +1748,8 @@ function baseLanguage(tag: string): string {
   try {
     return new Intl.Locale(tag).language;
   } catch {
-    return tag.split('-')[0]?.toLowerCase() ?? tag;
+    // Splitting text always gives a first piece, the whole of it where there is no separator.
+    return (tag.split('-')[0] as string).toLowerCase();
   }
 }
 
@@ -1842,7 +1834,7 @@ function storedPersonNameField(
   // (plain) surname is 'von und zu Stettbach'".
   const prefix = fields[`${field}-prefix`];
   const core = fields[`${field}-core`];
-  if (prefix === undefined && core === undefined) return undefined;
+  // A name carrying neither joins to no text, which is what an absent field is written as.
   return [prefix, core].filter((part) => part !== undefined).join(' ');
 }
 
@@ -1875,20 +1867,22 @@ function personNameInitials(
   cache: FormatterCache,
   retain: boolean,
 ): string {
-  const words = personNameWords(text);
-  if (words.length === 0) return '';
+  const [first, ...rest] = personNameWords(text);
+  if (first === undefined) return '';
   let result = fillPattern(
     profile.initial,
-    firstGrapheme(words[0]?.word ?? '', language, cache),
+    firstGrapheme(first.word, language, cache),
   );
-  for (let at = 1; at < words.length; at += 1) {
+  let separator = first.separator;
+  for (const next of rest) {
     const piece = fillPattern(
       profile.initial,
-      firstGrapheme(words[at]?.word ?? '', language, cache),
+      firstGrapheme(next.word, language, cache),
     );
     result = retain
-      ? `${result}${words[at - 1]?.separator ?? ''}${piece}`
+      ? `${result}${separator}${piece}`
       : fillPattern(profile.initialSequence, result, piece);
+    separator = next.separator;
   }
   return result;
 }
@@ -1899,11 +1893,10 @@ function personNameFieldText(
   placeholder: string,
   cache: FormatterCache,
 ): { readonly field: PersonNameField; readonly text: string } | undefined {
-  const [field, ...modifiers] = placeholder.split('-');
-  if (
-    field === undefined ||
-    !(personNameFields as readonly string[]).includes(field)
-  ) {
+  const modifiers = placeholder.split('-');
+  // Splitting text always gives a first piece, so there is a field name to take, empty or not.
+  const field = modifiers.shift() as string;
+  if (!(personNameFields as readonly string[]).includes(field)) {
     return undefined;
   }
   const variants = modifiers.filter((modifier) =>
@@ -1966,9 +1959,8 @@ function parsePersonNamePattern(
       tokens.push({ kind: 'literal', text: match[0] });
     else tokens.push({ kind: 'field', ...resolved });
   }
-  if (at < pattern.length) {
-    tokens.push({ kind: 'literal', text: pattern.slice(at) });
-  }
+  // Text after the last placeholder follows every field, and nothing after the last populated field
+  // is written, so it is not kept.
   return tokens;
 }
 
@@ -1979,9 +1971,8 @@ function trimToPopulated(
   const populated = tokens.map(
     (token) => token.kind === 'field' && token.text.length > 0,
   );
-  const first = populated.indexOf(true);
-  if (first < 0) return [];
-  return tokens.slice(first, populated.lastIndexOf(true) + 1);
+  // With no populated field both positions are before the start, and the slice is empty.
+  return tokens.slice(populated.indexOf(true), populated.lastIndexOf(true) + 1);
 }
 
 /**
@@ -2019,23 +2010,24 @@ function removeEmptyFields(
 function coalesceLiterals(
   tokens: readonly PersonNameToken[],
 ): readonly PersonNameToken[] {
-  const kept: PersonNameToken[] = [];
-  for (const token of tokens) {
-    const previous = kept[kept.length - 1];
-    if (token.kind !== 'literal' || previous?.kind !== 'literal') {
+  const [head, ...rest] = tokens;
+  if (head === undefined) return [];
+  const kept: PersonNameToken[] = [head];
+  for (const token of rest) {
+    const previous = kept[kept.length - 1] as PersonNameToken;
+    if (token.kind !== 'literal' || previous.kind !== 'literal') {
       kept.push(token);
       continue;
     }
     kept.pop();
-    const merged =
-      previous.text.length === 0
-        ? token.text
-        : token.text.length === 0 || previous.text.endsWith(token.text)
-          ? previous.text
-          : `${previous.text}${token.text}`.replace(
-              /(\s)\s+/gu,
-              (_whole, first: string) => first,
-            );
+    // A literal is never empty: it is the text between two placeholders, or a placeholder kept
+    // as text.
+    const merged = previous.text.endsWith(token.text)
+      ? previous.text
+      : `${previous.text}${token.text}`.replace(
+          /(\s)\s+/gu,
+          (_whole, first: string) => first,
+        );
     kept.push({ kind: 'literal', text: merged });
   }
   return kept;
@@ -2095,14 +2087,14 @@ export function formatPersonName(
   // The only empty region in the release is `sorting` crossed with addressing and monogram, in
   // every one of the 379 rows: a sorting form is a referring form, so that is where it falls to.
   const referring = PERSON_NAME_USAGES.indexOf('referring');
-  const selected =
-    profile.cells[personNameCell(order, length, usage, formality)];
-  const index =
-    selected !== undefined && selected >= 0
-      ? selected
-      : profile.cells[personNameCell(order, length, referring, formality)];
-  const pattern =
-    index !== undefined && index >= 0 ? profile.patterns[index] : undefined;
+  // A cell the table does not have, or one that is negative, names no pattern: it is not zero or
+  // more, and it is not a position the pattern list has.
+  const cell = (cellUsage: number): number =>
+    profile.cells[
+      personNameCell(order, length, cellUsage, formality)
+    ] as number;
+  const selected = cell(usage);
+  const pattern = profile.patterns[selected >= 0 ? selected : cell(referring)];
   if (pattern === undefined) {
     return unsupported(
       `Locale ${JSON.stringify(profile.tag)} carries no person-name pattern for this combination.`,

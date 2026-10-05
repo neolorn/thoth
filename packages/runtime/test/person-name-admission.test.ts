@@ -193,6 +193,38 @@ describe('a part of a person name', () => {
     ).toBe('invalid-message-input');
   });
 
+  // Text is a sequence of characters, and half of a surrogate pair is not one. Each half is built
+  // from its code unit so that this file holds none.
+  it.each([
+    ['a high surrogate with no low one', [0x41, 0xd83d]],
+    ['a low surrogate with no high one', [0xde00, 0x41]],
+    ['a pair in the wrong order', [0xde00, 0xd83d]],
+    ['a high surrogate between two letters', [0x41, 0xd83d, 0x42]],
+    ['the first high surrogate alone', [0xd800]],
+    ['the last low surrogate alone', [0xdfff]],
+  ])('refuses a part carrying %s', (_, units) => {
+    const text = String.fromCharCode(...units);
+
+    expect(
+      refusal(() => personName('en', { given: text })).diagnostic.code,
+    ).toBe('invalid-message-input');
+  });
+
+  it('admits a part carrying a whole surrogate pair', () => {
+    const text = String.fromCharCode(0x41, 0xd83d, 0xde00);
+
+    expect(personName('en', { given: text }).fields.given).toBe(text);
+  });
+
+  it.each([
+    ['the character before the surrogates', 0xd7ff],
+    ['the character after the surrogates', 0xe000],
+  ])('admits a part carrying %s', (_, codePoint) => {
+    const text = 'Ada' + String.fromCodePoint(codePoint);
+
+    expect(personName('en', { given: text }).fields.given).toBe(text);
+  });
+
   it.each([
     ['a space', 0x20],
     ['the character before delete', 0x7e],

@@ -216,6 +216,9 @@ data. A release MUST preserve the fields supplied, MUST distinguish the name's o
 and script from the surrounding locale, MUST NOT impose a universal given-and-family persistence
 schema, and MUST NOT parse an unstructured name into authoritative components.
 
+The fields of a name are well-formed Unicode text. A field that carries half of a surrogate pair is
+refused when the name is built, as one carrying a control or a direction-override character is.
+
 Postal-address schemas, canonicalization, deliverability, validation, and final layout stay with the
 consumer application, as do telephone parsing, regional numbering metadata, canonicalization,
 dialing behavior, and validity. A release localizes the labels, the instructions, and the
