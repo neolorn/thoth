@@ -170,7 +170,23 @@ describe('a written-out policy with the tables a constructor writes', () => {
 
 describe('a written-out policy of any kind', () => {
   it.each([
-    ['of a kind that is not served', { kind: 'cookie' }, 'cookie'],
+    [
+      'of a kind that is not served',
+      { kind: 'cookie' },
+      'does not serve a "cookie"',
+    ],
+    [
+      'with a locale table that is nothing',
+      { locales: null },
+      'names no locales',
+    ],
+    [
+      'with a default locale that is not text',
+      { defaultLocale: ['en-US'] },
+      'default',
+    ],
+    ['with no roots', { localeNeutralRoots: undefined }, 'roots'],
+    ['with roots that are text', { localeNeutralRoots: 'abc' }, 'roots'],
     ['with no locale table', { locales: undefined }, 'names no locales'],
     ['with a locale table that is a list', { locales: ['en-US'] }, 'no loc'],
     ['with an empty locale table', { locales: {} }, 'names no locales'],
@@ -294,6 +310,11 @@ describe('a written-out path-prefix policy', () => {
       '"constructor"',
     ],
     ['no prefix table', { prefixes: undefined }, 'en-US'],
+    [
+      'a prefix table that holds something that is not text',
+      { prefixes: { 'en-us': 'en-US', 'ar-eg': 'ar-EG', other: 7 } },
+      'no locale is spelled with',
+    ],
     [
       'a prefix table that reads a prefix no locale is spelled with',
       { prefixes: { 'en-us': 'en-US', 'ar-eg': 'ar-EG', 'fr-fr': 'fr-FR' } },
@@ -420,6 +441,17 @@ describe('a written-out host policy', () => {
     ],
     ['no origin table', { origins: undefined }, 'en-US'],
     [
+      'an origin table that holds something that is not text',
+      {
+        origins: {
+          'https://example.com': 'en-US',
+          'https://example.eg': 'ar-EG',
+          other: 7,
+        },
+      },
+      'no locale is served at',
+    ],
+    [
       'an origin table that reads an origin no locale is served at',
       {
         origins: {
@@ -430,11 +462,15 @@ describe('a written-out host policy', () => {
       },
       'no locale is served at',
     ],
-    ['an x-default that is not text', { xDefaultUrl: 7 }, 'x-default'],
+    [
+      'an x-default that is not text',
+      { xDefaultUrl: 7 },
+      'not a normalized origin',
+    ],
     [
       'an x-default that is not normalized',
       { xDefaultUrl: 'https://example.org/' },
-      'x-default',
+      'not a normalized origin',
     ],
     [
       'an x-default with a path',

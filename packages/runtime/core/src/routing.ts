@@ -2667,9 +2667,22 @@ function servedPreference(
 ): string | undefined {
   const locale =
     requested === undefined ? undefined : canonicalizeLanguageTag(requested);
-  return locale !== undefined && Object.hasOwn(policy.locales, locale)
-    ? locale
-    : undefined;
+  return Object.keys(policy.locales).find((served) => served === locale);
+}
+
+/**
+ * The locale a leading segment states under a path-prefix policy.
+ *
+ * A policy's prefixes and aliases are lower case, so a prefix written in another case reads
+ * through the folded segment as an alias does, and the comparison with the canonical address
+ * corrects both.
+ */
+function prefixedLocale(
+  policy: PathPrefixLocalePolicy,
+  segment: string,
+): string | undefined {
+  const folded = segment.toLowerCase();
+  return ownEntry(policy.prefixes, folded) ?? ownEntry(policy.aliases, folded);
 }
 
 function resolvePathPrefixRoute(
@@ -2700,12 +2713,8 @@ function resolvePathPrefixRoute(
       presentationLocale: policy.defaultLocale,
     });
   }
-  // A policy's prefixes and aliases are lower case, so a prefix written in another case reads
-  // through the folded segment as an alias does, and the comparison with the canonical address
-  // below corrects both.
-  const folded = first?.toLowerCase() ?? '';
   const locale =
-    ownEntry(policy.prefixes, folded) ?? ownEntry(policy.aliases, folded);
+    first === undefined ? undefined : prefixedLocale(policy, first);
   if (locale === undefined) {
     const unprefixedMatch = matchRoute(
       parsed.segments,
