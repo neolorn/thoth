@@ -1368,9 +1368,9 @@ export const injections = Object.freeze([
     invariant:
       'Each context owns its participant registry; a participant registered on one context is never listed, prepared or disposed by another built from the same setup.',
     source: 'packages/runtime/src/localization.ts',
-    find: '    this.participantCoordinator = new ParticipantCoordinator(\n      options.transferredParticipants ?? [],\n    );',
+    find: '    this.participantCoordinator = new ParticipantCoordinator(\n      options.transferredParticipants ?? [],\n      this.participantRefusals(),\n    );',
     replace:
-      '    this.participantCoordinator = ((\n      globalThis as { sharedCoordinator?: ParticipantCoordinator }\n    ).sharedCoordinator ??= new ParticipantCoordinator(\n      options.transferredParticipants ?? [],\n    ));',
+      '    this.participantCoordinator = ((\n      globalThis as { sharedCoordinator?: ParticipantCoordinator }\n    ).sharedCoordinator ??= new ParticipantCoordinator(\n      options.transferredParticipants ?? [],\n      this.participantRefusals(),\n    ));',
   },
   {
     id: 'participant-transfer-carries-a-function',

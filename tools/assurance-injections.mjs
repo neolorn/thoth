@@ -2883,6 +2883,27 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/missing-translation-outcome.test.ts',
   },
   {
+    id: 'participant-commit-promise-accepted',
+    invariant:
+      'A commit that answers with a promise is refused as a contract rejection, and the change fails.',
+    source: 'packages/runtime/src/participant-runtime.ts',
+    find: '        if (asyncCallbackRejected(result)) {\n          throw new LocalizationError(\n            deferredHookDiagnostic(item.adapter.id, item.context),',
+    replace:
+      '        if (asyncCallbackRejected(result) && (false as boolean)) {\n          throw new LocalizationError(\n            deferredHookDiagnostic(item.adapter.id, item.context),',
+    caughtBy:
+      'packages/runtime/test/participant-registration-admission.test.ts',
+  },
+  {
+    id: 'participant-hook-promise-unreported',
+    invariant:
+      'A rollback, discard or disposal that answers with a promise is reported as a contract rejection naming the participant.',
+    source: 'packages/runtime/src/participant-runtime.ts',
+    find: '    if (asyncCallbackRejected(answer) && this.refused !== undefined) {',
+    replace:
+      '    if ((false as boolean) && this.refused !== undefined) {\n      void answer;',
+    caughtBy: 'packages/runtime/test/participant-hook-answers.test.ts',
+  },
+  {
     id: 'participant-report-extra-fields-admitted',
     invariant:
       'A participant answer carrying a field its status does not name is refused, so a consumer payload has no way into the transaction.',

@@ -38,6 +38,7 @@ import {
   type LocaleSelectorChoice,
   type LocalizationClock,
   type LocalizationContextOptions,
+  type LocalizationDiagnostic,
   type LocalizationLifecycle,
   type LocalizationParticipant,
   type LocalizationParticipantOptions,
@@ -1193,6 +1194,7 @@ class LocalizationInternal {
     this.formatterCache = new FormatterCache(formatterCapacity);
     this.participantCoordinator = new ParticipantCoordinator(
       options.transferredParticipants ?? [],
+      this.participantRefusals(),
     );
     if (
       !Array.isArray(options.transferredCatalogs ?? []) ||
@@ -1276,6 +1278,35 @@ class LocalizationInternal {
 
   observe(input: LocalizationEventInput): void {
     this.observability?.emit(input);
+  }
+
+  /**
+   * Where the coordinator reports a participant hook it refused after its change was decided.
+   *
+   * Nothing, for a context without a sink, so the coordinator builds no diagnostic that nobody
+   * would read.
+   */
+  private participantRefusals():
+    ((diagnostic: LocalizationDiagnostic) => void) | undefined {
+    const observability = this.observability;
+    if (observability === undefined) return undefined;
+    return (diagnostic) => {
+      observability.emit({
+        code: RUNTIME_EVENT_CODES.integration,
+        phase: 'integration',
+        status: 'failed',
+        reason: diagnostic.code,
+        ...(diagnostic.participantId === undefined
+          ? {}
+          : { participantId: diagnostic.participantId }),
+        ...(diagnostic.targetLocale === undefined
+          ? {}
+          : { targetLocale: diagnostic.targetLocale }),
+        ...(diagnostic.transitionId === undefined
+          ? {}
+          : { transitionId: diagnostic.transitionId }),
+      });
+    };
   }
 
   private get active(): ActiveSnapshot | undefined {

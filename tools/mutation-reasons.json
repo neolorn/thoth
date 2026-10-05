@@ -7381,34 +7381,7 @@
       "original": "adapter.discard?.(context, report)",
       "replacement": "adapter.discard(context, report)",
       "category": "equivalent",
-      "reason": "For a participant with no discard the call throws a TypeError inside the try that starts on line 606, and the catch on line 611 swallows it, so the caller sees the same nothing."
-    },
-    {
-      "file": "packages/runtime/src/participant-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "result !== undefined",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "The only statement this condition guards is a throw that the catch on line 611 of the same function swallows, so no caller can tell whether it ran. The branch only throws into the catch on line 778, which discards every error, so taking it always or never changes nothing.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/participant-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "result !== undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The only statement this condition guards is a throw that the catch on line 611 of the same function swallows, so no caller can tell whether it ran. The branch only throws into the catch on line 778, which discards every error, so taking it always or never changes nothing.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/participant-runtime.ts",
-      "mutator": "EqualityOperator",
-      "original": "result !== undefined",
-      "replacement": "result === undefined",
-      "category": "equivalent",
-      "reason": "The only statement this condition guards is a throw that the catch on line 611 of the same function swallows, so no caller can tell whether it ran. The branch only throws into the catch on line 778, which discards every error, so taking it always or never changes nothing.",
-      "count": 2
+      "reason": "For a participant with no discard the call throws a TypeError inside the hook that `tell` runs, whose catch returns, so the caller sees the same nothing as for a call that was skipped."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -7715,25 +7688,7 @@
       "original": "item.adapter.rollback?.(item.context, item.report)",
       "replacement": "item.adapter.rollback(item.context, item.report)",
       "category": "equivalent",
-      "reason": "Calling a rollback hook that is absent throws a TypeError inside the try on line 1203, and the catch on line 1210 discards it, which is what skipping the call does."
-    },
-    {
-      "file": "packages/runtime/src/participant-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "asyncCallbackRejected(result)",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The branch only throws into the catch on line 1210, which discards every error, so taking it always or never changes nothing. The branch only throws into the catch on line 1350, which discards every error, so taking it always or never changes nothing.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/participant-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "asyncCallbackRejected(result)",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "The branch only throws into the catch on line 1210, which discards every error, so taking it always or never changes nothing. The branch only throws into the catch on line 1350, which discards every error, so taking it always or never changes nothing.",
-      "count": 2
+      "reason": "Calling a rollback hook that is absent throws a TypeError inside the hook that `tell` runs, whose catch returns, which is what skipping the call does."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",
@@ -7805,7 +7760,7 @@
       "original": "adapter.dispose?.()",
       "replacement": "adapter.dispose()",
       "category": "equivalent",
-      "reason": "Calling a disposal hook that is absent throws a TypeError inside the try on line 1343, and the catch on line 1350 discards it, which is what skipping the call does. Calling a disposal hook that is absent throws a TypeError inside the try on line 773, and the catch on line 778 discards it, which is what skipping the call does.",
+      "reason": "Calling a disposal hook that is absent throws a TypeError inside the hook that `tell` runs, whose catch returns, which is what skipping the call does, at both places a disposal is told.",
       "count": 2
     },
     {

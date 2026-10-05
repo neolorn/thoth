@@ -598,27 +598,40 @@ function abortDiagnosticStatus(
       : 'failed';
 }
 
-function invokeDiscard(
-  adapter: ParticipantAdapter,
-  context: LocalizationParticipantContext,
-  report?: LocalizationParticipantReport,
-): void {
-  try {
-    const result = adapter.discard?.(context, report);
-    if (result !== undefined) {
-      throw new Error('Participant discard callbacks must be synchronous.');
-    }
-  } catch {
-    // A consumer discard failure cannot resurrect or commit stale work.
-  }
-}
-
 function asyncCallbackRejected(value: unknown): value is PromiseLike<unknown> {
   return (
     (typeof value === 'object' || typeof value === 'function') &&
     value !== null &&
     typeof (value as { readonly then?: unknown }).then === 'function'
   );
+}
+
+/**
+ * The refusal of a hook that answered with a promise.
+ *
+ * Commit, rollback, discard and disposal are synchronous, because every participant of a change is
+ * told in one pass and nothing waits for work a hook left running. A disposal belongs to no
+ * change, so its refusal names the participant alone.
+ */
+function deferredHookDiagnostic(
+  participantId: string,
+  context?: LocalizationParticipantContext,
+): LocalizationDiagnostic {
+  const message =
+    'A localization participant hook answered with a promise where a synchronous answer is required.';
+  return context === undefined
+    ? Object.freeze({
+        code: 'participant-contract-rejected',
+        outcome: 'operational-failure',
+        message,
+        participantId,
+      })
+    : participantDiagnostic(
+        'participant-contract-rejected',
+        message,
+        participantId,
+        context,
+      );
 }
 
 export class ParticipantCoordinator {
@@ -640,10 +653,48 @@ export class ParticipantCoordinator {
     },
   );
 
-  constructor(transferred: readonly ParticipantTransferRecord[] = []) {
+  /**
+   * `refused` is told of a rollback, discard or disposal hook that answered with a promise. Such a
+   * hook is called for a change whose outcome is already decided, so its refusal is reported
+   * beside that outcome and never in place of it.
+   */
+  constructor(
+    transferred: readonly ParticipantTransferRecord[] = [],
+    private readonly refused?: (diagnostic: LocalizationDiagnostic) => void,
+  ) {
     for (const record of transferred) {
       this.transferred.set(record.participantId, record);
     }
+  }
+
+  /**
+   * Calls a hook the change no longer depends on.
+   *
+   * A hook that throws here cannot undo an outcome that is already decided, so its failure goes no
+   * further. One that answers with a promise is refused as a commit is.
+   */
+  private tell(
+    adapter: ParticipantAdapter,
+    hook: () => unknown,
+    context?: LocalizationParticipantContext,
+  ): void {
+    let answer: unknown;
+    try {
+      answer = hook();
+    } catch {
+      return;
+    }
+    if (asyncCallbackRejected(answer) && this.refused !== undefined) {
+      this.refused(deferredHookDiagnostic(adapter.id, context));
+    }
+  }
+
+  private discard(
+    adapter: ParticipantAdapter,
+    context: LocalizationParticipantContext,
+    report?: LocalizationParticipantReport,
+  ): void {
+    this.tell(adapter, () => adapter.discard?.(context, report), context);
   }
 
   private assertActive(): void {
@@ -770,14 +821,7 @@ export class ParticipantCoordinator {
         targetLocale: adapter.work.targetLocale,
       }),
     );
-    try {
-      const result = adapter.dispose?.();
-      if (result !== undefined) {
-        throw new Error('Participant disposal callbacks must be synchronous.');
-      }
-    } catch {
-      // Disposal is best-effort and cannot retain a registration.
-    }
+    this.tell(adapter, () => adapter.dispose?.());
     this.adapters.delete(participantId);
     this.registryVersion.update((value) => value + 1);
   }
@@ -1019,7 +1063,7 @@ export class ParticipantCoordinator {
           diagnostic,
         });
       }
-      invokeDiscard(adapter, context, report);
+      this.discard(adapter, context, report);
       throw new LocalizationError(diagnostic);
     }
   }
@@ -1097,7 +1141,7 @@ export class ParticipantCoordinator {
           });
         }
         if (!item.finalized) {
-          invokeDiscard(item.adapter, item.context, item.report);
+          this.discard(item.adapter, item.context, item.report);
           this.cleanup(item);
         }
       }
@@ -1127,7 +1171,7 @@ export class ParticipantCoordinator {
   discardPrepared(prepared: readonly PreparedParticipant[]): void {
     for (const item of prepared as readonly InternalPreparedParticipant[]) {
       if (item.finalized) continue;
-      invokeDiscard(item.adapter, item.context, item.report);
+      this.discard(item.adapter, item.context, item.report);
       this.cleanup(item);
     }
   }
@@ -1159,7 +1203,9 @@ export class ParticipantCoordinator {
         invoked.push(item);
         const result = item.adapter.commit?.(item.context, item.report);
         if (asyncCallbackRejected(result)) {
-          throw contractError(item.adapter.id, item.context);
+          throw new LocalizationError(
+            deferredHookDiagnostic(item.adapter.id, item.context),
+          );
         }
       }
       for (const item of internal) {
@@ -1200,16 +1246,11 @@ export class ParticipantCoordinator {
                 failed.context,
               );
       for (const item of [...invoked].reverse()) {
-        try {
-          const result = item.adapter.rollback?.(item.context, item.report);
-          if (asyncCallbackRejected(result)) {
-            throw new Error(
-              'Participant rollback callbacks must be synchronous.',
-            );
-          }
-        } catch {
-          // Preserve the original participant commit failure.
-        }
+        this.tell(
+          item.adapter,
+          () => item.adapter.rollback?.(item.context, item.report),
+          item.context,
+        );
       }
       for (const item of internal) {
         if (item.finalized) continue;
@@ -1222,7 +1263,7 @@ export class ParticipantCoordinator {
           report: item.report,
           diagnostic,
         });
-        invokeDiscard(item.adapter, item.context, item.report);
+        this.discard(item.adapter, item.context, item.report);
         this.cleanup(item);
       }
       throw new LocalizationError(diagnostic);
@@ -1340,16 +1381,7 @@ export class ParticipantCoordinator {
     this.disposed = true;
     this.supersedeAll(undefined, undefined, true);
     for (const adapter of [...this.adapters.values()].reverse()) {
-      try {
-        const result = adapter.dispose?.();
-        if (asyncCallbackRejected(result)) {
-          throw new Error(
-            'Participant disposal callbacks must be synchronous.',
-          );
-        }
-      } catch {
-        // Disposal is best-effort and cannot retain another participant.
-      }
+      this.tell(adapter, () => adapter.dispose?.());
     }
     this.adapters.clear();
     this.transferred.clear();

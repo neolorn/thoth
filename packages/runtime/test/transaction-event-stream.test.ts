@@ -479,4 +479,67 @@ describe('the events of a locale change the application cancelled', () => {
     region.release('ar-EG');
     localization.dispose();
   });
+
+  it('name a participant whose discard answered with a promise, after the cancellation', async () => {
+    const watched = observed();
+    const region = participant('region', { hold: ['ar-EG'] });
+    const { localization } = runtime({
+      options: { observability: watched.emitter },
+    });
+    localization.registerParticipant({
+      ...region.value,
+      discard: (() => Promise.resolve()) as unknown as () => void,
+    });
+    await localization.initialize();
+    const change = localization.changeLocale('ar-EG');
+    await expect
+      .poll(() => region.calls)
+      .toStrictEqual(['prepare en-US', 'commit en-US', 'prepare ar-EG']);
+
+    localization.cancelTransition();
+
+    await expect(change).resolves.toMatchObject({
+      status: 'cancelled',
+      diagnostic: { code: 'cancelled' },
+    });
+    expect(watched.phase('integration')).toStrictEqual([
+      {
+        status: 'failed',
+        reason: 'participant-contract-rejected',
+        participantId: 'region',
+        targetLocale: 'ar-EG',
+        transitionId: 1,
+      },
+      {
+        status: 'failed',
+        reason: 'cancelled',
+        targetLocale: 'ar-EG',
+        transitionId: 1,
+      },
+    ]);
+    region.release('ar-EG');
+    localization.dispose();
+  });
+
+  it('report a disposal that answered with a promise, naming the participant alone', async () => {
+    const watched = observed();
+    const { localization } = runtime({
+      options: { observability: watched.emitter },
+    });
+    localization.registerParticipant({
+      ...participant('region').value,
+      dispose: (() => Promise.resolve()) as unknown as () => void,
+    });
+    await localization.initialize();
+
+    localization.dispose();
+
+    expect(watched.phase('integration')).toStrictEqual([
+      {
+        status: 'failed',
+        reason: 'participant-contract-rejected',
+        participantId: 'region',
+      },
+    ]);
+  });
 });

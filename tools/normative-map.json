@@ -1554,6 +1554,18 @@
     },
     {
       "spec": "06-runtime-and-angular.spec.md",
+      "section": "8. Participants",
+      "statement": "A release MUST refuse a commit that answers with a promise as a participant contract rejection, and that refusal fails the transition.",
+      "checks": ["assurance:participant-commit-promise-accepted"]
+    },
+    {
+      "spec": "06-runtime-and-angular.spec.md",
+      "section": "8. Participants",
+      "statement": "A rollback, a discard, and a disposal are told of an outcome that is already decided, so a release MUST report one that answers with a promise as the same rejection, naming the participant, and MUST NOT let it replace that outcome.",
+      "checks": ["assurance:participant-hook-promise-unreported"]
+    },
+    {
+      "spec": "06-runtime-and-angular.spec.md",
       "section": "9. Scope readiness",
       "statement": "A release MUST NOT require a consumer application to list startup scopes or per-route scopes.",
       "checks": [

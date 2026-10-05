@@ -197,6 +197,13 @@ fails the transition. A consumer application MAY set a cancellable deadline on a
 is an operational failure and MUST NOT authorize an incomplete coordinated commit. Catalog loading
 itself has no elapsed-time limit.
 
+Commit, rollback, discard, and disposal are synchronous, because every participant of a change is
+told in one pass and nothing waits for work a hook left running. A release MUST refuse a commit that
+answers with a promise as a participant contract rejection, and that refusal fails the transition. A
+rollback, a discard, and a disposal are told of an outcome that is already decided, so a release
+MUST report one that answers with a promise as the same rejection, naming the participant, and MUST
+NOT let it replace that outcome.
+
 ## 9. Scope readiness
 
 Which scopes the first render loads is derived from the route tree the toolkit already analyzes. A
