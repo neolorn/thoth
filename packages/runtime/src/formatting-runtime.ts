@@ -112,8 +112,7 @@ function claimedExtensionId(
   return adapter?.descriptor?.id;
 }
 
-function isPromiseLike(value: unknown): boolean {
-  if (!isPlainRecord(value)) return false;
+function isPromiseLike(value: Readonly<Record<string, unknown>>): boolean {
   try {
     return typeof value['then'] === 'function';
   } catch {
@@ -134,7 +133,7 @@ function normalizeAdapterParts(
   if (!Array.isArray(value) || value.length > maximumOutputLength + 1)
     return undefined;
   const parts: LocalizedFormatPart[] = [];
-  let projected = '';
+  let projected = 0;
   for (const item of value) {
     if (
       !isPlainRecord(item) ||
@@ -151,16 +150,10 @@ function normalizeAdapterParts(
     ) {
       return undefined;
     }
-    if (
-      codePointLengthAtMost(item['value'], maximumOutputLength) === undefined ||
-      projected.length + item['value'].length > maximumOutputLength * 2
-    ) {
-      return undefined;
-    }
-    projected += item['value'];
-    if (codePointLengthAtMost(projected, maximumOutputLength) === undefined) {
-      return undefined;
-    }
+    // The parts are the text cut into pieces, so each one is the next stretch of it. A part that
+    // is not ends the walk where it stands, before anything is built from what an adapter returned.
+    if (!text.startsWith(item['value'], projected)) return undefined;
+    projected += item['value'].length;
     parts.push(
       Object.freeze({
         kind: item['kind'] as LocalizedFormatPart['kind'],
@@ -174,7 +167,7 @@ function normalizeAdapterParts(
       }),
     );
   }
-  return projected === text ? Object.freeze(parts) : undefined;
+  return projected === text.length ? Object.freeze(parts) : undefined;
 }
 
 function adapterInputFailure<Value = never>(
@@ -215,7 +208,6 @@ function normalizeAdapterInputResult<Value>(
   if (
     !isPlainRecord(value) ||
     isPromiseLike(value) ||
-    typeof value['status'] !== 'string' ||
     !adapterInputStatuses.has(value['status'] as LocalizedInputStatus) ||
     typeof value['text'] !== 'string' ||
     value['text'].length > input.length + 1_024
@@ -467,16 +459,13 @@ export class FormattingSurface {
     // so an adapter from another context, or one never installed here, is still refused.
     const extensionId = claimedExtensionId(adapter);
     const safeExtensionId = safeDiagnosticIdentifier(extensionId);
-    const declaredId =
-      typeof extensionId === 'string' &&
-      /^[a-z][a-z0-9-]{0,31}:[a-z][a-z0-9-]{0,63}$/u.test(extensionId)
-        ? extensionId
-        : undefined;
+    // The registry holds a binding only under an identifier it admitted, so one that is not an
+    // identifier at all finds nothing there.
     const binding =
-      declaredId === undefined
-        ? undefined
-        : this.context.extensions.formattingAdapter(declaredId);
-    if (declaredId === undefined || binding === undefined) {
+      typeof extensionId === 'string'
+        ? this.context.extensions.formattingAdapter(extensionId)
+        : undefined;
+    if (binding === undefined) {
       return Object.freeze({
         ok: false,
         diagnostic: operationalDiagnostic(
@@ -540,7 +529,7 @@ export class FormattingSurface {
     const formatted: LocalizedFormattedValue = Object.freeze({
       kind: 'formatted-value',
       semantic: 'extension',
-      extensionId: declaredId,
+      extensionId: binding.descriptor.id,
       text: output['text'],
       parts,
       locale: formatting.locale,
@@ -562,8 +551,7 @@ export class FormattingSurface {
     const extensionId = claimedExtensionId(adapter);
     const safeExtensionId = safeDiagnosticIdentifier(extensionId);
     const binding =
-      typeof extensionId === 'string' &&
-      /^[a-z][a-z0-9-]{0,31}:[a-z][a-z0-9-]{0,63}$/u.test(extensionId)
+      typeof extensionId === 'string'
         ? this.context.extensions.parsingAdapter(extensionId)
         : undefined;
     if (binding === undefined) {

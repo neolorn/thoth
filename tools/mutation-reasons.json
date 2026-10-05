@@ -3148,106 +3148,6 @@
     },
     {
       "file": "packages/runtime/src/formatting-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "!isPlainRecord(value)",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Both callers (lines 216 to 217 and 505 to 506) reach isPromiseLike only after isPlainRecord held for the same value, so this guard never decides anything."
-    },
-    {
-      "file": "packages/runtime/src/formatting-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "codePointLengthAtMost(item['value'], maximumOutputLength) === undefined ||\n      projected.length + item['value'].length > maximumOutputLength * 2",
-      "replacement": "false",
-      "category": "performance-only",
-      "reason": "Lines 155 to 163 only stop the loop early: the projection can be returned only when it equals the text at line 177, and line 508 already held that text to the bound, so an over-long projection is refused with the same diagnostic whichever of these exits fires."
-    },
-    {
-      "file": "packages/runtime/src/formatting-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "codePointLengthAtMost(item['value'], maximumOutputLength) === undefined",
-      "replacement": "false",
-      "category": "performance-only",
-      "reason": "Lines 155 to 163 only stop the loop early: the projection can be returned only when it equals the text at line 177, and line 508 already held that text to the bound, so an over-long projection is refused with the same diagnostic whichever of these exits fires."
-    },
-    {
-      "file": "packages/runtime/src/formatting-runtime.ts",
-      "mutator": "LogicalOperator",
-      "original": "codePointLengthAtMost(item['value'], maximumOutputLength) === undefined ||\n      projected.length + item['value'].length > maximumOutputLength * 2",
-      "replacement": "codePointLengthAtMost(item['value'], maximumOutputLength) === undefined && projected.length + item['value'].length > maximumOutputLength * 2",
-      "category": "performance-only",
-      "reason": "Lines 155 to 163 only stop the loop early: the projection can be returned only when it equals the text at line 177, and line 508 already held that text to the bound, so an over-long projection is refused with the same diagnostic whichever of these exits fires."
-    },
-    {
-      "file": "packages/runtime/src/formatting-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "projected.length + item['value'].length > maximumOutputLength * 2",
-      "replacement": "false",
-      "category": "performance-only",
-      "reason": "Lines 155 to 163 only stop the loop early: the projection can be returned only when it equals the text at line 177, and line 508 already held that text to the bound, so an over-long projection is refused with the same diagnostic whichever of these exits fires."
-    },
-    {
-      "file": "packages/runtime/src/formatting-runtime.ts",
-      "mutator": "ArithmeticOperator",
-      "original": "projected.length + item['value'].length",
-      "replacement": "projected.length - item['value'].length",
-      "category": "performance-only",
-      "reason": "Lines 155 to 163 only stop the loop early: the projection can be returned only when it equals the text at line 177, and line 508 already held that text to the bound, so an over-long projection is refused with the same diagnostic whichever of these exits fires."
-    },
-    {
-      "file": "packages/runtime/src/formatting-runtime.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n      return undefined;\n    }",
-      "replacement": "{}",
-      "category": "performance-only",
-      "reason": "Lines 155 to 163 only stop the loop early: the projection can be returned only when it equals the text at line 177, and line 508 already held that text to the bound, so an over-long projection is refused with the same diagnostic whichever of these exits fires.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/formatting-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "codePointLengthAtMost(projected, maximumOutputLength) === undefined",
-      "replacement": "false",
-      "category": "performance-only",
-      "reason": "Lines 155 to 163 only stop the loop early: the projection can be returned only when it equals the text at line 177, and line 508 already held that text to the bound, so an over-long projection is refused with the same diagnostic whichever of these exits fires."
-    },
-    {
-      "file": "packages/runtime/src/formatting-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "typeof value['status'] !== 'string'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The set on lines 199 to 207 holds only strings, so the membership test on line 219 refuses every status that is not a string with the same result."
-    },
-    {
-      "file": "packages/runtime/src/formatting-runtime.ts",
-      "mutator": "Regex",
-      "original": "/^[a-z][a-z0-9-]{0,31}:[a-z][a-z0-9-]{0,63}$/u",
-      "replacement": "/[a-z][a-z0-9-]{0,31}:[a-z][a-z0-9-]{0,63}$/u",
-      "category": "equivalent",
-      "reason": "The identifier is only a key for the lookup on the next lines, and the registry admits no binding whose identifier fails this same grammar (extensions.ts line 135), so an identifier this looser pattern lets through finds no binding and gets the same refusal.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/formatting-runtime.ts",
-      "mutator": "Regex",
-      "original": "/^[a-z][a-z0-9-]{0,31}:[a-z][a-z0-9-]{0,63}$/u",
-      "replacement": "/^[a-z][a-z0-9-]{0,31}:[a-z][a-z0-9-]{0,63}/u",
-      "category": "equivalent",
-      "reason": "The identifier is only a key for the lookup on the next lines, and the registry admits no binding whose identifier fails this same grammar (extensions.ts line 135), so an identifier this looser pattern lets through finds no binding and gets the same refusal.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/formatting-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "declaredId === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Looking up an undefined identifier asks the registry for the name \"undefined\", which the admission grammar (extensions.ts line 135) cannot hold, so the binding is undefined either way. Lines 475 to 478 leave the binding undefined whenever the declared identifier is, so the second operand refuses every case this one did.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/formatting-runtime.ts",
       "mutator": "StringLiteral",
       "original": "`Formatting adapter ${safeExtensionId} is not registered.`",
       "replacement": "``",
@@ -3299,8 +3199,8 @@
       "mutator": "BlockStatement",
       "original": "{\n      return adapterInputFailure(\n        'invalid',\n        text,\n        `Parsing adapter ${safeExtensionId} failed.`,\n        formatting.locale,\n      );\n    }",
       "replacement": "{}",
-      "category": "equivalent",
-      "reason": "A parsing adapter that throws leaves the result undefined, which line 613 refuses with the same status, text, code and locale; the caller sees only a different message, which nothing compares."
+      "category": "message-wording",
+      "reason": "A parsing adapter that throws then leaves no result, and the test of the result that follows refuses it with the same status, text, code and locale. The two refusals differ only in the message a person reads, and nothing compares it."
     },
     {
       "file": "packages/runtime/src/formatting-runtime.ts",

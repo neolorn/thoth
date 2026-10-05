@@ -204,6 +204,14 @@ describe('a formatting adapter the caller passes', () => {
     ['an identifier that is a number', { descriptor: { id: 7 } }],
     // Reads as the installed name once it is turned into text, and is not that name.
     ['an identifier that is a list', { descriptor: { id: [TEXT_ID] } }],
+    [
+      'the installed name with text before it',
+      { descriptor: { id: 'x' + TEXT_ID } },
+    ],
+    [
+      'the installed name with text after it',
+      { descriptor: { id: TEXT_ID + 'x' } },
+    ],
     ['an identifier in another casing', { descriptor: { id: 'Test:code' } }],
   ])('is refused when it is %s', (_label, passed) => {
     const surface = surfaceWith(binding('text', () => ({ text: 'x' })));
@@ -266,6 +274,22 @@ describe('the answer of a parts adapter', () => {
     [
       'parts that spell less than the text',
       { text: 'ab', parts: [literal('a')] },
+    ],
+    [
+      'parts that spell the text in another order',
+      { text: 'ab', parts: [literal('b'), literal('a')] },
+    ],
+    [
+      'a part of the text that is not the next stretch of it',
+      { text: 'aba', parts: [literal('a'), literal('a'), literal('b')] },
+    ],
+    [
+      'parts that spell the text and then more',
+      { text: 'ab', parts: [literal('ab'), literal('a')] },
+    ],
+    [
+      'parts that stop one short of the text',
+      { text: 'abc', parts: [literal('a'), literal('b')] },
     ],
     ['a part that is nothing', { text: 'x', parts: [null] }],
     ['a part that is bare text', { text: 'x', parts: ['x'] }],
@@ -348,6 +372,12 @@ describe('the answer of a parts adapter', () => {
       [literal('x', { language: 'l'.repeat(64) })],
     ],
     ['an empty language', 'x', [literal('x', { language: '' })]],
+    [
+      'an empty part between two others',
+      'ab',
+      [literal('a'), literal(''), literal('b')],
+    ],
+    ['the same stretch twice', 'aa', [literal('a'), literal('a')]],
     [
       'either direction',
       'ab',

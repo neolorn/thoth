@@ -4059,9 +4059,9 @@ export const injections = Object.freeze([
     invariant:
       "A formatting adapter is resolved through the calling context's own registry, so one the context did not install is refused and a copy passed under an installed identity is never run.",
     source: 'packages/runtime/src/formatting-runtime.ts',
-    find: '        : this.context.extensions.formattingAdapter(declaredId);',
+    find: '        ? this.context.extensions.formattingAdapter(extensionId)',
     replace:
-      '        : (adapter as unknown as RuntimeFormattingAdapterBinding);',
+      '        ? (adapter as unknown as RuntimeFormattingAdapterBinding)',
     caughtBy: 'packages/runtime/test/formatting-adapter-refusals.test.ts',
   },
   {
