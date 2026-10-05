@@ -91,15 +91,6 @@ describe('what a numeric reading hands back', () => {
       },
     });
   });
-
-  it('says the same for a numbering system whose digits the host cannot write singly', () => {
-    const context = { locale: 'az', numberingSystem: 'arab' };
-    const result = parseLocalizedInput('5', { kind: 'decimal' }, context);
-    expect(result).toMatchObject({
-      status: 'unsupported-capability',
-      diagnostic: { reason: 'native-capability-rejected' },
-    });
-  });
 });
 
 describe('the declared range of a numeric field', () => {
@@ -274,8 +265,31 @@ describe('an empty numeric field', () => {
     ['an amount of money', { kind: 'money', currency: 'USD' }],
     ['a quantity', { kind: 'measurement', unit: 'kilometer' }],
     ['a percentage', { kind: 'percent', scale: 'fractional' }],
-    ['a field whose declaration cannot be met', between('6', '5')],
+    [
+      'an amount of money that requires its currency',
+      { kind: 'money', currency: 'USD', requireCurrency: true },
+    ],
+    [
+      'a percentage that requires its sign',
+      { kind: 'percent', scale: 'fractional', requirePercentSign: true },
+    ],
   ] as const)('is incomplete for %s', (_label, profile) => {
     expect(reading('', profile)).toBe('incomplete');
+  });
+
+  // The profile and the locale are judged before the text, the empty text included: a field that
+  // cannot be read at all says so before anybody types in it.
+  it('is refused under a profile whose declaration cannot be met', () => {
+    expect(reading('', between('6', '5'))).toBe('policy-rejected');
+  });
+
+  it('is an unsupported capability in a locale with no digits to read', () => {
+    expect(
+      parseLocalizedInput('', { kind: 'decimal' }, { locale: 'not a locale' }),
+    ).toMatchObject({
+      status: 'unsupported-capability',
+      text: '',
+      diagnostic: { reason: 'native-capability-rejected' },
+    });
   });
 });

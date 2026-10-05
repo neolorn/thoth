@@ -150,3 +150,129 @@ describe('a value that is not of the shape its kind declares', () => {
     ).toMatchObject({ ok: true });
   });
 });
+
+describe('a temporal value written by hand with a field that is not a number', () => {
+  const MINUTES: LocalizedInputProfile = { kind: 'plain-time', ...TIME };
+
+  it.each<[string, unknown, LocalizedInputProfile]>([
+    [
+      'a time whose second is a text',
+      { kind: 'plain-time', hour: 9, minute: 30, second: '0', nanosecond: 0 },
+      MINUTES,
+    ],
+    [
+      'a time whose nanosecond is a text',
+      { kind: 'plain-time', hour: 9, minute: 30, second: 0, nanosecond: '0' },
+      MINUTES,
+    ],
+    [
+      'a time whose hour is a text',
+      { kind: 'plain-time', hour: '9', minute: 30, second: 0, nanosecond: 0 },
+      MINUTES,
+    ],
+    [
+      'a time with no minute',
+      { kind: 'plain-time', hour: 9, second: 0, nanosecond: 0 },
+      MINUTES,
+    ],
+    [
+      'a date whose day is a text',
+      {
+        kind: 'plain-date',
+        year: 2026,
+        month: 3,
+        day: '14',
+        calendar: 'iso8601',
+      },
+      DATE,
+    ],
+    [
+      'a date whose year is a text',
+      {
+        kind: 'plain-date',
+        year: '2026',
+        month: 3,
+        day: 14,
+        calendar: 'iso8601',
+      },
+      DATE,
+    ],
+    [
+      'a date and time whose day is a text',
+      {
+        kind: 'plain-date-time',
+        date: {
+          kind: 'plain-date',
+          year: 2026,
+          month: 3,
+          day: '14',
+          calendar: 'iso8601',
+        },
+        time: plainTime(9, 30),
+      },
+      DATE_TIME,
+    ],
+    [
+      'a date and time whose second is a text',
+      {
+        kind: 'plain-date-time',
+        date: plainDate(2026, 3, 14),
+        time: {
+          kind: 'plain-time',
+          hour: 9,
+          minute: 30,
+          second: '0',
+          nanosecond: 0,
+        },
+      },
+      DATE_TIME,
+    ],
+  ])('is reported: %s', (_, value, profile) => {
+    expect(write(value, profile)).toMatchObject(REFUSED);
+  });
+
+  it('is told apart from the same values with numbers in their fields', () => {
+    expect(write(plainTime(9, 30), MINUTES)).toMatchObject({
+      ok: true,
+      value: { text: '09:30' },
+    });
+  });
+});
+
+describe('a value of another currency, unit or scale than its profile', () => {
+  // The profile is broken in a second way, which the platform would report with a code of its
+  // own. The value not being the profile's is what the caller got wrong first.
+  const amount = { kind: 'decimal', value: '5' };
+
+  it.each<[string, unknown, LocalizedInputProfile]>([
+    [
+      'money in another currency',
+      { kind: 'money', currency: 'USD', amount },
+      { kind: 'money', currency: 'EUR', maximumFractionDigits: -1 },
+    ],
+    [
+      'a measurement in another unit',
+      { kind: 'measurement', unit: 'inch', amount },
+      { kind: 'measurement', unit: 'kilometer', maximumFractionDigits: -1 },
+    ],
+    [
+      'a percentage on another scale',
+      { kind: 'percent', scale: 'fractional', amount },
+      { kind: 'percent', scale: 'percent-unit', maximumFractionDigits: -1 },
+    ],
+  ])('is reported as not matching it: %s', (_, value, profile) => {
+    expect(write(value, profile)).toMatchObject(REFUSED);
+  });
+
+  it('is the report of the platform when the value is of the profile', () => {
+    expect(
+      write(
+        { kind: 'money', currency: 'EUR', amount },
+        { kind: 'money', currency: 'EUR', maximumFractionDigits: -1 },
+      ),
+    ).toMatchObject({
+      ok: false,
+      diagnostic: { code: 'unsupported-formatting-capability' },
+    });
+  });
+});

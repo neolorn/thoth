@@ -3144,7 +3144,7 @@
       "original": "[]",
       "replacement": "[\"Stryker was here\"]",
       "category": "equivalent",
-      "reason": "The array is spread into the options position of the Error constructor, which installs a cause only from an object; a string there leaves the error without one, as the empty spread does. An extra first token that is not a populated field sits before every field, and trimToPopulated (lines 1982 to 1984) drops everything before the first populated field or returns nothing at all.",
+      "reason": "The array is spread into the options position of the Error constructor, which installs a cause only from an object; a string there leaves the error without one, as the empty spread does. An extra first token that is not a populated field sits before every field, and trimToPopulated (in trimToPopulated) drops everything before the first populated field or returns nothing at all.",
       "count": 2
     },
     {
@@ -3169,7 +3169,7 @@
       "original": "'An instant'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The label is used only on line 123 as the opening words of the integer refusal message."
+      "reason": "The label is used only in normalizeInteger as the opening words of the integer refusal message."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -3185,7 +3185,7 @@
       "original": "probe.getUTCDate() !== day",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "setUTCFullYear with a month of 1 to 12 and a day of 1 to 31 either lands on the date asked for or overflows the day into the next month (or yields an invalid date, where all three getters are NaN), so the month and the day clauses each fail exactly when any of the three does and lines 211 to 214 bound the fields that make it so."
+      "reason": "setUTCFullYear with a month of 1 to 12 and a day of 1 to 31 either lands on the date asked for or overflows the day into the next month (or yields an invalid date, where all three getters are NaN), so the month and the day clauses each fail exactly when any of the three does and plainDate bound the fields that make it so."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -3362,7 +3362,7 @@
       "original": "context.timeZone === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "When context.timeZone is undefined both callers have already required options.timeZone (lines 954 and 1358), and the options spread on line 1018 overwrites the undefined timeZone key, so the object passed on is the same."
+      "reason": "When context.timeZone is undefined both callers have already required options.timeZone (in formatInstant and formatInstantRange), and the options spread in instantOptions overwrites the undefined timeZone key, so the object passed on is the same."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -3378,7 +3378,7 @@
       "original": "calendar === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the first clause gone an undefined calendar yields { calendar: undefined }, which Intl.DateTimeFormat and the cache key both read as absent; the only caller that spreads the result over a context, formatZonedDateTime, passes value.calendar, which zonedDateTime always sets (line 358 default), and the plain-date callers have refused every non-iso8601 calendar first (lines 1032 and 1183)."
+      "reason": "With the first clause gone an undefined calendar yields { calendar: undefined }, which Intl.DateTimeFormat and the cache key both read as absent; the only caller that spreads the result over a context, formatZonedDateTime, passes value.calendar, which zonedDateTime always sets (in zonedDateTime default), and the plain-date callers have refused every non-iso8601 calendar first (in plainDateMilliseconds and formatPlainDateTime)."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -3458,7 +3458,7 @@
       "original": "start > at",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "The mutant only adds empty literals between adjacent placeholders: a leading one is trimmed (line 1984), the run scan steps over literals (line 2009), a merge with an empty literal returns the other text (lines 2031 to 2034), and an empty literal writes no part (line 2148)."
+      "reason": "The mutant only adds empty literals between adjacent placeholders: a leading one is trimmed (in trimToPopulated), the run scan steps over literals (in removeEmptyFields), a merge with an empty literal returns the other text (in coalesceLiterals), and an empty literal writes no part (in formatPersonName)."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -3466,7 +3466,7 @@
       "original": "start > at",
       "replacement": "start >= at",
       "category": "equivalent",
-      "reason": "The mutant only adds empty literals between adjacent placeholders: a leading one is trimmed (line 1984), the run scan steps over literals (line 2009), a merge with an empty literal returns the other text (lines 2031 to 2034), and an empty literal writes no part (line 2148)."
+      "reason": "The mutant only adds empty literals between adjacent placeholders: a leading one is trimmed (in trimToPopulated), the run scan steps over literals (in removeEmptyFields), a merge with an empty literal returns the other text (in coalesceLiterals), and an empty literal writes no part (in formatPersonName)."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -3474,7 +3474,7 @@
       "original": "token.kind !== 'field'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "Every literal token has non-empty text (it is pushed only when start > at on line 1959, from a non-empty match on line 1966, or when at < pattern.length on line 1969), so the length clause keeps literals without the kind clause."
+      "reason": "Every literal token has non-empty text (it is pushed only when start > at in parsePersonNamePattern, from a non-empty match in parsePersonNamePattern, or when at < pattern.length in parsePersonNamePattern), so the length clause keeps literals without the kind clause."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -3482,7 +3482,7 @@
       "original": "scan < tokens.length",
       "replacement": "scan <= tokens.length",
       "category": "equivalent",
-      "reason": "trimToPopulated (line 1984) ends the token list on a populated field, so the scan always breaks on line 2010 before it can reach tokens.length."
+      "reason": "trimToPopulated (in trimToPopulated) ends the token list on a populated field, so the scan always breaks in removeEmptyFields before it can reach tokens.length."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -4227,22 +4227,6 @@
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "StringLiteral",
-      "original": "'group'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "numericPartTypes is only consulted on the renderings of 1, -1 and 0.01 (lines 174-175 and 336-337), none of which has a group part, so dropping 'group' from the set changes no lookup."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "StringLiteral",
-      "original": "'decimal'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "numericPartTypes is only consulted on the renderings of 1, -1 and 0.01; a decimal part appears only in a currency rendering, between an integer and a fraction part that still bound the number, so first and last come out the same without 'decimal'."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
       "mutator": "ConditionalExpression",
       "original": "cached !== undefined",
       "replacement": "false",
@@ -4279,7 +4263,7 @@
       "original": "false",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "numberOptions is used to render the single digits 0 to 9, 1.1 and plus or minus 1, none of which is long enough to be grouped, and line 192 sets useGrouping itself for the one rendering that is. a month or a day of a date plainDate admits has at most two digits, which no locale groups, and a larger hand-built field fails the round trip either way",
+      "reason": "numberOptions is used to render the single digits 0 to 9, 1.1 and plus or minus 1, none of which is long enough to be grouped, and numberSyntax sets useGrouping itself for the one rendering that is. a month or a day of a date plainDate admits has at most two digits, which no locale groups, and a larger hand-built field fails the round trip either way",
       "count": 2
     },
     {
@@ -4298,167 +4282,6 @@
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The text of an Error that parseNumeric and parseDurationInput catch and replace with their own diagnostic; nothing reads it."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ArrowFunction",
-      "original": "({ type }) => numericPartTypes.has(type)",
-      "replacement": "() => undefined",
-      "category": "equivalent",
-      "reason": "Without the lookup first is -1 and every part is scanned instead of the ones before the number; no rendering of plus or minus 1 has a literal part after its integer (measured over the 454 languages this host has number data for under each of its 78 numbering systems), so the same marks are collected."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "first < 0",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "first is always at least 1 here because a sign part precedes the integer in the signDisplay: 'always' rendering, and no literal part follows the integer (measured over the 454 languages this host has number data for under each of its 78 numbering systems), so scanning the slice, the whole list, or either branch collects the same marks. The branch is reached only where a locale writes one of a unit with no number, so the affix is empty and any text matches it; what such a locale should read is not stated, and a case would fix the present reading in place.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "EqualityOperator",
-      "original": "first < 0",
-      "replacement": "first <= 0",
-      "category": "equivalent",
-      "reason": "first is always at least 1 here because a sign part precedes the integer in the signDisplay: 'always' rendering, and no literal part follows the integer (measured over the 454 languages this host has number data for under each of its 78 numbering systems), so scanning the slice, the whole list, or either branch collects the same marks."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "first < 0",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "first is always at least 1 here because a sign part precedes the integer in the signDisplay: 'always' rendering, and no literal part follows the integer (measured over the 454 languages this host has number data for under each of its 78 numbering systems), so scanning the slice, the whole list, or either branch collects the same marks."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "EqualityOperator",
-      "original": "first < 0",
-      "replacement": "first >= 0",
-      "category": "equivalent",
-      "reason": "first is always at least 1 here because a sign part precedes the integer in the signDisplay: 'always' rendering, and no literal part follows the integer (measured over the 454 languages this host has number data for under each of its 78 numbering systems), so scanning the slice, the whole list, or either branch collects the same marks."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "MethodExpression",
-      "original": "parts.slice(0, first)",
-      "replacement": "parts",
-      "category": "equivalent",
-      "reason": "first is always at least 1 here because a sign part precedes the integer in the signDisplay: 'always' rendering, and no literal part follows the integer (measured over the 454 languages this host has number data for under each of its 78 numbering systems), so scanning the slice, the whole list, or either branch collects the same marks."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "part.type !== 'literal'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Scanning the non-literal parts before the number adds only the sign parts, and no minus or plus sign value contains a Format-category scalar (measured over the 454 languages this host has number data for under each of its 78 numbering systems), so signMarks is unchanged."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "/\\p{Cf}/u.test(scalar)",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "Every scalar of every literal part before the number is already in the Format category (measured over the 454 languages this host has number data for under each of its 78 numbering systems; the one exception, Azerbaijani under arab or arabext digits, throws on line 158 before this line runs), so accepting all of them adds nothing."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "UnaryOperator",
-      "original": "-2",
-      "replacement": "+2",
-      "category": "equivalent",
-      "reason": "The grouped rendering of 123456789 has three integer parts (3,3,3) or more (2,2,2,3 and 1,2,2,2,2); index 2 and index -2 name parts of the same length in each, and both are undefined when there is one part."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "OptionalChaining",
-      "original": "decimalParts.find(({ type }) => type === 'decimal')?.value",
-      "replacement": "decimalParts.find(({\n  type\n}) => type === 'decimal').value",
-      "category": "equivalent",
-      "reason": "The rendering of 1.1 with minimumFractionDigits 1 always has a decimal part (measured over the 454 languages this host has number data for under each of its 78 numbering systems), so find never returns undefined and the optional chain never short-circuits."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "groupedParts.find(({ type }) => type === 'group')?.value === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The mutated lookup only decides whether the group key is spread; the value comes from the separate lookup on lines 206-207, and a group that is present but undefined reads the same as an absent one on line 558."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "OptionalChaining",
-      "original": "groupedParts.find(({ type }) => type === 'group')?.value",
-      "replacement": "groupedParts.find(({\n  type\n}) => type === 'group').value",
-      "category": "equivalent",
-      "reason": "The grouped rendering of 123456789 always has a group part (measured over the 454 languages this host has number data for under each of its 78 numbering systems), so find never returns undefined."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "type === 'group'",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "The mutated lookup only decides whether the group key is spread; the value comes from the separate lookup on lines 206-207, and a group that is present but undefined reads the same as an absent one on line 558."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "EqualityOperator",
-      "original": "type === 'group'",
-      "replacement": "type !== 'group'",
-      "category": "equivalent",
-      "reason": "The mutated lookup only decides whether the group key is spread; the value comes from the separate lookup on lines 206-207, and a group that is present but undefined reads the same as an absent one on line 558."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "OptionalChaining",
-      "original": "negativeSignParts.find(({ type }) => type === 'minusSign')?.value",
-      "replacement": "negativeSignParts.find(({\n  type\n}) => type === 'minusSign').value",
-      "category": "equivalent",
-      "reason": "The rendering of -1 always has a minusSign part (measured over the 454 languages this host has number data for under each of its 78 numbering systems), so find never returns undefined."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "LogicalOperator",
-      "original": "positiveSignParts.find(({ type }) => type === 'plusSign')?.value ?? '+'",
-      "replacement": "positiveSignParts.find(({\n  type\n}) => type === 'plusSign')?.value && '+'",
-      "category": "equivalent",
-      "reason": "The signDisplay: 'always' rendering of 1 always has a plusSign part and its value is always '+' (measured over the 454 languages this host has number data for under each of its 78 numbering systems), which is also the fallback, so a lookup that finds nothing, a chain that never short-circuits and a value replaced by the fallback all give '+'."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "OptionalChaining",
-      "original": "positiveSignParts.find(({ type }) => type === 'plusSign')?.value",
-      "replacement": "positiveSignParts.find(({\n  type\n}) => type === 'plusSign').value",
-      "category": "equivalent",
-      "reason": "The signDisplay: 'always' rendering of 1 always has a plusSign part and its value is always '+' (measured over the 454 languages this host has number data for under each of its 78 numbering systems), which is also the fallback, so a lookup that finds nothing, a chain that never short-circuits and a value replaced by the fallback all give '+'."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ArrowFunction",
-      "original": "({ type }) => type === 'plusSign'",
-      "replacement": "() => undefined",
-      "category": "equivalent",
-      "reason": "The signDisplay: 'always' rendering of 1 always has a plusSign part and its value is always '+' (measured over the 454 languages this host has number data for under each of its 78 numbering systems), which is also the fallback, so a lookup that finds nothing, a chain that never short-circuits and a value replaced by the fallback all give '+'."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "StringLiteral",
-      "original": "'plusSign'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "The signDisplay: 'always' rendering of 1 always has a plusSign part and its value is always '+' (measured over the 454 languages this host has number data for under each of its 78 numbering systems), which is also the fallback, so a lookup that finds nothing, a chain that never short-circuits and a value replaced by the fallback all give '+'."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "type === 'plusSign'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The signDisplay: 'always' rendering of 1 always has a plusSign part and its value is always '+' (measured over the 454 languages this host has number data for under each of its 78 numbering systems), which is also the fallback, so a lookup that finds nothing, a chain that never short-circuits and a value replaced by the fallback all give '+'."
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4494,60 +4317,12 @@
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "sign.length > 0",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "sign is the value of an Intl minusSign or plusSign part or the one-character fallback on lines 210 and 212, never the empty string, so the length test is always true."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "EqualityOperator",
-      "original": "sign.length > 0",
-      "replacement": "sign.length >= 0",
-      "category": "equivalent",
-      "reason": "sign is the value of an Intl minusSign or plusSign part or the one-character fallback on lines 210 and 212, never the empty string, so the length test is always true."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
       "mutator": "StringLiteral",
       "original": "''",
       "replacement": "\"Stryker was here!\"",
       "category": "equivalent",
-      "reason": "The default applies only to a two-field text, which passes line 1087 only at minute precision, where the seconds field is never read the initial value is read only at fraction precision, where line 1119 has replaced it the default applies only at minute precision, where lines 1144, 1151 and 1163 do not read the seconds digits the default applies only outside fraction precision, where lines 1145, 1152 and 1165 do not read the fraction digits fractionField is read only on line 1123, under precision === 'fraction', and line 1119 has assigned it by then, so its initial text is never read. secondDigits takes its default only under precision 'minute', where the list holds two fields, and lines 1144, 1151 and 1163 read it only under another precision. fractionDigits takes its default only where precision is not 'fraction', and lines 1146, 1153 and 1166 read it only under precision 'fraction'. The fraction field is read only where the profile reads a fraction, and on that path it is assigned from the split seconds field before it is read, so its starting text is never seen. The default applies only where the profile reads hours and minutes alone, and every later read of the seconds digits is behind a test that the precision is not minute. The default applies only where the profile reads no fraction, and every later read of the fraction digits is behind a test that the precision is fraction.",
+      "reason": "The default applies only to a two-field text, which passes parsePlainTime only at minute precision, where the seconds field is never read the initial value is read only at fraction precision, where parsePlainTime has replaced it the default applies only at minute precision, where parsePlainTime does not read the seconds digits the default applies only outside fraction precision, where parsePlainTime does not read the fraction digits fractionField is read only in parsePlainTime, under precision === 'fraction', and parsePlainTime has assigned it by then, so its initial text is never read. secondDigits takes its default only under precision 'minute', where the list holds two fields, and parsePlainTime reads it only under another precision. fractionDigits takes its default only where precision is not 'fraction', and parsePlainTime reads it only under precision 'fraction'. The fraction field is read only where the profile reads a fraction, and on that path it is assigned from the split seconds field before it is read, so its starting text is never seen. The default applies only where the profile reads hours and minutes alone, and every later read of the seconds digits is behind a test that the precision is not minute. The default applies only where the profile reads no fraction, and every later read of the fraction digits is behind a test that the precision is fraction.",
       "count": 7
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "profile.kind === 'percent'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The mutant renders a percent profile at 1 instead of 0.01, which is 100% instead of 1%; the affix is everything outside the numeric parts and is the same for both (measured over the 454 languages this host has number data for, under their default, latn, arab and arabext digits)."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "StringLiteral",
-      "original": "'percent'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "The mutant renders a percent profile at 1 instead of 0.01, which is 100% instead of 1%; the affix is everything outside the numeric parts and is the same for both (measured over the 454 languages this host has number data for, under their default, latn, arab and arabext digits)."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "value.length < affix.prefix.length + affix.suffix.length",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "A text that starts with the prefix, ends with the suffix and is shorter than both exists only where they overlap; the one overlap among this host's currencies, units and percent forms is the Kyrgyz year, whose negative affixes are '-' and '-ж.', and its only such text '-ж.' reads as an empty body through the positive affix as well, so both report incomplete."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ArithmeticOperator",
-      "original": "affix.prefix.length + affix.suffix.length",
-      "replacement": "affix.prefix.length - affix.suffix.length",
-      "category": "equivalent",
-      "reason": "A text that starts with the prefix, ends with the suffix and is shorter than both exists only where they overlap; the one overlap among this host's currencies, units and percent forms is the Kyrgyz year, whose negative affixes are '-' and '-ж.', and its only such text '-ж.' reads as an empty body through the positive affix as well, so both report incomplete."
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4629,7 +4404,7 @@
       "original": "{\n    return failed(\n      'incomplete',\n      text,\n      'The localized value is incomplete.',\n      context,\n    );\n  }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "an empty body leaves integerGroups as [\"\"], which line 593 reports with the same incomplete status"
+      "reason": "an empty body leaves integerGroups as [\"\"], which parseNumeric reports with the same incomplete status"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4637,7 +4412,7 @@
       "original": "working.length === 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "an empty body leaves integerGroups as [\"\"], which line 593 reports with the same incomplete status"
+      "reason": "an empty body leaves integerGroups as [\"\"], which parseNumeric reports with the same incomplete status"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4661,7 +4436,7 @@
       "original": "{\n      return failed(\n        'invalid',\n        text,\n        'Unexpected whitespace is not permitted inside a localized number.',\n        context,\n      );\n    }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "a whitespace scalar is neither \".\" nor \",\", so it falls to line 586 and gets the same invalid status"
+      "reason": "a whitespace scalar is neither \".\" nor \",\", so it falls to parseNumeric and gets the same invalid status"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4669,7 +4444,7 @@
       "original": "/\\p{White_Space}/u.test(scalar)",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "a whitespace scalar is neither \".\" nor \",\", so it falls to line 586 and gets the same invalid status"
+      "reason": "a whitespace scalar is neither \".\" nor \",\", so it falls to parseNumeric and gets the same invalid status"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4717,7 +4492,7 @@
       "original": "first.length < 1",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "an empty leading group is already reported as incomplete on line 593"
+      "reason": "an empty leading group is already reported as incomplete in parseNumeric"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4733,7 +4508,7 @@
       "original": "profile.maximumFractionDigits !== undefined",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "with no declared maximum the comparison on line 629 is against undefined and is false"
+      "reason": "with no declared maximum the comparison in parseNumeric is against undefined and is false"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4749,79 +4524,7 @@
       "original": "difference < 0",
       "replacement": "difference <= 0",
       "category": "equivalent",
-      "reason": "line 718 is reached only when the difference is not zero"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "LogicalOperator",
-      "original": "probe.getUTCFullYear() === year &&\n    probe.getUTCMonth() === month - 1 &&\n    probe.getUTCDate() === day",
-      "replacement": "probe.getUTCFullYear() === year && probe.getUTCMonth() === month - 1 || probe.getUTCDate() === day",
-      "category": "equivalent",
-      "reason": "plainDate (lines 752 and 873) admits only months 1-12 and days 1-31, where an overflowing day moves the probe to another month and another day of the same year, so the remaining comparisons decide alone"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "probe.getUTCFullYear() === year &&\n    probe.getUTCMonth() === month - 1",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "plainDate (lines 752 and 873) admits only months 1-12 and days 1-31, where an overflowing day moves the probe to another month and another day of the same year, so the remaining comparisons decide alone"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "LogicalOperator",
-      "original": "probe.getUTCFullYear() === year &&\n    probe.getUTCMonth() === month - 1",
-      "replacement": "probe.getUTCFullYear() === year || probe.getUTCMonth() === month - 1",
-      "category": "equivalent",
-      "reason": "plainDate (lines 752 and 873) admits only months 1-12 and days 1-31, where an overflowing day moves the probe to another month and another day of the same year, so the remaining comparisons decide alone"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "probe.getUTCFullYear() === year",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "plainDate (lines 752 and 873) admits only months 1-12 and days 1-31, where an overflowing day moves the probe to another month and another day of the same year, so the remaining comparisons decide alone"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "probe.getUTCMonth() === month - 1",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "for the months and days plainDate admits, a probe whose month moved also has a different day, so line 741 decides alone"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "probe.getUTCDate() === day",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "for the months and days plainDate admits, a probe whose day moved also has a different month, so line 740 decides alone"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "comparePlainDate(canonical, value) === 0",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "plainDate returns the year, month and day it was given or throws, so the canonical value always compares equal"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "calendar !== 'iso8601'",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "for the iso8601 calendar plainDate on line 752 has already refused a date that does not exist, so skipping the Gregorian check changes nothing"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "StringLiteral",
-      "original": "'iso8601'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "for the iso8601 calendar plainDate on line 752 has already refused a date that does not exist, so skipping the Gregorian check changes nothing"
+      "reason": "comparePlainDate is reached only when the difference is not zero"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4829,7 +4532,7 @@
       "original": "{\n    return false;\n  }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "the callers (lines 778-779, 1226) only test the result for truthiness, and undefined is as false as false the callers (lines 971-972, 1227) only test the result for truthiness, and undefined is as false as false the callers (lines 1448-1449) only test the result for truthiness, and undefined is as false as false",
+      "reason": "the callers (in validDatePattern and validPlainDateTimeBoundary) only test the result for truthiness, and undefined is as false as false the callers (in validTimePattern and validPlainDateTimeBoundary) only test the result for truthiness, and undefined is as false as false the callers (in validDurationField) only test the result for truthiness, and undefined is as false as false",
       "count": 3
     },
     {
@@ -4883,14 +4586,6 @@
     {
       "file": "packages/runtime/src/localized-input.ts",
       "mutator": "StringLiteral",
-      "original": "'The declared civil date does not exist.'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "the error thrown here is caught on line 893, which discards its message"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "StringLiteral",
       "original": "'The localized date is outside the declared field range.'",
       "replacement": "\"\"",
       "category": "message-wording",
@@ -4918,7 +4613,7 @@
       "original": "[...dayPeriodSeparator].length <= 8",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "a separator longer than 8 is not empty, so validPatternLiteral(separator, 8) on line 969 refuses it too"
+      "reason": "a separator longer than 8 is not empty, so validPatternLiteral(separator, 8) in validTimePattern refuses it too"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4926,7 +4621,7 @@
       "original": "[...dayPeriodSeparator]",
       "replacement": "[]",
       "category": "equivalent",
-      "reason": "a separator longer than 8 is not empty, so validPatternLiteral(separator, 8) on line 969 refuses it too"
+      "reason": "a separator longer than 8 is not empty, so validPatternLiteral(separator, 8) in validTimePattern refuses it too"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4934,7 +4629,7 @@
       "original": "dayPeriodSeparator === dayPeriodSeparator.normalize('NFC')",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "a non-empty separator that is not NFC is refused by validPatternLiteral on line 969, and an empty one is NFC"
+      "reason": "a non-empty separator that is not NFC is refused by validPatternLiteral in validTimePattern, and an empty one is NFC"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4946,20 +4641,12 @@
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n    return failed(\n      'incomplete',\n      text,\n      'The localized time is incomplete.',\n      context,\n    );\n  }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "empty text has fewer fields than the pattern expects (line 1076) or lacks its day-period marker (line 1060), both reported with the same incomplete status"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
       "mutator": "ConditionalExpression",
       "original": "source.length === 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "empty text has fewer fields than the pattern expects (line 1076) or lacks its day-period marker (line 1060), both reported with the same incomplete status every label starts with the empty string, so the next operand is true for empty text an empty field source splits into one empty part, which line 1543 reports with the same incomplete status empty text has an empty body, which lines 1660 and 1668 report with the same incomplete status",
-      "count": 4
+      "reason": "Three places, each followed by a test that reports the empty text with the same incomplete status. In parseTimeZoneInput the empty text is a prefix of every label, which the next operand reports. In parseDurationFieldValue an empty unit has no digits, which is short of the width the unit declares. In parseDurationInput the empty text has an empty body, which the test after the sign reports. Only the message differs.",
+      "count": 3
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4967,8 +4654,7 @@
       "original": "'The localized time is incomplete.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code",
-      "count": 2
+      "reason": "the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4984,7 +4670,7 @@
       "original": "profile.dayPeriod?.position",
       "replacement": "profile.dayPeriod.position",
       "category": "equivalent",
-      "reason": "the access is inside the block line 1036 enters only when dayPeriod is defined",
+      "reason": "the access is inside the block parsePlainTime enters only when dayPeriod is defined",
       "count": 2
     },
     {
@@ -5041,7 +4727,7 @@
       "original": "'minute'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "at minute precision the extra entry is an empty string that localizedDigits returns as \"\", and every later read of it is guarded by the precision at minute precision the seconds digits are the empty default, and Number(\"\") is 0 the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (lines 2278-2289) returns the same invalid-localized-input failure; only the message differs",
+      "reason": "at minute precision the extra entry is an empty string that localizedDigits returns as \"\", and every later read of it is guarded by the precision at minute precision the seconds digits are the empty default, and Number(\"\") is 0 the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (in verifyFormattedInput) returns the same invalid-localized-input failure; only the message differs",
       "count": 3
     },
     {
@@ -5050,7 +4736,7 @@
       "original": "profile.precision === 'fraction'",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "outside fraction precision the extra entry is an empty string, and every later read of it is guarded by the precision outside fraction precision the fraction digits are empty and the declared count is 0 (line 952 requires it undefined), so the comparison is false outside fraction precision the fraction digits are empty and the declared count is 0, so the comparison is false outside fraction precision the fraction digits are empty, and Number(\"000000000\") is 0",
+      "reason": "outside fraction precision the extra entry is an empty string, and every later read of it is guarded by the precision outside fraction precision the fraction digits are empty and the declared count is 0 (in validTimePattern requires it undefined), so the comparison is false outside fraction precision the fraction digits are empty and the declared count is 0, so the comparison is false outside fraction precision the fraction digits are empty, and Number(\"000000000\") is 0",
       "count": 4
     },
     {
@@ -5067,7 +4753,7 @@
       "original": "hourDigits.length < 1",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "an empty hour field is already reported as incomplete on line 1078"
+      "reason": "an empty hour field is already reported as incomplete in parsePlainTime"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5075,7 +4761,7 @@
       "original": "hourDigits.length === 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "an empty hour field is already reported as incomplete on line 1078, so this operand is never true"
+      "reason": "an empty hour field is already reported as incomplete in parsePlainTime, so this operand is never true"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5099,7 +4785,7 @@
       "original": "{\n    if (displayedHour > 23) hour = -1;\n  }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "an hour above 23 left unchanged is refused by plainTime on line 1184 with the same out-of-range result"
+      "reason": "an hour above 23 left unchanged is refused by plainTime in parsePlainTime with the same out-of-range result"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5107,7 +4793,7 @@
       "original": "displayedHour > 23",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "an hour above 23 left unchanged is refused by plainTime on line 1184 with the same out-of-range result",
+      "reason": "an hour above 23 left unchanged is refused by plainTime in parsePlainTime with the same out-of-range result",
       "count": 2
     },
     {
@@ -5140,7 +4826,7 @@
       "original": "boundary < 1",
       "replacement": "boundary <= 1",
       "category": "equivalent",
-      "reason": "a date half of one character has fewer than three fields (line 820) and an empty time half is short of its fields (lines 1003, 1076), both reported with the same incomplete status; the sum cannot exceed the text length"
+      "reason": "a date half of one character has fewer than three fields (in parsePlainDate) and an empty time half is short of its fields (in parsePlainTime), both reported with the same incomplete status; the sum cannot exceed the text length"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5148,7 +4834,7 @@
       "original": "boundary + profile.separator.length >= source.length",
       "replacement": "boundary + profile.separator.length > source.length",
       "category": "equivalent",
-      "reason": "a date half of one character has fewer than three fields (line 820) and an empty time half is short of its fields (lines 1003, 1076), both reported with the same incomplete status; the sum cannot exceed the text length"
+      "reason": "a date half of one character has fewer than three fields (in parsePlainDate) and an empty time half is short of its fields (in parsePlainTime), both reported with the same incomplete status; the sum cannot exceed the text length"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5156,7 +4842,7 @@
       "original": "boundary + profile.separator.length",
       "replacement": "boundary - profile.separator.length",
       "category": "equivalent",
-      "reason": "a date half of one character has fewer than three fields (line 820) and an empty time half is short of its fields (lines 1003, 1076), both reported with the same incomplete status; the sum cannot exceed the text length"
+      "reason": "a date half of one character has fewer than three fields (in parsePlainDate) and an empty time half is short of its fields (in parsePlainTime), both reported with the same incomplete status; the sum cannot exceed the text length"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5164,7 +4850,7 @@
       "original": "boundary + profile.separator.length >= source.length",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "a date half of one character has fewer than three fields (line 820) and an empty time half is short of its fields (lines 1003, 1076), both reported with the same incomplete status; the sum cannot exceed the text length"
+      "reason": "a date half of one character has fewer than three fields (in parsePlainDate) and an empty time half is short of its fields (in parsePlainTime), both reported with the same incomplete status; the sum cannot exceed the text length"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5188,7 +4874,7 @@
       "original": "option === null",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "reading labels off a null option throws inside the try, and the catch on line 1356 returns the same undefined"
+      "reason": "reading labels off a null option throws inside the try, and the catch in resolveTimeZoneInputOptions returns the same undefined"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5204,7 +4890,7 @@
       "original": "exact.size > 1",
       "replacement": "exact.size >= 1",
       "category": "equivalent",
-      "reason": "a single match has already returned on line 1390"
+      "reason": "a single match has already returned in parseTimeZoneInput"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5236,7 +4922,7 @@
       "original": "minimumIntegerDigits <= 15",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "a minimum width above 15 cannot satisfy lines 1440-1441, which need the maximum at least the minimum and at most 15"
+      "reason": "a minimum width above 15 cannot satisfy validDurationField, which need the maximum at least the minimum and at most 15"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5252,7 +4938,7 @@
       "original": "{\n    return failed(\n      'incomplete',\n      text,\n      `The localized duration ${field.field} field is incomplete.`,\n      context,\n    );\n  }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "an empty field source splits into one empty part, which line 1543 reports with the same incomplete status"
+      "reason": "an empty field source splits into one empty part, which parseDurationFieldValue reports with the same incomplete status"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5270,14 +4956,6 @@
       "replacement": "``",
       "category": "message-wording",
       "reason": "the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "integerSource.length === 0",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "an empty integer part has fewer digits than the minimum width, which line 1437 keeps at 1 or more, so line 1570 reports the same incomplete status"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5333,7 +5011,7 @@
       "original": "{\n    return failed(\n      'incomplete',\n      text,\n      'The localized duration is incomplete.',\n      context,\n    );\n  }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "empty text has an empty body, which lines 1660 and 1668 report with the same incomplete status an empty body fails its first token as incomplete: a literal on line 1683, a unit on line 1695 or 1522",
+      "reason": "empty text has an empty body, which parseDurationInput reports with the same incomplete status an empty body fails its first token as incomplete: a literal in parseDurationInput, a unit in parseDurationInput and parseDurationFieldValue",
       "count": 2
     },
     {
@@ -5367,7 +5045,7 @@
       "original": "body.length === 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "an empty body fails its first token as incomplete: a literal on line 1683, a unit on line 1695 or 1522"
+      "reason": "an empty body fails its first token as incomplete: a literal in parseDurationInput, a unit in parseDurationInput and parseDurationFieldValue"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5383,7 +5061,7 @@
       "original": "end < 0",
       "replacement": "end <= 0",
       "category": "equivalent",
-      "reason": "an end of 0 means an empty unit source, which parseDurationFieldValue reports with the same incomplete status on line 1522"
+      "reason": "an end of 0 means an empty unit source, which parseDurationFieldValue reports with the same incomplete status in parseDurationFieldValue"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5447,7 +5125,7 @@
       "original": "zone !== 'Z'",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "for \"Z\" the offset slices on lines 1837-1838 are empty and read as 0, so the block computes the same zero offset"
+      "reason": "for \"Z\" the offset slices in parseRfc3339 are empty and read as 0, so the block computes the same zero offset"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5455,7 +5133,7 @@
       "original": "'Z'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "for \"Z\" the offset slices on lines 1837-1838 are empty and read as 0, so the block computes the same zero offset"
+      "reason": "for \"Z\" the offset slices in parseRfc3339 are empty and read as 0, so the block computes the same zero offset"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5471,7 +5149,7 @@
       "original": "zone?.startsWith",
       "replacement": "zone.startsWith",
       "category": "equivalent",
-      "reason": "the zone group is mandatory in the expression on line 1777, so it is defined whenever this line runs"
+      "reason": "the zone group is mandatory in the expression in parseRfc3339, so it is defined whenever this line runs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5479,7 +5157,7 @@
       "original": "zone?.slice",
       "replacement": "zone.slice",
       "category": "equivalent",
-      "reason": "the zone group is mandatory in the expression on line 1777, so it is defined whenever this line runs",
+      "reason": "the zone group is mandatory in the expression in parseRfc3339, so it is defined whenever this line runs",
       "count": 2
     },
     {
@@ -5496,7 +5174,7 @@
       "original": "!validTimePattern(profile)",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "text written under an invalid pattern is refused when verifyFormattedInput re-reads it (parsePlainTime line 987), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text written under an invalid pattern is refused when verifyFormattedInput re-reads it (parsePlainTime), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5504,7 +5182,7 @@
       "original": "(profile.precision === 'minute' &&\n      (value.second !== 0 || value.nanosecond !== 0)) ||\n    (profile.precision === 'second' && value.nanosecond !== 0)",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (lines 2278-2289) returns the same invalid-localized-input failure; only the message differs"
+      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (in verifyFormattedInput) returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5512,7 +5190,7 @@
       "original": "profile.precision === 'minute' &&\n      (value.second !== 0 || value.nanosecond !== 0)",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (lines 2278-2289) returns the same invalid-localized-input failure; only the message differs"
+      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (in verifyFormattedInput) returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5520,7 +5198,7 @@
       "original": "(profile.precision === 'minute' &&\n      (value.second !== 0 || value.nanosecond !== 0)) ||\n    (profile.precision === 'second' && value.nanosecond !== 0)",
       "replacement": "profile.precision === 'minute' && (value.second !== 0 || value.nanosecond !== 0) && profile.precision === 'second' && value.nanosecond !== 0",
       "category": "equivalent",
-      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (lines 2278-2289) returns the same invalid-localized-input failure; only the message differs"
+      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (in verifyFormattedInput) returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5528,7 +5206,7 @@
       "original": "value.second !== 0 || value.nanosecond !== 0",
       "replacement": "value.second !== 0 && value.nanosecond !== 0",
       "category": "equivalent",
-      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (lines 2278-2289) returns the same invalid-localized-input failure; only the message differs"
+      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (in verifyFormattedInput) returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5536,7 +5214,7 @@
       "original": "value.second !== 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (lines 2278-2289) returns the same invalid-localized-input failure; only the message differs"
+      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (in verifyFormattedInput) returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5544,7 +5222,7 @@
       "original": "value.nanosecond !== 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (lines 2278-2289) returns the same invalid-localized-input failure; only the message differs"
+      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (in verifyFormattedInput) returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5552,7 +5230,7 @@
       "original": "profile.precision === 'second' && value.nanosecond !== 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (lines 2278-2289) returns the same invalid-localized-input failure; only the message differs"
+      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (in verifyFormattedInput) returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5560,7 +5238,7 @@
       "original": "'second'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (lines 2278-2289) returns the same invalid-localized-input failure; only the message differs"
+      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (in verifyFormattedInput) returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5568,7 +5246,7 @@
       "original": "{\n    return undefined;\n  }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (lines 2278-2289) returns the same invalid-localized-input failure; only the message differs",
+      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (in verifyFormattedInput) returns the same invalid-localized-input failure; only the message differs",
       "count": 2
     },
     {
@@ -5577,7 +5255,7 @@
       "original": "/[^0]/u.test(nanoseconds.slice(digits))",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (lines 2278-2289) returns the same invalid-localized-input failure; only the message differs"
+      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (in verifyFormattedInput) returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5585,7 +5263,7 @@
       "original": "profile.dayPeriod !== undefined",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "validTimePattern (lines 953-970, checked on line 2002) admits a day period exactly when the hour cycle is h11 or h12, which is exactly when period is set, so the two operands are always equal"
+      "reason": "validTimePattern (in validTimePattern, checked in localizedTimeText) admits a day period exactly when the hour cycle is h11 or h12, which is exactly when period is set, so the two operands are always equal"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5593,7 +5271,7 @@
       "original": "period !== undefined && profile.dayPeriod !== undefined",
       "replacement": "period !== undefined || profile.dayPeriod !== undefined",
       "category": "equivalent",
-      "reason": "validTimePattern (lines 953-970, checked on line 2002) admits a day period exactly when the hour cycle is h11 or h12, which is exactly when period is set, so the two operands are always equal"
+      "reason": "validTimePattern (in validTimePattern, checked in localizedTimeText) admits a day period exactly when the hour cycle is h11 or h12, which is exactly when period is set, so the two operands are always equal"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5601,7 +5279,7 @@
       "original": "period !== undefined",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "validTimePattern (lines 953-970, checked on line 2002) admits a day period exactly when the hour cycle is h11 or h12, which is exactly when period is set, so the two operands are always equal"
+      "reason": "validTimePattern (in validTimePattern, checked in localizedTimeText) admits a day period exactly when the hour cycle is h11 or h12, which is exactly when period is set, so the two operands are always equal"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5633,7 +5311,7 @@
       "original": "durationFieldNames.some(\n      (field) =>\n        !declaredFields.has(field) &&\n        durationFieldAmount(value, field).value !== '0',\n    )",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (lines 2278-2289) returns the same invalid-localized-input failure; only the message differs"
+      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (in verifyFormattedInput) returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5641,7 +5319,7 @@
       "original": "durationFieldNames.some(\n      (field) =>\n        !declaredFields.has(field) &&\n        durationFieldAmount(value, field).value !== '0',\n    )",
       "replacement": "durationFieldNames.every(field => !declaredFields.has(field) && durationFieldAmount(value, field).value !== '0')",
       "category": "equivalent",
-      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (lines 2278-2289) returns the same invalid-localized-input failure; only the message differs"
+      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (in verifyFormattedInput) returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5649,7 +5327,7 @@
       "original": "(field) =>\n        !declaredFields.has(field) &&\n        durationFieldAmount(value, field).value !== '0'",
       "replacement": "() => undefined",
       "category": "equivalent",
-      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (lines 2278-2289) returns the same invalid-localized-input failure; only the message differs"
+      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (in verifyFormattedInput) returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5657,7 +5335,7 @@
       "original": "!declaredFields.has(field) &&\n        durationFieldAmount(value, field).value !== '0'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (lines 2278-2289) returns the same invalid-localized-input failure; only the message differs"
+      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (in verifyFormattedInput) returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5665,7 +5343,7 @@
       "original": "signPolicy === 'forbidden' && value.sign < 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "a minus sign written under a forbidding profile is refused when verifyFormattedInput re-reads it (line 1652), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "a minus sign written under a forbidding profile is refused when verifyFormattedInput re-reads it (in parseDurationInput), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5673,7 +5351,7 @@
       "original": "'forbidden'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "a minus sign written under a forbidding profile is refused when verifyFormattedInput re-reads it (line 1652), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "a minus sign written under a forbidding profile is refused when verifyFormattedInput re-reads it (in parseDurationInput), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5681,7 +5359,7 @@
       "original": "(token.minimum !== undefined &&\n        compareDecimal(amount, token.minimum) < 0) ||\n      (token.maximum !== undefined && compareDecimal(amount, token.maximum) > 0)",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "an amount written outside its range is refused when verifyFormattedInput re-reads it (line 1591), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "an amount written outside its range is refused when verifyFormattedInput re-reads it (in parseDurationFieldValue), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5689,7 +5367,7 @@
       "original": "(token.minimum !== undefined &&\n        compareDecimal(amount, token.minimum) < 0) ||\n      (token.maximum !== undefined && compareDecimal(amount, token.maximum) > 0)",
       "replacement": "token.minimum !== undefined && compareDecimal(amount, token.minimum) < 0 && token.maximum !== undefined && compareDecimal(amount, token.maximum) > 0",
       "category": "equivalent",
-      "reason": "an amount written outside its range is refused when verifyFormattedInput re-reads it (line 1591), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "an amount written outside its range is refused when verifyFormattedInput re-reads it (in parseDurationFieldValue), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5697,7 +5375,7 @@
       "original": "token.minimum !== undefined &&\n        compareDecimal(amount, token.minimum) < 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "an amount written outside its range is refused when verifyFormattedInput re-reads it (line 1591), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "an amount written outside its range is refused when verifyFormattedInput re-reads it (in parseDurationFieldValue), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5705,7 +5383,7 @@
       "original": "token.maximum !== undefined && compareDecimal(amount, token.maximum) > 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "an amount written outside its range is refused when verifyFormattedInput re-reads it (line 1591), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "an amount written outside its range is refused when verifyFormattedInput re-reads it (in parseDurationFieldValue), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5713,7 +5391,7 @@
       "original": "{\n      return undefined;\n    }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "an amount written outside its range is refused when verifyFormattedInput re-reads it (line 1591), which returns the same invalid-localized-input failure; only the message differs an amount written wider or more precise than its unit is refused when verifyFormattedInput re-reads it (lines 1569 and 1580), which returns the same invalid-localized-input failure; only the message differs",
+      "reason": "an amount written outside its range is refused when verifyFormattedInput re-reads it (in parseDurationFieldValue), which returns the same invalid-localized-input failure; only the message differs an amount written wider or more precise than its unit is refused when verifyFormattedInput re-reads it (in parseDurationFieldValue), which returns the same invalid-localized-input failure; only the message differs",
       "count": 2
     },
     {
@@ -5722,7 +5400,7 @@
       "original": "token.maximumIntegerDigits ?? 15",
       "replacement": "token.maximumIntegerDigits && 15",
       "category": "equivalent",
-      "reason": "an amount written wider than its unit is refused when verifyFormattedInput re-reads it (line 1569), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "an amount written wider than its unit is refused when verifyFormattedInput re-reads it (in parseDurationFieldValue), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5730,7 +5408,7 @@
       "original": "integer.length > maximumIntegerDigits",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "an amount written wider or more precise than its unit is refused when verifyFormattedInput re-reads it (lines 1569 and 1580), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "an amount written wider or more precise than its unit is refused when verifyFormattedInput re-reads it (in parseDurationFieldValue), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5738,7 +5416,7 @@
       "original": "integer.length > maximumIntegerDigits ||\n      (fraction?.length ?? 0) > (token.maximumFractionDigits ?? 0)",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "an amount written wider or more precise than its unit is refused when verifyFormattedInput re-reads it (lines 1569 and 1580), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "an amount written wider or more precise than its unit is refused when verifyFormattedInput re-reads it (in parseDurationFieldValue), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5746,7 +5424,7 @@
       "original": "integer.length > maximumIntegerDigits ||\n      (fraction?.length ?? 0) > (token.maximumFractionDigits ?? 0)",
       "replacement": "integer.length > maximumIntegerDigits && (fraction?.length ?? 0) > (token.maximumFractionDigits ?? 0)",
       "category": "equivalent",
-      "reason": "an amount written wider or more precise than its unit is refused when verifyFormattedInput re-reads it (lines 1569 and 1580), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "an amount written wider or more precise than its unit is refused when verifyFormattedInput re-reads it (in parseDurationFieldValue), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5754,7 +5432,7 @@
       "original": "(fraction?.length ?? 0) > (token.maximumFractionDigits ?? 0)",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "a fraction written past the declared precision is refused when verifyFormattedInput re-reads it (line 1580), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "a fraction written past the declared precision is refused when verifyFormattedInput re-reads it (in parseDurationFieldValue), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5762,31 +5440,7 @@
       "original": "fraction?.length ?? 0",
       "replacement": "fraction?.length && 0",
       "category": "equivalent",
-      "reason": "a fraction written past the declared precision is refused when verifyFormattedInput re-reads it (line 1580), which returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "value.currency === profile.currency",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "the text reads back in the profile currency, so the identity comparison on line 2281, which names the currency, returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "value.unit === profile.unit",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "the text reads back in the profile unit, so the identity comparison on line 2281, which names the unit, returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "value.scale === profile.scale",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "the text reads back on the profile scale, so the identity comparison on line 2281, which names the scale, returns the same invalid-localized-input failure; only the message differs"
+      "reason": "a fraction written past the declared precision is refused when verifyFormattedInput re-reads it (in parseDurationFieldValue), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5794,7 +5448,7 @@
       "original": "value.kind === 'plain-date' &&\n        value.calendar === (profile.calendar ?? 'iso8601')",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "a value that is not a plain date in the profile calendar is written as text that does not read back to it, and the identity comparison on line 2281, which names the kind and the calendar, returns the same invalid-localized-input failure; only the message differs"
+      "reason": "a value that is not a plain date in the profile calendar is written as text that does not read back to it, and the identity comparison in verifyFormattedInput, which names the kind and the calendar, returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5802,7 +5456,7 @@
       "original": "value.kind === 'plain-date' &&\n        value.calendar === (profile.calendar ?? 'iso8601')",
       "replacement": "value.kind === 'plain-date' || value.calendar === (profile.calendar ?? 'iso8601')",
       "category": "equivalent",
-      "reason": "a value that is not a plain date in the profile calendar is written as text that does not read back to it, and the identity comparison on line 2281, which names the kind and the calendar, returns the same invalid-localized-input failure; only the message differs"
+      "reason": "a value that is not a plain date in the profile calendar is written as text that does not read back to it, and the identity comparison in verifyFormattedInput, which names the kind and the calendar, returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5810,7 +5464,7 @@
       "original": "value.kind === 'plain-date'",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "a value that is not a plain date in the profile calendar is written as text that does not read back to it, and the identity comparison on line 2281, which names the kind and the calendar, returns the same invalid-localized-input failure; only the message differs"
+      "reason": "a value that is not a plain date in the profile calendar is written as text that does not read back to it, and the identity comparison in verifyFormattedInput, which names the kind and the calendar, returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5818,7 +5472,7 @@
       "original": "value.calendar === (profile.calendar ?? 'iso8601')",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "the text reads back in the profile calendar, so the identity comparison on line 2281, which names the calendar, returns the same invalid-localized-input failure; only the message differs"
+      "reason": "the text reads back in the profile calendar, so the identity comparison in verifyFormattedInput, which names the calendar, returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5826,7 +5480,7 @@
       "original": "value.kind === 'plain-time'",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "a value of another kind has no clock fields, so localizedTimeText returns undefined or text that does not read back, and line 2457 or 2281 returns the same invalid-localized-input failure; only the message differs"
+      "reason": "a value of another kind has no clock fields, so localizedTimeText returns undefined or text that does not read back, and formatLocalizedInput and verifyFormattedInput returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5834,7 +5488,7 @@
       "original": "value.date.calendar === (profile.date.calendar ?? 'iso8601')",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "the text reads back in the profile calendar, so the identity comparison on line 2281, which names the calendar, returns the same invalid-localized-input failure; only the message differs"
+      "reason": "the text reads back in the profile calendar, so the identity comparison in verifyFormattedInput, which names the calendar, returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5842,7 +5496,7 @@
       "original": "value.kind === 'time-zone'",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "a value of another kind has no zone identity, so timeZone throws inside the try on line 2170 and line 2489 returns the same invalid-localized-input failure; only the message differs"
+      "reason": "a value of another kind has no zone identity, so timeZone throws inside the try in localizedTimeZoneText and formatLocalizedInput returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5850,7 +5504,7 @@
       "original": "value.kind === 'duration'",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "a value of another kind has no sign, so duration() throws inside the try on line 2074 and line 2508 returns the same invalid-localized-input failure; only the message differs"
+      "reason": "a value of another kind has no sign, so duration() throws inside the try in localizedDurationText and formatLocalizedInput returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5858,7 +5512,7 @@
       "original": "case 'money':\n      return `money:${value.currency}:${value.amount.value}`;",
       "replacement": "case 'money':",
       "category": "equivalent",
-      "reason": "without its own case the value falls through to the next one, which writes the same amount for both sides; the currency was matched on line 2197 and the parsed side carries the profile currency"
+      "reason": "without its own case the value falls through to the next one, which writes the same amount for both sides; the currency was matched in valueMatchesProfile and the parsed side carries the profile currency"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5866,7 +5520,7 @@
       "original": "case 'measurement':\n      return `measurement:${value.unit}:${value.amount.value}`;",
       "replacement": "case 'measurement':",
       "category": "equivalent",
-      "reason": "without its own case the value falls through to the next one, which writes the same amount for both sides; the unit was matched on line 2199 and the parsed side carries the profile unit"
+      "reason": "without its own case the value falls through to the next one, which writes the same amount for both sides; the unit was matched in valueMatchesProfile and the parsed side carries the profile unit"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5874,7 +5528,7 @@
       "original": "case 'percent':\n      return `percent:${value.scale}:${value.amount.value}`;",
       "replacement": "case 'percent':",
       "category": "equivalent",
-      "reason": "without its own case the value falls through to the next one, which writes the same amount for both sides; the scale was matched on line 2201 and the parsed side carries the profile scale"
+      "reason": "without its own case the value falls through to the next one, which writes the same amount for both sides; the scale was matched in valueMatchesProfile and the parsed side carries the profile scale"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5882,7 +5536,7 @@
       "original": "profile.kind === 'plain-date' ||\n    profile.kind === 'plain-time'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (line 1897 for a declared limit, line 811, 995 or 1768 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainDate, parsePlainTime and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5890,7 +5544,7 @@
       "original": "profile.kind === 'plain-date' ||\n    profile.kind === 'plain-time' ||\n    profile.kind === 'instant'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (line 1897 for a declared limit, line 811, 995 or 1768 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainDate, parsePlainTime and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5898,7 +5552,7 @@
       "original": "'plain-date'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (line 1897 for a declared limit, line 811, 995 or 1768 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainDate, parsePlainTime and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5906,7 +5560,7 @@
       "original": "profile.kind === 'plain-date'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (line 1897 for a declared limit, line 811, 995 or 1768 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainDate, parsePlainTime and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5914,7 +5568,7 @@
       "original": "profile.kind === 'plain-date' ||\n    profile.kind === 'plain-time' ||\n    profile.kind === 'instant'",
       "replacement": "(profile.kind === 'plain-date' || profile.kind === 'plain-time') && profile.kind === 'instant'",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (line 1897 for a declared limit, line 811, 995 or 1768 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainDate, parsePlainTime and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5922,7 +5576,7 @@
       "original": "profile.kind === 'plain-date' ||\n    profile.kind === 'plain-time'",
       "replacement": "profile.kind === 'plain-date' && profile.kind === 'plain-time'",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (line 1897 for a declared limit, line 811, 995 or 1768 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainDate, parsePlainTime and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5930,7 +5584,7 @@
       "original": "profile.kind === 'plain-time'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (line 1897 for a declared limit, line 995 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainTime for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5938,7 +5592,7 @@
       "original": "'plain-time'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (line 1897 for a declared limit, line 995 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainTime for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5946,7 +5600,7 @@
       "original": "profile.kind === 'instant'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (line 1897 for a declared limit, line 1768 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5954,7 +5608,7 @@
       "original": "'instant'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (line 1897 for a declared limit, line 1768 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5962,7 +5616,7 @@
       "original": "profile.kind === 'plain-date-time'",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (line 1897 for a declared limit, line 1257 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainDateTimeInput for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5970,7 +5624,7 @@
       "original": "'plain-date-time'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (line 1897 for a declared limit, line 1257 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainDateTimeInput for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5978,7 +5632,7 @@
       "original": "[...formatted.value.text].length >\n    (profile.maximumCharacters ?? defaultMaximumCharacters)",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (line 1897 for a declared limit, line 447, 811, 995, 1257, 1377, 1631 or 1768 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parseNumeric, parsePlainDate, parsePlainTime, parsePlainDateTimeInput, parseTimeZoneInput, parseDurationInput and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5986,7 +5640,7 @@
       "original": "[...formatted.value.text]",
       "replacement": "[]",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (line 1897 for a declared limit, line 447, 811, 995, 1257, 1377, 1631 or 1768 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parseNumeric, parsePlainDate, parsePlainTime, parsePlainDateTimeInput, parseTimeZoneInput, parseDurationInput and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -5994,7 +5648,7 @@
       "original": "{\n    return formattingPolicyFailure(\n      'The formatted value exceeds the declared localized-input field limit.',\n      context,\n    );\n  }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (line 1897 for a declared limit, line 447, 811, 995, 1257, 1377, 1631 or 1768 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parseNumeric, parsePlainDate, parsePlainTime, parsePlainDateTimeInput, parseTimeZoneInput, parseDurationInput and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -6018,7 +5672,7 @@
       "original": "!Number.isFinite(date.getTime()) || year < 0 || year > 9999",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "a year outside 0000-9999 or an invalid date is written as text the expression on line 1777 does not match, so verifyFormattedInput returns the same invalid-localized-input failure; only the message differs"
+      "reason": "a year outside 0000-9999 or an invalid date is written as text the expression in parseRfc3339 does not match, so verifyFormattedInput returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -6026,7 +5680,7 @@
       "original": "!Number.isFinite(date.getTime()) || year < 0 || year > 9999",
       "replacement": "(!Number.isFinite(date.getTime()) || year < 0) && year > 9999",
       "category": "equivalent",
-      "reason": "a year outside 0000-9999 or an invalid date is written as text the expression on line 1777 does not match, so verifyFormattedInput returns the same invalid-localized-input failure; only the message differs"
+      "reason": "a year outside 0000-9999 or an invalid date is written as text the expression in parseRfc3339 does not match, so verifyFormattedInput returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -6034,7 +5688,7 @@
       "original": "!Number.isFinite(date.getTime()) || year < 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "a year outside 0000-9999 or an invalid date is written as text the expression on line 1777 does not match, so verifyFormattedInput returns the same invalid-localized-input failure; only the message differs"
+      "reason": "a year outside 0000-9999 or an invalid date is written as text the expression in parseRfc3339 does not match, so verifyFormattedInput returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -6042,7 +5696,7 @@
       "original": "!Number.isFinite(date.getTime()) || year < 0",
       "replacement": "!Number.isFinite(date.getTime()) && year < 0",
       "category": "equivalent",
-      "reason": "a year outside 0000-9999 or an invalid date is written as text the expression on line 1777 does not match, so verifyFormattedInput returns the same invalid-localized-input failure; only the message differs"
+      "reason": "a year outside 0000-9999 or an invalid date is written as text the expression in parseRfc3339 does not match, so verifyFormattedInput returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -6050,7 +5704,7 @@
       "original": "year < 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "a year outside 0000-9999 or an invalid date is written as text the expression on line 1777 does not match, so verifyFormattedInput returns the same invalid-localized-input failure; only the message differs"
+      "reason": "a year outside 0000-9999 or an invalid date is written as text the expression in parseRfc3339 does not match, so verifyFormattedInput returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -6058,7 +5712,7 @@
       "original": "year > 9999",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "a year outside 0000-9999 or an invalid date is written as text the expression on line 1777 does not match, so verifyFormattedInput returns the same invalid-localized-input failure; only the message differs"
+      "reason": "a year outside 0000-9999 or an invalid date is written as text the expression in parseRfc3339 does not match, so verifyFormattedInput returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -6066,7 +5720,7 @@
       "original": "{\n    return formattingPolicyFailure(\n      'The instant cannot be represented by the declared four-digit RFC 3339 profile.',\n      context,\n    );\n  }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "a year outside 0000-9999 or an invalid date is written as text the expression on line 1777 does not match, so verifyFormattedInput returns the same invalid-localized-input failure; only the message differs"
+      "reason": "a year outside 0000-9999 or an invalid date is written as text the expression in parseRfc3339 does not match, so verifyFormattedInput returns the same invalid-localized-input failure; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",

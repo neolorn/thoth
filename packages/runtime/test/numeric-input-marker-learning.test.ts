@@ -192,3 +192,30 @@ describe('the spellings a field has learned', () => {
     expect([...amounts].sort()).toEqual([0, 1]);
   });
 });
+
+describe('a spelling whose two sides share a character', () => {
+  // The marker before the number ends in the character the marker after it begins with, so a text
+  // holding that character once begins with the one and ends with the other without holding both.
+  const overlapping = (parts: Parts): Parts => [
+    { type: 'unit', value: 'ab' },
+    ...parts.filter(({ type }) => type !== 'unit' && type !== 'literal'),
+    { type: 'unit', value: 'ba' },
+  ];
+
+  it('is not matched by a text shorter than its two sides together', async () => {
+    rewriteUnitParts(overlapping);
+    const parse = await freshParser();
+    expect(parse('aba', DAYS, EN).status).toBe('invalid');
+    expect(parse('aba', DAYS_REQUIRED, EN).status).toBe('policy-rejected');
+  });
+
+  it('is matched by a text that holds both sides', async () => {
+    rewriteUnitParts(overlapping);
+    const parse = await freshParser();
+    expect(parse('ab5ba', DAYS_REQUIRED, EN)).toMatchObject({
+      status: 'valid',
+      value: { amount: { value: '5' } },
+    });
+    expect(parse('abba', DAYS_REQUIRED, EN).status).toBe('incomplete');
+  });
+});

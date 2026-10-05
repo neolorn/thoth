@@ -702,3 +702,16 @@ describe('a duration written in the spelling its profile reads', () => {
     });
   }
 });
+
+describe('a duration unit that is unfinished', () => {
+  it('is incomplete while what is typed so far is digits', () => {
+    expect(read('.5 s', SECONDS).status).toBe('incomplete');
+    expect(read('5. s', SECONDS).status).toBe('incomplete');
+    expect(read('. s', SECONDS).status).toBe('incomplete');
+  });
+
+  it('is invalid once what is typed is not digits, which more typing does not mend', () => {
+    expect(read('.x s', SECONDS).status).toBe('invalid');
+    expect(read('x. s', SECONDS).status).toBe('invalid');
+  });
+});

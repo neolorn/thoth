@@ -77,14 +77,12 @@ interface NumberSyntax {
   readonly secondaryGroupSize: number;
 }
 
-/** The part types that carry a number's value; everything else around them is decoration. */
+/**
+ * The part types a written number begins and ends with; everything outside them is decoration. Its
+ * separators stand between two of these, so they need no naming here.
+ */
 const numericPartTypes: ReadonlySet<Intl.NumberFormatPartTypes> =
-  new Set<Intl.NumberFormatPartTypes>([
-    'integer',
-    'group',
-    'decimal',
-    'fraction',
-  ]);
+  new Set<Intl.NumberFormatPartTypes>(['integer', 'fraction']);
 
 const inputFormatterCache = new FormatterCache(128);
 const numberSyntaxCache = new Map<string, NumberSyntax>();
@@ -201,8 +199,8 @@ function numberSyntax(context: FormattingContext): NumberSyntax {
   // (a space, a bracket) does not quietly widen what the sign strip will swallow.
   const signMarks = new Set<string>();
   for (const parts of [negativeSignParts, positiveSignParts]) {
-    const first = parts.findIndex(({ type }) => numericPartTypes.has(type));
-    for (const part of first < 0 ? parts : parts.slice(0, first)) {
+    for (const part of parts) {
+      if (part.type === 'integer') break;
       if (part.type !== 'literal') continue;
       for (const scalar of part.value) {
         if (/\p{Cf}/u.test(scalar)) signMarks.add(scalar);
@@ -220,15 +218,11 @@ function numberSyntax(context: FormattingContext): NumberSyntax {
     .map(({ value }) => [...value].length);
   const primaryGroupSize = integerLengths.at(-1) ?? 3;
   const secondaryGroupSize = integerLengths.at(-2) ?? primaryGroupSize;
+  const group = groupedParts.find(({ type }) => type === 'group')?.value;
   const syntax = Object.freeze({
     digits,
     decimal: decimalParts.find(({ type }) => type === 'decimal')?.value ?? '.',
-    ...(groupedParts.find(({ type }) => type === 'group')?.value === undefined
-      ? {}
-      : {
-          group: groupedParts.find(({ type }) => type === 'group')
-            ?.value as string,
-        }),
+    ...(group === undefined ? {} : { group }),
     minus:
       negativeSignParts.find(({ type }) => type === 'minusSign')?.value ?? '-',
     plus:
@@ -536,14 +530,6 @@ function parseNumeric(
       context,
     );
   }
-  if (source.length === 0) {
-    return failed(
-      'incomplete',
-      text,
-      'The localized value is incomplete.',
-      context,
-    );
-  }
   if (
     (profile.maximumFractionDigits !== undefined &&
       (!Number.isSafeInteger(profile.maximumFractionDigits) ||
@@ -571,6 +557,17 @@ function parseNumeric(
       'The locale does not expose a strict decimal input syntax.',
       context,
       'native-capability-rejected',
+    );
+  }
+  // Asked here and not sooner, so that an invalid profile and a locale with no digits to read are
+  // reported for the empty text as for any other, and before the marker a profile requires, so
+  // that a field nobody has typed in is incomplete and not missing its marker.
+  if (source.length === 0) {
+    return failed(
+      'incomplete',
+      text,
+      'The localized value is incomplete.',
+      context,
     );
   }
   let working = source;
@@ -797,20 +794,17 @@ function comparePlainDate(left: PlainDateValue, right: PlainDateValue): number {
   return 0;
 }
 
-function validGregorianDateFields(
-  year: number,
-  month: number,
-  day: number,
-): boolean {
-  // A field that is not a whole number, or is too large for a date, leaves the probe unable to
-  // report the same field back, so the comparison below refuses it with the dates that do not exist.
+/**
+ * Whether a date `plainDate` built exists in the Gregorian calendar.
+ *
+ * `plainDate` holds the month to twelve and the day to thirty-one, so a date that does not exist
+ * runs over into the next month and one outside the platform's range is no date at all. Either way
+ * the day read back is not the day asked for, and for a date that exists it is.
+ */
+function existsInGregorian(value: PlainDateValue): boolean {
   const probe = new Date(0);
-  probe.setUTCFullYear(year, month - 1, day);
-  return (
-    probe.getUTCFullYear() === year &&
-    probe.getUTCMonth() === month - 1 &&
-    probe.getUTCDate() === day
-  );
+  probe.setUTCFullYear(value.year, value.month - 1, value.day);
+  return probe.getUTCDate() === value.day;
 }
 
 function validPlainDateBoundary(
@@ -820,18 +814,16 @@ function validPlainDateBoundary(
   if (value === undefined || value.calendar !== calendar)
     return value === undefined;
   try {
+    // Throws for fields that are not a date's: a boundary written by hand can hold anything.
     const canonical = plainDate(
       value.year,
       value.month,
       value.day,
       value.calendar,
     );
-    return (
-      comparePlainDate(canonical, value) === 0 &&
-      (calendar !== 'iso8601' && calendar !== 'gregory'
-        ? true
-        : validGregorianDateFields(value.year, value.month, value.day))
-    );
+    // `plainDate` has asked this of an ISO date already. A calendar that is neither is refused
+    // by the reader as one it cannot read, which is the truer report for it.
+    return calendar !== 'gregory' || existsInGregorian(canonical);
   } catch {
     return false;
   }
@@ -887,6 +879,17 @@ function parsePlainDate(
       context,
     );
   }
+  try {
+    numberSyntax(context);
+  } catch {
+    return failed(
+      'unsupported-capability',
+      text,
+      'The locale does not expose a strict date input syntax.',
+      context,
+      'native-capability-rejected',
+    );
+  }
   const fields = source.split(profile.separator);
   if (fields.length < 3 || fields.some((field) => field.length === 0)) {
     return failed(
@@ -928,26 +931,13 @@ function parsePlainDate(
       context,
     );
   }
+  let value: PlainDateValue | undefined;
   try {
-    if (!validGregorianDateFields(year, month, day)) {
-      throw new Error('The declared civil date does not exist.');
-    }
-    const value = plainDate(year, month, day, calendar);
-    if (
-      (profile.minimum !== undefined &&
-        comparePlainDate(value, profile.minimum) < 0) ||
-      (profile.maximum !== undefined &&
-        comparePlainDate(value, profile.maximum) > 0)
-    ) {
-      return failed(
-        'out-of-range',
-        text,
-        'The localized date is outside the declared field range.',
-        context,
-      );
-    }
-    return valid(text, value);
+    value = plainDate(year, month, day, calendar);
   } catch {
+    value = undefined;
+  }
+  if (value === undefined || !existsInGregorian(value)) {
     return failed(
       'out-of-range',
       text,
@@ -956,6 +946,20 @@ function parsePlainDate(
       'malformed-input',
     );
   }
+  if (
+    (profile.minimum !== undefined &&
+      comparePlainDate(value, profile.minimum) < 0) ||
+    (profile.maximum !== undefined &&
+      comparePlainDate(value, profile.maximum) > 0)
+  ) {
+    return failed(
+      'out-of-range',
+      text,
+      'The localized date is outside the declared field range.',
+      context,
+    );
+  }
+  return valid(text, value);
 }
 
 function plainTimeNanoseconds(value: PlainTimeValue): number {
@@ -1054,14 +1058,6 @@ function parsePlainTime(
       'policy-rejected',
       text,
       'The input exceeds the declared field limit.',
-      context,
-    );
-  }
-  if (source.length === 0) {
-    return failed(
-      'incomplete',
-      text,
-      'The localized time is incomplete.',
       context,
     );
   }
@@ -1335,6 +1331,27 @@ function parsePlainDateTimeInput(
       context,
     );
   }
+  // Asked of the field and not left to its halves, which are reached only by a text that has
+  // both: the calendar and the locale are reported whatever the text.
+  if (calendar !== 'iso8601' && calendar !== 'gregory') {
+    return failed(
+      'unsupported-capability',
+      text,
+      'Strict localized date input for this calendar requires an enabled parsing provider.',
+      context,
+    );
+  }
+  try {
+    numberSyntax(context);
+  } catch {
+    return failed(
+      'unsupported-capability',
+      text,
+      'The locale does not expose a strict date-time input syntax.',
+      context,
+      'native-capability-rejected',
+    );
+  }
   const boundary = source.indexOf(profile.separator);
   if (boundary < 1 || boundary + profile.separator.length >= source.length) {
     return failed(
@@ -1345,8 +1362,9 @@ function parsePlainDateTimeInput(
     );
   }
   const dateResult = parsePlainDate(source.slice(0, boundary), date, context);
+  // A half reports the half it was given, and the field reports the text it was given.
   if (dateResult.status !== 'valid') {
-    return dateResult as LocalizedInputResult<PlainDateTimeValue>;
+    return Object.freeze({ ...dateResult, text });
   }
   const timeResult = parsePlainTime(
     source.slice(boundary + profile.separator.length),
@@ -1354,7 +1372,7 @@ function parsePlainDateTimeInput(
     context,
   );
   if (timeResult.status !== 'valid') {
-    return timeResult as LocalizedInputResult<PlainDateTimeValue>;
+    return Object.freeze({ ...timeResult, text });
   }
   const value = plainDateTime(dateResult.value, timeResult.value);
   if (
@@ -1622,19 +1640,13 @@ function parseDurationFieldValue(
     );
   }
   const [integerSource = '', fractionSource] = decimalParts;
-  if (integerSource.length === 0 || fractionSource === '') {
-    return failed(
-      'incomplete',
-      text,
-      `The localized duration ${field.field} field is incomplete.`,
-      context,
-    );
-  }
   const integer = localizedDigits(integerSource, context);
   const fraction =
     fractionSource === undefined
       ? undefined
       : localizedDigits(fractionSource, context);
+  // Asked before whether a side is still empty: text that is not digits is not made a number by
+  // typing more of it.
   if (
     integer === undefined ||
     (fraction === undefined && fractionSource !== undefined)
@@ -1643,6 +1655,15 @@ function parseDurationFieldValue(
       'invalid',
       text,
       `The localized duration ${field.field} field contains invalid digits.`,
+      context,
+    );
+  }
+  // An empty whole part is short of the unit's width, which the next test reports.
+  if (fraction === '') {
+    return failed(
+      'incomplete',
+      text,
+      `The localized duration ${field.field} field is incomplete.`,
       context,
     );
   }
@@ -2041,6 +2062,9 @@ function localizedDateText(
   let formatter: Intl.NumberFormat;
   let yearFormatter: Intl.NumberFormat;
   try {
+    // Throws for a value that is not a date: one written by hand with a field that is not a whole
+    // number in its range.
+    plainDate(value.year, value.month, value.day, value.calendar);
     formatter = inputFormatterCache.number(context.locale, {
       useGrouping: false,
       minimumIntegerDigits: 2,
@@ -2056,7 +2080,7 @@ function localizedDateText(
         : { numberingSystem: context.numberingSystem }),
     });
   } catch {
-    // A locale the platform refuses has no digits to write the date in.
+    // A locale the platform refuses has no digits to write the date in either.
     return undefined;
   }
   const fields: Readonly<Record<string, string>> = {
@@ -2107,6 +2131,9 @@ function localizedTimeText(
   if (!validTimePattern(profile)) return undefined;
   let syntax: NumberSyntax;
   try {
+    // Throws for a value that is not a time: one written by hand with a field that is not a whole
+    // number in its range.
+    plainTime(value.hour, value.minute, value.second, value.nanosecond);
     syntax = numberSyntax(context);
   } catch {
     return undefined;

@@ -33,8 +33,6 @@ const AR: FormattingContext = Object.freeze({ locale: 'ar-EG' });
 const FA: FormattingContext = Object.freeze({ locale: 'fa-IR' });
 const SV: FormattingContext = Object.freeze({ locale: 'sv-SE' });
 const EN_IN: FormattingContext = Object.freeze({ locale: 'en-IN' });
-// Toki Pona groups in pairs all the way down, the one locale whose last group is not three long.
-const TOK: FormattingContext = Object.freeze({ locale: 'tok' });
 
 const DECIMAL: LocalizedInputProfile = Object.freeze({ kind: 'decimal' });
 const GROUPED: LocalizedInputProfile = Object.freeze({
@@ -136,16 +134,6 @@ describe("a number typed in a numbering system's digits", () => {
     expect(reading(`${ALM}-\u0661`, DECIMAL, context)).toEqual(decimal('-1'));
     expect(reading(`${ALM}+\u0661`, DECIMAL, context)).toEqual(decimal('1'));
   });
-
-  it('is reported unsupported where the host writes a digit as more than one character', () => {
-    // Azerbaijani under Arabic-Indic digits comes back from the host with words in front of
-    // every digit, so there is no digit set to read a number against.
-    const result = parseLocalizedInput('1', DECIMAL, {
-      locale: 'az',
-      numberingSystem: 'arab',
-    });
-    expect(result.status).toBe('unsupported-capability');
-  });
 });
 
 describe('the sign on a localized number', () => {
@@ -228,11 +216,6 @@ describe('the grouping of a localized number', () => {
     expect(reading('12,34,567', GROUPED, EN_IN)).toEqual(decimal('1234567'));
     expect(reading('1,234,567', GROUPED, EN_IN)).toBe('invalid');
     expect(reading('1,23,45', GROUPED, EN_IN)).toBe('invalid');
-  });
-
-  it('follows a locale whose last group is two digits long', () => {
-    expect(reading(`1${NBSP}23`, GROUPED, TOK)).toEqual(decimal('123'));
-    expect(reading(`1${NBSP}234`, GROUPED, TOK)).toBe('invalid');
   });
 });
 

@@ -157,6 +157,12 @@ Strict parsing is the commit default. A result is one of valid, incomplete, inva
 out-of-range, unsupported-capability, or policy-rejected, and a release MUST carry an
 invariant typed value only on the valid one.
 
+Every result carries the text as it was given, a date-time field's included when the fault is in one
+half of it. A field's profile, its calendar and its locale are judged before what its text says: an
+invalid profile is policy-rejected, and a calendar the field does not read or a locale the host has
+no digits to read it in is an unsupported capability, for every text within the field's character
+limit, the empty text included.
+
 A release MAY preserve incomplete localized text during composition or editing. A release MUST NOT,
 on commit, select the first plausible interpretation, change a currency or a unit, or resolve a
 daylight-saving ambiguity silently.
