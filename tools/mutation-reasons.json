@@ -7214,30 +7214,6 @@
       "reason": "The text of the unknown-presentation diagnostic; its code and outcome are asserted and nothing reads the text."
     },
     {
-      "file": "packages/runtime/src/relative-time-policy.ts",
-      "mutator": "ConditionalExpression",
-      "original": "policy.absoluteAfterMilliseconds !== undefined",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "With no ceiling declared the second operand compares the magnitude with undefined, which is false for every number, so the conjunction is false with or without the guard."
-    },
-    {
-      "file": "packages/runtime/src/relative-time-policy.ts",
-      "mutator": "StringLiteral",
-      "original": "'year'",
-      "replacement": "\"\"",
-      "category": "unstated-behavior",
-      "reason": "For each of the seven declared units both forms select the same unit; they differ only for a unit name outside the type, which the function does not refuse and the specification does not mention."
-    },
-    {
-      "file": "packages/runtime/src/relative-time-policy.ts",
-      "mutator": "ConditionalExpression",
-      "original": "index === smallestIndex",
-      "replacement": "false",
-      "category": "unstated-behavior",
-      "reason": "For each of the seven declared units both forms select the same unit; they differ only for a unit name outside the type, which the function does not refuse and the specification does not mention."
-    },
-    {
       "file": "packages/runtime/src/runtime-safety.ts",
       "mutator": "ArrayDeclaration",
       "original": "[]",

@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import { instant } from '../src/formatting.js';
 import {
+  resolveRelativeTime,
   selectRelativeTime,
+  type RelativeTimePolicy,
   type RelativeTimeUnit,
 } from '../src/relative-time-policy.js';
 
@@ -100,5 +102,101 @@ describe('the bounds an application sets', () => {
     expect(selectRelativeTime(at(-3_600_001), at(0), policy)).toStrictEqual({
       elapsedMilliseconds: -3_600_001,
     });
+  });
+});
+
+describe('a policy that cannot be applied', () => {
+  const REFUSED = {
+    diagnostic: {
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      message: 'The relative-time policy is invalid.',
+    },
+  };
+
+  const INVALID: readonly (readonly [string, unknown])[] = [
+    ['a smallest unit outside the seven', { smallestUnit: 'fortnight' }],
+    ['a largest unit outside the seven', { largestUnit: 'decade' }],
+    ['a plural unit name', { largestUnit: 'years' }],
+    ['an empty unit name', { smallestUnit: '' }],
+    ['a unit that is not text', { largestUnit: 3 }],
+    ['a unit that is a list', { smallestUnit: ['second'] }],
+    [
+      'a smallest unit larger than its largest',
+      { smallestUnit: 'day', largestUnit: 'hour' },
+    ],
+    [
+      'a smallest unit one step larger than its largest',
+      { smallestUnit: 'minute', largestUnit: 'second' },
+    ],
+    ['a ceiling that is not a number', { absoluteAfterMilliseconds: NaN }],
+    ['a negative ceiling', { absoluteAfterMilliseconds: -1 }],
+    ['a ceiling that is text', { absoluteAfterMilliseconds: '5' }],
+    ['a ceiling that is null', { absoluteAfterMilliseconds: null }],
+  ];
+
+  for (const [name, policy] of INVALID) {
+    it(`is refused for ${name}`, () => {
+      // A span of ninety minutes and one of none, so that neither the walk down the units nor the
+      // span shorter than every unit is reached under a policy that was not understood.
+      for (const span of [-5_400_000, 0, 10 * 31_556_952_000]) {
+        const decision = selectRelativeTime(
+          at(span),
+          at(0),
+          policy as RelativeTimePolicy,
+        );
+        expect(decision).toStrictEqual(REFUSED);
+        expect(Object.isFrozen(decision)).toBe(true);
+      }
+    });
+  }
+
+  it('is reported as unavailable, and not as a span to write absolutely', () => {
+    expect(
+      resolveRelativeTime(
+        at(-5_400_000),
+        at(0),
+        { largestUnit: 'decade' } as unknown as RelativeTimePolicy,
+        { locale: 'en-US' },
+      ),
+    ).toStrictEqual({ kind: 'unavailable', diagnostic: REFUSED.diagnostic });
+  });
+});
+
+describe('a policy at the edge of what can be applied', () => {
+  it('names one unit when the smallest and the largest are the same', () => {
+    const policy = { smallestUnit: 'hour', largestUnit: 'hour' } as const;
+
+    expect(selectRelativeTime(at(-1_800_000), at(0), policy)).toStrictEqual({
+      unit: 'hour',
+      value: 0,
+    });
+    expect(selectRelativeTime(at(-5_400_000), at(0), policy)).toStrictEqual({
+      unit: 'hour',
+      value: -1,
+    });
+    expect(selectRelativeTime(at(-7_200_000), at(0), policy)).toStrictEqual({
+      elapsedMilliseconds: -7_200_000,
+    });
+  });
+
+  it('takes a ceiling of zero as relative for no span but none', () => {
+    const policy = { absoluteAfterMilliseconds: 0 };
+
+    expect(selectRelativeTime(at(0), at(0), policy)).toStrictEqual({
+      unit: 'second',
+      value: 0,
+    });
+    expect(selectRelativeTime(at(1), at(0), policy)).toStrictEqual({
+      elapsedMilliseconds: 1,
+    });
+  });
+
+  it('takes an infinite ceiling as no ceiling', () => {
+    expect(
+      selectRelativeTime(at(-5_400_000), at(0), {
+        absoluteAfterMilliseconds: Infinity,
+      }),
+    ).toStrictEqual({ unit: 'hour', value: -1 });
   });
 });

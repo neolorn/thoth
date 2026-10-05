@@ -140,6 +140,12 @@ A span beyond that range is an explicit non-relative decision carrying the elaps
 MUST NOT report it as a formatting failure and MUST NOT substitute an absolute rendering, because
 the format, the zone, and the wording of that rendering belong to the application.
 
+The units a policy names are the seven a span is said in: year, month, week, day, hour, minute, and
+second. A policy that names any other unit, names a smallest unit larger than its largest, or
+declares a ceiling that is not a number of milliseconds from zero up is refused as an invalid
+configuration. No unit is selected under it, and the refusal is a result of its own, apart from the
+non-relative decision.
+
 ## 6. Localized parsing
 
 A release MUST NOT expose a universal permissive parser. Every localized parser is opt-in and

@@ -97,13 +97,38 @@ export interface RelativeTimeOutOfRange {
 }
 
 /**
- * What selection returns: a unit and value to say, or the elapsed time and nothing to say it in.
+ * A policy that cannot be applied, reported in place of a decision made under a guess at it.
  *
- * Check `unit` to tell the two apart. Equator writes no absolute date itself, because the wording,
- * the fields and the zone of that date are the application's.
+ * A policy is refused when it names a unit outside the seven, names a smallest unit larger than its
+ * largest, or declares a ceiling that is not a number of milliseconds from zero up.
+ */
+export interface RelativeTimePolicyRefused {
+  /** Always absent, as it is on a span that is out of range. */
+  readonly unit?: undefined;
+  /** Always absent, which is what tells a refused policy from a span that is out of range. */
+  readonly elapsedMilliseconds?: undefined;
+  /** What was refused, with the code `invalid-configuration`. */
+  readonly diagnostic: LocalizationDiagnostic;
+}
+
+/**
+ * What selection returns: a unit and value to say, the elapsed time and nothing to say it in, or a
+ * diagnostic where the policy itself cannot be applied.
+ *
+ * Check `unit` to tell a selection from the rest, and `elapsedMilliseconds` to tell a span that is
+ * out of range from a refused policy. Equator writes no absolute date itself, because the wording, the
+ * fields and the zone of that date are the application's.
  */
 export type RelativeTimeDecision =
-  RelativeTimeSelection | RelativeTimeOutOfRange;
+  RelativeTimeSelection | RelativeTimeOutOfRange | RelativeTimePolicyRefused;
+
+const policyRefused: RelativeTimePolicyRefused = Object.freeze({
+  diagnostic: Object.freeze({
+    code: 'invalid-configuration',
+    outcome: 'operational-failure',
+    message: 'The relative-time policy is invalid.',
+  }),
+});
 
 function epochMilliseconds(instant: InstantValue): number {
   // Instants are canonical epoch-nanosecond strings; only whole milliseconds matter here, and a
@@ -118,48 +143,60 @@ function epochMilliseconds(instant: InstantValue): number {
  * willing to express relatively. Equator does not substitute an absolute date itself: the wording,
  * the format and the zone of that date are the consumer's, and guessing them here would be the
  * product decision this function exists to avoid making.
+ *
+ * Returns a refusal, and selects nothing, under a policy that cannot be applied.
  */
 export function selectRelativeTime(
   target: InstantValue,
   reference: InstantValue,
   policy: RelativeTimePolicy = {},
 ): RelativeTimeDecision {
+  // No ceiling is a ceiling no span passes.
+  const ceiling: unknown =
+    policy.absoluteAfterMilliseconds === undefined
+      ? Infinity
+      : policy.absoluteAfterMilliseconds;
+  const largestIndex = UNIT_ORDER.indexOf(policy.largestUnit ?? 'year');
+  const smallestIndex = UNIT_ORDER.indexOf(policy.smallestUnit ?? 'second');
+  if (
+    largestIndex < 0 ||
+    // Also a smallest unit outside the seven, whose index is below every index a unit has.
+    smallestIndex < largestIndex ||
+    !(typeof ceiling === 'number' && ceiling >= 0)
+  ) {
+    return policyRefused;
+  }
+
   const elapsed = epochMilliseconds(target) - epochMilliseconds(reference);
   const magnitude = Math.abs(elapsed);
 
-  if (
-    policy.absoluteAfterMilliseconds !== undefined &&
-    magnitude > policy.absoluteAfterMilliseconds
-  ) {
+  if (magnitude > ceiling) {
     return Object.freeze({ elapsedMilliseconds: elapsed });
   }
 
-  const smallest = policy.smallestUnit ?? 'second';
-  const largest = policy.largestUnit ?? 'year';
-  const largestIndex = UNIT_ORDER.indexOf(largest);
-  const smallestIndex = UNIT_ORDER.indexOf(smallest);
-
+  const largest = UNIT_ORDER[largestIndex] as RelativeTimeUnit;
   if (magnitude >= MILLISECONDS[largest] * 2 && largestIndex > 0) {
     // Beyond the largest unit the consumer is willing to name. Reporting "24 months" when the
     // policy stops at months would be technically true and useless.
     return Object.freeze({ elapsedMilliseconds: elapsed });
   }
 
-  for (let index = largestIndex; index <= smallestIndex; index += 1) {
-    const unit = UNIT_ORDER[index] as RelativeTimeUnit;
-    const size = MILLISECONDS[unit];
-    if (magnitude >= size || index === smallestIndex) {
-      // Truncate rather than round: "1 hour ago" for 119 minutes is wrong in the direction that
-      // claims something is more recent than it is.
-      const truncated = Math.trunc(elapsed / size);
-      // A span shorter than its own unit truncates to -0, and -0 is a value no caller wants to
-      // meet: it compares equal to 0, serializes as 0, and survives as -0 in memory. A zero span
-      // has no direction, so it is reported without one.
-      return Object.freeze({ unit, value: truncated === 0 ? 0 : truncated });
-    }
+  // The largest unit the span reaches, and the smallest one for a span that reaches none.
+  let index = largestIndex;
+  while (
+    index < smallestIndex &&
+    magnitude < MILLISECONDS[UNIT_ORDER[index] as RelativeTimeUnit]
+  ) {
+    index += 1;
   }
-
-  return Object.freeze({ unit: smallest, value: 0 });
+  const unit = UNIT_ORDER[index] as RelativeTimeUnit;
+  // Truncate rather than round: "1 hour ago" for 119 minutes is wrong in the direction that
+  // claims something is more recent than it is.
+  const truncated = Math.trunc(elapsed / MILLISECONDS[unit]);
+  // A span shorter than its own unit truncates to -0, and -0 is a value no caller wants to
+  // meet: it compares equal to 0, serializes as 0, and survives as -0 in memory. A zero span
+  // has no direction, so it is reported without one.
+  return Object.freeze({ unit, value: truncated === 0 ? 0 : truncated });
 }
 
 /**
@@ -193,6 +230,12 @@ export function resolveRelativeTime(
 ): RelativeTimeOutcome {
   const decision = selectRelativeTime(target, reference, policy);
   if (decision.unit === undefined) {
+    if (decision.elapsedMilliseconds === undefined) {
+      return Object.freeze({
+        kind: 'unavailable',
+        diagnostic: decision.diagnostic,
+      });
+    }
     return Object.freeze({
       kind: 'absolute',
       elapsedMilliseconds: decision.elapsedMilliseconds,

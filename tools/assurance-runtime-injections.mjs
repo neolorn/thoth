@@ -705,16 +705,16 @@ export const injections = Object.freeze([
     invariant:
       'Equator selects the relative-time unit by truncating toward zero, so a phrase never claims a span is larger than it is.',
     source: 'packages/runtime/src/relative-time-policy.ts',
-    find: '      const truncated = Math.trunc(elapsed / size);',
-    replace: '      const truncated = Math.round(elapsed / size);',
+    find: '  const truncated = Math.trunc(elapsed / MILLISECONDS[unit]);',
+    replace: '  const truncated = Math.round(elapsed / MILLISECONDS[unit]);',
   },
   {
     id: 'relative-time-largest-unit-ignored',
     invariant:
       'The largest unit an application declares is honoured, and a span beyond it is handed back rather than named in a larger unit.',
     source: 'packages/runtime/src/relative-time-policy.ts',
-    find: "  const largest = policy.largestUnit ?? 'year';",
-    replace: "  const largest: RelativeTimeUnit = 'year';",
+    find: "  const largestIndex = UNIT_ORDER.indexOf(policy.largestUnit ?? 'year');",
+    replace: "  const largestIndex = UNIT_ORDER.indexOf('year');",
   },
   {
     id: 'out-of-range-span-reported-as-failure',
