@@ -1655,6 +1655,18 @@
     {
       "spec": "06-runtime-and-angular.spec.md",
       "section": "12. The testing surface",
+      "statement": "An address of any other scheme names no origin a deployment answers at, and a release MUST hand it to the handler as written, where it is refused as a structurally unsafe target, rather than answer it on another origin.",
+      "checks": ["assurance:seat-answers-another-scheme-on-its-origin"]
+    },
+    {
+      "spec": "06-runtime-and-angular.spec.md",
+      "section": "12. The testing surface",
+      "statement": "A release MUST leave a numeric reference that names no character, which is code point zero, a surrogate, or a value past the last code point, as it was written.",
+      "checks": ["assurance:seat-reads-a-null-reference-as-a-character"]
+    },
+    {
+      "spec": "06-runtime-and-angular.spec.md",
+      "section": "12. The testing surface",
       "statement": "A release MUST make a declared page outcome observable through that seat.",
       "checks": ["assurance:seat-hides-the-declared-outcome"]
     },

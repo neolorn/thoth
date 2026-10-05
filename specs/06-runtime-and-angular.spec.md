@@ -285,6 +285,18 @@ back over a socket. A release MUST supply the seat, MUST answer through the same
 deployment uses rather than through a second implementation of the same rules, and MUST NOT require
 a listening socket, a built bundle, or a browser to use it.
 
+An address is asked as a path or as an absolute `http:` or `https:` address. The authority of an
+absolute address ends at the next slash, question mark, or number sign, as RFC 3986 section 3.2 ends
+it, and what follows travels to the handler as written. An address of any other scheme names no
+origin a deployment answers at, and a release MUST hand it to the handler as written, where it is
+refused as a structurally unsafe target, rather than answer it on another origin.
+
+The head of the answered document is read as text. Comments, script content, and style content are
+left out wherever they stand, including inside a title or an attribute value, and a character
+reference is read as the character it names. A release MUST leave a numeric reference that names no
+character, which is code point zero, a surrogate, or a value past the last code point, as it was
+written.
+
 A release MUST make a declared page outcome observable through that seat. Section 5 of
 `07-routing-rendering-and-seo.spec.md` requires the declaration to travel over a channel no response
 exposes and no client can write, so nothing outside the release can otherwise observe whether it was

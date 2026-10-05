@@ -78,13 +78,29 @@ describe('the origin an address is asked on', () => {
     expect(answered.body).toBe('https://other.example/ar-eg/thani');
   });
 
-  it('is the one an absolute address of another scheme names', async () => {
+  it('is the one an absolute address names in either case of its scheme', async () => {
     const answered = await echoingSeat('https://site.example').request(
-      'ftp://other.example/ar-eg/thani',
+      'HTTP://other.example/ar-eg/thani',
     );
 
     expect(answered.status).toBe(200);
-    expect(answered.body).toBe('ftp://other.example/ar-eg/thani');
+    expect(answered.body).toBe('http://other.example/ar-eg/thani');
+  });
+
+  it('hands an address of any other scheme to the handler as written, which refuses it', async () => {
+    const seat = echoingSeat('https://site.example');
+
+    for (const address of [
+      'ftp://other.example/ar-eg/thani',
+      'ws://other.example/ar-eg/thani',
+      'x-https://other.example/ar-eg/thani',
+    ]) {
+      const answered = await seat.request(address);
+
+      expect(answered.resolution.status, address).toBe('malformed');
+      expect(answered.status, address).toBe(400);
+      expect(answered.body, address).toBe('');
+    }
   });
 
   it('hands the handler a path whose query carries an absolute address as that path', async () => {
@@ -97,6 +113,36 @@ describe('the origin an address is asked on', () => {
 
     expect(answered.status).toBe(direct.status);
     expect(answered.body).toBe(await direct.text());
+  });
+
+  it('ends the authority of an absolute address at a question mark or a number sign', async () => {
+    // RFC 3986 section 3.2: the authority ends at the next slash, question mark or number sign.
+    const seat = echoingSeat('https://site.example');
+    const located = async (address: string) =>
+      (await seat.request(address)).headers.get('location');
+
+    expect(await located('https://other.example?x=1')).toBe('/en-us?x=1');
+    expect(await located('https://other.example?next=/en-us/second')).toBe(
+      '/en-us?next=/en-us/second',
+    );
+    expect(await located('https://other.example#top')).toBe('/en-us#top');
+    expect(await located('https://other.example/?x=1')).toBe('/en-us?x=1');
+    // The query is the target's, so the origin is still the one the address names.
+    const answered = await seat.request(
+      'https://other.example/ar-eg/thani?next=/en-us/second',
+    );
+    expect(answered.body).toBe(
+      'https://other.example/ar-eg/thani?next=/en-us/second',
+    );
+  });
+
+  it('leaves a backslash after the host in the target, where the handler refuses it', async () => {
+    const answered = await echoingSeat('https://site.example').request(
+      'https://site.example\\en-us/second',
+    );
+
+    expect(answered.resolution.status).toBe('malformed');
+    expect(answered.status).toBe(400);
   });
 
   it('asks the root where an absolute address stops at its host', async () => {
@@ -143,6 +189,31 @@ describe('the part of a document read as its head', () => {
     expect(head.canonical).toBe('/fragment');
     expect(head.lang).toBeUndefined();
     expect(head.dir).toBeUndefined();
+  });
+});
+
+describe('what is left out of the head before it is read', () => {
+  it('is every comment, script and style, with what they hold', () => {
+    const head = answeredHead(
+      `<head><!-- <link rel="canonical" href="/commented"> -->` +
+        `<script type="application/ld+json">{"a":"<link rel='canonical' href='/scripted'>"}</script>` +
+        `<style>a::after{content:"<meta name='robots' content='styled'>"}</style>` +
+        `<link rel="canonical" href="/kept"></head>`,
+    );
+
+    expect(head.links.map((link) => link.href)).toEqual(['/kept']);
+    expect(head.robots).toBeUndefined();
+  });
+
+  it('is a comment written inside a title or an attribute value as well', () => {
+    // The head is read as text, not parsed, so the three are removed wherever they stand.
+    const head = answeredHead(
+      `<head><title>Name<!-- draft --></title>` +
+        `<meta name="description" content="a<!-- x -->b"></head>`,
+    );
+
+    expect(head.title).toBe('Name');
+    expect(head.description).toBe('ab');
   });
 });
 
@@ -213,6 +284,15 @@ describe('the metadata of an answered document', () => {
     );
 
     expect(head.robots).toBe('noindex, follow');
+  });
+
+  it('reads metadata written with no content as empty', () => {
+    const head = answeredHead(
+      `<head><meta name="robots"><meta property="og:title"></head>`,
+    );
+
+    expect(head.meta).toEqual({ robots: '' });
+    expect(head.properties).toEqual({ 'og:title': '' });
   });
 
   it('answers with no crawler directive where the page wrote none', () => {
@@ -295,5 +375,22 @@ describe('the character references of an answered document', () => {
     );
 
     expect(head.title).toBe('a&#x110000;b&#1114112;c');
+  });
+
+  it('leaves a reference that names no character as written', () => {
+    // Code point zero and the surrogates are not characters a document can hold.
+    const head = answeredHead(
+      `<head><title>a&#0;b&#x0;c&#xD800;d&#57343;e</title></head>`,
+    );
+
+    expect(head.title).toBe('a&#0;b&#x0;c&#xD800;d&#57343;e');
+  });
+
+  it('decodes the code points on either side of the surrogates', () => {
+    const head = answeredHead(
+      `<head><title>&#1;&#xD7FF;&#xE000;</title></head>`,
+    );
+
+    expect(head.title).toBe(String.fromCodePoint(1, 0xd7ff, 0xe000));
   });
 });

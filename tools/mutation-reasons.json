@@ -8838,68 +8838,11 @@
     },
     {
       "file": "packages/runtime/testing/src/server-seat.ts",
-      "mutator": "ConditionalExpression",
-      "original": "observed === undefined",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "The handler the seat builds on line 178 reports through `ɵobserve` before every return it has (packages/runtime/http/src/handler.ts lines 402, 466 and 558 precede the returns on 410, 474, 584 and 586) keyed by the request it was handed, and a handler that throws rejects on line 186, so no request reaches line 188 without an entry."
-    },
-    {
-      "file": "packages/runtime/testing/src/server-seat.ts",
-      "mutator": "MethodExpression",
-      "original": "address.slice(0, authority)",
-      "replacement": "address",
-      "category": "equivalent",
-      "reason": "The origin is only the base of `new URL(target, origin)` in `toWebRequest` (packages/runtime/http/src/node.ts line 76), and the target from line 245 always begins with `/`, which replaces the base's path and query, so the whole address as base builds the same request URL as its origin does."
-    },
-    {
-      "file": "packages/runtime/testing/src/server-seat.ts",
       "mutator": "StringLiteral",
       "original": "''",
       "replacement": "\"Stryker was here!\"",
       "category": "equivalent",
-      "reason": "The fallback is the attribute text of a document with no root element, and only `lang` and `dir` are read from it (lines 302-303); the replacement text parses to attributes named `stryker`, `was` and `here!`, so both fields stay undefined. The name is lower-cased on line 324 and its pattern on line 256 excludes whitespace, so it can never equal a text with capitals and spaces, and the original comparison with the empty string never holds either (the group needs one character); neither version ever skips an attribute. Line 324 lower-cases the name before the comparison, and the replacement text has an upper-case letter, so the comparison is false for every name, as it is against the empty text, which the pattern on line 256 never yields. The fallback is the attribute text of a document with no root element, and only `lang` and `dir` are read from it (lines 302-303); the replacement text parses to attributes named `stryker`, `was` and `here!`, so both fields stay undefined. The name is lower-cased on line 324 and its pattern on line 256 excludes whitespace, so it can never equal a text with capitals and spaces, and the original comparison with the empty string never holds either (the group needs one character); neither version ever skips an attribute. Line 324 lower-cases the name before the comparison, and the replacement text has an upper-case letter, so the comparison is false for every name, as it is against the empty text, which the pattern on line 256 never yields.",
-      "count": 3
-    },
-    {
-      "file": "packages/runtime/testing/src/server-seat.ts",
-      "mutator": "ConditionalExpression",
-      "original": "name === ''",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "The name is the first group of `ATTRIBUTE` on line 256, `([^\\s\"'=<>/]+)`, which is not optional and needs at least one character, so a match never yields an empty name and the `continue` is never taken."
-    },
-    {
-      "file": "packages/runtime/testing/src/server-seat.ts",
-      "mutator": "ConditionalExpression",
-      "original": "Number.isInteger(point) && point >= 0",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "`point` is `parseInt` of the digits `CHARACTER_REFERENCE` captured on line 258, with no sign and at least one digit, so it is a non-negative integer or, for an overlong run, Infinity, and Infinity is still refused by `point <= 0x10_ffff`."
-    },
-    {
-      "file": "packages/runtime/testing/src/server-seat.ts",
-      "mutator": "LogicalOperator",
-      "original": "Number.isInteger(point) && point >= 0",
-      "replacement": "Number.isInteger(point) || point >= 0",
-      "category": "equivalent",
-      "reason": "Both operands hold for every value `parseInt` gives the unsigned digit run captured on line 258, except Infinity, where the disjunction holds and the conjunction does not, and `point <= 0x10_ffff` refuses Infinity in either case."
-    },
-    {
-      "file": "packages/runtime/testing/src/server-seat.ts",
-      "mutator": "ConditionalExpression",
-      "original": "point >= 0",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "The pattern on line 258 captures digits only, with no sign, so `parseInt` never gives a negative number and the lower bound refuses nothing."
-    },
-    {
-      "file": "packages/runtime/testing/src/server-seat.ts",
-      "mutator": "EqualityOperator",
-      "original": "point >= 0",
-      "replacement": "point > 0",
-      "category": "unstated-behavior",
-      "reason": "Only the character reference for code point zero tells the two forms apart, and what the seat reads for it is not stated; a case would fix the present decoding in place."
+      "reason": "The fallback is the attribute text of a document with no root element, and only `lang` and `dir` are read from it; the replacement text parses to attributes named `stryker`, `was` and `here!`, so both fields stay undefined."
     }
   ]
 }

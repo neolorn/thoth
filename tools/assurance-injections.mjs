@@ -2717,6 +2717,24 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/server-seat.test.ts',
   },
   {
+    id: 'seat-answers-another-scheme-on-its-origin',
+    invariant:
+      'The server seat hands an address of a scheme other than http and https to the handler as written, where it is refused.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '  const scheme = /^https?:\\/\\//iu.exec(address);',
+    replace: '  const scheme = /^[a-z][a-z0-9+.-]*:\\/\\//iu.exec(address);',
+    caughtBy: 'packages/runtime/test/server-seat-addresses-and-head.test.ts',
+  },
+  {
+    id: 'seat-reads-a-null-reference-as-a-character',
+    invariant:
+      'The server seat leaves a numeric character reference that names no character as it was written.',
+    source: 'packages/runtime/testing/src/server-seat.ts',
+    find: '        return point > 0 &&',
+    replace: '        return point >= 0 &&',
+    caughtBy: 'packages/runtime/test/server-seat-addresses-and-head.test.ts',
+  },
+  {
     id: 'slot-options-projected-as-text',
     invariant:
       'Nothing a catalog writes on a slot reaches the text projection of the message.',

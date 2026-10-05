@@ -43,7 +43,9 @@ export interface AnsweredLink {
  *
  * Read from the response body rather than from a DOM, so a test needs neither a browser nor a
  * document. Everything inside `<head>` is scanned except script content, style content and
- * comments; a document with no `<head>` is scanned whole, which is what a fragment is.
+ * comments; a document with no `<head>` is scanned whole, which is what a fragment is. The head is
+ * read as text and not parsed, so the three are left out wherever they stand, a comment written
+ * inside a title or an attribute value included.
  */
 export interface AnsweredHead {
   /** What the tab and the search result say, with its surrounding whitespace removed. */
@@ -155,7 +157,6 @@ export interface AnsweredRequestInit {
 }
 
 const DEFAULT_ORIGIN = 'https://localhost';
-const ABSOLUTE = /^[a-z][a-z0-9+.-]*:\/\//iu;
 
 /**
  * Builds a seat over the handler this deployment installs.
@@ -184,10 +185,9 @@ export function createLocalizedServerSeat(
 
   const answer = async (request: Request): Promise<AnsweredAddress> => {
     const response = await handler(request);
-    const observed = answers.get(request);
-    if (observed === undefined) {
-      throw new Error('Equator server seat invariant failed.');
-    }
+    // The handler reports what it decided before every answer it gives, under the request it was
+    // handed, so an answered request always has an entry.
+    const observed = answers.get(request) as ɵAnsweredRequest;
     const body = await response.clone().text();
     return Object.freeze({
       response,
@@ -216,34 +216,14 @@ export function createLocalizedServerSeat(
       for (const [name, value] of new Headers(init.headers)) {
         headers[name] = value;
       }
-      const asked = askedOn(address, origin);
+      // The address is the request target as written. An absolute `http:` or `https:` one names
+      // its own origin, which the handler's resolver splits from the target where RFC 3986 section
+      // 3.2 ends an authority, and anything else that is not a path the handler refuses.
       return answer(
-        toWebRequest(
-          { method: init.method, url: asked.target, headers },
-          asked.origin,
-        ),
+        toWebRequest({ method: init.method, url: address, headers }, origin),
       );
     },
   });
-}
-
-/**
- * Splits an asked address into the origin it is asked on and the target as written.
- *
- * Split by hand rather than through `URL`, because parsing is the step that repairs a target and
- * the target is the thing under test.
- */
-function askedOn(
-  address: string,
-  origin: string,
-): { readonly origin: string; readonly target: string } {
-  if (!ABSOLUTE.test(address)) return { origin, target: address };
-  const authority = address.indexOf('/', address.indexOf('://') + 3);
-  if (authority === -1) return { origin: address, target: '/' };
-  return {
-    origin: address.slice(0, authority),
-    target: address.slice(authority),
-  };
 }
 
 const ROOT_ELEMENT = /<html\b([^>]*)>/iu;
@@ -282,8 +262,9 @@ export function answeredHead(document: string): AnsweredHead {
   const properties: Record<string, string> = {};
   const links: AnsweredLink[] = [];
   for (const element of scanned.matchAll(METADATA_ELEMENT)) {
-    const attributes = attributesOf(element[2] ?? '');
-    if ((element[1] ?? '').toLowerCase() === 'meta') {
+    // Both groups of the pattern take part in every match, the second as the empty text.
+    const attributes = attributesOf(element[2] as string);
+    if ((element[1] as string).toLowerCase() === 'meta') {
       const content = attributes['content'] ?? '';
       const name = attributes['name'];
       const property = attributes['property'];
@@ -321,8 +302,8 @@ export function answeredHead(document: string): AnsweredHead {
 function attributesOf(source: string): Record<string, string> {
   const found: Record<string, string> = {};
   for (const attribute of source.matchAll(ATTRIBUTE)) {
-    const name = (attribute[1] ?? '').toLowerCase();
-    if (name === '') continue;
+    // The pattern's first group is the name and takes at least one character.
+    const name = (attribute[1] as string).toLowerCase();
     found[name] = decode(attribute[2] ?? attribute[3] ?? attribute[4] ?? '');
   }
   return found;
@@ -333,6 +314,9 @@ function attributesOf(source: string): Record<string, string> {
  *
  * A title set to `Ali & Co` reaches the response as `Ali &amp; Co`, and an assertion written
  * against the string the application passed would fail on the escaping rather than on the title.
+ * A numeric reference that names no character, which is code point zero, a surrogate, or anything
+ * past the last code point, is left as written: no serializer writes one, and reading it as some
+ * character would be a guess.
  */
 function decode(text: string): string {
   return text.replace(
@@ -350,11 +334,14 @@ function decode(text: string): string {
             ? Number.parseInt(decimal, 10)
             : undefined;
       if (point !== undefined) {
-        return Number.isInteger(point) && point >= 0 && point <= 0x10_ffff
+        return point > 0 &&
+          point <= 0x10_ffff &&
+          (point < 0xd800 || point > 0xdfff)
           ? String.fromCodePoint(point)
           : reference;
       }
-      return NAMED_CHARACTERS[(name ?? '').toLowerCase()] ?? reference;
+      // A reference that is not numeric matched the pattern by its name.
+      return NAMED_CHARACTERS[(name as string).toLowerCase()] ?? reference;
     },
   );
 }
