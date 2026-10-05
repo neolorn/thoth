@@ -1381,7 +1381,10 @@ export interface LocalizationParticipantOptions {
 export interface LocaleChangeOptions {
   /** Whether to hold the old page until everything is ready. Defaults to holding it. */
   readonly mode?: LocaleChangeMode;
-  /** Scopes that must be loaded before the change commits, beyond the ones already required. */
+  /**
+   * The scopes the view requires, loaded before the change commits. Left out or empty, the ones
+   * already required stand.
+   */
   readonly requiredScopes?: readonly LocalizationScope[];
   /**
    * Scopes to load alongside a `progressive` change rather than ahead of it.
