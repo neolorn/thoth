@@ -251,7 +251,11 @@ export const injections = Object.freeze([
     // recovery surface that came up with nothing to read, which is what the invariant's name says
     // happens, rather than a surface that is missing altogether.
     find: `        this.recoveryValue.set(
-          this.recoveryText(this.options.recoveryMessageIdentity, locale),
+          this.recoveryOrNothing(
+            this.options.recoveryMessageIdentity,
+            locale,
+            transitionId,
+          ),
         );`,
     replace: `        this.recoveryValue.set(undefined);`,
   },
@@ -930,9 +934,9 @@ export const injections = Object.freeze([
     invariant:
       'The locale initialization resolves is not written to the persistence stores; only a deliberate change is.',
     source: 'packages/runtime/src/localization.ts',
-    find: "        const snapshot = this.commit(prepared);\n        this.lifecycleValue.set('ready');\n        this.targetLocaleValue.set(undefined);\n        this.startIndependentParticipants(\n          progressiveParticipants,",
+    find: "        if (!this.gone()) {\n          this.lifecycleValue.set('ready');\n          this.targetLocaleValue.set(undefined);\n          this.startIndependentParticipants(\n            progressiveParticipants,",
     replace:
-      "        const snapshot = this.commit(prepared);\n        this.localeResolution.persistLocale(snapshot, undefined);\n        this.lifecycleValue.set('ready');\n        this.targetLocaleValue.set(undefined);\n        this.startIndependentParticipants(\n          progressiveParticipants,",
+      "        this.localeResolution.persistLocale(snapshot, undefined);\n        if (!this.gone()) {\n          this.lifecycleValue.set('ready');\n          this.targetLocaleValue.set(undefined);\n          this.startIndependentParticipants(\n            progressiveParticipants,",
   },
   {
     id: 'unremembered-change-still-recorded',

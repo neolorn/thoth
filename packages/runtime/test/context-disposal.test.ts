@@ -11,7 +11,12 @@ import { describe, expect, it } from 'vitest';
 
 import type { LocalizationCommitHook } from '../src/localization.js';
 
-import { PROVIDER, catalogKey, rejectionOf } from './catalog-store-harness.js';
+import {
+  PROVIDER,
+  catalogKey,
+  rejectionOf,
+  scope,
+} from './catalog-store-harness.js';
 import {
   observed,
   participant,
@@ -238,6 +243,59 @@ describe('disposing a context', () => {
     await expect(initialization).resolves.toMatchObject({ code: 'disposed' });
     expect(localization.targetLocale()).toBeUndefined();
     expect(localization.lifecycle()).toBe('failed');
+  });
+});
+
+describe('a context disposed by the hook that is told of its first snapshot', () => {
+  /** A context whose initialization commits and is disposed in the same step. */
+  const leavingAtOnce = (fixture: Parameters<typeof runtime>[0] = {}) => {
+    const made = runtime({
+      ...fixture,
+      options: {
+        ...fixture.options,
+        commitHooks: [
+          {
+            apply: () => undefined,
+            committed: () => made.localization.dispose(),
+          } satisfies LocalizationCommitHook,
+        ],
+      },
+    });
+    return made;
+  };
+
+  it('answers the initialization with the snapshot it committed, and is not ready', async () => {
+    const { localization } = leavingAtOnce();
+
+    await expect(localization.initialize()).resolves.toMatchObject({
+      primaryLocale: 'en-US',
+    });
+
+    expect(localization.snapshot()).toBeUndefined();
+    expect(localization.lifecycle()).toBe('failed');
+    expect(localization.ready()).toBe(false);
+  });
+
+  it('refuses as disposed a scope request that was waiting for the initialization', async () => {
+    const { localization, loads } = leavingAtOnce();
+
+    await expect(
+      rejectionOf(() => localization.ensureScope(scope('lazy'))),
+    ).resolves.toMatchObject({ code: 'disposed' });
+    expect(loads[catalogKey('lazy', 'en-US')]).toBeUndefined();
+  });
+
+  it('refuses as disposed a participant retry that was waiting for the initialization', async () => {
+    const region = participant('region');
+    const { localization } = leavingAtOnce();
+    const registration = localization.registerParticipant(region.value, {
+      coordination: 'progressive',
+    });
+
+    await expect(
+      rejectionOf(() => registration.retry()),
+    ).resolves.toMatchObject({ code: 'disposed' });
+    expect(region.calls).toStrictEqual([]);
   });
 });
 

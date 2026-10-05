@@ -1414,6 +1414,27 @@ class LocalizationInternal {
     }
   }
 
+  /**
+   * The snapshot in force, for work that has just waited for one to be committed.
+   *
+   * Initialization can resolve and the context be disposed before the caller that waited for it
+   * runs again, and a disposed context has no snapshot.
+   */
+  private committed(): ActiveSnapshot {
+    this.assertActive();
+    return this.active as ActiveSnapshot;
+  }
+
+  /**
+   * Whether the context is disposed, read afresh.
+   *
+   * A hook or a participant that was just called may have disposed it, which a test of the field
+   * made before the call says nothing about.
+   */
+  private gone(): boolean {
+    return this.disposed;
+  }
+
   private normalizeScopes(
     values: readonly LocalizationScope[],
     label: string,
@@ -1958,6 +1979,33 @@ class LocalizationInternal {
   }
 
   /**
+   * A recovery message for a failed initialization, or nothing when it cannot be evaluated.
+   *
+   * The payload is handed over by the application, so a body in it can be one the evaluator
+   * refuses. That refusal is about the message and is reported as such: the failure the
+   * initialization ends with stays the reason no snapshot could be built.
+   */
+  private recoveryOrNothing(
+    identity: string | undefined,
+    targetLocale: string,
+    transitionId: number,
+  ): LocalizedText | undefined {
+    try {
+      return this.recoveryText(identity, targetLocale);
+    } catch (error: unknown) {
+      this.observability?.emit({
+        code: RUNTIME_EVENT_CODES.initialization,
+        phase: 'initialization',
+        status: 'unavailable',
+        reason: asDiagnostic(error).code,
+        targetLocale,
+        transitionId,
+      });
+      return undefined;
+    }
+  }
+
+  /**
    * Bringing the runtime from configured to ready, once.
    *
    * Two callers arriving together share one attempt: the in-flight promise is handed back rather
@@ -2018,14 +2066,18 @@ class LocalizationInternal {
           );
         }
         const snapshot = this.commit(prepared);
-        this.lifecycleValue.set('ready');
-        this.targetLocaleValue.set(undefined);
-        this.startIndependentParticipants(
-          progressiveParticipants,
-          locale,
-          snapshot.formatting,
-          transitionId,
-        );
+        // A hook that is told of the commit may dispose the context. The commit stands, and a
+        // disposed context is neither ready nor starts anything.
+        if (!this.gone()) {
+          this.lifecycleValue.set('ready');
+          this.targetLocaleValue.set(undefined);
+          this.startIndependentParticipants(
+            progressiveParticipants,
+            locale,
+            snapshot.formatting,
+            transitionId,
+          );
+        }
         this.observability?.emit({
           code: RUNTIME_EVENT_CODES.initialization,
           phase: 'initialization',
@@ -2048,13 +2100,21 @@ class LocalizationInternal {
         if (this.disposed) throw error;
         const locale = this.targetLocaleValue() ?? this.defaultLocale;
         this.lifecycleValue.set('failed');
+        this.targetLocaleValue.set(undefined);
         this.recoveryValue.set(
-          this.recoveryText(this.options.recoveryMessageIdentity, locale),
+          this.recoveryOrNothing(
+            this.options.recoveryMessageIdentity,
+            locale,
+            transitionId,
+          ),
         );
         this.recoveryRetryLabelValue.set(
-          this.recoveryText(this.options.recoveryRetryLabelIdentity, locale),
+          this.recoveryOrNothing(
+            this.options.recoveryRetryLabelIdentity,
+            locale,
+            transitionId,
+          ),
         );
-        this.targetLocaleValue.set(undefined);
         throw error;
       })
       .finally(() => {
@@ -2127,7 +2187,7 @@ class LocalizationInternal {
     this.assertActive();
     if (this.pending !== undefined) await this.pending.promise;
     if (this.active === undefined) await this.initialize();
-    const active = this.active as ActiveSnapshot;
+    const active = this.committed();
     const registration = this.participantCoordinator
       .registrations()
       .find(({ id }) => id === participantId);
@@ -2303,18 +2363,25 @@ class LocalizationInternal {
     );
     if (this.pending?.key === key) return this.pending.promise;
     const id = (this.nextTransitionId += 1);
-    this.participantCoordinator.supersedeAll();
-    for (const background of this.progressiveControllers) {
-      background.abort(
-        new LocalizationError(
-          operationalDiagnostic(
-            'superseded',
-            'A newer locale intent superseded progressive scope loading.',
+    const overtake = (): void => {
+      this.participantCoordinator.supersedeAll();
+      for (const background of this.progressiveControllers) {
+        background.abort(
+          new LocalizationError(
+            operationalDiagnostic(
+              'superseded',
+              'A newer locale intent superseded progressive scope loading.',
+            ),
           ),
-        ),
-      );
-    }
-    this.progressiveControllers.clear();
+        );
+      }
+      this.progressiveControllers.clear();
+    };
+    // An initialization in flight is not work an earlier intent started, so the change waits for
+    // it and overtakes nothing until it has settled: section 7 of
+    // `specs/06-runtime-and-angular.spec.md`.
+    const initializing = this.initialization !== undefined;
+    if (!initializing) overtake();
     if (this.pending !== undefined) {
       this.pending.cancellation = 'superseded';
       this.pending.controller.abort(
@@ -2327,10 +2394,15 @@ class LocalizationInternal {
       );
     }
     const controller = new AbortController();
+    // Read afresh at each step: the change is aborted from outside while it waits.
+    const interrupted = (): boolean => controller.signal.aborted;
     const pending = {} as PendingTransition;
     const promise = Promise.resolve()
       .then(async () => {
         if (this.active === undefined) await this.initialize();
+        // Cancelled, overtaken or left without a context while it waited, the change starts nothing.
+        if (interrupted()) throw controller.signal.reason;
+        if (initializing) overtake();
         const activeRoute = this.active?.publicSnapshot.route;
         const requestedRoute =
           options.route === undefined
@@ -2366,11 +2438,23 @@ class LocalizationInternal {
                 id,
                 controller.signal,
               );
-            if (this.pending !== pending || controller.signal.aborted) {
+            if (interrupted()) {
               this.participantCoordinator.discardPrepared(preparedParticipants);
               throw controller.signal.reason;
             }
+            const held = this.active.publicSnapshot;
             this.participantCoordinator.commitPrepared(preparedParticipants);
+            // A participant may dispose the context from its commit. The participants did
+            // commit, under the snapshot that was in force when they were told.
+            if (this.gone()) {
+              return Object.freeze({
+                status: 'committed',
+                transitionId: id,
+                mode,
+                targetLocale: locale,
+                snapshot: held,
+              }) satisfies LocaleChangeResult;
+            }
           }
           this.lifecycleValue.set('ready');
           this.targetLocaleValue.set(undefined);
@@ -2414,14 +2498,27 @@ class LocalizationInternal {
           requestedRoute,
           participantsToPrepare,
         );
-        if (this.pending !== pending || controller.signal.aborted) {
+        if (interrupted()) {
           prepared.release();
           throw controller.signal.reason;
         }
         const previousLocale = this.active?.publicSnapshot.primaryLocale;
         const snapshot = this.commit(prepared);
-        this.lifecycleValue.set('ready');
-        this.targetLocaleValue.set(undefined);
+        const committed = Object.freeze({
+          status: 'committed',
+          transitionId: id,
+          mode,
+          targetLocale: locale,
+          snapshot,
+        }) satisfies LocaleChangeResult;
+        // A hook that is told of the commit may dispose the context. The change did commit, so the
+        // choice is remembered below as for any other, and a disposed context is neither ready nor
+        // starts anything further.
+        const left = this.gone();
+        if (!left) {
+          this.lifecycleValue.set('ready');
+          this.targetLocaleValue.set(undefined);
+        }
         // Only a deliberate change is remembered. Persisting the locale that initialization
         // negotiated would freeze an accidental answer: a visitor who never chose anything would
         // carry the first guess forever, and changing their browser's language afterwards would
@@ -2433,6 +2530,7 @@ class LocalizationInternal {
         if (options.remember !== false) {
           this.localeResolution.persistLocale(snapshot, previousLocale);
         }
+        if (left) return committed;
         const unloadedProgressive = progressive.filter(
           (scope) => !this.active?.scopes.has(scopeIdentity(scope)),
         );
@@ -2448,13 +2546,7 @@ class LocalizationInternal {
           snapshot.formatting,
           id,
         );
-        return Object.freeze({
-          status: 'committed',
-          transitionId: id,
-          mode,
-          targetLocale: locale,
-          snapshot,
-        }) satisfies LocaleChangeResult;
+        return committed;
       })
       .catch((error: unknown) => {
         const cancellation = pending.cancellation;
@@ -2799,7 +2891,7 @@ class LocalizationInternal {
   async ensureScope(scopeValue: LocalizationScope): Promise<void> {
     this.assertActive();
     if (this.active === undefined) await this.initialize();
-    const active = this.active as ActiveSnapshot;
+    const active = this.committed();
     const scope = this.assertScope(scopeValue);
     const key = scopeIdentity(scope);
     if (active.scopes.has(key)) return;
@@ -2832,6 +2924,8 @@ class LocalizationInternal {
         // scope ready, and it is ready in the locale the visitor is actually in.
         releaseActivations([activation]);
         await (this.pending?.promise ?? this.initialization);
+        // Nothing superseded a request whose context was disposed while it waited.
+        this.assertActive();
         if (this.active?.scopes.has(key) === true) return;
         throw new LocalizationError(
           operationalDiagnostic(

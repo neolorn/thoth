@@ -114,7 +114,9 @@ initialization, and MUST NOT publish a partial runtime.
 
 When no initial snapshot can be built, a release MUST expose a typed failure and the
 generated recovery payload. Section 11 of `03-locale-identity-and-resolution.spec.md` owns the
-renderer for that payload. An explicit retry starts a new attempt.
+renderer for that payload. An explicit retry starts a new attempt. A recovery message that cannot be
+evaluated MUST NOT replace that failure: the initialization still ends with the reason no snapshot
+could be built, the message is left out, and its own failure is reported to the observability sink.
 
 A failed initialization MUST NOT move the address the reader asked for. In a browser a release
 MUST hold the navigation to that address until a retry succeeds and then complete it, so a retry
@@ -164,6 +166,12 @@ A release MUST coalesce equivalent in-flight requests, MUST let the latest disti
 win, and MUST NOT let a superseded transition commit, persist, or overwrite the diagnostics of the
 current one. Superseded work is cancelled where cancellation is possible and invalidated by
 transition identity in every case.
+
+A release MUST NOT let a locale change requested while the context is initializing end that
+initialization, or be ended by it: the change waits for the initialization to settle, the
+initialization commits what it was preparing, and the change then runs from that snapshot. A change
+that waited for an initialization that failed ends as failed with that failure. A change that is
+cancelled, overtaken, or left without a context while it waits starts nothing.
 
 In coordinated mode a release MUST leave the prior address, view, snapshot, document state,
 focus, and persistence unchanged when a transition is cancelled, a guard rejects it, or its
@@ -279,6 +287,16 @@ document state behind either.
 Destroying a context cancels its pending work and releases its effects, listeners, subscriptions,
 loader references, pinned cache entries, and participant registrations. A release MUST NOT
 let that disposal reach another context or a consumer application's own store.
+
+Work that is waiting when its context is destroyed ends with the typed disposed failure: an
+initialization, a scope request, including one waiting for a change that overtook it, and a
+participant retry. A locale change in flight ends as cancelled.
+
+A context may be destroyed from a hook or a participant that is being told of a commit. That commit
+stands: the change it belongs to ends as committed with the snapshot the hooks were told of, and its
+choice is remembered as for any committed change. A release MUST NOT start further work in a context
+that was destroyed by a hook or a participant it told of a commit: no progressive scope load, no
+participant preparation, and no return to the ready state.
 
 ## 12. The testing surface
 

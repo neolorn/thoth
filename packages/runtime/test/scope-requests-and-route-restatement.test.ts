@@ -425,7 +425,7 @@ describe('a scope request that a locale change overtakes', () => {
     localization.dispose();
   });
 
-  it('is answered with a diagnostic when the context is disposed while it waits', async () => {
+  it('is answered as disposed, not as superseded, when the context is disposed while it waits', async () => {
     const { localization, release } = await ready({
       hold: [catalogKey('lazy', 'ar-EG')],
     });
@@ -443,7 +443,7 @@ describe('a scope request that a locale change overtakes', () => {
     localization.dispose();
 
     await expect(back).resolves.toMatchObject({ status: 'cancelled' });
-    await expect(ensured).resolves.toMatchObject({ code: 'superseded' });
+    await expect(ensured).resolves.toMatchObject({ code: 'disposed' });
   });
 });
 

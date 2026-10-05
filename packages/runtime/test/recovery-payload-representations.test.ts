@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 
 import { PROVIDER, catalogKey, rejectionOf } from './catalog-store-harness.js';
 import { expression, literal, local } from './compiled-artifact-harness.js';
-import { TITLE, runtime } from './transaction-runtime-harness.js';
+import { TITLE, observed, runtime } from './transaction-runtime-harness.js';
 
 const pattern = (parts: readonly unknown[]): unknown => ({
   kind: 'pattern',
@@ -38,13 +38,23 @@ async function failed(
   identity: string = TITLE.identity,
   initialLocale = 'en-US',
 ) {
+  const watched = observed();
   const { localization } = runtime({
     fail: { [catalogKey('shell', initialLocale)]: 1 },
     setup: { recoveryPayload: payload },
-    options: { initialLocale, recoveryMessageIdentity: identity },
+    options: {
+      initialLocale,
+      recoveryMessageIdentity: identity,
+      observability: watched.emitter,
+    },
   });
   const diagnostic = await rejectionOf(() => localization.initialize());
-  return { localization, diagnostic };
+  return {
+    localization,
+    diagnostic,
+    /** What the emitter was told of the initialization, in order. */
+    told: () => watched.phase('initialization'),
+  };
 }
 
 describe('the identity a recovery message is addressed by', () => {
@@ -182,13 +192,33 @@ describe('the body of a recovery message', () => {
     ],
     ['selects a variant without its parts', selecting([otherwise(undefined)])],
   ])(
-    'ends in a typed failure and shows nothing when it %s',
+    'leaves the load failure as the failure, and shows nothing, when it %s',
     async (_label, body) => {
-      const { localization, diagnostic } = await failed([representation(body)]);
+      const { localization, diagnostic, told } = await failed([
+        representation(body),
+      ]);
 
-      expect(diagnostic).toMatchObject({ outcome: 'operational-failure' });
+      expect(diagnostic).toMatchObject({ code: 'catalog-load-failed' });
       expect(localization.recovery()).toBeUndefined();
       expect(localization.lifecycle()).toBe('failed');
+      expect(localization.targetLocale()).toBeUndefined();
+      // The message that could not be evaluated is reported on its own, after the failure it
+      // was meant to explain.
+      expect(told()).toStrictEqual([
+        { status: 'started', transitionId: 0 },
+        {
+          status: 'failed',
+          reason: 'catalog-load-failed',
+          targetLocale: 'en-US',
+          transitionId: 0,
+        },
+        {
+          status: 'unavailable',
+          reason: 'invalid-rich-message',
+          targetLocale: 'en-US',
+          transitionId: 0,
+        },
+      ]);
       localization.dispose();
     },
   );

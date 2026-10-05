@@ -22,11 +22,18 @@ import type {
 import {
   LAZY,
   SHELL,
+  observed,
   participant,
   runtime,
   until,
   type Runtime,
 } from './transaction-runtime-harness.js';
+
+/** Every microtask and timer already due, for a case that states what did not happen. */
+const settled = (): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
 
 const FAILED: LocalizationParticipantReport = Object.freeze({
   status: 'failed',
@@ -138,13 +145,28 @@ describe('a change whose commit hook destroys the context', () => {
           if (snapshot.primaryLocale === 'ar-EG') localization.dispose();
         },
       };
-      ({ localization } = runtime({ options: { commitHooks: [hook] } }));
+      const watched = observed();
+      const stored: string[] = [];
+      ({ localization } = runtime({
+        options: {
+          commitHooks: [hook],
+          observability: watched.emitter,
+          persistence: [
+            {
+              id: 'memory',
+              read: () => undefined,
+              write: (locale) => void stored.push(locale),
+            },
+          ],
+        },
+      }));
       await localization.initialize();
 
       const result = await localization.changeLocale('ar-EG', {
         mode,
         progressiveScopes: [LAZY],
       });
+      await settled();
 
       expect(result).toMatchObject({
         status: 'committed',
@@ -153,6 +175,37 @@ describe('a change whose commit hook destroys the context', () => {
       });
       expect(told).toStrictEqual(['en-US', 'ar-EG']);
       expect(localization.snapshot()).toBeUndefined();
+      // The change committed, so the choice is remembered. The context it left behind is not
+      // ready, and nothing is loaded into it afterwards.
+      expect(stored).toStrictEqual(['ar-EG']);
+      expect(localization.lifecycle()).toBe('failed');
+      expect(
+        watched
+          .phase('catalog')
+          .filter(
+            ({ scopeId, targetLocale, status }) =>
+              scopeId === 'lazy' &&
+              targetLocale === 'ar-EG' &&
+              status === 'started',
+          ),
+      ).toHaveLength(mode === 'coordinated' ? 1 : 0);
     },
   );
+
+  it('reports a change committed by a participant that then destroys the context', async () => {
+    const { localization, region } = await behind();
+    const leaving: LocalizationParticipant = {
+      ...region.value,
+      id: 'leaving',
+      commit: () => localization.dispose(),
+    };
+    const snapshot = localization.snapshot();
+    localization.registerParticipant(leaving);
+
+    const result = await localization.changeLocale('en-US');
+
+    expect(result).toMatchObject({ status: 'committed', snapshot });
+    expect(localization.snapshot()).toBeUndefined();
+    expect(localization.lifecycle()).toBe('failed');
+  });
 });

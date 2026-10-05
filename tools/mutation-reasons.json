@@ -4711,22 +4711,6 @@
     },
     {
       "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "this.pending !== pending || controller.signal.aborted",
-      "replacement": "false",
-      "category": "unstated-behavior",
-      "reason": "The two forms differ only in whether the attempt of a change cancelled at this point is left prepared or cancelled, and the specification states neither; a case for it would fix one of them in place."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "LogicalOperator",
-      "original": "this.pending !== pending || controller.signal.aborted",
-      "replacement": "this.pending !== pending && controller.signal.aborted",
-      "category": "unstated-behavior",
-      "reason": "The two forms differ only in whether the attempt of a change cancelled at this point is left prepared or cancelled, and the specification states neither; a case for it would fix one of them in place."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
       "mutator": "OptionalChaining",
       "original": "this.active?.scopes",
       "replacement": "this.active.scopes",
@@ -4777,15 +4761,6 @@
       "replacement": "true",
       "category": "equivalent",
       "reason": "A coordinated change makes its progressive scopes required (2233-2241) and they are loaded once it is committed, so only a progressive change can reach this with a scope left to load, and loadProgressive over an empty list acquires and publishes nothing (2489-2516).",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "this.pending !== pending",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "A transition stops being the pending one only when a later change replaces it (2465), which aborted its controller first (2272-2281), or when it has itself settled (2440-2441), which is after this line, so the test of the signal beside it decides alone. A transition stops being the pending one only when a later change replaces it (line 2465), which aborted its controller first (lines 2272 to 2281), or when it has itself settled (lines 2440 and 2441), which is after this line, so the test of the signal beside it decides alone.",
       "count": 2
     },
     {

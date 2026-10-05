@@ -2894,6 +2894,35 @@ export const injections = Object.freeze([
       'packages/runtime/test/participant-registration-admission.test.ts',
   },
   {
+    id: 'change-ends-the-initialization-it-met',
+    invariant:
+      'A locale change requested while the context is initializing leaves the initialization and its participants alone until it has settled.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '    if (!initializing) overtake();',
+    replace: '    overtake();',
+    caughtBy:
+      'packages/runtime/test/locale-change-during-initialization.test.ts',
+  },
+  {
+    id: 'destroyed-context-keeps-working-after-its-commit',
+    invariant:
+      'A change whose commit destroyed the context loads no progressive scope into it afterwards.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '        if (left) return committed;',
+    replace: '        void left;',
+    caughtBy: 'packages/runtime/test/locale-change-interruptions.test.ts',
+  },
+  {
+    id: 'unreadable-recovery-message-replaces-the-failure',
+    invariant:
+      'A recovery message that cannot be evaluated is left out, and the initialization still ends with the failure that stopped it.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '      return this.recoveryText(identity, targetLocale);\n    } catch (error: unknown) {',
+    replace:
+      '      return this.recoveryText(identity, targetLocale);\n    } catch (error: unknown) {\n      if (error !== undefined) throw error;',
+    caughtBy: 'packages/runtime/test/recovery-payload-representations.test.ts',
+  },
+  {
     id: 'participant-cancellation-stops-at-preparation',
     invariant:
       "A change that is abandoned after its required participants prepared still reaches each one's signal, and none of them is then asked to commit.",
