@@ -5,6 +5,10 @@
  * no credentials, path, query or fragment, and the address is HTTPS at one of them. One entry that
  * is not such an origin refuses the call, even where another entry would have admitted the
  * address, because a list with one wrong entry is a list nobody has read.
+ *
+ * `specs/09-safe-content-and-ux.spec.md` section 3 tells the two refusals apart: a refused entry
+ * carries the reason `malformed-input`, because the list was written wrongly, and an address the
+ * list does not hold carries no reason.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -35,11 +39,18 @@ const against = (...entries: readonly unknown[]) =>
 const addressed = (href: string) =>
   refusalOf(() => externalDestination(href, ['https://example.com']));
 
+/** The refusal of an address the allowlist does not hold: the list was read and said no. */
 function expectPolicyRefusal(refusal: LocalizationError | undefined): void {
   expect(refusal?.diagnostic.code).toBe('invalid-rich-message');
   expect(refusal?.diagnostic.outcome).toBe('operational-failure');
-  // A refusal by policy carries no reason; the parser's refusals are the ones that do.
   expect(refusal?.diagnostic.reason).toBeUndefined();
+}
+
+/** The refusal of the list itself, for an entry that is not what an entry may be. */
+function expectEntryRefusal(refusal: LocalizationError | undefined): void {
+  expect(refusal?.diagnostic.code).toBe('invalid-rich-message');
+  expect(refusal?.diagnostic.outcome).toBe('operational-failure');
+  expect(refusal?.diagnostic.reason).toBe('malformed-input');
 }
 
 describe('an allowlist entry', () => {
@@ -49,39 +60,40 @@ describe('an allowlist entry', () => {
   });
 
   it('refuses the call when it is not HTTPS, whatever the other entries allow', () => {
-    expectPolicyRefusal(against('https://example.com', 'http://other.example'));
-    expectPolicyRefusal(against('http://other.example', 'https://example.com'));
+    expectEntryRefusal(against('https://example.com', 'http://other.example'));
+    expectEntryRefusal(against('http://other.example', 'https://example.com'));
   });
 
   it('refuses the call when it carries a user name', () => {
-    expectPolicyRefusal(against('https://user@example.com'));
+    expectEntryRefusal(against('https://user@example.com'));
   });
 
   it('refuses the call when it carries a password', () => {
-    expectPolicyRefusal(against('https://:secret@example.com'));
+    expectEntryRefusal(against('https://:secret@example.com'));
   });
 
   it('refuses the call when it carries a path', () => {
-    expectPolicyRefusal(against('https://example.com/second'));
+    expectEntryRefusal(against('https://example.com/second'));
   });
 
   it('refuses the call when it carries a query', () => {
-    expectPolicyRefusal(against('https://example.com?page=1'));
+    expectEntryRefusal(against('https://example.com?page=1'));
   });
 
   it('refuses the call when it carries a fragment', () => {
-    expectPolicyRefusal(against('https://example.com#top'));
+    expectEntryRefusal(against('https://example.com#top'));
   });
 
   it('refuses the call when it is not a string', () => {
-    expectPolicyRefusal(against(42));
-    expectPolicyRefusal(against('https://example.com', undefined));
+    expectEntryRefusal(against(42));
+    expectEntryRefusal(against('https://example.com', undefined));
+    expectEntryRefusal(against(''));
   });
 
   it('refuses the call when it carries an invisible character', () => {
     // A URL parser drops a zero-width space from a host, so the entry would otherwise be read as
     // the origin it only resembles. Built from its code point so that none sits in this file.
-    expectPolicyRefusal(
+    expectEntryRefusal(
       against(`https://exam${String.fromCodePoint(0x200b)}ple.com`),
     );
   });
@@ -102,7 +114,7 @@ describe('an allowlist entry', () => {
     expect(externalDestination(`${atBound}/second`, [atBound]).href).toBe(
       `${atBound}/second`,
     );
-    expectPolicyRefusal(
+    expectEntryRefusal(
       refusalOf(() => externalDestination(`${pastBound}/second`, [pastBound])),
     );
   });
@@ -118,7 +130,8 @@ describe('an address against its allowlist', () => {
   });
 
   it('is refused under another scheme whose origin is an allowed one', () => {
-    // A `blob:` address reports the origin of the address inside it.
+    // A `blob:` address reports the origin of the address inside it, and the allowlist admits an
+    // address only over HTTPS.
     expect(new URL('blob:https://example.com/second').origin).toBe(
       'https://example.com',
     );

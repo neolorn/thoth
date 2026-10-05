@@ -1835,14 +1835,6 @@
     },
     {
       "file": "packages/runtime/src/destinations.ts",
-      "mutator": "ConditionalExpression",
-      "original": "parsed.origin !== 'https://site.invalid'",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "An address reaching destinations.ts 72 starts with one slash, not two, holds no backslash (53-56) and no control character (runtime-safety.ts 425-429, which covers the tab and line breaks a URL parser strips). Resolved against the base it stays a path on that base, so the origin cannot differ."
-    },
-    {
-      "file": "packages/runtime/src/destinations.ts",
       "mutator": "StringLiteral",
       "original": "'The external rich-message destination exceeds a fixed safety policy.'",
       "replacement": "\"\"",

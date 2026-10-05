@@ -3259,6 +3259,18 @@
     {
       "spec": "09-safe-content-and-ux.spec.md",
       "section": "3. Rendering a rich message",
+      "statement": "A release MUST refuse the call for an entry that is anything else, whatever the other entries allow, and that refusal carries the reason `malformed-input`, so a caller can tell a list that was written wrongly from an address the list does not hold.",
+      "checks": ["assurance:allowlist-entry-refused-without-its-reason"]
+    },
+    {
+      "spec": "09-safe-content-and-ux.spec.md",
+      "section": "3. Rendering a rich message",
+      "statement": "A release MUST admit an address only when it is HTTPS at one of those origins and carries no credentials.",
+      "checks": ["assurance:address-under-another-scheme-admitted"]
+    },
+    {
+      "spec": "09-safe-content-and-ux.spec.md",
+      "section": "3. Rendering a rich message",
       "statement": "A release MUST preserve localized text, formatted values, and the children of a container slot in that projection, and MUST NOT let a destination, a handler, or protected binding data appear in it.",
       "checks": [
         "assurance:container-slot-children-dropped-from-projection",

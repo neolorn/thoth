@@ -4741,6 +4741,27 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/asset-declaration-and-selection.test.ts',
   },
   {
+    id: 'allowlist-entry-refused-without-its-reason',
+    invariant:
+      'An allowlist entry that is not a credential-free HTTPS origin refuses the call with the reason malformed-input.',
+    source: 'packages/runtime/src/destinations.ts',
+    find: "          'An external destination allowlist entry must be a credential-free HTTPS origin.',\n          'malformed-input',",
+    replace:
+      "          'An external destination allowlist entry must be a credential-free HTTPS origin.',",
+    caughtBy:
+      'packages/runtime/test/external-destination-allowlist-entries.test.ts',
+  },
+  {
+    id: 'address-under-another-scheme-admitted',
+    invariant:
+      'An external destination is admitted only over HTTPS, so an address under another scheme whose origin reads as an allowed one is refused.',
+    source: 'packages/runtime/src/destinations.ts',
+    find: "    parsed.protocol !== 'https:' ||\n    !origins.has(parsed.origin) ||",
+    replace: '    !origins.has(parsed.origin) ||',
+    caughtBy:
+      'packages/runtime/test/external-destination-allowlist-entries.test.ts',
+  },
+  {
     id: 'territory-split-takes-the-first-region',
     invariant:
       'A region CLDR split into several becomes the one likely subtags give the language, not the first of the list.',

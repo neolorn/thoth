@@ -58,6 +58,15 @@ A `link` binding carries an application-owned typed destination and renders anch
 button type. A release MUST NOT let a catalog choose a URL, an origin, a scheme, a target, a
 link relationship, a callback, a command, or an event.
 
+A destination on another site is built against an allowlist the application supplies. Each entry
+is an HTTPS origin with no credentials, path, query, or fragment. A release MUST refuse the call
+for an entry that is anything else, whatever the other entries allow, and that refusal carries the
+reason `malformed-input`, so a caller can tell a list that was written wrongly from an address the
+list does not hold. A release MUST admit an address only when it is HTTPS at one of those origins
+and carries no credentials. An address under another scheme whose origin reads as an allowed one,
+such as a `blob:` address, is refused like any other address the list does not hold, with no
+reason.
+
 Every rich contract projects to plain text. A release MUST preserve localized text, formatted
 values, and the children of a container slot in that projection, and MUST NOT let a destination, a
 handler, or protected binding data appear in it.

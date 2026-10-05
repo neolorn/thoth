@@ -69,9 +69,6 @@ export function internalDestination(href: string): TrustedDestination {
       cause,
     );
   }
-  if (parsed.origin !== 'https://site.invalid') {
-    return invalidDestination('The internal destination cannot change origin.');
-  }
   return Object.freeze({
     kind: 'internal',
     href: `${parsed.pathname}${parsed.search}${parsed.hash}`,
@@ -117,9 +114,13 @@ export function externalDestination(
   }
   const origins = new Set(
     allowedOrigins.map((origin) => {
+      // Every refused entry carries the reason, and a refused address carries none: the list is
+      // the application's own, so a caller reads from it whether the list was written wrongly or
+      // the address is one the list does not hold.
       if (unsafeUrlText(origin, RUNTIME_LIMITS.destinationOriginCodeUnits)) {
         return invalidDestination(
           'An external destination allowlist origin is invalid.',
+          'malformed-input',
         );
       }
       let parsedOrigin: URL;
@@ -142,6 +143,7 @@ export function externalDestination(
       ) {
         return invalidDestination(
           'An external destination allowlist entry must be a credential-free HTTPS origin.',
+          'malformed-input',
         );
       }
       return parsedOrigin.origin;
