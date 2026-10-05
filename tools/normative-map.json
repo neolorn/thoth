@@ -1424,7 +1424,10 @@
       "spec": "06-runtime-and-angular.spec.md",
       "section": "5. Lifecycle",
       "statement": "A release MUST coalesce equivalent concurrent initialization, and MUST NOT publish a partial runtime.",
-      "checks": ["assurance-runtime:failed-required-scope-committed-anyway"]
+      "checks": [
+        "assurance-runtime:failed-required-scope-committed-anyway",
+        "assurance:initialization-recorded-after-its-sink-is-told"
+      ]
     },
     {
       "spec": "06-runtime-and-angular.spec.md",

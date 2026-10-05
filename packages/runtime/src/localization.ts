@@ -2047,6 +2047,15 @@ class LocalizationInternal {
     const controller = new AbortController();
     this.initializationController = controller;
     const transitionId = force ? (this.nextTransitionId += 1) : 0;
+    // Recorded before the sink, a store or a participant is called, so one of them that asks for
+    // the context from inside this call is answered with this attempt and starts no second one.
+    let begin!: (attempt: Promise<LocalizationSnapshot>) => void;
+    const initialization = new Promise<LocalizationSnapshot>((resolve) => {
+      begin = resolve;
+    }).finally(() => {
+      this.initialization = undefined;
+    });
+    this.initialization = initialization;
     this.observability?.emit({
       code: RUNTIME_EVENT_CODES.initialization,
       phase: 'initialization',
@@ -2055,7 +2064,7 @@ class LocalizationInternal {
     });
     const requiredParticipants = this.participantCoordinator.required();
     const progressiveParticipants = this.participantCoordinator.progressive();
-    const initialization = this.localeResolution
+    const attempt = this.localeResolution
       .resolveInitialLocale(controller.signal)
       .then(async (locale) => {
         this.targetLocaleValue.set(locale);
@@ -2127,12 +2136,8 @@ class LocalizationInternal {
           ),
         );
         throw error;
-      })
-      .finally(() => {
-        if (this.initialization === initialization)
-          this.initialization = undefined;
       });
-    this.initialization = initialization;
+    begin(attempt);
     return initialization;
   }
 

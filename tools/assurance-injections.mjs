@@ -2922,6 +2922,16 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/locale-change-interruptions.test.ts',
   },
   {
+    id: 'initialization-recorded-after-its-sink-is-told',
+    invariant:
+      'An initialization asked for from the sink that is told one started is answered with the attempt in flight.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '    this.initialization = initialization;\n',
+    replace:
+      '    queueMicrotask(() => {\n      this.initialization = initialization;\n    });\n',
+    caughtBy: 'packages/runtime/test/initialization-reentry.test.ts',
+  },
+  {
     id: 'destroyed-context-reports-a-scope-as-it-was',
     invariant:
       'A scope of a destroyed context reads as failed with the disposed failure, not as the readiness it had.',
