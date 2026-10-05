@@ -3288,15 +3288,6 @@
     },
     {
       "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "this.active === undefined",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "With a snapshot committed, initialize answers with it (1937) and the retry continues one microtask later with the same state. With a snapshot committed, initialize answers with it (1937), so awaiting it unconditionally only adds a microtask before the same transition runs.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
       "mutator": "ArrowFunction",
       "original": "() => this.progressiveControllers.delete(controller)",
       "replacement": "() => undefined",
@@ -3310,22 +3301,6 @@
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The label is used only inside the message text of the scope-list diagnostics that normalizeScopes builds."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "mode === 'coordinated'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "In coordinated mode every required registration was committed for the locale by the transaction itself, so the pending filter (participant-runtime.ts:1267) drops what the other branch would have dropped."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "StringLiteral",
-      "original": "'coordinated'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "In coordinated mode every required registration was committed for the locale by the transaction itself, so the pending filter (participant-runtime.ts:1267) drops what the other branch would have dropped."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -3360,14 +3335,6 @@
       "category": "equivalent",
       "reason": "active is undefined here only after dispose, which aborted the transition controller (2929); the catch at 2413 reports an aborted transition as cancelled whatever was thrown. this.active is undefined after 2287 only once dispose has run, and dispose aborts this controller (2929), so the check on 2371 throws before this line reads it. The committed snapshot is set by the initialization awaited on line 2287 and cleared only by dispose (line 2959), which aborts the pending controller first (line 2929), and line 2371 throws on an aborted signal with no await between it and this line. active is undefined here only after dispose, which aborted the transition controller (2929); the catch at 2413 reports an aborted transition as cancelled whatever was thrown. this.active is undefined after 2287 only once dispose has run, and dispose aborts this controller (2929), so the check on 2371 throws before this line reads it. The committed snapshot is set by the initialization awaited on line 2287 and cleared only by dispose (line 2959), which aborts the pending controller first (line 2929), and line 2371 throws on an aborted signal with no await between it and this line.",
       "count": 4
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "this.active !== undefined",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "active is undefined here only after dispose, which aborted the transition controller (2929); the catch at 2413 reports an aborted transition as cancelled whatever was thrown."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -3436,14 +3403,6 @@
       "category": "message-wording",
       "reason": "The message of the cancelled diagnostic. The message of the reason a cancelled transition is aborted with.",
       "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "locale !== source",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "For the source locale it only asks the store for the same catalog twice, and the second request reads the cache or joins the load in flight (catalog-runtime.ts 1156-1162)."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -3565,14 +3524,6 @@
       "replacement": ";",
       "category": "performance-only",
       "reason": "Clears a set that nothing reads after disposal: preloadScope and ensureScope, the callers of beginOperation, are refused by assertActive before they reach it, and dispose returns at once the second time."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "CallExpression",
-      "original": "this.store.dispose();",
-      "replacement": ";",
-      "category": "equivalent",
-      "reason": "Every path into the store after disposal is refused before it: the entry points assert the context is active (1360-1369) and work in flight was aborted on 2926-2934, so whether the store dropped its cache cannot be read."
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -4182,30 +4133,6 @@
       "mutator": "EqualityOperator",
       "original": "boundary < 1",
       "replacement": "boundary <= 1",
-      "category": "equivalent",
-      "reason": "a date half of one character has fewer than three fields (in parsePlainDate) and an empty time half is short of its fields (in parsePlainTime), both reported with the same incomplete status; the sum cannot exceed the text length"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "EqualityOperator",
-      "original": "boundary + profile.separator.length >= source.length",
-      "replacement": "boundary + profile.separator.length > source.length",
-      "category": "equivalent",
-      "reason": "a date half of one character has fewer than three fields (in parsePlainDate) and an empty time half is short of its fields (in parsePlainTime), both reported with the same incomplete status; the sum cannot exceed the text length"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ArithmeticOperator",
-      "original": "boundary + profile.separator.length",
-      "replacement": "boundary - profile.separator.length",
-      "category": "equivalent",
-      "reason": "a date half of one character has fewer than three fields (in parsePlainDate) and an empty time half is short of its fields (in parsePlainTime), both reported with the same incomplete status; the sum cannot exceed the text length"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "boundary + profile.separator.length >= source.length",
-      "replacement": "false",
       "category": "equivalent",
       "reason": "a date half of one character has fewer than three fields (in parsePlainDate) and an empty time half is short of its fields (in parsePlainTime), both reported with the same incomplete status; the sum cannot exceed the text length"
     },
