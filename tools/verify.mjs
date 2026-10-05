@@ -496,7 +496,10 @@ const provisionTree = (tree, commit) => {
   // registration locked, and a prune keeps a locked one, so it is unlocked first; a registration
   // that is not locked refuses the unlock, which is the usual case and changes nothing.
   try {
-    git('worktree', 'unlock', path);
+    execFileSync('git', ['worktree', 'unlock', path], {
+      cwd: workspaceRoot,
+      stdio: 'ignore',
+    });
   } catch {
     // Not locked, or not registered.
   }
