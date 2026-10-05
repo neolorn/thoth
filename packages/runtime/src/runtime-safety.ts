@@ -235,7 +235,7 @@ function canonicalJson(value: unknown): string {
   }
   const record = value as Readonly<Record<string, unknown>>;
   return `{${Object.keys(record)
-    .sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))
+    .sort(compareCodePoint)
     .map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`)
     .join(',')}}`;
 }
