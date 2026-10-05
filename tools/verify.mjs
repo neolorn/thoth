@@ -492,7 +492,14 @@ const provisionTree = (tree, commit) => {
   removeTree(path);
   // A run that died leaves its registrations behind, and `git worktree add` refuses a path that is
   // still registered even after the directory is gone. Pruning first makes a crashed run cost
-  // nothing on the next one.
+  // nothing on the next one. A run ended while git was still creating a tree leaves that
+  // registration locked, and a prune keeps a locked one, so it is unlocked first; a registration
+  // that is not locked refuses the unlock, which is the usual case and changes nothing.
+  try {
+    git('worktree', 'unlock', path);
+  } catch {
+    // Not locked, or not registered.
+  }
   git('worktree', 'prune');
   git('worktree', 'add', '--detach', path, commit);
   runIn(path, 'pnpm', ['install', '--frozen-lockfile']);
