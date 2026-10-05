@@ -292,6 +292,9 @@ export interface PathPrefixLocalePolicyOptions {
  *
  * Frozen, and with both directions of the prefix table resolved, so reading an address and writing
  * one are the same lookup rather than two tables that can disagree.
+ *
+ * One written out as an object is held to the same tables wherever it is read, and refused with a
+ * `LocalizationError` where a prefix is not a usable segment or the two directions disagree.
  */
 export interface PathPrefixLocalePolicy {
   readonly kind: 'path-prefix';
@@ -328,7 +331,12 @@ export interface LocaleNeutralPolicyOptions {
   readonly xDefaultPath?: string;
 }
 
-/** A checked locale-neutral policy, built by `createLocaleNeutralPolicy`. */
+/**
+ * A checked locale-neutral policy, built by `createLocaleNeutralPolicy`.
+ *
+ * One written out as an object is held to what the constructor writes wherever it is read, and
+ * refused with a `LocalizationError` otherwise.
+ */
 export interface LocaleNeutralPolicy {
   readonly kind: 'locale-neutral';
   /** The locale served when nothing about the reader says otherwise. */
@@ -358,7 +366,13 @@ export interface HostLocalePolicyOptions {
   readonly xDefaultUrl?: string;
 }
 
-/** A checked host policy, built by `createHostLocalePolicy`. */
+/**
+ * A checked host policy, built by `createHostLocalePolicy`.
+ *
+ * One written out as an object is held to what the constructor writes wherever it is read, and
+ * refused with a `LocalizationError` where an origin is not a normalized HTTP origin or the two
+ * directions of the origin table disagree.
+ */
 export interface HostLocalePolicy {
   readonly kind: 'locale-host';
   /** The primary origin's locale. */
