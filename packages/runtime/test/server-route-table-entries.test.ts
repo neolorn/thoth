@@ -386,20 +386,25 @@ describe('the values a locale-neutral entry enumerates', () => {
     ]);
   });
 
-  it('enumerates an address once, with the values that spelled it first', async () => {
-    // Two different values can spell one address where a codec writes a separator of its own.
+  it('enumerates an address once where both locales spell it, or a value is written twice', async () => {
+    // Both locales spell this route's path alike and write these values alike, so each value is
+    // one address whichever locale it is serialized for.
     const [entry] = await expanded(
       tableFor(NEUTRAL, [
         {
           routeId: 'comparison',
           prerender: [
-            { left: 'a/b', right: 'c' },
-            { left: 'a', right: 'b/c' },
+            { left: 'a', right: 'b' },
+            { left: 'c', right: 'd' },
+            { left: 'a', right: 'b' },
           ],
         },
       ]),
     );
-    expect(entry?.prerendered).toStrictEqual([{ left: 'a/b', right: 'c' }]);
+    expect(entry?.prerendered).toStrictEqual([
+      { left: 'a', right: 'b' },
+      { left: 'c', right: 'd' },
+    ]);
   });
 });
 
