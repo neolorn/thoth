@@ -14,10 +14,12 @@
 import { describe, expect, it } from 'vitest';
 
 import type { LocalizationCommitHook } from '../src/localization.js';
+import type { LocalizationEventEmitter } from '../src/observability.js';
 
 import {
   PROVIDER,
   catalogKey,
+  loadersFor,
   rejectionOf,
   scope,
 } from './catalog-store-harness.js';
@@ -26,6 +28,7 @@ import {
   LAZY,
   SHELL,
   UNCOMPILED,
+  compiled,
   configured,
   participant,
   route,
@@ -53,6 +56,30 @@ const arrived = (localization: Runtime, locale: string): Promise<void> =>
       return `${status} ${targetLocale}`;
     })
     .toBe(`ready ${locale}`);
+
+/**
+ * An observer that acts once, in the turn the lazy scope's catalog is reported loaded.
+ *
+ * A load is reported before the runtime does anything with it, so this names the last point at
+ * which a request has not landed, where a count of turns would only happen to fall on it.
+ */
+const whenLazyLoaded = (act: () => void): LocalizationEventEmitter => {
+  let acted = false;
+  return {
+    emit: (input) => {
+      if (
+        acted ||
+        input.phase !== 'catalog' ||
+        input.status !== 'succeeded' ||
+        input.scopeId !== 'lazy'
+      ) {
+        return;
+      }
+      acted = true;
+      act();
+    },
+  };
+};
 
 async function ready(fixture: Parameters<typeof runtime>[0] = {}) {
   const made = runtime(fixture);
@@ -351,27 +378,35 @@ describe('a scope asked for outside a locale change', () => {
     const loading = rejectionOf(() => held.localization.ensureScope(LAZY));
     held.localization.dispose();
     await expect(loading).resolves.toMatchObject({ code: 'disposed' });
+  });
 
-    // Then with the catalogs warmed, so that the request is turns of the microtask queue away from
-    // landing, and disposed one turn later each time: every point between the request and the
-    // landing is one the context is disposed at.
-    const outcomes = new Set<string>();
-    for (let turns = 0; outcomes.size < 2 && turns < 200; turns += 1) {
-      const { localization } = await ready();
-      await localization.preloadScope(LAZY, 'en-US');
-      const asked = rejectionOf(() => localization.ensureScope(LAZY));
-      for (let turn = 0; turn < turns; turn += 1) await Promise.resolve();
-      const landed = localization.snapshot()?.loadedScopes.length === 2;
+  it('is refused as disposed when the context is disposed in the turn its catalog is reported loaded', async () => {
+    const made = await ready({
+      options: {
+        observability: whenLazyLoaded(() => made.localization.dispose()),
+      },
+    });
 
-      localization.dispose();
+    await expect(
+      rejectionOf(() => made.localization.ensureScope(LAZY)),
+    ).resolves.toMatchObject({ code: 'disposed' });
+  });
 
-      const outcome = (await asked)?.code ?? 'landed';
-      expect(outcome, `disposed ${turns} turns after the request`).toBe(
-        landed ? 'landed' : 'disposed',
-      );
-      outcomes.add(outcome);
-    }
-    expect([...outcomes].sort()).toStrictEqual(['disposed', 'landed']);
+  it('has landed when the context is disposed once the scope was committed', async () => {
+    const landed: number[] = [];
+    const leaving: LocalizationCommitHook = {
+      apply: () => undefined,
+      committed: (snapshot) => {
+        landed.push(snapshot.loadedScopes.length);
+        if (snapshot.loadedScopes.length === 2) made.localization.dispose();
+      },
+    };
+    const made = await ready({ options: { commitHooks: [leaving] } });
+
+    await expect(made.localization.ensureScope(LAZY)).resolves.toBeUndefined();
+
+    expect(landed).toStrictEqual([1, 2]);
+    expect(made.localization.snapshot()).toBeUndefined();
   });
 });
 
@@ -548,39 +583,74 @@ describe('a scope warmed ahead of the view that reads it', () => {
     localization.dispose();
   });
 
-  it('is refused as disposed when the context is disposed before it has finished', async () => {
-    /** How a warmed preload ends when the context is disposed `turns` turns after it was asked for. */
-    const disposedAfter = async (turns: number) => {
-      const { localization } = await ready();
-      await localization.preloadScope(LAZY, 'en-US');
-      let finished = false;
-      const asked = localization.preloadScope(LAZY, 'en-US').then(
-        () => {
-          finished = true;
-          return 'finished';
+  it('is refused as disposed when the context is disposed while its catalog is loading', async () => {
+    const { localization, loads, release } = await ready({
+      hold: [catalogKey('lazy', 'ar-EG')],
+    });
+    const asked = rejectionOf(() => localization.preloadScope(LAZY, 'ar-EG'));
+    await until(() => loads[catalogKey('lazy', 'ar-EG')] === 1);
+
+    localization.dispose();
+    release(catalogKey('lazy', 'ar-EG'));
+
+    await expect(asked).resolves.toMatchObject({ code: 'disposed' });
+  });
+
+  it('is refused as disposed when the context is disposed in the turn its loader answers', async () => {
+    // A preload reports nothing to an observer, so the last point before it finishes is named by
+    // the loader: it disposes the context and then hands over the catalog it was asked for.
+    const key = catalogKey('lazy', 'ar-EG');
+    const loaders = loadersFor(compiled());
+    const made = await ready({
+      setup: {
+        catalogLoaders: {
+          ...loaders,
+          [key]: async () => {
+            const artifact = await loaders[key]?.();
+            made.localization.dispose();
+            return artifact;
+          },
         },
-        (error: { diagnostic?: { code?: string } }) => error.diagnostic?.code,
-      );
-      for (let turn = 0; turn < turns; turn += 1) await Promise.resolve();
-      const finishedFirst = finished;
-      localization.dispose();
-      return { finishedFirst, outcome: await asked };
-    };
+      },
+    });
 
-    const refused: number[] = [];
-    const finishedUnseen: number[] = [];
-    for (let turns = 0; turns < 40; turns += 1) {
-      const { finishedFirst, outcome } = await disposedAfter(turns);
-      if (outcome === 'disposed') refused.push(turns);
-      else if (!finishedFirst) finishedUnseen.push(turns);
-      else break;
-    }
+    await expect(
+      rejectionOf(() => made.localization.preloadScope(LAZY, 'ar-EG')),
+    ).resolves.toMatchObject({ code: 'disposed' });
+  });
 
-    expect(refused.length).toBeGreaterThan(0);
-    // A promise is seen to have settled one turn after the work behind it ended, so one disposal
-    // can fall after the preload finished and before the case could know. Any more than one is a
-    // preload that went on to finish in a context already disposed.
-    expect(finishedUnseen.length).toBeLessThanOrEqual(1);
+  it('is refused as disposed when the context is disposed in the turn the store has taken its catalog in', async () => {
+    // With no room in the cache, the store reports what it does with a catalog nothing holds as
+    // the last thing it does for a preload. Disposed there, the context is gone with nothing
+    // left of the preload to interrupt, and the preload still does not answer as if it stood.
+    let asked = false;
+    const made = await ready({
+      setup: { maximumCachedCatalogs: 1 },
+      options: {
+        observability: {
+          emit: (input) => {
+            if (!asked || input.phase !== 'cache') return;
+            asked = false;
+            made.localization.dispose();
+          },
+        },
+      },
+    });
+    asked = true;
+
+    await expect(
+      rejectionOf(() => made.localization.preloadScope(LAZY, 'en-US')),
+    ).resolves.toMatchObject({ code: 'disposed' });
+    expect(asked).toBe(false);
+  });
+
+  it('has finished when the context is disposed after it answered', async () => {
+    const { localization } = await ready();
+
+    await expect(
+      localization.preloadScope(LAZY, 'ar-EG'),
+    ).resolves.toBeUndefined();
+    localization.dispose();
   });
 
   it('names the scope it refuses when the scope was never generated', async () => {

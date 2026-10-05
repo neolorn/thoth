@@ -14,6 +14,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { LocalizationCommitHook } from '../src/localization.js';
+import type { LocalizationEventEmitter } from '../src/observability.js';
 import type { LocalizationParticipantReport } from '@neolorn/equator/core';
 
 import { catalogKey, diagnosticOf } from './catalog-store-harness.js';
@@ -42,6 +43,33 @@ const settled = (): Promise<void> =>
   new Promise((resolve) => {
     setTimeout(resolve, 0);
   });
+
+/**
+ * An observer that acts once, in the turn the shell catalog of `locale` is reported loaded.
+ *
+ * A load is reported before the runtime does anything with it, so this names one point of a
+ * change exactly, where a count of turns would only happen to fall on it.
+ */
+const whenLoaded = (
+  locale: string,
+  act: () => void,
+): LocalizationEventEmitter => {
+  let acted = false;
+  return {
+    emit: (input) => {
+      if (
+        acted ||
+        input.phase !== 'catalog' ||
+        input.status !== 'succeeded' ||
+        input.targetLocale !== locale
+      ) {
+        return;
+      }
+      acted = true;
+      act();
+    },
+  };
+};
 
 async function ready(fixture: Parameters<typeof runtime>[0] = {}) {
   const made = runtime(fixture);
@@ -199,37 +227,96 @@ describe('a change that did not commit', () => {
     });
   });
 
-  it('is cancelled, and commits nothing, when it is cancelled at any point before its snapshot reaches a hook', async () => {
-    // Cancelled one turn later each time, so that every point between the request and the commit
-    // is one of the points the change is cancelled at.
-    const outcomes = new Set<string>();
-    for (let turns = 0; outcomes.size < 2 && turns < 200; turns += 1) {
+  describe('cancelled before its snapshot reaches a hook', () => {
+    /** A context whose hook writes down every locale it is handed. */
+    const watched = async (fixture: Parameters<typeof runtime>[0] = {}) => {
       const handed: string[] = [];
       const watching: LocalizationCommitHook = {
         apply: (snapshot) => void handed.push(snapshot.primaryLocale),
       };
-      const { localization } = await ready({
-        options: { commitHooks: [watching] },
+      const made = await ready({
+        ...fixture,
+        options: { ...fixture.options, commitHooks: [watching] },
       });
-      // Warmed first, so that the change is turns of the microtask queue away from its commit.
-      await localization.preloadScope(SHELL, 'ar-EG');
+      return { ...made, handed };
+    };
+
+    it('is cancelled, and commits nothing, while its catalog is loading', async () => {
+      const { localization, handed, release } = await watched({
+        hold: [catalogKey('shell', 'ar-EG')],
+      });
       const change = localization.changeLocale('ar-EG');
-      for (let turn = 0; turn < turns; turn += 1) await Promise.resolve();
-      const handedFirst = handed.includes('ar-EG');
+      await until(
+        () => localization.scopeReadiness(SHELL)().status === 'loading',
+      );
 
       localization.cancelTransition();
+      release(catalogKey('shell', 'ar-EG'));
 
-      const { status } = await change;
-      expect(status, `cancelled ${turns} turns after the request`).toBe(
-        handedFirst ? 'committed' : 'cancelled',
-      );
-      expect(localization.snapshot()?.primaryLocale).toBe(
-        handedFirst ? 'ar-EG' : 'en-US',
-      );
-      outcomes.add(status);
+      await expect(change).resolves.toMatchObject({ status: 'cancelled' });
+      expect(handed).toStrictEqual(['en-US']);
+      expect(localization.snapshot()?.primaryLocale).toBe('en-US');
       localization.dispose();
-    }
-    expect([...outcomes].sort()).toStrictEqual(['cancelled', 'committed']);
+    });
+
+    it('is cancelled, and commits nothing, in the turn its catalog is reported loaded', async () => {
+      const made = await watched({
+        options: {
+          observability: whenLoaded('ar-EG', () =>
+            made.localization.cancelTransition(),
+          ),
+        },
+      });
+      const { localization, handed } = made;
+
+      await expect(localization.changeLocale('ar-EG')).resolves.toMatchObject({
+        status: 'cancelled',
+      });
+
+      expect(handed).toStrictEqual(['en-US']);
+      expect(localization.snapshot()?.primaryLocale).toBe('en-US');
+      localization.dispose();
+    });
+
+    it('is cancelled, and commits nothing, in the turn its participant finished preparing', async () => {
+      const { localization, handed } = await watched();
+      const region = participant('region');
+      localization.registerParticipant({
+        ...region.value,
+        prepare: async (context) => {
+          const report = await region.value.prepare(context);
+          if (context.targetLocale === 'ar-EG') localization.cancelTransition();
+          return report;
+        },
+      });
+
+      await expect(localization.changeLocale('ar-EG')).resolves.toMatchObject({
+        status: 'cancelled',
+      });
+
+      expect(handed).toStrictEqual(['en-US']);
+      expect(region.calls).not.toContain('commit ar-EG');
+      expect(localization.snapshot()?.primaryLocale).toBe('en-US');
+      localization.dispose();
+    });
+  });
+
+  it('is committed when it is cancelled once its snapshot has reached a hook', async () => {
+    const cancelling: LocalizationCommitHook = {
+      apply: (snapshot) => {
+        if (snapshot.primaryLocale === 'ar-EG')
+          made.localization.cancelTransition();
+      },
+    };
+    const made = await ready({ options: { commitHooks: [cancelling] } });
+    const { localization } = made;
+
+    await expect(localization.changeLocale('ar-EG')).resolves.toMatchObject({
+      status: 'committed',
+    });
+
+    expect(localization.snapshot()?.primaryLocale).toBe('ar-EG');
+    localization.dispose();
   });
 });
 
