@@ -1205,7 +1205,7 @@ export function ɵisGeneratedPseudoLocales(
 ): boolean {
   if (!Array.isArray(value)) return false;
   const entries: readonly unknown[] = value;
-  if (entries.length === 0 || entries.length > locales.length) return false;
+  if (entries.length === 0) return false;
   if (new Set(entries).size !== entries.length) return false;
   return entries.every(
     (entry) =>
@@ -1713,24 +1713,22 @@ function parameterNames(path: string): readonly string[] {
 }
 
 function safePresentationPath(path: string, localized = false): boolean {
+  // A leading, trailing or doubled slash leaves an empty segment, which no pattern below admits.
   return !(
-    path.startsWith('/') ||
-    path.endsWith('/') ||
-    path.includes('//') ||
-    (path.length > 0 &&
-      path
-        .split('/')
-        .some((segment) =>
-          segment.startsWith(':')
-            ? !/^:[A-Za-z][A-Za-z0-9_]{0,63}$/u.test(segment)
-            : localized
-              ? segment.length > 128 ||
-                segment.normalize('NFC') !== segment ||
-                !/^[\p{L}\p{N}](?:[\p{L}\p{N}\p{M}-]{0,126}[\p{L}\p{N}\p{M}])?$/u.test(
-                  segment,
-                )
-              : !/^[a-z0-9](?:[a-z0-9-]{0,126}[a-z0-9])?$/u.test(segment),
-        ))
+    path.length > 0 &&
+    path
+      .split('/')
+      .some((segment) =>
+        segment.startsWith(':')
+          ? !/^:[A-Za-z][A-Za-z0-9_]{0,63}$/u.test(segment)
+          : localized
+            ? segment.length > 128 ||
+              segment.normalize('NFC') !== segment ||
+              !/^[\p{L}\p{N}](?:[\p{L}\p{N}\p{M}-]{0,126}[\p{L}\p{N}\p{M}])?$/u.test(
+                segment,
+              )
+            : !/^[a-z0-9](?:[a-z0-9-]{0,126}[a-z0-9])?$/u.test(segment),
+      )
   );
 }
 
@@ -1782,6 +1780,10 @@ function checkRouteProjection(
   }
   const ids = new Set<string>();
   const paths = new Set<string>();
+  const codecsById = new Map<
+    string,
+    Readonly<Record<string, RouteParameterCodec>>
+  >();
   for (const route of projection.generated.routes) {
     if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(route.id)) {
       routeError(
@@ -1819,6 +1821,7 @@ function checkRouteProjection(
       routeError(`Generated route ${route.id} has inconsistent parameters.`);
     }
     const codecs = projection.parameters?.[route.id] ?? {};
+    codecsById.set(route.id, codecs);
     for (const name of discovered) {
       if (codecs[name] === undefined) {
         routeError(`Dynamic route ${route.id} requires a codec for ${name}.`);
@@ -1868,12 +1871,10 @@ function checkRouteProjection(
     routeError('Historical route outcomes exceed Equator bounds.');
   }
   for (const [path, outcome] of historical) {
+    // An empty path, and a leading, trailing or doubled slash, leave an empty segment, which the
+    // pattern does not admit.
     if (
-      path.length === 0 ||
       paths.has(path) ||
-      path.startsWith('/') ||
-      path.endsWith('/') ||
-      path.includes('//') ||
       path
         .split('/')
         .some(
@@ -1894,10 +1895,14 @@ function checkRouteProjection(
           `Historical replacement target ${outcome.routeId} is unavailable.`,
         );
       }
+      // Every route was held to a codec for each of its parameters above, so the target has one.
+      const codecs = codecsById.get(target.id) as Readonly<
+        Record<string, RouteParameterCodec>
+      >;
       for (const name of target.parameterNames) {
-        const codec = projection.parameters?.[target.id]?.[name];
+        const codec = codecs[name] as RouteParameterCodec;
         const value = outcome.parameters?.[name];
-        if (codec === undefined || value === undefined) {
+        if (value === undefined) {
           routeError(
             `Historical replacement ${path} requires parameter ${name}.`,
           );
@@ -1999,8 +2004,6 @@ function localeIndex(
       locale === undefined
         ? route.path
         : presentationPath(projection, route, locale);
-    // The wildcard is not an address. Matching skipped it and so does this.
-    if (path === '**') continue;
     const pattern = path.length === 0 ? [] : path.split('/');
     const indexed: IndexedRoute = { route, order, pattern };
     if (!pattern.every((segment) => KEYABLE_SEGMENT.test(segment))) {
@@ -2255,12 +2258,13 @@ function matchIndexedRoute(
       canonicalSegments.push(canonical);
       corrected ||= canonical !== actual;
     } else if (/^[a-z0-9-]+$/u.test(expected)) {
-      if (expected.toLowerCase() !== actual.toLowerCase()) {
+      // A segment of this spelling is lower case as written, so only the request's is folded.
+      if (expected !== actual.toLowerCase()) {
         matched = false;
         break;
       }
-      canonicalSegments.push(expected.toLowerCase());
-      corrected ||= expected.toLowerCase() !== actual;
+      canonicalSegments.push(expected);
+      corrected ||= expected !== actual;
     } else if (expected === actual) {
       canonicalSegments.push(expected);
     } else {
@@ -3406,9 +3410,7 @@ function localizedRouteSegments(
   const segments: string[] = [];
   for (const segment of pattern) {
     if (!segment.startsWith(':')) {
-      segments.push(
-        /^[a-z0-9-]+$/u.test(segment) ? segment.toLowerCase() : segment,
-      );
+      segments.push(segment);
       continue;
     }
     const name = segment.slice(1);
@@ -4516,8 +4518,9 @@ function sitemapPriority(value: number): string {
 interface SitemapEntry {
   readonly url: string;
   readonly alternates: readonly RouteAlternate[];
-  readonly xDefault?: string;
-  readonly claim?: SitemapRouteClass & { readonly lastmod?: string };
+  readonly xDefault: string | undefined;
+  readonly claim:
+    (SitemapRouteClass & { readonly lastmod?: string }) | undefined;
 }
 
 function sitemapEntryXml(entry: SitemapEntry): string {
@@ -4695,8 +4698,8 @@ export function projectSitemap(
         entries.push({
           url: alternate.url,
           alternates: seo.alternates,
-          ...(seo.xDefault === undefined ? {} : { xDefault: seo.xDefault }),
-          ...(claim === undefined ? {} : { claim }),
+          xDefault: seo.xDefault,
+          claim,
         });
       }
     }

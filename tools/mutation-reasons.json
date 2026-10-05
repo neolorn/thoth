@@ -262,14 +262,6 @@
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "entries.length > locales.length",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Lines 1209 and 1213 require the entries to be distinct and each among the locales, which already keeps them from outnumbering the locales."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
       "mutator": "StringLiteral",
       "original": "'A route policy requires locales.'",
       "replacement": "\"\"",
@@ -465,56 +457,6 @@
     {
       "file": "packages/runtime/core/src/routing.ts",
       "mutator": "ConditionalExpression",
-      "original": "path.startsWith('/') ||\n    path.endsWith('/')",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "A leading, trailing or doubled slash leaves an empty segment, and each segment pattern on lines 1725, 1729 and 1732 refuses an empty segment, so the clause below refuses the same paths."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "path.startsWith('/') ||\n    path.endsWith('/') ||\n    path.includes('//')",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "A leading, trailing or doubled slash leaves an empty segment, and each segment pattern on lines 1725, 1729 and 1732 refuses an empty segment, so the clause below refuses the same paths."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "LogicalOperator",
-      "original": "path.startsWith('/') ||\n    path.endsWith('/') ||\n    path.includes('//')",
-      "replacement": "(path.startsWith('/') || path.endsWith('/')) && path.includes('//')",
-      "category": "equivalent",
-      "reason": "A leading, trailing or doubled slash leaves an empty segment, and each segment pattern on lines 1725, 1729 and 1732 refuses an empty segment, so the clause below refuses the same paths."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "LogicalOperator",
-      "original": "path.startsWith('/') ||\n    path.endsWith('/')",
-      "replacement": "path.startsWith('/') && path.endsWith('/')",
-      "category": "equivalent",
-      "reason": "A leading, trailing or doubled slash leaves an empty segment, and each segment pattern on lines 1725, 1729 and 1732 refuses an empty segment, so the clause below refuses the same paths."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "MethodExpression",
-      "original": "path.startsWith('/')",
-      "replacement": "path.endsWith('/')",
-      "category": "equivalent",
-      "reason": "A leading, trailing or doubled slash leaves an empty segment, and each segment pattern on lines 1725, 1729 and 1732 refuses an empty segment, so the clause below refuses the same paths. A path with a leading slash has an empty first segment, which the segment pattern on line 1881 refuses, and a trailing slash is already the next operand, so the exchanged test refuses the same paths.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "MethodExpression",
-      "original": "path.endsWith('/')",
-      "replacement": "path.startsWith('/')",
-      "category": "equivalent",
-      "reason": "A leading, trailing or doubled slash leaves an empty segment, and each segment pattern on lines 1725, 1729 and 1732 refuses an empty segment, so the clause below refuses the same paths. A path with a trailing slash has an empty last segment, which the segment pattern on line 1881 refuses, and a leading slash is already the previous operand, so the exchanged test refuses the same paths.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
       "original": "existing !== route.id",
       "replacement": "true",
       "category": "equivalent",
@@ -563,28 +505,11 @@
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "OptionalChaining",
-      "original": "projection.parameters?.[target.id]?.[name]",
-      "replacement": "projection.parameters?.[target.id][name]",
-      "category": "unreachable",
-      "reason": "The loop body runs only for a replacement target that takes parameters, and lines 1815 to 1825 have already refused every route with a parameter and no codec for it, so the table and its entry for the target are always present here."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "OptionalChaining",
-      "original": "projection.parameters?.[target.id]",
-      "replacement": "projection.parameters[target.id]",
-      "category": "unreachable",
-      "reason": "The loop body runs only for a replacement target that takes parameters, and lines 1815 to 1825 have already refused every route with a parameter and no codec for it, so the table and its entry for the target are always present here."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
       "mutator": "ConditionalExpression",
       "original": "codec === undefined",
       "replacement": "false",
       "category": "unreachable",
-      "reason": "The loop body runs only for a replacement target that takes parameters, and lines 1815 to 1825 have already refused every route with a parameter and no codec for it, so the table and its entry for the target are always present here. A parameter segment comes from a generated path, whose codecs lines 1815 to 1825 require, or from a localized path, which lines 1843 and 1844 hold to the same parameter names, so the codec table and its entry for the route are always present here.",
-      "count": 2
+      "reason": "A parameter segment comes from a generated path, whose codecs the projection check requires, or from a localized path, which the check holds to the same parameter names, so the codec table and its entry for the route are always present here."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -608,8 +533,7 @@
       "original": "/^[a-z0-9-]+$/u",
       "replacement": "/^[a-z0-9-]$/u",
       "category": "performance-only",
-      "reason": "A route that is not keyed is scanned instead, and matchRoute on lines 2282 to 2295 offers scanned and keyed routes the same comparison in table order, so keying fewer routes changes how many are compared and never which one answers. The pattern only chooses whether to lower-case a segment made of lower-case letters, digits and hyphens, which lower-casing leaves as it is, so matching fewer of them changes no segment.",
-      "count": 2
+      "reason": "A route that is not keyed is scanned instead, and matchRoute offers scanned and keyed routes the same comparison in table order, so keying fewer routes changes how many are compared and never which one answers."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -619,14 +543,6 @@
       "category": "equivalent",
       "reason": "With no locale presentationPath looks a localized table up under the key undefined, and line 1841 refuses any key that is not a canonical locale tag, so the lookup misses and the route keeps its own path. every path into line 2734 assigns locale from a prefix or an alias (lines 2585, 2602, 2606) and the remaining branch returns (lines 2609 to 2732), so locale is never undefined here",
       "count": 3
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "path === '**'",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "safePresentationPath refuses '**' as a generated path on lines 1732 and 1796 and as a localized one on lines 1729 and 1842, so no route of a checked projection is spelled that way."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -1224,22 +1140,6 @@
       "replacement": "false",
       "category": "equivalent",
       "reason": "A projection that is not indexable carries the frozen empty `alternates` of line 4376, so the loop on line 4668 it would fall into publishes nothing."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "seo.xDefault === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "An `xDefault: undefined` property reads the same as an absent one at its only reader, the `entry.xDefault !== undefined` test on line 4524."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "claim === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "A `claim: undefined` property reads the same as an absent one: sitemapEntryXml reads it only through `claim?.` on lines 4505, 4513 and 4516."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
