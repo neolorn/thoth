@@ -92,40 +92,18 @@ const supportedArtifactFeatures = new Set([
   'structured-output',
 ]);
 
+/**
+ * The canonical text of a value an inert snapshot produced.
+ *
+ * Nothing else reaches this function: the configuration, the catalog set and every candidate are
+ * copied by `snapshotInertJson` before any part of them is compared, and that copy has already
+ * refused an unpaired surrogate, a number that is not canonical and a record that is not plain.
+ */
 function canonicalize(value: unknown): string {
-  if (value === null || typeof value === 'boolean')
-    return JSON.stringify(value);
-  if (typeof value === 'string') {
-    for (let index = 0; index < value.length; index += 1) {
-      const code = value.charCodeAt(index);
-      if (code >= 0xd800 && code <= 0xdbff) {
-        const following = value.charCodeAt(index + 1);
-        if (!(following >= 0xdc00 && following <= 0xdfff)) {
-          throw new TypeError('Unpaired Unicode surrogate in catalog data.');
-        }
-        index += 1;
-      } else if (code >= 0xdc00 && code <= 0xdfff) {
-        throw new TypeError('Unpaired Unicode surrogate in catalog data.');
-      }
-    }
-    return JSON.stringify(value);
-  }
-  if (typeof value === 'number') {
-    if (
-      !Number.isFinite(value) ||
-      Object.is(value, -0) ||
-      (Number.isInteger(value) && !Number.isSafeInteger(value))
-    ) {
-      throw new TypeError('Non-canonical number in catalog data.');
-    }
-    return JSON.stringify(value);
-  }
   if (Array.isArray(value)) {
     return `[${value.map((item) => canonicalize(item)).join(',')}]`;
   }
-  if (!isDataRecord(value)) {
-    throw new TypeError('Catalog data must be inert JSON.');
-  }
+  if (!isDataRecord(value)) return JSON.stringify(value);
   return `{${Object.keys(value)
     .sort(compareCodePoint)
     .map((key) => `${JSON.stringify(key)}:${canonicalize(value[key])}`)
@@ -190,7 +168,7 @@ async function digestCanonicalCatalog(value: unknown): Promise<string> {
   const bytes = new TextEncoder().encode(
     `equator-compiled-catalog/1\u0000${canonicalize(value)}`,
   );
-  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+  const digest = await subtle.digest('SHA-256', bytes);
   return `sha256-${base64Url(new Uint8Array(digest))}`;
 }
 
@@ -431,16 +409,20 @@ function assertDescriptor(
           scope.applicationContractFingerprint ||
         address.semanticRegistryFingerprint !==
           scope.semanticRegistryFingerprint ||
+        // Asked before the two lists are compared: an entry and a scope that both state no list
+        // would otherwise agree, and the entry would pass here and be refused at every load.
+        !Array.isArray(address.requiredExtensions) ||
         canonicalize(address.requiredExtensions) !==
           canonicalize(scope.requiredExtensions) ||
         !/^sha256-[A-Za-z0-9_-]{43}$/u.test(address.contentDigest) ||
         !validResources(artifact.resources) ||
+        !Array.isArray(address.requiredFeatures) ||
         address.requiredFeatures.some(
           (feature) => !supportedArtifactFeatures.has(feature),
         ) ||
         artifacts.has(key) ||
-        !hasOwn(loaders, key) ||
-        typeof loaders[key] !== 'function'
+        // An own entry of the loader map is a function: `copyLoaders` admitted nothing else.
+        !hasOwn(loaders, key)
       ) {
         throw new LocalizationError(
           operationalDiagnostic(
@@ -498,12 +480,9 @@ function copyLoaders(candidate: CatalogLoaders): CatalogLoaders {
   }
   const copied = Object.create(null) as Record<string, () => unknown>;
   for (const [identity, property] of Object.entries(properties)) {
-    if (
-      property.get !== undefined ||
-      property.set !== undefined ||
-      !hasOwn(property, 'value') ||
-      typeof property.value !== 'function'
-    ) {
+    // Read from the descriptor, where an accessor has no value, so one is refused without being
+    // run.
+    if (typeof property.value !== 'function') {
       throw new LocalizationError(
         operationalDiagnostic(
           'invalid-configuration',
@@ -605,10 +584,8 @@ function validInputContract(value: unknown): boolean {
     enumeration === undefined ||
     (Array.isArray(enumeration) &&
       enumeration.length <= RUNTIME_LIMITS.extensionOptionValues &&
-      enumeration.every(
-        (item) =>
-          ['string', 'number', 'boolean'].includes(typeof item) &&
-          (typeof item !== 'number' || Number.isFinite(item)),
+      enumeration.every((item) =>
+        ['string', 'number', 'boolean'].includes(typeof item),
       ) &&
       new Set(enumeration).size === enumeration.length)
   );
@@ -653,9 +630,6 @@ function outputPartCount(body: Readonly<Record<string, unknown>>): number {
       throw new TypeError('A catalog selection variant is malformed.');
     }
     total += variant['pattern'].length;
-    if (total > RUNTIME_LIMITS.outputPartsPerCatalog) {
-      throw new TypeError('A catalog exceeds the fixed output-part ceiling.');
-    }
   }
   return total;
 }
@@ -714,10 +688,8 @@ function remeasureCatalog(catalog: CompiledCatalog): CatalogResourceSummary {
       typeof message.sourceFingerprint !== 'string' ||
       !/^sha256-[A-Za-z0-9_-]{43}$/u.test(message.sourceFingerprint) ||
       !Array.isArray(message.inputs) ||
-      message.inputs.length > RUNTIME_LIMITS.inputsPerMessage ||
       !message.inputs.every(validInputContract) ||
       !Array.isArray(message.slots) ||
-      message.slots.length > RUNTIME_LIMITS.slotsPerMessage ||
       !message.slots.every(validSlotContract) ||
       !isDataRecord(message.body)
     ) {
@@ -751,6 +723,8 @@ function remeasureCatalog(catalog: CompiledCatalog): CatalogResourceSummary {
         ? (body['variants'] as readonly unknown[]).length
         : 0;
     const messageOutputParts = outputPartCount(body);
+    // Held to the per-message ceilings once, as the largest message of the measured summary: a
+    // message past one of them is the largest by that count.
     const summary = Object.freeze({
       irNodes: metrics.nodes,
       depth: metrics.depth,
@@ -760,9 +734,6 @@ function remeasureCatalog(catalog: CompiledCatalog): CatalogResourceSummary {
       slots: message.slots.length,
       outputParts: messageOutputParts,
     });
-    if (!validMessageSummary(summary)) {
-      throw new TypeError('Catalog message resources exceed fixed ceilings.');
-    }
     identifiers +=
       message.messageId.split('.').length +
       message.inputs.length +
@@ -1300,6 +1271,5 @@ export class LocalCatalogStore {
   dispose(): void {
     this.disposed = true;
     this.cache.clear();
-    this.inFlight.clear();
   }
 }

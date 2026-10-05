@@ -1250,118 +1250,6 @@
     },
     {
       "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "index < value.length",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "Every value canonicalize() is given has already passed snapshotInertJson (catalog-runtime.ts 897-901 for a loaded catalog, 1014-1023 for the descriptor whose entries are compared at 933-934, 1247-1251 for a seeded one), which refuses unpaired surrogates, non-canonical numbers and non-plain records at runtime-safety.ts 281-294 and 336-343, so this guard never sees a value it would refuse."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "EqualityOperator",
-      "original": "index < value.length",
-      "replacement": "index >= value.length",
-      "category": "unreachable",
-      "reason": "Every value canonicalize() is given has already passed snapshotInertJson (catalog-runtime.ts 897-901 for a loaded catalog, 1014-1023 for the descriptor whose entries are compared at 933-934, 1247-1251 for a seeded one), which refuses unpaired surrogates, non-canonical numbers and non-plain records at runtime-safety.ts 281-294 and 336-343, so this guard never sees a value it would refuse."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n      const code = value.charCodeAt(index);\n      if (code >= 0xd800 && code <= 0xdbff) {\n        const following = value.charCodeAt(index + 1);\n        if (!(following >= 0xdc00 && following <= 0xdfff)) {\n          throw new TypeError('Unpaired Unicode surrogate in catalog data.');\n        }\n        index += 1;\n      } else if (code >= 0xdc00 && code <= 0xdfff) {\n        throw new TypeError('Un",
-      "replacement": "{}",
-      "category": "unreachable",
-      "reason": "Every value canonicalize() is given has already passed snapshotInertJson (catalog-runtime.ts 897-901 for a loaded catalog, 1014-1023 for the descriptor whose entries are compared at 933-934, 1247-1251 for a seeded one), which refuses unpaired surrogates, non-canonical numbers and non-plain records at runtime-safety.ts 281-294 and 336-343, so this guard never sees a value it would refuse."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "EqualityOperator",
-      "original": "index < value.length",
-      "replacement": "index <= value.length",
-      "category": "unreachable",
-      "reason": "Every value canonicalize() is given has already passed snapshotInertJson (catalog-runtime.ts 897-901 for a loaded catalog, 1014-1023 for the descriptor whose entries are compared at 933-934, 1247-1251 for a seeded one), which refuses unpaired surrogates, non-canonical numbers and non-plain records at runtime-safety.ts 281-294 and 336-343, so this guard never sees a value it would refuse."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "code >= 0xd800 && code <= 0xdbff",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "Every value canonicalize() is given has already passed snapshotInertJson (catalog-runtime.ts 897-901 for a loaded catalog, 1014-1023 for the descriptor whose entries are compared at 933-934, 1247-1251 for a seeded one), which refuses unpaired surrogates, non-canonical numbers and non-plain records at runtime-safety.ts 281-294 and 336-343, so this guard never sees a value it would refuse."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "EqualityOperator",
-      "original": "code >= 0xd800",
-      "replacement": "code > 0xd800",
-      "category": "unreachable",
-      "reason": "Every value canonicalize() is given has already passed snapshotInertJson (catalog-runtime.ts 897-901 for a loaded catalog, 1014-1023 for the descriptor whose entries are compared at 933-934, 1247-1251 for a seeded one), which refuses unpaired surrogates, non-canonical numbers and non-plain records at runtime-safety.ts 281-294 and 336-343, so this guard never sees a value it would refuse."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "code >= 0xdc00 && code <= 0xdfff",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "Every value canonicalize() is given has already passed snapshotInertJson (catalog-runtime.ts 897-901 for a loaded catalog, 1014-1023 for the descriptor whose entries are compared at 933-934, 1247-1251 for a seeded one), which refuses unpaired surrogates, non-canonical numbers and non-plain records at runtime-safety.ts 281-294 and 336-343, so this guard never sees a value it would refuse."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "EqualityOperator",
-      "original": "code >= 0xdc00",
-      "replacement": "code > 0xdc00",
-      "category": "unreachable",
-      "reason": "Every value canonicalize() is given has already passed snapshotInertJson (catalog-runtime.ts 897-901 for a loaded catalog, 1014-1023 for the descriptor whose entries are compared at 933-934, 1247-1251 for a seeded one), which refuses unpaired surrogates, non-canonical numbers and non-plain records at runtime-safety.ts 281-294 and 336-343, so this guard never sees a value it would refuse."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "!Number.isFinite(value) ||\n      Object.is(value, -0) ||\n      (Number.isInteger(value) && !Number.isSafeInteger(value))",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "Every value canonicalize() is given has already passed snapshotInertJson (catalog-runtime.ts 897-901 for a loaded catalog, 1014-1023 for the descriptor whose entries are compared at 933-934, 1247-1251 for a seeded one), which refuses unpaired surrogates, non-canonical numbers and non-plain records at runtime-safety.ts 281-294 and 336-343, so this guard never sees a value it would refuse."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "LogicalOperator",
-      "original": "!Number.isFinite(value) ||\n      Object.is(value, -0) ||\n      (Number.isInteger(value) && !Number.isSafeInteger(value))",
-      "replacement": "(!Number.isFinite(value) || Object.is(value, -0)) && Number.isInteger(value) && !Number.isSafeInteger(value)",
-      "category": "unreachable",
-      "reason": "Every value canonicalize() is given has already passed snapshotInertJson (catalog-runtime.ts 897-901 for a loaded catalog, 1014-1023 for the descriptor whose entries are compared at 933-934, 1247-1251 for a seeded one), which refuses unpaired surrogates, non-canonical numbers and non-plain records at runtime-safety.ts 281-294 and 336-343, so this guard never sees a value it would refuse."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "!Number.isFinite(value) ||\n      Object.is(value, -0)",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "Every value canonicalize() is given has already passed snapshotInertJson (catalog-runtime.ts 897-901 for a loaded catalog, 1014-1023 for the descriptor whose entries are compared at 933-934, 1247-1251 for a seeded one), which refuses unpaired surrogates, non-canonical numbers and non-plain records at runtime-safety.ts 281-294 and 336-343, so this guard never sees a value it would refuse."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "LogicalOperator",
-      "original": "!Number.isFinite(value) ||\n      Object.is(value, -0)",
-      "replacement": "!Number.isFinite(value) && Object.is(value, -0)",
-      "category": "unreachable",
-      "reason": "Every value canonicalize() is given has already passed snapshotInertJson (catalog-runtime.ts 897-901 for a loaded catalog, 1014-1023 for the descriptor whose entries are compared at 933-934, 1247-1251 for a seeded one), which refuses unpaired surrogates, non-canonical numbers and non-plain records at runtime-safety.ts 281-294 and 336-343, so this guard never sees a value it would refuse."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "Number.isInteger(value) && !Number.isSafeInteger(value)",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "Every value canonicalize() is given has already passed snapshotInertJson (catalog-runtime.ts 897-901 for a loaded catalog, 1014-1023 for the descriptor whose entries are compared at 933-934, 1247-1251 for a seeded one), which refuses unpaired surrogates, non-canonical numbers and non-plain records at runtime-safety.ts 281-294 and 336-343, so this guard never sees a value it would refuse."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "!isDataRecord(value)",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "Every value canonicalize() is given has already passed snapshotInertJson (catalog-runtime.ts 897-901 for a loaded catalog, 1014-1023 for the descriptor whose entries are compared at 933-934, 1247-1251 for a seeded one), which refuses unpaired surrogates, non-canonical numbers and non-plain records at runtime-safety.ts 281-294 and 336-343, so this guard never sees a value it would refuse."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
       "mutator": "EqualityOperator",
       "original": "index < bytes.length",
       "replacement": "index <= bytes.length",
@@ -1423,14 +1311,6 @@
       "replacement": "``",
       "category": "message-wording",
       "reason": "Only the text of the invalid-configuration message changes; the code, outcome, reason and identities the tests assert are the same."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "typeof loaders[key] !== 'function'",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "The loaders reaching assertDescriptor are the copy made by copyLoaders (constructor, catalog-runtime.ts 1024-1030), which has already refused any own value that is not a function at 500-513; an own key of that copy is always a function."
     },
     {
       "file": "packages/runtime/src/catalog-runtime.ts",
@@ -1498,54 +1378,6 @@
     },
     {
       "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "LogicalOperator",
-      "original": "property.get !== undefined ||\n      property.set !== undefined ||\n      !hasOwn(property, 'value')",
-      "replacement": "(property.get !== undefined || property.set !== undefined) && !hasOwn(property, 'value')",
-      "category": "equivalent",
-      "reason": "A property descriptor is either an accessor, which has no value field, or a data property, which has neither get nor set. The accessor is still refused by the !hasOwn(property, \"value\") clause or by typeof property.value !== \"function\" at catalog-runtime.ts 505, with the same invalid-configuration diagnostic."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "property.get !== undefined ||\n      property.set !== undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "A property descriptor is either an accessor, which has no value field, or a data property, which has neither get nor set. The accessor is still refused by the !hasOwn(property, \"value\") clause or by typeof property.value !== \"function\" at catalog-runtime.ts 505, with the same invalid-configuration diagnostic."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "property.get !== undefined ||\n      property.set !== undefined ||\n      !hasOwn(property, 'value')",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "A property descriptor is either an accessor, which has no value field, or a data property, which has neither get nor set. The accessor is still refused by the !hasOwn(property, \"value\") clause or by typeof property.value !== \"function\" at catalog-runtime.ts 505, with the same invalid-configuration diagnostic."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "property.get !== undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "A property descriptor is either an accessor, which has no value field, or a data property, which has neither get nor set. The accessor is still refused by the !hasOwn(property, \"value\") clause or by typeof property.value !== \"function\" at catalog-runtime.ts 505, with the same invalid-configuration diagnostic."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "LogicalOperator",
-      "original": "property.get !== undefined ||\n      property.set !== undefined",
-      "replacement": "property.get !== undefined && property.set !== undefined",
-      "category": "equivalent",
-      "reason": "A property descriptor is either an accessor, which has no value field, or a data property, which has neither get nor set. The accessor is still refused by the !hasOwn(property, \"value\") clause or by typeof property.value !== \"function\" at catalog-runtime.ts 505, with the same invalid-configuration diagnostic."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "property.set !== undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "A property descriptor is either an accessor, which has no value field, or a data property, which has neither get nor set. The accessor is still refused by the !hasOwn(property, \"value\") clause or by typeof property.value !== \"function\" at catalog-runtime.ts 505, with the same invalid-configuration diagnostic."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
       "mutator": "StringLiteral",
       "original": "'Generated catalog loaders must contain only data functions.'",
       "replacement": "\"\"",
@@ -1559,22 +1391,6 @@
       "replacement": "true",
       "category": "equivalent",
       "reason": "The block reads the kind and function fields. The value is an array admitted by snapshotInertJson, whose own keys are its indices and length only (runtime-safety.ts 309-319), so both reads are undefined and neither count moves."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "typeof item !== 'number' || Number.isFinite(item)",
-      "replacement": "true",
-      "category": "unreachable",
-      "reason": "A number that is not finite never reaches validInputContract: the catalog was copied by snapshotInertJson first (catalog-runtime.ts 897-901), which refuses it at runtime-safety.ts 281-288."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "StringLiteral",
-      "original": "'number'",
-      "replacement": "\"\"",
-      "category": "unreachable",
-      "reason": "A number that is not finite never reaches validInputContract: the catalog was copied by snapshotInertJson first (catalog-runtime.ts 897-901), which refuses it at runtime-safety.ts 281-288."
     },
     {
       "file": "packages/runtime/src/catalog-runtime.ts",
@@ -1603,42 +1419,10 @@
     {
       "file": "packages/runtime/src/catalog-runtime.ts",
       "mutator": "ConditionalExpression",
-      "original": "total > RUNTIME_LIMITS.outputPartsPerCatalog",
-      "replacement": "false",
-      "category": "message-wording",
-      "reason": "A selection past the catalog-wide output-part ceiling is also past the per-message one, so validMessageSummary refuses it at catalog-runtime.ts 763 with a TypeError, reported as the same malformed-input admission failure; only the cause text differs."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "EqualityOperator",
-      "original": "total > RUNTIME_LIMITS.outputPartsPerCatalog",
-      "replacement": "total >= RUNTIME_LIMITS.outputPartsPerCatalog",
-      "category": "message-wording",
-      "reason": "A selection past the catalog-wide output-part ceiling is also past the per-message one, so validMessageSummary refuses it at catalog-runtime.ts 763 with a TypeError, reported as the same malformed-input admission failure; only the cause text differs."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "ConditionalExpression",
       "original": "typeof message.messageId !== 'string'",
       "replacement": "false",
       "category": "message-wording",
       "reason": "An identifier that is not text passes the remaining clauses and then fails message.messageId.split at catalog-runtime.ts 767 with a TypeError, reported as the same malformed-input admission failure; only the cause text differs."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "message.inputs.length > RUNTIME_LIMITS.inputsPerMessage",
-      "replacement": "false",
-      "category": "message-wording",
-      "reason": "A message declaring more inputs than one may is refused by validMessageSummary at catalog-runtime.ts 763, which bounds the same count; a TypeError either way, reported as malformed-input, with a different cause text."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "message.slots.length > RUNTIME_LIMITS.slotsPerMessage",
-      "replacement": "false",
-      "category": "message-wording",
-      "reason": "A message declaring more slots than one may is refused by validMessageSummary at catalog-runtime.ts 763, which bounds the same count; a TypeError either way, reported as malformed-input, with a different cause text."
     },
     {
       "file": "packages/runtime/src/catalog-runtime.ts",
@@ -1652,30 +1436,6 @@
       "file": "packages/runtime/src/catalog-runtime.ts",
       "mutator": "StringLiteral",
       "original": "'Catalog message body is invalid.'",
-      "replacement": "\"\"",
-      "category": "message-wording",
-      "reason": "Only the text of the TypeError that becomes the cause of the admission failure changes; the code, outcome, reason and identities the tests assert are the same."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n      throw new TypeError('Catalog message resources exceed fixed ceilings.');\n    }",
-      "replacement": "{}",
-      "category": "message-wording",
-      "reason": "A message past a per-message ceiling raises the largest-message summary past it too, and validResources(measured) at catalog-runtime.ts 817 checks that summary with the same validMessageSummary; a TypeError either way, reported as malformed-input, with a different cause text."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "!validMessageSummary(summary)",
-      "replacement": "false",
-      "category": "message-wording",
-      "reason": "A message past a per-message ceiling raises the largest-message summary past it too, and validResources(measured) at catalog-runtime.ts 817 checks that summary with the same validMessageSummary; a TypeError either way, reported as malformed-input, with a different cause text."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "StringLiteral",
-      "original": "'Catalog message resources exceed fixed ceilings.'",
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "Only the text of the TypeError that becomes the cause of the admission failure changes; the code, outcome, reason and identities the tests assert are the same."
@@ -1816,14 +1576,6 @@
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "Only the text of the load-failure diagnostic message changes; the code, outcome, reason and identities the tests assert are the same."
-    },
-    {
-      "file": "packages/runtime/src/catalog-runtime.ts",
-      "mutator": "CallExpression",
-      "original": "this.inFlight.clear();",
-      "replacement": ";",
-      "category": "equivalent",
-      "reason": "After dispose() nothing reads inFlight: loadShared starts with assertActive (catalog-runtime.ts 1153) and throws, and a load that finishes later removes its own entry. The caller sees the same disposed refusals and an empty cache."
     },
     {
       "file": "packages/runtime/src/destinations.ts",

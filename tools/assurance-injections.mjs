@@ -3099,8 +3099,8 @@ export const injections = Object.freeze([
     invariant:
       'A generated set with no loader for one of its artifacts is refused at construction rather than at the first load.',
     source: 'packages/runtime/src/catalog-runtime.ts',
-    find: "        !hasOwn(loaders, key) ||\n        typeof loaders[key] !== 'function'",
-    replace: '        false',
+    find: '        !hasOwn(loaders, key)\n      ) {',
+    replace: '        false\n      ) {',
     caughtBy: 'packages/runtime/test/generated-set-admission.test.ts',
   },
   {
@@ -3288,9 +3288,9 @@ export const injections = Object.freeze([
     invariant:
       'A loader-map entry that is an accessor is refused, and its getter is never called.',
     source: 'packages/runtime/src/catalog-runtime.ts',
-    find: "      property.get !== undefined ||\n      property.set !== undefined ||\n      !hasOwn(property, 'value') ||\n      typeof property.value !== 'function'\n    ) {\n      throw new LocalizationError(\n        operationalDiagnostic(\n          'invalid-configuration',\n          'Generated catalog loaders must contain only data functions.',\n        ),\n      );\n    }\n    copied[identity] = property.value as () => unknown;",
+    find: "    if (typeof property.value !== 'function') {\n      throw new LocalizationError(\n        operationalDiagnostic(\n          'invalid-configuration',\n          'Generated catalog loaders must contain only data functions.',\n        ),\n      );\n    }\n    copied[identity] = property.value as () => unknown;",
     replace:
-      "      typeof candidate[identity] !== 'function'\n    ) {\n      throw new LocalizationError(\n        operationalDiagnostic(\n          'invalid-configuration',\n          'Generated catalog loaders must contain only data functions.',\n        ),\n      );\n    }\n    void property;\n    copied[identity] = candidate[identity] as () => unknown;",
+      "    if (typeof candidate[identity] !== 'function') {\n      throw new LocalizationError(\n        operationalDiagnostic(\n          'invalid-configuration',\n          'Generated catalog loaders must contain only data functions.',\n        ),\n      );\n    }\n    void property;\n    copied[identity] = candidate[identity] as () => unknown;",
     caughtBy: 'packages/runtime/test/loader-map-copy.test.ts',
   },
   {

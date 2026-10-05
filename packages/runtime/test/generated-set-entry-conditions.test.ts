@@ -149,6 +149,24 @@ describe('an entry of a generated set', () => {
       },
     ],
     [
+      'no list of required extensions',
+      (address) => {
+        delete address['requiredExtensions'];
+      },
+    ],
+    [
+      'no list of required features',
+      (address) => {
+        delete address['requiredFeatures'];
+      },
+    ],
+    [
+      'required features that are text rather than a list',
+      (address) => {
+        address['requiredFeatures'] = 'selection';
+      },
+    ],
+    [
       'a digest with something before it',
       (address) => {
         address['contentDigest'] = `x${FINGERPRINT}`;
@@ -180,6 +198,22 @@ describe('an entry of a generated set', () => {
       'targetLocale',
     ]);
     expect(diagnostic?.providerId).toBe(PROVIDER);
+  });
+
+  it('is refused when it states no list of required extensions and its scope states none either', () => {
+    // Two absent lists agree with each other, so only asking for a list refuses this one.
+    expect(
+      refusal((copy) => {
+        for (const scope of copy.configuration.scopes) {
+          delete (scope as unknown as Record<string, unknown>)[
+            'requiredExtensions'
+          ];
+        }
+        for (const { address } of entries(copy)) {
+          delete address['requiredExtensions'];
+        }
+      })?.code,
+    ).toBe('invalid-configuration');
   });
 
   it('is refused when the set lists it twice', () => {
