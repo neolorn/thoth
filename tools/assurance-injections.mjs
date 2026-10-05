@@ -960,6 +960,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/route-parameters-and-x-default.test.ts',
   },
   {
+    id: 'unsafe-prerender-spelling-enumerated',
+    invariant:
+      'A prerender parameter value some locale spells as anything but one safe path segment fails the build.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '      if (!safeParameterSegment(text)) {',
+    replace: '      if (!safeParameterSegment(text) && false) {',
+    caughtBy: 'packages/runtime/test/prerender-parameter-segments.test.ts',
+  },
+  {
     id: 'prerender-value-function-ignored',
     invariant:
       'Prerender parameter values supplied by a function are rendered like values written in place.',

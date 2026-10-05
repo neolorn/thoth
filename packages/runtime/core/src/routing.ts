@@ -4048,6 +4048,14 @@ function prerenderParameters(
           }),
         );
       }
+      // The spelling becomes a segment of an address the build writes a file at, so it is held to
+      // the rule every built address is: a separator or a dot segment in it would place the file
+      // somewhere the address does not say.
+      if (!safeParameterSegment(text)) {
+        routeError(
+          `Route ${route.id} parameter ${name} is spelled ${JSON.stringify(text)} in ${locale}, which is not one safe path segment, so it cannot be rendered ahead of time.`,
+        );
+      }
       serialized[name] = text;
     }
     return Object.freeze(serialized);

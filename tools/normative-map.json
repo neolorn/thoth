@@ -2304,6 +2304,12 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "9. Rendering modes and prerendering",
+      "statement": "A release MUST fail the build the same way for a value whose spelling in some locale is not one safe path segment, because the build writes a file at the address that spelling completes.",
+      "checks": ["assurance:unsafe-prerender-spelling-enumerated"]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "9. Rendering modes and prerendering",
       "statement": "A release MUST accept the values from a function the build calls as well as from a set written in place, and MUST serialize both the same way.",
       "checks": ["assurance:prerender-value-function-ignored"]
     },
