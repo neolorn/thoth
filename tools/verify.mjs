@@ -830,7 +830,9 @@ if (resuming) {
 
 // Fresh, because a tree an earlier run of named stages left holds what that run built, and the
 // question this one answers is what the stages do starting from the commit.
-if (only !== undefined) releaseTrees(wanted.map(treePath));
+// The whole folder, not only the trees this run wants: a tree an earlier run made for a stage this
+// one leaves out would otherwise stay registered for good.
+if (only !== undefined) releaseTrees([treesRoot]);
 
 const provisionStartedAt = Date.now();
 const treesInUse = new Map();
