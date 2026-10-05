@@ -2037,21 +2037,28 @@ function localizedDateText(
   value: PlainDateValue,
   profile: LocalizedPlainDateInputPattern,
   context: FormattingContext,
-): string {
-  const formatter = inputFormatterCache.number(context.locale, {
-    useGrouping: false,
-    minimumIntegerDigits: 2,
-    ...(context.numberingSystem === undefined
-      ? {}
-      : { numberingSystem: context.numberingSystem }),
-  });
-  const yearFormatter = inputFormatterCache.number(context.locale, {
-    useGrouping: false,
-    minimumIntegerDigits: 4,
-    ...(context.numberingSystem === undefined
-      ? {}
-      : { numberingSystem: context.numberingSystem }),
-  });
+): string | undefined {
+  let formatter: Intl.NumberFormat;
+  let yearFormatter: Intl.NumberFormat;
+  try {
+    formatter = inputFormatterCache.number(context.locale, {
+      useGrouping: false,
+      minimumIntegerDigits: 2,
+      ...(context.numberingSystem === undefined
+        ? {}
+        : { numberingSystem: context.numberingSystem }),
+    });
+    yearFormatter = inputFormatterCache.number(context.locale, {
+      useGrouping: false,
+      minimumIntegerDigits: 4,
+      ...(context.numberingSystem === undefined
+        ? {}
+        : { numberingSystem: context.numberingSystem }),
+    });
+  } catch {
+    // A locale the platform refuses has no digits to write the date in.
+    return undefined;
+  }
   const fields: Readonly<Record<string, string>> = {
     day: formatter.format(value.day),
     month: formatter.format(value.month),
@@ -2475,9 +2482,27 @@ function numericWritingOptions(
  * writes. That is what lets a field hold the locale's spelling while the form holds the value.
  *
  * Takes the value, the profile it was parsed under, and the context. Returns the text, or a
- * reported failure when the value does not match the profile it is being written against.
+ * reported failure when the value does not match the profile it is being written against. A value
+ * that is not of the declared shape at all is reported the same way and is never thrown.
  */
 export function formatLocalizedInput<Profile extends LocalizedInputProfile>(
+  value: LocalizedInputValue<Profile>,
+  profile: Profile,
+  context: FormattingContext,
+): FormattingResult {
+  try {
+    return writeLocalizedInput(value, profile, context);
+  } catch {
+    // A value written by hand can lack a member its kind declares or hold something else in its
+    // place, and reading it then throws. The caller is owed a result either way.
+    return formattingPolicyFailure(
+      'The invariant value does not match the declared localized input profile.',
+      context,
+    );
+  }
+}
+
+function writeLocalizedInput<Profile extends LocalizedInputProfile>(
   value: LocalizedInputValue<Profile>,
   profile: Profile,
   context: FormattingContext,
@@ -2592,6 +2617,12 @@ export function formatLocalizedInput<Profile extends LocalizedInputProfile>(
       );
     case 'plain-date': {
       const text = localizedDateText(value as PlainDateValue, profile, context);
+      if (text === undefined) {
+        return formattingPolicyFailure(
+          'The invariant date cannot be represented by the declared localized input profile.',
+          context,
+        );
+      }
       return verifyFormattedInput(
         Object.freeze({
           ok: true,
@@ -2639,7 +2670,14 @@ export function formatLocalizedInput<Profile extends LocalizedInputProfile>(
           context,
         );
       }
-      const text = `${localizedDateText(dateTime.date, profile.date, context)}${profile.separator}${timeText}`;
+      // The date half has text here: the one thing that leaves it without any is a locale the
+      // platform refuses, and the time half has just been written in this one.
+      const dateText = localizedDateText(
+        dateTime.date,
+        profile.date,
+        context,
+      ) as string;
+      const text = `${dateText}${profile.separator}${timeText}`;
       return verifyFormattedInput(
         localizedInputFormatting('plain-date-time', text, value, context),
         value as LocalizedInputValue<LocalizedInputProfile>,

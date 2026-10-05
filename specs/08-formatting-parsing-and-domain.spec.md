@@ -187,6 +187,10 @@ precision the value is written to it, and a value the precision would round is r
 written. Where it declares none the value is written with every fraction digit it has, and a rounder
 value keeps the fraction digits the locale shows for its kind.
 
+Writing a field answers with the text or with a reported failure, and does not throw. A value that
+is not of the profile's kind, a value written by hand that lacks a member its kind declares or holds
+something else in its place, and a locale the host refuses are each reported.
+
 Temporal parsing uses declared patterns or generated field profiles. A release MUST NOT use
 the platform's permissive date parser, host coercion, a guessed field order, natural-language
 guessing, or the host's implicit time zone as a correctness path.
