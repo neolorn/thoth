@@ -554,6 +554,41 @@ describe('an attempt overtaken by a newer one for the same region', () => {
     coordinator.dispose();
   });
 
+  it('is discarded without ending a newer attempt made under the same transition', async () => {
+    const coordinator = new ParticipantCoordinator();
+    const log: string[] = [];
+    const answer = deferred<LocalizationParticipantReport>();
+    let asked = 0;
+    const region = recorded(coordinator, log, 'region', () =>
+      asked++ === 0 ? READY : answer.promise,
+    );
+    const again = () =>
+      coordinator.prepareRequired(
+        coordinator.required(),
+        'ar-EG',
+        FORMATTING,
+        1,
+        live(),
+      );
+
+    const first = await again();
+    const second = again();
+    coordinator.discardPrepared(first);
+
+    // The attempts share a transition identity, so only the work each one started tells them apart.
+    expect(region.registration.state().attempt).toStrictEqual({
+      status: 'preparing',
+      targetLocale: 'ar-EG',
+      transitionId: 1,
+    });
+    answer.resolve(READY);
+    coordinator.commitPrepared(await second);
+
+    expect(log).toStrictEqual(['discard region 1 ready', 'commit region 1']);
+    expect(region.registration.state().attempt.status).toBe('ready');
+    coordinator.dispose();
+  });
+
   it('is refused at commit without disturbing what the newer attempt committed', async () => {
     const coordinator = new ParticipantCoordinator();
     const log: string[] = [];

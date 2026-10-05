@@ -98,6 +98,7 @@ export interface PreparedParticipant {
 
 interface InternalPreparedParticipant extends PreparedParticipant {
   readonly adapter: ParticipantAdapter;
+  readonly work: ParticipantWork;
   readonly unlink: () => void;
   readonly clearDeadline: () => void;
   finalized: boolean;
@@ -934,9 +935,17 @@ export class ParticipantCoordinator {
     prepared.finalized = true;
     prepared.clearDeadline();
     prepared.unlink();
-    if (prepared.adapter.work?.transitionId === prepared.context.transitionId) {
-      delete prepared.adapter.work;
-    }
+    if (this.latest(prepared)) delete prepared.adapter.work;
+  }
+
+  /**
+   * Whether no preparation of the same participant has begun since this one.
+   *
+   * Two attempts can carry one transition identity, so the work each one started is what tells
+   * them apart.
+   */
+  private latest(prepared: InternalPreparedParticipant): boolean {
+    return prepared.adapter.work === prepared.work;
   }
 
   private async prepareOne(
@@ -1038,6 +1047,7 @@ export class ParticipantCoordinator {
         adapter,
         context,
         report,
+        work,
         unlink: linked.unlink,
         clearDeadline,
         finalized: false,
@@ -1173,6 +1183,26 @@ export class ParticipantCoordinator {
   discardPrepared(prepared: readonly PreparedParticipant[]): void {
     for (const item of prepared as readonly InternalPreparedParticipant[]) {
       if (item.finalized) continue;
+      // The attempt of a newer preparation is that preparation's to end.
+      if (this.latest(item)) {
+        const reason: unknown = item.context.signal.reason;
+        const diagnostic =
+          reason instanceof LocalizationError
+            ? reason.diagnostic
+            : participantDiagnostic(
+                'cancelled',
+                'The change a localization participant prepared for did not commit.',
+                item.adapter.id,
+                item.context,
+              );
+        this.setAttempt(item.adapter, {
+          status: abortDiagnosticStatus(diagnostic),
+          targetLocale: item.context.targetLocale,
+          transitionId: item.context.transitionId,
+          report: item.report,
+          diagnostic,
+        });
+      }
       this.discard(item.adapter, item.context, item.report);
       this.cleanup(item);
     }
@@ -1258,10 +1288,7 @@ export class ParticipantCoordinator {
         if (item.finalized) continue;
         // A newer attempt of the same participant may have prepared, and committed, since this
         // one did. What the page shows and how that attempt ended are the newer one's to say.
-        if (
-          item.adapter.stateValue().attempt.transitionId ===
-          item.context.transitionId
-        ) {
+        if (this.latest(item)) {
           this.setAttempt(item.adapter, {
             status:
               item === failed ? abortDiagnosticStatus(diagnostic) : 'cancelled',

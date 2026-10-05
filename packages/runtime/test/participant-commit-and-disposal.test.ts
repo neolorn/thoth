@@ -76,6 +76,39 @@ describe('a prepared participant', () => {
     coordinator.dispose();
   });
 
+  it('ends its attempt as cancelled when it is discarded', async () => {
+    const { coordinator, region } = one();
+    const prepared = await prepare(coordinator, 1);
+
+    coordinator.discardPrepared(prepared);
+
+    expect(region.registration.state().attempt).toStrictEqual({
+      status: 'cancelled',
+      targetLocale: 'ar-EG',
+      transitionId: 1,
+      report: READY,
+      diagnostic: diagnostic('cancelled', 1),
+    });
+    coordinator.dispose();
+  });
+
+  it('ends its attempt the way its change ended, when the change was overtaken first', async () => {
+    const { coordinator, region } = one();
+    const prepared = await prepare(coordinator, 1);
+
+    coordinator.supersedeAll('fr-FR', 9);
+    coordinator.discardPrepared(prepared);
+
+    expect(region.registration.state().attempt).toStrictEqual({
+      status: 'superseded',
+      targetLocale: 'ar-EG',
+      transitionId: 1,
+      report: READY,
+      diagnostic: diagnostic('superseded', 9, 'fr-FR'),
+    });
+    coordinator.dispose();
+  });
+
   it('is not discarded once it has committed', async () => {
     const { coordinator, log } = one();
     const prepared = await prepare(coordinator, 1);

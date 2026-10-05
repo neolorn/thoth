@@ -177,7 +177,10 @@ transaction by registering a participant. A release MUST hand a participant the 
 locale, the effective formatting context, the transition identity, and a cancellation signal, and
 nothing else about the transition. A release MUST abort that signal when the change is abandoned or
 overtaken at any moment before the participant commits or is discarded, including after it has
-reported, and MUST NOT ask a participant whose signal is aborted to commit.
+reported, and MUST NOT ask a participant whose signal is aborted to commit. A participant's state
+records how its latest attempt ended: with its report once it commits, and as cancelled or
+superseded when the change it prepared for is abandoned or overtaken, whether or not the participant
+had already reported.
 
 A participant keeps its payload in the consumer application's own services, stores, signals, and
 components. It reports readiness, the representation it actually supplies, and bounded safe
