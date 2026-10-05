@@ -175,7 +175,9 @@ region and MUST NOT roll back an already valid commit.
 A region whose content belongs to the application rather than to a catalog takes part in the
 transaction by registering a participant. A release MUST hand a participant the target
 locale, the effective formatting context, the transition identity, and a cancellation signal, and
-nothing else about the transition.
+nothing else about the transition. A release MUST abort that signal when the change is abandoned or
+overtaken at any moment before the participant commits or is discarded, including after it has
+reported, and MUST NOT ask a participant whose signal is aborted to commit.
 
 A participant keeps its payload in the consumer application's own services, stores, signals, and
 components. It reports readiness, the representation it actually supplies, and bounded safe

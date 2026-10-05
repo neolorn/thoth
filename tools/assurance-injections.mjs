@@ -2894,6 +2894,16 @@ export const injections = Object.freeze([
       'packages/runtime/test/participant-registration-admission.test.ts',
   },
   {
+    id: 'participant-cancellation-stops-at-preparation',
+    invariant:
+      "A change that is abandoned after its required participants prepared still reaches each one's signal, and none of them is then asked to commit.",
+    source: 'packages/runtime/src/participant-runtime.ts',
+    find: '        signalValue,\n        cohort.signal,\n      ]).catch((error: unknown) => {',
+    replace:
+      '        cohort.signal,\n      ]).catch((error: unknown) => {\n        void signalValue;',
+    caughtBy: 'packages/runtime/test/participant-cohort-preparation.test.ts',
+  },
+  {
     id: 'participant-hook-promise-unreported',
     invariant:
       'A rollback, discard or disposal that answers with a promise is reported as a contract rejection naming the participant.',

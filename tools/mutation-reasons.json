@@ -7608,15 +7608,7 @@
       "original": "registrations.length === 0",
       "replacement": "false",
       "category": "performance-only",
-      "reason": "The early return only saves the work of an empty cohort: with no registrations the rest of the method links and unlinks a controller, settles nothing and returns the same frozen empty list."
-    },
-    {
-      "file": "packages/runtime/src/participant-runtime.ts",
-      "mutator": "ConditionalExpression",
-      "original": "!cohort.controller.signal.aborted",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "With the condition always true the only new call is abort on a controller that is already aborted, which keeps its first reason and dispatches nothing."
+      "reason": "The early return only saves the work of an empty cohort: with no registrations the rest of the method creates a controller nothing listens to, settles nothing and returns the same frozen empty list."
     },
     {
       "file": "packages/runtime/src/participant-runtime.ts",

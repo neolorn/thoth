@@ -1555,6 +1555,12 @@
     {
       "spec": "06-runtime-and-angular.spec.md",
       "section": "8. Participants",
+      "statement": "A release MUST abort that signal when the change is abandoned or overtaken at any moment before the participant commits or is discarded, including after it has reported, and MUST NOT ask a participant whose signal is aborted to commit.",
+      "checks": ["assurance:participant-cancellation-stops-at-preparation"]
+    },
+    {
+      "spec": "06-runtime-and-angular.spec.md",
+      "section": "8. Participants",
       "statement": "A release MUST refuse a commit that answers with a promise as a participant contract rejection, and that refusal fails the transition.",
       "checks": ["assurance:participant-commit-promise-accepted"]
     },

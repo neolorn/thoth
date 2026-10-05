@@ -888,32 +888,44 @@ export class ParticipantCoordinator {
     );
   }
 
+  /**
+   * A controller that aborts with whichever of `parents` aborts first, until `unlink` is called.
+   *
+   * A parent aborted without a typed reason is reported under the participant's own identity, so
+   * every diagnostic names a participant that was registered.
+   */
   private linkedController(
-    parent: AbortSignal,
+    parents: readonly AbortSignal[],
     participantId: string,
     targetLocale: string,
     transitionId: number,
   ): { readonly controller: AbortController; readonly unlink: () => void } {
     const controller = new AbortController();
-    const abort = () => {
-      const reason =
-        parent.reason instanceof LocalizationError
-          ? parent.reason
-          : new LocalizationError({
-              code: 'cancelled',
-              outcome: 'operational-failure',
-              message: 'The localization participant transition was cancelled.',
-              participantId,
-              targetLocale,
-              transitionId,
-            });
-      controller.abort(reason);
-    };
-    if (parent.aborted) abort();
-    else parent.addEventListener('abort', abort, { once: true });
+    const links = parents.map((parent) => {
+      const abort = () => {
+        controller.abort(
+          parent.reason instanceof LocalizationError
+            ? parent.reason
+            : new LocalizationError({
+                code: 'cancelled',
+                outcome: 'operational-failure',
+                message:
+                  'The localization participant transition was cancelled.',
+                participantId,
+                targetLocale,
+                transitionId,
+              }),
+        );
+      };
+      if (parent.aborted) abort();
+      else parent.addEventListener('abort', abort, { once: true });
+      return () => parent.removeEventListener('abort', abort);
+    });
     return {
       controller,
-      unlink: () => parent.removeEventListener('abort', abort),
+      unlink: () => {
+        for (const unlink of links) unlink();
+      },
     };
   }
 
@@ -932,7 +944,7 @@ export class ParticipantCoordinator {
     targetLocale: string,
     formatting: FormattingContext,
     transitionId: number,
-    parentSignal: AbortSignal,
+    parents: readonly AbortSignal[],
   ): Promise<InternalPreparedParticipant> {
     const adapter = this.adapter(registration);
     adapter.work?.controller.abort(
@@ -947,7 +959,7 @@ export class ParticipantCoordinator {
     );
     const previousState = adapter.stateValue();
     const linked = this.linkedController(
-      parentSignal,
+      parents,
       adapter.id,
       targetLocale,
       transitionId,
@@ -1074,28 +1086,20 @@ export class ParticipantCoordinator {
     signalValue: AbortSignal,
   ): Promise<readonly PreparedParticipant[]> {
     if (registrations.length === 0) return Object.freeze([]);
-    const cohort = this.linkedController(
-      signalValue,
-      'participant-cohort',
-      targetLocale,
-      transitionId,
-    );
+    // The cohort carries one member's failure to the others. The change's own signal is linked to
+    // each member directly, so that it still reaches a member that has prepared and waits for the
+    // commit or the discard.
+    const cohort = new AbortController();
     const promises = registrations.map((registration) =>
-      this.prepareOne(
-        registration,
-        targetLocale,
-        formatting,
-        transitionId,
-        cohort.controller.signal,
-      ).catch((error: unknown) => {
-        if (!cohort.controller.signal.aborted) {
-          cohort.controller.abort(error);
-        }
+      this.prepareOne(registration, targetLocale, formatting, transitionId, [
+        signalValue,
+        cohort.signal,
+      ]).catch((error: unknown) => {
+        cohort.abort(error);
         throw error;
       }),
     );
     const settled = await Promise.allSettled(promises);
-    cohort.unlink();
     const prepared = settled
       .filter(
         (
@@ -1287,7 +1291,7 @@ export class ParticipantCoordinator {
         targetLocale,
         formatting,
         transitionId,
-        signalValue,
+        [signalValue],
       );
       this.commitPrepared([prepared]);
     } catch {

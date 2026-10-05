@@ -192,11 +192,12 @@ describe('the required participants of one change', () => {
     coordinator.dispose();
   });
 
-  it('are cancelled with the change, in the name of the cohort', async () => {
+  it('are cancelled with the change, each under its own name', async () => {
     const coordinator = new ParticipantCoordinator();
     const log: string[] = [];
     const controller = new AbortController();
     const region = recorded(coordinator, log, 'region', unanswered);
+    const zone = recorded(coordinator, log, 'zone', unanswered);
 
     const preparing = rejectionOf(() =>
       coordinator.prepareRequired(
@@ -209,16 +210,26 @@ describe('the required participants of one change', () => {
     );
     controller.abort();
 
+    // A diagnostic names a participant only by an identity one was registered under.
     expect(await settled(preparing)).toStrictEqual(
-      diagnostic('cancelled', 'participant-cohort', 7),
+      diagnostic('cancelled', 'region', 7),
     );
     expect(region.registration.state().attempt).toStrictEqual({
       status: 'cancelled',
       targetLocale: 'ar-EG',
       transitionId: 7,
-      diagnostic: diagnostic('cancelled', 'participant-cohort', 7),
+      diagnostic: diagnostic('cancelled', 'region', 7),
     });
-    expect(log).toStrictEqual(['discard region 7 unanswered']);
+    expect(zone.registration.state().attempt).toStrictEqual({
+      status: 'cancelled',
+      targetLocale: 'ar-EG',
+      transitionId: 7,
+      diagnostic: diagnostic('cancelled', 'zone', 7),
+    });
+    expect(log).toStrictEqual([
+      'discard region 7 unanswered',
+      'discard zone 7 unanswered',
+    ]);
     coordinator.dispose();
   });
 
@@ -298,11 +309,12 @@ describe('the required participants of one change', () => {
     coordinator.dispose();
   });
 
-  it('are left to the caller by a cancellation that arrives once all have prepared', async () => {
+  it('are told through their signals of a cancellation that arrives once all have prepared', async () => {
     const coordinator = new ParticipantCoordinator();
     const log: string[] = [];
     const controller = new AbortController();
     const region = recorded(coordinator, log, 'region');
+    const zone = recorded(coordinator, log, 'zone');
 
     const prepared = await coordinator.prepareRequired(
       coordinator.required(),
@@ -311,18 +323,68 @@ describe('the required participants of one change', () => {
       10,
       controller.signal,
     );
-    controller.abort();
+    const cancelled = new LocalizationError({
+      code: 'cancelled',
+      outcome: 'operational-failure',
+      message: 'The change was cancelled.',
+    });
+    controller.abort(cancelled);
 
-    // The caller holds the prepared list by now, and commits or discards it on its own reading of
-    // the change.
-    expect(region.contexts[0]?.signal.aborted).toBe(false);
-    coordinator.commitPrepared(prepared);
-    expect(log).toStrictEqual(['commit region 10']);
+    expect(region.contexts[0]?.signal.reason).toBe(cancelled);
+    expect(zone.contexts[0]?.signal.reason).toBe(cancelled);
+    // A participant that was told its change is over is not then asked to commit it.
+    expect(diagnosticOf(() => coordinator.commitPrepared(prepared))).toBe(
+      cancelled.diagnostic,
+    );
+    expect(log).toStrictEqual([
+      'discard region 10 ready',
+      'discard zone 10 ready',
+    ]);
     coordinator.dispose();
   });
 });
 
 describe('the signal a participant is handed', () => {
+  const preparedUnder = async (controller: AbortController) => {
+    const coordinator = new ParticipantCoordinator();
+    const log: string[] = [];
+    const region = recorded(coordinator, log, 'region');
+    const prepared = await coordinator.prepareRequired(
+      coordinator.required(),
+      'ar-EG',
+      FORMATTING,
+      1,
+      controller.signal,
+    );
+    return { coordinator, log, region, prepared };
+  };
+
+  it('stays open once a required region has committed', async () => {
+    const controller = new AbortController();
+    const { coordinator, log, region, prepared } =
+      await preparedUnder(controller);
+
+    coordinator.commitPrepared(prepared);
+    controller.abort();
+
+    expect(log).toStrictEqual(['commit region 1']);
+    expect(region.contexts[0]?.signal.aborted).toBe(false);
+    coordinator.dispose();
+  });
+
+  it('stays open once a prepared region has been discarded', async () => {
+    const controller = new AbortController();
+    const { coordinator, log, region, prepared } =
+      await preparedUnder(controller);
+
+    coordinator.discardPrepared(prepared);
+    controller.abort();
+
+    expect(log).toStrictEqual(['discard region 1 ready']);
+    expect(region.contexts[0]?.signal.aborted).toBe(false);
+    coordinator.dispose();
+  });
+
   it('stays open once the region has committed', async () => {
     const coordinator = new ParticipantCoordinator();
     const log: string[] = [];
