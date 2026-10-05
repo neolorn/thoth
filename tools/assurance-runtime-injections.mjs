@@ -948,8 +948,8 @@ export const injections = Object.freeze([
     invariant:
       'A stored value read for a restored page does not move it when the reader chose or removed a locale while it was being read.',
     source: 'packages/runtime/src/localization.ts',
-    find: '    if (target === undefined || this.requestedChanges !== requested)',
-    replace: '    if (target === undefined || requested < 0)',
+    find: '    if (this.requestedChanges !== requested) {',
+    replace: '    if (requested < 0) {',
   },
   {
     id: 'strict-policy-accepts-source-fallback',
@@ -1588,9 +1588,8 @@ export const injections = Object.freeze([
     invariant:
       'Once a server-rendered page has hydrated, the stores are read again, and a stored choice the declared order puts first moves the page.',
     source: 'packages/runtime/src/angular.ts',
-    find: '          void applicationRef.whenStable().then(() => {\n            if (applicationRef.destroyed) return;\n            void localization.ɵrestoreLocale(\n              locationAddress(document.location, baseHref),\n            );',
-    replace:
-      '          void applicationRef.whenStable().then(() => {\n            if (applicationRef.destroyed) return;\n            void locationAddress(document.location, baseHref);',
+    find: '          void localization.ɵrestoreAfterHydration({',
+    replace: '          void Promise.resolve({',
   },
   {
     id: 'test-environment-keeps-local-storage',

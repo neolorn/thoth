@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest';
 import type { LocalizationPersistenceStore } from '../src/persistence.js';
 
 import { catalogKey, diagnosticOf } from './catalog-store-harness.js';
-import { runtime, until } from './transaction-runtime-harness.js';
+import { observed, runtime, until } from './transaction-runtime-harness.js';
 
 /** Every microtask and timer already due, for a case that states what was not written. */
 const settled = (): Promise<void> =>
@@ -251,5 +251,246 @@ describe('a page restored without its stores having been read', () => {
     remembered.releaseReads();
 
     await expect(restored).resolves.toBeUndefined();
+  });
+});
+
+/**
+ * A restore has no caller to answer, so each way it ends is an event of the `persistence` phase,
+ * and no two ways report the same event.
+ */
+describe('how a restore ended, as its events say', () => {
+  const watching = async (fixture: Parameters<typeof runtime>[0] = {}) => {
+    const watched = observed();
+    const made = await ready({
+      ...fixture,
+      options: { ...fixture.options, observability: watched.emitter },
+    });
+    const first = made.localization.snapshot()?.id;
+    // The events of the restore alone: a store's own events name the store.
+    const restores = () =>
+      watched
+        .phase('persistence')
+        .filter((event) => event.correlationId === undefined);
+    return { ...made, first, restores };
+  };
+
+  it('started, then succeeded with the stored locale, where the page moves', async () => {
+    const { localization, remembered, first, restores } = await watching();
+    remembered.chooseElsewhere('ar-EG');
+
+    await localization.ɵrestoreLocale(HERE);
+
+    expect(restores()).toStrictEqual([
+      { status: 'started', snapshotId: first },
+      { status: 'succeeded', targetLocale: 'ar-EG', snapshotId: first },
+    ]);
+    localization.dispose();
+  });
+
+  it('started, then unavailable, where the stores hold nothing that moves the page', async () => {
+    const { localization, first, restores } = await watching();
+
+    await localization.ɵrestoreLocale(HERE);
+
+    expect(restores()).toStrictEqual([
+      { status: 'started', snapshotId: first },
+      { status: 'unavailable', snapshotId: first },
+    ]);
+    localization.dispose();
+  });
+
+  it('unavailable with no snapshot, and no start, before a locale is committed', async () => {
+    const watched = observed();
+    const remembered = memory();
+    remembered.chooseElsewhere('ar-EG');
+    const { localization } = runtime({
+      options: {
+        persistence: [remembered.store],
+        observability: watched.emitter,
+      },
+    });
+
+    await localization.ɵrestoreLocale(HERE);
+
+    expect(watched.phase('persistence')).toStrictEqual([
+      { status: 'unavailable' },
+    ]);
+    localization.dispose();
+  });
+
+  it('cancelled as superseded, naming the change in flight, and no start', async () => {
+    const { localization, remembered, release, first, restores } =
+      await watching({ hold: [catalogKey('shell', 'ar-EG')] });
+    const change = localization.changeLocale('ar-EG');
+    await until(() => localization.targetLocale() === 'ar-EG');
+    remembered.chooseElsewhere('ar-EG');
+
+    await localization.ɵrestoreLocale(HERE);
+
+    expect(restores()).toStrictEqual([
+      {
+        status: 'cancelled',
+        reason: 'superseded',
+        targetLocale: 'ar-EG',
+        snapshotId: first,
+      },
+    ]);
+    release(catalogKey('shell', 'ar-EG'));
+    await change;
+    localization.dispose();
+  });
+
+  it('started, then superseded, where a change was asked for while the stores were read', async () => {
+    const { localization, remembered, first, restores } = await watching();
+    remembered.chooseElsewhere('ar-EG');
+    remembered.holdReads();
+
+    const restored = localization.ɵrestoreLocale(HERE);
+    await until(remembered.reading);
+    await localization.changeLocale('en-US');
+    remembered.releaseReads();
+    await restored;
+
+    expect(restores()).toStrictEqual([
+      { status: 'started', snapshotId: first },
+      { status: 'superseded', reason: 'superseded', snapshotId: first },
+    ]);
+    localization.dispose();
+  });
+
+  it('started, then cancelled as disposed, where the context is disposed while the stores are read', async () => {
+    const { localization, remembered, first, restores } = await watching();
+    remembered.chooseElsewhere('ar-EG');
+    remembered.holdReads();
+
+    const restored = localization.ɵrestoreLocale(HERE);
+    await until(remembered.reading);
+    localization.dispose();
+    remembered.releaseReads();
+    await restored;
+
+    expect(restores()).toStrictEqual([
+      { status: 'started', snapshotId: first },
+      { status: 'cancelled', reason: 'disposed', snapshotId: first },
+    ]);
+  });
+
+  it('cancelled as disposed with no snapshot, and no start, once the context is disposed', async () => {
+    const { localization, remembered, restores } = await watching();
+    remembered.chooseElsewhere('ar-EG');
+    localization.dispose();
+
+    await localization.ɵrestoreLocale(HERE);
+
+    expect(restores()).toStrictEqual([
+      { status: 'cancelled', reason: 'disposed' },
+    ]);
+  });
+
+  it('builds no event where no sink is configured', async () => {
+    const { localization, remembered } = await ready();
+    remembered.chooseElsewhere('ar-EG');
+
+    await expect(localization.ɵrestoreLocale(HERE)).resolves.toMatchObject({
+      status: 'committed',
+    });
+    localization.dispose();
+  });
+});
+
+/**
+ * The restore a page drawn by a server is owed once it is adopted. It asks the stores only where
+ * a server's decision was transferred and the application is still there when hydration ends, and
+ * says so under the `ssr-hydration` phase where it does not.
+ */
+describe('the restore after hydration', () => {
+  const adopted = async (initialLocale: string | undefined) => {
+    const watched = observed();
+    const remembered = memory();
+    remembered.chooseElsewhere('ar-EG');
+    const made = runtime({
+      options: {
+        persistence: [remembered.store],
+        observability: watched.emitter,
+        ...(initialLocale === undefined ? {} : { initialLocale }),
+      },
+    });
+    await made.localization.initialize();
+    return { ...made, watched };
+  };
+  const page = (destroyed = false) => {
+    let hydrate: () => void = () => undefined;
+    const hydrated = new Promise<void>((resolve) => {
+      hydrate = resolve;
+    });
+    let asked = 0;
+    return {
+      hydrate,
+      asked: () => asked,
+      value: {
+        hydrated,
+        destroyed: () => destroyed,
+        address: () => {
+          asked += 1;
+          return HERE;
+        },
+      },
+    };
+  };
+
+  it('moves a page a server drew to the stored locale, once hydration is over', async () => {
+    const { localization, watched } = await adopted('en-US');
+    const shown = page();
+
+    const restored = localization.ɵrestoreAfterHydration(shown.value);
+    await settled();
+    expect(localization.snapshot()?.primaryLocale).toBe('en-US');
+    expect(shown.asked()).toBe(0);
+    shown.hydrate();
+
+    await expect(restored).resolves.toMatchObject({
+      status: 'committed',
+      targetLocale: 'ar-EG',
+    });
+    expect(watched.phase('ssr-hydration')).toStrictEqual([]);
+    localization.dispose();
+  });
+
+  it('asks no store, and says unavailable, where the browser drew the page itself', async () => {
+    const { localization, watched } = await adopted(undefined);
+    const shown = page();
+    shown.hydrate();
+
+    await expect(
+      localization.ɵrestoreAfterHydration(shown.value),
+    ).resolves.toBeUndefined();
+
+    expect(watched.phase('ssr-hydration')).toStrictEqual([
+      { status: 'unavailable' },
+    ]);
+    expect(shown.asked()).toBe(0);
+    expect(
+      watched
+        .phase('persistence')
+        .filter((event) => event.status === 'started'),
+    ).toStrictEqual([]);
+    localization.dispose();
+  });
+
+  it('asks no store, and says cancelled as disposed, where the application was destroyed first', async () => {
+    const { localization, watched } = await adopted('en-US');
+    const shown = page(true);
+    shown.hydrate();
+
+    await expect(
+      localization.ɵrestoreAfterHydration(shown.value),
+    ).resolves.toBeUndefined();
+
+    expect(watched.phase('ssr-hydration')).toStrictEqual([
+      { status: 'cancelled', reason: 'disposed' },
+    ]);
+    expect(shown.asked()).toBe(0);
+    expect(localization.snapshot()?.primaryLocale).toBe('en-US');
+    localization.dispose();
   });
 });

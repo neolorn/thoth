@@ -358,7 +358,7 @@ The catalog cache that `maximumCachedCatalogs` bounds, under phase `cache`: `suc
 
 Declared as `RUNTIME_EVENT_CODES.ssrHydration`.
 
-Carrying the committed localization from a server render to the browser, under phase `ssr-hydration`. On the server, after a commit: `started`, then `succeeded` when the snapshot was written to the transfer state, or `failed` with `internal-invariant` when there was none to write. In the browser, when a transferred snapshot is present: `started`, then `succeeded` with its locale, or `failed` with `invalid-configuration` when the snapshot was not accepted.
+Carrying the committed localization from a server render to the browser, under phase `ssr-hydration`. On the server, after a commit: `started`, then `succeeded` when the snapshot was written to the transfer state, or `failed` with `internal-invariant` when there was none to write. In the browser, when a transferred snapshot is present: `started`, then `succeeded` with its locale, or `failed` with `invalid-configuration` when the snapshot was not accepted. Also in the browser, when the application starts, for the restore a page the server drew is owed once it is adopted: `unavailable` when no snapshot was transferred, so the browser drew the page from the stores itself and none is read again, and `cancelled` with `disposed` when the application was destroyed before hydration ended. Where neither is reported the stores are read, and `EQ-E2008` says how that ended.
 
 ### EQ-E2007
 
@@ -370,7 +370,7 @@ An integration failed, with the reason and, where one is responsible, the partic
 
 Declared as `RUNTIME_EVENT_CODES.persistence`.
 
-Reading, writing or removing the remembered locale, with the store's id as `correlationId`. Reading reports `failed` when a store throws, and `unavailable` with `unsupported-locale` when a store holds a locale that is malformed or no longer served; the next store is read instead. Writing happens after a commit that changed the locale and reports `succeeded`, `failed`, or `superseded` when a newer choice arrived first. Removing reports `succeeded`, `failed`, or `unavailable` for a store with no way to remove.
+Reading, writing or removing the remembered locale, with the store's id as `correlationId`. Reading reports `failed` when a store throws, and `unavailable` with `unsupported-locale` when a store holds a locale that is malformed or no longer served; the next store is read instead. Writing happens after a commit that changed the locale and reports `succeeded`, `failed`, or `superseded` when a newer choice arrived first. Removing reports `succeeded`, `failed`, or `unavailable` for a store with no way to remove. A restore, which reads the stores again for a page returned from the back-forward cache or adopted from a server render, reports with no `correlationId`, and no two ways it ends report the same event. Before the stores are read: `unavailable` with no `snapshotId` when no locale is committed yet, `cancelled` with `disposed` and no `snapshotId` when the context is disposed, and `cancelled` with `superseded` and the locale being moved to when a change is in flight. Otherwise `started`, then one of: `succeeded` with the stored locale, after which the change it asks for reports under `EQ-E2003`; `unavailable` when the stores hold nothing that moves the page; `superseded` when a change or a removal was asked for while the stores were read; `cancelled` with `disposed` when the context was disposed while they were read.
 
 ## Runtime failures
 

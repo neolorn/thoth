@@ -12,6 +12,7 @@ import {
   localStorageStore,
   memoryStore,
   withLocaleSources,
+  withObservability,
   withPersistence,
   withRecoveryMessage,
   withoutDocumentLocale,
@@ -21,6 +22,7 @@ import { messages } from '#i18n/shell';
 
 import { accountProfile } from './account-profile';
 import { routes } from './app.routes';
+import { eventLog } from './event-log';
 import { tabSessionStore } from './tab-session-store';
 
 /**
@@ -49,6 +51,7 @@ export const appConfig: ApplicationConfig = {
         memoryStore(),
       ),
       withRecoveryMessage({ message: messages.recovery.unavailable }),
+      withObservability(eventLog),
     ),
   ],
 };

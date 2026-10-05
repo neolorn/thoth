@@ -2163,12 +2163,11 @@ export function provideLocalizationSetup(
         const baseHref = applicationBaseHref();
         const browser = isPlatformBrowser(inject(PLATFORM_ID));
         return () => {
-          if (!browser || localization.renderedLocale() === undefined) return;
-          void applicationRef.whenStable().then(() => {
-            if (applicationRef.destroyed) return;
-            void localization.ɵrestoreLocale(
-              locationAddress(document.location, baseHref),
-            );
+          if (!browser) return;
+          void localization.ɵrestoreAfterHydration({
+            hydrated: applicationRef.whenStable(),
+            destroyed: () => applicationRef.destroyed,
+            address: () => locationAddress(document.location, baseHref),
           });
         };
       },

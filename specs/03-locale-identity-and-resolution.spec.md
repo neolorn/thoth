@@ -181,8 +181,11 @@ read the stores again, so that a stored choice the declared sources would choose
 moves the page. The visitor sees the move, and it is not written back. A value read this way, or
 when a page returns from the browser's back-forward cache, MUST NOT move the page if the visitor
 asked for a locale change or a removal while it was being read: that request is the newer
-decision. Cookie writing is done in the browser, because the response headers belong to the
-consumer's server.
+decision. A release MUST report to the observability sink each way such a read ends, whether it
+moves the page or leaves it where it is, and each reason the stores were not read, each as an
+event none of the others produces, because a page left in the wrong language by a read that found
+nothing looks, from outside, the same as one whose stores were never read. Cookie writing is done
+in the browser, because the response headers belong to the consumer's server.
 
 The locale cookie a release writes, from its browser store or from its own request handler, MUST
 be one a browser stores. A release MUST refuse at configuration a cookie name that is not a token, a

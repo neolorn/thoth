@@ -560,6 +560,34 @@ export const injections = Object.freeze([
     caughtBy: 'packages/toolkit/test/derived-locale-policy.test.ts',
   },
   {
+    id: 'restore-that-found-nothing-reported-as-superseded',
+    invariant:
+      'A restore that found nothing stored to move the page reports a status no other ending of a restore has.',
+    source: 'packages/runtime/src/localization.ts',
+    find: "      report('unavailable', { snapshotId });",
+    replace:
+      "      report('superseded', { reason: 'superseded', snapshotId });",
+    caughtBy: 'packages/runtime/test/remembered-locale-requests.test.ts',
+  },
+  {
+    id: 'restore-not-owed-left-unreported',
+    invariant:
+      'A page the browser drew itself reports that no restore is owed, rather than ending in silence.',
+    source: 'packages/runtime/src/localization.ts',
+    find: "        phase: 'ssr-hydration',\n        status: 'unavailable',",
+    replace: "        phase: 'ssr-hydration',\n        status: 'cancelled',",
+    caughtBy: 'packages/runtime/test/remembered-locale-requests.test.ts',
+  },
+  {
+    id: 'restore-of-a-destroyed-application-left-unreported',
+    invariant:
+      'An application destroyed before hydration ended reports that its restore was cancelled, and reads no store.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '    if (page.destroyed()) {\n      this.observability?.emit({',
+    replace: '    if (page.destroyed()) {\n      void ({',
+    caughtBy: 'packages/runtime/test/remembered-locale-requests.test.ts',
+  },
+  {
     id: 'build-origin-not-required',
     invariant:
       'A build under a locale-host policy is refused unless it is told which origin it answers at.',

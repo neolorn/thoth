@@ -498,6 +498,21 @@ export abstract class Localization {
     readonly url: string;
     readonly origin?: string;
   }): Promise<LocaleChangeResult | undefined>;
+
+  /**
+   * The restore above for a page the server drew or a build wrote, run once the page is adopted.
+   *
+   * Called by the browser integration when the application starts. `hydrated` settles when
+   * hydration is over, `destroyed` says whether the application was torn down while that was
+   * awaited, and `address` is read only then, because a client navigation may have moved the page
+   * since. Does nothing where the browser drew the page itself, since the stores were read to
+   * draw it.
+   */
+  abstract ɵrestoreAfterHydration(page: {
+    readonly hydrated: Promise<unknown>;
+    readonly destroyed: () => boolean;
+    readonly address: () => { readonly url: string; readonly origin?: string };
+  }): Promise<LocaleChangeResult | undefined>;
   /**
    * Whether one scope is loaded in the committed locale, as a signal to bind.
    *
@@ -2626,11 +2641,40 @@ class LocalizationInternal {
     readonly url: string;
     readonly origin?: string;
   }): Promise<LocaleChangeResult | undefined> {
+    // A restore that leaves the page where it is has no result to hand anyone, and a browser event
+    // is its caller, so each way it ends is reported: a page that stayed in the wrong language is
+    // otherwise indistinguishable from one whose restore never ran.
+    const report = (
+      status: LocalizationEventInput['status'],
+      rest: Partial<LocalizationEventInput> = {},
+    ): void => {
+      this.observability?.emit({
+        code: RUNTIME_EVENT_CODES.persistence,
+        phase: 'persistence',
+        status,
+        ...rest,
+      });
+    };
     // Nothing committed means nothing on screen to restore: not yet initialized, or disposed, which
     // clears what is current. Answered rather than refused, because a browser event is the caller.
-    const committed = this.active?.publicSnapshot.primaryLocale;
-    if (committed === undefined || this.targetLocaleValue() !== undefined)
+    const active = this.active?.publicSnapshot;
+    if (active === undefined) {
+      if (this.disposed) report('cancelled', { reason: 'disposed' });
+      else report('unavailable');
       return undefined;
+    }
+    const committed = active.primaryLocale;
+    const snapshotId = active.id;
+    const pending = this.targetLocaleValue();
+    if (pending !== undefined) {
+      report('cancelled', {
+        reason: 'superseded',
+        targetLocale: pending,
+        snapshotId,
+      });
+      return undefined;
+    }
+    report('started', { snapshotId });
     const requested = this.requestedChanges;
     const target = await this.localeResolution.restoredLocale(
       committed,
@@ -2640,9 +2684,48 @@ class LocalizationInternal {
     // The stores were read while the reader could still act. A change or a removal asked for since
     // is a newer decision than what they said, and a restore run over it would undo it
     // (`specs/03-locale-identity-and-resolution.spec.md` section 8).
-    if (target === undefined || this.requestedChanges !== requested)
+    if (this.disposed) {
+      report('cancelled', { reason: 'disposed', snapshotId });
       return undefined;
+    }
+    if (this.requestedChanges !== requested) {
+      report('superseded', { reason: 'superseded', snapshotId });
+      return undefined;
+    }
+    if (target === undefined) {
+      report('unavailable', { snapshotId });
+      return undefined;
+    }
+    report('succeeded', { targetLocale: target, snapshotId });
     return this.changeLocale(target, { remember: false });
+  }
+
+  async restoreAfterHydration(page: {
+    readonly hydrated: Promise<unknown>;
+    readonly destroyed: () => boolean;
+    readonly address: () => { readonly url: string; readonly origin?: string };
+  }): Promise<LocaleChangeResult | undefined> {
+    // The two ways this ends before the stores are asked are reported for the reason the ways a
+    // restore ends are: from outside they look the same as a restore that found nothing stored.
+    if (this.renderedLocale() === undefined) {
+      this.observability?.emit({
+        code: RUNTIME_EVENT_CODES.ssrHydration,
+        phase: 'ssr-hydration',
+        status: 'unavailable',
+      });
+      return undefined;
+    }
+    await page.hydrated;
+    if (page.destroyed()) {
+      this.observability?.emit({
+        code: RUNTIME_EVENT_CODES.ssrHydration,
+        phase: 'ssr-hydration',
+        status: 'cancelled',
+        reason: 'disposed',
+      });
+      return undefined;
+    }
+    return this.restoreLocale(page.address());
   }
 
   /**
@@ -3066,6 +3149,14 @@ class RuntimeLocalization implements Localization {
     readonly origin?: string;
   }): Promise<LocaleChangeResult | undefined> {
     return this.internal().restoreLocale(address);
+  }
+
+  ɵrestoreAfterHydration(page: {
+    readonly hydrated: Promise<unknown>;
+    readonly destroyed: () => boolean;
+    readonly address: () => { readonly url: string; readonly origin?: string };
+  }): Promise<LocaleChangeResult | undefined> {
+    return this.internal().restoreAfterHydration(page);
   }
 
   scopeReadiness(scope: LocalizationScope): Signal<ScopeReadiness> {

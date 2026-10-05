@@ -743,6 +743,16 @@
     {
       "spec": "03-locale-identity-and-resolution.spec.md",
       "section": "8. Persistence",
+      "statement": "A release MUST report to the observability sink each way such a read ends, whether it moves the page or leaves it where it is, and each reason the stores were not read, each as an event none of the others produces, because a page left in the wrong language by a read that found nothing looks, from outside, the same as one whose stores were never read.",
+      "checks": [
+        "assurance:restore-that-found-nothing-reported-as-superseded",
+        "assurance:restore-not-owed-left-unreported",
+        "assurance:restore-of-a-destroyed-application-left-unreported"
+      ]
+    },
+    {
+      "spec": "03-locale-identity-and-resolution.spec.md",
+      "section": "8. Persistence",
       "statement": "The locale cookie a release writes, from its browser store or from its own request handler, MUST be one a browser stores.",
       "checks": [
         "assurance:cookie-host-prefix-domain",

@@ -5946,6 +5946,7 @@ async function verifyEmbeddedPanel(row, languages) {
   page.on('console', (message) => {
     if (message.type() === 'error') faults.push(message.text());
   });
+  const logged = logOf(page);
   const at = (label) =>
     sectionCheck(row, `embedded panel under ${languages}, ${label}`);
   const shows = async (locale, check) => {
@@ -5971,7 +5972,7 @@ async function verifyEmbeddedPanel(row, languages) {
     assert.deepEqual(
       [shown.document, shown.locale],
       [['en', 'ltr'], locale],
-      `${check}: the panel is not in ${locale}, or withoutDocumentLocale did not leave the host page's lang alone${outstandingRequestsNote(page)}\nScripts the page loaded: ${scripts.join(', ')}`,
+      `${check}: the panel is not in ${locale}, or withoutDocumentLocale did not leave the host page's lang alone${outstandingRequestsNote(page)}\nScripts the page loaded: ${scripts.join(', ')}\nWhat the panel's sink was told, where a restore's events say how it ended:\n${logged.join('\n')}`,
     );
     return shown;
   };
@@ -6050,6 +6051,7 @@ async function verifyEmbeddedPanel(row, languages) {
       // From a blank page, because a page showing the same view would answer the capture below
       // with its own elements rather than the ones the new document was given.
       await page.goto('about:blank');
+      const loggedBefore = logged.length;
       await navigateWithScriptGate(
         page,
         `${embedded.origin}${path}`,
@@ -6071,6 +6073,20 @@ async function verifyEmbeddedPanel(row, languages) {
         `${check} kept none of the elements it was given`,
       );
       await shows('ar', check);
+      const restore = loggedEvents(logged.slice(loggedBefore).join('\n'))
+        .filter(
+          (event) =>
+            event.phase === 'persistence' && event.correlationId === undefined,
+        )
+        .map(({ status, targetLocale }) => [status, targetLocale ?? null]);
+      assert.deepEqual(
+        restore,
+        [
+          ['started', null],
+          ['succeeded', 'ar'],
+        ],
+        `${check}: the LocalizationObservabilitySink installed with withObservability was not told that the stores were read once the page was adopted and that the read ended in a change to ar`,
+      );
       assert.deepEqual(
         await embeddedStores(page),
         { tab: null, device: 'ar', account: null },
