@@ -14,6 +14,12 @@
  * version's shape on record. `--check` fails on any difference, and says which of them are
  * incompatible.
  *
+ * `--replace <stamp>[,<stamp>...]` records a named format's current shape whatever the difference.
+ * It is for a major version no release has carried: the section's rule protects a reader of a
+ * version, and a shape that has not left the repository has none, so moving its stamp would publish
+ * a second major version of a format whose first nobody received. The record's own diff is where a
+ * replacement is reviewed, and `--check` is unchanged by it.
+ *
  * Every stamp literal in the built code must be a recorded format, a same-build stamp, or a digest
  * label, so a format added without a record is found rather than missed.
  */
@@ -29,6 +35,15 @@ import { inputsRoot } from './stage-self-test.mjs';
 
 const workspaceRoot = inputsRoot();
 const check = process.argv.includes('--check');
+const replaceAt = process.argv.indexOf('--replace');
+const replaced = new Set(
+  replaceAt === -1
+    ? []
+    : (process.argv[replaceAt + 1] ?? '').split(',').filter((stamp) => stamp),
+);
+if (check && replaced.size > 0) {
+  throw new Error('--replace writes the record, and --check never does.');
+}
 const recordPath = resolve(workspaceRoot, 'tools/format-shapes.json');
 
 const toolkit = (file, type) => ({ file: `dist/toolkit/${file}.d.ts`, type });
@@ -575,6 +590,12 @@ const current = Object.fromEntries(
 );
 
 const recorded = JSON.parse(readFileSync(recordPath, 'utf8')).formats;
+for (const stamp of replaced) {
+  assert.ok(
+    stamp in recorded && stamp in current,
+    `--replace names ${stamp}, which is not a format both recorded and built.`,
+  );
+}
 const findings = [];
 const next = {};
 
@@ -639,13 +660,15 @@ for (const [stamp, entry] of Object.entries(current)) {
       });
     }
   }
+  const replacing = replaced.has(stamp);
   for (const { path, change, incompatible } of found) {
     findings.push({
-      incompatible,
-      text: `${stamp}: ${path}: ${change} (${incompatible ? 'incompatible' : 'compatible'})`,
+      incompatible: incompatible && !replacing,
+      text: `${stamp}: ${path}: ${change} (${incompatible ? (replacing ? 'incompatible, replaced' : 'incompatible') : 'compatible'})`,
     });
   }
-  next[stamp] = found.some(({ incompatible }) => incompatible) ? was : entry;
+  next[stamp] =
+    found.some(({ incompatible }) => incompatible) && !replacing ? was : entry;
 }
 
 const accounted = new Set([
@@ -711,6 +734,7 @@ if (check) {
     parser: 'json',
   });
   writeFileSync(recordPath, text, 'utf8');
+  for (const { text: line } of findings) out(`  ${line}`);
   out(
     `Format shapes written: ${Object.keys(next).length} format(s), ${findings.length} change(s) recorded.`,
   );
