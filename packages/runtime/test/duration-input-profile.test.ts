@@ -237,6 +237,8 @@ describe('the sign of a duration', () => {
     (-1 | 0 | 1)?,
   ])[] = [
     ['1:30', undefined, 'valid', 1],
+    ['-1:30', undefined, 'policy-rejected'],
+    ['+1:30', undefined, 'policy-rejected'],
     ['1:30', 'optional', 'valid', 1],
     ['-1:30', 'optional', 'valid', -1],
     ['+1:30', 'optional', 'valid', 1],
@@ -248,7 +250,7 @@ describe('the sign of a duration', () => {
     ['-1:30', 'required', 'valid', -1],
     ['+0:00', 'required', 'valid', 0],
     ['-0:00', 'required', 'policy-rejected'],
-    ['-0:00', undefined, 'policy-rejected'],
+    ['-0:00', 'optional', 'policy-rejected'],
     ['-', 'optional', 'incomplete'],
     ['+', 'required', 'incomplete'],
   ];
@@ -649,6 +651,11 @@ describe('a duration written in the spelling its profile reads', () => {
       'a backward duration where a sign is forbidden',
       duration({ hours: 1 }, -1),
       { ...CLOCK, sign: 'forbidden' },
+    ],
+    [
+      'a backward duration where no sign is declared',
+      duration({ hours: 1 }, -1),
+      CLOCK,
     ],
     [
       'an amount wider than its unit',

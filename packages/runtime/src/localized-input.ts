@@ -495,9 +495,9 @@ function parseNumeric(
   let working = source;
   const affixes = profileAffixes(profile, context);
   const requireAffix =
-    (profile.kind === 'money' && (profile.requireCurrency ?? true)) ||
-    (profile.kind === 'measurement' && (profile.requireUnit ?? true)) ||
-    (profile.kind === 'percent' && (profile.requirePercentSign ?? true));
+    (profile.kind === 'money' && profile.requireCurrency === true) ||
+    (profile.kind === 'measurement' && profile.requireUnit === true) ||
+    (profile.kind === 'percent' && profile.requirePercentSign === true);
   if (requireAffix && !affixes.available) {
     return failed(
       'unsupported-capability',
@@ -1470,7 +1470,7 @@ function validDurationPattern(
     !Array.isArray(profile.pattern) ||
     profile.pattern.length < 1 ||
     profile.pattern.length > 31 ||
-    !['forbidden', 'optional', 'required'].includes(profile.sign ?? 'optional')
+    !['forbidden', 'optional', 'required'].includes(profile.sign ?? 'forbidden')
   ) {
     return false;
   }
@@ -1648,7 +1648,7 @@ function parseDurationInput(
   let body = signedBody.body;
   const negative = signedBody.negative;
   const explicitSign = signedBody.explicit;
-  const signPolicy = profile.sign ?? 'optional';
+  const signPolicy = profile.sign ?? 'forbidden';
   if (signPolicy === 'forbidden' && explicitSign) {
     return failed(
       'policy-rejected',
@@ -2119,7 +2119,7 @@ function localizedDurationText(
   ) {
     return undefined;
   }
-  const signPolicy = profile.sign ?? 'optional';
+  const signPolicy = profile.sign ?? 'forbidden';
   if (signPolicy === 'forbidden' && value.sign < 0) return undefined;
   let text =
     value.sign < 0

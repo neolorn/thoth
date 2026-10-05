@@ -58,7 +58,11 @@ describe('what a numeric reading hands back', () => {
   });
 
   it('names a missing capability, not bad input, when the host cannot express the field', () => {
-    const profile = { kind: 'measurement', unit: 'not-a-unit' } as const;
+    const profile = {
+      kind: 'measurement',
+      unit: 'not-a-unit',
+      requireUnit: true,
+    } as const;
     expect(parseLocalizedInput('5', profile, EN)).toStrictEqual({
       status: 'unsupported-capability',
       text: '5',

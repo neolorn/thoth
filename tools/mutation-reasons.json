@@ -6059,15 +6059,6 @@
     {
       "file": "packages/runtime/src/localized-input.ts",
       "mutator": "StringLiteral",
-      "original": "'optional'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "the policy is only compared with \"forbidden\" and \"required\", so an empty default behaves as \"optional\" does",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "StringLiteral",
       "original": "'A sign is forbidden by this duration field profile.'",
       "replacement": "\"\"",
       "category": "message-wording",

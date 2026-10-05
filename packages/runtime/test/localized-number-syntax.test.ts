@@ -44,22 +44,27 @@ const GROUPED: LocalizedInputProfile = Object.freeze({
 const USD: LocalizedInputProfile = Object.freeze({
   kind: 'money',
   currency: 'USD',
+  requireCurrency: true,
 });
 const EUR: LocalizedInputProfile = Object.freeze({
   kind: 'money',
   currency: 'EUR',
+  requireCurrency: true,
 });
 const KILOMETERS: LocalizedInputProfile = Object.freeze({
   kind: 'measurement',
   unit: 'kilometer',
+  requireUnit: true,
 });
 const FRACTION: LocalizedInputProfile = Object.freeze({
   kind: 'percent',
   scale: 'fractional',
+  requirePercentSign: true,
 });
 const PERCENT_UNIT: LocalizedInputProfile = Object.freeze({
   kind: 'percent',
   scale: 'percent-unit',
+  requirePercentSign: true,
 });
 
 const ALM = '\u061C';
@@ -283,9 +288,9 @@ describe('an amount of money typed with its currency', () => {
     expect(reading(`${NBSP}\u20AC`, EUR, DE)).toBe('incomplete');
   });
 
-  it('is refused without the symbol unless the field waives it', () => {
+  it('is refused without the symbol only where the field requires it', () => {
     expect(reading('5.00', USD, EN)).toBe('policy-rejected');
-    const bare = { ...USD, requireCurrency: false } as LocalizedInputProfile;
+    const bare = { kind: 'money', currency: 'USD' } as LocalizedInputProfile;
     expect(reading('5.00', bare, EN)).toEqual(money(decimal('5'), 'USD'));
     expect(reading('-5.00', bare, EN)).toEqual(money(decimal('-5'), 'USD'));
     expect(reading('$5.00', bare, EN)).toEqual(money(decimal('5'), 'USD'));
@@ -320,6 +325,7 @@ describe('a quantity typed with its unit', () => {
     const profile = {
       kind: 'measurement',
       unit: 'not-a-unit',
+      requireUnit: true,
     } as LocalizedInputProfile;
     expect(reading('5 km', profile, EN)).toBe('unsupported-capability');
   });

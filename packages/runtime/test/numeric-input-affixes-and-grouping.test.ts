@@ -113,6 +113,58 @@ describe('a numeric field that contracts a marker', () => {
   });
 });
 
+describe('a numeric field that names a marker without requiring it', () => {
+  const NAMED: readonly (readonly [
+    string,
+    LocalizedInputProfile,
+    string,
+    object,
+  ])[] = [
+    [
+      'currency',
+      { kind: 'money', currency: 'USD' },
+      '$5',
+      { kind: 'money', currency: 'USD', amount: { value: '5' } },
+    ],
+    [
+      'unit',
+      { kind: 'measurement', unit: 'kilometer' },
+      '5 km',
+      { kind: 'measurement', unit: 'kilometer', amount: { value: '5' } },
+    ],
+    [
+      'percent sign',
+      { kind: 'percent', scale: 'percent-unit' },
+      '5%',
+      { kind: 'percent', scale: 'percent-unit', amount: { value: '5' } },
+    ],
+  ];
+
+  for (const [marker, profile, marked, value] of NAMED) {
+    it(`reads a bare number when the ${marker} is not required`, () => {
+      expect(read('5', profile)).toMatchObject({ status: 'valid', value });
+    });
+
+    it(`reads a bare negative number when the ${marker} is not required`, () => {
+      expect(read('-5', profile)).toMatchObject({
+        status: 'valid',
+        value: { amount: { value: '-5' } },
+      });
+    });
+
+    it(`reads the ${marker} when it is typed without being required`, () => {
+      expect(read(marked, profile)).toMatchObject({ status: 'valid', value });
+    });
+  }
+
+  it('reads a bare number in a unit the host cannot write', () => {
+    expect(read('5', { kind: 'measurement', unit: 'furlong' })).toMatchObject({
+      status: 'valid',
+      value: { kind: 'measurement', unit: 'furlong', amount: { value: '5' } },
+    });
+  });
+});
+
 describe('a number with its separators', () => {
   const GROUPED: LocalizedInputProfile = Object.freeze({
     kind: 'decimal',
