@@ -4331,6 +4331,16 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/rich-slot-projection-binding.test.ts',
   },
   {
+    id: 'malformed-catalog-set-refused-untyped',
+    invariant:
+      'A catalog set or configuration with a member missing or of another shape is refused as a configuration failure by the store.',
+    source: 'packages/runtime/src/catalog-runtime.ts',
+    find: "        'invalid-configuration',\n        'The generated catalog set or its configuration is malformed.',",
+    replace:
+      "        'internal-invariant',\n        'The generated catalog set or its configuration is malformed.',",
+    caughtBy: 'packages/runtime/test/catalog-set-shape-faults.test.ts',
+  },
+  {
     id: 'generated-value-snapshot-failure-untyped',
     invariant:
       'A generated configuration or catalog set that is not inert data is refused as a configuration failure, not with the bare error of the copy.',

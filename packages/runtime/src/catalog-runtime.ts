@@ -327,6 +327,39 @@ type ReceivedCatalogSetArtifact = Omit<CatalogSetArtifact, 'address'> & {
 };
 
 /**
+ * The artifacts of a set that agrees with its configuration.
+ *
+ * Both values are inert copies by now, so reading a member runs no code of the application and the
+ * only thing a read can throw is the `TypeError` of a member that is missing or of another shape.
+ * That is a set the toolkit did not write, and it is refused as one. Every fault the comparison
+ * itself finds is thrown as the configuration failure already and passes through.
+ */
+function assertDescriptor(
+  configuration: AsReceived<GeneratedConfiguration, 'generatedAbi'>,
+  descriptor: ReceivedCatalogSetDescriptor,
+  loaders: CatalogLoaders,
+  contextTimeZone: boolean,
+): ReadonlyMap<string, CatalogSetArtifact> {
+  try {
+    return comparedArtifacts(
+      configuration,
+      descriptor,
+      loaders,
+      contextTimeZone,
+    );
+  } catch (cause) {
+    if (cause instanceof LocalizationError) throw cause;
+    throw new LocalizationError(
+      operationalDiagnostic(
+        'invalid-configuration',
+        'The generated catalog set or its configuration is malformed.',
+      ),
+      { cause },
+    );
+  }
+}
+
+/**
  * Everything about a generated set that can be settled before a single catalog is loaded.
  *
  * The list is `specs/05-compiled-artifacts-and-trust.spec.md` section 4: the profiles, the
@@ -334,7 +367,7 @@ type ReceivedCatalogSetArtifact = Omit<CatalogSetArtifact, 'address'> & {
  * formed digest, a summary inside the ceilings, no repeated identity, and a loader for every
  * entry. It runs once at construction, because none of it depends on a request.
  */
-function assertDescriptor(
+function comparedArtifacts(
   configuration: AsReceived<GeneratedConfiguration, 'generatedAbi'>,
   descriptor: ReceivedCatalogSetDescriptor,
   loaders: CatalogLoaders,
