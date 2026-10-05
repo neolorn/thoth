@@ -4,6 +4,7 @@ import {
   createHostLocalePolicy,
   createLocaleNeutralPolicy,
   createPathPrefixLocalePolicy,
+  LocalizationError,
   localeFromRoute,
   resolveInitialRouteLocale,
   type LocaleUrlPolicy,
@@ -146,14 +147,27 @@ describe('the origin a context carries, under a locale-host policy', () => {
     expect(stated('/second', HOSTED)).toBe('en-US');
   });
 
-  it('is read only where it is text', () => {
+  it('is refused where it is not text, under every policy', () => {
     // A URL object reads as the Arabic origin once it is turned into text, and it is not text.
-    const context = {
-      url: '/second',
-      origin: new URL('https://example.eg'),
-    };
-    expect(initial(context, HOSTED)).toBe('en-US');
-    expect(stated(context, HOSTED)).toBe('en-US');
+    // Read at the default origin instead, the request would be answered in English.
+    for (const origin of [new URL('https://example.eg'), null, 7]) {
+      const context = { url: '/second', origin };
+      for (const policy of POLICIES) {
+        expect(() => initial(context, policy)).toThrow(LocalizationError);
+        expect(() => stated(context, policy)).toThrow(LocalizationError);
+      }
+    }
+    try {
+      initial({ url: '/second', origin: 7 }, HOSTED);
+    } catch (error) {
+      expect((error as LocalizationError).diagnostic).toMatchObject({
+        code: 'invalid-configuration',
+        reason: 'malformed-input',
+      });
+    }
+    expect(initial({ url: '/second', origin: undefined }, HOSTED)).toBe(
+      'en-US',
+    );
   });
 
   it('answers in the default locale and states none where the policy has no such origin', () => {

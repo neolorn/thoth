@@ -131,6 +131,10 @@ succeeds. One build then prerenders one origin's locale while the document adver
 that build does not produce, which is where those locales live. A locale switch is a document
 navigation, because no application state crosses an origin.
 
+A request context states its origin as text. A release MUST refuse a context whose origin is
+anything else, under every policy kind, and MUST NOT read the address at the default locale's origin
+instead, because that answers in a locale the request did not ask for.
+
 A release MUST advertise or link a locale only where arriving at the address with nothing said about
 preference yields that locale. That is one observation rather than a property of the policy kind, it
 is the only kind of visitor a crawler is, and it is also what a reader gets from a link opened in a

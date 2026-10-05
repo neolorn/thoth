@@ -3314,10 +3314,24 @@ function requestTarget(context: unknown): string | undefined {
                 .request.url
             : undefined
         : undefined;
-  if (candidate === undefined) return undefined;
-  if (candidate.startsWith('/')) return candidate;
   // As written, for the resolver to classify.
-  return splitAbsoluteTarget(candidate) === undefined ? undefined : candidate;
+  return candidate;
+}
+
+/**
+ * The origin a request context states, which a host policy reads the locale from.
+ *
+ * Called with a context a target was read from, so with text or an object. An origin that is not
+ * text is refused: reading the address at the default locale's origin instead would answer in a
+ * locale the request did not ask for.
+ */
+function requestOrigin(context: unknown): string | undefined {
+  const origin: unknown = (context as { readonly origin?: unknown }).origin;
+  if (origin === undefined || typeof origin === 'string') return origin;
+  return routeError(
+    'The request context states an origin that is not text.',
+    'malformed-input',
+  );
 }
 
 /**
@@ -3341,15 +3355,10 @@ export function localeFromRoute(
   assertLocalePolicy(policy);
   const target = requestTarget(context);
   if (target === undefined) return undefined;
+  const origin = requestOrigin(context);
   if (policy.kind === 'locale-neutral') {
     return neutralAddressLocale(target, policy, projection);
   }
-  const origin =
-    typeof context === 'object' &&
-    context !== null &&
-    typeof (context as { readonly origin?: unknown }).origin === 'string'
-      ? (context as { readonly origin: string }).origin
-      : undefined;
   const resolution = resolveLocalizedRoute(target, policy, projection, {
     ...(origin === undefined ? {} : { origin }),
   });
@@ -3396,7 +3405,8 @@ function neutralAddressLocale(
  *
  * Called on a server, where there is no committed snapshot yet and the address is the only thing
  * that says which language to start in. The context is whatever the platform supplies for the
- * request; the origin is read off it when it has one, which is what a host policy needs.
+ * request; the origin is read off it when it has one, which is what a host policy needs, and a
+ * context whose origin is not text is refused with a `LocalizationError`.
  *
  * Returns the locale to present in, which for an address naming no route is the one the resolution
  * decided the response should be presented in rather than always the default.
@@ -3409,12 +3419,7 @@ export function resolveInitialRouteLocale(
   assertLocalePolicy(policy);
   const target = requestTarget(context);
   if (target === undefined) return policy.defaultLocale;
-  const origin =
-    typeof context === 'object' &&
-    context !== null &&
-    typeof (context as { readonly origin?: unknown }).origin === 'string'
-      ? (context as { readonly origin: string }).origin
-      : undefined;
+  const origin = requestOrigin(context);
   const resolution = resolveLocalizedRoute(target, policy, projection, {
     ...(origin === undefined ? {} : { origin }),
   });

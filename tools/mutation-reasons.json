@@ -736,58 +736,6 @@
     {
       "file": "packages/runtime/core/src/routing.ts",
       "mutator": "ConditionalExpression",
-      "original": "candidate.startsWith('/')",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "Text that is neither a path nor an HTTP address then goes to the resolver, which answers malformed in the default locale (lines 3045 and 3213); both callers answer for that as they do for no target, the default locale and undefined."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "splitAbsoluteTarget(candidate) === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Text that does not split is then returned for the resolver, which answers malformed in the default locale (lines 3045 and 3213); resolveInitialRouteLocale returns that default and localeFromRoute returns undefined, as each does for no target."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "typeof context === 'object' &&\n    context !== null",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "Reached only with a target, which requestTarget (lines 3232 to 3244) returns only for a string or a non-null object, and a string has no origin property, so the test of the origin itself decides alone.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "LogicalOperator",
-      "original": "typeof context === 'object' &&\n    context !== null",
-      "replacement": "typeof context === 'object' || context !== null",
-      "category": "equivalent",
-      "reason": "Reached only with a target, which requestTarget (lines 3232 to 3244) returns only for a string or a non-null object, and a string has no origin property, so the test of the origin itself decides alone.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "typeof context === 'object'",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "Reached only with a target, which requestTarget (lines 3232 to 3244) returns only for a string or a non-null object, and a string has no origin property, so the test of the origin itself decides alone.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "context !== null",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "Reached only with a target, which requestTarget (lines 3232 to 3244) returns only for a string or a non-null object, and a string has no origin property, so the test of the origin itself decides alone.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
       "original": "resolution.status === 'redirect'",
       "replacement": "true",
       "category": "equivalent",

@@ -1823,6 +1823,12 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "3. Locale URL policies",
+      "statement": "A release MUST refuse a context whose origin is anything else, under every policy kind, and MUST NOT read the address at the default locale's origin instead, because that answers in a locale the request did not ask for.",
+      "checks": ["assurance:request-origin-that-is-not-text-ignored"]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "3. Locale URL policies",
       "statement": "A release MUST advertise or link a locale only where arriving at the address with nothing said about preference yields that locale.",
       "checks": ["assurance:alternate-advertised-without-arrival-check"]
     },

@@ -2950,6 +2950,16 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/written-out-locale-policies.test.ts',
   },
   {
+    id: 'request-origin-that-is-not-text-ignored',
+    invariant:
+      'A request context whose origin is not text is refused, never read at the default origin.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: "  if (origin === undefined || typeof origin === 'string') return origin;",
+    replace:
+      "  if (true) return typeof origin === 'string' ? origin : undefined;",
+    caughtBy: 'packages/runtime/test/request-context-locale.test.ts',
+  },
+  {
     id: 'unserved-policy-kind-narrowed-anyway',
     invariant:
       'A locale URL policy of a kind Equator does not serve is refused where it is narrowed, naming the kinds that are served.',
