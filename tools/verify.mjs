@@ -607,7 +607,7 @@ const runStep = (id, timeoutSeconds, root, processors) =>
 // ---------------------------------------------------------------------------------------------
 
 // Sized from what the machine reports rather than from a constant, so a smaller machine narrows the
-// run instead of thrashing it, and to half of it by default (`gate-resources.mjs`), because the
+// run instead of thrashing it, and to two thirds of it by default (`gate-resources.mjs`), because the
 // machine is usually someone's working machine while the gate runs.
 const budget = processorBudget();
 

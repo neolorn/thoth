@@ -45,16 +45,16 @@ import { takeHeavyJobLock } from './heavy-job-lock.mjs';
 import { steps as declaredSteps } from './verify-stages.mjs';
 import { workingRoot } from './working-state.mjs';
 
-// The default is half the machine, whatever the machine.
+// The default is two thirds of the machine, whatever the machine.
 assert.equal(
   processorBudget({}, 32),
-  16,
-  'The default budget is not half of 32.',
+  21,
+  'The default budget is not two thirds of 32, rounded down.',
 );
 assert.equal(
   processorBudget({}, 3),
-  1,
-  'The default budget is not half of 3, rounded down.',
+  2,
+  'The default budget is not two thirds of 3.',
 );
 assert.equal(
   processorBudget({}, 1),

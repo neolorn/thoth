@@ -95,8 +95,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       # No engines and no Node builds: this runs the two fast vitest suites and nothing else.
-      # The worker count is named because `tools/run-mutation.mjs` otherwise hands Stryker half the
-      # machine, which is right on a working machine and would halve this runner.
+      # The worker count is named because `tools/run-mutation.mjs` otherwise hands Stryker two
+      # thirds of the machine, which is right on a working machine and would narrow this runner.
       - name: Mutate
         run: pnpm run mutation --concurrency 4
 

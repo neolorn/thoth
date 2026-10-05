@@ -5,9 +5,9 @@
  * machine unresponsive, or takes it down, costs more than a slower run does. So it takes a share
  * rather than all of it:
  *
- * - **Processors.** One setting, `EQUATOR_VERIFY_PROCESSORS`, defaulting to half the logical
- *   processors the machine reports, so it scales with the machine. It counts the stages that run at
- *   once and the workers each stage's runners start, together: a stage declares how many
+ * - **Processors.** One setting, `EQUATOR_VERIFY_PROCESSORS`, defaulting to two thirds of the
+ *   logical processors the machine reports, so it scales with the machine. It counts the stages
+ *   that run at once and the workers each stage's runners start, together: a stage declares how many
  *   processors it occupies (`processors` in `verify-stages.mjs`, one when it says nothing), the
  *   scheduler starts a stage only while the stages running and the one starting fit the budget,
  *   and each stage's runners are handed its share through the settings they read themselves.
@@ -35,7 +35,7 @@ export function processorBudget(
 ) {
   const set = environment[PROCESSORS_VARIABLE];
   if (set === undefined || set === '') {
-    return Math.max(1, Math.floor(parallelism / 2));
+    return Math.max(1, Math.floor((parallelism * 2) / 3));
   }
   const value = Number(set);
   if (!Number.isInteger(value) || value < 1) {
