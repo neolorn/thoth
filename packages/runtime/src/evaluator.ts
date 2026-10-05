@@ -712,11 +712,22 @@ function unicodeOptions(
   });
 }
 
-function withoutUnicodeOptions(
+/**
+ * The options a function or a slot is given: those written, less the `u:` ones and less any whose
+ * variable holds no value.
+ *
+ * An optional input may be omitted and a nullable one may be null, and an option written as such a
+ * variable then has nothing to say. LDML 48 Part 9, Option Resolution, leaves an option that did
+ * not resolve out of the mapping, so the option is as if it had not been written: what the operand
+ * carried under that name still applies, and a function that requires the option refuses the call.
+ * Keeping the name with no value would instead erase what the operand carried.
+ */
+function writtenOptions(
   options: Readonly<Record<string, unknown>>,
 ): Readonly<Record<string, unknown>> {
   const entries = Object.entries(options).filter(
-    ([name]) => !name.startsWith('u:'),
+    ([name, value]) =>
+      !name.startsWith('u:') && value !== undefined && value !== null,
   );
   return entries.length === Object.keys(options).length
     ? options
@@ -759,7 +770,6 @@ function optionText(
 ): Readonly<Record<string, string>> {
   const text: Record<string, string> = {};
   for (const [name, value] of Object.entries(source)) {
-    if (value === undefined || value === null) continue;
     text[name] = typeof value === 'string' ? value : String(value);
   }
   return text;
@@ -1211,7 +1221,7 @@ function resolveExpression(
   // options it accepts, and leaving `u:dir` in the mapping would fail that contract for using a
   // feature of the message syntax rather than of the function.
   const unicode = unicodeOptions(declared, `:${name}`, true);
-  const options = withoutUnicodeOptions(declared);
+  const options = writtenOptions(declared);
   switch (name) {
     case 'string':
       // *"The function `:string` has no options."* Checked rather than ignored: an option written
@@ -1670,9 +1680,10 @@ function slotOptions(
   return Object.freeze({
     options: Object.freeze(
       Object.fromEntries(
-        Object.entries(withoutUnicodeOptions(declared)).map(
-          ([name, option]) => [name, String(option)],
-        ),
+        Object.entries(writtenOptions(declared)).map(([name, option]) => [
+          name,
+          String(option),
+        ]),
       ),
     ),
     ...(unicode.id === undefined ? {} : { id: unicode.id }),

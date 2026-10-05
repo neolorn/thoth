@@ -355,7 +355,7 @@ describe('the options a message function declares', () => {
   };
 
   const SIZE: readonly CompiledInputContract[] = [
-    { name: 'size', type: 'number', optional: true, nullable: false },
+    { name: 'size', type: 'number', optional: true, nullable: true },
   ];
 
   const withOptions = (
@@ -423,26 +423,62 @@ describe('the options a message function declares', () => {
     refused({ label: literal('x'), size: variable('size') }, { size: 1.5 });
   });
 
-  it('calls the function with no value for an option whose variable was omitted', () => {
-    expect(
-      renderArtifact(
-        {
-          body: patternBody([
-            call(literal('operand'), {
-              label: literal('x'),
-              size: variable('size'),
-            }),
-          ]),
-          inputs: SIZE,
-        },
-        {},
-        extensionsOf({ options: OPTIONS }, ({ options }) => ({
-          text: String(options['size'] ?? 'unset'),
-          value: 'ok',
-        })),
-      ),
-    ).toBe('unset');
-  });
+  it.each([
+    ['was omitted', {}],
+    ['is null', { size: null }],
+  ])(
+    'calls the function without an option whose variable %s',
+    (_label, values) => {
+      expect(
+        withOptions({ label: literal('x'), size: variable('size') }, values),
+      ).toBe('ok(label=x)');
+    },
+  );
+
+  it.each([
+    ['was omitted', {}],
+    ['is null', { size: null }],
+  ])(
+    'refuses a call whose required option is written as a variable that %s',
+    (_label, values) => {
+      refused({ label: variable('size') }, values);
+    },
+  );
+
+  it.each([
+    ['was omitted', {}],
+    ['is null', { size: null }],
+  ])(
+    'leaves what the operand carried in force for an option whose variable %s',
+    (_label, values) => {
+      expect(
+        renderArtifact(
+          {
+            body: patternBody(
+              [
+                call(variable('first'), {
+                  label: literal('y'),
+                  size: variable('size'),
+                }),
+              ],
+              [
+                local(
+                  'first',
+                  call(literal('operand'), {
+                    label: literal('x'),
+                    size: literal('12'),
+                  }),
+                ),
+              ],
+            ),
+            inputs: SIZE,
+          },
+          values,
+          extensionsOf({ options: OPTIONS }),
+        ),
+      ).toBe('ok(label=y,size=12)');
+    },
+  );
 
   it('refuses a required option whose variable holds the wrong type', () => {
     refused({ label: variable('size') }, { size: 12 });

@@ -4340,6 +4340,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/runtime-extension-admission.test.ts',
   },
   {
+    id: 'valueless-option-kept-in-the-call',
+    invariant:
+      'An option whose variable was omitted or is null is left out of the call, so what the operand carried under its name still applies.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: "      !name.startsWith('u:') && value !== undefined && value !== null,",
+    replace: "      !name.startsWith('u:'),",
+    caughtBy: 'packages/runtime/test/function-option-resolution.test.ts',
+  },
+  {
     id: 'scope-refused-for-its-name',
     invariant:
       'Every scope name the identity grammar admits compiles to its own module, whatever its length or number of parts.',

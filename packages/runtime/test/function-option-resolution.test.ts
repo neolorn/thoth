@@ -137,28 +137,36 @@ describe('the u: options of markup', () => {
     },
   ];
 
-  const marked = (options: Readonly<Record<string, unknown>>) =>
-    evaluateArtifact({
-      body: patternBody([
-        {
-          kind: 'markup',
-          markupKind: 'open',
-          name: 'mark',
-          options,
-          attributes: {},
-        },
-        'inside',
-        {
-          kind: 'markup',
-          markupKind: 'close',
-          name: 'mark',
-          options: {},
-          attributes: {},
-        },
-      ]),
-      slots: MARK,
-      resultKind: 'structured',
-    });
+  const marked = (
+    options: Readonly<Record<string, unknown>>,
+    declared: readonly CompiledInputContract[] = NONE,
+    values: Readonly<Record<string, unknown>> = {},
+  ) =>
+    evaluateArtifact(
+      {
+        inputs: declared,
+        body: patternBody([
+          {
+            kind: 'markup',
+            markupKind: 'open',
+            name: 'mark',
+            options,
+            attributes: {},
+          },
+          'inside',
+          {
+            kind: 'markup',
+            markupKind: 'close',
+            name: 'mark',
+            options: {},
+            attributes: {},
+          },
+        ]),
+        slots: MARK,
+        resultKind: 'structured',
+      },
+      values,
+    );
 
   it('lifts u:id out of the options a slot carries', () => {
     const result = marked({ 'u:id': literal('first'), tone: literal('calm') });
@@ -173,6 +181,32 @@ describe('the u: options of markup', () => {
     const slot = (result.value as readonly LocalizedSlotPart[])[0]!;
     expect(Object.keys(slot)).not.toContain('id');
     expect(slot.options).toEqual({ tone: 'calm' });
+  });
+
+  it.each([
+    ['was omitted', {}],
+    ['is null', { tone: null }],
+  ])(
+    'gives a slot no option where the variable written for it %s',
+    (_label, values) => {
+      const result = marked(
+        { tone: variable('tone'), weight: literal('bold') },
+        inputs(['tone', 'string', { optional: true, nullable: true }]),
+        values,
+      );
+      const slot = (result.value as readonly LocalizedSlotPart[])[0]!;
+      expect(slot.options).toEqual({ weight: 'bold' });
+    },
+  );
+
+  it('still refuses a u:id whose variable was omitted', () => {
+    const failure = refusalOf(() =>
+      marked(
+        { 'u:id': variable('tone') },
+        inputs(['tone', 'string', { optional: true }]),
+      ),
+    );
+    expect(failure.diagnostic.code).toBe('invalid-rich-message');
   });
 
   it.each(['ltr', 'rtl', 'auto', 'inherit'])(
@@ -208,6 +242,24 @@ describe('an option whose value arrives through a variable', () => {
   it('is left unwritten when the variable is null', () => {
     expect(render(SOURCE, DIGITS, { count: 1, digits: null })).toBe('1');
   });
+
+  const CARRIED =
+    '.local $shown = {$count :number minimumFractionDigits=2}\n' +
+    '{{{$shown :number minimumFractionDigits=$digits}}}';
+
+  it('is written over what the operand carried when the variable holds a value', () => {
+    expect(render(CARRIED, DIGITS, { count: 1, digits: 3 })).toBe('1.000');
+  });
+
+  it.each([
+    ['was omitted', {}],
+    ['is null', { digits: null }],
+  ])(
+    'leaves what the operand carried in force when the variable %s',
+    (_label, values) => {
+      expect(render(CARRIED, DIGITS, { count: 1, ...values })).toBe('1.00');
+    },
+  );
 
   it('is read as the text of a number where the option is one of a list of numerals', () => {
     expect(

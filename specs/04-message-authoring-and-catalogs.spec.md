@@ -197,6 +197,12 @@ longer chain does not lose what a function further along declares, and each func
 the options its own descriptor names. Inheritance MUST NOT become a second way past a closed
 descriptor.
 
+An option may be written as a variable, and the input behind it may be optional or nullable. Where
+that input was omitted or is null the option has no value, which the standard resolves by leaving
+the option out. A release MUST call the function, or build the slot, without an option whose
+variable was omitted or is null, MUST leave in force what the operand carried under that name, and
+MUST refuse the call where the function requires the option.
+
 ## 7. Typed inputs
 
 A source-only `inputs` mapping is permitted where the toolkit cannot infer the complete contract

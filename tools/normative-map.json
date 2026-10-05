@@ -937,6 +937,12 @@
     },
     {
       "spec": "04-message-authoring-and-catalogs.spec.md",
+      "section": "6. Message bodies",
+      "statement": "A release MUST call the function, or build the slot, without an option whose variable was omitted or is null, MUST leave in force what the operand carried under that name, and MUST refuse the call where the function requires the option.",
+      "checks": ["assurance:valueless-option-kept-in-the-call"]
+    },
+    {
+      "spec": "04-message-authoring-and-catalogs.spec.md",
       "section": "7. Typed inputs",
       "statement": "Each key is the exact inferred external variable name without `$`, and a release MUST refuse a key that introduces a new, misspelled, or unused input.",
       "checks": ["assurance:refinement-key-not-an-input-accepted"]
