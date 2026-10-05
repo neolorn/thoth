@@ -17,8 +17,15 @@
  * must be the CPU time the tree used in it. The budget's default and each stage's declared share are
  * checked against the real declarations too, so a share nobody can be handed fails here rather
  * than in a run.
+ *
+ * The lock every heavy job takes is driven here as well (`heavy-job-lock.mjs`): a second job is
+ * refused by the first one's name, a job the holder started runs under the holder's lock, and a
+ * lock whose holder has exited, or whose process id belongs to a later process, is taken over.
  */
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { existsSync, rmSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import {
   createScheduler,
@@ -34,7 +41,9 @@ import {
   holdDown,
   processorsBetween,
 } from './process-tree.mjs';
+import { takeHeavyJobLock } from './heavy-job-lock.mjs';
 import { steps as declaredSteps } from './verify-stages.mjs';
+import { workingRoot } from './working-state.mjs';
 
 // The default is half the machine, whatever the machine.
 assert.equal(
@@ -275,6 +284,86 @@ assert.ok(
   heldForMemory > 0,
   'Nothing was ready while memory was under the floor, so the floor was never tested.',
 );
+
+// The lock every heavy job takes, over a file of its own. The first holder is this process, read
+// from the machine as the gate reads one, so the refusal below is of a holder really running.
+const lockPath = resolve(workingRoot, 'heavy-job-lock-self-test.lock');
+rmSync(lockPath, { force: true });
+const outside = { path: lockPath, environment: {} };
+const first = await takeHeavyJobLock('the planted first job', outside);
+assert.equal(first.inherited, false, 'The first job did not take the lock.');
+await assert.rejects(
+  takeHeavyJobLock('the planted second job', outside),
+  new RegExp(
+    `A heavy job is already running: the planted first job \\(process ${process.pid}, started `,
+    'u',
+  ),
+  'A second heavy job was started while the first held the lock, or was refused without naming it.',
+);
+const under = await takeHeavyJobLock('a job the first one started', {
+  path: lockPath,
+  environment: first.environment,
+});
+assert.equal(
+  under.inherited,
+  true,
+  "A job handed the holder's token was not run under the holder's lock.",
+);
+under.release();
+assert.ok(
+  existsSync(lockPath),
+  "A job running under the holder's lock released it.",
+);
+first.release();
+assert.ok(!existsSync(lockPath), 'The holder did not release its lock.');
+
+// A holder that is gone: a process that has exited, and a process id handed to a later process.
+const exited = spawnSync(process.execPath, ['-e', '']).pid;
+const plantHolder = (holder) =>
+  writeFileSync(
+    lockPath,
+    `${JSON.stringify({ token: 'planted', ...holder })}\n`,
+  );
+plantHolder({
+  job: 'the planted dead job',
+  pid: exited,
+  startedAt: new Date().toISOString(),
+});
+const afterDead = await takeHeavyJobLock('the job after a dead one', outside);
+assert.match(
+  afterDead.tookOver ?? '',
+  new RegExp(`the planted dead job \\(process ${exited}, `, 'u'),
+  'A lock whose holder had exited was not taken over by name.',
+);
+afterDead.release();
+const lockedAt = Date.parse('2026-01-01T00:00:00.000Z');
+const reusedHolder = {
+  job: 'the planted job whose id was reused',
+  pid: 4242,
+  startedAt: new Date(lockedAt).toISOString(),
+};
+const machine = (started) => ({
+  ...outside,
+  processExists: () => true,
+  readProcesses: async () => ({ processes: [{ pid: 4242, started }] }),
+});
+plantHolder(reusedHolder);
+await assert.rejects(
+  takeHeavyJobLock('the job beside a live one', machine(lockedAt - 60_000)),
+  /A heavy job is already running: the planted job whose id was reused/u,
+  'A holder that started before its lock was written was taken for a dead one.',
+);
+const afterReuse = await takeHeavyJobLock(
+  'the job after a reused id',
+  machine(lockedAt + 60_000),
+);
+assert.match(
+  afterReuse.tookOver ?? '',
+  /the planted job whose id was reused/u,
+  'A lock was kept by a process that started after it was written, which is another process with the same id.',
+);
+afterReuse.release();
+assert.ok(!existsSync(lockPath), 'The last planted job left its lock behind.');
 
 process.stdout.write(
   `verify:gate-limits:self-test GREEN: ${planted.length} planted stages ran within ${BUDGET} processors, alone where exclusive, held ${heldForMemory} times for memory, peak ${scheduler.peakProcessors}.\n`,

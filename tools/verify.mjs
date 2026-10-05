@@ -40,6 +40,7 @@ import {
   verdictOccurrences,
 } from './gate-occurrences.mjs';
 import { readTrace, traceDrift } from './trace-drift.mjs';
+import { holdHeavyJobLock } from './heavy-job-lock.mjs';
 import { claimsFile, safeName, steps } from './verify-stages.mjs';
 import { attemptLedgerPath, workingRoot } from './working-state.mjs';
 
@@ -461,6 +462,8 @@ const runStep = (id, timeoutSeconds, root, processors) =>
         EQUATOR_TRACE_LAUNCHER: '1',
         // The stage's share of the processor budget, in the settings its runners size themselves by.
         ...runnerEnvironment(processors),
+        // What a stage starts runs under this run's lock and is not refused by it.
+        ...heavyJob.environment,
         // The trace goes to the repository, because the tree it describes is about to be removed.
         EQUATOR_TRACE_FILE: resolve(runDirectory, `${safeName(id)}.jsonl`),
         // Traced against the tree the stage actually ran in, so a path resolves to the same
@@ -530,34 +533,11 @@ const budget = processorBudget();
  * One gate run at a time on a machine.
  *
  * Two runs would each take the whole budget, which is the overload the budget exists to prevent,
- * and they would share `tmp/verify-run` and the ledger besides. The lock names the process holding
- * it, so a run that died is not mistaken for one still going.
+ * and they would share `tmp/verify-run` and the ledger besides. The lock is the one every heavy job
+ * takes (`heavy-job-lock.mjs`), so a mutation run is refused while a
+ * gate is going, and the gate while one of them is.
  */
-const lockPath = resolve(workingRoot, 'verify.lock');
-const alive = (pid) => {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return error.code === 'EPERM';
-  }
-};
-if (existsSync(lockPath)) {
-  const holder = JSON.parse(readFileSync(lockPath, 'utf8'));
-  if (holder.pid !== process.pid && alive(holder.pid)) {
-    throw new Error(
-      `Another gate run is going: process ${holder.pid}, started ${holder.startedAt}. One run at a time; wait for it, or end it.`,
-    );
-  }
-}
-mkdirSync(workingRoot, { recursive: true });
-writeFileSync(
-  lockPath,
-  `${JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() })}\n`,
-);
-process.on('exit', () => {
-  rmSync(lockPath, { force: true });
-});
+const heavyJob = await holdHeavyJobLock('the gate');
 
 /**
  * Below normal, for the gate and everything it starts.
