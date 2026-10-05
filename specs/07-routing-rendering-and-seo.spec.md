@@ -402,6 +402,13 @@ themselves in the canonical address, so a return address such as `?next=/account
 after a canonical correction or a redirect as before it. An escaped slash in a path segment stays a
 structurally unsafe target under section 4, because decoded it would turn one segment into two.
 
+A canonical address is written in Unicode Normalization Form C: a declared path and a parameter a
+codec writes are both held to it. A release MUST read each decoded path segment, query name, query
+value, and fragment in that form, a parameter before its codec reads it, and MUST answer a spelling
+that is not in it as a variant of the one that is. A letter followed by a combining mark that the
+form writes as one character is such a spelling, and so is U+212A, the Kelvin sign, which the form
+writes as the ASCII capital `K`, so in a prefix or a static segment it is then an ASCII-case variant.
+
 Canonical, alternate, and sitemap URLs omit the fragment and omit query parameters by default. A
 bounded typed query value joins canonical identity only where a route declares a stable indexable
 representation, and a release MUST NOT promote accepted transient query state into cache,

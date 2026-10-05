@@ -4628,6 +4628,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/query-and-fragment-separators.test.ts',
   },
   {
+    id: 'request-spelling-read-unnormalized',
+    invariant:
+      'A request spelling that is not in Unicode Normalization Form C is read in that form and corrected to the canonical address.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: "    const decoded = decodeURIComponent(value).normalize('NFC');",
+    replace: '    const decoded = decodeURIComponent(value);',
+    caughtBy: 'packages/runtime/test/request-normal-form.test.ts',
+  },
+  {
     id: 'cache-directive-after-a-missing-comma-dropped',
     invariant:
       "A directive that follows another with no comma between them in a page's Cache-Control is still read, so no-store is never lost to a max-age.",

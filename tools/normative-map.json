@@ -2237,6 +2237,12 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "6. Canonicalization, query, and fragment",
+      "statement": "A release MUST read each decoded path segment, query name, query value, and fragment in that form, a parameter before its codec reads it, and MUST answer a spelling that is not in it as a variant of the one that is.",
+      "checks": ["assurance:request-spelling-read-unnormalized"]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "6. Canonicalization, query, and fragment",
       "statement": "A bounded typed query value joins canonical identity only where a route declares a stable indexable representation, and a release MUST NOT promote accepted transient query state into cache, telemetry, or indexing identity on its own.",
       "checks": [
         "assurance:alternate-carries-the-visit-query",
