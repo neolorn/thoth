@@ -32,11 +32,9 @@
  * workers make more mutants time out, so a reading taken at a higher worker count scores higher on
  * the same tree and is the inflated one.
  *
- * **A survivor is a verdict only where every test planned for it ran.** The runner stops a
- * mutant's tests at the first failure, and a run that is cut short with no failure recorded is
- * scored as survived with fewer tests completed than planned. 575 of the 1,873 were like that. Run
- * again over their lines with `--disableBail`, most of them are killed, so read `testsCompleted`
- * against `coveredBy` before reading a survivor, and settle the short ones that way.
+ * **That reading was taken with the runner stopping a mutant's tests at the first failure**, and 575
+ * of its 1,873 survivors had fewer tests completed than planned, which is no verdict. `disableBail`
+ * below is why a reading no longer carries those.
  *
  * **The survivors that stay are recorded.** `tools/mutation-reasons.json` lists each mutant no test
  * could notice, with its category and a sentence about that site, and
@@ -202,6 +200,18 @@ export default {
     cpus().length <= 4 ? cpus().length : cpus().length - 1,
     24,
   ),
+
+  /**
+   * Every test planned for a mutant runs, whatever the earlier ones did.
+   *
+   * By default the runner stops a mutant's tests at the first failure. A run cut short with no
+   * failure recorded is then scored as survived with fewer tests completed than planned, and the
+   * report cannot tell that from a mutant every test passed over: 575 of 1,873 survivors in one
+   * reading were of that kind, and most of them were killed once their tests were allowed to
+   * finish. A survivor without a verdict is not a reading, so the cut is off, and
+   * `tools/verify-mutation-reasons.mjs --report` refuses a report that carries one.
+   */
+  disableBail: true,
 
   // The default is 1.5x the measured run plus 5s. These suites are between one and twenty seconds
   // whole, so a single slow mutant is easily inside the noise of a busy machine, and a timeout is

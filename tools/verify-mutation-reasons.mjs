@@ -14,11 +14,12 @@
  * line with a recorded mutant has to look at the record.
  *
  * With `--report <stryker json>` it is the reading's half. Every survivor in the report must have
- * an entry. A survivor counts only where every test planned for the mutant ran: the runner stops a
- * mutant's tests at the first failure, and a run cut short with no failure recorded is scored as
- * survived with fewer tests completed than planned, which is no verdict. Those are counted and
- * printed, not refused, and so is an entry no survivor matched, because a recorded mutant that
- * timed out in one run is still the same mutant.
+ * an entry. A survivor is a verdict only where every test planned for the mutant ran: a runner
+ * that stops a mutant's tests at the first failure scores a run cut short with no failure recorded
+ * as survived, with fewer tests completed than planned. Both configurations set `disableBail`, so
+ * a report that carries such a mutant was not taken with them, and it is refused. An entry no
+ * survivor matched is counted and printed, not refused, because a recorded mutant that timed out
+ * in one run is still the same mutant.
  *
  * Usage: node tools/verify-mutation-reasons.mjs [--report <path>]
  */
@@ -127,6 +128,9 @@ if (reportIndex !== -1) {
       if (mutant.status !== 'Survived') continue;
       if ((mutant.testsCompleted ?? 0) < (mutant.coveredBy ?? []).length) {
         unsettled += 1;
+        fail(
+          `${file}:${mutant.location.start.line} ${mutant.mutatorName} is scored as survived with ${mutant.testsCompleted ?? 0} of ${(mutant.coveredBy ?? []).length} planned tests run, which is no verdict. Take the reading with disableBail.`,
+        );
         continue;
       }
       survivors += 1;
