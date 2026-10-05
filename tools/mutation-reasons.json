@@ -1358,7 +1358,7 @@
       "original": "Object.keys(properties).length > RUNTIME_LIMITS.jsonNodes",
       "replacement": "Object.keys(properties).length >= RUNTIME_LIMITS.jsonNodes",
       "category": "out-of-reach-in-a-unit-test",
-      "reason": "The ceiling is 2,500,000 entries, and every case that admits a catalog reaches this line, so a case at and past the ceiling would build a map of that size in each of several hundred runs."
+      "reason": "The ceiling is 2,500,000 entries. A loader map one past it took 14 seconds and 876 MiB to build and to read the way copyLoaders reads it, measured once on the development machine, and a case at the ceiling and a case one past it would each pay that inside a suite whose cases are given 30 seconds."
     },
     {
       "file": "packages/runtime/src/catalog-runtime.ts",
@@ -1366,7 +1366,7 @@
       "original": "Object.keys(properties).length > RUNTIME_LIMITS.jsonNodes",
       "replacement": "false",
       "category": "out-of-reach-in-a-unit-test",
-      "reason": "The ceiling is 2,500,000 entries, and every case that admits a catalog reaches this line, so a case at and past the ceiling would build a map of that size in each of several hundred runs."
+      "reason": "The ceiling is 2,500,000 entries. A loader map one past it took 14 seconds and 876 MiB to build and to read the way copyLoaders reads it, measured once on the development machine, and a case at the ceiling and a case one past it would each pay that inside a suite whose cases are given 30 seconds."
     },
     {
       "file": "packages/runtime/src/catalog-runtime.ts",
@@ -5876,14 +5876,6 @@
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The text of the unknown-presentation diagnostic; its code and outcome are asserted and nothing reads the text."
-    },
-    {
-      "file": "packages/runtime/src/runtime-safety.ts",
-      "mutator": "ArrayDeclaration",
-      "original": "[]",
-      "replacement": "[\"Stryker was here\"]",
-      "category": "equivalent",
-      "reason": "The list is the set of keys already seen, which starts empty; the replacement seeds it with one text, which changes a result only for a value carrying a key spelled exactly as that text."
     },
     {
       "file": "packages/runtime/src/runtime-safety.ts",

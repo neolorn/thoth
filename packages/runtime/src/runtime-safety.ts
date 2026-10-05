@@ -199,10 +199,12 @@ export function areTransferredAddresses(
 export function hasExactKeys(
   value: Readonly<Record<string, unknown>>,
   required: readonly string[],
-  optional: readonly string[] = [],
+  optional?: readonly string[],
 ): boolean {
   const keys = Object.keys(value);
-  const allowed = new Set([...required, ...optional]);
+  const allowed = new Set(
+    optional === undefined ? required : [...required, ...optional],
+  );
   return (
     required.every((key) => hasOwn(value, key)) &&
     keys.every((key) => allowed.has(key)) &&
@@ -234,8 +236,10 @@ function canonicalJson(value: unknown): string {
     return `[${value.map((item) => canonicalJson(item)).join(',')}]`;
   }
   const record = value as Readonly<Record<string, unknown>>;
+  // The default order of `sort` is by code unit, the order `<` gives two keys, and it is the
+  // same on every engine because no comparator is involved.
   return `{${Object.keys(record)
-    .sort(compareCodePoint)
+    .sort()
     .map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`)
     .join(',')}}`;
 }
