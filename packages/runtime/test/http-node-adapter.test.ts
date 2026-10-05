@@ -282,4 +282,26 @@ describe('a request no URL can be built from, read through the Node listener', (
     }
     expect(renders).toBe(0);
   });
+
+  it('is cached and indexed as the handler answers a malformed target', async () => {
+    const handler = createLocaleRequestHandler({
+      policy: POLICY,
+      projection: PROJECTION,
+      cache: { successMaxAge: 600, permanentRedirectMaxAge: 86_400 },
+    });
+    const malformed = await handler(
+      new Request('https://site.example/en-us/%zz'),
+    );
+    const sink = recorder();
+
+    await toNodeListener(handler)(
+      incoming('/second', { host: 'a b' }),
+      sink.target,
+    );
+
+    expect(malformed.status).toBe(sink.status());
+    for (const name of ['cache-control', 'x-robots-tag']) {
+      expect(sink.headers.get(name), name).toBe(malformed.headers.get(name));
+    }
+  });
 });

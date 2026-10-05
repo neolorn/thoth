@@ -22,6 +22,7 @@ import {
   routeCacheHeaders,
   routeHttpDescriptor,
   ɵassertStorableCookie,
+  type ɵCookieAttributes,
   ɵopenPageOutcomeChannel,
   ɵtakePageOutcome,
   type DeclaredPageOutcomeDescriptor,
@@ -331,17 +332,20 @@ export function createLocaleRequestHandler(
       ? options.policy
       : builtLocalePolicy(options.policy, options.configuration);
   const cookie = options.cookie ?? {};
-  const cookieName =
-    cookie === false ? undefined : (cookie.name ?? 'equator-locale');
-  if (cookie !== false) {
-    ɵassertStorableCookie('createLocaleRequestHandler', {
-      name: cookie.name ?? 'equator-locale',
-      path: cookie.path ?? '/',
-      domain: cookie.domain,
-      maxAgeSeconds: cookie.maxAgeSeconds ?? ONE_YEAR_SECONDS,
-      sameSite: cookie.sameSite ?? 'Lax',
-      secure: cookie.secure ?? true,
-    });
+  // The attributes are settled once, so the cookie that is checked is the cookie that is written.
+  const stored =
+    cookie === false
+      ? undefined
+      : Object.freeze({
+          name: cookie.name ?? 'equator-locale',
+          path: cookie.path ?? '/',
+          domain: cookie.domain,
+          maxAgeSeconds: cookie.maxAgeSeconds ?? ONE_YEAR_SECONDS,
+          sameSite: cookie.sameSite ?? 'Lax',
+          secure: cookie.secure ?? true,
+        });
+  if (stored !== undefined) {
+    ɵassertStorableCookie('createLocaleRequestHandler', stored);
   }
 
   // Derived from what this deployment reads, never from what this request happened to carry.
@@ -352,7 +356,7 @@ export function createLocaleRequestHandler(
   // responses that were decided by a cookie. A deployment that reads cookies at all has cookie-
   // varying responses at every address that varies, whoever happens to be asking.
   const localePreference: LocalePreferenceSource =
-    cookie === false ? 'accept-language' : 'cookie';
+    stored === undefined ? 'accept-language' : 'cookie';
 
   // Per handler rather than per module, so one deployment's warnings cannot silence another's,
   // and per process rather than per request, because a declaration at a refused address is a
@@ -362,9 +366,9 @@ export function createLocaleRequestHandler(
   return async (request: Request): Promise<Response> => {
     const url = new URL(request.url);
     const carried =
-      cookieName === undefined
+      stored === undefined
         ? undefined
-        : readCookie(request.headers.get('cookie'), cookieName);
+        : readCookie(request.headers.get('cookie'), stored.name);
     // A signal that names a locale this build does not serve says nothing, so negotiation carries
     // on to the next one: a remembered choice of a removed locale must not turn an address that
     // exists into a 404, and a visitor whose first language is not served still has a second.
@@ -451,15 +455,12 @@ export function createLocaleRequestHandler(
       }
       // Only when there is something new to remember, and only when a person asked for it.
       if (
-        cookieName !== undefined &&
+        stored !== undefined &&
         settled !== undefined &&
         settled !== carried &&
         !isBackgroundRequest(request)
       ) {
-        headers.append(
-          'set-cookie',
-          serializeCookie(cookieName, settled, cookie === false ? {} : cookie),
-        );
+        headers.append('set-cookie', serializeCookie(stored, settled));
       }
       return headers;
     };
@@ -633,7 +634,6 @@ function undeclaredFailureDescriptor(
     ...(resolved.contentLanguage === undefined
       ? {}
       : { contentLanguage: resolved.contentLanguage }),
-    ...(resolved.variesBy === undefined ? {} : { variesBy: resolved.variesBy }),
     robots: 'noindex',
     cache: 'private-no-store',
   });
@@ -827,17 +827,13 @@ function servedLocale(
     : undefined;
 }
 
-function serializeCookie(
-  name: string,
-  value: string,
-  options: Exclude<LocaleCookiePolicy, false>,
-): string {
+function serializeCookie(cookie: ɵCookieAttributes, value: string): string {
   return [
-    `${name}=${encodeURIComponent(value)}`,
-    `Path=${options.path ?? '/'}`,
-    `Max-Age=${options.maxAgeSeconds ?? ONE_YEAR_SECONDS}`,
-    `SameSite=${options.sameSite ?? 'Lax'}`,
-    ...(options.domain === undefined ? [] : [`Domain=${options.domain}`]),
-    ...((options.secure ?? true) ? ['Secure'] : []),
+    `${cookie.name}=${encodeURIComponent(value)}`,
+    `Path=${cookie.path}`,
+    `Max-Age=${cookie.maxAgeSeconds}`,
+    `SameSite=${cookie.sameSite}`,
+    ...(cookie.domain === undefined ? [] : [`Domain=${cookie.domain}`]),
+    ...(cookie.secure ? ['Secure'] : []),
   ].join('; ');
 }

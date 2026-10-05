@@ -991,39 +991,6 @@
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
-      "mutator": "BooleanLiteral",
-      "original": "false",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "The cookie option is `false` or an object and never `true`, so `cookie !== true` always holds; for `false` the mutant validates `false.name ?? 'equator-locale'` and the other defaults on lines 336-341, which ɵassertStorableCookie (core/src/cookie-attributes.ts:46-108) accepts without throwing or any other effect, so the handler is built exactly as before. Reached only where cookie is an object (line 452 with line 333), and the cookie option is never `true`, so `cookie === true` is false exactly as `cookie === false` is and serializeCookie receives the same object.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/http/src/handler.ts",
-      "mutator": "ConditionalExpression",
-      "original": "cookie !== false",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "With `cookie: false` the mutant runs the assertion on the defaults (every `cookie.x` reads undefined off `false` and takes its `??` default), and ɵassertStorableCookie accepts the defaults and has no effect but throwing, so construction succeeds with the same handler."
-    },
-    {
-      "file": "packages/runtime/http/src/handler.ts",
-      "mutator": "StringLiteral",
-      "original": "'Lax'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "This default is only what ɵassertStorableCookie is shown, and that function reads sameSite in one comparison, `sameSite === 'None'` (core/src/cookie-attributes.ts:78), which 'Lax' and '' both fail; the SameSite the response carries comes from serializeCookie's own default on line 830."
-    },
-    {
-      "file": "packages/runtime/http/src/handler.ts",
-      "mutator": "ConditionalExpression",
-      "original": "cookieName === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "With no cookie name the mutant calls readCookie(header, undefined), where line 790 skips every entry because a trimmed string is never `undefined`, so it returns undefined, the value the original assigns directly."
-    },
-    {
-      "file": "packages/runtime/http/src/handler.ts",
       "mutator": "StringLiteral",
       "original": "''",
       "replacement": "\"Stryker was here!\"",
@@ -1038,14 +1005,6 @@
       "replacement": "false",
       "category": "equivalent",
       "reason": "The mutant passes `locale: undefined` instead of omitting the key, and the resolver reads the context only as `context.locale === undefined` (core/src/routing.ts:2539) and servedPreference(policy, context.locale), which returns on undefined (routing.ts:3010), so both shapes resolve identically."
-    },
-    {
-      "file": "packages/runtime/http/src/handler.ts",
-      "mutator": "ConditionalExpression",
-      "original": "cookie === false",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "This expression is evaluated only inside `cookieName !== undefined` (line 452), and line 333 makes cookieName undefined exactly when cookie is false, so the test is always false here and serializeCookie always receives the cookie object."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
@@ -1094,30 +1053,6 @@
       "replacement": "false",
       "category": "equivalent",
       "reason": "The mutant gives the descriptor a `contentLanguage` key holding undefined instead of no key, and its one reader, line 441, tests `effective.contentLanguage !== undefined`, so the header is set or left off identically; the descriptor never leaves the handler."
-    },
-    {
-      "file": "packages/runtime/http/src/handler.ts",
-      "mutator": "ConditionalExpression",
-      "original": "resolved.variesBy === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Nothing reads `variesBy` off the descriptor this function returns: cacheHeaders (line 427) spreads the address's own descriptor and takes only `cache` from this one, responseHeaders reads contentLanguage, robots and location, and line 587 reads status, so no response depends on the key."
-    },
-    {
-      "file": "packages/runtime/http/src/handler.ts",
-      "mutator": "ConditionalExpression",
-      "original": "resolved.variesBy === undefined",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "Dropping `variesBy` from the undeclared-failure descriptor changes nothing a caller sees, because the handler never reads it from there: line 427 takes variesBy from the address's own descriptor and only `cache` from this one."
-    },
-    {
-      "file": "packages/runtime/http/src/handler.ts",
-      "mutator": "EqualityOperator",
-      "original": "resolved.variesBy === undefined",
-      "replacement": "resolved.variesBy !== undefined",
-      "category": "equivalent",
-      "reason": "The mutant inverts when `variesBy` is copied onto the undeclared-failure descriptor, and that key has no reader: the Vary and Cache-Control of the response come from the address's own descriptor on line 427 with only `cache` taken from this one."
     },
     {
       "file": "packages/runtime/http/src/handler.ts",
@@ -1206,30 +1141,6 @@
       "replacement": "true",
       "category": "equivalent",
       "reason": "When the tag is not well formed `locale` is undefined, and the mutant then returns either `locale`, which is undefined, or undefined, so servedLocale answers undefined on both arms as the original does."
-    },
-    {
-      "file": "packages/runtime/http/src/node.ts",
-      "mutator": "StringLiteral",
-      "original": "'noindex'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "routeCacheHeaders (core/src/routing.ts 834-887) reads the descriptor for its status, cache and variesBy and never its robots, and line 153 sets X-Robots-Tag from its own literal, so the 400 response has the same headers."
-    },
-    {
-      "file": "packages/runtime/http/src/node.ts",
-      "mutator": "ObjectLiteral",
-      "original": "{\n        successMaxAge: 0,\n        permanentRedirectMaxAge: 0,\n        localePreference: 'accept-language',\n      }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "For the private-no-store descriptor built on line 137, which has no variesBy, routeCacheHeaders (core/src/routing.ts 834-887) answers \"private, no-store\" and no Vary whatever the freshness holds: localePreference is read only for a descriptor that varies by preference and the durations only for a shared response, so the 400 response has the same headers."
-    },
-    {
-      "file": "packages/runtime/http/src/node.ts",
-      "mutator": "StringLiteral",
-      "original": "'accept-language'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "For the private-no-store descriptor built on line 137, which has no variesBy, routeCacheHeaders (core/src/routing.ts 834-887) answers \"private, no-store\" and no Vary whatever the freshness holds: localePreference is read only for a descriptor that varies by preference and the durations only for a shared response, so the 400 response has the same headers."
     },
     {
       "file": "packages/runtime/router/src/document-messages.ts",

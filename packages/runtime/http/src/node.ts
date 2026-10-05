@@ -1,8 +1,3 @@
-import {
-  routeCacheHeaders,
-  type RouteHttpDescriptor,
-} from '@neolorn/equator/core';
-
 import type { LocaleRequestHandler } from './handler';
 import { rememberRawTarget } from './raw-target';
 
@@ -133,23 +128,13 @@ export function toNodeListener(
   };
 }
 
+/** The caching and indexing the handler gives a malformed target, with no locale to name. */
 function unbuildableRequest(): Response {
-  const descriptor: RouteHttpDescriptor = {
+  return new Response(null, {
     status: 400,
-    robots: 'noindex',
-    cache: 'private-no-store',
-  };
-  // A response nothing may keep reads neither duration nor the preference source, and the
-  // listener was given none of them.
-  const headers = new Headers(
-    Object.entries(
-      routeCacheHeaders(descriptor, {
-        successMaxAge: 0,
-        permanentRedirectMaxAge: 0,
-        localePreference: 'accept-language',
-      }),
-    ),
-  );
-  headers.set('x-robots-tag', 'noindex');
-  return new Response(null, { status: descriptor.status, headers });
+    headers: {
+      'cache-control': 'private, no-store',
+      'x-robots-tag': 'noindex',
+    },
+  });
 }
