@@ -41,13 +41,19 @@ export interface CompiledSet {
   readonly catalogs: readonly ToolkitCompiledCatalog[];
 }
 
-/** Compiles the fixture, with `edit` applied to one scope's source text first. */
+/**
+ * Compiles the fixture, with `edit` applied to one scope's source text first.
+ *
+ * `further` adds scopes to the two the fixture has, for a case that needs more than one scope
+ * loading at a time.
+ */
 export function compileSet(
   edit: (scopeId: string, locale: string, text: string) => string = (
     _scope,
     _locale,
     text,
   ) => text,
+  further: Readonly<Record<string, Readonly<Record<string, string>>>> = {},
 ): CompiledSet {
   const parsedConfiguration = parseConfiguration(
     JSON.stringify({
@@ -58,18 +64,19 @@ export function compileSet(
     }),
   );
   if (!parsedConfiguration.ok) throw new Error('Configuration fixture failed');
-  const catalogs = Object.entries(SOURCES).flatMap(([scopeId, byLocale]) =>
-    Object.entries(byLocale).map(([locale, text]) => {
-      const parsed = parseCatalog(edit(scopeId, locale, text), {
-        role: locale === 'en-US' ? 'source' : 'target',
-        providerId: PROVIDER,
-        scopeId,
-        locale,
-        sourcePath: `i18n/${scopeId}/${locale}.yaml`,
-      });
-      if (!parsed.ok) throw new Error(JSON.stringify(parsed.diagnostics));
-      return parsed.value;
-    }),
+  const catalogs = Object.entries({ ...SOURCES, ...further }).flatMap(
+    ([scopeId, byLocale]) =>
+      Object.entries(byLocale).map(([locale, text]) => {
+        const parsed = parseCatalog(edit(scopeId, locale, text), {
+          role: locale === 'en-US' ? 'source' : 'target',
+          providerId: PROVIDER,
+          scopeId,
+          locale,
+          sourcePath: `i18n/${scopeId}/${locale}.yaml`,
+        });
+        if (!parsed.ok) throw new Error(JSON.stringify(parsed.diagnostics));
+        return parsed.value;
+      }),
   );
   const graph = analyzeCatalogSet({
     configuration: parsedConfiguration.value,

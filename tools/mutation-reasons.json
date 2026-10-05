@@ -4032,14 +4032,6 @@
     },
     {
       "file": "packages/runtime/src/localization.ts",
-      "mutator": "MethodExpression",
-      "original": "progressive.filter(\n          (scope) => !this.active?.scopes.has(scopeIdentity(scope)),\n        )",
-      "replacement": "progressive",
-      "category": "equivalent",
-      "reason": "The snapshot just committed holds the required scopes and no others (lines 1741 to 1768), and a progressive change refuses a scope named as both (line 2221), so the filter removes nothing where line 2393 goes on to load, and a coordinated change loads nothing there."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
       "mutator": "ConditionalExpression",
       "original": "status === 'superseded'",
       "replacement": "false",

@@ -17,7 +17,12 @@ import type { LocalizationCommitHook } from '../src/localization.js';
 import type { LocalizationEventEmitter } from '../src/observability.js';
 import type { LocalizationParticipantReport } from '@neolorn/equator/core';
 
-import { catalogKey, diagnosticOf } from './catalog-store-harness.js';
+import {
+  catalogKey,
+  compileSet,
+  diagnosticOf,
+  scope,
+} from './catalog-store-harness.js';
 import {
   HEADING,
   LAZY,
@@ -399,6 +404,80 @@ describe('what a change starts beside itself', () => {
     expect(result).toMatchObject({ status: 'committed', snapshot: held });
     expect(localization.snapshot()).toBe(held);
     expect(localization.scopeReadiness(LAZY)()).toBe(readiness);
+    localization.dispose();
+  });
+
+  it('loads nothing again for a progressive scope a coordinated change committed with itself', async () => {
+    const { localization, loads } = await ready();
+
+    const result = await localization.changeLocale('ar-EG', {
+      mode: 'coordinated',
+      progressiveScopes: [LAZY],
+    });
+    const committed = localization.snapshot();
+    const readiness = localization.scopeReadiness(LAZY)();
+    await settled();
+
+    expect(result).toMatchObject({ status: 'committed', snapshot: committed });
+    expect(committed?.loadedScopes).toStrictEqual([SHELL, LAZY]);
+    expect(localization.snapshot()).toBe(committed);
+    expect(localization.scopeReadiness(LAZY)()).toBe(readiness);
+    expect(loads[catalogKey('lazy', 'ar-EG')]).toBe(1);
+    localization.dispose();
+  });
+
+  it('lands a progressive scope only in the snapshot it was loaded for, when a change overtakes the scope beside it', async () => {
+    // Two scopes load beside the change. The first has its catalogs in hand and waits for the
+    // second, and the reader moves on before the second arrives. What the first loaded belongs to
+    // the snapshot it was asked for, and the snapshot of the locale the reader moved to never
+    // holds it.
+    const LATE = scope('late');
+    const set = compileSet(undefined, {
+      late: {
+        'en-US': 'messages:\n  note: Late note\n',
+        'ar-EG': 'messages:\n  note: Late note, translated\n',
+      },
+    });
+    const published: string[] = [];
+    const watching: LocalizationCommitHook = {
+      apply: () => undefined,
+      committed: (snapshot) =>
+        void published.push(
+          `${snapshot.primaryLocale} ${snapshot.loadedScopes
+            .map(({ scopeId }) => scopeId)
+            .join('+')}`,
+        ),
+    };
+    const { localization, release } = await ready({
+      set,
+      hold: [catalogKey('late', 'ar-EG')],
+      options: { commitHooks: [watching] },
+    });
+    await localization.changeLocale('ar-EG', {
+      mode: 'progressive',
+      progressiveScopes: [LAZY, LATE],
+    });
+    await expect
+      .poll(() => localization.scopeReadiness(LAZY)().status)
+      .toBe('ready');
+
+    const back = await localization.changeLocale('en-US');
+    const committed = localization.snapshot();
+    release(catalogKey('late', 'ar-EG'));
+    await settled();
+
+    expect(back).toMatchObject({ status: 'committed', snapshot: committed });
+    expect(published).toStrictEqual([
+      'en-US shell',
+      'ar-EG shell',
+      'ar-EG shell+lazy',
+      'en-US shell',
+    ]);
+    expect(localization.snapshot()).toBe(committed);
+    expect(localization.scopeReadiness(LATE)()).toMatchObject({
+      status: 'failed',
+      diagnostic: { code: 'superseded' },
+    });
     localization.dispose();
   });
 

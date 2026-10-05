@@ -59,6 +59,35 @@ describe('a locale change asked for while the context is initializing', () => {
     localization.dispose();
   });
 
+  it('overtakes what the initialization started beside itself, once the initialization has settled', async () => {
+    const side = participant('side', { hold: ['en-US', 'ar-EG'] });
+    const { localization, release } = runtime({
+      hold: [catalogKey('shell', 'en-US'), catalogKey('shell', 'ar-EG')],
+    });
+    localization.registerParticipant(side.value, {
+      coordination: 'progressive',
+    });
+    const initializing = localization.initialize();
+    const change = localization.changeLocale('ar-EG');
+    release(catalogKey('shell', 'en-US'));
+    await initializing;
+    await expect.poll(() => side.calls).toStrictEqual(['prepare en-US']);
+
+    // The change has begun, and has committed nothing yet: the region is told at the start of the
+    // change that its work for the locale being left is no longer wanted.
+    await expect.poll(() => side.contexts[0]?.signal.aborted).toBe(true);
+    expect(localization.snapshot()?.primaryLocale).toBe('en-US');
+    expect(side.contexts[0]?.signal.reason).toMatchObject({
+      diagnostic: { code: 'superseded' },
+    });
+
+    release(catalogKey('shell', 'ar-EG'));
+    await expect(change).resolves.toMatchObject({ status: 'committed' });
+    side.release('en-US');
+    side.release('ar-EG');
+    localization.dispose();
+  });
+
   it('reports the failure of the initialization it waited for, and loads nothing of its own', async () => {
     const { localization, release, loads } = runtime({
       hold: [catalogKey('shell', 'en-US')],
