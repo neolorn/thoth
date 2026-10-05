@@ -372,6 +372,12 @@ A same-route locale switch preserves safely parsed bounded query parameters and 
 default. A release MUST NOT copy raw URL text, and MUST NOT let a query or fragment value
 choose an origin, an executable destination, a catalog identity, or a trust decision.
 
+A slash and a question mark are data in a query and in a fragment, as RFC 3986 sections 3.4 and 3.5
+have them. A release MUST read either one there, written as itself or escaped, and MUST write both as
+themselves in the canonical address, so a return address such as `?next=/account` is the same text
+after a canonical correction or a redirect as before it. An escaped slash in a path segment stays a
+structurally unsafe target under section 4, because decoded it would turn one segment into two.
+
 Canonical, alternate, and sitemap URLs omit the fragment and omit query parameters by default. A
 bounded typed query value joins canonical identity only where a route declares a stable indexable
 representation, and a release MUST NOT promote accepted transient query state into cache,

@@ -2098,25 +2098,35 @@ interface ParsedTarget {
   readonly canonicalSuffix: string;
 }
 
+/**
+ * One escaped piece of an address as text, or nothing where it is longer than its bound, holds an
+ * escape that does not decode, or decodes to a control or a backslash.
+ */
 function decodeBounded(value: string, maximum: number): string | undefined {
-  if (value.length > maximum || /%(?![0-9A-Fa-f]{2})/u.test(value))
-    return undefined;
+  if (value.length > maximum) return undefined;
   try {
     const decoded = decodeURIComponent(value).normalize('NFC');
-    return /[\p{Cc}\\/]/u.test(decoded) ? undefined : decoded;
+    return /[\p{Cc}\\]/u.test(decoded) ? undefined : decoded;
   } catch {
     return undefined;
   }
 }
 
+/**
+ * A query name, a query value or a fragment as an address spells it.
+ *
+ * RFC 3986 sections 3.4 and 3.5 let a slash and a question mark stand as data in a query and in a
+ * fragment, so both are written as themselves and a return address such as `?next=/account` is
+ * the same text after a correction as before it. Everything else is escaped as a path segment is.
+ */
+function encodedSuffixText(text: string): string {
+  return encodeURIComponent(text).replace(/%2F/gu, '/').replace(/%3F/gu, '?');
+}
+
 function parseTarget(target: string): ParsedTarget | undefined {
-  if (
-    target.length === 0 ||
-    target.length > 8192 ||
-    !target.startsWith('/') ||
-    target.startsWith('//') ||
-    /[\\\p{Cc}]/u.test(target)
-  ) {
+  // Every caller hands over text that begins with a slash, or with a backslash where an absolute
+  // address put one after its authority, and the backslash is refused here.
+  if (target.length > 8192 || /[\\\p{Cc}]/u.test(target)) {
     return undefined;
   }
   const hashIndex = target.indexOf('#');
@@ -2125,6 +2135,8 @@ function parseTarget(target: string): ParsedTarget | undefined {
   const queryIndex = beforeHash.indexOf('?');
   const rawPath = queryIndex < 0 ? beforeHash : beforeHash.slice(0, queryIndex);
   const rawQuery = queryIndex < 0 ? '' : beforeHash.slice(queryIndex + 1);
+  // A slash is data in a query and in a fragment and a separator in a path, so an escaped one is
+  // refused in the path alone: decoded, it would turn one segment into two.
   if (rawPath.includes('//') || /%2f|%5c/iu.test(rawPath)) return undefined;
   const trailingSlash = rawPath.length > 1 && rawPath.endsWith('/');
   const rawSegments = rawPath
@@ -2143,9 +2155,7 @@ function parseTarget(target: string): ParsedTarget | undefined {
       return undefined;
     segments.push(decoded);
   }
-  if (rawQuery.length > 2048 || /%(?![0-9A-Fa-f]{2})/u.test(rawQuery)) {
-    return undefined;
-  }
+  if (rawQuery.length > 2048) return undefined;
   const query: RouteQueryValue[] = [];
   if (rawQuery.length > 0) {
     const entries = rawQuery.split('&');
@@ -2163,8 +2173,8 @@ function parseTarget(target: string): ParsedTarget | undefined {
       // correction writes the canonical one, and a spelling that grows past them once encoded would
       // be corrected to an address this parser then refuses.
       if (
-        encodeURIComponent(name).length > 128 ||
-        encodeURIComponent(value).length > 512
+        encodedSuffixText(name).length > 128 ||
+        encodedSuffixText(value).length > 512
       ) {
         return undefined;
       }
@@ -2175,14 +2185,14 @@ function parseTarget(target: string): ParsedTarget | undefined {
     rawFragment === undefined ? undefined : decodeBounded(rawFragment, 512);
   if (rawFragment !== undefined && fragment === undefined) return undefined;
   const canonicalFragment =
-    fragment === undefined ? undefined : encodeURIComponent(fragment);
+    fragment === undefined ? undefined : encodedSuffixText(fragment);
   if (canonicalFragment !== undefined && canonicalFragment.length > 512) {
     return undefined;
   }
   const canonicalQuery = query
     .map(
       ({ name, value }) =>
-        `${encodeURIComponent(name)}=${encodeURIComponent(value)}`,
+        `${encodedSuffixText(name)}=${encodedSuffixText(value)}`,
     )
     .join('&');
   if (canonicalQuery.length > 2048) return undefined;
@@ -4137,14 +4147,14 @@ function localizedRouteAddress(
   const queryText = query
     .map(
       ({ name, value }) =>
-        `${encodeURIComponent(name)}=${encodeURIComponent(value)}`,
+        `${encodedSuffixText(name)}=${encodedSuffixText(value)}`,
     )
     .join('&');
   if (fragment !== undefined && [...fragment].length > 512) {
     routeError('Route fragment state exceeds Equator bounds.');
   }
   const routeText = encodedSegments(serialized);
-  const suffix = `${queryText.length === 0 ? '' : `?${queryText}`}${fragment === undefined ? '' : `#${encodeURIComponent(fragment)}`}`;
+  const suffix = `${queryText.length === 0 ? '' : `?${queryText}`}${fragment === undefined ? '' : `#${encodedSuffixText(fragment)}`}`;
   if (policy.kind === 'path-prefix') {
     return Object.freeze({
       ok: true as const,

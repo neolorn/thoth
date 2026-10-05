@@ -4452,7 +4452,7 @@ export const injections = Object.freeze([
     invariant:
       'A query spelling that grows past its bounds once canonically encoded is refused, not corrected to an address the resolver then refuses.',
     source: 'packages/runtime/core/src/routing.ts',
-    find: '        encodeURIComponent(name).length > 128 ||\n        encodeURIComponent(value).length > 512\n',
+    find: '        encodedSuffixText(name).length > 128 ||\n        encodedSuffixText(value).length > 512\n',
     replace: '        name.length > 128 ||\n        value.length > 512\n',
     caughtBy: 'packages/runtime/test/canonical-correction-single-hop.test.ts',
   },
@@ -4465,6 +4465,25 @@ export const injections = Object.freeze([
     replace:
       '  if (canonicalFragment !== undefined && fragment !== undefined && [...fragment].length > 512) {',
     caughtBy: 'packages/runtime/test/canonical-correction-single-hop.test.ts',
+  },
+  {
+    id: 'query-slash-refused-as-a-separator',
+    invariant:
+      'A slash in a query value or a fragment is read as data, so a return address in a query is answered.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '    return /[\\p{Cc}\\\\]/u.test(decoded) ? undefined : decoded;',
+    replace:
+      '    return /[\\p{Cc}\\\\/]/u.test(decoded) ? undefined : decoded;',
+    caughtBy: 'packages/runtime/test/query-and-fragment-separators.test.ts',
+  },
+  {
+    id: 'query-slash-escaped-by-a-correction',
+    invariant:
+      'A correction or a redirect writes a slash and a question mark in a query or a fragment as themselves.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: "  return encodeURIComponent(text).replace(/%2F/gu, '/').replace(/%3F/gu, '?');",
+    replace: '  return encodeURIComponent(text);',
+    caughtBy: 'packages/runtime/test/query-and-fragment-separators.test.ts',
   },
   {
     id: 'migration-sink-unreachable',

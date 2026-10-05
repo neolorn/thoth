@@ -2154,6 +2154,15 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "6. Canonicalization, query, and fragment",
+      "statement": "A release MUST read either one there, written as itself or escaped, and MUST write both as themselves in the canonical address, so a return address such as `?next=/account` is the same text after a canonical correction or a redirect as before it.",
+      "checks": [
+        "assurance:query-slash-refused-as-a-separator",
+        "assurance:query-slash-escaped-by-a-correction"
+      ]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "6. Canonicalization, query, and fragment",
       "statement": "A bounded typed query value joins canonical identity only where a route declares a stable indexable representation, and a release MUST NOT promote accepted transient query state into cache, telemetry, or indexing identity on its own.",
       "checks": [
         "assurance:alternate-carries-the-visit-query",

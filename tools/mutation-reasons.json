@@ -678,15 +678,6 @@
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "Regex",
-      "original": "/%(?![0-9A-Fa-f]{2})/u",
-      "replacement": "/%(?![0-9A-Fa-f])/u",
-      "category": "equivalent",
-      "reason": "An escape the weaker pattern lets through is a percent sign and one hexadecimal digit, which decodeURIComponent throws on, and the catch on line 2107 returns undefined as the test would have. Every escape in the query lies in the name or the value of one entry, and decodeBounded on lines 2157 and 2158 returns undefined for the escape the weaker pattern lets through, so line 2159 refuses the query.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
       "mutator": "BlockStatement",
       "original": "{\n    return undefined;\n  }",
       "replacement": "{}",
@@ -696,28 +687,12 @@
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "ConditionalExpression",
-      "original": "target.length === 0",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "An empty target does not begin with '/', so the third operand on line 2116 refuses it without this one."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
       "mutator": "StringLiteral",
       "original": "'/'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "Every caller passes a target that begins with '/' (lines 2817 and 3043) or the remainder of an absolute address, which lines 2835 and 2848 leave beginning with '/' or a backslash, and line 2118 refuses the backslash. the separator of the address quoted inside the refusal message This is the literal the path is compared with, not the one written: the comparison then never holds, and the other arm writes canonicalPath, which is the same slash where it did hold. Every text then starts with the prefix and is returned unchecked, and text the check on line 3247 would refuse resolves as malformed in the default locale (lines 3045 and 3213), which both callers answer as they do for no target. An empty `pathOnly` gives the same string in both arms, and the root then takes the other arm, where the prefix followed by \"/\" answers a 308 correction that followPermanentRedirect on line 5189 follows to the same resolution.",
-      "count": 5
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "MethodExpression",
-      "original": "target.startsWith('//')",
-      "replacement": "target.endsWith('//')",
-      "category": "equivalent",
-      "reason": "A leading '//' is in the path, which line 2128 refuses; a trailing '//' is in the path, or in a query entry or the fragment, where line 2106 refuses a decoded slash and lines 2159 and 2176 return undefined."
+      "reason": "the separator of the address quoted inside the refusal message This is the literal the path is compared with, not the one written: the comparison then never holds, and the other arm writes canonicalPath, which is the same slash where it did hold. Every text then starts with the prefix and is returned unchecked, and text the check on the line after would refuse resolves as malformed in the default locale, which both callers answer as they do for no target. An empty `pathOnly` gives the same string in both arms, and the root then takes the other arm, where the prefix followed by \"/\" answers a 308 correction that followPermanentRedirect follows to the same resolution.",
+      "count": 4
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -725,7 +700,7 @@
       "original": "hashIndex < 0",
       "replacement": "hashIndex <= 0",
       "category": "equivalent",
-      "reason": "Line 2116 has already refused a target that does not begin with '/', so the character searched for is never at index 0 and the two comparisons agree.",
+      "reason": "Every caller of parseTarget passes text that begins with '/' (pathOnlyTarget, resolveHostRoute) or with a backslash, which the test before refuses, so the character searched for is never at index 0 and the two comparisons agree.",
       "count": 2
     },
     {
@@ -734,7 +709,7 @@
       "original": "queryIndex < 0",
       "replacement": "queryIndex <= 0",
       "category": "equivalent",
-      "reason": "Line 2116 has already refused a target that does not begin with '/', so the character searched for is never at index 0 and the two comparisons agree.",
+      "reason": "Every caller of parseTarget passes text that begins with '/' (pathOnlyTarget, resolveHostRoute) or with a backslash, which the test before refuses, so the character searched for is never at index 0 and the two comparisons agree.",
       "count": 2
     },
     {
