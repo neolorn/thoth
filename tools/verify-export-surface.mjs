@@ -55,12 +55,10 @@ const BASELINE = Object.freeze({
   // rather than the builder.
   extensionDescriptor:
     'toolkit API; the plugin surface the extension guide documents',
-  // The router entry point imports these two from the primary one, and one entry point of a
-  // package reaches another only through what that one publishes. The corpus reads what uses the
-  // packages, not the packages, so it does not see that import.
+  // The router entry point imports this from the primary one, and one entry point of a package
+  // reaches another only through what that one publishes. The corpus reads what uses the packages,
+  // not the packages, so it does not see that import.
   DocumentLocalization:
-    'runtime API; imported by the router entry point from the primary one',
-  localizedRouteAddresses:
     'runtime API; imported by the router entry point from the primary one',
 });
 
