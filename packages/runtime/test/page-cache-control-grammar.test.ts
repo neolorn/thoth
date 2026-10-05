@@ -73,6 +73,8 @@ describe("how a page's Cache-Control is read", () => {
     expect(pageSaid('max-age=60 private')).toBe('private, no-cache');
     expect(pageSaid('max-age="60" no-store')).toBe('private, no-store');
     expect(pageSaid('public no-store')).toBe('private, no-store');
+    // Reading resumes after a closing quote, so a directive written against it is still one.
+    expect(pageSaid('private="a"no-store')).toBe('private, no-store');
     expect(pageSaid('max-age=600 s-maxage=30 no-transform')).toBe(
       'public, max-age=600, must-revalidate, s-maxage=30, no-transform',
     );
