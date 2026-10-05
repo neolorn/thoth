@@ -55,9 +55,9 @@ value.
 
 ## Assert what it parses
 
-The money profile requires the currency marker, which is why the visitor types `$19.99` rather than
-`19.99`. Parsing happens in the committed locale, so after a switch the field reads Arabic-Indic
-digits and refuses the Latin ones.
+The profile sets `requireCurrency`, which is why the visitor types `$19.99` rather than `19.99`;
+without it a bare number is read too. Parsing happens in the committed locale, so after a switch
+the field reads Arabic-Indic digits and refuses the Latin ones.
 
 ```ts src/app/forms.spec.ts
 import { afterEach, describe, expect, it } from 'vitest';
@@ -102,6 +102,7 @@ class PriceField {
   readonly profile: LocalizedMoneyInputProfile = {
     kind: 'money',
     currency: 'USD',
+    requireCurrency: true,
   };
   amount: MoneyValue | null = null;
   readonly control = viewChild.required(NgModel);
