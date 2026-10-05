@@ -14,15 +14,19 @@ import { nodeConsumerProfiles } from './package-consumer-profiles.mjs';
  */
 
 /**
- * `format:check`, `lint:self-test`, `lint` and `typecheck` are the first phase and prerequisites of
- * everything else, applied by the runner rather than written into each stage. A tree that does not
+ * `format:check`, `lint:self-test`, `lint`, `typecheck`, `verify:injection-anchors:self-test` and
+ * `verify:injection-anchors` are the first phase and prerequisites of everything else, applied by the runner rather than written into each stage. A tree that does not
  * typecheck is a tree nobody should be measuring, and a formatting miss found four seconds in should
  * cost four seconds, not the hour the rest of this takes to prove a change that was already
  * correct. That happened: a new test file went unformatted into a run that spent an hour on browser
  * rows and consumer installs before printing a two-line prettier warning. Applying the gate in the
  * runner means a stage added later is covered on the day it lands.
  *
- * Three of the four are a chain rather than four peers, and the chain is the whole of what `needs`
+ * The anchor check is there because the two stages that apply the injections reach a stale anchor
+ * minutes in, one of them after a build and a consumer install, and the same reading costs under a
+ * second with nothing built.
+ *
+ * Three of the first four are a chain rather than four peers, and the chain is the whole of what `needs`
  * says here. `lint` runs after the control that proves it can fail, for the reason
  * `verify:browser-assurance:self-test` runs before the browser gate: a broken control should make
  * what it controls report skipped, which is true, rather than pass on evidence nothing checked.
@@ -87,6 +91,26 @@ const declared = Object.freeze([
       {
         on: 'lint',
         why: 'The same program, about the same cost, and the more specific finding first.',
+      },
+    ],
+  },
+  // The stage below, shown refusing an anchor that has left its file, one that is there twice and
+  // a file that is gone.
+  {
+    id: 'verify:injection-anchors:self-test',
+    gate: true,
+    reads: ['source:packages', 'source:tools'],
+  },
+  // Every injection the two assurance stages apply, held to the file it patches: its text there
+  // exactly once. It builds nothing, which is why it can run with the formatter and the linter.
+  {
+    id: 'verify:injection-anchors',
+    gate: true,
+    reads: ['source:packages', 'source:tools'],
+    needs: [
+      {
+        on: 'verify:injection-anchors:self-test',
+        why: 'A stage nobody has seen refuse the defects it exists for is indistinguishable from one that reads nothing.',
       },
     ],
   },

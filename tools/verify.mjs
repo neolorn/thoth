@@ -179,9 +179,9 @@ const scoped = (step, artefact) => `${treeOf(step)} ${artefact}`;
 // The same question pointed at the gate rather than at a search. A typo in either id would leave
 // `gates` empty and every stage would run exactly as it did before, with nothing to notice.
 const gates = steps.filter(({ gate }) => gate === true).map(({ id }) => id);
-if (gates.length !== 4) {
+if (gates.length !== 6) {
   throw new Error(
-    `Expected four gate stages and found ${gates.length} (${gates.join(', ') || 'none'}). Without them every stage below runs whatever the cheap checks said.`,
+    `Expected six gate stages and found ${gates.length} (${gates.join(', ') || 'none'}). Without them every stage below runs whatever the cheap checks said.`,
   );
 }
 

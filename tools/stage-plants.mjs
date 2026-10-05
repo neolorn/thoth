@@ -10,6 +10,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { relative, resolve } from 'node:path';
 
+import { injections as fastInjections } from './assurance-injections.mjs';
+import { injections as runtimeInjections } from './assurance-runtime-injections.mjs';
 import { buildStatsFiles } from './build-stats.mjs';
 import { plants as packageStructurePlants } from './package-structure-plants.mjs';
 import {
@@ -434,6 +436,45 @@ export const stageSelfTests = Object.freeze({
           delete lock.dataSources.cldrJsonCore.role;
         }),
         refusal: /cldrJsonCore: the lock records no role/u,
+      },
+    ],
+  },
+  'verify:injection-anchors': {
+    script: 'tools/verify-injection-anchors.mjs',
+    // The files the injections patch, read from the lists, so a new source is copied on the day
+    // an injection names it.
+    inputs: [
+      ...new Set(
+        [...fastInjections, ...runtimeInjections].map(({ source }) => source),
+      ),
+    ].sort(),
+    plants: [
+      {
+        id: 'anchor-gone-from-its-file',
+        plant: plantText(
+          'packages/toolkit/src/semantic-model.ts',
+          '    if (missing.length === 0) continue;',
+          '    if (missing.length < 1) continue;',
+        ),
+        refusal:
+          /missing-plural-categories-unreported: the text it finds is in packages\/toolkit\/src\/semantic-model\.ts 0 time\(s\)/u,
+      },
+      {
+        id: 'anchor-in-its-file-twice',
+        plant: (root) =>
+          editText(
+            root,
+            'packages/toolkit/src/semantic-model.ts',
+            (text) => `${text}\n//     if (missing.length === 0) continue;\n`,
+          ),
+        refusal:
+          /missing-plural-categories-unreported: the text it finds is in packages\/toolkit\/src\/semantic-model\.ts 2 time\(s\)/u,
+      },
+      {
+        id: 'patched-file-gone',
+        plant: (root) =>
+          rm(resolve(root, 'packages/runtime/src/issue-convention.ts')),
+        refusal: /packages\/runtime\/src\/issue-convention\.ts does not exist/u,
       },
     ],
   },
