@@ -1061,6 +1061,14 @@ const toolkitRtlOutput = [
 // A "#= TARGET1" comment on a Link line of backward is the release's own statement of the name the
 // link stands for. The standard's steps do not read it, so it is held against their answer
 // instead: a release in which the two disagree stops the generator.
+//
+// The last step is the rename waiting period. Where the database adds a Zone to replace an existing
+// one, the new name resolves to the former one until two years have passed, so that an identifier
+// stored here is one a system on older data still reads. No file of a release dates a Link, so the
+// renames and their days are the lock's, and a rename the lock does not record is found by holding
+// the release against the table the previous pin produced: a name that was primary there, and is
+// now a Link to a name that table did not carry, was renamed. A Zone and a Link that changed
+// places were both carried, which is the case the standard gives no waiting period.
 const COUNTRY_THE_RELEASE_DOES_NOT_STATE = new Map([
   ['Atlantic/Jan_Mayen', 'SJ'],
 ]);
@@ -1195,7 +1203,7 @@ const primaryWithinCountry = (name, zone) => {
   );
   return backzoneNames.get(name);
 };
-const primaryTimeZone = (name) => {
+const primaryBeforeWaiting = (name) => {
   let primary = name;
   if (timeZoneLinks.has(name) && !zoneTabNames.has(name)) {
     const zone = zoneOfLink(name);
@@ -1203,6 +1211,111 @@ const primaryTimeZone = (name) => {
   }
   return UTC_NAMES.has(primary) ? 'UTC' : primary;
 };
+const RENAME_WAITING_YEARS = 2;
+const ISO_DAY = /^\d{4}-\d\d-\d\d$/u;
+assert.ok(
+  ISO_DAY.test(timeZoneSource.released ?? '') &&
+    Array.isArray(timeZoneSource.renames),
+  'standards/sources.lock.json does not give the pinned time zone release its day, or its list of renames.',
+);
+// Both are days written year first, so the later one is the greater string.
+const waitingConcluded = (released) =>
+  String(Number(released.slice(0, 4)) + RENAME_WAITING_YEARS) +
+    released.slice(4) <=
+  timeZoneSource.released;
+const recordedRenames = new Set();
+const renamedWhileWaiting = new Map();
+for (const {
+  renamed,
+  replacement,
+  release,
+  released,
+} of timeZoneSource.renames) {
+  assert.ok(
+    typeof release === 'string' &&
+      ISO_DAY.test(released ?? '') &&
+      released <= timeZoneSource.released,
+    'The rename of ' +
+      renamed +
+      ' in standards/sources.lock.json names no release, or a day that is not one on or before the pinned release.',
+  );
+  assert.ok(
+    timeZoneLinks.has(renamed) &&
+      !zoneTabNames.has(renamed) &&
+      zoneTabNames.has(replacement) &&
+      primaryBeforeWaiting(renamed) === replacement,
+    'standards/sources.lock.json records ' +
+      renamed +
+      ' as renamed to ' +
+      replacement +
+      ', and the pinned release does not link the first to the second as a name zone.tab lists.',
+  );
+  recordedRenames.add(renamed + '>' + replacement);
+  if (!waitingConcluded(released))
+    renamedWhileWaiting.set(replacement, renamed);
+}
+const primaryTimeZone = (name) => {
+  const primary = primaryBeforeWaiting(name);
+  return renamedWhileWaiting.get(primary) ?? primary;
+};
+let previousTimeZoneTable;
+try {
+  previousTimeZoneTable = await readFile(
+    resolve(
+      workspaceRoot,
+      'packages/runtime/src/time-zone-identities.generated.ts',
+    ),
+    'utf8',
+  );
+} catch (error) {
+  if (error?.code !== 'ENOENT') throw error;
+}
+const previousTimeZoneRelease = /'tzdata-([^/']+)\/equator-time-zone-/u.exec(
+  previousTimeZoneTable ?? '',
+)?.[1];
+if (
+  previousTimeZoneRelease !== undefined &&
+  previousTimeZoneRelease !== timeZoneRelease
+) {
+  const written = /TIME_ZONE_IDENTITIES =\s+("[^"]*");/u.exec(
+    previousTimeZoneTable,
+  );
+  assert.ok(
+    written !== null,
+    'The time zone identity table of ' +
+      previousTimeZoneRelease +
+      ' could not be read, so a rename since it would go unseen.',
+  );
+  const previousPrimary = new Map(
+    JSON.parse(written[1])
+      .split(' ')
+      .map((entry) => {
+        const [name, primary = name] = entry.split('>');
+        return [name, primary];
+      }),
+  );
+  for (const name of timeZoneLinks.keys()) {
+    if (zoneTabNames.has(name) || previousPrimary.get(name) !== name) continue;
+    const replacement = primaryBeforeWaiting(name);
+    assert.ok(
+      previousPrimary.has(replacement) ||
+        recordedRenames.has(name + '>' + replacement),
+      'standards/sources.lock.json does not record the rename of ' +
+        name +
+        ' to ' +
+        replacement +
+        ', which release ' +
+        timeZoneRelease +
+        ' carries and ' +
+        previousTimeZoneRelease +
+        " did not. Add it to the renames of ianaTimeZoneDatabase with the release that made it and the day in that release's NEWS heading, so that " +
+        replacement +
+        ' resolves to ' +
+        name +
+        ' for the waiting period.',
+    );
+  }
+}
 for (const [name, standsFor] of timeZoneLinkStandsFor) {
   assert.equal(
     primaryTimeZone(name),
@@ -1218,7 +1331,10 @@ const timeZoneEntries = [
   ...[...UTC_NAMES]
     .filter((name) => name !== 'UTC')
     .map((name) => [name, 'UTC']),
-  ...[...zoneTabNames].map((name) => [name, name]),
+  ...[...zoneTabNames].map((name) => [
+    name,
+    renamedWhileWaiting.get(name) ?? name,
+  ]),
   ...[...backwardZones].map((name) => [name, name]),
   ...[...timeZoneLinks.keys()]
     .filter((name) => !zoneTabNames.has(name))

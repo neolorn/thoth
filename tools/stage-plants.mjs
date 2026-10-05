@@ -567,6 +567,39 @@ export const stageSelfTests = Object.freeze({
         refusal: /The checked-in Equator time zone identity table is stale/u,
       },
       {
+        id: 'replacement-name-primary-inside-its-waiting-period',
+        plant: plantText(
+          'standards/sources.lock.json',
+          '"released": "2022-08-10"',
+          '"released": "2025-08-10"',
+        ),
+        refusal: /The checked-in Equator time zone identity table is stale/u,
+      },
+      {
+        // The table an earlier pin would have left: the former name primary, the new one absent.
+        id: 'rename-the-lock-does-not-record',
+        plant: async (root) => {
+          await editJson('standards/sources.lock.json', (lock) => {
+            lock.dataSources.ianaTimeZoneDatabase.renames = [];
+          })(root);
+          await editText(
+            root,
+            'packages/runtime/src/time-zone-identities.generated.ts',
+            (text) =>
+              replaceOnce(
+                'Europe/Kiev>Europe/Kyiv Europe/Kirov Europe/Kyiv ',
+                'Europe/Kiev Europe/Kirov ',
+              )(
+                replaceOnce(
+                  "'tzdata-2026e/equator-time-zone-1'",
+                  "'tzdata-2026d/equator-time-zone-1'",
+                )(text),
+              ),
+          );
+        },
+        refusal: /does not record the rename of Europe\/Kiev to Europe\/Kyiv/u,
+      },
+      {
         id: 'alias-rule-not-the-pinned-one',
         plant: plantText(
           'packages/toolkit/src/locale-aliases.generated.ts',

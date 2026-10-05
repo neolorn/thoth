@@ -2708,6 +2708,15 @@
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "2. Canonical value contracts",
+      "statement": "A release MUST resolve a name the database added to replace a Zone, where the database keeps the former name as a Link, to that former name until the pinned release is two years or more later than the release that renamed it, the waiting period section 6.5.1 of that standard recommends, because an identifier stored earlier is one a system on older data cannot read.",
+      "checks": [
+        "plant:verify:locale-profile:replacement-name-primary-inside-its-waiting-period",
+        "plant:verify:locale-profile:rename-the-lock-does-not-record"
+      ]
+    },
+    {
+      "spec": "08-formatting-parsing-and-domain.spec.md",
+      "section": "2. Canonical value contracts",
       "statement": "A release MUST NOT perform accounting, exchange, tax, cash rounding, business precision, rate calculation, percentage-point conversion, or implicit unit conversion.",
       "reason": "It excludes capabilities the runtime does not have, so there is no behavior to remove and see a test fail. The nearest observable property, that formatting reports rather than rounds an exact decimal it cannot represent, is its own statement elsewhere."
     },

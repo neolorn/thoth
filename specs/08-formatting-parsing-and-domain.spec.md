@@ -55,9 +55,12 @@ that the `TZ` column of `zone.tab` lists is primary itself, any other Link whose
 another country resolves to a name `zone.tab` lists for the Link's own country, and `Etc/UTC`,
 `Etc/GMT`, `GMT` and their Links are `UTC`. Where that country has one `zone.tab` line the Link
 resolves to it, and where it has several, to the name the release's `backzone` file maps the Link
-to. A name is matched without regard to case. A name the pinned release does not
-carry, which a fixed offset under `Etc/` and a zone newer than the release both are, keeps the
-host's spelling.
+to. A release MUST resolve a name the database added to replace a Zone, where the database keeps
+the former name as a Link, to that former name until the pinned release is two years or more later
+than the release that renamed it, the waiting period section 6.5.1 of that standard recommends,
+because an identifier stored earlier is one a system on older data cannot read. A name is matched
+without regard to case. A name the pinned release does not carry, which a fixed offset under `Etc/`
+and a zone newer than the release both are, keeps the host's spelling.
 
 A release MUST NOT perform accounting, exchange, tax, cash rounding, business precision, rate
 calculation, percentage-point conversion, or implicit unit conversion. Those belong to the consumer
