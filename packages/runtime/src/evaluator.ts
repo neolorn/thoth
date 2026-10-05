@@ -409,7 +409,7 @@ function isValidInput(
   if (value === null) return contract.nullable;
   if (value === undefined) return contract.optional;
   if (contract.enum !== undefined) {
-    return typeof value === 'string' && contract.enum.includes(value);
+    return (contract.enum as readonly unknown[]).includes(value);
   }
   switch (contract.type) {
     case 'boolean':

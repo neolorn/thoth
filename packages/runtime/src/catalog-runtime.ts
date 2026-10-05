@@ -39,7 +39,7 @@ export interface CompiledInputContract {
   readonly type: 'boolean' | 'date-time' | 'integer' | 'number' | 'string';
   readonly optional: boolean;
   readonly nullable: boolean;
-  readonly enum?: readonly string[];
+  readonly enum?: readonly (string | number | boolean)[];
 }
 
 export interface CompiledSlotContract {
