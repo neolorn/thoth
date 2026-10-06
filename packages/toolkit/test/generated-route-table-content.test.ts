@@ -220,6 +220,38 @@ describe('the route table a generation writes', () => {
       [...lazy.matchAll(/scopeId: "([a-z]+)"/gu)].map(([, id]) => id),
     ).toEqual(['page', 'panel', 'shell']);
   });
+
+  it('gives a lazily loaded route the startup scopes and its own, and not the scope another lazy route defers', async () => {
+    // A route waits for every scope in its list before it renders, so a scope that only another
+    // route uses is a catalog downloaded for a page that never shows it.
+    const lazy = (scope: string): readonly string[] => [
+      `import { messages } from '#i18n/${scope}';`,
+      '',
+      'export const heading = messages.heading.messageId;',
+    ];
+    const root = await project(['shell', 'admin', 'reports'], {
+      'shell.ts': SHELL,
+      'admin.ts': lazy('admin'),
+      'reports.ts': lazy('reports'),
+      'app.routes.ts': [
+        "import type { Routes } from '@angular/router';",
+        '',
+        'export const routes: Routes = [',
+        "  { path: 'admin', loadComponent: () => import('./admin') },",
+        "  { path: 'reports', loadComponent: () => import('./reports') },",
+        '];',
+      ],
+    });
+
+    const table = await routeTable(root);
+    const scopesOf = (id: string): readonly (string | undefined)[] =>
+      [...row(table, id).matchAll(/scopeId: "([a-z]+)"/gu)].map(
+        ([, scope]) => scope,
+      );
+    expect(scopesOf('route:admin')).toEqual(['admin', 'shell']);
+    expect(scopesOf('route:reports')).toEqual(['reports', 'shell']);
+  });
+
   it('gives a lazily loaded route no scope for a handle whose message no catalog defines', async () => {
     // An owner with no catalogs knows no message identities, so a handle written by hand is taken
     // as a use like any other. No scope holds its message, and the route that defers the file is
