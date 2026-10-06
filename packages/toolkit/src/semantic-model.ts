@@ -31,6 +31,7 @@ import type {
 import {
   PLURAL_SELECTOR_FUNCTIONS,
   type MessageExpression,
+  type MessageFunctionReference,
   type MessagePattern,
   type MessageSemanticModel,
   type MessageValueReference,
@@ -1275,8 +1276,22 @@ function pluralSelectorPositions(
     ]),
   );
   const selectors: PluralSelector[] = [];
+  // A `.local` bound to a variable with no function of its own carries that variable's
+  // annotation, so the function that selects is the first one met along the bindings.
+  const annotation = (name: string): MessageFunctionReference | undefined => {
+    const seen = new Set<string>();
+    let current: string | undefined = name;
+    while (current !== undefined && !seen.has(current)) {
+      seen.add(current);
+      const value: MessageExpression | undefined = byName.get(current)?.value;
+      if (value?.function !== undefined) return value.function;
+      current =
+        value?.operand?.kind === 'variable' ? value.operand.name : undefined;
+    }
+    return undefined;
+  };
   semantics.selectors.forEach((selector, index) => {
-    const reference = byName.get(selector)?.value.function;
+    const reference = annotation(selector);
     if (
       reference === undefined ||
       !PLURAL_SELECTOR_FUNCTIONS.has(reference.name)
