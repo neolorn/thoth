@@ -286,6 +286,22 @@ describe('the locales a disagreement names', () => {
       summary?.indexOf('"ja-JP"') ?? -1,
     );
   });
+
+  it('are listed in code point order, whatever order the configuration wrote them in', async () => {
+    const root = await project({
+      configuredLocales: ['en-US', 'ar-EG', 'ja-JP', 'de-DE'],
+      policy: AGREEING,
+    });
+
+    const found = await reported(root, 'EQ1408');
+    expect(found).toHaveLength(1);
+    const summary = found[0]?.summary;
+    expect(summary).toContain('"de-DE"');
+    expect(summary).toContain('"ja-JP"');
+    expect(summary?.indexOf('"de-DE"')).toBeLessThan(
+      summary?.indexOf('"ja-JP"') ?? -1,
+    );
+  });
 });
 
 describe('a leading segment that is not a segment', () => {
