@@ -321,6 +321,11 @@ function descriptorError(
   if (!validExtensionId(descriptor.id)) {
     return 'Application-local extension identities require a provider namespace and bounded lowercase name.';
   }
+  // The library names what is built in under this namespace, and a descriptor registered there
+  // would be taken for the built-in it is named after.
+  if (descriptor.id.startsWith('equator:')) {
+    return 'Extension identities in the equator namespace are reserved for the library.';
+  }
   switch (descriptor.kind) {
     case 'message-function': {
       if (!validBound(descriptor.maximumOutputLength, 65_536)) {

@@ -194,7 +194,8 @@ option vocabularies are implemented and verified.
 
 A release MAY accept explicitly registered custom MessageFormat functions. Standard functions
 remain preferred, and an extension MUST name its functions in a namespace its provider owns so that
-one cannot collide with Unicode's or with another extension's.
+one cannot collide with Unicode's or with another extension's. The `equator` namespace is the library's own:
+a registry that registers any descriptor in it is refused with `EQ1805`.
 
 A custom function has two projections, and a release MUST keep them separate. The descriptor
 is versioned JSON data carrying identity, operand, option, result, selector, capability,
