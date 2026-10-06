@@ -1894,6 +1894,17 @@ class LocalizationInternal {
       }
       throw error;
     }
+    // A hook or a participant may destroy the context while the snapshot is applied to it. Nothing
+    // is current yet, so there is nothing to stand: the change ends as one in flight does.
+    if (this.disposed) {
+      prepared.release();
+      throw new LocalizationError(
+        operationalDiagnostic(
+          'disposed',
+          'The localization context is disposed.',
+        ),
+      );
+    }
     // Cleared before the snapshot lands rather than part way through publication. No `committed`
     // hook can observe it, a hook is handed the snapshot and nothing else, and an effect sees the
     // settled state, so nothing can read a half-published state.

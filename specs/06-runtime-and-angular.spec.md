@@ -306,6 +306,11 @@ choice is remembered as for any committed change. A release MUST NOT start furth
 that was destroyed by a hook or a participant it told of a commit: no progressive scope load, no
 participant preparation, and no return to the ready state.
 
+A context destroyed while a commit is still being applied, before its snapshot is current, has no
+commit to stand. The change ends as one in flight does: a locale change as cancelled and an
+initialization with the typed disposed failure, and no snapshot is published to the destroyed
+context.
+
 ## 12. The testing surface
 
 `@neolorn/equator/testing` exports seven things: the testing providers, an in-memory catalog loader
