@@ -152,15 +152,16 @@ export const PLURAL_SELECTOR_FUNCTIONS: ReadonlySet<string> = Object.freeze(
  * `calendar` and a misspelt `timeZone` would otherwise be told its options "cannot be used
  * together": true of the pair and useless to the person who has to fix one of them. The two
  * options whose values are data rather than a rule are re-tried one at a time, and the first that
- * fails alone is the one named. Nothing else can fail: every other date option is an enumerated
- * value the table has already judged.
+ * fails alone is the one named. That includes one this expression did not write: an option its
+ * operand's declaration carries is not judged again against the table here. Nothing else can fail:
+ * every other date option is an enumerated value the table has already judged.
  */
 function dateOptionProblem(
   functionName: string,
   resolved: Readonly<Record<string, string>>,
 ): string {
   for (const [name, rule] of Object.entries(MESSAGE_OPTION_RULES)) {
-    if (rule.kind !== 'constructed') continue;
+    if (rule.kind !== 'constructed' && rule.kind !== 'platform') continue;
     const value = resolved[name];
     if (value === undefined) continue;
     try {
@@ -1232,9 +1233,12 @@ export function catchallOtherCollisions(
   const groups = new Map<string, number[]>();
   const catchallSignatures = new Set<string>();
   for (const [index, variant] of variants.entries()) {
-    const signature = variant.keys
-      .map((key) => (key.kind === 'catchall' ? 'other' : key.value))
-      .join(' ');
+    // Serialized as a list, because a quoted key can hold any character a separator could be.
+    const signature = JSON.stringify(
+      variant.keys.map((key) =>
+        key.kind === 'catchall' ? 'other' : key.value,
+      ),
+    );
     const group = groups.get(signature);
     if (group === undefined) groups.set(signature, [index]);
     else group.push(index);
