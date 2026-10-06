@@ -119,4 +119,20 @@ describe('a compilation that fails while a sink is listening', () => {
       },
     ]);
   });
+
+  it('reports the failure in the compilation phase, as it reported the start', () => {
+    const events: ToolkitObservabilityEvent[] = [];
+    const compiled = compileProject(
+      request({
+        recoveryMessageIdentities: ['@example/app:shell:absent'],
+        observability: { emit: (event) => void events.push(event) },
+      }),
+    );
+
+    expect(compiled.ok).toBe(false);
+    expect(events.map(({ status, phase }) => ({ status, phase }))).toEqual([
+      { status: 'started', phase: 'compilation' },
+      { status: 'failed', phase: 'compilation' },
+    ]);
+  });
 });
