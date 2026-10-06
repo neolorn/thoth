@@ -12,7 +12,7 @@ import { FormattingSurface } from '../src/formatting-runtime.js';
 /**
  * What the runtime makes of the value an installed adapter hands back.
  *
- * `specs/08-formatting-parsing-and-domain.spec.md` section 9 resolves an adapter through the
+ * `specs/08-formatting-parsing-and-domain.spec.md` section 7 resolves an adapter through the
  * calling context's own registry and treats one that is unregistered, throwing, malformed or over
  * its bound as a typed refusal. An adapter is consumer code, so nothing about its answer is taken
  * on trust: the answer is rebuilt field by field, and a field outside its closed shape refuses the
