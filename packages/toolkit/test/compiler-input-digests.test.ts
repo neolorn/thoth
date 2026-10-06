@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { parseCatalog } from '../src/catalog.js';
 import { fingerprintCompilerInputs } from '../src/compiler.js';
 import {
   defineExtensionRegistry,
@@ -90,5 +91,80 @@ describe('the inputs a compilation is fingerprinted by', () => {
     expect(recovery([first, second])).toBe(recovery([second, first]));
     expect(recovery([first])).not.toBe(recovery([second]));
     expect(recovery([first])).not.toBe(recovery([first, second]));
+  });
+
+  it('refuse a configuration that has no JSON form with a TypeError', () => {
+    // A function has no JSON form, and neither has a value that was never passed. Both are a
+    // mistake in the request, reported as one, and not as the parse failure of a text nobody wrote.
+    for (const configuration of [undefined, () => 'en-US']) {
+      expect(() => digests({ configuration: configuration as never })).toThrow(
+        TypeError,
+      );
+    }
+  });
+});
+
+/**
+ * What of a catalog's message reaches the catalog's digest.
+ *
+ * A description and a context are what a translator is handed with the text, and both are written
+ * into the interchange files. Changing one without the text is still a change to what the catalog
+ * says, so a later run has to see it.
+ */
+
+function catalogDigest(...entry: readonly string[]): string | undefined {
+  const parsed = parseCatalog(
+    ['messages:', '  checkout:', ...entry, ''].join('\n'),
+    {
+      role: 'source',
+      providerId: '@example/app',
+      scopeId: 'shell',
+      locale: 'en-US',
+      sourcePath: 'i18n/shell/en-US.yaml',
+    },
+  );
+  if (!parsed.ok) throw new Error(JSON.stringify(parsed.diagnostics));
+  return digests({ catalogs: [parsed.value] })[
+    'catalog:@example/app:shell:en-US:source'
+  ];
+}
+
+describe('the digest of a catalog', () => {
+  const text = '    message: "Place order"';
+
+  it('moves when a message gains a description, and when the description changes', () => {
+    const bare = catalogDigest(text);
+    const described = catalogDigest(text, '    description: "A button"');
+
+    expect(bare).toMatch(/^sha256-/u);
+    expect(described).not.toBe(bare);
+    expect(catalogDigest(text, '    description: "A heading"')).not.toBe(
+      described,
+    );
+  });
+
+  it('moves when a message gains a context, and when the context changes', () => {
+    const bare = catalogDigest(text);
+    const placed = catalogDigest(text, '    context: "Checkout page"');
+
+    expect(placed).not.toBe(bare);
+    expect(catalogDigest(text, '    context: "Cart page"')).not.toBe(placed);
+  });
+
+  it('tells a description from a context that says the same thing', () => {
+    expect(catalogDigest(text, '    description: "Checkout page"')).not.toBe(
+      catalogDigest(text, '    context: "Checkout page"'),
+    );
+  });
+
+  it('is stated for a message declared with no text yet', () => {
+    // An empty entry has no parsed text to digest, and is digested by the rest of what it declares.
+    const empty = catalogDigest('    empty: true');
+
+    expect(empty).toMatch(/^sha256-/u);
+    expect(empty).not.toBe(catalogDigest(text));
+    expect(catalogDigest('    empty: true', '    description: "A"')).not.toBe(
+      empty,
+    );
   });
 });
