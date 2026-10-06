@@ -5830,7 +5830,8 @@
       "original": "!needed.has(key)",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "With the guard always taken, routeScopes sets a key it already holds to an object with the same providerId and scopeId; Map.set keeps the key in its first position and the result is sorted by scopeId afterwards, so the returned list is the same."
+      "reason": "In both loops of routeScopes, with the guard always taken, a key the map already holds is set again to an object with the same providerId and scopeId; Map.set keeps the key in its first position and the result is sorted by scopeId afterwards, so the returned list is the same.",
+      "count": 2
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5854,8 +5855,8 @@
       "original": "', '",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The separator between the quoted names listed inside a summary: the locales of the two EQ1408 sentences and the unread options of EQ1417.",
-      "count": 3
+      "reason": "The separator between the quoted names listed inside a summary: the unreached message ids of EQ1311, the locales of the two EQ1408 sentences and the unread options of EQ1417.",
+      "count": 4
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5958,7 +5959,8 @@
       "original": "'them'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The plural pronoun inside the EQ1417 summary."
+      "reason": "The plural pronoun inside a summary: four times in the EQ1408 sentence for configured locales with no address, twice in the EQ1408 sentence for policy locales with no catalogs, and once in EQ1417.",
+      "count": 7
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -6079,7 +6081,8 @@
       "original": "''",
       "replacement": "\"Stryker was here!\"",
       "category": "message-wording",
-      "reason": "The empty tail of the EQ1410 summary for a literal mention; the change appends text to that sentence."
+      "reason": "The empty tail of a summary sentence: after the listed ids of EQ1311 when none are left out, and of the EQ1410 summary for a literal mention; the change appends text to that sentence.",
+      "count": 2
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -6353,7 +6356,8 @@
       "original": "typeof literal === 'number'",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "Number.isFinite answers false for every value that is not a number, so the conjunction on line 693 is false for a literal of another type whether or not the typeof test is made first."
+      "reason": "Number.isFinite on line 694 and Number.isSafeInteger on line 696 each answer false for every value that is not a number, so either conjunction is false for a literal of another type whether or not the typeof test is made first.",
+      "count": 2
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6393,8 +6397,8 @@
       "original": "'message-local'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "The kind computed on line 891 is only looked up in the registry on line 892 and in interactiveSlotKinds on line 904; a registered identity carries a provider namespace, so neither \"message-local\" nor the empty string is found in either. At another place: A slot kind is never the empty string (line 1027 supplies a name), so the changed comparison holds for every kind and 'message-local' is recorded as a key too. No descriptor carries that id, because a registered id must be a namespace, a colon and a name (validExtensionId, extensions.ts line 311), so line 1876 drops it.",
-      "count": 2
+      "reason": "On lines 892, 910, 932 and 1128 the fallback kind is only compared with 'code', looked up in interactiveSlotKinds, and looked up in the registry; neither \"message-local\" nor the empty string is 'code' or a built-in kind, and a registered id must be a namespace, a colon and a name (validExtensionId, extensions.ts line 310), so neither is found. On line 1865 a slot kind is never the empty string (line 1028 supplies a name), so the changed comparison also records 'message-local' as a key, and line 1888 drops it because no descriptor can carry that id.",
+      "count": 5
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6572,7 +6576,8 @@
       "original": "', '",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The separator between the missing category names inside the EQ1308 summary."
+      "reason": "The separator between the names a summary lists: the operand types inside the EQ1302 summary on line 796 and the missing categories inside the EQ1308 summary on line 1369.",
+      "count": 2
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7322,6 +7327,278 @@
       "replacement": "{}",
       "category": "equivalent",
       "reason": "In firstGrapheme the options go to Intl.Segmenter, whose granularity is grapheme when none is named, so the segmenter built cuts the same first grapheme. The options also spell the key of the module's own formatter cache, which nothing outside the module can read."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "unused.length === 1",
+      "replacement": "false",
+      "category": "message-wording",
+      "reason": "The condition chooses only between the nouns \"message\" and \"messages\" in the EQ1311 summary of unusedSourceMessages; the count, the listed ids, the code and the severity are the same either way."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "StringLiteral",
+      "original": "'message'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The literal is the singular noun in the EQ1311 summary of unusedSourceMessages, read by a person; the count and the listed ids beside it are unchanged."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "message.description === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the guard never taken, catalogMessageInput returns a description key holding undefined for a message that has none. Its one caller passes the object to canonicalValue, whose JSON.stringify leaves out a property whose value is undefined, so the digested value is the same."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "message.context === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the guard never taken, catalogMessageInput returns a context key holding undefined for a message that has none. Its one caller passes the object to canonicalValue, whose JSON.stringify leaves out a property whose value is undefined, so the digested value is the same."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "portable === '..' ||\n    portable.startsWith(`..${sep}`)",
+      "replacement": "false",
+      "category": "message-wording",
+      "reason": "A relative path that is \"..\" or begins with \"..\" and a separator has \"..\" as its first segment, so when portableAnalysisPath's first test lets it through, the segment test eleven lines below throws for it. Both throw a TypeError, and only the sentence it carries differs."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "LogicalOperator",
+      "original": "portable === '..' ||\n    portable.startsWith(`..${sep}`)",
+      "replacement": "portable === '..' && portable.startsWith(`..${sep}`)",
+      "category": "message-wording",
+      "reason": "No text both equals \"..\" and begins with \"..\" and a separator, so the changed clause is never true, and a path above the project reaches portableAnalysisPath's segment test, which throws for its leading \"..\" segment. Both throw a TypeError, and only the sentence it carries differs."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "StringLiteral",
+      "original": "'have addresses'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The plural verb phrase inside the EQ1408 summary for policy locales that have no catalogs; the diagnostic's code and path are the same with or without it."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "StringLiteral",
+      "original": "'Those addresses resolve'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The plural opening of the second sentence of the EQ1408 summary for policy locales that have no catalogs."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "StringLiteral",
+      "original": "'are configured locales'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The plural verb phrase inside the EQ1408 summary for configured locales the policy gives no address."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "policyDeclaration.claimedSegments.length > 0",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "With no claimed segment both lookup maps built inside the block are empty, so every route and every routerLink address finds no claim and is skipped; nothing is reported with or without the guard."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "StringLiteral",
+      "original": "`writes lang=${JSON.stringify(mention.text)} by hand`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The clause of the EQ1410 summary that says a static lang was written without a dir beside it; the code, severity and path of the warning do not depend on it."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "OptionalChaining",
+      "original": "result.diagnostics[0]?.code",
+      "replacement": "result.diagnostics[0].code",
+      "category": "equivalent",
+      "reason": "A failed result is built only by toolkitFailure, which throws on an empty list (diagnostics.ts line 225), so the first diagnostic of a failure always exists and the optional step never short-circuits."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "diagnosticCode === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "The change can only hand emitToolkitEvent a diagnosticCode key holding undefined, and emitToolkitEvent leaves the key off the event when its value is undefined, so the emitted event is the same."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "ConditionalExpression",
+      "original": "rule.kind !== 'constructed' && rule.kind !== 'platform'",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "Retrying an option of another kind alone cannot throw: a date function inherits only timeZone, calendar and hour12, hour12 reaches Intl.DateTimeFormat as a boolean, and every other option is written on the expression and judged against its enumerated values before dateOptionProblem is called, each of which dateTimeFormatOptions turns into component values Intl accepts. So the loop names the same option, or none, either way."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Custom message function ${JSON.stringify(reference.name)} requires an operand.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1805 finding for a registered function called without an operand; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Custom message function ${JSON.stringify(reference.name)} requires option ${JSON.stringify(name)}.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1805 finding for a required option the call leaves out; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "'An explicit-empty message cannot declare inputs because it has no inferred input set.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1302 finding for inputs declared on an explicitly empty message; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Input ${JSON.stringify(name)} has incompatible MessageFormat operand uses: ${explicitTypes.join(', ')}.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1302 finding for an input used under two operand types; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Rich slot ${JSON.stringify(part.name)} closes ${JSON.stringify(opened ?? 'no open slot')}.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1303 finding for a closing element that names another slot; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "LogicalOperator",
+      "original": "opened ?? 'no open slot'",
+      "replacement": "opened && 'no open slot'",
+      "category": "message-wording",
+      "reason": "The expression is interpolated into the summary of the EQ1303 finding on line 871 and read nowhere else: it chooses the text that stands for the slot that was open."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Rich slot ${JSON.stringify(part.name)} cannot be nested inside code.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1303 finding for a slot nested inside code; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Rich slot ${JSON.stringify(name)} is used as both paired and standalone.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1303 finding for a slot used both paired and standalone; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Built-in rich slot ${JSON.stringify(name)} must be paired.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1303 finding for a built-in slot that stands alone; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Rich slot ${JSON.stringify(name)} must use the ${customKind.shape} shape declared by ${JSON.stringify(kind)}.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1303 finding for a slot whose shape is not the one its registered kind declares; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Rich slot ${JSON.stringify(name)} is present in every source variant and cannot be made optional by refinement.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1303 finding for an optional refinement on a slot every variant uses; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Rich slot ${JSON.stringify(name)} is not repeated by the source and cannot be made repeatable by refinement.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1303 finding for a repeatable refinement on a slot no variant repeats; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "ConditionalExpression",
+      "original": "existingTemplate !== undefined",
+      "replacement": "true",
+      "category": "message-wording",
+      "reason": "The condition on line 1717 only chooses between two summaries of one EQ1305 finding with one path, the duplicate-template sentence and the generated-name sentence, so the change puts the first sentence on both."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "ConditionalExpression",
+      "original": "existingTemplate !== undefined",
+      "replacement": "false",
+      "category": "message-wording",
+      "reason": "The condition on line 1717 only chooses between two summaries of one EQ1305 finding with one path, the duplicate-template sentence and the generated-name sentence, so the change puts the second sentence on both."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "EqualityOperator",
+      "original": "existingTemplate !== undefined",
+      "replacement": "existingTemplate === undefined",
+      "category": "message-wording",
+      "reason": "The condition on line 1717 only chooses between two summaries of one EQ1305 finding with one path, the duplicate-template sentence and the generated-name sentence, so the change swaps which sentence a finding carries."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Open families ${JSON.stringify(existingTemplate)} and ${JSON.stringify(name)} duplicate one template.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1305 finding for two families that share a template; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Message ${JSON.stringify(member.messageId)} ambiguously matches open families ${JSON.stringify(previous)} and ${JSON.stringify(name)}.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1305 finding for a message that matches two families; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Message ${JSON.stringify(messageId)} exceeds the ${RESOURCE_LIMITS.selectorsPerMessage}-selector implementation ceiling.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1302 finding for a message past the selector ceiling; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Message ${JSON.stringify(messageId)} exceeds the ${RESOURCE_LIMITS.variantsPerMessage}-variant implementation ceiling.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1302 finding for a message past the variant ceiling; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "ConditionalExpression",
+      "original": "severity === 'error'",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "Every finding analyzeCatalogSet collects is built by semanticDiagnostic, whose severity is error unless a completeness policy supplies it, and the three calls that pass one (lines 1372, 1413 and 2179) carry EQ1308, EQ1307 and EQ1306, all in COMPLETENESS_CODES. A finding that is not an error therefore already fails the second half of the conjunction."
     }
   ]
 }
