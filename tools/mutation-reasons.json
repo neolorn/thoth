@@ -2542,7 +2542,8 @@
       "original": "[]",
       "replacement": "[\"Stryker was here\"]",
       "category": "equivalent",
-      "reason": "The array is spread into the options position of the Error constructor, which installs a cause only from an object; a string there leaves the error without one, as the empty spread does."
+      "reason": "In invalidCanonicalValue the array is spread into the options position of the Error constructor, which installs a cause only from an object; a string there leaves the error without one, as the empty spread does. In parsePersonNamePattern the array is the token list, and a leading entry that is not a populated field is cut by trimToPopulated, which keeps only what lies from the first populated field to the last and keeps nothing when there is none.",
+      "count": 2
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -2975,8 +2976,8 @@
       "original": "[]",
       "replacement": "[\"Stryker was here\"]",
       "category": "equivalent",
-      "reason": "catalogConsultationOrder keeps only chain members the store has an artifact for (evaluator.ts 1985-1987), so a default chain naming a locale nothing was compiled for adds no catalog and no inherited locale. The coordinator keys transferred records by participantId (participant-runtime.ts 643-647) and reads them only by a registered string id (line 707), so a default entry with no participantId is never read. The default only stands in for an absent list inside Array.isArray, and any array answers that the same way. seed returns without effect for a value that is not a data record (catalog-runtime.ts 1255), so a default list holding a string seeds nothing. The placeholder string in the queue default has no committed method and publish reads entries only through the optional call, so it is skipped. The placeholder string in the applied list has no rollback method and the list is walked only through the optional call inside a try block, so it is skipped. The recovery handle is plain, and a plain message refuses markup before slot contracts are read (evaluator.ts:1735), so the slots list is never consulted. The synthetic recovery catalog's requiredExtensions is never read by evaluateCandidate or findEvaluationCandidate, which use only key, generatedAbi, messages and resources.maximumMessage.outputParts. The handle is built here and handed only to findEvaluationCandidate and evaluateCandidate, and evaluator.ts never reads a handle inputNames list. The handle is built here and handed only to findEvaluationCandidate and evaluateCandidate, and evaluator.ts never reads a handle slotNames list. With no commit hooks the loop visits one string, which has no dispose, and the optional call on 2940 skips it.",
-      "count": 11
+      "reason": "Each default stands in for an absent list and its one placeholder string is never read as a member. NO_INHERITED_LOCALES: catalogConsultationOrder keeps only chain members the store has an artifact for, and it has none for the placeholder. transferredParticipants: ParticipantCoordinator keys the record by its participantId, which a string has not, and reads records only by a registered string id. transferredCatalogs inside Array.isArray: any array answers the same. transferredCatalogs handed to seed, in the constructor and in createChild: LocalCatalogStore.seed returns without effect for a value that is not a data record. commitHooks in publish and in dispose: the placeholder has no committed and no dispose, and both are reached through an optional call. The applied list in commit: the placeholder has no rollback, reached through an optional call inside a try block. The slots, requiredExtensions, inputNames and slotNames of the recovery message, catalog and handle in recoveryText: the message is plain, so evaluatePattern refuses markup before a slot contract is read, and evaluateCandidate and findEvaluationCandidate read no requiredExtensions, inputNames or slotNames.",
+      "count": 12
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -3342,8 +3343,8 @@
       "original": "this.active?.scopes",
       "replacement": "this.active.scopes",
       "category": "equivalent",
-      "reason": "Reached only inside the branch whose condition on 2304 read this.active.publicSnapshot with no await in between, so this.active is defined. this.commit on 2376 published the snapshot in the same synchronous turn, so this.active is defined.",
-      "count": 2
+      "reason": "In all three places this.active is defined when the line runs. In the same-locale branch of changeLocale the branch condition read this.active.publicSnapshot, and a disposal while it waited for participants either interrupts the change or returns before the line. After commit in changeLocale the snapshot was published in the same turn and a disposal by a hook returns before the line. In ensureScope the line follows assertActive, and only disposal clears a snapshot that committed() had already returned.",
+      "count": 3
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -3427,7 +3428,8 @@
       "original": "[activation]",
       "replacement": "[]",
       "category": "equivalent",
-      "reason": "The branch runs only after dispose, which cleared the store (2957, catalog-runtime.ts 1299-1303), so releasing the leases finds no cache entry to unpin and nothing to evict (catalog-runtime.ts 1219-1225)."
+      "reason": "Both branches run only for a disposed context: commitScopeActivation finds no current snapshot only after dispose published none, and the operation signal ensureScope tests is aborted by dispose alone. dispose cleared the store in the same call, so releasing the leases lowers the pin count of an entry the cache no longer holds and LocalCatalogStore.evict finds nothing to evict or report.",
+      "count": 2
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -3857,7 +3859,8 @@
       "original": "'Strict localized date input for this calendar requires an enabled parsing provider.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code"
+      "reason": "the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code",
+      "count": 2
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4530,8 +4533,8 @@
       "original": "{\n    return undefined;\n  }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "the text written without this guard reads back as a different value or not at all, and verifyFormattedInput (in verifyFormattedInput) returns the same invalid-localized-input failure; only the message differs",
-      "count": 2
+      "reason": "Without this early return localizedTimeText, localizedDurationText or localizedTimeZoneText either throws on a local the try left unassigned, which formatLocalizedInput reports, or writes text that verifyFormattedInput reads back as a different value; each gives the same invalid-localized-input failure and only the message differs.",
+      "count": 4
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4635,7 +4638,8 @@
       "original": "'forbidden'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "a minus sign written under a forbidding profile is refused when verifyFormattedInput re-reads it (in parseDurationInput), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "In localizedDurationText either change only lets a minus sign be written under a forbidding profile, and that text is refused when verifyFormattedInput re-reads it (in parseDurationInput), which returns the same invalid-localized-input failure; only the message differs",
+      "count": 2
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4764,7 +4768,8 @@
       "original": "'plain-date'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainDate, parsePlainTime and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "In verifyFormattedInput the kind only picks the default limit, and text over it is refused again on the re-read (in parseLocalizedInput for a declared limit, parsePlainDate for this kind's default); in invariantInputIdentity the label only selects the arm for a date, which is compared after a valid re-read, and localizedDateText writes exactly the fields that arm names, so both identities agree whichever arm answers. Each place gives the same result and at most the message differs.",
+      "count": 2
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4804,7 +4809,8 @@
       "original": "'plain-time'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainTime for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "In verifyFormattedInput the kind only picks the default limit, and text over it is refused again on the re-read (in parseLocalizedInput for a declared limit, parsePlainTime for this kind's default); in invariantInputIdentity the label only selects the arm for a time, which is compared after a valid re-read, and localizedTimeText refuses every time its pattern cannot write in full, so both identities agree whichever arm answers. Each place gives the same result and at most the message differs.",
+      "count": 2
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4836,7 +4842,8 @@
       "original": "'plain-date-time'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainDateTimeInput for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "In verifyFormattedInput the kind only picks the default limit, and text over it is refused again on the re-read (in parseLocalizedInput for a declared limit, parsePlainDateTimeInput for this kind's default); in invariantInputIdentity the label only selects the arm for a date and time, which is compared after a valid re-read of text that holds both halves in full, so both identities agree whichever arm answers. Each place gives the same result and at most the message differs.",
+      "count": 2
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4948,7 +4955,8 @@
       "original": "'The invariant value does not match the declared localized input profile.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code"
+      "reason": "the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code",
+      "count": 2
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -6814,6 +6822,506 @@
       "replacement": "typeof literal === 'number' || Number.isFinite(literal)",
       "category": "unreachable",
       "reason": "the two differ only for a number that is not finite, and parseCatalog refuses an enum literal that is one with EQ1101 (the Number.isFinite test where catalog.ts reads enum members), so none reaches literalMatchesType"
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "StringLiteral",
+      "original": "'The numbering system of the formatting context is not a numbering system identifier.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "malformedNumberingSystem is the diagnostic message of the refusal in parseLocalizedInput and writeLocalizedInput; nothing compares it and the suite asserts the status and the code"
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "StringLiteral",
+      "original": "'This runtime has no data for the numbering system of the formatting context.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "unavailableNumberingSystem is the diagnostic message of the refusal in parseLocalizedInput and writeLocalizedInput; nothing compares it and the suite asserts the status and the code"
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "ConditionalExpression",
+      "original": "group === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "numberSyntax then builds its syntax with a group member holding undefined instead of no group member, and parseNumeric, the only reader, asks whether syntax.group is undefined, which answers the same for both."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "ConditionalExpression",
+      "original": "oldest === undefined",
+      "replacement": "true",
+      "category": "performance-only",
+      "reason": "The loop in numberSyntax and in profileAffixes then stops before it evicts, so the cache keeps every entry; an entry is derived from its key alone, so only memory changes and never a result.",
+      "count": 2
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "ConditionalExpression",
+      "original": "oldest === undefined",
+      "replacement": "false",
+      "category": "unreachable",
+      "reason": "numberSyntax and profileAffixes ask for the oldest key only inside a loop that runs while the map holds more than 64 entries, so the key is always a string and the break this condition guards is never taken.",
+      "count": 2
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "EqualityOperator",
+      "original": "oldest === undefined",
+      "replacement": "oldest !== undefined",
+      "category": "performance-only",
+      "reason": "The loop in numberSyntax and in profileAffixes then stops before it evicts, so the cache keeps every entry; an entry is derived from its key alone, so only memory changes and never a result.",
+      "count": 2
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "BlockStatement",
+      "original": "{\n    return [];\n  }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "For a decimal or percentage-points profile profileAffixes then goes on with no counts assigned, iterating them throws inside its own try, the catch leaves nothing learned, and the empty list it returns is what the removed return gave."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "CallExpression",
+      "original": "profileAffixCache.delete(cacheKey);",
+      "replacement": ";",
+      "category": "performance-only",
+      "reason": "profileAffixCache only saves relearning spellings that profileAffixes derives from the profile and the context alone, so the same spellings are returned whether or not the entry is found, kept, reordered or evicted."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "CallExpression",
+      "original": "profileAffixCache.set(cacheKey, cached);",
+      "replacement": ";",
+      "category": "performance-only",
+      "reason": "profileAffixCache only saves relearning spellings that profileAffixes derives from the profile and the context alone, so the same spellings are returned whether or not the entry is found, kept, reordered or evicted."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "OptionalChaining",
+      "original": "negative?.negative",
+      "replacement": "negative.negative",
+      "category": "equivalent",
+      "reason": "In profileAffixes the negative spelling is taken from the same formatter as the positive one and the host writes it in the same pattern with a sign added, so where affixPattern found a number and a marker in the positive spelling it finds them in the negative one and the value is never undefined there; measured over every language the host has data for, 135 compound units, eight currencies and the percent style, with no exception."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "BlockStatement",
+      "original": "{\n    // A currency or unit the platform refuses has no spelling to learn; the field then reads a\n    // bare number, or refuses where the profile requires the marker.\n    learned.clear();\n  }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "Everything that throws inside the try of profileAffixes is the construction of the number formatter for a currency or unit the platform refuses, which happens before the first spelling is learned, so the map the catch clears is already empty."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "CallExpression",
+      "original": "learned.clear();",
+      "replacement": ";",
+      "category": "equivalent",
+      "reason": "Everything that throws inside the try of profileAffixes is the construction of the number formatter for a currency or unit the platform refuses, which happens before the first spelling is learned, so the map the catch clears is already empty."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "ArithmeticOperator",
+      "original": "right.prefix.length +\n        right.suffix.length",
+      "replacement": "right.prefix.length - right.suffix.length",
+      "category": "equivalent",
+      "reason": "The comparator in profileAffixes then orders the spellings differently, but parseNumeric takes the first one that matches the text, and on the host data no positive spelling of one plural category also matches a negative spelling learned before it, so the first match is the same; measured over every language the host has data for, 135 compound units, eight currencies and the percent style, where the order differed in 839 lists and the first match in none."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "ConditionalExpression",
+      "original": "profileAffixCache.size > 64",
+      "replacement": "false",
+      "category": "performance-only",
+      "reason": "profileAffixes then never evicts, so profileAffixCache keeps every entry; an entry is derived from its key alone, so only memory changes and never a result."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "EqualityOperator",
+      "original": "profileAffixCache.size > 64",
+      "replacement": "profileAffixCache.size >= 64",
+      "category": "performance-only",
+      "reason": "profileAffixes then evicts at 64 entries instead of 65; an evicted entry is relearned from its key alone, so only the work changes and never a result."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "StringLiteral",
+      "original": "'The locale does not expose a strict date input syntax.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code"
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "BlockStatement",
+      "original": "{\n    value = undefined;\n  }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "In parsePlainDate the variable is declared without a value just above the try, so it is already undefined when plainDate throws and the assignment in the catch changes nothing."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "StringLiteral",
+      "original": "'The locale does not expose a strict time input syntax.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code"
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "StringLiteral",
+      "original": "'The locale does not expose a strict date-time input syntax.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code"
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "StringLiteral",
+      "original": "'The declared localized instant profile is invalid.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code"
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "BlockStatement",
+      "original": "{\n    // A locale the platform refuses has no digits to write the date in either.\n    return undefined;\n  }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "localizedDateText then goes on with no formatter assigned and throws on its first use, which formatLocalizedInput reports as the same invalid-localized-input failure writeLocalizedInput gives for a date with no text; only the message differs."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "ConditionalExpression",
+      "original": "!validDurationPattern(profile, syntax)",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "localizedDurationText then writes under a pattern it would have refused, and either throws, which formatLocalizedInput reports, or hands text to verifyFormattedInput, whose re-read in parseDurationInput holds the pattern to the same validDurationPattern and refuses it; each gives the same invalid-localized-input failure and only the message differs."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "ConditionalExpression",
+      "original": "options === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With no options resolved localizedTimeZoneText then either returns undefined from its catch as before or throws searching them, which formatLocalizedInput reports as the same invalid-localized-input failure; only the message differs."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "OptionalChaining",
+      "original": "options.find(({ timeZone: option }) => option.id === canonical.id)\n    ?.labels",
+      "replacement": "options.find(({\n  timeZone: option\n}) => option.id === canonical.id).labels",
+      "category": "equivalent",
+      "reason": "For a zone no option names localizedTimeZoneText then throws reading the labels of nothing, which formatLocalizedInput reports as the same invalid-localized-input failure writeLocalizedInput gives for a zone with no text; only the message differs."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "ConditionalExpression",
+      "original": "case 'plain-date':\n      return `plain-date:${value.calendar}:${value.year}-${value.month}-${value.day}`;",
+      "replacement": "case 'plain-date':",
+      "category": "equivalent",
+      "reason": "invariantInputIdentity is compared only after verifyFormattedInput has re-read the text as valid, and localizedDateText writes exactly the fields the identity names, so a valid re-read is always of the same date and the two identities agree whatever this arm returns."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "StringLiteral",
+      "original": "`plain-date:${value.calendar}:${value.year}-${value.month}-${value.day}`",
+      "replacement": "``",
+      "category": "equivalent",
+      "reason": "invariantInputIdentity is compared only after verifyFormattedInput has re-read the text as valid, and localizedDateText writes exactly the fields the identity names, so a valid re-read is always of the same date and the two identities agree whatever this arm returns."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "StringLiteral",
+      "original": "`plain-time:${value.hour}:${value.minute}:${value.second}:${value.nanosecond}`",
+      "replacement": "``",
+      "category": "equivalent",
+      "reason": "invariantInputIdentity is compared only after verifyFormattedInput has re-read the text as valid, and localizedTimeText refuses every time its pattern cannot write in full, so a valid re-read is always of the same time and the two identities agree whatever this arm returns."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "ConditionalExpression",
+      "original": "case 'plain-date-time':\n      return `plain-date-time:${value.date.calendar}:${value.date.year}-${value.date.month}-${value.date.day}T${value.time.hour}:${value.time.minute}:${value.time.second}:${value.time.nanosecond}`;",
+      "replacement": "case 'plain-date-time':",
+      "category": "equivalent",
+      "reason": "invariantInputIdentity is compared only after verifyFormattedInput has re-read the text as valid, and writeLocalizedInput joins a date localizedDateText writes in full to a time localizedTimeText refuses unless it can write it in full, so a valid re-read is always of the same date and time and the two identities agree whatever this arm returns."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "StringLiteral",
+      "original": "`plain-date-time:${value.date.calendar}:${value.date.year}-${value.date.month}-${value.date.day}T${value.time.hour}:${value.time.minute}:${value.time.second}:${value.time.nanosecond}`",
+      "replacement": "``",
+      "category": "equivalent",
+      "reason": "invariantInputIdentity is compared only after verifyFormattedInput has re-read the text as valid, and writeLocalizedInput joins a date localizedDateText writes in full to a time localizedTimeText refuses unless it can write it in full, so a valid re-read is always of the same date and time and the two identities agree whatever this arm returns."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "ConditionalExpression",
+      "original": "parsed.status !== 'valid'",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "For a re-read that is not valid verifyFormattedInput then asks invariantInputIdentity for the identity of no value, which throws, and formatLocalizedInput reports that as the same invalid-localized-input failure; only the message differs."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "EqualityOperator",
+      "original": "mark < 0",
+      "replacement": "mark <= 0",
+      "category": "equivalent",
+      "reason": "In numericWritingOptions the point stands first only in an amount written by hand that is not a canonical decimal, and nativeNumber refuses such an amount before the precision computed here reaches a formatter."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "ConditionalExpression",
+      "original": "mark < 0",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "For an amount with no fraction numericWritingOptions then returns a larger maximum of fraction digits, at most the length of an integer nativeNumber accepts and so within the platform's limit, and a whole number is written with no fraction digits under any maximum."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "ObjectLiteral",
+      "original": "{ style: 'unit', unit: profile.unit }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "The style is used by numericWritingOptions only to ask the platform its default maximum of fraction digits, which is 3 for the unit style and for the plain style alike."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "StringLiteral",
+      "original": "'unit'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "numericWritingOptions then fails to build the formatter it asks for a default precision and falls back to the digits the amount carries, which is every digit it has; the unit style writes no fraction digit beyond those under the larger default either, so the text is the same."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "StringLiteral",
+      "original": "'percent'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "numericWritingOptions then fails to build the formatter it asks for a default precision and its catch leaves the default at 0, which is the percent style's own default maximum of fraction digits."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "ConditionalExpression",
+      "original": "text === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With no text to carry, verifyFormattedInput throws when it measures the text, and formatLocalizedInput reports that as the same invalid-localized-input failure this guard returns; only the message differs.",
+      "count": 4
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "BlockStatement",
+      "original": "{\n        return formattingPolicyFailure(\n          'The invariant date cannot be represented by the declared localized input profile.',\n          context,\n        );\n      }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "With no text to carry, verifyFormattedInput throws when it measures the text, and formatLocalizedInput reports that as the same invalid-localized-input failure this guard returns; only the message differs."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "StringLiteral",
+      "original": "'The invariant date cannot be represented by the declared localized input profile.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code"
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "BlockStatement",
+      "original": "{\n        return formattingPolicyFailure(\n          'The invariant time cannot be represented by the declared localized input profile.',\n          context,\n        );\n      }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "With no text to carry, verifyFormattedInput throws when it measures the text, and formatLocalizedInput reports that as the same invalid-localized-input failure this guard returns; only the message differs."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "ConditionalExpression",
+      "original": "timeText === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "writeLocalizedInput then joins the date to the word undefined, which holds no digit of any numbering system, so the re-read in verifyFormattedInput is never valid and it returns the same invalid-localized-input failure; only the message differs."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "BlockStatement",
+      "original": "{\n        return formattingPolicyFailure(\n          'The invariant date-time cannot be represented by the declared localized input profile.',\n          context,\n        );\n      }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "writeLocalizedInput then joins the date to the word undefined, which holds no digit of any numbering system, so the re-read in verifyFormattedInput is never valid and it returns the same invalid-localized-input failure; only the message differs."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "BlockStatement",
+      "original": "{\n        return formattingPolicyFailure(\n          'The invariant time zone is not represented by the declared localized input profile.',\n          context,\n        );\n      }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "With no text to carry, verifyFormattedInput throws when it measures the text, and formatLocalizedInput reports that as the same invalid-localized-input failure this guard returns; only the message differs."
+    },
+    {
+      "file": "packages/runtime/src/localized-input.ts",
+      "mutator": "BlockStatement",
+      "original": "{\n        return formattingPolicyFailure(\n          'The invariant duration cannot be represented by the declared localized input profile.',\n          context,\n        );\n      }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "With no text to carry, verifyFormattedInput throws when it measures the text, and formatLocalizedInput reports that as the same invalid-localized-input failure this guard returns; only the message differs."
+    },
+    {
+      "file": "packages/runtime/src/assets.ts",
+      "mutator": "StringLiteral",
+      "original": "'Dynamic asset domain outcome code is invalid.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The text of the invalid-configuration refusal dynamicAssetParticipantReport throws through invalidAsset for a domain outcome code that is no identity; the tests assert the code and nothing reads the text."
+    },
+    {
+      "file": "packages/runtime/src/catalog-runtime.ts",
+      "mutator": "StringLiteral",
+      "original": "'The generated catalog set or its configuration is malformed.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The text of the invalid-configuration refusal assertDescriptor wraps a failed read in; the tests assert the code and the cause and nothing reads the text."
+    },
+    {
+      "file": "packages/runtime/src/localization.ts",
+      "mutator": "ArrayDeclaration",
+      "original": "[locale]",
+      "replacement": "[]",
+      "category": "equivalent",
+      "reason": "A chain that names its own locale is admitted by isGeneratedLocaleFallbacks without the seed, and inheritsThroughItself then finds it: visit opens the locale, walks its chain, meets the locale still open and answers true, so the constructor refuses the table with the same diagnostic either way."
+    },
+    {
+      "file": "packages/runtime/src/localization.ts",
+      "mutator": "ConditionalExpression",
+      "original": "settled.has(locale)",
+      "replacement": "false",
+      "category": "performance-only",
+      "reason": "In inheritsThroughItself a locale is settled only after its visit answered false, and a second walk from it meets the same parents and answers false again, since any open locale it could reach would have made the first walk a ring; the test only saves the second walk."
+    },
+    {
+      "file": "packages/runtime/src/localization.ts",
+      "mutator": "CallExpression",
+      "original": "open.delete(locale);",
+      "replacement": ";",
+      "category": "equivalent",
+      "reason": "visit in inheritsThroughItself adds the locale to settled on the next statement and tests settled before open, so a locale left in open after its visit is answered by the settled test and the open test never sees it."
+    },
+    {
+      "file": "packages/runtime/src/localization.ts",
+      "mutator": "CallExpression",
+      "original": "settled.add(locale);",
+      "replacement": ";",
+      "category": "performance-only",
+      "reason": "Without the settled set visit in inheritsThroughItself walks a finished locale again; open.delete has already taken it out of the open set, and the second walk answers false as the first did, so only the work repeats."
+    },
+    {
+      "file": "packages/runtime/src/localization.ts",
+      "mutator": "ConditionalExpression",
+      "original": "diagnostic.participantId === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "The callback participantRefusals returns is called by ParticipantCoordinator.tell alone, with a diagnostic deferredHookDiagnostic built from the adapter id, so participantId is always a string there and the empty branch is never taken."
+    },
+    {
+      "file": "packages/runtime/src/localization.ts",
+      "mutator": "CallExpression",
+      "original": "this.assertActive();",
+      "replacement": ";",
+      "category": "equivalent",
+      "reason": "ensureScope on a disposed context still rejects with the disposed diagnostic without the first assertActive: with no snapshot it awaits initialize, whose own assertActive throws it, and with a snapshot committed() throws it, both before the scope is read."
+    },
+    {
+      "file": "packages/runtime/src/localization.ts",
+      "mutator": "ConditionalExpression",
+      "original": "primaryLocale === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "When primaryLocale is undefined in createChild neither the child options nor the parent options state an initialLocale, so writing initialLocale: undefined changes nothing a reader sees: the option is read only as a property, by LocaleResolution, formatting and renderedLocale, never by key presence."
+    },
+    {
+      "file": "packages/runtime/src/participant-runtime.ts",
+      "mutator": "StringLiteral",
+      "original": "'A localization participant hook answered with a promise where a synchronous answer is required.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The text of the participant-contract-rejected diagnostic deferredHookDiagnostic builds for a hook that answered with a promise; the tests assert the code and the participant and nothing reads the text."
+    },
+    {
+      "file": "packages/runtime/src/participant-runtime.ts",
+      "mutator": "BlockStatement",
+      "original": "{\n      return;\n    }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "When the hook throws in ParticipantCoordinator.tell the answer is still undefined, and asyncCallbackRejected answers false for undefined, so falling out of the catch block reports nothing, as returning does."
+    },
+    {
+      "file": "packages/runtime/src/participant-runtime.ts",
+      "mutator": "StringLiteral",
+      "original": "'The change a localization participant prepared for did not commit.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The text of the cancelled diagnostic discardPrepared gives a participant whose signal carries no typed reason; the tests assert the status and the code and nothing reads the text."
+    },
+    {
+      "file": "packages/runtime/core/src/routing.ts",
+      "mutator": "ConditionalExpression",
+      "original": "rawPath.length > 1",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "In parseTarget the length test only keeps the path \"/\" from counting as ending in a slash, and for that path cutting the last character and cutting none both leave the same empty text to split into segments. The trailingSlash member it also sets on the parsed target is read by nothing in the module, and the parsed target never leaves it."
+    },
+    {
+      "file": "packages/runtime/core/src/routing.ts",
+      "mutator": "EqualityOperator",
+      "original": "rawPath.length > 1",
+      "replacement": "rawPath.length >= 1",
+      "category": "equivalent",
+      "reason": "In parseTarget the two comparisons differ only for a path of one character, which ends in a slash only when it is \"/\", and for that path cutting the last character and cutting none both leave the same empty text to split into segments. The trailingSlash member it also sets on the parsed target is read by nothing in the module, and the parsed target never leaves it."
+    },
+    {
+      "file": "packages/runtime/core/src/routing.ts",
+      "mutator": "ObjectLiteral",
+      "original": "{ spelling: folded, kind: 'locale prefix' as const }",
+      "replacement": "{}",
+      "category": "message-wording",
+      "reason": "The spelling and kind claimedLeadingSegment answers with are read only by refuseClaimedAddress, which quotes them inside its refusal message; every other reader asks only whether a claim came back, and an empty object is one."
+    },
+    {
+      "file": "packages/runtime/core/src/routing.ts",
+      "mutator": "StringLiteral",
+      "original": "'The request context states an origin that is not text.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The message of the refusal requestOrigin throws for an origin that is not text; the refusal is asserted by its code and reason, and nothing compares the wording."
+    },
+    {
+      "file": "packages/runtime/core/src/routing.ts",
+      "mutator": "ConditionalExpression",
+      "original": "kept.has(address)",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "In the getPrerenderParams of neutralServerRoutes an address is the pattern with every parameter of the route written in, because a localized path is held to the route's own parameter names, so two parameter sets that give one address hold the same spellings. Setting the address again keeps its place in the map and stores a record equal to the one already there, and the pseudo-locale test in between answers the same for the same address."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "StringLiteral",
+      "original": "'The plain date is outside the native Date range.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The message of the refusal plainDateMilliseconds answers with for a date the platform's Date cannot hold; the refusal is asserted by its code, and nothing compares the wording."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "ObjectLiteral",
+      "original": "{ granularity: 'grapheme' }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "In firstGrapheme the options go to Intl.Segmenter, whose granularity is grapheme when none is named, so the segmenter built cuts the same first grapheme. The options also spell the key of the module's own formatter cache, which nothing outside the module can read."
     }
   ]
 }
