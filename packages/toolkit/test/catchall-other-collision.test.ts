@@ -145,6 +145,20 @@ describe('what it must not report', () => {
     expect(catchallOtherCollisions(variantsOf(twoSelectors))).toEqual([]);
   });
 
+  it('compares key by key, so two tuples that only spell the same letters in a row do not merge', () => {
+    // `* x` becomes `other x`. `othe rx` is a different pair of keys that reads the same once the
+    // boundary between its keys is lost.
+    const twoSelectors = [
+      '.input {$kind :string}',
+      '.input {$size :string}',
+      '.match $kind $size',
+      '* x {{any kind, size x}}',
+      'othe rx {{another pair}}',
+      '* * {{anything}}',
+    ].join('\n');
+    expect(catchallOtherCollisions(variantsOf(twoSelectors))).toEqual([]);
+  });
+
   it('finds the collision across two selectors when one tuple repeats', () => {
     const twoSelectors = [
       '.input {$count :number}',
