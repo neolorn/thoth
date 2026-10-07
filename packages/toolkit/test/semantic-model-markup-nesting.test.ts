@@ -106,6 +106,15 @@ describe('a closing markup element', () => {
   });
 });
 
+describe('an opening markup element', () => {
+  it('is refused on its message when nothing closes it', () => {
+    expect(refusals([message('{#strong}Save now')])).toEqual(onTheMessage);
+    expect(
+      refusals([message('{#strong}Save {#emphasis}now{/emphasis}')]),
+    ).toEqual(onTheMessage);
+  });
+});
+
 describe('an interactive slot', () => {
   it('is accepted inside a slot that is not interactive', () => {
     expect(
