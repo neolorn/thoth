@@ -984,6 +984,15 @@ export function parseMessageSemanticModel(
       for (const [name, value] of Object.entries(functionRef.options ?? {})) {
         if (name.startsWith(UNICODE_OPTION_PREFIX)) continue;
         if (value.type !== 'literal') {
+          // Whether the function has an option of this name does not wait for the value, so a
+          // name it does not define is refused here as it is beside a literal.
+          if (!profile.accepts.includes(name)) {
+            optionsSound = false;
+            optionDiagnostic(
+              `MessageFormat option ${name} on :${functionRef.name} ${messageOptionProblem(functionRef.name, name, '')}.`,
+            );
+            continue;
+          }
           // MessageFormat allows a variable option value in general and forbids it for some:
           // *"if the value is not a literal, a Bad Option error is emitted."* Which ones is a
           // property of the function and the table says it. `select` is singled out for Equator's

@@ -8064,6 +8064,14 @@
       "replacement": "true",
       "category": "equivalent",
       "reason": "Line 1944 continues unless the source catalog's role is 'source', so by the filter on line 1984 the one catalog this clause excludes is also excluded by the role clause beside it, and the same catalogs are kept as targets."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "StringLiteral",
+      "original": "''",
+      "replacement": "\"Stryker was here!\"",
+      "category": "equivalent",
+      "reason": "The value handed to messageOptionProblem for a name the function does not define: the name is judged first and the function returns before it reads the value."
     }
   ]
 }
