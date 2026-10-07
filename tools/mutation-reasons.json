@@ -7783,6 +7783,287 @@
       "replacement": ";",
       "category": "equivalent",
       "reason": "`generateContracts` raises only EQ1304 and EQ1305, both at the default error severity (generated-contracts.ts lines 276, 293 and 763), and returns a failure when any error is present, so on the success path this line is reached with `contracts.diagnostics` always empty and the push adds nothing."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "StringLiteral",
+      "original": "'..'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The two paths this moves between the two checks, the directory above the project and the project itself, are refused with a TypeError by either check; only which of the two sentences the error carries changes."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "StringLiteral",
+      "original": "`Equator analysis input path is not portable: ${path}`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The literal is the sentence of the TypeError thrown for an analysis input whose name is not portable; analysis-input-path-portability.test.ts asserts the type of the error at this site and nothing reads its text."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "request.analysis.sources === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the guard gone an absent sources reaches analyzeApplication as a key holding undefined, and its only read of the field is request.sources ?? [], which answers the same for a missing key and an undefined one."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "MethodExpression",
+      "original": "[\n      ...(request.recoveryMessageIdentities ?? []),\n      ...(analysis?.recoveryMessageIdentities ?? []),\n    ]\n      .filter((identity, index, values) => values.indexOf(identity) === index)",
+      "replacement": "[...(request.recoveryMessageIdentities ?? []), ...(analysis?.recoveryMessageIdentities ?? [])]",
+      "category": "equivalent",
+      "reason": "The list is read three ways after this line: for being empty, which a repeated identity cannot change, and by recoveryModule and recoveryRepresentations, each of which puts it through a Set before reading it."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "recoveryMessageIdentities.length === 0",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the guard gone an empty list is passed to generateContracts, whose only read of the option is options.recoveryMessageIdentities ?? [], so an empty list and an absent option produce the same recovery module."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "sink === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "Without the early return an absent sink goes down the reporting path, where emitToolkitEvent returns at once for an undefined sink, and the result returned or the error rethrown is the one compileProjectCore produced."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "LogicalOperator",
+      "original": "'arg' in expression && receivedArg(expression) !== undefined",
+      "replacement": "'arg' in expression || receivedArg(expression) !== undefined",
+      "category": "equivalent",
+      "reason": "receivedArg answers undefined whenever the arg key is absent, and parseMessage never writes the key with undefined in it, so the two tests are true together and false together and joining them with or changes nothing."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "ConditionalExpression",
+      "original": "receivedArg(expression) !== undefined",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "The expression comes from parseMessage, which writes the arg key only when it holds a parsed operand and leaves the key off otherwise, so the key is never present with undefined in it and the second test never decides."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "ConditionalExpression",
+      "original": "key.value === undefined",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "A catch-all key from parseMessage is the object { type: \"*\" } and nothing else, so key.value is undefined for every message and the branch that copies a value is never taken."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "BooleanLiteral",
+      "original": "true",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "messageFormatErrorCode reads this table with Object.hasOwn, which asks whether the type is a key of it; the value stored under the key is never read, so true and false select the same code.",
+      "count": 6
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "StringLiteral",
+      "original": "'MessageFormat source'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The literal is the label untrustedText puts at the start of its two sentences, for a source that is not a string and for one over the ceiling; both keep the code EQ1201, which message-source-byte-ceiling.test.ts asserts."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "StringLiteral",
+      "original": "'utf8'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "Buffer.byteLength falls back to UTF-8 for an encoding name it does not know, the empty string included, so the count is the same for every source."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "ConditionalExpression",
+      "original": "profile === undefined",
+      "replacement": "false",
+      "category": "unreachable",
+      "reason": "Lines 784 to 804 return EQ1203 for any function that is neither in the built-in profile nor registered, MESSAGE_FUNCTION_OPTIONS has an entry for each of the ten built-in names and customProfiles one for each registered name, so no function reaches this line without a profile."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "ArrayDeclaration",
+      "original": "[]",
+      "replacement": "[\"Stryker was here\"]",
+      "category": "equivalent",
+      "reason": "The list is compared against option names, and an option name is an identifier the parser read, which cannot contain a space; no name equals the planted text, so nothing is dropped with it or without it."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "ConditionalExpression",
+      "original": "resolved !== undefined",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "carried is read only through get, here and in the function visitor, and get answers undefined for a name stored with undefined exactly as it does for a name never stored."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "StringLiteral",
+      "original": "`:${functionRef.name}`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The literal is the phrase naming the function in the sentences checkUnicodeOptions writes; the code stays EQ1204, which message-format.test.ts asserts for u: options written on a function."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "OptionalChaining",
+      "original": "resolved?.complete",
+      "replacement": "resolved.complete",
+      "category": "equivalent",
+      "reason": "resolveCarried answers undefined only for an expression with no function or a function with no profile, and this call passes a function whose built-in profile line 968 has just required, so resolved is always an object here."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "ConditionalExpression",
+      "original": "profile.operand === 'string'",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "The only string function is :string, which accepts no option and inherits none, and a variable-valued option returns at line 1028; so its resolved options are empty here and the number formatter the code goes on to build from them is the default one, which does not throw."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "StringLiteral",
+      "original": "'string'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "No profile has an empty operand kind, so the comparison is false for every function, and for :string, the one function it was true for, the resolved options are empty here and the number formatter built from them is the default one, which does not throw."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "LogicalOperator",
+      "original": "current !== undefined && !seen.has(current)",
+      "replacement": "current !== undefined || !seen.has(current)",
+      "category": "equivalent",
+      "reason": "The walk starts at a selector, and lines 760 to 770 have already refused any selector whose chain of declarations does not end at one that names a function and any declaration that refers to itself or to a later one; so the walk returns at line 1136 before current is undefined or a name repeats."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "ConditionalExpression",
+      "original": "current !== undefined",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "When current is undefined the loop body looks it up in declarationsByName, finds nothing and returns undefined, which is what leaving the loop returns."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "CallExpression",
+      "original": "seen.add(current);",
+      "replacement": ";",
+      "category": "equivalent",
+      "reason": "A name can repeat only on a chain that reaches a declaration with no function whose operand is itself or a later name, and lines 760 to 770 refuse that as a duplicate declaration or a selector with no annotation before the walk runs; with no repeat, seen is never what ends the loop."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "ConditionalExpression",
+      "original": "message.comment === undefined",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "parseMessage returns a message with type, declarations and a pattern or selectors and variants, and never a comment, so message.comment is undefined for every source and the branch that copies it is never taken."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "BooleanLiteral",
+      "original": "false",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "The literal on line 458 is the first value of InputUsage.bare for an input met for the first time. Nothing reads `bare`: line 790 is the only reader of a usage and takes its explicit set alone."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "BlockStatement",
+      "original": "{\n    usage.bare = true;\n  }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "The block on lines 459 to 461 only sets InputUsage.bare for a reference with no operand type and adds nothing to the explicit set. Nothing reads `bare`, and line 790 infers from the explicit set alone."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "BooleanLiteral",
+      "original": "true",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "The literal on line 460 is the value written to InputUsage.bare for a reference with no operand type. Nothing reads `bare`: line 790 takes a usage's explicit set alone."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "ConditionalExpression",
+      "original": "typeof part !== 'string'",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "On line 560 the test that follows, part.kind === 'expression', is already false for a text part, because a string has no `kind`; the same parts are collected with or without the type test."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "'string'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "With the literal emptied the type test on line 560 is true for every part, and the test that follows, part.kind === 'expression', is already false for a text part, because a string has no `kind`; the same parts are collected."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "ConditionalExpression",
+      "original": "selectors.length === 0",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "The early return on line 1346 is followed only by the loop over `selectors` on line 1348, which does nothing for an empty list, and the function returns nothing either way."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "OptionalChaining",
+      "original": "left[0]?.providerId",
+      "replacement": "left[0].providerId",
+      "category": "equivalent",
+      "reason": "Every list in `groups` is created on line 1914 and given a catalog on line 1915 before line 1916 stores it, so the first element of a group the sort on line 1920 compares is never undefined and the optional read is never the one taken."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "OptionalChaining",
+      "original": "left[0]?.scopeId",
+      "replacement": "left[0].scopeId",
+      "category": "equivalent",
+      "reason": "Every list in `groups` is created on line 1914 and given a catalog on line 1915 before line 1916 stores it, so the first element of a group the sort on line 1920 compares is never undefined and the optional read is never the one taken."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "OptionalChaining",
+      "original": "right[0]?.providerId",
+      "replacement": "right[0].providerId",
+      "category": "equivalent",
+      "reason": "Every list in `groups` is created on line 1914 and given a catalog on line 1915 before line 1916 stores it, so the first element of a group the sort on line 1920 compares is never undefined and the optional read is never the one taken."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "OptionalChaining",
+      "original": "right[0]?.scopeId",
+      "replacement": "right[0].scopeId",
+      "category": "equivalent",
+      "reason": "Every list in `groups` is created on line 1914 and given a catalog on line 1915 before line 1916 stores it, so the first element of a group the sort on line 1920 compares is never undefined and the optional read is never the one taken."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "ConditionalExpression",
+      "original": "exemplar === undefined",
+      "replacement": "false",
+      "category": "unreachable",
+      "reason": "Lines 1914 to 1916 store a group only after pushing a catalog onto it, and nothing removes one, so `catalogs[0]` on line 1925 is always a catalog and the guard on line 1926 never continues."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "ConditionalExpression",
+      "original": "catalog !== sourceCatalog",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "Line 1944 continues unless the source catalog's role is 'source', so by the filter on line 1984 the one catalog this clause excludes is also excluded by the role clause beside it, and the same catalogs are kept as targets."
     }
   ]
 }
