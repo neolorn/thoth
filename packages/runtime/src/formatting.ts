@@ -349,7 +349,8 @@ export function timeZone(id: string): TimeZoneValue {
  * in an office somewhere. The instant fixes the moment and the zone fixes the wall clock, so the
  * pair survives a daylight-saving change that a wall clock alone would not.
  *
- * Throws for a zone or a calendar this platform does not support.
+ * Throws for a zone or a calendar this platform does not support. A calendar is named as the
+ * platform names it: `hebrew`, not an alias or another spelling of it.
  */
 export function zonedDateTime(
   instantValue: InstantValue,
@@ -358,10 +359,17 @@ export function zonedDateTime(
 ): ZonedDateTimeValue {
   const canonicalTimeZone = timeZone(timeZoneId).id;
   try {
-    new Intl.DateTimeFormat('en-US', {
+    const probe = new Intl.DateTimeFormat('en-US', {
       timeZone: canonicalTimeZone,
       calendar,
-    }).format(0);
+    });
+    probe.format(0);
+    // A well-formed name the platform has no calendar for is not an error to `Intl`: it formats
+    // in the locale's own calendar. The value would then name one calendar and be counted in
+    // another, so the name is kept only where the platform answers with it.
+    if (probe.resolvedOptions().calendar !== calendar) {
+      throw new RangeError(`Unsupported calendar: ${calendar}`);
+    }
   } catch (cause) {
     return invalidCanonicalValue(
       'A zoned date-time requires a supported IANA time-zone identity and calendar.',

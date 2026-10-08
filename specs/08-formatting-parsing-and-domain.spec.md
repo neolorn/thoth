@@ -62,6 +62,11 @@ because an identifier stored earlier is one a system on older data cannot read. 
 without regard to case. A name the pinned release does not carry, which a fixed offset under `Etc/`
 and a zone newer than the release both are, keeps the host's spelling.
 
+A zoned date-time's calendar is one the host counts in, under the name the host gives it. A
+well-formed calendar name the host has no calendar for, which the host would format in the
+locale's own calendar without an error, is refused when the value is created, and so is an alias
+or another spelling of a calendar's name.
+
 A release MUST NOT perform accounting, exchange, tax, cash rounding, business precision, rate
 calculation, percentage-point conversion, or implicit unit conversion. Those belong to the consumer
 application's domain.
