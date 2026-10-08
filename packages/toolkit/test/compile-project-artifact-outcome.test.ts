@@ -46,7 +46,7 @@ function request(
 describe('an output plan that cannot be made', () => {
   it('is returned as the refusal of the compilation', () => {
     // A scope takes its module's name from its own, and `routes.ts` is a module the compiler
-    // writes, so the contracts are generated and the plan that would hold both is refused.
+    // writes, so the contracts are generated and the output plan that would hold both is refused.
     const compiled = compileProject(request({ catalogs: [catalog('routes')] }));
 
     expect(compiled.ok).toBe(false);
