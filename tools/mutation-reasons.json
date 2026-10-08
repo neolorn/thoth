@@ -6170,8 +6170,8 @@
       "original": "options.path === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the test false a caller that named no entry passes path: undefined to toolkitDiagnostic, which reads it with options.path?.slice and \"safePath ?? []\" (diagnostics.ts lines 266 to 279) and writes the same empty path an absent property gives.",
-      "count": 3
+      "reason": "With the test false a caller that named no entry passes path: undefined to toolkitDiagnostic, which reads it with options.path?.slice and \"safePath ?? []\" (diagnostics.ts lines 266 to 279) and writes the same empty path an absent property gives. All four places, lines 718, 741, 798 and 810, spread the option into a toolkitDiagnostic call in this one form.",
+      "count": 4
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -6236,7 +6236,8 @@
       "original": "false",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "The flag is read once, on line 1027, beside resolved?.complete !== true. This line runs only for an option whose value is a variable, which makes literalOptions answer complete: false (line 893) and resolveCarried pass it on (line 945), so line 1027 returns whatever the flag holds."
+      "reason": "The flag is read once, on line 1037, beside resolved?.complete !== true. Both places, lines 1005 and 1019, run only for an option whose value is a variable and whose name is outside the u: namespace, which makes literalOptions answer complete: false (line 894) and resolveCarried pass it on (line 946), so line 1037 returns whatever the flag holds.",
+      "count": 2
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -7822,7 +7823,8 @@
       "original": "recoveryMessageIdentities.length === 0",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "With the guard gone an empty list is passed to generateContracts, whose only read of the option is options.recoveryMessageIdentities ?? [], so an empty list and an absent option produce the same recovery module."
+      "reason": "With the guard gone an empty list is passed to generateContracts (line 936) or to compileLocalArtifacts (line 979). Each reads the option once, as options.recoveryMessageIdentities ?? [] and request.recoveryMessageIdentities ?? [], so an empty list and an absent option produce the same recovery module and the same recovery payload.",
+      "count": 2
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -8120,6 +8122,94 @@
       "replacement": ";",
       "category": "equivalent",
       "reason": "In commit(), the branch for a context disposed while the snapshot was applied runs after dispose() has returned and after commitPrepared() returned without throwing, so every prepared participant is already finalized and discardPrepared() skips it, and the store's cache is already cleared, so each lease's release() lowers a count on an entry nothing can reach and evict() finds nothing over the bound. No callback, event, state or later load differs."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "request.analysis.typeNames === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the test false an absent typeNames is passed to analyzeApplication as typeNames: undefined, and its one read of the option (static-analysis.ts line 3310) is request.typeNames === undefined, so the program is built with the same compiler options an absent property gives."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "analysis.localeMentions.length > 0",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "With no locale mentions the block only builds the two sets of configured locales and languages from the locales of a graph analyzeCatalogSet already accepted, which are strings and cannot throw there, and its loop over the mentions runs zero times, so no diagnostic is pushed."
+    },
+    {
+      "file": "packages/toolkit/src/message-format.ts",
+      "mutator": "StringLiteral",
+      "original": "`MessageFormat source exceeds the ${RESOURCE_LIMITS.messageBytes}-byte implementation ceiling.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1201 finding for a message whose UTF-8 bytes pass the ceiling while its characters do not; its code and its path are what the case compares."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Message ${JSON.stringify(messageId)} exceeds the ${RESOURCE_LIMITS.inputsPerMessage}-input implementation ceiling.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1302 finding for a message past the input ceiling; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Rich slot ${JSON.stringify(stack.at(-1))} is not closed.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1303 finding for an opening element nothing closes; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "UnaryOperator",
+      "original": "-1",
+      "replacement": "+1",
+      "category": "message-wording",
+      "reason": "The index only chooses which open slot the EQ1303 summary for an unclosed element names; the diagnostic is pushed whenever the stack is not empty, with the same code and path."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Message ${JSON.stringify(messageId)} exceeds the ${RESOURCE_LIMITS.slotsPerMessage}-slot implementation ceiling.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1303 finding for a message past the slot ceiling; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Catalog locale ${JSON.stringify(catalog.locale)} is not declared by the project.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1301 finding for a catalog whose locale the project does not declare; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Scope ${exemplar.providerId}/${exemplar.scopeId} requires one source catalog for ${request.configuration.sourceLocale}.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1301 finding for a scope without a source catalog for the source locale; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "'Empty scopes do not produce Equator registries or generated output.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1301 finding for a source catalog with no message; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "StringLiteral",
+      "original": "`Catalog ${catalog.locale} must use role ${expectedRole}.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The whole summary of the EQ1301 finding for a catalog whose role contradicts its locale; its code and its path are what the cases compare."
     }
   ]
 }
