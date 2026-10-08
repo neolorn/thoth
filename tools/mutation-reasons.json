@@ -3121,8 +3121,8 @@
       "original": "'The localization context is disposed.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "Only the text of the disposed diagnostic changes; its code and fields are asserted and the wording is not contract. The message of the reason every aborted operation is ended with. The message of the reason every operation is ended with when its context is disposed; cases read its code. Only the text of the disposed diagnostic changes; its code and fields are asserted and the wording is not contract. The message of the reason every aborted operation is ended with. The message of the reason every operation is ended with when its context is disposed; cases read its code.",
-      "count": 4
+      "reason": "Only the text of the disposed diagnostic changes, in assertActive(), commit(), initialize(), ensureScope() and dispose(); every place builds the same code and outcome, which are what the cases read, and the wording is not contract.",
+      "count": 5
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -8072,6 +8072,54 @@
       "replacement": "\"Stryker was here!\"",
       "category": "equivalent",
       "reason": "The value handed to messageOptionProblem for a name the function does not define: the name is judged first and the function returns before it reads the value."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "StringLiteral",
+      "original": "'Native Date formatting cannot preserve sub-millisecond plain-time precision.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The literal is the message of the diagnostic formatPlainTime returns when it refuses a plain time finer than a millisecond; the code, the outcome, the target locale and the absent reason of that refusal are the same with any text."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "StringLiteral",
+      "original": "'Plain-time formatting cannot apply a time zone.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The literal is the message of the diagnostic formatPlainTime returns when it refuses a time zone other than UTC; the code, the outcome, the target locale and the absent reason of that refusal are the same with any text."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "StringLiteral",
+      "original": "'Native Date cannot safely construct non-ISO plain date-time fields.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The literal is the message of the diagnostic formatPlainDateTime returns when it refuses a date in a calendar other than the ISO one; the code, the outcome, the target locale and the absent reason of that refusal are the same with any text."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "StringLiteral",
+      "original": "'Plain date-time formatting cannot apply a time zone.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The literal is the message of the diagnostic formatPlainDateTime returns when it refuses a time zone other than UTC; the code, the outcome, the target locale and the absent reason of that refusal are the same with any text."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "StringLiteral",
+      "original": "'Native Date formatting cannot preserve sub-millisecond plain date-time precision.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The literal is the message of the diagnostic formatPlainDateTime returns when it refuses a time finer than a millisecond; the code, the outcome, the target locale and the absent reason of that refusal are the same with any text."
+    },
+    {
+      "file": "packages/runtime/src/localization.ts",
+      "mutator": "CallExpression",
+      "original": "prepared.release();",
+      "replacement": ";",
+      "category": "equivalent",
+      "reason": "In commit(), the branch for a context disposed while the snapshot was applied runs after dispose() has returned and after commitPrepared() returned without throwing, so every prepared participant is already finalized and discardPrepared() skips it, and the store's cache is already cleared, so each lease's release() lowers a count on an entry nothing can reach and evict() finds nothing over the bound. No callback, event, state or later load differs."
     }
   ]
 }
