@@ -8210,6 +8210,22 @@
       "replacement": "``",
       "category": "message-wording",
       "reason": "The whole summary of the EQ1301 finding for a catalog whose role contradicts its locale; its code and its path are what the cases compare."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "StringLiteral",
+      "original": "'A zoned date-time requires a supported IANA time-zone identity and calendar.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The sentence of the refusal zonedDateTime raises for a calendar the host does not have. Its code, outcome, reason and cause are the same with any text, and zoned-date-time-value.test.ts asserts those."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "CallExpression",
+      "original": "probe.format(0);",
+      "replacement": ";",
+      "category": "equivalent",
+      "reason": "The constructor on the line above has already refused a zone or a calendar name it cannot read with a RangeError, and formatting the epoch with a formatter that exists does not throw, so the call decides nothing the constructor and the comparison after it have not."
     }
   ]
 }
