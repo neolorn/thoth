@@ -37,6 +37,9 @@ const runtimeTypes = [
   '  export interface CatalogSetDescriptor {',
   "    readonly set: 'set';",
   '  }',
+  '  export interface PersonNameProfileSet {',
+  "    readonly names: 'names';",
+  '  }',
   '  export interface RecoveryRepresentation {',
   "    readonly representation: 'representation';",
   '  }',
@@ -114,6 +117,11 @@ describe('an application importing a module the overlay declares', () => {
       specifier: '#i18n/catalog-loaders',
       name: 'catalogLoaders',
       reading: "export const read: 'loaders' = catalogLoaders.loaders;",
+    },
+    {
+      specifier: '#i18n/person-names',
+      name: 'personNames',
+      reading: "export const read: 'names' = personNames.names;",
     },
     {
       specifier: '#i18n/recovery-payload',
