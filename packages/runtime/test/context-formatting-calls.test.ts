@@ -410,6 +410,14 @@ describe('a call on a localization context', () => {
     });
   });
 
+  it('describes the week by its first day and its weekend, and by nothing else', () => {
+    const described = localization.localeMetadata();
+    expect(described.ok && Object.keys(described.value.week ?? {})).toEqual([
+      'firstDay',
+      'weekend',
+    ]);
+  });
+
   it('describes a locale with no region as one that has none', () => {
     // A language the platform has no likely region for, so the tag implies none either.
     const described = localeMetadata('tlh-Latn');

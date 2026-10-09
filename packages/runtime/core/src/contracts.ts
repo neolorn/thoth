@@ -2041,8 +2041,6 @@ export interface LocaleWeekInformation {
   readonly firstDay: number;
   /** Which days are the weekend, in the same numbering. Not always two, and not always adjacent. */
   readonly weekend: readonly number[];
-  /** How many days of a week must fall in a year for it to count as that year's first week. */
-  readonly minimalDays: number;
 }
 
 /**
@@ -2058,7 +2056,7 @@ export interface LocaleMetadata {
   readonly language: string;
   /** Its script, where the tag names or implies one. */
   readonly script?: string;
-  /** Its region, where the tag names one. */
+  /** Its region, where the tag names or implies one. */
   readonly region?: string;
   /** Which way it is written. */
   readonly direction: LocaleDirection;

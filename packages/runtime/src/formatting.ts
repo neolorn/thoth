@@ -2324,7 +2324,6 @@ interface ExtendedLocale {
   getWeekInfo?(): {
     readonly firstDay: number;
     readonly weekend: readonly number[];
-    readonly minimalDays: number;
   };
 }
 
@@ -2365,7 +2364,6 @@ export function localeMetadata(
               week: Object.freeze({
                 firstDay: week.firstDay,
                 weekend: Object.freeze([...week.weekend]),
-                minimalDays: week.minimalDays,
               }),
             }),
       }),
