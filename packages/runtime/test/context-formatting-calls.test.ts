@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import {
   compareLocalized,
@@ -53,6 +53,37 @@ const DATE_TIME: Intl.DateTimeFormatOptions = Object.freeze({
   timeStyle: 'short',
 });
 
+/** What the platform's own locale object answers, on a platform that has all four methods. */
+interface PlatformLocale {
+  getCalendars(): string[];
+  getNumberingSystems(): string[];
+  getHourCycles(): string[];
+  getWeekInfo(): { firstDay: number; weekend: number[] };
+}
+
+const PLATFORM = new Intl.Locale('ar-EG') as unknown as PlatformLocale;
+
+// A method a case takes off the platform's locale object, and what puts it back.
+let removed: readonly [string, PropertyDescriptor] | undefined;
+
+function withoutPlatformMethod(method: keyof PlatformLocale): void {
+  const descriptor = Object.getOwnPropertyDescriptor(
+    Intl.Locale.prototype,
+    method,
+  );
+  if (descriptor === undefined) {
+    throw new Error('the platform has no such method');
+  }
+  removed = [method, descriptor];
+  Reflect.deleteProperty(Intl.Locale.prototype, method);
+}
+
+// The segmenter's own method, kept while a case answers in its place.
+const SEGMENT = Object.getOwnPropertyDescriptor(
+  Intl.Segmenter.prototype,
+  'segment',
+) as PropertyDescriptor;
+
 describe('a call on a localization context', () => {
   let localization: Runtime;
 
@@ -68,6 +99,14 @@ describe('a call on a localization context', () => {
 
   afterAll(() => {
     localization.dispose();
+  });
+
+  afterEach(() => {
+    if (removed !== undefined) {
+      Object.defineProperty(Intl.Locale.prototype, removed[0], removed[1]);
+      removed = undefined;
+    }
+    Object.defineProperty(Intl.Segmenter.prototype, 'segment', SEGMENT);
   });
 
   it('formats in a locale whose answers differ from the default locale’s', () => {
@@ -205,6 +244,21 @@ describe('a call on a localization context', () => {
     expect(localization.formatDisplayName('JP', options).ok).toBe(true);
   });
 
+  it('formats the name of a code as one part that carries the whole name', () => {
+    const options = { type: 'region' } as const;
+    const name = new Intl.DisplayNames('ar-EG', options).of('JP');
+
+    expect(name).toMatch(/\S/u);
+    expect(localization.formatDisplayName('JP', options)).toMatchObject({
+      ok: true,
+      value: {
+        semantic: 'display-name',
+        text: name,
+        parts: [{ kind: 'display-name', value: name }],
+      },
+    });
+  });
+
   it('formats a person name', () => {
     const value = personName('en', { given: 'Mary', surname: 'Hamish' });
 
@@ -215,6 +269,29 @@ describe('a call on a localization context', () => {
       localization.formatPersonName(value, { order: 'sorting' }),
     ).toStrictEqual(formatPersonName(value, COMMITTED, { order: 'sorting' }));
     expect(localization.formatPersonName(value).ok).toBe(true);
+  });
+
+  it('formats a person name by the profiles its setup carries', async () => {
+    // A set of another profile version is refused, where the set the library compiles in formats.
+    const profiles = { profile: 'another-profile', patterns: [], rows: [] };
+    const { localization: profiled } = runtime({
+      setup: { personNames: profiles },
+      options: {
+        initialLocale: 'ar-EG',
+        formattingContext: { timeZone: 'UTC' },
+      },
+    });
+    await profiled.initialize();
+    const value = personName('en', { given: 'Mary', surname: 'Hamish' });
+
+    expect(profiled.formatPersonName(value)).toStrictEqual(
+      formatPersonName(value, COMMITTED, {}, profiles),
+    );
+    expect(profiled.formatPersonName(value)).toMatchObject({
+      ok: false,
+      diagnostic: { reason: 'integrity-mismatch' },
+    });
+    profiled.dispose();
   });
 
   it('selects a plural category by the committed locale’s rules', () => {
@@ -241,6 +318,10 @@ describe('a call on a localization context', () => {
     expect(localization.compare('a', 'b')).toStrictEqual({
       ok: true,
       value: -1,
+    });
+    expect(localization.compare('b', 'a')).toStrictEqual({
+      ok: true,
+      value: 1,
     });
     expect(localization.compare('a', 'A')).toStrictEqual(
       compareLocalized('a', 'A', COMMITTED),
@@ -276,6 +357,29 @@ describe('a call on a localization context', () => {
     });
   });
 
+  it('says whether a segment is word-like only where the platform answers that', () => {
+    // Graphemes are not words, and the platform gives a grapheme no such member.
+    expect(localization.segment('اب')).toStrictEqual({
+      ok: true,
+      value: [
+        { segment: 'ا', index: 0, input: 'اب' },
+        { segment: 'ب', index: 1, input: 'اب' },
+      ],
+    });
+
+    Object.defineProperty(Intl.Segmenter.prototype, 'segment', {
+      ...SEGMENT,
+      value: (input: string) => [
+        { segment: input, index: 0, input, isWordLike: undefined },
+      ],
+    });
+
+    expect(localization.segment('اب', { granularity: 'word' })).toStrictEqual({
+      ok: true,
+      value: [{ segment: 'اب', index: 0, input: 'اب' }],
+    });
+  });
+
   it('describes the committed locale', () => {
     expect(localization.localeMetadata()).toStrictEqual(
       localeMetadata('ar-EG'),
@@ -284,5 +388,66 @@ describe('a call on a localization context', () => {
       ok: true,
       value: { locale: 'ar-EG', language: 'ar', direction: 'rtl' },
     });
+  });
+
+  it('describes the committed locale by what the platform answers for it', () => {
+    const week = PLATFORM.getWeekInfo();
+
+    expect(PLATFORM.getCalendars()).not.toHaveLength(0);
+    expect(PLATFORM.getNumberingSystems()).not.toHaveLength(0);
+    expect(PLATFORM.getHourCycles()).not.toHaveLength(0);
+    expect(week.weekend).not.toHaveLength(0);
+    expect(localization.localeMetadata()).toMatchObject({
+      ok: true,
+      value: {
+        script: 'Arab',
+        region: 'EG',
+        calendars: PLATFORM.getCalendars(),
+        numberingSystems: PLATFORM.getNumberingSystems(),
+        hourCycles: PLATFORM.getHourCycles(),
+        week: { firstDay: week.firstDay, weekend: week.weekend },
+      },
+    });
+  });
+
+  it('describes a locale with no region as one that has none', () => {
+    // A language the platform has no likely region for, so the tag implies none either.
+    const described = localeMetadata('tlh-Latn');
+
+    expect(new Intl.Locale('tlh-Latn').maximize().region).toBeUndefined();
+    expect(described).toMatchObject({
+      ok: true,
+      value: { locale: 'tlh-Latn', language: 'tlh', script: 'Latn' },
+    });
+    expect(described.ok && Object.keys(described.value)).not.toContain(
+      'region',
+    );
+  });
+
+  it.each([
+    ['getCalendars', 'calendars'],
+    ['getNumberingSystems', 'numberingSystems'],
+    ['getHourCycles', 'hourCycles'],
+  ] as const)(
+    'describes a locale on a platform with no %s, with an empty list',
+    (method, member) => {
+      withoutPlatformMethod(method);
+
+      expect(localization.localeMetadata()).toMatchObject({
+        ok: true,
+        value: { locale: 'ar-EG', [member]: [] },
+      });
+    },
+  );
+
+  it('describes a locale on a platform that exposes no week, with none', () => {
+    withoutPlatformMethod('getWeekInfo');
+    const described = localization.localeMetadata();
+
+    expect(described).toMatchObject({
+      ok: true,
+      value: { locale: 'ar-EG', calendars: PLATFORM.getCalendars() },
+    });
+    expect(described.ok && Object.keys(described.value)).not.toContain('week');
   });
 });
