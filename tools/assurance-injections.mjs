@@ -4871,4 +4871,24 @@ export const injections = Object.freeze([
       '  let canonical: string | undefined;\n  try {\n    canonical = Intl.getCanonicalLocales(locale)[0];\n  } catch {\n    canonical = canonicalizeLanguageTag(locale);\n  }',
     caughtBy: 'packages/toolkit/test/pinned-locale-aliases.test.ts',
   },
+  {
+    id: 'participant-request-context-withheld',
+    invariant:
+      'A request context given to createLocalizationContext is handed, unchanged, to every participant of that context.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '      : { participantRequestContext: options.requestContext }),',
+    replace: '      : {}),',
+    caughtBy:
+      'packages/runtime/test/standalone-context-request-context.test.ts',
+  },
+  {
+    id: 'person-name-thrown-for-an-unreadable-language',
+    invariant:
+      'A person name whose language tag the platform refuses is formatted, with a field asked for in capitals cased by no locale, and never thrown.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: '    return text.toUpperCase();',
+    replace: '    throw new RangeError(language);',
+    caughtBy:
+      'packages/runtime/test/person-name-casing-unreadable-language.test.ts',
+  },
 ]);
