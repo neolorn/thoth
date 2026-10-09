@@ -1257,9 +1257,9 @@ export class LocalCatalogStore {
   async seed(candidate: unknown, signal?: AbortSignal): Promise<void> {
     this.assertActive();
     const operationSignal = signal ?? new AbortController().signal;
-    if (aborted(operationSignal)) {
-      throw operationSignal.reason ?? new DOMException('Aborted', 'AbortError');
-    }
+    // The signal a context hands over is its own lifetime's, which is aborted only by disposal and
+    // always with the disposed failure, so an aborted signal carries the failure to throw.
+    if (aborted(operationSignal)) throw operationSignal.reason;
     let snapshot: InertJsonSnapshot;
     try {
       snapshot = snapshotInertJson(candidate, {
@@ -1303,9 +1303,7 @@ export class LocalCatalogStore {
     );
     const catalog = await waitForSignal(admission, operationSignal);
     this.assertActive();
-    if (aborted(operationSignal)) {
-      throw operationSignal.reason ?? new DOMException('Aborted', 'AbortError');
-    }
+    if (aborted(operationSignal)) throw operationSignal.reason;
     this.retain(key, catalog);
     this.evict();
   }
