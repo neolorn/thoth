@@ -33,9 +33,10 @@ describe('a date and time written under a locale that is not a language tag', ()
     expect(written).toMatchObject({
       ok: false,
       diagnostic: {
-        code: 'invalid-localized-input',
+        code: 'unsupported-formatting-capability',
         outcome: 'operational-failure',
         targetLocale: 'not a locale',
+        reason: 'native-capability-rejected',
       },
     });
   });

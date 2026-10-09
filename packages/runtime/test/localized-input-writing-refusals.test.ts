@@ -18,6 +18,14 @@ const EN: FormattingContext = Object.freeze({ locale: 'en-US' });
 const NOT_A_LOCALE: FormattingContext = Object.freeze({ locale: 'not a tag' });
 
 const REFUSED = { ok: false, diagnostic: { code: 'invalid-localized-input' } };
+// A locale the platform has no digits for is a capability it lacks, not a fault in the value.
+const LACKING = {
+  ok: false,
+  diagnostic: {
+    code: 'unsupported-formatting-capability',
+    reason: 'native-capability-rejected',
+  },
+};
 
 const DATE: LocalizedInputProfile = {
   kind: 'plain-date',
@@ -42,7 +50,7 @@ const write = (
 describe('a field written in a locale that is not a language tag', () => {
   it('reports a date instead of throwing', () => {
     expect(write(plainDate(2026, 3, 14), DATE, NOT_A_LOCALE)).toMatchObject(
-      REFUSED,
+      LACKING,
     );
   });
 
@@ -53,7 +61,7 @@ describe('a field written in a locale that is not a language tag', () => {
         DATE_TIME,
         NOT_A_LOCALE,
       ),
-    ).toMatchObject(REFUSED);
+    ).toMatchObject(LACKING);
   });
 
   it('writes the same values in a locale that is one', () => {

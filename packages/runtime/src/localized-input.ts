@@ -2056,17 +2056,25 @@ export function parseLocalizedInput<Profile extends LocalizedInputProfile>(
   return result as LocalizedInputResult<LocalizedInputValue<Profile>>;
 }
 
+/**
+ * What a writer answers in place of text under a locale the platform has no digits for.
+ *
+ * Kept apart from the answer for a value the profile cannot represent, because the two are
+ * different faults: one is the value's or the profile's, and the other is a capability the platform
+ * lacks, which the caller is told as one.
+ */
+const NO_DIGITS = Symbol('no digits');
+
+type WrittenText = string | typeof NO_DIGITS | undefined;
+
 function localizedDateText(
   value: PlainDateValue,
   profile: LocalizedPlainDateInputPattern,
   context: FormattingContext,
-): string | undefined {
+): WrittenText {
   let formatter: Intl.NumberFormat;
   let yearFormatter: Intl.NumberFormat;
   try {
-    // Throws for a value that is not a date: one written by hand with a field that is not a whole
-    // number in its range.
-    plainDate(value.year, value.month, value.day, value.calendar);
     formatter = inputFormatterCache.number(context.locale, {
       useGrouping: false,
       minimumIntegerDigits: 2,
@@ -2082,7 +2090,13 @@ function localizedDateText(
         : { numberingSystem: context.numberingSystem }),
     });
   } catch {
-    // A locale the platform refuses has no digits to write the date in either.
+    return NO_DIGITS;
+  }
+  try {
+    // Throws for a value that is not a date: one written by hand with a field that is not a whole
+    // number in its range.
+    plainDate(value.year, value.month, value.day, value.calendar);
+  } catch {
     return undefined;
   }
   const fields: Readonly<Record<string, string>> = {
@@ -2129,14 +2143,18 @@ function localizedTimeText(
   value: PlainTimeValue,
   profile: TimePatternWithLimit,
   context: FormattingContext,
-): string | undefined {
+): WrittenText {
   if (!validTimePattern(profile)) return undefined;
   let syntax: NumberSyntax;
+  try {
+    syntax = numberSyntax(context);
+  } catch {
+    return NO_DIGITS;
+  }
   try {
     // Throws for a value that is not a time: one written by hand with a field that is not a whole
     // number in its range.
     plainTime(value.hour, value.minute, value.second, value.nanosecond);
-    syntax = numberSyntax(context);
   } catch {
     return undefined;
   }
@@ -2197,12 +2215,12 @@ function localizedDurationText(
   value: DurationValue,
   profile: LocalizedDurationInputProfile,
   context: FormattingContext,
-): string | undefined {
+): WrittenText {
   let syntax: NumberSyntax;
   try {
     syntax = numberSyntax(context);
   } catch {
-    return undefined;
+    return NO_DIGITS;
   }
   if (!validDurationPattern(profile, syntax)) return undefined;
   try {
@@ -2295,6 +2313,20 @@ function localizedTimeZoneText(
   }
   return options.find(({ timeZone: option }) => option.id === canonical.id)
     ?.labels[0];
+}
+
+function formattingLocaleWithoutDigits(
+  context: FormattingContext,
+): FormattingResult {
+  return Object.freeze({
+    ok: false,
+    diagnostic: diagnostic(
+      'unsupported-formatting-capability',
+      'This runtime has no digits to write the value in for the locale of the formatting context.',
+      context,
+      'native-capability-rejected',
+    ),
+  });
 }
 
 function formattingPolicyFailure(
@@ -2646,6 +2678,7 @@ function writeLocalizedInput<Profile extends LocalizedInputProfile>(
       );
     case 'plain-date': {
       const text = localizedDateText(value as PlainDateValue, profile, context);
+      if (text === NO_DIGITS) return formattingLocaleWithoutDigits(context);
       if (text === undefined) {
         return formattingPolicyFailure(
           'The invariant date cannot be represented by the declared localized input profile.',
@@ -2673,6 +2706,7 @@ function writeLocalizedInput<Profile extends LocalizedInputProfile>(
     }
     case 'plain-time': {
       const text = localizedTimeText(value as PlainTimeValue, profile, context);
+      if (text === NO_DIGITS) return formattingLocaleWithoutDigits(context);
       if (text === undefined) {
         return formattingPolicyFailure(
           'The invariant time cannot be represented by the declared localized input profile.',
@@ -2693,6 +2727,7 @@ function writeLocalizedInput<Profile extends LocalizedInputProfile>(
         dateTimeHalf(profile.time, profile),
         context,
       );
+      if (timeText === NO_DIGITS) return formattingLocaleWithoutDigits(context);
       if (timeText === undefined) {
         return formattingPolicyFailure(
           'The invariant date-time cannot be represented by the declared localized input profile.',
@@ -2735,6 +2770,7 @@ function writeLocalizedInput<Profile extends LocalizedInputProfile>(
         profile,
         context,
       );
+      if (text === NO_DIGITS) return formattingLocaleWithoutDigits(context);
       if (text === undefined) {
         return formattingPolicyFailure(
           'The invariant duration cannot be represented by the declared localized input profile.',

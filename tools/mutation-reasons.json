@@ -4533,7 +4533,7 @@
       "original": "{\n    return undefined;\n  }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "Without this early return localizedTimeText, localizedDurationText or localizedTimeZoneText either throws on a local the try left unassigned, which formatLocalizedInput reports, or writes text that verifyFormattedInput reads back as a different value; each gives the same invalid-localized-input failure and only the message differs.",
+      "reason": "Without this early return localizedDateText, localizedTimeText, localizedDurationText or localizedTimeZoneText either throws on a local the try left unassigned, which formatLocalizedInput reports, or writes text that verifyFormattedInput reads back as a different value; each gives the same invalid-localized-input failure and only the message differs.",
       "count": 4
     },
     {
@@ -6991,14 +6991,6 @@
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n    // A locale the platform refuses has no digits to write the date in either.\n    return undefined;\n  }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "localizedDateText then goes on with no formatter assigned and throws on its first use, which formatLocalizedInput reports as the same invalid-localized-input failure writeLocalizedInput gives for a date with no text; only the message differs."
     },
     {
       "file": "packages/runtime/src/localized-input.ts",

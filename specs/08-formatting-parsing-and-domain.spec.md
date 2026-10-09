@@ -193,6 +193,11 @@ whose numbering system is not a numbering system identifier, the empty string am
 as an invalid configuration, and one the host has no digits for is refused as an unsupported
 capability. Neither is read as a context that declares none.
 
+A date, a time, a date-time, or a duration is written in the digits of its context's locale. A
+locale the host has no digits for is reported on writing as an unsupported capability, with the
+host's refusal as the reason, as it is on reading and as a numeric field reports it, and not as a
+fault in the value or in the field's profile.
+
 A numeric field is written back in the spelling its profile reads. Where the profile declares a
 precision the value is written to it, and a value the precision would round is reported instead of
 written. Where it declares none the value is written with every fraction digit it has, and a rounder
