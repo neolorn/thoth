@@ -399,6 +399,14 @@ export const injections = Object.freeze([
       '    this.outcomeDocument = outcomeClass;\n    if (outcomeClass.length >= 0) return;',
   },
   {
+    id: 'locale-committed-without-an-address',
+    invariant:
+      'A locale change on a page whose route has no address in the target locale ends as failed and commits nothing.',
+    source: 'packages/runtime/router/src/route-localization.ts',
+    find: '    this.reresolve(active, locale);',
+    replace: '    void locale;',
+  },
+  {
     id: 'canonical-correction-split-into-hops',
     invariant:
       'A prefix or alias correction is combined with every other correction the address needs into a single 308.',

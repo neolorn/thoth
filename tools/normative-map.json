@@ -2299,6 +2299,12 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "7. Locale switching",
+      "statement": "Where the target locale is served in this document and the route on screen has no address in it, because a parameter has no spelling there or because a declared spelling is one the route's codec refuses, a release MUST end the change as failed with the diagnostic the address was refused with, and MUST NOT commit a locale the address bar cannot follow.",
+      "checks": ["assurance-runtime:locale-committed-without-an-address"]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "7. Locale switching",
       "statement": "A release MUST publish a snapshot only through a transaction, including when a single scope finishes loading, so every commit observer sees the same kind of event.",
       "checks": ["assurance-runtime:scope-load-published-without-a-transaction"]
     },
