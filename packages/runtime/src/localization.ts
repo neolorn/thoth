@@ -392,6 +392,10 @@ export abstract class Localization {
    *
    * The control the recovery message offers. It re-runs the load that failed; it does not change
    * the locale, so a locale that cannot load will fail again until whatever it depends on is back.
+   *
+   * Calling it again while that attempt is running returns the same work, so two controls on one
+   * page start one attempt. Calling it when nothing has failed is a mistake in the caller and
+   * throws a `LocalizationError` there and then, rather than returning a promise that rejects.
    */
   abstract retry(): Promise<LocalizationSnapshot>;
   /**
@@ -1082,6 +1086,9 @@ class LocalizationInternal {
   private readonly lifetimeController = new AbortController();
   private readonly operationControllers = new Set<AbortController>();
   private initialization: Promise<LocalizationSnapshot> | undefined;
+  // Set for the attempt in flight. A retry asked for during an attempt that began after a failure
+  // is asking for that attempt, and one asked for during the first attempt has nothing to retry.
+  private initializationFollowsFailure = false;
   private initializationController: AbortController | undefined;
   private pending: PendingTransition | undefined;
   private readonly progressiveControllers = new Set<AbortController>();
@@ -2062,6 +2069,7 @@ class LocalizationInternal {
       return Promise.resolve(this.active.publicSnapshot);
     }
     if (this.initialization !== undefined) return this.initialization;
+    this.initializationFollowsFailure = this.lifecycleValue() === 'failed';
     this.lifecycleValue.set('initializing');
     const controller = new AbortController();
     this.initializationController = controller;
@@ -2167,6 +2175,12 @@ class LocalizationInternal {
   }
 
   retry(): Promise<LocalizationSnapshot> {
+    if (
+      this.initialization !== undefined &&
+      this.initializationFollowsFailure
+    ) {
+      return this.initialization;
+    }
     if (this.lifecycleValue() !== 'failed') {
       throw new LocalizationError(
         operationalDiagnostic(

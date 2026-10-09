@@ -117,9 +117,11 @@ generated recovery payload. An attempt stopped by an error that carries no diagn
 a coherence-critical effect of the consumer application throws, ends with the typed internal
 failure, and that error is kept as its cause. Section 11 of
 `03-locale-identity-and-resolution.spec.md` owns the renderer for that payload. An explicit retry
-starts a new attempt. A recovery message that cannot be evaluated MUST NOT replace that failure: the
-initialization still ends with the reason no snapshot could be built, the message is left out, and
-its own failure is reported to the observability sink.
+starts a new attempt. A retry asked for while an attempt that followed a failure is in flight is
+that attempt, and a retry asked for when no attempt has failed is refused with the typed
+configuration failure. A recovery message that cannot be evaluated MUST NOT replace that failure:
+the initialization still ends with the reason no snapshot could be built, the message is left out,
+and its own failure is reported to the observability sink.
 
 A failed initialization MUST NOT move the address the reader asked for. In a browser a release
 MUST hold the navigation to that address until a retry succeeds and then complete it, so a retry

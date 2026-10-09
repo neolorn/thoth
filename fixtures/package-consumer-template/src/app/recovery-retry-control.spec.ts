@@ -216,4 +216,27 @@ describe('the retry control of the recovery region', () => {
     expect(localization.lifecycle()).toBe('ready');
     expect(region(fixture)).toBeNull();
   });
+
+  it('shares its attempt with a retry the application asks for beside it', async () => {
+    open = await failed();
+    const { localization, fixture, loads, unhandled, button } = open;
+
+    button().click();
+    await vi.waitFor(() => {
+      expect(loads).toHaveLength(2);
+    });
+    // What a second recovery region on the page, or the application's own code, does while the
+    // first attempt is still open.
+    const beside = localization.retry();
+    loads[1]?.deliver();
+    const snapshot = await beside;
+    await vi.waitFor(() => {
+      expect(fixture.componentInstance.recovered).toHaveLength(1);
+    });
+
+    expect(snapshot).toBe(localization.snapshot());
+    expect(fixture.componentInstance.recovered[0]).toBe(snapshot);
+    expect(loads).toHaveLength(2);
+    expect(unhandled).toEqual([]);
+  });
 });
