@@ -424,13 +424,14 @@ function compilerInputDigests(
       }),
     );
   }
-  if ((request.recoveryMessageIdentities?.length ?? 0) > 0) {
+  const recoveryMessageIdentities = request.recoveryMessageIdentities ?? [];
+  if (recoveryMessageIdentities.length > 0) {
     inputs.push(
       Object.freeze({
         identity: 'recovery-message-identities',
         digest: digestCanonicalJson(
           'equator-compiler-recovery-input/1',
-          [...(request.recoveryMessageIdentities ?? [])].sort(compareCodePoint),
+          [...recoveryMessageIdentities].sort(compareCodePoint),
         ),
       }),
     );
