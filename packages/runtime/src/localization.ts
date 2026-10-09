@@ -1006,7 +1006,8 @@ function localeLanguage(locale: string): string {
   try {
     return localeProfile(locale).language;
   } catch {
-    return locale.split('-')[0] ?? locale;
+    // Splitting text always gives a first piece, the whole of it where there is no separator.
+    return locale.split('-')[0] as string;
   }
 }
 
