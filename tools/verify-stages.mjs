@@ -188,6 +188,10 @@ const declared = Object.freeze([
   // gate reads occurrences, and a browser whose context does not close either is ended, recorded
   // there too, and replaced by a fresh one that the rest of the row runs in.
   { id: 'verify:browser-teardown:self-test', reads: ['source:tools'] },
+  // Drives the browser rows' script gate with a page of its own in place of a browser: a script is
+  // held for the caller during a gated navigation and handed on at any other time, and the page's
+  // route is never removed, because a script asked for while a route is going away is left paused.
+  { id: 'verify:browser-script-gate:self-test', reads: ['source:tools'] },
   // Plants a document and a map beside it and requires the reader to find each planted statement
   // and the map to refuse each planted defect, so the stage below cannot pass by reading nothing.
   { id: 'verify:normative-map:self-test', reads: ['source:tools'] },

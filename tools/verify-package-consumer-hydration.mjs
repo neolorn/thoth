@@ -16,6 +16,7 @@ import {
   replacementSignature,
   stepClosingItsOwnPages,
 } from './browser-call-bound.mjs';
+import { navigateWithScriptGate } from './browser-script-gate.mjs';
 import { recordOccurrence } from './gate-occurrences.mjs';
 import { descendantsOf, readProcesses } from './process-tree.mjs';
 import {
@@ -3103,38 +3104,6 @@ async function assertUnrequestedMovementIsUndone(page) {
   );
   if (priorViewport !== null) {
     await page.setViewportSize(priorViewport);
-  }
-}
-
-async function navigateWithScriptGate(page, url, beforeScripts) {
-  let releaseScripts;
-  const gate = new Promise((resolveGate) => {
-    releaseScripts = resolveGate;
-  });
-  // The route is removed only once every request it holds has been continued. `page.unroute` does
-  // not wait for a handler that is still running, and a script the page asks for as the navigation
-  // settles is in exactly that handler.
-  const held = new Set();
-  const routeHandler = (route) => {
-    const continued = gate.then(() => route.continue());
-    held.add(continued);
-    return continued.finally(() => held.delete(continued));
-  };
-  await page.route('**/*.js', routeHandler);
-  const navigation = page.goto(url, { waitUntil: 'load' });
-  // When the wait below fails, its error is the one to report. The navigation then rejects as the
-  // page closes under it, and unhandled, that rejection ends the process before the wait's error is
-  // printed.
-  navigation.catch(() => {});
-
-  try {
-    await beforeScripts();
-    releaseScripts();
-    return await navigation;
-  } finally {
-    releaseScripts();
-    await Promise.allSettled([...held]);
-    await page.unroute('**/*.js', routeHandler);
   }
 }
 
