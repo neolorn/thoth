@@ -511,6 +511,8 @@ export abstract class Localization {
    * reach, which is every locale under every other policy, and the one this origin serves under a
    * host policy. An address means the change belongs elsewhere: `changeLocale` reports `redirected`
    * and runs no transition, and in a browser the claim has already started moving the document.
+   * A claim that throws has refused the change: `changeLocale` reports `failed` with the thrown
+   * diagnostic, and runs no transition either.
    *
    * Registered from the routing side rather than decided here, because only that side holds the
    * policy, the projection and the route the reader is on. Passing `undefined` unregisters, which
@@ -2335,7 +2337,32 @@ class LocalizationInternal {
     // asked about the same locale a transition would have run for. A claimed change runs no
     // transition at all: nothing is loaded, no participant is called, and no snapshot is published,
     // because none of it would survive the origin the reader is being moved to.
-    const claimedAddress = this.localeChangeClaim?.(locale);
+    let claimedAddress: string | undefined;
+    try {
+      claimedAddress = this.localeChangeClaim?.(locale);
+    } catch (error: unknown) {
+      // A claim that cannot build the address it would send the document to has refused the
+      // change. Nothing is scheduled yet, so the refusal is the whole outcome, and it is a result
+      // because a caller waits on a change and does not catch around one.
+      const id = (this.nextTransitionId += 1);
+      const result: LocaleChangeResult = Object.freeze({
+        status: 'failed',
+        transitionId: id,
+        mode,
+        targetLocale: locale,
+        diagnostic: asDiagnostic(error),
+      });
+      this.lastResultValue.set(result);
+      this.observability?.emit({
+        code: RUNTIME_EVENT_CODES.transition,
+        phase: 'transition',
+        status: 'failed',
+        reason: result.diagnostic.code,
+        targetLocale: locale,
+        transitionId: id,
+      });
+      return Promise.resolve(result);
+    }
     if (claimedAddress !== undefined) {
       const id = (this.nextTransitionId += 1);
       const result: LocaleChangeResult = Object.freeze({

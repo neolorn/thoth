@@ -15,10 +15,12 @@ import {
 import { filter, firstValueFrom } from 'rxjs';
 import {
   Localization,
+  createHostLocalePolicy,
   createPathPrefixLocalePolicy,
   withFormattingContext,
   withRouting,
   type LocaleChangeMode,
+  type LocaleUrlPolicy,
 } from '@neolorn/equator';
 import {
   LocalizedRouteParameters,
@@ -43,7 +45,8 @@ import { runtimeExtensions } from './runtime-extensions';
  * of another. The page here is a dossier whose slug is declared, and the Arabic spelling it
  * declares is one the route's codec refuses, so the Arabic address cannot be built. The change is
  * refused before it commits, and the locale, the address, the document and the route record all
- * stay as they were.
+ * stay as they were. Under a host policy the same change would move the document to another
+ * origin, and it is refused the same way before anything moves.
  */
 
 const PATH_PREFIX = createPathPrefixLocalePolicy({
@@ -53,8 +56,19 @@ const PATH_PREFIX = createPathPrefixLocalePolicy({
   xDefaultPath: '/',
 });
 
+const HOST = createHostLocalePolicy({
+  defaultLocale: 'en-US',
+  origins: {
+    'en-US': 'https://site.example',
+    'ar-EG': 'https://ar.site.example',
+    'en-Arab-XB': 'https://xb.site.example',
+  },
+});
+
 const ORIGIN = 'https://site.example';
 const ARRIVAL = '/en-us/dossiers/dossier';
+/** The same page under a policy that states the locale in the origin. */
+const HOST_ARRIVAL = '/dossiers/dossier';
 
 /** Refused by the dossier's codec, which reads no slug that starts with a dot. */
 const UNREADABLE = '.unreadable';
@@ -90,16 +104,18 @@ interface Arrived {
 async function dossierDeclaring(
   arabicSlug: string,
   mode: LocaleChangeMode = 'coordinated',
+  policy: LocaleUrlPolicy = PATH_PREFIX,
 ): Promise<Arrived> {
+  const arrival = policy === HOST ? HOST_ARRIVAL : ARRIVAL;
   // The reduced table leaves projection routes unrendered, which the router reports.
   vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-  history.replaceState(null, '', ARRIVAL);
+  history.replaceState(null, '', arrival);
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
       {
         provide: MOCK_PLATFORM_LOCATION_CONFIG,
-        useValue: { startUrl: `${ORIGIN}${ARRIVAL}` },
+        useValue: { startUrl: `${ORIGIN}${arrival}` },
       },
       provideLocalizedRouter(ROUTES, { origin: ORIGIN, mode }),
       provideLocalizationTesting(
@@ -111,7 +127,7 @@ async function dossierDeclaring(
           extensions: runtimeExtensions,
           routeProjection,
         },
-        withRouting({ policy: PATH_PREFIX, projection: appRouteProjection }),
+        withRouting({ policy, projection: appRouteProjection }),
         withFormattingContext({ timeZone: 'UTC' }),
       ),
     ],
@@ -222,6 +238,32 @@ describe('a locale change on a page whose address in that locale cannot be built
 
     expect(result.status).toBe('committed');
     expect(platform.pathname).toBe('/en-arab-xb/dossiers/dossier');
+  });
+});
+
+describe('a locale change to another origin, on a page whose address there cannot be built', () => {
+  it('ends as failed with the refusal the address was built with, and moves nothing', async () => {
+    const { localization, platform, settle } = await dossierDeclaring(
+      UNREADABLE,
+      'coordinated',
+      HOST,
+    );
+    const before = localization.snapshot();
+
+    const result = await localization.changeLocale('ar-EG');
+    await settle();
+
+    expect(result).toMatchObject({
+      status: 'failed',
+      targetLocale: 'ar-EG',
+      diagnostic: {
+        code: 'invalid-configuration',
+        outcome: 'operational-failure',
+      },
+    });
+    expect(localization.lastResult()).toBe(result);
+    expect(localization.snapshot()).toBe(before);
+    expect(platform.pathname).toBe(HOST_ARRIVAL);
   });
 });
 

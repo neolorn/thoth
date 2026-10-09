@@ -11,9 +11,10 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import type {
-  LocalizationParticipantReport,
-  LocalizationSnapshot,
+import {
+  LocalizationError,
+  type LocalizationParticipantReport,
+  type LocalizationSnapshot,
 } from '@neolorn/equator/core';
 
 import { catalogKey, diagnosticOf } from './catalog-store-harness.js';
@@ -150,6 +151,37 @@ describe('a locale another origin serves', () => {
       mode: 'progressive',
       targetLocale: 'ar-EG',
       address: ADDRESS,
+    });
+    expect(Object.isFrozen(result)).toBe(true);
+    expect(localization.lastResult()).toBe(result);
+    expect(localization.snapshot()).toBe(snapshot);
+    expect(localization.lifecycle()).toBe('ready');
+    expect(loads[catalogKey('shell', 'ar-EG')]).toBeUndefined();
+    localization.dispose();
+  });
+
+  it('ends the change as failed where the address there is refused, with nothing loaded or committed', async () => {
+    const { localization, snapshot, loads } = await ready();
+    localization.ɵclaimLocaleChange(() => {
+      throw new LocalizationError({
+        code: 'invalid-configuration',
+        outcome: 'operational-failure',
+        message: 'The address of this page in that locale cannot be built.',
+      });
+    });
+
+    const result = await localization.changeLocale('AR-eg');
+
+    expect(result).toStrictEqual({
+      status: 'failed',
+      transitionId: 1,
+      mode: 'coordinated',
+      targetLocale: 'ar-EG',
+      diagnostic: {
+        code: 'invalid-configuration',
+        outcome: 'operational-failure',
+        message: 'The address of this page in that locale cannot be built.',
+      },
     });
     expect(Object.isFrozen(result)).toBe(true);
     expect(localization.lastResult()).toBe(result);
