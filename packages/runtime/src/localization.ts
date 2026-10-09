@@ -122,14 +122,26 @@ import {
 } from './participant-runtime';
 
 /**
- * What a routing integration does once a locale is committed, in the order the runtime decides.
+ * What a routing integration does around a locale commit, in the order the runtime decides.
  *
- * Both run after publication rather than during the transaction, and that is forced rather than
- * chosen: each spells something in the locale that has just landed (the address bar through
- * `prepareExternalUrl`, the head through the route resolved for it) and both read that locale
- * back off the published snapshot. Run inside the transaction they would spell the previous one.
+ * `writeAddress` and `projectDocument` run after publication rather than during the transaction,
+ * and that is forced rather than chosen: each spells something in the locale that has just landed
+ * (the address bar through `prepareExternalUrl`, the head through the route resolved for it) and
+ * both read that locale back off the published snapshot. Run inside the transaction they would
+ * spell the previous one.
+ *
+ * `resolveRoute` runs inside the transaction for the same reason turned round: after publication
+ * nothing can be refused. Section 11 of `specs/06-runtime-and-angular.spec.md` makes the route
+ * coherence-critical, so a locale the page on screen has no address in is one the commit has to
+ * be prevented for, and a step that only found that out while writing the address would find it
+ * out over a page already in the new language.
  */
 export interface RoutingCommitSteps {
+  /**
+   * Resolve the route on screen in the locale about to commit, throwing where it has no address
+   * there. The throw fails the change with its diagnostic, and nothing is published.
+   */
+  readonly resolveRoute: (locale: string) => void;
   /** Bring the address bar into line with the route and the locale now current. */
   readonly writeAddress: () => void;
   /** Project the document metadata, the head, and the addresses the switcher offers. */

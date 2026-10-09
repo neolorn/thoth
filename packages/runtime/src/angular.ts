@@ -1077,12 +1077,17 @@ function defaultLocaleAnnouncement(snapshot: LocalizationSnapshot): string {
  * that has just landed, and both read that locale back off the published snapshot: the address bar
  * through `prepareExternalUrl`, the head through the route re-resolved for it. Run inside the
  * transaction, before publication, each would spell the locale being left.
+ *
+ * `refusal` is the one thing here that does run in `apply`, because it is the one thing that can
+ * still stop the commit: it throws where the page on screen has no address in the locale arriving,
+ * and a throw from `apply` rolls the transaction back.
  */
 class RoutingCommitHook implements LocalizationCommitHook {
   step: ((locale: string) => void) | undefined;
+  refusal: ((locale: string) => void) | undefined;
 
-  apply(): void {
-    // Nothing. This hook's whole content is its position, and its position is after publication.
+  apply(snapshot: LocalizationSnapshot): void {
+    this.refusal?.(snapshot.primaryLocale);
   }
 
   committed(snapshot: LocalizationSnapshot): void {
@@ -2034,6 +2039,7 @@ export function provideLocalizationSetup(
             : { initialRoute: transferred.route }),
           ...(hooks.length === 0 ? {} : { commitHooks: Object.freeze(hooks) }),
           claimRoutingCommit: (steps) => {
+            routedAddress.refusal = steps?.resolveRoute;
             routedAddress.step =
               steps === undefined ? undefined : () => steps.writeAddress();
             routedDocument.step =

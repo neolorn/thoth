@@ -501,14 +501,15 @@ export class RouteLocalization {
           "Localized routing requires the Router's default deferred URL update; 'eager' publishes a localized URL before its page exists.",
       });
     }
-    // Two positions in the runtime's commit list rather than two effects of our own. The steps are
-    // this side's, only routing can spell an address or project a head, but when they run is a
+    // Positions in the runtime's commit list rather than effects of our own. The steps are this
+    // side's, only routing can spell an address or project a head, but when they run is a
     // property of the commit, and an order that emerges from service construction is one nothing
     // states and no test can read.
     //
-    // Claimed in one call, and given up in one, because the two belong to the same integration:
-    // an adapter that is torn down leaves no half-registered sequence behind.
+    // Claimed in one call, and given up in one, because they belong to the same integration: an
+    // adapter that is torn down leaves no half-registered sequence behind.
     this.localization.ɵclaimRoutingCommit({
+      resolveRoute: (locale) => this.refuseUnaddressed(locale),
       writeAddress: () => this.addressSync.ɵreconcile(),
       projectDocument: (locale) => {
         this.onLocaleCommitted(locale);
@@ -1232,6 +1233,26 @@ export class RouteLocalization {
   }
 
   /**
+   * Refuse a locale the page on screen has no address in, while the commit can still be stopped.
+   *
+   * Section 7 of `specs/07-routing-rendering-and-seo.spec.md` has the address bar follow a locale
+   * commit. Both steps that run after one build this page's address in the arriving locale, and a
+   * build that throws there throws over a snapshot already published: the page is in the new
+   * language, the address and the head are in the old one, and the change has reported that it
+   * committed. So the same build is made here first, where its refusal fails the change instead.
+   *
+   * Nothing is asked while a navigation is in flight. The change is then the navigation's own, or
+   * is overtaken by it, and the address that follows is the destination's, which the Router
+   * writes.
+   */
+  private refuseUnaddressed(locale: string): void {
+    if (this.router.getCurrentNavigation() !== null) return;
+    const active = untracked(this.context);
+    if (active === undefined) return;
+    this.reresolve(active, locale);
+  }
+
+  /**
    * Put the reader back when no navigation is going to do it.
    *
    * The same hazard as the document projection above, in the other direction. This adapter claims
@@ -1368,6 +1389,9 @@ export class RouteLocalization {
    * `undefined` when the policy cannot express it as a path: under `locale-host` the address is
    * on another origin, and switching to it is a document navigation rather than anything this can
    * do. The document is then left stating the locale it still shows, which is the honest outcome.
+   *
+   * Throws the address build's own `LocalizationError` where the route has no address in that
+   * locale at all: a parameter with no spelling there, or a declared spelling its codec refuses.
    */
   private reresolve(
     context: RouteLocalizationContext,
