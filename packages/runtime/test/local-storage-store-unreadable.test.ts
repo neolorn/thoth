@@ -5,7 +5,10 @@ import '@angular/compiler';
 import { Injector, PLATFORM_ID, runInInjectionContext } from '@angular/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { localStorageStore } from '../src/persistence.js';
+import {
+  localStorageStore,
+  type LocalStorageStoreOptions,
+} from '../src/persistence.js';
 
 /**
  * The local-storage store, read in a browser whose storage cannot be read.
@@ -16,12 +19,16 @@ import { localStorageStore } from '../src/persistence.js';
  * the throw goes no further.
  */
 
-function storeOver(storage: Partial<Storage>, platform = 'browser') {
+function storeOver(
+  storage: Partial<Storage>,
+  platform = 'browser',
+  options?: LocalStorageStoreOptions,
+) {
   vi.stubGlobal('localStorage', storage);
   const injector = Injector.create({
     providers: [{ provide: PLATFORM_ID, useValue: platform }],
   });
-  return runInInjectionContext(injector, localStorageStore());
+  return runInInjectionContext(injector, localStorageStore(options));
 }
 
 describe('the local-storage store', () => {
@@ -40,7 +47,40 @@ describe('the local-storage store', () => {
 
     expect(store.id).toBe('local-storage');
     expect(await store.read()).toBe('ar-EG');
-    expect(asked).toHaveLength(1);
+    expect(asked).toStrictEqual(['equator-locale']);
+  });
+
+  it('reads under the key it is handed, where it is handed one', async () => {
+    const asked: string[] = [];
+    const store = storeOver(
+      {
+        getItem: (key) => {
+          asked.push(key);
+          return 'ar-EG';
+        },
+      },
+      'browser',
+      { key: 'chosen-locale' },
+    );
+
+    expect(await store.read()).toBe('ar-EG');
+    expect(asked).toStrictEqual(['chosen-locale']);
+  });
+
+  it('reads nothing, and asks the storage nothing, outside a browser', async () => {
+    let asked = 0;
+    const store = storeOver(
+      {
+        getItem: () => {
+          asked += 1;
+          return 'ar-EG';
+        },
+      },
+      'server',
+    );
+
+    expect(await store.read()).toBeUndefined();
+    expect(asked).toBe(0);
   });
 
   it('reads nothing, and does not throw, where reading the storage throws', async () => {
