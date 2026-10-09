@@ -1648,6 +1648,23 @@ function firstGrapheme(
 }
 
 /**
+ * Formatted text a reader sees, in the capitals of the name's own language: presentation, which is
+ * what host locale data is for.
+ *
+ * A name read from storage can carry a tag the platform refuses, and such a name states no language
+ * to be cased in. It takes the mapping that belongs to no locale, as its monogram takes a code
+ * point, so one unreadable tag does not take the whole name with it.
+ */
+function upperCasedIn(text: string, language: string): string {
+  try {
+    // eslint-disable-next-line no-restricted-syntax
+    return text.toLocaleUpperCase(language);
+  } catch {
+    return text.toUpperCase();
+  }
+}
+
+/**
  * Person names, from CLDR patterns rather than from a field order written by hand.
  *
  * A hand-written field order gets this wrong. CLDR 48 lists five surname-first languages in root
@@ -1926,15 +1943,11 @@ function personNameFieldText(
       modifiers.includes('retain'),
     );
   }
-  // Formatted text a reader sees, cased by the name's own language: presentation, which is what
-  // host locale data is for.
   if (modifiers.includes('allCaps')) {
-    // eslint-disable-next-line no-restricted-syntax
-    text = text.toLocaleUpperCase(value.language);
+    text = upperCasedIn(text, value.language);
   } else if (modifiers.includes('initialCap')) {
     const head = firstGrapheme(text, value.language, cache);
-    // eslint-disable-next-line no-restricted-syntax
-    text = head.toLocaleUpperCase(value.language) + text.slice(head.length);
+    text = upperCasedIn(head, value.language) + text.slice(head.length);
   }
   return { field: name, text };
 }

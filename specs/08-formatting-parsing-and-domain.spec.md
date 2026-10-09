@@ -234,6 +234,11 @@ schema, and MUST NOT parse an unstructured name into authoritative components.
 The fields of a name are well-formed Unicode text. A field that carries half of a surrogate pair is
 refused when the name is built, as one carrying a control or a direction-override character is.
 
+A name can reach the formatter without having been built, carrying a language tag the platform
+refuses. A release MUST format such a name rather than throw: a monogram is the first code point of
+its field, and a field a pattern asks for in capitals takes the case mapping that belongs to no
+locale.
+
 Postal-address schemas, canonicalization, deliverability, validation, and final layout stay with the
 consumer application, as do telephone parsing, regional numbering metadata, canonicalization,
 dialing behavior, and validity. A release localizes the labels, the instructions, and the
