@@ -15,6 +15,7 @@ import {
 } from '@angular/router';
 import { filter, firstValueFrom } from 'rxjs';
 import {
+  DocumentLocalization,
   Localization,
   createPathPrefixLocalePolicy,
   withFormattingContext,
@@ -389,6 +390,9 @@ describe('a response that reached no route, with a document that declares no tit
     ).toHaveLength(0);
     // Written in the locale the address states, which is the one that was committed for it.
     expect(document.documentElement.lang).toBe('ar-EG');
+    expect(TestBed.inject(DocumentLocalization).current()?.locale).toBe(
+      'ar-EG',
+    );
     expect(document.title).toBe(
       TestBed.inject(Localization).text(messages.document.notFound.title),
     );

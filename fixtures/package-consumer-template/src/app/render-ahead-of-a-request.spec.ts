@@ -14,6 +14,7 @@ import { RouterOutlet } from '@angular/router';
 import {
   Localization,
   LocalizationError,
+  createHostLocalePolicy,
   createLocaleNeutralPolicy,
   createPathPrefixLocalePolicy,
   defineRouteProjection,
@@ -59,6 +60,16 @@ const NEUTRAL = createLocaleNeutralPolicy({
 });
 
 const ORIGIN = 'https://site.example';
+const ARABIC_ORIGIN = 'https://ar.site.example';
+
+const HOST = createHostLocalePolicy({
+  defaultLocale: 'en-US',
+  origins: {
+    'en-US': ORIGIN,
+    'ar-EG': ARABIC_ORIGIN,
+    'en-Arab-XB': 'https://xb.site.example',
+  },
+});
 
 /**
  * The application's own projection with one route declared private, which none of its routes is.
@@ -80,6 +91,21 @@ const PRIVATE_SECOND = defineRouteProjection({
   }),
 } as unknown as typeof appRouteProjection);
 
+/** The same, for the one route here whose path is spelled apart in Arabic. */
+const PRIVATE_ITEM = defineRouteProjection({
+  ...appRouteProjection,
+  generated: Object.freeze({
+    ...routeProjection,
+    routes: Object.freeze(
+      routeProjection.routes.map((route) =>
+        route.id === 'item'
+          ? Object.freeze({ ...route, indexing: 'private' as const })
+          : route,
+      ),
+    ),
+  }),
+} as unknown as typeof appRouteProjection);
+
 @Component({
   selector: 'render-root',
   standalone: true,
@@ -90,6 +116,8 @@ class RootHost {}
 
 interface Render {
   readonly policy?: LocaleUrlPolicy;
+  /** The origin the build answers at, which under a host policy is its locale. */
+  readonly origin?: string;
   readonly platform?: 'server' | 'browser';
   /** The request the render answers, where it answers one. */
   readonly request?: Request;
@@ -102,18 +130,19 @@ async function bootstrappedAt(
   path: string,
   render: Render = {},
 ): Promise<unknown> {
+  const origin = render.origin ?? ORIGIN;
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
       {
         provide: MOCK_PLATFORM_LOCATION_CONFIG,
-        useValue: { startUrl: `${ORIGIN}${path}` },
+        useValue: { startUrl: `${origin}${path}` },
       },
       { provide: PLATFORM_ID, useValue: render.platform ?? 'server' },
       ...(render.request === undefined
         ? []
         : [{ provide: REQUEST, useValue: render.request }]),
-      provideLocalizedRouter(routes, { origin: ORIGIN }),
+      provideLocalizedRouter(routes, { origin }),
       provideLocalizationTesting(
         {
           configuration,
@@ -190,6 +219,18 @@ describe('a page rendered ahead of a request', () => {
         policy: NEUTRAL,
       }),
     ).toBeUndefined();
+  });
+
+  it('is refused for a private route at an address read at the origin the build answers at', async () => {
+    // The Arabic spelling of the route matches nothing at the default locale's origin, so the
+    // route's class is found only by reading the address where this build serves it.
+    expectRefusedAsSharedFile(
+      await bootstrappedAt(`/${encodeURIComponent('عناصر')}/42`, {
+        policy: HOST,
+        origin: ARABIC_ORIGIN,
+        projection: PRIVATE_ITEM,
+      }),
+    );
   });
 
   it('is left to the application where the address reached no route', async () => {
