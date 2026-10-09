@@ -18,7 +18,7 @@ function unsafeUrlText(value: unknown, maximum: number): boolean {
 /**
  * A rich-message destination failure, carrying what the caller knew about it.
  *
- * The same defect as `routeError` in the routing core and found the same way: three call sites pass
+ * The same defect as `routeError` in the routing core and found the same way: its call sites pass
  * `'malformed-input'` and the `URL` parser's own error, and the thrown diagnostic carried neither.
  */
 function invalidDestination(
@@ -59,16 +59,11 @@ export function internalDestination(href: string): TrustedDestination {
       'An internal rich-message destination must be a safe origin-relative URL.',
     );
   }
-  let parsed: URL;
-  try {
-    parsed = new URL(href, 'https://site.invalid');
-  } catch (cause) {
-    return invalidDestination(
-      'The internal rich-message destination is invalid.',
-      'malformed-input',
-      cause,
-    );
-  }
+  // Parsing cannot fail here. The checks above leave an address that starts with one slash and
+  // carries no backslash and no control character, so against a base with a host the URL parser
+  // goes from its relative slash state to its path, query and fragment states, and none of those
+  // returns failure: what they cannot keep they percent-encode.
+  const parsed = new URL(href, 'https://site.invalid');
   return Object.freeze({
     kind: 'internal',
     href: `${parsed.pathname}${parsed.search}${parsed.hash}`,
