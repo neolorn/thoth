@@ -2634,8 +2634,9 @@ function refuseClaimedAddress(refusal: {
   readonly segments: readonly string[];
 }): never {
   const { claimed, routeId, locale, segments } = refusal;
+  // A claimed segment is the first one a caller read, so there is a first one to quote.
   return routeError(
-    `Route ${routeId} is addressed at ${JSON.stringify(`/${segments.join('/')}`)} in ${locale}, where this policy emits no locale prefix, and its leading segment ${JSON.stringify(segments[0] ?? '')} is this policy's ${claimed.kind} ${JSON.stringify(claimed.spelling)}. Equator's own resolver reads that segment as the ${claimed.kind} and never reaches the route, so this is an address Equator would emit and could not resolve. Rename the route's leading segment, or spell the ${claimed.kind} differently.`,
+    `Route ${routeId} is addressed at ${JSON.stringify(`/${segments.join('/')}`)} in ${locale}, where this policy emits no locale prefix, and its leading segment ${JSON.stringify(segments[0])} is this policy's ${claimed.kind} ${JSON.stringify(claimed.spelling)}. Equator's own resolver reads that segment as the ${claimed.kind} and never reaches the route, so this is an address Equator would emit and could not resolve. Rename the route's leading segment, or spell the ${claimed.kind} differently.`,
   );
 }
 

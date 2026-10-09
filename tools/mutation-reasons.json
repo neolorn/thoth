@@ -579,14 +579,6 @@
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "LogicalOperator",
-      "original": "segments[0] ?? ''",
-      "replacement": "segments[0] && ''",
-      "category": "message-wording",
-      "reason": "the leading segment quoted inside the refusal message"
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
       "mutator": "ConditionalExpression",
       "original": "first === undefined",
       "replacement": "false",
