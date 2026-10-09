@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
+import { instant } from '../src/formatting.js';
 import { createLocalizationContext } from '../src/localization.js';
+import {
+  type LocalizationObservabilityEvent,
+  type LocalizationObservabilityOptions,
+} from '../src/observability.js';
 import {
   type LocalizationContextOptions,
   type LocalizationSetup,
@@ -30,7 +35,8 @@ import {
  */
 
 interface Fixture {
-  readonly options?: Partial<LocalizationContextOptions>;
+  readonly options?: Partial<LocalizationContextOptions> &
+    LocalizationObservabilityOptions;
   /** A catalog key whose loader fails every time it is asked. */
   readonly failing?: string;
   readonly recoveryPayload?: readonly unknown[];
@@ -100,6 +106,62 @@ describe('a context built outside an injector', () => {
 
     expect(loads).toStrictEqual([catalogKey('shell', 'en-US')]);
     expect(localization.text(TITLE)).toBe('Catalog store');
+    localization.dispose();
+  });
+
+  it('starts in the locale it is handed', async () => {
+    const { localization } = context({ options: { initialLocale: 'ar-EG' } });
+
+    const snapshot = await localization.initialize();
+
+    expect(snapshot.primaryLocale).toBe('ar-EG');
+    localization.dispose();
+  });
+
+  it('starts in the default locale when it is handed none', async () => {
+    const { localization } = context();
+
+    const snapshot = await localization.initialize();
+
+    expect(snapshot.primaryLocale).toBe('en-US');
+    localization.dispose();
+  });
+
+  it('formats under the defaults it is handed', async () => {
+    const { localization } = context({
+      options: { formattingContext: { timeZone: 'UTC' } },
+    });
+    const { localization: bare } = context();
+    const range = [instant('0'), instant('90000000000000')] as const;
+    const fields = { dateStyle: 'medium', timeStyle: 'short' } as const;
+
+    const snapshot = await localization.initialize();
+    await bare.initialize();
+
+    expect(snapshot.formatting).toMatchObject({ timeZone: 'UTC' });
+    expect(localization.formatInstantRange(...range, fields).ok).toBe(true);
+    // With no zone there is no wall clock to read an instant against, and the call is refused.
+    expect(bare.formatInstantRange(...range, fields).ok).toBe(false);
+    localization.dispose();
+    bare.dispose();
+  });
+
+  it('reports to the sink it is handed', async () => {
+    const events: LocalizationObservabilityEvent[] = [];
+    const { localization } = context({
+      options: { observability: { emit: (event) => void events.push(event) } },
+    });
+
+    const snapshot = await localization.initialize();
+
+    expect(
+      events
+        .filter(({ phase }) => phase === 'initialization')
+        .map(({ status, snapshotId }) => ({ status, snapshotId })),
+    ).toStrictEqual([
+      { status: 'started', snapshotId: undefined },
+      { status: 'succeeded', snapshotId: snapshot.id },
+    ]);
     localization.dispose();
   });
 
