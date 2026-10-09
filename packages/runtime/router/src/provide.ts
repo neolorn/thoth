@@ -583,9 +583,10 @@ function refusePolicyAtConfiguration(
   // Exhaustive by construction. A member added to `LocaleUrlPolicy` fails to assign here, which is
   // the point: the next kind is decided rather than defaulted into being half served.
   //
-  // The throw below is unreachable: a policy object carrying an unknown `kind` dies in
-  // `builtLocalePolicy` before any router provider runs. It stays because the arm is what makes the
-  // switch exhaustive, and because the ordering upstream is not this file's to rely on.
+  // A policy declared through `withRouting()` does not reach the throw below, because
+  // `builtLocalePolicy` refuses an unknown `kind` before any router provider runs. A value provided
+  // for `LOCALE_URL_POLICY` directly is read here as it stands, so for that one this is the
+  // refusal.
   const unserved: never = policy;
   throw new LocalizationError({
     code: 'invalid-configuration',
