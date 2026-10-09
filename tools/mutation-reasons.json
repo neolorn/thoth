@@ -1939,7 +1939,8 @@
       "original": "`:${functionName} received unsupported formatting options.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The literal is the text of the refusal raised when Intl.NumberFormat rejects the options of a number function; the suite compares its code and outcome and nothing reads the text."
+      "reason": "The literal is the text of the refusal raised when the platform rejects the options of a number function or of a date function; the suite compares its code, outcome, reason and cause, and nothing reads the text.",
+      "count": 2
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -3041,7 +3042,8 @@
       "original": "false",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "publishing is read only on line 2539, after line 2538 has returned for a runtime with no snapshot, and the publication that set the first snapshot assigned it on lines 1312 and 1322."
+      "reason": "publishing is read only on line 2539, after line 2538 has returned for a runtime with no snapshot, and the publication that set the first snapshot assigned it on lines 1312 and 1322. initializationFollowsFailure is read only after an initialization exists, and initialize assigns the field before it creates one, so its initial value is never read either.",
+      "count": 2
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -8210,6 +8212,94 @@
       "replacement": ";",
       "category": "equivalent",
       "reason": "The constructor on the line above has already refused a zone or a calendar name it cannot read with a RangeError, and formatting the epoch with a formatter that exists does not throw, so the call decides nothing the constructor and the comparison after it have not."
+    },
+    {
+      "file": "packages/runtime/core/src/routing.ts",
+      "mutator": "BlockStatement",
+      "original": "{\n    locale = undefined;\n  }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "The variable is declared without a value and assigned only inside the try, so it is already undefined when the catch runs."
+    },
+    {
+      "file": "packages/runtime/src/formatting-runtime.ts",
+      "mutator": "ObjectLiteral",
+      "original": "{\n      year: 'numeric',\n      month: 'numeric',\n      day: 'numeric',\n    }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "A date formatter handed no field and no style formats the year, month and day as numeric, which is the default the object states."
+    },
+    {
+      "file": "packages/runtime/src/formatting-runtime.ts",
+      "mutator": "ConditionalExpression",
+      "original": "this.context.personNames === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "An undefined fourth argument takes the default formatPersonName declares for it, the root profiles, which is what leaving the argument out takes."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "CallExpression",
+      "original": "throw new RangeError(locale);",
+      "replacement": ";",
+      "category": "equivalent",
+      "reason": "Without the throw the undefined tag reaches new Intl.Locale on the next line, which throws inside the same try, and the same catch answers with the same refusal."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "ConditionalExpression",
+      "original": "canonical === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "Without the throw the undefined tag reaches new Intl.Locale on the next line, which throws inside the same try, and the same catch answers with the same refusal."
+    },
+    {
+      "file": "packages/runtime/src/localization.ts",
+      "mutator": "ConditionalExpression",
+      "original": "options.initialLocale === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "Every reader of initialLocale takes its value and none asks whether the member is present, so an undefined member reads as an absent one."
+    },
+    {
+      "file": "packages/runtime/src/localization.ts",
+      "mutator": "ConditionalExpression",
+      "original": "options.requestContext === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "participantRequestContext is read once, by value, so an undefined member reads as an absent one."
+    },
+    {
+      "file": "packages/runtime/src/localization.ts",
+      "mutator": "ConditionalExpression",
+      "original": "options.formattingContext === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "formattingContext is read through an optional chain and a nullish default, so an undefined member reads as an absent one."
+    },
+    {
+      "file": "packages/runtime/src/localization.ts",
+      "mutator": "ConditionalExpression",
+      "original": "options.initialRoute === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "initialRoute is read by value and handed to a preparation that takes undefined for no route, so an undefined member reads as an absent one."
+    },
+    {
+      "file": "packages/runtime/src/localization.ts",
+      "mutator": "ConditionalExpression",
+      "original": "options.observability === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "An emitter over no sink returns before it builds an event, so nothing is emitted with or without it."
+    },
+    {
+      "file": "packages/runtime/src/persistence.ts",
+      "mutator": "BlockStatement",
+      "original": "{\n          // Storage can be disabled or full, and reading it can throw outright. A preference\n          // nobody can read is a preference that is absent, which the chain already handles.\n          return undefined;\n        }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "The catch is the last statement of the function and returns undefined, which is what falling off the end returns."
     }
   ]
 }
