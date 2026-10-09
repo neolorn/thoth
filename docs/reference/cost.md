@@ -19,11 +19,11 @@ The bytes of each entry point's own module in each build, before compression, as
 
 | Entry point                | Minimal consumer, initial | Minimal consumer, lazy | Minimal consumer, server | Full consumer, initial | Full consumer, lazy | Full consumer, server |
 | -------------------------- | ------------------------: | ---------------------: | -----------------------: | ---------------------: | ------------------: | --------------------: |
-| `@neolorn/equator`         |                   204,057 |                      0 |                        0 |                275,974 |                   0 |               230,752 |
-| `@neolorn/equator/core`    |                    28,821 |                      0 |                        0 |                 64,552 |                   0 |               112,342 |
-| `@neolorn/equator/forms`   |                         0 |                      0 |                        0 |                  4,398 |                   0 |                 3,561 |
-| `@neolorn/equator/http`    |                         0 |                      0 |                        0 |                      0 |                   0 |                 6,205 |
-| `@neolorn/equator/router`  |                         0 |                      0 |                        0 |                 38,860 |                   0 |                32,213 |
+| `@neolorn/equator`         |                   204,478 |                      0 |                        0 |                277,459 |                   0 |               231,999 |
+| `@neolorn/equator/core`    |                    28,696 |                      0 |                        0 |                 65,328 |                   0 |               113,876 |
+| `@neolorn/equator/forms`   |                         0 |                      0 |                        0 |                  4,385 |                   0 |                 3,549 |
+| `@neolorn/equator/http`    |                         0 |                      0 |                        0 |                      0 |                   0 |                 6,162 |
+| `@neolorn/equator/router`  |                         0 |                      0 |                        0 |                 38,889 |                   0 |                32,213 |
 | `@neolorn/equator/ssr`     |                         0 |                      0 |                        0 |                      0 |                   0 |                   153 |
 | `@neolorn/equator/testing` |                         0 |                      0 |                        0 |                      0 |                   0 |                     0 |
 
@@ -33,12 +33,12 @@ Everything each build emits, including Angular and the application itself.
 
 | Application      | Part    | Files |     Bytes |    gzip |  Brotli |
 | ---------------- | ------- | ----: | --------: | ------: | ------: |
-| Minimal consumer | initial |     1 |   326,097 |  98,456 |  84,827 |
+| Minimal consumer | initial |     1 |   326,194 |  98,601 |  84,971 |
 | Minimal consumer | lazy    |     4 |     8,758 |   4,299 |   3,521 |
 | Minimal consumer | server  |     0 |         0 |       0 |       0 |
-| Full consumer    | initial |     1 |   716,662 | 206,705 | 173,295 |
-| Full consumer    | lazy    |     6 |    63,158 |  17,530 |  15,381 |
-| Full consumer    | server  |    20 | 1,604,177 | 468,086 | 403,978 |
+| Full consumer    | initial |     1 |   718,972 | 207,610 | 173,798 |
+| Full consumer    | lazy    |     6 |    63,156 |  17,534 |  15,366 |
+| Full consumer    | server  |    20 | 1,606,902 | 469,498 | 405,138 |
 
 ## Generated contracts
 
@@ -46,7 +46,7 @@ The generated code in the initial files, and each lazily loaded catalog: one sco
 
 ### Minimal consumer
 
-Generated code in the initial files: 13,859 bytes.
+Generated code in the initial files: 13,866 bytes.
 
 | Scope | Locale | Bytes |  gzip | Brotli |
 | ----- | ------ | ----: | ----: | -----: |
@@ -57,7 +57,7 @@ Generated code in the initial files: 13,859 bytes.
 
 ### Full consumer
 
-Generated code in the initial files: 51,252 bytes.
+Generated code in the initial files: 51,271 bytes.
 
 | Scope | Locale |  Bytes |  gzip | Brotli |
 | ----- | ------ | -----: | ----: | -----: |
