@@ -246,10 +246,16 @@ interface PendingRoute {
   readonly previousUrl: string;
   readonly scopes: readonly LocalizationScope[];
   readonly progressiveScopes: readonly LocalizationScope[];
-  readonly restoreOnly: boolean;
   /** The snapshot to put back if this navigation never lands. */
   readonly previousSnapshot: LocalizationSnapshot | undefined;
-  readonly result: LocaleChangeResult;
+  /**
+   * The change this navigation committed.
+   *
+   * Absent for the navigation that puts an address back after a failed projection: it commits
+   * nothing, so it has no document to project when it lands and no snapshot to put back when it
+   * does not.
+   */
+  readonly result: LocaleChangeResult | undefined;
 }
 
 function configuredScopes(
@@ -540,8 +546,8 @@ export class RouteLocalization {
         const pending = this.pending.get(event.id);
         if (pending !== undefined) {
           this.pending.delete(event.id);
-          if (!pending.restoreOnly) {
-            this.commitPromise = this.applyDocument(pending);
+          if (pending.result !== undefined) {
+            this.commitPromise = this.applyDocument(pending, pending.result);
           }
         }
         // Last, and that is the whole reason it happens here. The locale commits in the resolver,
@@ -558,7 +564,7 @@ export class RouteLocalization {
         // The locale was committed before activation, and this navigation never arrived. Putting
         // the previous snapshot back is what keeps the specification's promise that a cancelled or
         // failed navigation leaves the snapshot, document, and URL as they were.
-        if (pending !== undefined && !pending.restoreOnly) {
+        if (pending?.result !== undefined) {
           void this.restoreSnapshot(pending.previousSnapshot);
         }
         // A navigation that never arrived leaves nothing to return the visitor to.
@@ -811,19 +817,8 @@ export class RouteLocalization {
       previousUrl,
       scopes,
       progressiveScopes,
-      restoreOnly,
       previousSnapshot,
-      result:
-        result ??
-        Object.freeze({
-          status: 'committed',
-          transitionId: 0,
-          mode: this.options.mode ?? 'coordinated',
-          targetLocale: resolution.locale,
-          snapshot:
-            this.localization.snapshot() ??
-            (previousSnapshot as LocalizationSnapshot),
-        }),
+      result,
     });
     return context;
   }
@@ -864,10 +859,10 @@ export class RouteLocalization {
    */
   private async applyDocument(
     pending: PendingRoute,
+    result: LocaleChangeResult,
   ): Promise<LocaleChangeResult> {
     const { resolution } = pending.context;
     const previousSnapshot = pending.previousSnapshot;
-    const result = pending.result;
     let addresses: Readonly<Record<string, string>> | undefined;
     try {
       addresses = this.projectDocument(pending.context);
