@@ -743,12 +743,9 @@ function localizedDigits(
   value: string,
   context: FormattingContext,
 ): string | undefined {
-  let syntax: NumberSyntax;
-  try {
-    syntax = numberSyntax(context);
-  } catch {
-    return undefined;
-  }
+  // Each field parser has already asked for this context's syntax and answered for a locale the
+  // platform refuses, so the syntax is there to read by the time a field's digits are.
+  const syntax = numberSyntax(context);
   let result = '';
   for (const scalar of value) {
     const digit = syntax.digits.get(scalar);
