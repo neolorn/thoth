@@ -288,18 +288,16 @@ function navigationDiagnostic(message: string): LocalizationDiagnostic {
 }
 
 /**
- * The diagnostic a locale change carries, for the two outcomes that carry one.
+ * The diagnostic a locale change that did not commit carries, for the outcomes that carry one.
  *
- * `committed` succeeded and `redirected` is a document navigation: neither is a defect and
- * neither has anything to report. Written as a function rather than as a narrowing at the call site
- * because a fourth outcome added later must be a compile error here, and not a property access that
- * quietly yields `undefined`.
+ * `redirected` is a document navigation: it is not a defect and it has nothing to report. Written
+ * as a function rather than as a narrowing at the call site because an outcome added later must be
+ * a compile error here, and not a property access that quietly yields `undefined`.
  */
 function transactionDiagnostic(
-  result: LocaleChangeResult,
+  result: Exclude<LocaleChangeResult, { readonly status: 'committed' }>,
 ): LocalizationDiagnostic | undefined {
   switch (result.status) {
-    case 'committed':
     case 'redirected':
       return undefined;
     default:
