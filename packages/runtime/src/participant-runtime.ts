@@ -80,6 +80,9 @@ interface ParticipantAdapter extends RegisteredParticipant {
   readonly discard?: LocalizationParticipant['discard'];
   readonly dispose?: LocalizationParticipant['dispose'];
   readonly stateValue: ReturnType<typeof signal<LocalizationParticipantState>>;
+  // The caller's own, handed on by reference: freezing or copying it would change an object this
+  // registry does not own.
+  readonly requestContext: unknown;
   transferred: boolean;
   work?: ParticipantWork;
 }
@@ -710,6 +713,7 @@ export class ParticipantCoordinator {
     participant: LocalizationParticipant,
     options: LocalizationParticipantOptions,
     retry: (participantId: string) => Promise<LocalizationParticipantState>,
+    requestContext?: unknown,
   ): LocalizationParticipantRegistration {
     this.assertActive();
     // A participant and its options arrive from application code, so the mode is read as what
@@ -777,6 +781,7 @@ export class ParticipantCoordinator {
       stateValue: signal(
         stateFromTransfer(participant.id, coordination, compatibleTransfer),
       ),
+      requestContext,
       transferred: compatibleTransfer !== undefined,
     };
     this.adapters.set(adapter.id, adapter);
@@ -978,6 +983,9 @@ export class ParticipantCoordinator {
       ...(adapter.transferred && previousState.current !== undefined
         ? { transferred: previousState.current }
         : {}),
+      ...(adapter.requestContext === undefined
+        ? {}
+        : { requestContext: adapter.requestContext }),
     });
     adapter.transferred = false;
     const work: ParticipantWork = {

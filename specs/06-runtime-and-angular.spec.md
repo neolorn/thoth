@@ -199,6 +199,11 @@ records how its latest attempt ended: with its report once it commits, and as ca
 superseded when the change it prepared for is abandoned or overtaken, whether or not the participant
 had already reported.
 
+A context built outside the injector MAY be given a request context, a value of the consumer
+application's own. A release MUST hand that value, unread and unchanged, to every participant of
+that context and of a child context made from it, and MUST NOT hand a participant a request
+context the consumer application did not give.
+
 A participant keeps its payload in the consumer application's own services, stores, signals, and
 components. It reports readiness, the representation it actually supplies, and bounded safe
 identity. A release MUST NOT read, copy, cache, or transfer that payload.

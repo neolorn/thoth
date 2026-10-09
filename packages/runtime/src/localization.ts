@@ -232,6 +232,13 @@ export interface LocalizationRuntimeOptions {
   readonly bootstrapScopes: readonly LocalizationScope[];
   readonly initialLocale?: string;
   readonly requestContext?: unknown;
+  /**
+   * What the caller asked to have carried to its participants.
+   *
+   * Kept apart from `requestContext`, which is the address locale resolution reads: an application
+   * that never named a value to carry is handed none.
+   */
+  readonly participantRequestContext?: unknown;
   readonly recoveryMessageIdentity?: string;
   readonly recoveryRetryLabelIdentity?: string;
   readonly formattingContext?: Omit<FormattingContext, 'locale'>;
@@ -2200,6 +2207,7 @@ class LocalizationInternal {
       participant,
       options,
       (participantId) => this.retryParticipant(participantId),
+      this.options.participantRequestContext,
     );
     this.scheduleRegisteredParticipant(registration.id);
     return registration;
@@ -3631,7 +3639,7 @@ export function createLocalizationContext(
       : { initialLocale: options.initialLocale }),
     ...(options.requestContext === undefined
       ? {}
-      : { requestContext: options.requestContext }),
+      : { participantRequestContext: options.requestContext }),
     ...(options.recoveryMessage === undefined
       ? {}
       : { recoveryMessageIdentity: options.recoveryMessage.identity }),

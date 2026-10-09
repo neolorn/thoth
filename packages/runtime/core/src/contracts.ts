@@ -1290,6 +1290,13 @@ export interface LocalizationParticipantContext {
    * participant can adopt what is already on screen instead of fetching it again.
    */
   readonly transferred?: LocalizationParticipantCurrent;
+  /**
+   * What `createLocalizationContext` was given as its request context, as it was given.
+   *
+   * Present only where the context was built with one. On a server it is usually the request, so
+   * the content prepared here can be fetched for that request without a global to find it by.
+   */
+  readonly requestContext?: unknown;
 }
 
 /**
@@ -2576,7 +2583,8 @@ export interface LocalizationContextOptions {
    * Something of the caller's own to carry through, opaque to Equator.
    *
    * On a server this is usually the request, so a participant preparing content for one request can
-   * reach it without a global.
+   * reach it without a global: each participant of the context, and of a child context made from
+   * it, is handed this value as its context's `requestContext`.
    */
   readonly requestContext?: unknown;
   /** What to say when localization could not start. Must be plain and take no inputs. */
