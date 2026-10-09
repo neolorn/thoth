@@ -271,9 +271,9 @@ describe('a commit hook that refuses the first snapshot', () => {
       },
     });
 
-    await expect(localization.initialize()).rejects.toThrow(
-      'the hook under test refused the snapshot',
-    );
+    await expect(localization.initialize()).rejects.toMatchObject({
+      diagnostic: { code: 'internal-invariant' },
+    });
 
     expect(events).toStrictEqual([
       'hook apply en-US#1',

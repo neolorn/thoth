@@ -381,6 +381,10 @@ export abstract class Localization {
    * Called for you when the providers are installed, so an application needs it only to await the
    * first commit somewhere that must not render before it, such as a route guard. Calling it again
    * once it has started returns the same work rather than starting over.
+   *
+   * Rejects with a `LocalizationError` when no snapshot could be built. Its `diagnostic` says why,
+   * and when the reason was an error thrown by the application's own code, such as an overlay
+   * adapter, that error is its `cause`.
    */
   abstract initialize(): Promise<LocalizationSnapshot>;
   /**
@@ -2123,12 +2127,18 @@ class LocalizationInternal {
         });
         return snapshot;
       })
-      .catch((error: unknown) => {
+      .catch((thrown: unknown) => {
+        // A commit hook is application code and throws whatever it throws. A caller branches on
+        // the diagnostic, so what leaves here always carries one.
+        const error =
+          thrown instanceof LocalizationError
+            ? thrown
+            : new LocalizationError(asDiagnostic(thrown), { cause: thrown });
         this.observability?.emit({
           code: RUNTIME_EVENT_CODES.initialization,
           phase: 'initialization',
           status: this.disposed ? 'cancelled' : 'failed',
-          reason: asDiagnostic(error).code,
+          reason: error.diagnostic.code,
           targetLocale: this.targetLocaleValue() ?? this.defaultLocale,
           transitionId,
         });
