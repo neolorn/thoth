@@ -285,6 +285,18 @@ describe('an event repeated inside one second', () => {
     );
   });
 
+  it('is not a repeat where a provider and a scope only read alike once joined', () => {
+    const { events, emit } = reporting();
+
+    emit({ ...FAILURE, providerId: 'ab', scopeId: 'c' });
+    emit({ ...FAILURE, providerId: 'a', scopeId: 'bc' });
+
+    expect(events).toStrictEqual([
+      { ...BARE_EVENT, ...FAILURE, providerId: 'ab', scopeId: 'c' },
+      { ...BARE_EVENT, ...FAILURE, providerId: 'a', scopeId: 'bc' },
+    ]);
+  });
+
   it('remembers 128 failures and gives up the oldest first', () => {
     const { events, emit } = reporting();
     const scopes = Array.from({ length: 129 }, (_, index) => `scope-${index}`);
