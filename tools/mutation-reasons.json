@@ -8357,6 +8357,31 @@
       "replacement": "false",
       "category": "equivalent",
       "reason": "With no sink the call to emit throws inside the try whose catch swallows it, and the function returns nothing either way; no caller builds an emitter over no sink."
+    },
+    {
+      "file": "packages/runtime/src/observability.ts",
+      "mutator": "StringLiteral",
+      "original": "''",
+      "replacement": "\"Stryker was here!\"",
+      "count": 4,
+      "category": "equivalent",
+      "reason": "The text stands in the repeat key for a member the event does not carry. Any text does that; only an event whose reason, provider, scope or target locale is the replacement text itself would read as a repeat of one without the member."
+    },
+    {
+      "file": "packages/runtime/src/observability.ts",
+      "mutator": "ConditionalExpression",
+      "original": "previous !== undefined",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "With no earlier time the subtraction is not a number, and its comparison with the window is false, so the event is reported as it is with the guard."
+    },
+    {
+      "file": "packages/runtime/src/observability.ts",
+      "mutator": "ConditionalExpression",
+      "original": "oldest !== undefined",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "The branch runs only when the map holds as many keys as the cap, so there is always an oldest key to delete."
     }
   ]
 }
