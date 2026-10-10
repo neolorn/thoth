@@ -8340,6 +8340,23 @@
       "replacement": "/^[\\p{L}\\p{N}][\\p{L}\\p{N}-]*/u",
       "category": "equivalent",
       "reason": "A value reaches the switch only after it matched the message-part pattern, which admits lowercase letters, digits and single hyphens from its first character to its last; every such value matches this pattern with or without the anchor."
+    },
+    {
+      "file": "packages/runtime/src/observability.ts",
+      "mutator": "ConditionalExpression",
+      "original": "value === undefined",
+      "replacement": "false",
+      "count": 2,
+      "category": "equivalent",
+      "reason": "In boundedInteger and in boundedDuration the next operand asks Number.isSafeInteger or Number.isFinite, which answer false for undefined, so undefined is still answered with undefined."
+    },
+    {
+      "file": "packages/runtime/src/observability.ts",
+      "mutator": "ConditionalExpression",
+      "original": "sink === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With no sink the call to emit throws inside the try whose catch swallows it, and the function returns nothing either way; no caller builds an emitter over no sink."
     }
   ]
 }
