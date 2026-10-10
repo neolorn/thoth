@@ -22,6 +22,7 @@ import { catalogKey } from './catalog-store-harness.js';
 import {
   LAZY,
   SHELL,
+  observed,
   participant,
   runtime,
   until,
@@ -126,6 +127,59 @@ describe('a progressive scope that cancellation did not reach', () => {
     release(catalogKey('lazy', 'ar-EG'));
     await settled();
 
+    expect(localization.snapshot()).toMatchObject({
+      primaryLocale: 'en-US',
+      loadedScopes: [SHELL],
+    });
+    localization.dispose();
+  });
+
+  it('is dropped, and nothing is thrown, when its catalog fails after a newer change committed', async () => {
+    let next: Promise<unknown> | undefined;
+    const hook: LocalizationCommitHook = {
+      apply: () => undefined,
+      committed: (snapshot) => {
+        if (snapshot.primaryLocale === 'ar-EG' && next === undefined) {
+          next = made.localization.changeLocale('en-US');
+        }
+      },
+    };
+    const watched = observed();
+    const made = runtime({
+      hold: [catalogKey('lazy', 'ar-EG')],
+      fail: { [catalogKey('lazy', 'ar-EG')]: 1 },
+      options: { commitHooks: [hook], observability: watched.emitter },
+    });
+    const { localization, release } = made;
+    const failed = (): boolean =>
+      watched
+        .phase('catalog')
+        .some(
+          ({ status, scopeId, targetLocale }) =>
+            status === 'failed' &&
+            scopeId === 'lazy' &&
+            targetLocale === 'ar-EG',
+        );
+    // Nothing awaits a progressive load, so a throw inside one surfaces here and nowhere else.
+    const unhandled: unknown[] = [];
+    const listener = (reason: unknown): void => void unhandled.push(reason);
+    process.on('unhandledRejection', listener);
+    await localization.initialize();
+
+    try {
+      await localization.changeLocale('ar-EG', {
+        mode: 'progressive',
+        progressiveScopes: [LAZY],
+      });
+      await next;
+      release(catalogKey('lazy', 'ar-EG'));
+      await expect.poll(failed).toBe(true);
+      await settled();
+    } finally {
+      process.off('unhandledRejection', listener);
+    }
+
+    expect(unhandled).toStrictEqual([]);
     expect(localization.snapshot()).toMatchObject({
       primaryLocale: 'en-US',
       loadedScopes: [SHELL],
