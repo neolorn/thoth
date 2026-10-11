@@ -878,7 +878,7 @@ process.stdout.write(
 const SAMPLE_SECONDS = 15;
 const overBudget = [];
 const lowered = new Set();
-let liftedAtLastReading = false;
+let liftedBefore = false;
 let raisedWhileLifted = 0;
 let peakMeasured = 0;
 let samples = 0;
@@ -910,8 +910,8 @@ const sampler = (async () => {
     // lift, or raised during one, was moved by the gate and not by the process itself, so the
     // record of lowered processes starts again on either side of it.
     const lifted = priorityLifted();
-    if (lifted !== liftedAtLastReading) lowered.clear();
-    liftedAtLastReading = lifted;
+    if (lifted !== liftedBefore) lowered.clear();
+    liftedBefore = lifted;
     if (lifted) {
       raisedWhileLifted += liftUp(
         tree,
