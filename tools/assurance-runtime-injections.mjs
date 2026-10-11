@@ -1600,7 +1600,7 @@ export const injections = Object.freeze([
       'Once a server-rendered page has hydrated, the stores are read again, and a stored choice the declared order puts first moves the page.',
     source: 'packages/runtime/src/angular.ts',
     find: '          void localization.ɵrestoreAfterHydration({',
-    replace: '          void Promise.resolve({',
+    replace: '          void localization; void Promise.resolve({',
   },
   {
     id: 'test-environment-keeps-local-storage',
