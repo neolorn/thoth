@@ -1749,7 +1749,9 @@ export const injections = Object.freeze([
     find: '    if (level !== undefined) {',
     replace: "    if (level !== undefined && (level as string) === '') {",
     suite: 'verify:consumer',
-    caughtWhen: /The build prerendered route:lazy, which it has to refuse/u,
+    // The consumer's own specs run before its build, and one of them asks the same refusal.
+    caughtWhen:
+      /The build prerendered route:lazy, which it has to refuse|FAIL .*a page rendered ahead of a request > is refused for a route kept per visitor/u,
   },
   {
     id: 'primary-entry-imports-node',
@@ -1854,7 +1856,9 @@ export const injections = Object.freeze([
     find: "    if (resolution.variesBy === 'locale-preference') {",
     replace: "    if ((resolution.variesBy as string) === 'none of them') {",
     suite: 'verify:locale-neutral-consumer',
-    caughtWhen: /The build prerendered route:second, which it has to refuse/u,
+    // The consumer's own specs run before its build, and one of them asks the same refusal.
+    caughtWhen:
+      /The build prerendered route:second, which it has to refuse|FAIL .*a page rendered ahead of a request > is refused at an address more than one locale spells/u,
   },
   {
     id: 'announcement-written-through-runtime-code-generation',
