@@ -1634,7 +1634,7 @@ export const injections = Object.freeze([
     source: 'packages/runtime/src/participant-runtime.ts',
     find: "      .map(({ value }) => value);\n    const unavailable = prepared.find(\n      ({ report }) => report.status === 'unavailable',\n    );",
     replace:
-      "      .map(({ value }) =>\n        value.report.status === 'unavailable' &&\n        value.previousState.current !== undefined\n          ? ({ ...value, report: value.previousState.current.report } as typeof value)\n          : value,\n      );\n    const unavailable = prepared.find(\n      ({ report }) => report.status === 'unavailable',\n    );",
+      "      .map(({ value }) =>\n        value.report.status === 'unavailable' &&\n        value.adapter.stateValue().current !== undefined\n          ? ({ ...value, report: value.adapter.stateValue().current?.report } as typeof value)\n          : value,\n      );\n    const unavailable = prepared.find(\n      ({ report }) => report.status === 'unavailable',\n    );",
   },
   {
     id: 'undeclared-outcome-document-unreported',
