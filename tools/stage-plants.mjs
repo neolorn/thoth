@@ -1006,8 +1006,8 @@ export const stageSelfTests = Object.freeze({
         // The cohort that met an unavailable participant keeps every one that prepared for it.
         plant: plantMatching(
           runtimeBundle,
-          /if \(!item\.finalized\)( \{\s*invokeDiscard\(item\.adapter, item\.context, item\.report\);)/u,
-          'if (false)$1',
+          /this\.discard\(item\.adapter, item\.context, item\.report\);(\s*this\.cleanup\(item\);\s*\}\s*throw refusal\.reason;)/u,
+          'void item.report;$1',
         ),
         measures: [
           'a switch prepares each participant once and discards every one a refused switch prepared',
