@@ -152,8 +152,9 @@ export function processorsBetween(earlier, later, seconds) {
  * it, but only for a caller with a privilege an ordinary account does not have
  * (`JOBOBJECT_BASIC_LIMIT_INFORMATION`, `PriorityClass`), so each one is lowered when a reading
  * finds it. A process that cannot be lowered, or that is found above again after it was, is not
- * held by that, and is a finding. `lowered` carries what was lowered from one reading to the next,
- * keyed by start time as well as id, since an id can be given to a new process.
+ * held by that, and is a finding. One that ended between the reading and the call is not.
+ * `lowered` carries what was lowered from one reading to the next, keyed by start time as well as
+ * id, since an id can be given to a new process.
  */
 export function holdDown(above, priority, lowered, set) {
   const findings = [];
@@ -169,6 +170,8 @@ export function holdDown(above, priority, lowered, set) {
       set(entry.pid, priority);
       lowered.add(key);
     } catch (error) {
+      // Ended between the reading and the call, so nothing is left running above the stage.
+      if (error.info?.code === 'ESRCH') continue;
       findings.push(
         `process ${entry.pid} under the gate runs at priority ${entry.priority}, above its stage's, and could not be lowered: ${error.message}`,
       );

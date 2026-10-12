@@ -25,6 +25,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, rmSync, writeFileSync } from 'node:fs';
+import { setPriority } from 'node:os';
 import { resolve } from 'node:path';
 
 import {
@@ -405,6 +406,14 @@ assert.match(
   holdDown([{ ...raised, pid: 66 }], 10, lowered, lower)[0] ?? '',
   /could not be lowered: access denied/u,
   'A process the gate could not lower was not reported.',
+);
+
+// The platform's own call on a process that has ended, so the error read is the one it throws.
+const ended = spawnSync(process.execPath, ['-e', '']).pid;
+assert.deepEqual(
+  holdDown([{ ...raised, pid: ended }], 10, lowered, setPriority),
+  [],
+  'A process that ended before the gate could lower it was reported as not held.',
 );
 
 assert.ok(
