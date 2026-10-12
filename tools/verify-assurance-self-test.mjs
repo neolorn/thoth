@@ -144,6 +144,20 @@ const reports = [
     ],
   },
   {
+    name: 'stopped-before-the-failure-was-reported',
+    status: 1,
+    expect: 'unmeasured',
+    interrupted: true,
+    testResults: [
+      {
+        name: 'a.spec.ts',
+        status: 'passed',
+        message: '',
+        assertionResults: [test('passed'), test('pending')],
+      },
+    ],
+  },
+  {
     name: 'failed-test',
     status: 1,
     expect: 'caught',
@@ -170,14 +184,19 @@ const reports = [
     ],
   },
 ];
-for (const { name, status, expect, testResults } of reports) {
-  const { verdict } = verdictOf({
+for (const { name, status, expect, testResults, ...rest } of reports) {
+  const { verdict, interrupted = false } = verdictOf({
     reportPath: plantReport(name, testResults),
     status,
   });
   process.stdout.write(`suite report ${name}: ${verdict}\n`);
   if (verdict !== expect) {
     wrong.push(`the suite report ${name} read ${verdict}, not ${expect}`);
+  }
+  if (interrupted !== (rest.interrupted ?? false)) {
+    wrong.push(
+      `the suite report ${name} read ${interrupted ? 'interrupted' : 'not interrupted'}`,
+    );
   }
 }
 rmSync(reportDirectory, { force: true, recursive: true });

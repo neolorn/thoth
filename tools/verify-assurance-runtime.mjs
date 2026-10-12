@@ -149,23 +149,36 @@ function suiteVerdict(suite, caughtWhen) {
       'node_modules/.vite/assurance.vitest.config.mts',
     );
     mkdirSync(dirname(runnerConfigPath), { recursive: true });
-    writeFileSync(
-      runnerConfigPath,
-      "import base from '../../vitest.config.mts';\n\n" +
-        'export default { ...base, test: { ...base.test, bail: 1 } };\n',
-    );
-    const result = run(
-      'pnpm',
-      [
-        'test',
-        '--reporters=json',
-        `--output-file=${reportPath}`,
-        `--runner-config=${runnerConfigPath}`,
-      ],
-      consumerRoot,
-      consumerSpecsEnvironment(),
-    );
-    const verdict = verdictOf({ reportPath, status: result.status });
+    const measured = (bail) => {
+      rmSync(reportPath, { force: true });
+      writeFileSync(
+        runnerConfigPath,
+        "import base from '../../vitest.config.mts';\n\n" +
+          `export default { ...base, test: { ...base.test, bail: ${bail} } };\n`,
+      );
+      const result = run(
+        'pnpm',
+        [
+          'test',
+          '--reporters=json',
+          `--output-file=${reportPath}`,
+          `--runner-config=${runnerConfigPath}`,
+        ],
+        consumerRoot,
+        consumerSpecsEnvironment(),
+      );
+      return {
+        result,
+        verdict: verdictOf({ reportPath, status: result.status }),
+      };
+    };
+    const stopped = measured(1);
+    // Stopping at the first failure can stop the worker before it has reported that failure, and
+    // the report then holds unfinished tests and no failed one. Run to its end, the suite reports
+    // every test it ran, so that run is measured again without the stop.
+    const { result, verdict } = stopped.verdict.interrupted
+      ? measured(0)
+      : stopped;
     if (verdict.verdict !== 'unmeasured') return verdict;
     // The report says no test failed and the exit status says the run did. Only how the process
     // ended, what the report counted and what the suite printed say which of the two to believe.

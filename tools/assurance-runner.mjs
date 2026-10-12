@@ -18,7 +18,8 @@ import { resolve } from 'node:path';
  * `caught` only when a test ran and failed. A run whose report is missing, which is what a build
  * that did not compile leaves, and a file that failed without running a test, which is what a
  * module that did not load leaves, both exit non-zero exactly as a catch does, and are
- * `unmeasured`.
+ * `unmeasured`. So is a run stopped with tests unfinished and no failure reported, which is marked
+ * `interrupted` so that a caller that stopped the run itself can run it to its end.
  */
 export function verdictOf({ reportPath, status, testFile, label }) {
   const report = existsSync(reportPath)
@@ -51,6 +52,17 @@ export function verdictOf({ reportPath, status, testFile, label }) {
   }
   if (status === 0 && tests.length > 0) return { verdict: 'passed' };
   const message = files.find(({ message: text }) => text)?.message;
+  // Vitest reports a test it has no result for as `pending`. A run stopped at its first failure
+  // tells the worker to stop from inside the failing test, and the result of that test is sent on
+  // a timer: a worker stopped before the timer fires leaves the failure out of the report.
+  const unfinished = tests.filter(({ status: state }) => state === 'pending');
+  if (unfinished.length > 0) {
+    return {
+      verdict: 'unmeasured',
+      interrupted: true,
+      why: `${subject} was stopped with ${unfinished.length} test(s) unfinished and none reported as failed (exit ${status ?? 'null'}).`,
+    };
+  }
   return {
     verdict: 'unmeasured',
     why: `${subject} ran no test to a failure: ${message || `exit ${status ?? 'null'}`}`,
