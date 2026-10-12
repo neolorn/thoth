@@ -19,7 +19,13 @@
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -159,7 +165,36 @@ function suiteVerdict(suite, caughtWhen) {
       consumerRoot,
       consumerSpecsEnvironment(),
     );
-    return verdictOf({ reportPath, status: result.status });
+    const verdict = verdictOf({ reportPath, status: result.status });
+    if (verdict.verdict !== 'unmeasured') return verdict;
+    // The report says no test failed and the exit status says the run did. Only how the process
+    // ended, what the report counted and what the suite printed say which of the two to believe.
+    const tail = `${result.stdout ?? ''}${result.stderr ?? ''}`
+      .trimEnd()
+      .split('\n')
+      .slice(-40)
+      .join('\n');
+    const counted = existsSync(reportPath)
+      ? (({ testResults = [], ...totals }) =>
+          `${JSON.stringify(totals)}\n` +
+          testResults
+            .filter(({ status }) => status !== 'passed')
+            .map(
+              ({ name, status, message }) =>
+                `  ${status} ${name}${message ? `: ${message}` : ''}`,
+            )
+            .slice(0, 20)
+            .join('\n'))(JSON.parse(readFileSync(reportPath, 'utf8')))
+      : '(no report)';
+    return {
+      ...verdict,
+      why:
+        `${verdict.why}` +
+        `${result.signal === null || result.signal === undefined ? '' : `, killed by ${result.signal}`}` +
+        `${result.error === undefined ? '' : `, ${String(result.error)}`}\n` +
+        `--- what the report counted ---\n${counted}\n` +
+        `--- the suite's last 40 lines ---\n${tail}`,
+    };
   }
   if (suite !== 'browser') {
     const staged = run('pnpm', ['run', suite], workspaceRoot);
