@@ -1,4 +1,8 @@
-import { requireArgument, type ArgumentShape } from './call-arguments.js';
+import {
+  EXTENSION_REGISTRY_ARGUMENT,
+  requireArgument,
+  type ArgumentShape,
+} from './call-arguments.js';
 import { admitCatalogs, type Catalog } from './catalog.js';
 import {
   digestCanonicalJson,
@@ -13,9 +17,9 @@ import {
   toolkitSuccess,
   type ToolkitResult,
 } from './diagnostics.js';
+import type { ExtensionRegistry } from './extensions.js';
 import {
   analyzeCatalogSet,
-  type CatalogSetAnalysisRequest,
   type SemanticGraph,
   type SemanticMessage,
 } from './semantic-model.js';
@@ -43,6 +47,13 @@ export interface CatalogDiffSnapshot {
   readonly configuration: ProjectConfiguration;
   /** The catalogs as they stood. */
   readonly catalogs: readonly Catalog[];
+  /**
+   * The extension registry in force, when the catalogs name anything from one.
+   *
+   * A segment type, a slot kind or a message function is known only through the registry, so a
+   * snapshot whose catalogs use one is refused without it, as a compilation is.
+   */
+  readonly extensions?: ExtensionRegistry;
 }
 
 /**
@@ -169,6 +180,7 @@ function addEntry(
  */
 const SNAPSHOT_ARGUMENT: ArgumentShape = {
   required: { configuration: 'record', catalogs: ['record'] },
+  optional: { extensions: EXTENSION_REGISTRY_ARGUMENT },
 };
 
 /** One snapshot with its configuration and its catalogs judged as their parsers judge them. */
@@ -177,7 +189,7 @@ function admitSnapshot(
 ): ToolkitResult<CatalogDiffSnapshot> {
   const configuration = admitConfiguration(snapshot.configuration);
   const catalogs = admitCatalogs(snapshot.catalogs, {
-    extensions: (snapshot as CatalogSetAnalysisRequest).extensions,
+    extensions: snapshot.extensions,
   });
   if (!configuration.ok || !catalogs.ok) {
     return toolkitFailure([
