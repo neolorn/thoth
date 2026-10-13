@@ -1105,14 +1105,6 @@ export const injections = Object.freeze([
       "  if (localization.snapshot() === undefined) {\n    throw new Error('The localization runtime has not started.');\n  }\n  await new Promise<void>((settle) => {",
   },
   {
-    id: 'server-render-answers-with-recovery',
-    invariant:
-      'A server bootstrap whose initial snapshot cannot be built rejects instead of rendering the recovery.',
-    source: 'packages/runtime/src/localization.ts',
-    find: '      if (server || localization.recovery() === undefined) throw error;',
-    replace: '      if (localization.recovery() === undefined) throw error;',
-  },
-  {
     id: 'overlay-adapter-built-with-the-configuration',
     invariant:
       'The overlay adapter is built inside the injector of the context that owns it, not when the configuration is declared.',

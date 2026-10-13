@@ -1482,7 +1482,7 @@
       "spec": "06-runtime-and-angular.spec.md",
       "section": "5. Lifecycle",
       "statement": "A server render or prerender whose initial snapshot cannot be built MUST fail rather than render the recovery payload, so the deployment answers with its own error and a build stops.",
-      "checks": ["assurance-runtime:server-render-answers-with-recovery"]
+      "checks": ["assurance:server-render-answers-with-recovery"]
     },
     {
       "spec": "06-runtime-and-angular.spec.md",

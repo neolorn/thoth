@@ -9,7 +9,16 @@ import {
   type LocalizationSetup,
 } from '@neolorn/equator/core';
 
-import { compileSet, loadersFor, scope } from './catalog-store-harness.js';
+import {
+  catalogKey,
+  compileSet,
+  loadersFor,
+  scope,
+} from './catalog-store-harness.js';
+import {
+  TITLE,
+  runtime as transactionRuntime,
+} from './transaction-runtime-harness.js';
 
 /**
  * What the application initializer waits on, where the injector is destroyed before the context
@@ -43,6 +52,24 @@ function runtime(loading = true) {
     } as unknown as LocalizationSetup,
     bootstrapScopes: [scope('shell')],
   });
+}
+
+/** A context whose startup catalog fails to load, with a recovery message it can show. */
+function recovering() {
+  return transactionRuntime({
+    fail: { [catalogKey('shell', 'en-US')]: 1 },
+    setup: {
+      recoveryPayload: [
+        {
+          identity: TITLE.identity,
+          locale: 'en-US',
+          sourceFingerprint: 'recovery-fixture',
+          body: { kind: 'pattern', declarations: [], pattern: ['Try again'] },
+        },
+      ],
+    },
+    options: { recoveryMessageIdentity: TITLE.identity },
+  }).localization;
 }
 
 /** Rejections nothing handled, as the process reports them. */
@@ -120,6 +147,40 @@ describe('the initialization an application bootstrap waits on', () => {
     });
 
     await expect(waited).rejects.toBeInstanceOf(LocalizationError);
+    localization.dispose();
+  });
+
+  it('settles in a browser where the failed start has a recovery to show', async () => {
+    const localization = recovering();
+
+    await expect(
+      initializedForBootstrap(localization, {
+        server: false,
+        abandoned: () => false,
+        initialized: () => undefined,
+      }),
+    ).resolves.toBeUndefined();
+    expect(localization.recovery()).toBeDefined();
+    localization.dispose();
+  });
+
+  it('rejects on a server though the failed start has a recovery to show', async () => {
+    const localization = recovering();
+    let ran = 0;
+    const waited = initializedForBootstrap(localization, {
+      server: true,
+      abandoned: () => false,
+      initialized: () => {
+        ran += 1;
+      },
+    });
+
+    await expect(waited).rejects.toMatchObject({
+      diagnostic: { code: 'catalog-load-failed' },
+    });
+    // The recovery is there to show, and a server render does not answer with it.
+    expect(localization.recovery()).toBeDefined();
+    expect(ran).toBe(0);
     localization.dispose();
   });
 

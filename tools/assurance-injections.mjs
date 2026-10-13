@@ -1239,6 +1239,16 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/coordinated-progressive-scopes.test.ts',
   },
   {
+    id: 'server-render-answers-with-recovery',
+    invariant:
+      'A server bootstrap whose initial snapshot cannot be built rejects instead of rendering the recovery.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '      if (server || localization.recovery() === undefined) throw error;',
+    replace: '      if (localization.recovery() === undefined) throw error;',
+    caughtBy:
+      'packages/runtime/test/bootstrap-initialization-abandoned.test.ts',
+  },
+  {
     id: 'page-put-back-in-the-locale-from-before-a-change-in-place',
     invariant:
       'The page a navigation left is put back in the locale a change made in place has committed since the navigation committed its own.',
