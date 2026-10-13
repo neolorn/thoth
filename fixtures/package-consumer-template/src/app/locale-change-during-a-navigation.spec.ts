@@ -218,10 +218,10 @@ async function navigationCommitted(): Promise<Committed> {
   answer(true);
   // The navigation's own commit is the one that carries the destination's record.
   for (let round = 0; round < 20; round += 1) {
-    if (localization.snapshot().route?.canonicalPath === DESTINATION) break;
+    if (localization.snapshot()?.route?.canonicalPath === DESTINATION) break;
     await settle();
   }
-  expect(localization.snapshot().route?.canonicalPath).toBe(DESTINATION);
+  expect(localization.snapshot()?.route?.canonicalPath).toBe(DESTINATION);
   expect(TestBed.inject(Router).getCurrentNavigation()).not.toBeNull();
   expect(platform.pathname).toBe(ARRIVAL);
   return { localization, platform, landed, load, settle };
@@ -258,7 +258,7 @@ describe('a locale change in place while a navigation to another page is in flig
     expect(await landed).toBeInstanceOf(NavigationCancel);
     await settle();
 
-    expect(localization.snapshot().primaryLocale).toBe('en-US');
+    expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     expect(platform.pathname).toBe(ARRIVAL);
     expect(document.documentElement.lang).toBe('en-US');
   });
@@ -274,7 +274,7 @@ describe('a locale change in place while a navigation to another page is in flig
     expect(await landed).toBeInstanceOf(NavigationEnd);
     await settle();
 
-    expect(localization.snapshot().primaryLocale).toBe('en-US');
+    expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     expect(platform.pathname).toBe(DESTINATION);
   });
 
@@ -287,7 +287,7 @@ describe('a locale change in place while a navigation to another page is in flig
       status: 'committed',
       targetLocale: 'en-Arab-XB',
     });
-    expect(localization.snapshot().primaryLocale).toBe('en-Arab-XB');
+    expect(localization.snapshot()?.primaryLocale).toBe('en-Arab-XB');
 
     answer(false);
     await landed;
@@ -317,7 +317,7 @@ describe('a locale change in place after a navigation has committed its locale a
     expect(await landed).toBeInstanceOf(NavigationEnd);
     await settle();
 
-    expect(localization.snapshot().primaryLocale).toBe('en-US');
+    expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     expect(platform.pathname).toBe(DESTINATION);
     expect(document.documentElement.lang).toBe('en-US');
   });
@@ -338,8 +338,8 @@ describe('a locale change in place after a navigation has committed its locale a
     await settle();
 
     const snapshot = localization.snapshot();
-    expect(snapshot.primaryLocale).toBe('en-Arab-XB');
-    expect(snapshot.route?.canonicalPath).toBe('/en-arab-xb/dossiers/other');
+    expect(snapshot?.primaryLocale).toBe('en-Arab-XB');
+    expect(snapshot?.route?.canonicalPath).toBe('/en-arab-xb/dossiers/other');
     expect(platform.pathname).toBe('/en-arab-xb/dossiers/other');
     expect(document.documentElement.lang).toBe('en-Arab-XB');
   });
