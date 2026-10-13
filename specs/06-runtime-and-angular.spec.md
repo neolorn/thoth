@@ -204,7 +204,9 @@ had already reported.
 A context built outside the injector MAY be given a request context, a value of the consumer
 application's own. A release MUST hand that value, unread and unchanged, to every participant of
 that context and of a child context made from it, and MUST NOT hand a participant a request
-context the consumer application did not give.
+context the consumer application did not give. A participant receives it beside what the
+transition hands it: the value describes the request the context serves and says nothing about the
+transition, so it is the same value for every transition of that context.
 
 A participant keeps its payload in the consumer application's own services, stores, signals, and
 components. It reports readiness, the representation it actually supplies, and bounded safe
