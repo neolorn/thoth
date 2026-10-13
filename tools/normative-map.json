@@ -1884,6 +1884,7 @@
       "statement": "A release MUST hold a policy to the tables a constructor writes wherever it reads one, and MUST refuse one that departs from them as a configuration error: a locale that is not a canonical tag, a default locale the policy does not name, a prefix, alias, or locale-neutral root that is not a path segment or repeats another, an origin that is not a normalized HTTP origin, a prefix or origin table that does not read each address back to the locale it was written for, or a member that belongs to another kind of policy.",
       "checks": [
         "assurance:written-out-policy-table-read-unchecked",
+        "assurance:roots-list-empty-slot-read-as-text",
         "assurance:written-out-policy-member-of-another-kind-read"
       ]
     },

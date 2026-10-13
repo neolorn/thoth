@@ -3114,6 +3114,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/written-out-locale-policies.test.ts',
   },
   {
+    id: 'roots-list-empty-slot-read-as-text',
+    invariant:
+      'An empty slot in a list of locale-neutral roots is refused, and is not read as the path segment its spelling would be.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: "    typeof value === 'string' &&\n    /^[a-z0-9](?:[a-z0-9-]",
+    replace: '    /^[a-z0-9](?:[a-z0-9-]',
+    caughtBy: 'packages/runtime/test/neutral-roots-empty-slot.test.ts',
+  },
+  {
     id: 'written-out-policy-member-of-another-kind-read',
     invariant:
       'A policy written out with a member that belongs to another kind of policy is refused wherever the policy is read.',

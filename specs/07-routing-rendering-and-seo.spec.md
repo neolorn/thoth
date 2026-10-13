@@ -114,6 +114,8 @@ prefix as a locale it has no address for, or sends an address to itself, and a m
 kind decides nothing where the application that wrote it expects it to. A prefix, an alias, and a
 locale-neutral root are each one to 63 lowercase ASCII letters, digits, and hyphens that begin and
 end with a letter or a digit, and any such text is accepted, a word such as `undefined` included.
+An empty slot in a list of roots is not text, so a constructor and a reading of a written-out
+policy both refuse it as a root that is not a path segment.
 
 The policy states intent and the build decides which locales exist. A release MUST intersect
 the declared policy with the generated configuration once, into a narrowed policy, and MUST resolve,

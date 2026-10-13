@@ -1170,8 +1170,18 @@ function canonicalLocale(value: string): string {
   );
 }
 
-function validPrefix(value: string): boolean {
-  return /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/u.test(value);
+/**
+ * Whether a value is text that can stand as one path segment.
+ *
+ * Asked of a value of no known type. A regular expression reads a value that is not text by its
+ * spelling, and the spelling of an empty slot in a list is the word `undefined`, which is a path
+ * segment.
+ */
+function validPrefix(value: unknown): boolean {
+  return (
+    typeof value === 'string' &&
+    /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/u.test(value)
+  );
 }
 
 /**
@@ -1395,7 +1405,8 @@ export function createPathPrefixLocalePolicy(
   if (locales[defaultLocale] === undefined) {
     routeError('The route default locale must be supported.');
   }
-  const neutral = (options.localeNeutralRoots ?? []).map((value) => {
+  // Every slot of the list is read, an empty one included, which `map` passes over.
+  const neutral = Array.from(options.localeNeutralRoots ?? [], (value) => {
     if (!validPrefix(value) || occupied.has(value)) {
       return routeError(
         `Locale-neutral root ${JSON.stringify(value)} is invalid or colliding.`,
@@ -1612,7 +1623,8 @@ function assertLocalePolicy(policy: LocaleUrlPolicy): void {
   if (
     !Array.isArray(roots) ||
     new Set(roots).size !== roots.length ||
-    !roots.every((root) => typeof root === 'string' && validPrefix(root))
+    // A copy, because `every` passes over an empty slot and a copy has none.
+    !Array.from(roots as readonly unknown[]).every((root) => validPrefix(root))
   ) {
     return refuse(
       `lists ${JSON.stringify(roots)} as its locale-neutral roots, which are not distinct path segments`,
