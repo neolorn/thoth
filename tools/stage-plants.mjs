@@ -567,6 +567,15 @@ export const stageSelfTests = Object.freeze({
         refusal: /The checked-in Equator time zone identity table is stale/u,
       },
       {
+        id: 'fixed-offset-zone-not-the-pinned-one',
+        plant: plantText(
+          'standards/data/tzdata-2026e/etcetera',
+          'Etc/GMT+5',
+          'Etc/GMT+15',
+        ),
+        refusal: /The checked-in Equator time zone identity table is stale/u,
+      },
+      {
         id: 'replacement-name-primary-inside-its-waiting-period',
         plant: plantText(
           'standards/sources.lock.json',
