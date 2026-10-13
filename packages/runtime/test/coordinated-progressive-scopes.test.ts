@@ -207,6 +207,54 @@ describe('a locale change that names a progressive scope', () => {
     }
   });
 
+  it('takes a scope the snapshot requires as progressive again, in progressive mode', async () => {
+    // The coordinated change leaves the scope required by the snapshot it commits.
+    const { localization } = await change('coordinated', 'en-US');
+    expect(
+      localization.snapshot()?.requiredScopes.map((entry) => entry.scopeId),
+    ).toStrictEqual(['shell', 'lazy']);
+
+    const result = await localization.changeLocale('ar-EG', {
+      mode: 'progressive',
+      progressiveScopes: [LAZY],
+    });
+
+    expect(result.status).toBe('committed');
+    expect(
+      localization.snapshot()?.requiredScopes.map((entry) => entry.scopeId),
+      'the scopes the progressive change waited for',
+    ).toStrictEqual(['shell']);
+    expect(localization.scopeReadiness(LAZY)().status).not.toBe('ready');
+    await expect
+      .poll(() => localization.scopeReadiness(LAZY)().status)
+      .toBe('ready');
+    expect(localization.text(HEADING)).toBe('عنوان مؤجل');
+  });
+
+  it('waits for a scope a request is still waiting on, though the change names it as progressive', async () => {
+    const set = compileSet();
+    const localization = createLocalizationRuntime({
+      setup: {
+        configuration: set.configuration,
+        catalogSet: set.descriptor,
+        catalogLoaders: loadersFor(set),
+      } as unknown as LocalizationSetup,
+      bootstrapScopes: [SHELL],
+    });
+    await localization.initialize();
+    const asked = localization.ensureScope(LAZY);
+
+    const result = await localization.changeLocale('ar-EG', {
+      mode: 'progressive',
+      progressiveScopes: [LAZY],
+    });
+    await asked;
+
+    expect(result.status).toBe('committed');
+    expect(localization.scopeReadiness(LAZY)().status).toBe('ready');
+    expect(localization.text(HEADING)).toBe('عنوان مؤجل');
+  });
+
   it('commits before the scope arrives, in progressive mode', async () => {
     const { localization, result } = await change('progressive', 'ar-EG');
 

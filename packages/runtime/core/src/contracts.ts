@@ -1400,7 +1400,10 @@ export interface LocaleChangeOptions {
    * Scopes to load alongside a `progressive` change rather than ahead of it.
    *
    * A `coordinated` change loads them before it commits, as it loads `requiredScopes`, and the
-   * snapshot it commits lists them as required.
+   * snapshot it commits lists them as required. A scope the page already requires may be named
+   * here: a `progressive` change that names no `requiredScopes` then commits without waiting for
+   * it. Only a scope the same call also names in `requiredScopes` is refused, with
+   * `invalid-configuration`.
    */
   readonly progressiveScopes?: readonly LocalizationScope[];
   /**

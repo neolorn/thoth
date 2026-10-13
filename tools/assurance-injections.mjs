@@ -1201,6 +1201,34 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/coordinated-progressive-scopes.test.ts',
   },
   {
+    id: 'scope-named-as-both-accepted',
+    invariant:
+      'A locale change that names one scope as both required and progressive is refused.',
+    source: 'packages/runtime/src/localization.ts',
+    find: "      this.normalizeScopes(named, 'requiredScopes').map(scopeIdentity),",
+    replace:
+      "      this.normalizeScopes([], 'requiredScopes').map(scopeIdentity),",
+    caughtBy: 'packages/runtime/test/coordinated-progressive-scopes.test.ts',
+  },
+  {
+    id: 'standing-scope-refused-as-progressive',
+    invariant:
+      'A locale change may name as progressive a scope that is already required.',
+    source: 'packages/runtime/src/localization.ts',
+    find: "      this.normalizeScopes(named, 'requiredScopes').map(scopeIdentity),",
+    replace: '      carried.map(scopeIdentity),',
+    caughtBy: 'packages/runtime/test/coordinated-progressive-scopes.test.ts',
+  },
+  {
+    id: 'standing-scope-held-by-a-progressive-change',
+    invariant:
+      'A progressive locale change does not wait for a scope it names as progressive, though the snapshot requires it.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '                (scope) => !progressiveIdentities.has(scopeIdentity(scope)),',
+    replace: '                () => true,',
+    caughtBy: 'packages/runtime/test/coordinated-progressive-scopes.test.ts',
+  },
+  {
     id: 'social-locale-written-as-a-language-tag',
     invariant: 'The social locale is written in the language_TERRITORY form.',
     source: 'packages/runtime/core/src/locale-profile.ts',

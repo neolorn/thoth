@@ -2428,26 +2428,32 @@ class LocalizationInternal {
     // A change that names no required scope adds none to the ones already required, whether it
     // leaves the list out or gives an empty one.
     const named = options.requiredScopes ?? [];
-    const carried = this.normalizeScopes(
-      this.withOutstandingRequiredScopes(
-        Array.isArray(named) && named.length === 0
-          ? (this.active?.publicSnapshot.requiredScopes ?? this.bootstrapScopes)
-          : named,
-      ),
-      'requiredScopes',
-    );
     const progressive = this.normalizeScopes(
       options.progressiveScopes ?? [],
       'progressiveScopes',
     );
-    // A coordinated change makes its progressive scopes required, and the next change carries
-    // them forward as such. Naming the same scope as progressive again is then the same request
-    // and not a contradiction, so there only the scopes this call states as required are compared.
+    const progressiveIdentities = new Set(progressive.map(scopeIdentity));
+    // A scope is required by the snapshot because an earlier change or a first render loaded it
+    // ahead, which the caller of this change did not choose and may not know. Naming it as
+    // progressive is therefore a request and not a contradiction: a progressive change leaves it
+    // out of what it waits for, and a coordinated one waits for it either way.
+    const standing =
+      this.active?.publicSnapshot.requiredScopes ?? this.bootstrapScopes;
+    const carried = this.normalizeScopes(
+      this.withOutstandingRequiredScopes(
+        Array.isArray(named) && named.length === 0
+          ? mode === 'progressive'
+            ? standing.filter(
+                (scope) => !progressiveIdentities.has(scopeIdentity(scope)),
+              )
+            : standing
+          : named,
+      ),
+      'requiredScopes',
+    );
+    // Only a scope this call itself states as required contradicts naming it as progressive.
     const statedRequired = new Set(
-      (mode === 'coordinated'
-        ? this.normalizeScopes(options.requiredScopes ?? [], 'requiredScopes')
-        : carried
-      ).map(scopeIdentity),
+      this.normalizeScopes(named, 'requiredScopes').map(scopeIdentity),
     );
     if (progressive.some((scope) => statedRequired.has(scopeIdentity(scope)))) {
       throw new LocalizationError(

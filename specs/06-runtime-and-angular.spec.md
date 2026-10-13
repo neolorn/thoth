@@ -166,6 +166,13 @@ A change that names no required scope, by leaving the list out or by giving an e
 the scopes already required: those of the committed snapshot, or the startup scopes when nothing is
 committed yet.
 
+A release MUST refuse a change that names one scope as both required and progressive with the
+`invalid-configuration` diagnostic, and MUST NOT start a transition for it. A scope the committed
+snapshot requires is not thereby named as required, and a release MUST NOT refuse a change that
+names such a scope as progressive. A progressive change that names no required scope MUST leave
+that scope out of the scopes it waits for and load it alongside, unless a scope request is still
+waiting for it. A coordinated change waits for it, as for any scope it names as progressive.
+
 In progressive mode a release MAY commit the primary locale and the ready scopes while
 registered regions finish independently, and MUST expose each region's transition identity,
 readiness, outcome, supplying locale, and direction. A release MUST NOT decide whether such a

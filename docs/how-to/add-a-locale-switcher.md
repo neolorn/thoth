@@ -91,9 +91,8 @@ await localization.changeLocale(choice.locale, {
 A scope is the `{ providerId, scopeId }` pair its generated module exports. The change commits with
 the other scopes, and `scopeReadiness(comments)` reports `loading`, then `ready` or `failed`, for
 the region to render from. `requiredScopes` in the same options names the scopes the change waits
-for. Leave it out and the scopes the page already requires stand. The call throws
-`invalid-configuration` for a scope named in both lists, and for a progressive scope the page
-already requires.
+for. Leave it out and the scopes the page already requires stand, apart from the ones you name as
+progressive. The call throws `invalid-configuration` for a scope named in both lists.
 
 ## Assert that the switch is atomic
 

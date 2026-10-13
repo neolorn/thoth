@@ -372,18 +372,19 @@ describe('a change to the committed locale', () => {
 });
 
 describe('the scopes of a locale change', () => {
-  it('refuses, in progressive mode, a progressive scope the committed snapshot requires', async () => {
+  it('takes, in progressive mode, a progressive scope the committed snapshot requires', async () => {
     const { localization } = await ready();
     await localization.changeLocale('en-US', { requiredScopes: [SHELL, LAZY] });
 
+    await expect(
+      localization.changeLocale('ar-EG', {
+        mode: 'progressive',
+        progressiveScopes: [LAZY],
+      }),
+    ).resolves.toMatchObject({ status: 'committed' });
     expect(
-      diagnosticOf(() =>
-        localization.changeLocale('ar-EG', {
-          mode: 'progressive',
-          progressiveScopes: [LAZY],
-        }),
-      ),
-    ).toMatchObject({ code: 'invalid-configuration' });
+      localization.snapshot()?.requiredScopes.map((scope) => scope.scopeId),
+    ).toStrictEqual(['shell']);
     localization.dispose();
   });
 
