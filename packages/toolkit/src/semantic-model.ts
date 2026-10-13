@@ -1669,30 +1669,6 @@ function parseFamilyTemplate(
   return { authored, parts: Object.freeze(parts) };
 }
 
-function familySegmentMatches(
-  value: string,
-  descriptor:
-    | Extract<ExtensionDescriptor, { readonly kind: 'identifier-segment' }>
-    | undefined,
-): boolean {
-  if (
-    !nativeMessagePartPattern.test(value) ||
-    value.normalize('NFC') !== value ||
-    value.length > (descriptor?.maximumLength ?? 128)
-  ) {
-    return false;
-  }
-  switch (descriptor?.syntax) {
-    case 'ascii-token':
-      return /^[A-Za-z][A-Za-z0-9-]*$/u.test(value);
-    case 'unicode-token':
-      return /^[\p{L}\p{N}][\p{L}\p{N}-]*$/u.test(value);
-    default:
-      // Lower-kebab, which the pattern above has already held the value to.
-      return true;
-  }
-}
-
 function familyMatch(
   messageId: string,
   parsed: ParsedFamilyTemplate,
@@ -1715,7 +1691,10 @@ function familyMatch(
       type === undefined
         ? undefined
         : extensionDescriptor(extensions, 'identifier-segment', type);
-    if (!familySegmentMatches(value, descriptor)) return undefined;
+    // The value is one part of a message identity, which a catalog holds to the lower-kebab part
+    // grammar, and each of the three segment syntaxes admits every such part. The length the
+    // type allows is all a segment type can still refuse it for.
+    if (value.length > (descriptor?.maximumLength ?? 128)) return undefined;
     segments[part.name] = value;
   }
   return frozenRecord(

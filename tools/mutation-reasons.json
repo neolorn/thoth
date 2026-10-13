@@ -6444,30 +6444,6 @@
     {
       "file": "packages/toolkit/src/semantic-model.ts",
       "mutator": "ConditionalExpression",
-      "original": "!nativeMessagePartPattern.test(value) ||\n    value.normalize('NFC') !== value",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Every value here is one part of a message key, and the catalog schema holds every part of a message key to [a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)* (schemas.ts line 391), which is nativeMessagePartPattern and is ASCII, which NFC leaves as it is. Both clauses are false for every key parseCatalog admits, so only the length clause decides."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "LogicalOperator",
-      "original": "!nativeMessagePartPattern.test(value) ||\n    value.normalize('NFC') !== value",
-      "replacement": "!nativeMessagePartPattern.test(value) && value.normalize('NFC') !== value",
-      "category": "equivalent",
-      "reason": "Every value here is one part of a message key, and the catalog schema holds every part of a message key to [a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)* (schemas.ts line 391), which is nativeMessagePartPattern and is ASCII, which NFC leaves as it is. Both operands are false for every key parseCatalog admits, so joining them with && gives the same false."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "ConditionalExpression",
-      "original": "value.normalize('NFC') !== value",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Every value here is one part of a message key, and the catalog schema holds every part of a message key to [a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)* (schemas.ts line 391), which is nativeMessagePartPattern and is ASCII. NFC leaves an ASCII string unchanged, so the clause is false for every key parseCatalog admits."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "ConditionalExpression",
       "original": "type === undefined",
       "replacement": "false",
       "category": "equivalent",
@@ -7852,46 +7828,6 @@
       "replacement": "{}",
       "category": "equivalent",
       "reason": "The catch is the last statement of the function and returns undefined, which is what falling off the end returns."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "ConditionalExpression",
-      "original": "case 'ascii-token':\n      return /^[A-Za-z][A-Za-z0-9-]*$/u.test(value);",
-      "replacement": "case 'ascii-token':",
-      "category": "equivalent",
-      "reason": "With the case emptied an ascii-token type falls through to the unicode-token pattern, and a value reaches the switch only after it matched the message-part pattern, whose every value both patterns admit."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "Regex",
-      "original": "/^[A-Za-z][A-Za-z0-9-]*$/u",
-      "replacement": "/[A-Za-z][A-Za-z0-9-]*$/u",
-      "category": "equivalent",
-      "reason": "A value reaches the switch only after it matched the message-part pattern, which admits lowercase letters, digits and single hyphens from its first character to its last; every such value matches this pattern with or without the anchor."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "Regex",
-      "original": "/^[A-Za-z][A-Za-z0-9-]*$/u",
-      "replacement": "/^[A-Za-z][A-Za-z0-9-]*/u",
-      "category": "equivalent",
-      "reason": "A value reaches the switch only after it matched the message-part pattern, which admits lowercase letters, digits and single hyphens from its first character to its last; every such value matches this pattern with or without the anchor."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "Regex",
-      "original": "/^[\\p{L}\\p{N}][\\p{L}\\p{N}-]*$/u",
-      "replacement": "/[\\p{L}\\p{N}][\\p{L}\\p{N}-]*$/u",
-      "category": "equivalent",
-      "reason": "A value reaches the switch only after it matched the message-part pattern, which admits lowercase letters, digits and single hyphens from its first character to its last; every such value matches this pattern with or without the anchor."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "Regex",
-      "original": "/^[\\p{L}\\p{N}][\\p{L}\\p{N}-]*$/u",
-      "replacement": "/^[\\p{L}\\p{N}][\\p{L}\\p{N}-]*/u",
-      "category": "equivalent",
-      "reason": "A value reaches the switch only after it matched the message-part pattern, which admits lowercase letters, digits and single hyphens from its first character to its last; every such value matches this pattern with or without the anchor."
     },
     {
       "file": "packages/runtime/src/observability.ts",
