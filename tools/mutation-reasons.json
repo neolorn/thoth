@@ -7752,34 +7752,10 @@
     {
       "file": "packages/toolkit/src/semantic-model.ts",
       "mutator": "StringLiteral",
-      "original": "`Catalog locale ${JSON.stringify(catalog.locale)} is not declared by the project.`",
-      "replacement": "``",
-      "category": "message-wording",
-      "reason": "The whole summary of the EQ1301 finding for a catalog whose locale the project does not declare; its code and its path are what the cases compare."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "StringLiteral",
-      "original": "`Scope ${exemplar.providerId}/${exemplar.scopeId} requires one source catalog for ${request.configuration.sourceLocale}.`",
-      "replacement": "``",
-      "category": "message-wording",
-      "reason": "The whole summary of the EQ1301 finding for a scope without a source catalog for the source locale; its code and its path are what the cases compare."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "StringLiteral",
       "original": "'Empty scopes do not produce Equator registries or generated output.'",
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The whole summary of the EQ1301 finding for a source catalog with no message; its code and its path are what the cases compare."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "StringLiteral",
-      "original": "`Catalog ${catalog.locale} must use role ${expectedRole}.`",
-      "replacement": "``",
-      "category": "message-wording",
-      "reason": "The whole summary of the EQ1301 finding for a catalog whose role contradicts its locale; its code and its path are what the cases compare."
     },
     {
       "file": "packages/runtime/src/formatting.ts",

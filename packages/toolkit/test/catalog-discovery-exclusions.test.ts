@@ -141,7 +141,7 @@ describe('two catalogs with one complete identity', () => {
         .map(({ code, summary }) => `${code} ${summary}`);
     });
     expect(answers[0]).toEqual([
-      'EQ1301 Duplicate catalog for @example/app/shell/en-US.',
+      'EQ1301 Scope @example/app/shell has two catalogs for locale "en-US": copy-0/en-US.yaml and copy-1/en-US.yaml.',
     ]);
     expect(answers[1]).toEqual(answers[0]);
   });

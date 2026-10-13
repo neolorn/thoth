@@ -3632,7 +3632,7 @@ export const injections = Object.freeze([
     invariant:
       'Two catalogs with one provider, scope and locale fail the compilation, whichever arrives first.',
     source: 'packages/toolkit/src/semantic-model.ts',
-    find: '      if (byLocale.has(catalog.locale)) {',
+    find: '      if (first !== undefined) {',
     replace: '      if (false as boolean) {',
     caughtBy: 'packages/toolkit/test/catalog-discovery-exclusions.test.ts',
   },

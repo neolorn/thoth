@@ -384,6 +384,24 @@ const standardFunctionNames = new Set([
 ]);
 const nativeMessagePartPattern = /^[a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*$/u;
 
+/** The file a catalog was read from, as a refusal of the whole catalog names it. */
+function catalogFile(catalog: Catalog): string {
+  return catalog.sourcePath ?? `a ${catalog.locale} catalog read from no file`;
+}
+
+/**
+ * A catalog named by its file and its scope.
+ *
+ * A refusal of a whole catalog has no line to point at and so carries no position, which leaves
+ * its sentence as the only place the file can be named.
+ */
+function catalogInScope(catalog: Catalog): string {
+  const scope = `scope ${catalog.providerId}/${catalog.scopeId}`;
+  return catalog.sourcePath === undefined
+    ? `Catalog of ${scope}, read from no file,`
+    : `Catalog ${catalog.sourcePath} of ${scope}`;
+}
+
 function semanticDiagnostic(
   catalog: Catalog,
   code: ToolkitDiagnosticCode,
@@ -1929,7 +1947,7 @@ export function analyzeCatalogSet(
         semanticDiagnostic(
           catalog,
           'EQ1301',
-          `Catalog locale ${JSON.stringify(catalog.locale)} is not declared by the project.`,
+          `${catalogInScope(catalog)} is for locale ${JSON.stringify(catalog.locale)}, which the project does not declare.`,
           [],
         ),
       );
@@ -1950,12 +1968,14 @@ export function analyzeCatalogSet(
     if (exemplar === undefined) continue;
     const byLocale = new Map<string, Catalog>();
     for (const catalog of catalogs) {
-      if (byLocale.has(catalog.locale)) {
+      const first = byLocale.get(catalog.locale);
+      if (first !== undefined) {
         diagnostics.push(
           semanticDiagnostic(
             catalog,
             'EQ1301',
-            `Duplicate catalog for ${catalog.providerId}/${catalog.scopeId}/${catalog.locale}.`,
+            // Both files in one order, so the sentence is the same whichever was read first.
+            `Scope ${catalog.providerId}/${catalog.scopeId} has two catalogs for locale ${JSON.stringify(catalog.locale)}: ${[catalogFile(first), catalogFile(catalog)].sort(compareCodeUnit).join(' and ')}.`,
             [],
           ),
         );
@@ -1970,7 +1990,7 @@ export function analyzeCatalogSet(
         semanticDiagnostic(
           exemplar,
           'EQ1301',
-          `Scope ${exemplar.providerId}/${exemplar.scopeId} requires one source catalog for ${request.configuration.sourceLocale}.`,
+          `Scope ${exemplar.providerId}/${exemplar.scopeId} requires one source catalog for ${request.configuration.sourceLocale}, and has ${catalogs.map(catalogFile).join(', ')}.`,
           [],
         ),
       );
@@ -1996,7 +2016,7 @@ export function analyzeCatalogSet(
           semanticDiagnostic(
             catalog,
             'EQ1301',
-            `Catalog ${catalog.locale} must use role ${expectedRole}.`,
+            `${catalogInScope(catalog)} is for locale ${JSON.stringify(catalog.locale)} and must use role ${expectedRole}.`,
             [],
           ),
         );
