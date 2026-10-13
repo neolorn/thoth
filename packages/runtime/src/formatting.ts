@@ -45,7 +45,12 @@ import {
   type TimeZoneValue,
   type ZonedDateTimeValue,
 } from '@neolorn/equator/core';
-import { FormatterCache, formattingLocale, isCalendarName } from './evaluator';
+import {
+  FormatterCache,
+  formattingLocale,
+  hostAnswer,
+  isCalendarName,
+} from './evaluator';
 import {
   PERSON_NAME_FORMALITIES,
   PERSON_NAME_LENGTHS,
@@ -1059,7 +1064,7 @@ function dateFormatter(
     );
   }
   const formatter = sharedFormatters.dateTime(formattingTag, options);
-  return formatter.resolvedOptions().calendar === calendar
+  return hostAnswer(formatter)['calendar'] === calendar
     ? formatter
     : unsupported(
         'The host does not count in the calendar asked for.',

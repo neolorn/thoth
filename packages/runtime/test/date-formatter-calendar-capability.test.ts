@@ -176,6 +176,47 @@ describe.each(FORMATTERS)('formatting %s', (_title, format) => {
   });
 });
 
+describe('a table of dates under one calendar', () => {
+  it('asks the host what the formatter counts in once, and not once for each date', () => {
+    const asked = vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions');
+    // A shape of options no other test builds, so the formatter is new to the cache.
+    const options = {
+      year: '2-digit',
+      month: 'narrow',
+      day: '2-digit',
+    } as const;
+    const context = under('buddhist');
+    const written = new Set<string>();
+
+    for (let day = 0; day < 10_000; day += 1) {
+      const result = formatPlainDate(
+        plainDate(2000 + (day % 400), 1 + (day % 12), 1 + (day % 28)),
+        context,
+        options,
+      );
+      if (result.ok) written.add(result.value.text);
+    }
+
+    expect(written.size).toBeGreaterThan(1_000);
+    expect(asked).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks again for another formatter', () => {
+    const asked = vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions');
+    const options = {
+      year: 'numeric',
+      month: 'narrow',
+      day: '2-digit',
+    } as const;
+
+    formatPlainDate(MARCH_14, under('buddhist'), options);
+    formatPlainDate(MARCH_14, under('hebrew'), options);
+    formatPlainDate(MARCH_14, under('hebrew'), options);
+
+    expect(asked).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe('formatting a plain time', () => {
   const TIME = { hour: 'numeric', minute: 'numeric' } as const;
 

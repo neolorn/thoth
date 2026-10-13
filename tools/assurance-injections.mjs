@@ -2082,7 +2082,7 @@ export const injections = Object.freeze([
     invariant:
       'A zoned date-time whose calendar the host resolves to another is reported as an unsupported formatting capability, and is not written in the calendar the host fell back to.',
     source: 'packages/runtime/src/formatting.ts',
-    find: '  return formatter.resolvedOptions().calendar === calendar',
+    find: "  return hostAnswer(formatter)['calendar'] === calendar",
     replace: '  return calendar === calendar',
     caughtBy: 'packages/runtime/test/zoned-date-time-host-capability.test.ts',
   },
@@ -2101,7 +2101,7 @@ export const injections = Object.freeze([
     invariant:
       'A calendar of the formatting context the host answers with another is reported by every date formatter as an unsupported formatting capability, and no date is written in the calendar the host fell back to.',
     source: 'packages/runtime/src/formatting.ts',
-    find: '  return formatter.resolvedOptions().calendar === calendar',
+    find: "  return hostAnswer(formatter)['calendar'] === calendar",
     replace: '  return calendar === calendar',
     caughtBy:
       'packages/runtime/test/date-formatter-calendar-capability.test.ts',
@@ -2121,8 +2121,18 @@ export const injections = Object.freeze([
     invariant:
       'A date a message writes under a calendar the host answers with another is reported as an unsupported formatting capability.',
     source: 'packages/runtime/src/evaluator.ts',
-    find: '    formatter.resolvedOptions().calendar !== options.calendar',
+    find: "    hostAnswer(formatter)['calendar'] !== options.calendar",
     replace: '    false',
+    caughtBy:
+      'packages/runtime/test/date-formatter-calendar-capability.test.ts',
+  },
+  {
+    id: 'host-answer-asked-for-every-value',
+    invariant:
+      'What the host says a cached formatter counts in is asked once for the formatter and kept, so a table of dates under one calendar does not ask once for each date.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '    hostAnswers.set(formatter, answer);',
+    replace: '    void answer;',
     caughtBy:
       'packages/runtime/test/date-formatter-calendar-capability.test.ts',
   },

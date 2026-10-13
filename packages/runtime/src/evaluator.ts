@@ -289,6 +289,27 @@ function stableOptions(options: Readonly<Record<string, unknown>>): string {
   );
 }
 
+/**
+ * What the host says a formatter it built writes in, asked once for each formatter.
+ *
+ * `resolvedOptions` builds its answer anew on every call, and a formatter the cache holds would be
+ * asked the same question for every value it formats: a table of ten thousand dates would ask ten
+ * thousand times. The answer cannot change while the formatter lives, so it is kept against the
+ * formatter and goes when the formatter does.
+ */
+const hostAnswers = new WeakMap<object, Readonly<Record<string, unknown>>>();
+
+export function hostAnswer(formatter: {
+  resolvedOptions(): object;
+}): Readonly<Record<string, unknown>> {
+  let answer = hostAnswers.get(formatter);
+  if (answer === undefined) {
+    answer = formatter.resolvedOptions() as Readonly<Record<string, unknown>>;
+    hostAnswers.set(formatter, answer);
+  }
+  return answer;
+}
+
 type CachedFormatter =
   | Intl.NumberFormat
   | Intl.DateTimeFormat
@@ -1193,7 +1214,7 @@ function dateResolved(
   // locale, so the calendar it answers with is compared with the one asked for.
   if (
     options.calendar !== undefined &&
-    formatter.resolvedOptions().calendar !== options.calendar
+    hostAnswer(formatter)['calendar'] !== options.calendar
   ) {
     unsupportedFormatting(
       `:${functionName} was asked for the calendar "${options.calendar}", which this runtime does not count in.`,

@@ -164,18 +164,23 @@ describe('a plain date counted in gregory', () => {
       },
     };
 
-    expect(formatPlainDate(MARCH_14_GREGORIAN, EN, DATE)).toMatchObject(
+    // What the host answered for a formatter is kept with it, so each shape of options here is
+    // one no other test has built a formatter for.
+    const date = { dateStyle: 'full' } as const;
+    const dateAndTime = { dateStyle: 'full', timeStyle: 'medium' } as const;
+
+    expect(formatPlainDate(MARCH_14_GREGORIAN, EN, date)).toMatchObject(
       unsupported,
     );
     expect(
       formatPlainDateTime(
         plainDateTime(MARCH_14_GREGORIAN, AT_NOON),
         EN,
-        DATE_AND_TIME,
+        dateAndTime,
       ),
     ).toMatchObject(unsupported);
     // An ISO date names no calendar to hold the host to.
-    expect(formatPlainDate(MARCH_14, EN, DATE)).toMatchObject({ ok: true });
+    expect(formatPlainDate(MARCH_14, EN, date)).toMatchObject({ ok: true });
   });
 
   it('is what a date field of a gregory profile reads, and the formatter writes it', () => {
