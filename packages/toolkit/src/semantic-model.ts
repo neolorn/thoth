@@ -293,10 +293,12 @@ export interface CatalogSetAnalysisRequest {
   readonly requireCompleteTargets?: boolean;
 }
 
-interface InputUsage {
-  readonly explicit: Set<PortableTypeId>;
-  bare: boolean;
-}
+/**
+ * The operand types a message's functions give each external input.
+ *
+ * A reference no function annotates gives none: its input is text unless another use says more.
+ */
+type InputUsages = Map<string, Set<PortableTypeId>>;
 
 interface PatternSlotSummary {
   readonly counts: ReadonlyMap<string, number>;
@@ -449,25 +451,25 @@ function registerValueReference(
   value: MessageValueReference | undefined,
   type: PortableTypeId | undefined,
   externalInputs: ReadonlySet<string>,
-  usages: Map<string, InputUsage>,
+  usages: InputUsages,
 ): void {
-  if (value?.kind !== 'variable' || !externalInputs.has(value.name)) {
+  if (
+    type === undefined ||
+    value?.kind !== 'variable' ||
+    !externalInputs.has(value.name)
+  ) {
     return;
   }
 
-  const usage = usages.get(value.name) ?? { explicit: new Set(), bare: false };
-  if (type === undefined) {
-    usage.bare = true;
-  } else {
-    usage.explicit.add(type);
-  }
-  usages.set(value.name, usage);
+  const types = usages.get(value.name) ?? new Set();
+  types.add(type);
+  usages.set(value.name, types);
 }
 
 function registerExpression(
   expression: MessageExpression,
   externalInputs: ReadonlySet<string>,
-  usages: Map<string, InputUsage>,
+  usages: InputUsages,
   extensions: ExtensionRegistry | undefined,
 ): void {
   const descriptor =
@@ -501,7 +503,7 @@ function registerExpression(
 function registerPatternInputs(
   pattern: MessagePattern,
   externalInputs: ReadonlySet<string>,
-  usages: Map<string, InputUsage>,
+  usages: InputUsages,
   extensions: ExtensionRegistry | undefined,
 ): void {
   for (const part of pattern) {
@@ -510,10 +512,6 @@ function registerPatternInputs(
     }
     if (part.kind === 'expression') {
       registerExpression(part, externalInputs, usages, extensions);
-    } else {
-      for (const option of Object.values(part.options)) {
-        registerValueReference(option, undefined, externalInputs, usages);
-      }
     }
   }
 }
@@ -521,9 +519,9 @@ function registerPatternInputs(
 function inputUsages(
   semantics: MessageSemanticModel,
   extensions: ExtensionRegistry | undefined,
-): ReadonlyMap<string, InputUsage> {
+): ReadonlyMap<string, ReadonlySet<PortableTypeId>> {
   const externalInputs = new Set(semantics.externalInputs);
-  const usages = new Map<string, InputUsage>();
+  const usages: InputUsages = new Map();
   for (const declaration of semantics.declarations) {
     registerExpression(declaration.value, externalInputs, usages, extensions);
   }
@@ -785,9 +783,8 @@ function effectiveInputs(
 
   const contracts: EffectiveInputContract[] = [];
   for (const name of message.semantics.externalInputs) {
-    const usage = usages.get(name);
     const inheritedContract = inherited.get(name);
-    const explicitTypes = [...(usage?.explicit ?? [])].sort(compareCodePoint);
+    const explicitTypes = [...(usages.get(name) ?? [])].sort(compareCodePoint);
     if (explicitTypes.length > 1) {
       diagnostics.push(
         semanticDiagnostic(

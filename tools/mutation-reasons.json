@@ -6134,30 +6134,6 @@
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n      for (const option of Object.values(part.options)) {\n        registerValueReference(option, undefined, externalInputs, usages);\n      }\n    }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "A variable written as a markup option is registered with no type, which only sets InputUsage.bare; nothing reads `bare`, and line 789 infers the same type from an absent usage as from one whose explicit set is empty."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n        registerValueReference(option, undefined, externalInputs, usages);\n      }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "The loop body only registers a markup option with no type, which sets InputUsage.bare and adds nothing to the explicit set; nothing reads `bare`, and line 789 treats an absent usage and an empty explicit set alike."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "CallExpression",
-      "original": "registerValueReference(option, undefined, externalInputs, usages);",
-      "replacement": ";",
-      "category": "equivalent",
-      "reason": "The call registers a markup option with an undefined type, so it can only set InputUsage.bare; nothing reads `bare`, and line 789 treats an absent usage and an empty explicit set alike."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
       "mutator": "StringLiteral",
       "original": "`Custom message function option ${JSON.stringify(authored)} is incompatible with its portable descriptor.`",
       "replacement": "``",
@@ -7628,30 +7604,6 @@
       "replacement": "true",
       "category": "equivalent",
       "reason": "parseMessage returns a message with type, declarations and a pattern or selectors and variants, and never a comment, so message.comment is undefined for every source and the branch that copies it is never taken."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "BooleanLiteral",
-      "original": "false",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "The literal on line 458 is the first value of InputUsage.bare for an input met for the first time. Nothing reads `bare`: line 790 is the only reader of a usage and takes its explicit set alone."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n    usage.bare = true;\n  }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "The block on lines 459 to 461 only sets InputUsage.bare for a reference with no operand type and adds nothing to the explicit set. Nothing reads `bare`, and line 790 infers from the explicit set alone."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "BooleanLiteral",
-      "original": "true",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The literal on line 460 is the value written to InputUsage.bare for a reference with no operand type. Nothing reads `bare`: line 790 takes a usage's explicit set alone."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
