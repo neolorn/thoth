@@ -1112,6 +1112,34 @@ for (const line of (
   const zone = /^Zone\s+(\S+)/u.exec(line);
   if (zone !== null) backwardZones.add(zone[1]);
 }
+// The release's etcetera file holds the zones that belong to no country: UTC, GMT, and a fixed
+// offset from them for every whole hour a clock is kept at. Each is a Zone, so each is its own
+// primary identifier, and a name the table lacked would be one the runtime refuses.
+const etceteraZones = new Set();
+for (const line of (
+  await readFile(resolve(timeZoneRoot, 'etcetera'), 'utf8')
+).split('\n')) {
+  const zone = /^Zone\s+(\S+)/u.exec(line);
+  if (zone !== null) etceteraZones.add(zone[1]);
+  const link = /^Link\s+(\S+)\s+(\S+)/u.exec(line);
+  assert.ok(
+    link === null || (link[1] === 'Etc/GMT' && link[2] === 'GMT'),
+    'The pinned etcetera file links ' +
+      link?.[2] +
+      ' to ' +
+      link?.[1] +
+      ', which the table has no rule for; the one link it is known to carry is GMT.',
+  );
+}
+assert.ok(
+  etceteraZones.size >= 20 &&
+    etceteraZones.has('Etc/UTC') &&
+    etceteraZones.has('Etc/GMT') &&
+    [...etceteraZones].every((name) => name.startsWith('Etc/')),
+  'The pinned etcetera file yielded ' +
+    etceteraZones.size +
+    ' zones, or one outside Etc/; the release carries UTC, GMT and a zone for each whole hour from them.',
+);
 // The two line openings and the single space are the standard's own reading of backzone. A line
 // written any other way is one the standard does not read, and a name that needed it stops the
 // generator below.
@@ -1336,6 +1364,9 @@ const timeZoneEntries = [
     renamedWhileWaiting.get(name) ?? name,
   ]),
   ...[...backwardZones].map((name) => [name, name]),
+  ...[...etceteraZones]
+    .filter((name) => !UTC_NAMES.has(name))
+    .map((name) => [name, name]),
   ...[...timeZoneLinks.keys()]
     .filter((name) => !zoneTabNames.has(name))
     .map((name) => [name, primaryTimeZone(name)]),

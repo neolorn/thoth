@@ -198,8 +198,8 @@
       "released": "2026-09-29",
       "url": "https://data.iana.org/time-zones/releases/tzdata2026e.tar.gz",
       "projectSnapshot": "data/tzdata-2026e",
-      "role": "The time zone database release the profile is pinned to. Development-only derivation input: tools/generate-locale-profile.mjs derives packages/runtime/src/time-zone-identities.generated.ts, the primary identifier of every name the release's zone.tab and backward files carry, resolved inside a name's own country with the release's backzone file, and only that table reaches a published package.",
-      "snapshotLayout": "Three files of the release, byte for byte: `backward`, which holds the links from former and merged names; `zone.tab`, whose country and TZ columns say which names a country still calls its own; and `backzone`, whose link lines say which of a country's names a former name stood for. Nothing else in the release is read, and of `backzone` only those link lines.",
+      "role": "The time zone database release the profile is pinned to. Development-only derivation input: tools/generate-locale-profile.mjs derives packages/runtime/src/time-zone-identities.generated.ts, the primary identifier of every name the release's zone.tab, backward and etcetera files carry, resolved inside a name's own country with the release's backzone file, and only that table reaches a published package.",
+      "snapshotLayout": "Four files of the release, byte for byte: `backward`, which holds the links from former and merged names; `zone.tab`, whose country and TZ columns say which names a country still calls its own; `backzone`, whose link lines say which of a country's names a former name stood for; and `etcetera`, which holds the zones that belong to no country, UTC, GMT and the fixed offsets from them. Nothing else in the release is read, and of `backzone` only those link lines. The release's `factory` file is left out on purpose: its one zone stands for a clock nobody has set and names no time zone.",
       "renames": [
         {
           "renamed": "Europe/Kiev",
@@ -253,6 +253,14 @@
             "algorithm": "SHA-256",
             "encoding": "hex",
             "value": "9c965661692c07d241c758c41c6f1e9c082d0f77a193d9240228b995e2f1666f"
+          }
+        },
+        "etcetera": {
+          "bytes": 3124,
+          "digest": {
+            "algorithm": "SHA-256",
+            "encoding": "hex",
+            "value": "7281f095b42c13c4ae36b8bcba884e81dbb38127221fc1d9805c4dbf852487db"
           }
         },
         "zone.tab": {
