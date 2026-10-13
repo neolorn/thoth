@@ -392,6 +392,39 @@ describe('a scope option of the Router integration', () => {
   );
 });
 
+describe('the codec of a route parameter', () => {
+  const read = () => ({ ok: true, value: 'x' });
+  const write = () => 'x';
+
+  it.each<readonly [string, unknown]>([
+    ['an object with neither function', {}],
+    ['an object with parse alone', { parse: read }],
+    ['an object with serialize alone', { serialize: write }],
+    ['an object whose parse is text', { parse: 'parse', serialize: write }],
+    ['an object whose serialize is text', { parse: read, serialize: 'write' }],
+  ])('is refused when it is %s', (_, codec) => {
+    expect(
+      refusal(() => projected({ parameters: { item: { id: codec } } })),
+    ).toStrictEqual({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      message:
+        'The codec of item/id must carry a parse and a serialize function.',
+      reason: 'malformed-input',
+    });
+  });
+
+  it('is taken when it carries both', () => {
+    expect(
+      refusal(() =>
+        projected({
+          parameters: { item: { id: { parse: read, serialize: write } } },
+        }),
+      ),
+    ).toBeUndefined();
+  });
+});
+
 describe('an option declared as a function', () => {
   it.each(NOT_A_FUNCTION)('is refused when it is %s', (_, value) => {
     expect(refusal(() => ɵfunctionOption(value, 'The option'))).toMatchObject({

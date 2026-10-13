@@ -98,6 +98,31 @@ async function clientHeader(
   return written ?? '';
 }
 
+/** What the store writes to forget the choice, taken from the document as above. */
+async function forgottenHeader(options: CookieStoreOptions): Promise<string> {
+  let written: string | undefined;
+  const document = {
+    get cookie(): string {
+      return '';
+    },
+    set cookie(value: string) {
+      written = value;
+    },
+  };
+  const injector = Injector.create({
+    providers: [
+      { provide: PLATFORM_ID, useValue: 'browser' },
+      { provide: DOCUMENT, useValue: document },
+    ],
+  });
+
+  const store = runInInjectionContext(injector, cookieStore(options));
+  await store.forget?.();
+
+  expect(written, 'the store wrote no cookie at all').toBeTypeOf('string');
+  return written ?? '';
+}
+
 /** What the handler writes, for a visitor arriving in a locale their cookie does not name. */
 async function serverHeader(
   cookie: CookieStoreOptions,
@@ -272,5 +297,33 @@ describe('a cookie configuration neither half will write', () => {
         cookie: ordinary,
       }),
     ).not.toThrow();
+  });
+});
+
+/**
+ * Forgetting is a write of the same cookie, expired.
+ *
+ * A browser matches a cookie on its name, path and domain, so an expiry written with any of them
+ * different leaves the original where it was. The expiry also carries `Secure` where the write
+ * did, because a cookie that is not `Secure` cannot overwrite one that is.
+ */
+describe('the cookie the browser store writes to forget a choice', () => {
+  it('names the domain and is Secure where the cookie it expires is', async () => {
+    expect(
+      await forgottenHeader({
+        name: 'site-locale',
+        path: '/app',
+        domain: 'site.example',
+        sameSite: 'Strict',
+      }),
+    ).toBe(
+      'site-locale=; Path=/app; Max-Age=0; SameSite=Strict; Domain=site.example; Secure',
+    );
+  });
+
+  it('names no domain and is not Secure where the cookie it expires is neither', async () => {
+    expect(await forgottenHeader({ name: 'site-locale', secure: false })).toBe(
+      'site-locale=; Path=/; Max-Age=0; SameSite=Lax',
+    );
   });
 });

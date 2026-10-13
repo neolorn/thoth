@@ -87,6 +87,26 @@ describe('the authored entries that name an address', () => {
     expect(childPaths(table, 'ar-eg')).toEqual(['']);
   });
 
+  it('reads an entry with no path as answering at its parent', () => {
+    // Angular refuses an entry with neither a path nor a matcher, and only in a development build
+    // (`@angular/router` 22.2.1, `validateConfig`). In a production build the entry is matched as
+    // an empty path is, so that is how its address is read here.
+    const table = localizedRouteTable(
+      [
+        { loadComponent: HOME },
+        { path: 'reports', children: [{ loadComponent: PAGE }] },
+      ],
+      POLICY,
+      projectionOf([
+        { id: 'route:_index', path: '', parameterNames: [] },
+        { id: 'route:reports', path: 'reports', parameterNames: [] },
+      ]),
+    );
+
+    expect(table.problems).toEqual([]);
+    expect(childPaths(table, 'ar-eg')).toEqual(['', 'reports']);
+  });
+
   it('reports an entry whose only target is an empty list of children', () => {
     const table = localizedRouteTable(
       [
