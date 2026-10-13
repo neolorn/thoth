@@ -415,6 +415,15 @@ export const injections = Object.freeze([
     replace: '    void locale;',
   },
   {
+    id: 'navigation-change-redirected-let-through',
+    invariant:
+      'A navigation whose own locale change ends as redirected fails, and does not go on as though the change had committed.',
+    source: 'packages/runtime/router/src/route-localization.ts',
+    find: "    if (result !== undefined && result.status !== 'committed') {",
+    replace:
+      "    if (\n      result !== undefined &&\n      result.status !== 'committed' &&\n      result.status !== 'redirected'\n    ) {",
+  },
+  {
     id: 'cancelled-navigation-undoes-a-change-made-in-place',
     invariant:
       'A navigation cancelled after its commit puts the page it left back in the locale a change made in place since has committed.',

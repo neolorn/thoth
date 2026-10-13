@@ -761,6 +761,11 @@ export class RouteLocalization {
    * `undefined` means the locale is settled and this application's own routing should answer.
    * That is the shape of an address the projection does not contain: a not-found, a locale this
    * application does not support, or one it has declared gone.
+   *
+   * Rejects with a `RouteLocalizationError` where the locale change the address asks for does not
+   * commit, so the Router abandons the navigation with its address and the snapshot as they were.
+   * The error carries the diagnostic the change ended with, and `route-unavailable` where the
+   * change ended as redirected, which carries an address and no diagnostic.
    */
   async prepare(
     target: string,
@@ -914,6 +919,11 @@ export class RouteLocalization {
           status: 'malformed',
           httpStatus: 400,
           presentationLocale: resolution.locale,
+          // A change that ends `redirected` carries no diagnostic. The resolver
+          // `provideLocalizedRouter` installs hands in a path, which a host policy reads at the
+          // origin this build answers at, so its change never ends that way. An application that
+          // calls this from a resolver of its own can hand in an absolute address at another of
+          // the policy's origins, and the document is then already on its way there.
           diagnostic:
             transactionDiagnostic(result) ??
             navigationDiagnostic(

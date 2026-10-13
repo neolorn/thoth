@@ -445,14 +445,16 @@ another origin serves it. Where the route on screen has no address in the target
 parameter has no spelling there or because a declared spelling is one the route's codec refuses, a
 release MUST end the change as failed with the diagnostic the address was refused with, MUST NOT
 commit a locale the address bar cannot follow, and MUST NOT send the document to another origin. A
-locale change a navigation makes is answered for the navigation's destination instead. A release
-MUST answer a change made in place while a navigation is in flight for the route on screen, as it
-answers any other, because that navigation can still be cancelled. Where that navigation has
-already committed its locale and has not landed, a release MUST answer the change for the
-navigation's destination as well, and MUST write the page that lands in the locale that is
-committed. Where that navigation is cancelled or fails instead, a release MUST put back the page it
-left in the locale the change committed, and MUST NOT put back the locale from before the
-navigation, because the change committed and its caller was told so.
+locale change a navigation makes is answered for the navigation's destination instead. Where that
+change does not commit, a release MUST fail the navigation with the diagnostic the change ended
+with, or with `route-unavailable` where the change ended as redirected and carries none, and MUST
+leave the snapshot and the Router's address as they were. A release MUST answer a change made in place
+while a navigation is in flight for the route on screen, as it answers any other, because that navigation
+can still be cancelled. Where that navigation has already committed its locale and has not landed, a
+release MUST answer the change for the navigation's destination as well, and MUST write the page
+that lands in the locale that is committed. Where that navigation is cancelled or fails instead, a
+release MUST put back the page it left in the locale the change committed, and MUST NOT put back the
+locale from before the navigation, because the change committed and its caller was told so.
 
 A release MUST publish a snapshot only through a transaction, including when a single scope
 finishes loading, so every commit observer sees the same kind of event.

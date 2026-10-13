@@ -50,7 +50,11 @@ import { runtimeExtensions } from './runtime-extensions';
  * `prepare` commits the locale an address is in before the destination is built. Where that change
  * ends any other way, the resolver fails with a `RouteLocalizationError`, so the Router abandons
  * the navigation with the address untouched, and the error carries the diagnostic the change ended
- * with. `RouteLocalization` is constructed here the way an application that does not use
+ * with. A change that ends as redirected carries none, and the error then carries one of the
+ * navigation's own: under a host policy that is an absolute address at another of the policy's
+ * origins, which only an application's own call can hand in.
+ *
+ * `RouteLocalization` is constructed here the way an application that does not use
  * `provideLocalizedRouter` constructs it, which is also the one way it is handed a host policy with
  * no origin, with an origin that is not one, or with one the policy does not name. Each is refused
  * where the adapter is constructed.
@@ -317,6 +321,41 @@ describe('a navigation under a host policy, at the origin the build answers at',
     expect(assigned).toEqual([]);
     expect(localization.snapshot()?.primaryLocale).toBe('en-US');
     expect(router.url).toBe('/second');
+  });
+});
+
+describe('a navigation under a host policy, handed an address at another of its origins', () => {
+  it('fails the navigation, reports the change as redirected, and sends the document to that origin', async () => {
+    const { arrive, assigned, ended, localization, routeLocalization, router } =
+      configured(HOST, { origin: ORIGIN });
+    await arrive();
+    const before = localization.snapshot();
+
+    // An absolute address names its own origin, and that origin serves Arabic.
+    prepared = 'https://ar.site.example/second';
+    const end = ended();
+    void router.navigateByUrl('/second').catch(() => undefined);
+
+    // A redirect carries an address and no diagnostic, so the navigation fails with its own.
+    expect(refusal(await end)).toMatchObject({
+      status: 'malformed',
+      httpStatus: 400,
+      presentationLocale: 'ar-EG',
+      diagnostic: {
+        code: 'route-unavailable',
+        outcome: 'operational-failure',
+        message: 'The localized route transaction did not commit.',
+      },
+    });
+    expect(assigned).toHaveLength(1);
+    expect(assigned[0]?.startsWith('https://ar.site.example')).toBe(true);
+    expect(await routeLocalization.settled()).toMatchObject({
+      status: 'redirected',
+      targetLocale: 'ar-EG',
+      address: assigned[0],
+    });
+    expect(localization.snapshot()).toBe(before);
+    expect(router.url).toBe('/');
   });
 });
 
