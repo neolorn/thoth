@@ -34,6 +34,10 @@ the page changes.
 A switch is not a navigation. The Router's URL is still the route you are on. Only the address the visitor sees carries the locale,
 and only under a policy that puts it there.
 
+A page can have an address in one locale and none in another, where a route parameter has no
+spelling there. A switch to that locale from such a page ends as `failed` with `route-unavailable`,
+and the words, the address and the document's `lang` stay as they were.
+
 ## Application state
 
 A switch reuses the running application rather than reloading the document, so state survives it: a
@@ -56,8 +60,9 @@ its first view.
 ## Where the guarantee ends
 
 A policy that puts the locale in the origin cannot hold it, because application state does not cross
-origins. There, a change is reported as a redirect and the document moves instead. That is one of the
-costs of choosing that policy, and it is weighed in
+origins. There, a change is reported as a redirect and the document moves instead, to the address the
+page on screen has at the other origin. Where it has none there, the change fails and the document
+stays. That is one of the costs of choosing that policy, and it is weighed in
 [About how routing derives addresses](about-addresses.md).
 
 ## Related
