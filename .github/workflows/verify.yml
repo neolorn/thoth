@@ -109,6 +109,16 @@ jobs:
 
       - run: pnpm run stage:consumer-store
 
+      # The npm consumer installs offline from a cache of its own, which is the same precondition
+      # for the one consumer npm installs.
+      - name: Cache the npm consumer's packages
+        uses: actions/cache@v6
+        with:
+          path: .runtimes/npm-cache
+          key: npm-consumer-${{ runner.os }}-${{ hashFiles('fixtures/npm-package-consumer/package-lock.json') }}
+
+      - run: pnpm run stage:npm-cache
+
       - name: Gate
         run: node tools/verify.mjs
 
