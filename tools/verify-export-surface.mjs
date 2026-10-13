@@ -46,16 +46,7 @@ const workspaceRoot = inputsRoot();
  * does not belong on this list: an occurrence proxy cannot see that use, and the answer is a gate
  * that can rather than an entry admitting it cannot.
  */
-const BASELINE = Object.freeze({
-  // The plugin half of the extension contract: a plugin calls this to tell the compiler about the
-  // same descriptors `defineRuntimeExtensions` registers at runtime, and
-  // `docs/how-to/add-an-extension.md` is where that is written down. This corpus does not read
-  // `docs`, deliberately, because a name in prose is not a use. The fixture declares its extensions
-  // in `equator.extensions.json` instead, which is the other supported way and exercises the parser
-  // rather than the builder.
-  extensionDescriptor:
-    'toolkit API; the plugin surface the extension guide documents',
-});
+const BASELINE = Object.freeze({});
 
 const CORPUS = Object.freeze([
   {
