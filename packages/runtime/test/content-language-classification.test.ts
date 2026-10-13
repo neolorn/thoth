@@ -33,7 +33,8 @@ describe('content declared as having no language', () => {
 });
 
 describe('content declared as undetermined', () => {
-  it.each(['und', 'UND', 'und-EG'])(
+  // Four letters make a script only as the whole of the second subtag.
+  it.each(['und', 'UND', 'und-EG', 'und-EG-Arab', 'und-Arabs'])(
     'is unknown for %s, as it was declared',
     (language) => {
       expect(contentPresentation(language)).toStrictEqual({

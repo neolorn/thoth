@@ -2797,30 +2797,6 @@
       "reason": "With the shortcut gone a space is replaced by a space, which leaves the literal unchanged."
     },
     {
-      "file": "packages/runtime/src/locale-presentation.ts",
-      "mutator": "OptionalChaining",
-      "original": "language.split('-')[0]?.toLowerCase",
-      "replacement": "language.split('-')[0].toLowerCase",
-      "category": "equivalent",
-      "reason": "String.prototype.split returns at least one element for any string, so the first element is never undefined and the optional call is never the one taken."
-    },
-    {
-      "file": "packages/runtime/src/locale-presentation.ts",
-      "mutator": "ConditionalExpression",
-      "original": "parts.length > 1",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "With one part there is no second subtag, so parts[1] ?? '' is the empty text and the four-letter pattern refuses it; the length test never decides the answer."
-    },
-    {
-      "file": "packages/runtime/src/locale-presentation.ts",
-      "mutator": "EqualityOperator",
-      "original": "parts.length > 1",
-      "replacement": "parts.length >= 1",
-      "category": "equivalent",
-      "reason": "With one part there is no second subtag, so parts[1] ?? '' is the empty text and the four-letter pattern refuses it; admitting a length of one changes no answer."
-    },
-    {
       "file": "packages/runtime/src/locale-resolution.ts",
       "mutator": "StringLiteral",
       "original": "'browser'",

@@ -68,7 +68,8 @@ export function contentPresentation(language?: string): ContentPresentation {
     return Object.freeze({ direction: 'auto', classification: 'unknown' });
   }
 
-  const primary = language.split('-')[0]?.toLowerCase() ?? '';
+  // A split always yields a first element, which is the whole tag when it has no hyphen.
+  const primary = (language.split('-')[0] as string).toLowerCase();
 
   if (primary === LANGUAGE_INDEPENDENT) {
     return Object.freeze({
@@ -97,8 +98,7 @@ export function contentPresentation(language?: string): ContentPresentation {
 
 function hasScriptSubtag(language: string): boolean {
   // A script subtag is exactly four alphabetic characters in the second position.
-  const parts = language.split('-');
-  return parts.length > 1 && /^[A-Za-z]{4}$/u.test(parts[1] ?? '');
+  return /^[^-]*-[A-Za-z]{4}(?:-|$)/u.test(language);
 }
 
 /**
