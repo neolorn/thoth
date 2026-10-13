@@ -1741,31 +1741,26 @@ function analyzeFamilies(
 ): readonly SemanticFamily[] {
   const families: SemanticFamily[] = [];
   const templates = new Map<string, string>();
-  const projectedNames = new Map<string, string>();
   const memberships = new Map<string, string>();
   for (const [name, authored] of Object.entries(catalog.families).sort(
     ([left], [right]) => compareCodeUnit(left, right),
   )) {
+    // Two families cannot share a generated name. A family name is lower-case kebab, the
+    // generated name drops each hyphen and raises the letter after it, and the raised letters say
+    // where the hyphens were, so two names that differ give two generated names.
     const existingTemplate = templates.get(authored.template);
-    const projectedName = name.replace(/-([a-z0-9])/gu, (_, value: string) =>
-      value.toUpperCase(),
-    );
-    const existingProjection = projectedNames.get(projectedName);
-    if (existingTemplate !== undefined || existingProjection !== undefined) {
+    if (existingTemplate !== undefined) {
       diagnostics.push(
         semanticDiagnostic(
           catalog,
           'EQ1305',
-          existingTemplate !== undefined
-            ? `Open families ${JSON.stringify(existingTemplate)} and ${JSON.stringify(name)} duplicate one template.`
-            : `Open families ${JSON.stringify(existingProjection)} and ${JSON.stringify(name)} collide at generated name ${JSON.stringify(projectedName)}.`,
+          `Open families ${JSON.stringify(existingTemplate)} and ${JSON.stringify(name)} duplicate one template.`,
           ['families', name],
         ),
       );
       continue;
     }
     templates.set(authored.template, name);
-    projectedNames.set(projectedName, name);
     const parsed = parseFamilyTemplate(
       catalog,
       name,
