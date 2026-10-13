@@ -8,7 +8,7 @@
  * lifecycle are the host's, so the same inputs answer the same way whichever surface asked.
  */
 
-import { isAbsolute, relative, resolve, sep } from 'node:path';
+import { isAbsolute, posix, relative, resolve, sep, win32 } from 'node:path';
 
 import ts from 'typescript';
 
@@ -1092,6 +1092,29 @@ function compileAdmitted(
 }
 
 /**
+ * Refuses a generated root that is not a portable path inside the owner.
+ *
+ * The path is part of the generated owner identity, so one spelled two ways, or one that leaves
+ * the owner, would name an owner no host could write. Both platforms' rules for an absolute path
+ * are asked, so the answer does not depend on where the compilation runs.
+ */
+function requireGeneratedRootPath(path: string): void {
+  if (
+    win32.isAbsolute(path) ||
+    posix.isAbsolute(path) ||
+    path.includes('\\') ||
+    path.normalize('NFC') !== path ||
+    path
+      .split('/')
+      .some((segment) => segment === '' || segment === '.' || segment === '..')
+  ) {
+    throw new TypeError(
+      'compileProject: request.owner.generatedRootPath must be a portable path inside the owner: relative, with forward slashes, and with no empty, "." or ".." segment.',
+    );
+  }
+}
+
+/**
  * Compiles a project from catalogs already in memory, and touches no files.
  *
  * Analyses the catalogs together, settles each message's contract across its locales, compiles the
@@ -1114,6 +1137,7 @@ export function compileProject(
     request,
     COMPILE_PROJECT_REQUEST,
   );
+  requireGeneratedRootPath(request.owner.generatedRootPath);
   const sink = request.observability;
   if (sink === undefined) return compileAdmitted(request);
   emitToolkitEvent(sink, {

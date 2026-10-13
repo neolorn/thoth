@@ -301,7 +301,12 @@ export interface OwnerIdentity {
    * `compileProject` refuses one outside the provider grammar with `EQ1104`.
    */
   readonly providerId: string;
-  /** Where this owner generates, as a portable path relative to the owner root. */
+  /**
+   * Where this owner generates, as a portable path relative to the owner root.
+   *
+   * Forward slashes, and no empty, `.` or `..` segment. `compileProject` throws a `TypeError` for
+   * any other.
+   */
   readonly generatedRootPath: string;
 }
 

@@ -79,3 +79,44 @@ describe('the provider identity of the owner compileProject is handed', () => {
     expect(result.ok).toBe(true);
   });
 });
+
+describe('the generated root of the owner compileProject is handed', () => {
+  // `OwnerIdentity.generatedRootPath` is a portable path relative to the owner root, and
+  // `specs/10-compiler-and-tooling.spec.md` section 8 keeps generated output inside the owner.
+  it.each([
+    '',
+    '.',
+    '../out',
+    'src/../../out',
+    '/srv/out',
+    'C:/out',
+    'src\\i18n',
+    'src//i18n',
+    'src/i18n/',
+  ])('is thrown back when it is %j', (generatedRootPath) => {
+    expect(() =>
+      compileProject({
+        configuration,
+        catalogs: [],
+        owner: { providerId: '@example/app', generatedRootPath },
+      }),
+    ).toThrow(
+      new TypeError(
+        'compileProject: request.owner.generatedRootPath must be a portable path inside the owner: relative, with forward slashes, and with no empty, "." or ".." segment.',
+      ),
+    );
+  });
+
+  it.each(['src/generated/i18n', 'i18n', 'projects/shop/src/generated/i18n'])(
+    'is taken when it is %j',
+    (generatedRootPath) => {
+      const result = compileProject({
+        configuration,
+        catalogs: [],
+        owner: { providerId: '@example/app', generatedRootPath },
+      });
+
+      expect(result.ok).toBe(true);
+    },
+  );
+});
