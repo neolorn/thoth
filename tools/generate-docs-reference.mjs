@@ -383,11 +383,11 @@ const SELECTS = Object.freeze({
   withExtensions:
     'Registers formatting and parsing adapters for a value type your domain has and `Intl` does not.',
   withFormattingContext:
-    'Sets what every formatter starts from: the numbering system, the calendar, the time zone, and the currency display.',
+    'Sets what every formatter starts from: the time zone, the calendar, the numbering system, and the hour cycle.',
   withLocaleAnnouncement:
     'Replaces the wording of the locale-change announcement Equator already makes. Returning nothing leaves the announcing to a live region of your own.',
   withLocaleSources:
-    'Inserts a locale source of your own into the order Equator asks in.',
+    'Names the sources Equator asks for the locale, and their order: `url`, `stored`, `browser` and `default`.',
   withLocalizationClock:
     'Decides what `now` is for relative time. `fixedClock` makes a test reproducible.',
   withObservability: 'Sends runtime outcomes to a sink you supply.',
