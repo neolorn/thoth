@@ -6,11 +6,25 @@ import {
   provideLocalizationSetup,
   withExtensions,
   withFormattingContext,
+  withLocaleAnnouncement,
+  withLocaleSources,
+  withLocalizationClock,
+  withObservability,
+  withOverlayLocale,
+  withPersistence,
   withRecoveryMessage,
   withRelativeTimePolicy,
   withRouting,
+  type LocalizationSetup,
 } from '@neolorn/equator';
 import { provideLocalizedRouter } from '@neolorn/equator/router';
+import {
+  createInMemoryCatalogLoaders,
+  provideLocalizationTesting,
+} from '@neolorn/equator/testing';
+import { configuration } from '#i18n';
+import { catalogLoaders } from '#i18n/catalog-loaders';
+import { catalogSet } from '#i18n/catalog-set';
 
 import { routes } from './app.routes';
 import { appRouteProjection } from './localization.routes';
@@ -21,7 +35,8 @@ import { appRouteProjection } from './localization.routes';
  * Section 3 of `specs/07-routing-rendering-and-seo.spec.md` holds an option declared as an object
  * or as a list to that kind where the configuration is given. Each call here is one an application
  * that is not type-checked can write, and each is refused by the call itself with
- * `invalid-configuration`, before any provider is built.
+ * `invalid-configuration`, before any provider is built. An option declared as a function, or as
+ * one of a set of named values, and each feature handed to a provider are held the same way.
  */
 
 const POLICY = createPathPrefixLocalePolicy({
@@ -58,7 +73,56 @@ const NOT_A_LIST: readonly unknown[] = [
   () => undefined,
 ];
 
+const NOT_A_FUNCTION: readonly unknown[] = [
+  undefined,
+  null,
+  'text',
+  7,
+  true,
+  ['x'],
+  { a: 1 },
+];
+const NOT_A_NAME: readonly unknown[] = [
+  undefined,
+  null,
+  'cookie',
+  'URL',
+  7,
+  ['url'],
+  { url: true },
+];
+
+const SETUP: LocalizationSetup = { configuration, catalogSet, catalogLoaders };
+const KEY = {
+  providerId: '@example/app',
+  scopeId: 'shell',
+  catalogLocale: 'en-US',
+};
+
 const OBJECTS: readonly (readonly [string, (value: never) => unknown])[] = [
+  ['withLocalizationClock(clock)', (v) => withLocalizationClock(v)],
+  ['withObservability(sink)', (v) => withObservability(v)],
+  ['provideLocalizationTesting(setup)', (v) => provideLocalizationTesting(v)],
+  [
+    'provideLocalizationTesting catalogLoaders',
+    (v) => provideLocalizationTesting({ ...SETUP, catalogLoaders: v }),
+  ],
+  [
+    'provideLocalizationSetup, a feature',
+    (v) => provideLocalizationSetup(SETUP, v),
+  ],
+  [
+    'provideLocalizationTesting, a feature',
+    (v) => provideLocalizationTesting(SETUP, v),
+  ],
+  [
+    'createInMemoryCatalogLoaders, a catalog',
+    (v) => createInMemoryCatalogLoaders([v]),
+  ],
+  [
+    'createInMemoryCatalogLoaders, the key of a catalog',
+    (v) => createInMemoryCatalogLoaders([{ key: v, catalog: {} }]),
+  ],
   ['withRouting(options)', (v) => withRouting(v)],
   [
     'withRouting policy',
@@ -123,7 +187,45 @@ const OBJECTS: readonly (readonly [string, (value: never) => unknown])[] = [
   ],
 ];
 
+const FUNCTIONS: readonly (readonly [string, (value: never) => unknown])[] = [
+  [
+    'withLocalizationClock, now of the clock',
+    (v) => withLocalizationClock({ now: v }),
+  ],
+  [
+    'withObservability, emit of the sink',
+    (v) => withObservability({ emit: v }),
+  ],
+  ['withPersistence, a store', (v) => withPersistence(v)],
+  ['withLocaleAnnouncement(format)', (v) => withLocaleAnnouncement(v)],
+  ['withOverlayLocale(create)', (v) => withOverlayLocale(v)],
+  [
+    'provideLocalizationTesting, a catalog loader',
+    (v) =>
+      provideLocalizationTesting({
+        ...SETUP,
+        catalogLoaders: { '@example/app:shell:en-US': v },
+      }),
+  ],
+];
+
+const NAMES: readonly (readonly [string, (value: never) => unknown])[] = [
+  ['withLocaleSources, a source', (v) => withLocaleSources(v)],
+  [
+    'withLocaleSources, a source after a declared one',
+    (v) => withLocaleSources('url', v),
+  ],
+  [
+    'provideLocalizationSetup, the kind of a feature',
+    (v) => provideLocalizationSetup(SETUP, { ɵkind: v } as never),
+  ],
+];
+
 const LISTS: readonly (readonly [string, (value: never) => unknown])[] = [
+  [
+    'createInMemoryCatalogLoaders(catalogs)',
+    (v) => createInMemoryCatalogLoaders(v),
+  ],
   ['withExtensions(bindings)', (v) => withExtensions(v)],
   ['provideLocalizedRouter(routes)', (v) => provideLocalizedRouter(v)],
   [
@@ -143,6 +245,22 @@ describe('a provider option declared as an object', () => {
 describe('a provider option declared as a list', () => {
   for (const [option, call] of LISTS) {
     it.each(NOT_A_LIST)(`${option} is refused when it is %j`, (value) => {
+      expect(refusal(() => call(value as never))).toBe('invalid-configuration');
+    });
+  }
+});
+
+describe('a provider option declared as a function', () => {
+  for (const [option, call] of FUNCTIONS) {
+    it.each(NOT_A_FUNCTION)(`${option} is refused when it is %j`, (value) => {
+      expect(refusal(() => call(value as never))).toBe('invalid-configuration');
+    });
+  }
+});
+
+describe('a provider option declared as one of a set of named values', () => {
+  for (const [option, call] of NAMES) {
+    it.each(NOT_A_NAME)(`${option} is refused when it is %j`, (value) => {
       expect(refusal(() => call(value as never))).toBe('invalid-configuration');
     });
   }
@@ -175,5 +293,31 @@ describe('provider options of the kind their declaration names', () => {
     ).toBeUndefined();
     expect(refusal(() => withExtensions([]))).toBeUndefined();
     expect(refusal(() => provideLocalizedRouter(routes, {}))).toBeUndefined();
+  });
+
+  it('are taken by the features that take a function or a named value', () => {
+    for (const call of [
+      () => withLocalizationClock({ now: () => undefined } as never),
+      () => withObservability({ emit: () => undefined }),
+      () => withPersistence((() => ({})) as never),
+      () => withLocaleSources('url', 'stored', 'browser', 'default'),
+      () => withLocaleAnnouncement(() => undefined),
+      () => withOverlayLocale((() => ({})) as never),
+      () => createInMemoryCatalogLoaders([]),
+      () => createInMemoryCatalogLoaders([{ key: KEY, catalog: {} }]),
+      () =>
+        provideLocalizationSetup(
+          SETUP,
+          withLocaleSources('url', 'default'),
+          withFormattingContext({ timeZone: 'UTC' }),
+        ),
+      () =>
+        provideLocalizationTesting(
+          SETUP,
+          withObservability({ emit: () => undefined }),
+        ),
+    ]) {
+      expect(refusal(call)).toBeUndefined();
+    }
   });
 });

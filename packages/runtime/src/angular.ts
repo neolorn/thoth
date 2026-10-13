@@ -44,7 +44,9 @@ import {
   type RouteRuntimeProjection,
   type RouteSeoProjection,
   type RuntimeExtensionBinding,
+  ɵfunctionOption,
   ɵlistOption,
+  ɵnamedOption,
   ɵrecordOption,
 } from '@neolorn/equator/core';
 import {
@@ -62,6 +64,7 @@ import {
 import {
   RUNTIME_EVENT_CODES,
   createLocalizationEventEmitter,
+  refuseSinkOfAnotherKind,
   type LocalizationEventEmitter,
   type LocalizationObservabilitySink,
 } from './observability';
@@ -412,6 +415,27 @@ const transferStateKey = makeStateKey<TransferSnapshot>(
   '@neolorn/equator:localization-state/1',
 );
 
+/** Every kind, keyed so a kind added to the union and left out here does not compile. */
+const FEATURE_KINDS = Object.freeze(
+  Object.keys({
+    'document-locale': true,
+    'formatting-context': true,
+    'recovery-message': true,
+    'locale-announcement': true,
+    'overlay-locale': true,
+    observability: true,
+    'localization-clock': true,
+    'relative-time-policy': true,
+    persistence: true,
+    'locale-sources': true,
+    routing: true,
+    extensions: true,
+  } satisfies Record<
+    LocalizationFeatureKind,
+    true
+  >) as LocalizationFeatureKind[],
+);
+
 function freezeFeature<Feature extends LocalizationFeature>(
   feature: Feature,
 ): Feature {
@@ -498,6 +522,13 @@ export function withFormattingContext(
 export function withLocalizationClock(
   clock: LocalizationClock,
 ): LocalizationFeature<'localization-clock'> {
+  const given = ɵrecordOption(
+    clock,
+    'The clock of withLocalizationClock()',
+  ) as {
+    readonly now?: unknown;
+  };
+  ɵfunctionOption(given.now, 'now of the clock of withLocalizationClock()');
   return freezeFeature<LocalizationClockFeature>({
     ɵkind: 'localization-clock',
     clock,
@@ -542,6 +573,9 @@ export function withPersistence(
       message: 'Locale persistence requires at least one store.',
     });
   }
+  for (const store of stores) {
+    ɵfunctionOption(store, 'A store of withPersistence()');
+  }
   return freezeFeature<PersistenceFeature>({
     ɵkind: 'persistence',
     factories: Object.freeze([...stores]),
@@ -576,6 +610,13 @@ export function withPersistence(
  * itself, two of them eventually disagree, and the resulting bug is invisible until a visitor sees
  * one region of the page in a language the rest of it is not using.
  */
+const LOCALE_SOURCES = Object.freeze([
+  'url',
+  'stored',
+  'browser',
+  'default',
+] as const satisfies readonly LocalizationLocaleSource[]);
+
 export function withLocaleSources(
   ...sources: readonly LocalizationLocaleSource[]
 ): LocalizationFeature<'locale-sources'> {
@@ -585,6 +626,9 @@ export function withLocaleSources(
       outcome: 'operational-failure',
       message: 'Locale resolution requires at least one source.',
     });
+  }
+  for (const source of sources) {
+    ɵnamedOption(source, LOCALE_SOURCES, 'A source of withLocaleSources()');
   }
   if (new Set(sources).size !== sources.length) {
     throw new LocalizationError({
@@ -767,6 +811,7 @@ export function withoutDocumentLocale(): LocalizationFeature<'document-locale'> 
 export function withLocaleAnnouncement(
   format: (snapshot: LocalizationSnapshot) => string | undefined,
 ): LocalizationFeature<'locale-announcement'> {
+  ɵfunctionOption(format, 'The format of withLocaleAnnouncement()');
   return freezeFeature<LocaleAnnouncementFeature>({
     ɵkind: 'locale-announcement',
     format,
@@ -785,6 +830,7 @@ export function withLocaleAnnouncement(
 export function withOverlayLocale(
   create: LocalizationOverlayAdapterFactory,
 ): LocalizationFeature<'overlay-locale'> {
+  ɵfunctionOption(create, 'The factory of withOverlayLocale()');
   return freezeFeature<OverlayLocaleFeature>({
     ɵkind: 'overlay-locale',
     create,
@@ -800,6 +846,7 @@ export function withOverlayLocale(
 export function withObservability(
   sink: LocalizationObservabilitySink,
 ): LocalizationFeature<'observability'> {
+  refuseSinkOfAnotherKind(sink, 'The sink of withObservability()');
   return freezeFeature<ObservabilityFeature>({
     ɵkind: 'observability',
     sink,
@@ -1844,6 +1891,18 @@ export function provideLocalizationSetup(
   ...features: readonly LocalizationFeature[]
 ): EnvironmentProviders {
   ɵrecordOption(setup, 'The setup of provideLocalizationSetup()');
+  // Read by kind below, where a value that is no feature would be skipped as a kind nobody
+  // asked for, and the application would run without what it believed it had installed.
+  for (const feature of features) {
+    const given = ɵrecordOption(feature, 'A localization feature') as {
+      readonly ɵkind?: unknown;
+    };
+    ɵnamedOption(
+      given.ɵkind,
+      FEATURE_KINDS,
+      'The kind of a localization feature',
+    );
+  }
   const recovery = oneFeature(features, 'recovery-message') as
     RecoveryMessageFeature | undefined;
   const formatting = oneFeature(features, 'formatting-context') as

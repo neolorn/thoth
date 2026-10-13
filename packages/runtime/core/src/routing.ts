@@ -1203,6 +1203,42 @@ export function ɵlistOption<Shape>(value: Shape, name: string): Shape {
   return value;
 }
 
+/**
+ * An option held to the function its declaration names, or the refusal of anything else.
+ *
+ * Stored as given, a value of another kind is called when the feature first runs, which throws an
+ * error that names no option, far from the configuration that carried it.
+ */
+export function ɵfunctionOption<Shape>(value: Shape, name: string): Shape {
+  if (typeof value !== 'function') {
+    return routeError(
+      `${name} must be a function, and ${kindOf(value)} was given.`,
+      'malformed-input',
+    );
+  }
+  return value;
+}
+
+/**
+ * An option held to the values its declaration names, or the refusal of anything else.
+ *
+ * A reader compares the option against each name in turn and takes a value that matches none as
+ * the one it tests last, so a value outside them configures something nobody wrote.
+ */
+export function ɵnamedOption<Name extends string>(
+  value: unknown,
+  names: readonly Name[],
+  name: string,
+): Name {
+  if (typeof value !== 'string' || !names.includes(value as Name)) {
+    return routeError(
+      `${name} must be one of ${names.join(', ')}, and ${typeof value === 'string' ? 'other text' : kindOf(value)} was given.`,
+      'malformed-input',
+    );
+  }
+  return value as Name;
+}
+
 /** As `ɵrecordOption`, for an option that may be left out. */
 function optionalRecord<Shape>(
   value: Shape | undefined,

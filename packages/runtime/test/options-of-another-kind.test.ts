@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import { createLocaleRequestHandler } from '../http/src/handler.js';
 import { refuseOptionsOfAnotherKind } from '../router/src/navigation-scopes.js';
-import { createLocalizationRuntime } from '../src/localization.js';
+import {
+  createLocalizationContext,
+  createLocalizationRuntime,
+} from '../src/localization.js';
+import { createLocalizationEventEmitter } from '../src/observability.js';
 import {
   LocalizationError,
   createDefaultLocalePrefixPolicy,
@@ -12,6 +16,8 @@ import {
   createPathPrefixLocalePolicy,
   localizedServerRoutes,
   validateRouteProjection,
+  ɵfunctionOption,
+  ɵnamedOption,
   type GeneratedConfiguration,
   type LocalizationSetup,
 } from '@neolorn/equator/core';
@@ -28,6 +34,10 @@ import { compileSet, loadersFor, scope } from './catalog-store-harness.js';
  * policy constructors, the identifier codec, the request handler with the policy, the projection
  * and the generated configuration it reads, the server routes, the options of the Router
  * integration, and the localization context.
+ *
+ * An option declared as a function, or as one of a set of named values, is held the same way. The
+ * features that take one are built inside an Angular application, so the cases here call the two
+ * checks those features call, and the sink of a context, which a unit test can hand over.
  */
 
 /** Every kind of value that is not an object. */
@@ -50,6 +60,29 @@ const NOT_A_LIST: readonly (readonly [string, unknown])[] = [
   ['an object', { a: 1 }],
   ['an empty object', {}],
   ['a function', () => undefined],
+];
+
+/** Every kind of value that is not a function. */
+const NOT_A_FUNCTION: readonly (readonly [string, unknown])[] = [
+  ['nothing', undefined],
+  ['null', null],
+  ['text', 'text'],
+  ['a number', 7],
+  ['a boolean', true],
+  ['a list', ['x']],
+  ['an object', { call: () => undefined }],
+];
+
+/** Every kind of value that is none of the names an option declares. */
+const NOT_A_NAME: readonly (readonly [string, unknown])[] = [
+  ['nothing', undefined],
+  ['null', null],
+  ['other text', 'cookie'],
+  ['a name in another case', 'URL'],
+  ['a number', 7],
+  ['a list of one name', ['url']],
+  ['an object', { url: true }],
+  ['a function', () => 'url'],
 ];
 
 /** The diagnostic a call refuses with, or `undefined` when it did not refuse. */
@@ -355,6 +388,82 @@ describe('a scope option of the Router integration', () => {
       }
     },
   );
+});
+
+describe('an option declared as a function', () => {
+  it.each(NOT_A_FUNCTION)('is refused when it is %s', (_, value) => {
+    expect(refusal(() => ɵfunctionOption(value, 'The option'))).toMatchObject({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      reason: 'malformed-input',
+    });
+  });
+
+  it('is taken as given when it is one', () => {
+    const given = (): number => 1;
+    expect(ɵfunctionOption(given, 'The option')).toBe(given);
+  });
+});
+
+describe('an option declared as one of a set of named values', () => {
+  it.each(NOT_A_NAME)('is refused when it is %s', (_, value) => {
+    expect(
+      refusal(() => ɵnamedOption(value, ['url', 'stored'], 'The option')),
+    ).toMatchObject({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      reason: 'malformed-input',
+    });
+  });
+
+  it('names the values it takes and never the one it was given', () => {
+    expect(
+      refusal(() => ɵnamedOption('cookie', ['url', 'stored'], 'The option'))
+        ?.message,
+    ).toBe('The option must be one of url, stored, and other text was given.');
+  });
+
+  it('is taken as given when it is one of them', () => {
+    expect(ɵnamedOption('stored', ['url', 'stored'], 'The option')).toBe(
+      'stored',
+    );
+  });
+});
+
+describe('an observability sink', () => {
+  const SINKS: readonly (readonly [string, unknown])[] = [
+    ...NOT_AN_OBJECT,
+    ['an object with no emit', {}],
+    ['an object whose emit is text', { emit: 'text' }],
+  ];
+
+  it.each(SINKS)('is refused by the emitter when it is %s', (_, value) => {
+    expect(
+      refusal(() => createLocalizationEventEmitter(value as never)),
+    ).toMatchObject({ code: 'invalid-configuration' });
+  });
+
+  it.each(SINKS)('is refused by a context when it is %s', (_, value) => {
+    const set = compileSet();
+    expect(
+      refusal(() =>
+        createLocalizationContext({
+          setup: {
+            configuration: set.configuration,
+            catalogSet: set.descriptor,
+            catalogLoaders: loadersFor(set),
+          } as unknown as LocalizationSetup,
+          observability: value as never,
+        }),
+      ),
+    ).toMatchObject({ code: 'invalid-configuration' });
+  });
+
+  it('is taken when it is an object that emits', () => {
+    expect(
+      refusal(() => createLocalizationEventEmitter({ emit: () => undefined })),
+    ).toBeUndefined();
+  });
 });
 
 describe('options of the kind their declaration names', () => {

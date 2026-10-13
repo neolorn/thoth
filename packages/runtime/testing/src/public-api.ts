@@ -40,6 +40,11 @@ import {
   type LocalizationScope,
   type LocalizationSetup,
 } from '@neolorn/equator';
+import {
+  ɵfunctionOption,
+  ɵlistOption,
+  ɵrecordOption,
+} from '@neolorn/equator/core';
 
 interface DeferredPlan {
   readonly started: Promise<void>;
@@ -290,6 +295,12 @@ export class LocalizationTestingController {
   readonly catalogLoaders: CatalogLoaders;
 
   constructor(loaders: CatalogLoaders) {
+    // Each loader is wrapped below, and the wrapper is a function whatever it wraps, so the
+    // context would take a table of anything as a table of loaders.
+    ɵrecordOption(loaders, 'The catalogLoaders of the setup');
+    for (const [identity, loader] of Object.entries(loaders)) {
+      ɵfunctionOption(loader, `The catalog loader ${identity}`);
+    }
     this.catalogLoaders = Object.freeze(
       Object.fromEntries(
         Object.entries(loaders).map(([identity, loader]) => [
@@ -359,6 +370,7 @@ export function provideLocalizationTesting(
   setup: LocalizationSetup,
   ...features: readonly LocalizationFeature[]
 ): EnvironmentProviders {
+  ɵrecordOption(setup, 'The setup of provideLocalizationTesting()');
   const controller = new LocalizationTestingController(setup.catalogLoaders);
   return makeEnvironmentProviders([
     {
@@ -394,6 +406,18 @@ export function createInMemoryCatalogLoaders(
     readonly catalog: unknown;
   }[],
 ): CatalogLoaders {
+  ɵlistOption(catalogs, 'The catalogs of createInMemoryCatalogLoaders()');
+  // A copy, so an empty slot is read as the catalog it is not.
+  for (const entry of Array.from(catalogs as readonly unknown[])) {
+    const given = ɵrecordOption(
+      entry,
+      'A catalog of createInMemoryCatalogLoaders()',
+    ) as { readonly key?: unknown };
+    ɵrecordOption(
+      given.key,
+      'The key of a catalog of createInMemoryCatalogLoaders()',
+    );
+  }
   return Object.freeze(
     Object.fromEntries(
       catalogs.map(({ key, catalog }) => [

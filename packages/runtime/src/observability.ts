@@ -11,7 +11,11 @@
 // configured it builds no event at all, so an application that wants none pays nothing for
 // the capability.
 
-import { type LocalizationFailureCode } from '@neolorn/equator/core';
+import {
+  type LocalizationFailureCode,
+  ɵfunctionOption,
+  ɵrecordOption,
+} from '@neolorn/equator/core';
 
 /**
  * The version stamp every runtime event carries, so a consumer of the stream can tell what shape
@@ -254,9 +258,22 @@ function emitLocalizationEvent(
   }
 }
 
+/**
+ * Refuses a sink that is not an object with an `emit` function.
+ *
+ * Read as a value of no known type, because the declared type is the caller's claim. A sink of
+ * another kind fails on the first event, and a report that throws is dropped where it is made, so
+ * the application would report nothing and nothing would say why.
+ */
+export function refuseSinkOfAnotherKind(sink: unknown, name: string): void {
+  const given = ɵrecordOption(sink, name) as { readonly emit?: unknown };
+  ɵfunctionOption(given.emit, `emit of ${name}`);
+}
+
 export function createLocalizationEventEmitter(
   sink: LocalizationObservabilitySink,
 ): LocalizationEventEmitter {
+  refuseSinkOfAnotherKind(sink, 'The observability sink');
   const failures = new Map<string, number>();
   return Object.freeze({
     emit: (input: LocalizationEventInput): void => {

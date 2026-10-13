@@ -1949,7 +1949,10 @@
       "statement": "A release MUST refuse a value of another kind, `null` included, with the `invalid-configuration` diagnostic where the configuration is given, and MUST NOT read text as a table of its characters, a number as an empty table, or an object as a list.",
       "checks": [
         "assurance:option-of-another-kind-read-as-an-object",
-        "assurance:option-of-another-kind-read-as-a-list"
+        "assurance:option-of-another-kind-read-as-a-list",
+        "assurance:option-of-another-kind-called-as-a-function",
+        "assurance:option-outside-its-named-values-let-through",
+        "assurance:observability-sink-of-another-kind-stored"
       ]
     },
     {

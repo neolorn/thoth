@@ -3397,6 +3397,33 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/options-of-another-kind.test.ts',
   },
   {
+    id: 'option-of-another-kind-called-as-a-function',
+    invariant:
+      'An option declared as a function is refused as a configuration error when it is given a value of another kind.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: "  if (typeof value !== 'function') {\n    return routeError(",
+    replace: "  if (typeof value === 'symbol') {\n    return routeError(",
+    caughtBy: 'packages/runtime/test/options-of-another-kind.test.ts',
+  },
+  {
+    id: 'option-outside-its-named-values-let-through',
+    invariant:
+      'An option declared as one of a set of named values is refused as a configuration error when it is given any other value.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: "  if (typeof value !== 'string' || !names.includes(value as Name)) {",
+    replace: "  if (typeof value === 'symbol') {",
+    caughtBy: 'packages/runtime/test/options-of-another-kind.test.ts',
+  },
+  {
+    id: 'observability-sink-of-another-kind-stored',
+    invariant:
+      'An observability sink that is not an object with an emit function is refused as a configuration error where it is handed over.',
+    source: 'packages/runtime/src/observability.ts',
+    find: "  refuseSinkOfAnotherKind(sink, 'The observability sink');",
+    replace: '  void 0;',
+    caughtBy: 'packages/runtime/test/options-of-another-kind.test.ts',
+  },
+  {
     id: 'option-of-another-kind-read-as-a-list',
     invariant:
       'An option declared as a list is refused as a configuration error when it is given a value of another kind.',
