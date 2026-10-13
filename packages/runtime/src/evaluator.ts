@@ -48,6 +48,7 @@ import {
   isUnicodeKeywordType,
   messageOptionProblem,
   numberFormatOptions,
+  type MessageFunctionOptionProfile,
   type MessageOperandKind,
 } from './message-function-options';
 import {
@@ -606,11 +607,8 @@ function plainResolved(
     isolate: false,
     // ":string" "provides string selection and formatting", and an unannotated selector is
     // resolved through this same path. The suite writes no Bad Selector case for either.
-    selection: Object.freeze({
-      match: (key: string) => key === compare,
-      // ":string" ranks nothing: every key that matches is the same key.
-      betterThan: () => false,
-    }),
+    // A list of the one key: ":string" ranks nothing, since every key that matches is that key.
+    selection: listedSelection([compare]),
   });
 }
 
@@ -1005,8 +1003,10 @@ function resolvedNumberOptions(
   functionName: string,
   declared: Readonly<Record<string, string>>,
 ): Readonly<Record<string, string>> {
-  const excluded =
-    MESSAGE_FUNCTION_OPTIONS[functionName]?.excludedFromResolved ?? [];
+  // Every function resolved as a number has a profile, and a profile always names this list.
+  const { excludedFromResolved: excluded } = MESSAGE_FUNCTION_OPTIONS[
+    functionName
+  ] as MessageFunctionOptionProfile;
   if (excluded.length === 0) return Object.freeze({ ...declared });
   return Object.freeze(
     Object.fromEntries(
@@ -1457,7 +1457,8 @@ function resolveExpression(
 }
 
 /**
- * Selection over the keys a registered function answered with, best first.
+ * Selection over a list of keys, best first: the keys a registered function answered with, or the
+ * one key a value that selects as text matches.
  *
  * The list is copied once, so `match` and `betterThan` answer from the same keys rather than
  * re-reading an object the extension still holds.

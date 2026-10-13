@@ -1580,14 +1580,6 @@
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "ArrowFunction",
-      "original": "() => false",
-      "replacement": "() => undefined",
-      "category": "unreachable",
-      "reason": "This is betterThan of a value that selects as text. selectorsCompare asks it only about two different keys that both match, and match is equality with one string, so no two different keys both match and it is never called."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
       "mutator": "StringLiteral",
       "original": "'Message evaluation exceeded the fixed step ceiling.'",
       "replacement": "\"\"",
@@ -1830,14 +1822,6 @@
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "OptionalChaining",
-      "original": "MESSAGE_FUNCTION_OPTIONS[functionName]?.excludedFromResolved",
-      "replacement": "MESSAGE_FUNCTION_OPTIONS[functionName].excludedFromResolved",
-      "category": "unreachable",
-      "reason": "resolvedNumberOptions is called only from numericResolved (line 1043), which is reached only from the six numeric cases of the switch on lines 1226 to 1236, and MESSAGE_FUNCTION_OPTIONS in message-function-options.ts has a profile for each of the six, so the lookup is never undefined."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
       "mutator": "ConditionalExpression",
       "original": "excluded.length === 0",
       "replacement": "false",
@@ -2052,7 +2036,7 @@
       "original": "matching.indexOf(left) < matching.indexOf(right)",
       "replacement": "matching.indexOf(left) <= matching.indexOf(right)",
       "category": "equivalent",
-      "reason": "betterThan is asked only about two different keys that both match (line 1534 skips equal keys), both are therefore in a list line 1318 holds free of duplicates, and two different entries never have equal indexes."
+      "reason": "betterThan is asked only about two different keys that both match (selectorsCompare skips equal keys), both are therefore in the list, which is the one key of a value that selects as text or a registered function's keys, held free of duplicates where they are admitted, and two different entries never have equal indexes."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
