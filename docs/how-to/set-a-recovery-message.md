@@ -21,6 +21,7 @@ messages:
 ```
 
 The second names the retry control. Write it in every locale you ship, the way you write the first.
+`generate` reports `EQ1501` for either one that takes an input or carries a slot.
 
 ## Compose it
 
