@@ -427,14 +427,13 @@ address bar follow it, leaving the route, its parameters, and its history entry 
 switch itself, and a consumer application MUST change locale through the localization API rather
 than by navigating to a localized address.
 
-The address the bar follows to is built before the transaction commits. Where the target locale is
-served in this document and the route on screen has no address in it, because a parameter has no
-spelling there or because a declared spelling is one the route's codec refuses, a release MUST end
-the change as failed with the diagnostic the address was refused with, and MUST NOT commit a locale
-the address bar cannot follow. A locale change a navigation makes is answered for the navigation's
-destination instead. Where the target locale is served by another origin the change is a redirect,
-and an address there that is refused for a declared spelling ends it as failed in the same way,
-with the document left where it is.
+The address a change moves to is built before anything changes: the address the bar follows to
+where the target locale is served in this document, and the address the document is sent to where
+another origin serves it. Where the route on screen has no address in the target locale, because a
+parameter has no spelling there or because a declared spelling is one the route's codec refuses, a
+release MUST end the change as failed with the diagnostic the address was refused with, MUST NOT
+commit a locale the address bar cannot follow, and MUST NOT send the document to another origin. A
+locale change a navigation makes is answered for the navigation's destination instead.
 
 A release MUST publish a snapshot only through a transaction, including when a single scope
 finishes loading, so every commit observer sees the same kind of event.

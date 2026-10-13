@@ -407,6 +407,17 @@ export const injections = Object.freeze([
     replace: '    void locale;',
   },
   {
+    id: 'document-sent-to-an-origin-with-no-address',
+    invariant:
+      "A locale change to another origin, on a page with no spelling in that locale, ends as failed and does not send the document to that origin's root.",
+    source: 'packages/runtime/router/src/route-localization.ts',
+    // The refusing build stays in the expression, so the injected source still compiles with
+    // every symbol read.
+    find: '      this.addressesFor(context, spellings)[locale] ??\n      buildLocalizedRoute(',
+    replace:
+      '      this.addressesFor(context, spellings)[locale] ??\n      (this.options.policy.locales[locale] as string) ??\n      buildLocalizedRoute(',
+  },
+  {
     id: 'canonical-correction-split-into-hops',
     invariant:
       'A prefix or alias correction is combined with every other correction the address needs into a single 308.',

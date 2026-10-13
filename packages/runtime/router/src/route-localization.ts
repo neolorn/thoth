@@ -607,6 +607,9 @@ export class RouteLocalization {
    * `defaultView` is `null` while server rendering, and then nothing moves. The address is still
    * the honest answer to what was asked, and reporting it is better than committing a locale this
    * origin does not serve.
+   *
+   * Throws where the page on screen has no address in that locale, and `changeLocale` ends the
+   * change as failed with what was thrown.
    */
   private crossOriginAddress(locale: string): string | undefined {
     const { policy } = this.options;
@@ -617,14 +620,36 @@ export class RouteLocalization {
     }
     const active = untracked(this.context);
     const address =
-      active === undefined
-        ? origin
-        : (this.addressesFor(
-            active,
-            this.parameters.ɵforNavigation(active.navigationId),
-          )[locale] ?? origin);
+      active === undefined ? origin : this.addressAt(active, locale);
     this.hostDocument.defaultView?.location.assign(address);
     return address;
+  }
+
+  /**
+   * The address of the page on screen in a locale another origin serves.
+   *
+   * Throws where the page has none there. The shared derivation leaves such a locale out, because
+   * the head and the switcher publish only what exists, and here that absence is the answer the
+   * change needs: section 7 of `specs/07-routing-rendering-and-seo.spec.md` ends the change as
+   * failed, and the origin's root is another page. So the address is built once more for this
+   * locale alone, which throws the refusal the derivation set aside.
+   */
+  private addressAt(context: RouteLocalizationContext, locale: string): string {
+    const spellings = this.parameters.ɵforNavigation(context.navigationId);
+    const { resolution } = context;
+    return (
+      this.addressesFor(context, spellings)[locale] ??
+      buildLocalizedRoute(
+        this.options.policy,
+        this.options.projection,
+        resolution.routeId,
+        locale,
+        resolution.parameters,
+        resolution.query,
+        resolution.fragment,
+        spellings,
+      )
+    );
   }
 
   /**
