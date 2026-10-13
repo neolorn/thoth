@@ -210,7 +210,9 @@ value keeps the fraction digits the locale shows for its kind.
 
 Writing a field answers with the text or with a reported failure, and does not throw. A value that
 is not of the profile's kind, a value written by hand that lacks a member its kind declares or holds
-something else in its place, and a locale the host refuses are each reported.
+something else in its place, and a locale the host refuses are each reported. A value the field does
+not take is reported before the context's numbering system is judged: the value is the caller's and
+the numbering system the application's, so the fault named first is the one the caller can correct.
 
 Temporal parsing uses declared patterns or generated field profiles. A release MUST NOT use
 the platform's permissive date parser, host coercion, a guessed field order, natural-language
