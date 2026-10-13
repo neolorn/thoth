@@ -306,9 +306,11 @@ const DATE_OF_AN_ARTIFACT =
 // than an internal event, so it belongs with the accepted dates above. It is spelled out
 // separately because the heading states a release without using any of those words, and the
 // bracketed version with its separator is what keeps this from accepting a sentence that
-// happens to mention a day.
+// happens to mention a day. A milestone heading is the same statement about a release made under
+// the project's earlier name: it carries the number and the day without the brackets, which are
+// kept for versions of these packages.
 const CHANGELOG_RELEASE_HEADING =
-  /^##\s+\[\d+\.\d+\.\d+[^\]]*\]\s+-\s+(?:19|20)\d{2}-\d{2}-\d{2}\s*$/u;
+  /^##\s+(?:\[\d+\.\d+\.\d+[^\]]*\]|Milestone\s+\d+\.\d+\.\d+\S*)\s+-\s+(?:19|20)\d{2}-\d{2}-\d{2}\s*$/u;
 
 /**
  * The variable naming a file of further words to refuse, one to a line.
