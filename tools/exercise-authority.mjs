@@ -92,22 +92,28 @@ export function exerciseAuthority({ inputs, locale, catalog, direction }) {
     inputs.instant.epochMilliseconds,
   );
   const date = moment(
-    { ...inputs.plainDate.options, timeZone: 'UTC' },
+    // A date with no zone is written in the calendar the application declares, as a moment is.
+    {
+      calendar: context.calendar,
+      ...inputs.plainDate.options,
+      timeZone: 'UTC',
+    },
     plainDate(inputs.plainDate),
   );
   const time = moment(
     {
+      hourCycle: context.hourCycle,
       ...inputs.plainTime.options,
       timeZone: 'UTC',
-      hourCycle: context.hourCycle,
     },
     plainTime(inputs.plainTime),
   );
   const dateTime = moment(
     {
+      calendar: context.calendar,
+      hourCycle: context.hourCycle,
       ...inputs.plainDateTime.options,
       timeZone: 'UTC',
-      hourCycle: context.hourCycle,
     },
     plainDateTime(inputs.plainDateTime),
   );
