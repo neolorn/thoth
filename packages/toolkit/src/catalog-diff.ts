@@ -168,16 +168,6 @@ function addEntry(
   entries.set(entryKey(entry), Object.freeze(entry));
 }
 
-/**
- * Compares two states of a project and says what a translation team has to do about it.
- *
- * Analyses both snapshots and compares them by message rather than by file, so a message that moved
- * between scopes is one entry rather than two and a reformatted catalog produces none at all.
- *
- * Returns the changes and a digest of them, or the reasons either snapshot could not be analysed.
- * A rename must be declared through `identityMoves`; without that it reads as a deletion and an
- * addition, which throws away the translations.
- */
 const SNAPSHOT_ARGUMENT: ArgumentShape = {
   required: { configuration: 'record', catalogs: ['record'] },
   optional: { extensions: EXTENSION_REGISTRY_ARGUMENT },
@@ -206,6 +196,16 @@ function admitSnapshot(
   );
 }
 
+/**
+ * Compares two states of a project and says what a translation team has to do about it.
+ *
+ * Analyses both snapshots and compares them by message rather than by file, so a message that moved
+ * between scopes is one entry rather than two and a reformatted catalog produces none at all.
+ *
+ * Returns the changes and a digest of them, or the reasons either snapshot could not be analysed.
+ * A rename must be declared through `identityMoves`; without that it reads as a deletion and an
+ * addition, which throws away the translations.
+ */
 export function diffCatalogSets(
   request: CatalogDiffRequest,
 ): ToolkitResult<CatalogDiff> {

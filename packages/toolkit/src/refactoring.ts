@@ -320,6 +320,10 @@ function changedCatalogFiles(
   return toolkitSuccess(Object.freeze(changes));
 }
 
+const IDENTITY_ARGUMENT: ArgumentShape = {
+  required: { providerId: 'text', scopeId: 'text', messageId: 'text' },
+};
+
 /**
  * Works out everything a message rename touches, and writes nothing.
  *
@@ -330,10 +334,6 @@ function changedCatalogFiles(
  * that is already taken. Applying a rename plan is a separate step, and it is refused there if a
  * file it expects has changed since.
  */
-const IDENTITY_ARGUMENT: ArgumentShape = {
-  required: { providerId: 'text', scopeId: 'text', messageId: 'text' },
-};
-
 export function planMessageRefactor(
   request: MessageRefactorRequest,
 ): ToolkitResult<MessageRefactorPlan> {
