@@ -3132,6 +3132,16 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/written-out-locale-policies.test.ts',
   },
   {
+    id: 'locale-that-is-not-text-read-as-a-tag',
+    invariant:
+      'A policy constructor refuses an empty slot in a list of locales, and a locale that is not text, as a configuration error.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: "  if (typeof value !== 'string') {\n    return routeError(\n      'A route locale that is not text is invalid.',",
+    replace:
+      "  if (value === 0) {\n    return routeError(\n      'A route locale that is not text is invalid.',",
+    caughtBy: 'packages/runtime/test/policy-list-empty-slot.test.ts',
+  },
+  {
     id: 'roots-list-empty-slot-read-as-text',
     invariant:
       'An empty slot in a list of locale-neutral roots is refused, and is not read as the path segment its spelling would be.',

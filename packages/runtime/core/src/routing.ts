@@ -1162,7 +1162,20 @@ function routeError(
   );
 }
 
-function canonicalLocale(value: string): string {
+/**
+ * A locale in its canonical spelling, or the refusal of one that has none.
+ *
+ * Taken as a value of no known type, because a locale reaches here from options an application
+ * wrote: an empty slot in a list of locales and a value that is not text are refused as a tag that
+ * is not one, where reading either as text would throw an error that names nothing.
+ */
+function canonicalLocale(value: unknown): string {
+  if (typeof value !== 'string') {
+    return routeError(
+      'A route locale that is not text is invalid.',
+      'malformed-input',
+    );
+  }
   return (
     canonicalizeLanguageTag(value) ??
     routeError(

@@ -116,7 +116,8 @@ kind decides nothing where the application that wrote it expects it to. A prefix
 locale-neutral root are each one to 63 lowercase ASCII letters, digits, and hyphens that begin and
 end with a letter or a digit, and any such text is accepted, a word such as `undefined` included.
 An empty slot in a list of roots is not text, so a constructor and a reading of a written-out
-policy both refuse it as a root that is not a path segment.
+policy both refuse it as a root that is not a path segment. A constructor refuses an empty slot in
+a list of locales, and a locale that is not text, the same way, as a locale that is not a tag.
 
 The policy states intent and the build decides which locales exist. A release MUST intersect
 the declared policy with the generated configuration once, into a narrowed policy, and MUST resolve,

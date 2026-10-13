@@ -1894,6 +1894,7 @@
       "checks": [
         "assurance:written-out-policy-table-read-unchecked",
         "assurance:roots-list-empty-slot-read-as-text",
+        "assurance:locale-that-is-not-text-read-as-a-tag",
         "assurance:written-out-policy-member-of-another-kind-read"
       ]
     },
