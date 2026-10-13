@@ -28,7 +28,7 @@ import {
   snapshotInertJson,
   waitForSignal,
   type InertJsonSnapshot,
-  compareCodePoint,
+  compareCodeUnit,
 } from './runtime-safety';
 import {
   RUNTIME_EVENT_CODES,
@@ -106,7 +106,7 @@ function canonicalize(value: unknown): string {
   }
   if (!isDataRecord(value)) return JSON.stringify(value);
   return `{${Object.keys(value)
-    .sort(compareCodePoint)
+    .sort(compareCodeUnit)
     .map((key) => `${JSON.stringify(key)}:${canonicalize(value[key])}`)
     .join(',')}}`;
 }

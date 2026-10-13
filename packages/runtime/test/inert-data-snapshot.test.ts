@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   codePointLengthAtMost,
-  compareCodePoint,
+  compareCodeUnit,
   safeDiagnosticIdentifier,
   snapshotInertJson,
 } from '../src/runtime-safety.js';
@@ -387,12 +387,12 @@ describe('an identifier made safe to print', () => {
 
 describe('ordering keys by code unit', () => {
   it('puts the lower key first, the higher last, and ties nowhere', () => {
-    expect(compareCodePoint('a', 'b')).toBe(-1);
-    expect(compareCodePoint('b', 'a')).toBe(1);
-    expect(compareCodePoint('a', 'a')).toBe(0);
-    expect(compareCodePoint('Z', 'a')).toBe(-1);
-    expect(compareCodePoint('a', 'aa')).toBe(-1);
-    expect(['b', 'a', 'Z', 'aa'].sort(compareCodePoint)).toStrictEqual([
+    expect(compareCodeUnit('a', 'b')).toBe(-1);
+    expect(compareCodeUnit('b', 'a')).toBe(1);
+    expect(compareCodeUnit('a', 'a')).toBe(0);
+    expect(compareCodeUnit('Z', 'a')).toBe(-1);
+    expect(compareCodeUnit('a', 'aa')).toBe(-1);
+    expect(['b', 'a', 'Z', 'aa'].sort(compareCodeUnit)).toStrictEqual([
       'Z',
       'a',
       'aa',

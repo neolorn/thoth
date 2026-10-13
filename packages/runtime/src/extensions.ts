@@ -25,7 +25,7 @@ import {
   isDataRecord,
   sha256Base64Url,
   snapshotInertJson,
-  compareCodePoint,
+  compareCodeUnit,
 } from './runtime-safety';
 
 const extensionValueTypes = new Set([
@@ -349,7 +349,7 @@ export function defineRuntimeExtensions(
   const seen = new Set<string>();
   const normalized = bindings.map((binding) => normalizeBinding(binding));
   normalized.sort((left, right) =>
-    compareCodePoint(key(left.descriptor), key(right.descriptor)),
+    compareCodeUnit(key(left.descriptor), key(right.descriptor)),
   );
   for (const binding of normalized) {
     const identity = key(binding.descriptor);

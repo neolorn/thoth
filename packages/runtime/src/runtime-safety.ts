@@ -161,8 +161,8 @@ export function snapshotGeneratedJson(
   }
 }
 
-/** Orders two keys by code point, for a table whose order has to be the same on every run. */
-export function compareCodePoint(left: string, right: string): number {
+/** Orders two keys by UTF-16 code unit, for a table whose order has to be the same on every run. */
+export function compareCodeUnit(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
