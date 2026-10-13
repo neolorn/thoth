@@ -119,6 +119,11 @@ An empty slot in a list of roots is not text, so a constructor and a reading of 
 policy both refuse it as a root that is not a path segment. A constructor refuses an empty slot in
 a list of locales, and a locale that is not text, the same way, as a locale that is not a tag.
 
+An option a constructor or a provider declares as an object or as a list is of that kind, the
+options themselves included. A release MUST refuse a value of another kind, `null` included, with
+the `invalid-configuration` diagnostic where the configuration is given, and MUST NOT read text as
+a table of its characters, a number as an empty table, or an object as a list.
+
 The policy states intent and the build decides which locales exist. A release MUST intersect
 the declared policy with the generated configuration once, into a narrowed policy, and MUST resolve,
 publish, and provide from that value alone, so a site added later inherits the intersection rather

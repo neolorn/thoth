@@ -1919,6 +1919,15 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "3. Locale URL policies",
+      "statement": "A release MUST refuse a value of another kind, `null` included, with the `invalid-configuration` diagnostic where the configuration is given, and MUST NOT read text as a table of its characters, a number as an empty table, or an object as a list.",
+      "checks": [
+        "assurance:option-of-another-kind-read-as-an-object",
+        "assurance:option-of-another-kind-read-as-a-list"
+      ]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "3. Locale URL policies",
       "statement": "A release MUST intersect the declared policy with the generated configuration once, into a narrowed policy, and MUST resolve, publish, and provide from that value alone, so a site added later inherits the intersection rather than repeating it.",
       "checks": ["assurance:built-policy-keeps-unbuilt-aliases"]
     },

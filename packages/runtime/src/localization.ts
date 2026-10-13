@@ -66,6 +66,8 @@ import {
   type RuntimeParsingAdapterBinding,
   type ScopeReadiness,
   type ZonedDateTimeValue,
+  ɵlistOption,
+  ɵrecordOption,
 } from '@neolorn/equator/core';
 import {
   LocalCatalogStore,
@@ -1137,6 +1139,9 @@ class LocalizationInternal {
     readonly facade: Localization,
     readonly options: LocalizationRuntimeOptions,
   ) {
+    ɵrecordOption(options, 'The options of a localization context');
+    ɵrecordOption(options.setup, 'The setup of a localization context');
+    ɵlistOption(options.bootstrapScopes, 'bootstrapScopes');
     this.observability = options.observability;
     const configuration = snapshotGeneratedJson(
       options.setup.configuration,
@@ -3705,6 +3710,8 @@ class RuntimeLocalization implements Localization {
 export function createLocalizationContext(
   options: LocalizationContextOptions & LocalizationObservabilityOptions,
 ): Localization {
+  ɵrecordOption(options, 'The options of createLocalizationContext()');
+  ɵrecordOption(options.setup, 'The setup of createLocalizationContext()');
   const bootstrapScopes =
     options.bootstrapScopes ??
     Object.freeze(

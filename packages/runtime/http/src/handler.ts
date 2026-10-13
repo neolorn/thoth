@@ -23,9 +23,11 @@ import {
   resolveLocalizedRoute,
   routeCacheHeaders,
   routeHttpDescriptor,
+  validateRouteProjection,
   ɵassertStorableCookie,
   type ɵCookieAttributes,
   ɵopenPageOutcomeChannel,
+  ɵrecordOption,
   ɵtakePageOutcome,
   type DeclaredPageOutcomeDescriptor,
   type GeneratedConfiguration,
@@ -329,6 +331,10 @@ const ONE_YEAR_SECONDS = 31_536_000;
 export function createLocaleRequestHandler(
   options: LocaleRequestHandlerOptions,
 ): LocaleRequestHandler {
+  ɵrecordOption(options, 'The options of createLocaleRequestHandler');
+  ɵrecordOption(options.cache, 'cache');
+  // Checked where the handler is made, and not by the first request that reads a route.
+  validateRouteProjection(options.projection);
   const policy =
     options.configuration === undefined
       ? options.policy
@@ -336,7 +342,12 @@ export function createLocaleRequestHandler(
   // Read once here, so a policy written out with tables no constructor writes is refused where the
   // handler is made, and no request reads a table before the policy has been held to them.
   allowedLocaleHosts(policy);
-  const cookie = options.cookie ?? {};
+  const cookie =
+    options.cookie === false
+      ? false
+      : options.cookie === undefined
+        ? {}
+        : ɵrecordOption(options.cookie, 'cookie');
   // The attributes are settled once, so the cookie that is checked is the cookie that is written.
   const stored =
     cookie === false

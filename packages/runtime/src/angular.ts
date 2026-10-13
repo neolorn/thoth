@@ -44,6 +44,8 @@ import {
   type RouteRuntimeProjection,
   type RouteSeoProjection,
   type RuntimeExtensionBinding,
+  ɵlistOption,
+  ɵrecordOption,
 } from '@neolorn/equator/core';
 import {
   Localization,
@@ -442,8 +444,10 @@ export interface RecoveryMessageOptions {
 export function withRecoveryMessage(
   options: RecoveryMessageOptions,
 ): LocalizationFeature<'recovery-message'> {
+  ɵrecordOption(options, 'The options of withRecoveryMessage()');
   const plain = (handle: MessageHandle): void => {
-    if (handle.inputNames.length > 0) {
+    ɵrecordOption(handle, 'A recovery message');
+    if (ɵlistOption(handle.inputNames, 'inputNames').length > 0) {
       throw new LocalizationError({
         code: 'invalid-configuration',
         outcome: 'operational-failure',
@@ -477,7 +481,9 @@ export function withFormattingContext(
 ): LocalizationFeature<'formatting-context'> {
   return freezeFeature<FormattingContextFeature>({
     ɵkind: 'formatting-context',
-    context: Object.freeze({ ...context }),
+    context: Object.freeze({
+      ...ɵrecordOption(context, 'The context of withFormattingContext()'),
+    }),
   });
 }
 
@@ -509,7 +515,9 @@ export function withRelativeTimePolicy(
 ): LocalizationFeature<'relative-time-policy'> {
   return freezeFeature<RelativeTimePolicyFeature>({
     ɵkind: 'relative-time-policy',
-    policy: Object.freeze({ ...policy }),
+    policy: Object.freeze({
+      ...ɵrecordOption(policy, 'The policy of withRelativeTimePolicy()'),
+    }),
   });
 }
 
@@ -602,7 +610,9 @@ export function withExtensions(
 ): LocalizationFeature<'extensions'> {
   return freezeFeature<ExtensionsFeature>({
     ɵkind: 'extensions',
-    bindings: Object.freeze([...bindings]),
+    bindings: Object.freeze([
+      ...ɵlistOption(bindings, 'The bindings of withExtensions()'),
+    ]),
   });
 }
 
@@ -622,6 +632,7 @@ export function withRouting(
 ): LocalizationFeature<'routing'> {
   // A caller who is not type-checked reaches this the same way a type-checked one does, so the
   // policy is read as whatever was passed rather than as the field the options declare.
+  ɵrecordOption(options, 'The options of withRouting()');
   const policy: unknown = options.policy;
   if (policy === undefined) {
     throw new LocalizationError({
@@ -629,6 +640,18 @@ export function withRouting(
       outcome: 'operational-failure',
       message: 'withRouting() requires a locale URL policy.',
     });
+  }
+  ɵrecordOption(policy, 'The policy of withRouting()');
+  // Its generated half is read for its identity before the projection is checked as a whole.
+  ɵrecordOption(
+    ɵrecordOption(options.projection, 'The projection of withRouting()')
+      .generated,
+    'The generated half of the projection of withRouting()',
+  );
+  for (const name of ['indexing', 'sitemap', 'caching'] as const) {
+    if (options[name] !== undefined) {
+      ɵrecordOption(options[name], `The ${name} policy of withRouting()`);
+    }
   }
   const frozen = Object.freeze({ ...options });
   return freezeFeature<RoutingFeature>({
@@ -1819,6 +1842,7 @@ export function provideLocalizationSetup(
   setup: LocalizationSetup,
   ...features: readonly LocalizationFeature[]
 ): EnvironmentProviders {
+  ɵrecordOption(setup, 'The setup of provideLocalizationSetup()');
   const recovery = oneFeature(features, 'recovery-message') as
     RecoveryMessageFeature | undefined;
   const formatting = oneFeature(features, 'formatting-context') as

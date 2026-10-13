@@ -35,6 +35,7 @@ import {
   type LocaleUrlPolicy,
   type LocalizedAddressContext,
 } from '@neolorn/equator';
+import { ɵlistOption } from '@neolorn/equator/core';
 
 import { LocalizedAddressSync } from './address-sync.js';
 import {
@@ -43,7 +44,10 @@ import {
   type RouteDocumentField,
 } from './document-messages.js';
 import { LocalizedLocationStrategy } from './location-strategy.js';
-import { refuseUndeclaredMode } from './navigation-scopes.js';
+import {
+  refuseOptionsOfAnotherKind,
+  refuseUndeclaredMode,
+} from './navigation-scopes.js';
 import { LocalizedUrlHandlingStrategy } from './url-handling-strategy.js';
 import { LocalizedTitleStrategy } from './title-strategy.js';
 import {
@@ -252,6 +256,8 @@ export function provideLocalizedRouter(
   // refused where the declaration is built rather than where the page is visited, and this call is
   // where an application builds it. Deferred to a navigation, the failure is a title with its
   // placeholders showing, on one route, in whichever locale that route was first opened in.
+  ɵlistOption(routes, 'The routes of provideLocalizedRouter');
+  refuseOptionsOfAnotherKind(options);
   refuseUnboundDocumentMessages(options);
   // Here as well as where the integration is constructed, so the refusal is in the stack of the
   // call that wrote the option.

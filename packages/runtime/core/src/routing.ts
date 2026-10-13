@@ -1162,6 +1162,63 @@ function routeError(
   );
 }
 
+/** What a value is, in the words a refusal names it with. */
+function kindOf(value: unknown): string {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'a list';
+  return typeof value === 'object' ? 'an object' : `a ${typeof value}`;
+}
+
+/**
+ * An option held to the object its declaration names, or the refusal of anything else.
+ *
+ * An application that is not type-checked can pass any value. Reading the members of `null`
+ * throws an error that names no option, and `Object.entries` reads text as a table of its
+ * characters and a number as an empty table, which would configure something nobody wrote.
+ */
+export function ɵrecordOption<Shape>(value: Shape, name: string): Shape {
+  const given: unknown = value;
+  if (typeof given !== 'object' || given === null || Array.isArray(given)) {
+    return routeError(
+      `${name} must be an object, and ${kindOf(given)} was given.`,
+      'malformed-input',
+    );
+  }
+  return value;
+}
+
+/**
+ * An option held to the list its declaration names, or the refusal of anything else.
+ *
+ * Text is iterable and an object with a `length` copies as a list, so either would otherwise be
+ * read as entries nobody wrote.
+ */
+export function ɵlistOption<Shape>(value: Shape, name: string): Shape {
+  if (!Array.isArray(value)) {
+    return routeError(
+      `${name} must be a list, and ${kindOf(value)} was given.`,
+      'malformed-input',
+    );
+  }
+  return value;
+}
+
+/** As `ɵrecordOption`, for an option that may be left out. */
+function optionalRecord<Shape>(
+  value: Shape | undefined,
+  name: string,
+): Shape | undefined {
+  return value === undefined ? undefined : ɵrecordOption(value, name);
+}
+
+/** As `ɵlistOption`, for an option that may be left out. */
+function optionalList<Shape>(
+  value: Shape | undefined,
+  name: string,
+): Shape | undefined {
+  return value === undefined ? undefined : ɵlistOption(value, name);
+}
+
 /**
  * A locale in its canonical spelling, or the refusal of one that has none.
  *
@@ -1228,7 +1285,13 @@ function builtLocales(
   // Every provider that narrows a policy reaches this first, so the policy is held to its tables
   // before any of them is read.
   assertLocalePolicy(policy);
-  const built = new Set(configuration.locales.map(canonicalLocale));
+  ɵrecordOption(configuration, 'The generated configuration');
+  const built = new Set(
+    ɵlistOption(
+      configuration.locales,
+      'The locales of the generated configuration',
+    ).map(canonicalLocale),
+  );
   if (!built.has(policy.defaultLocale)) {
     routeError(
       `This policy makes ${JSON.stringify(policy.defaultLocale)} the default locale and the generated configuration passed alongside it lists ${configuration.locales.map((locale) => JSON.stringify(locale)).join(', ')}. Pass the same generated configuration the application's own \`provideLocalization()\` received, or add the locale to it.`,
@@ -1395,7 +1458,10 @@ export function builtLocalePolicy(
 export function createPathPrefixLocalePolicy(
   options: PathPrefixLocalePolicyOptions,
 ): PathPrefixLocalePolicy {
-  const localeEntries = Object.entries(options.locales);
+  ɵrecordOption(options, 'The options of a path-prefix policy');
+  const localeEntries = Object.entries(
+    ɵrecordOption(options.locales, 'locales'),
+  );
   if (localeEntries.length === 0)
     routeError('A route policy requires locales.');
   const locales: Record<string, string> = {};
@@ -1421,17 +1487,22 @@ export function createPathPrefixLocalePolicy(
     routeError('The route default locale must be supported.');
   }
   // Every slot of the list is read, an empty one included, which `map` passes over.
-  const neutral = Array.from(options.localeNeutralRoots ?? [], (value) => {
-    if (!validPrefix(value) || occupied.has(value)) {
-      return routeError(
-        `Locale-neutral root ${JSON.stringify(value)} is invalid or colliding.`,
-      );
-    }
-    occupied.add(value);
-    return value;
-  });
+  const neutral = Array.from(
+    optionalList(options.localeNeutralRoots, 'localeNeutralRoots') ?? [],
+    (value) => {
+      if (!validPrefix(value) || occupied.has(value)) {
+        return routeError(
+          `Locale-neutral root ${JSON.stringify(value)} is invalid or colliding.`,
+        );
+      }
+      occupied.add(value);
+      return value;
+    },
+  );
   const aliases: Record<string, string> = {};
-  for (const [alias, targetValue] of Object.entries(options.aliases ?? {})) {
+  for (const [alias, targetValue] of Object.entries(
+    optionalRecord(options.aliases, 'aliases') ?? {},
+  )) {
     const target = canonicalLocale(targetValue);
     if (
       !validPrefix(alias) ||
@@ -1466,6 +1537,7 @@ export function createPathPrefixLocalePolicy(
 export function createDefaultLocalePrefixPolicy(
   options: Omit<PathPrefixLocalePolicyOptions, 'omitDefaultPrefix'>,
 ): PathPrefixLocalePolicy {
+  ɵrecordOption(options, 'The options of a default-locale-prefix policy');
   return createPathPrefixLocalePolicy({
     ...options,
     omitDefaultPrefix: true,
@@ -1514,7 +1586,7 @@ function neutralRoots(
   values: readonly string[] | undefined,
 ): readonly string[] {
   const roots = new Set<string>();
-  for (const value of values ?? []) {
+  for (const value of optionalList(values, 'localeNeutralRoots') ?? []) {
     if (!validPrefix(value) || roots.has(value)) {
       routeError(
         `Locale-neutral root ${JSON.stringify(value)} is invalid or colliding.`,
@@ -1576,6 +1648,12 @@ function textEntries(
     : undefined;
 }
 
+/** A table where it is an object, and nothing where it is a value with no entries to read. */
+function tableOrNothing<Table>(table: Table): Table | undefined {
+  const given: unknown = table;
+  return typeof given === 'object' && given !== null ? table : undefined;
+}
+
 /**
  * Refuses a policy whose tables are not ones a constructor writes.
  *
@@ -1588,6 +1666,7 @@ function textEntries(
  * constructor refuses the options behind it.
  */
 function assertLocalePolicy(policy: LocaleUrlPolicy): void {
+  ɵrecordOption(policy, 'A locale URL policy');
   if (CHECKED_POLICIES.has(policy)) return;
   // Decided before any table is read. A kind this build does not serve has none of the tables read
   // below, so reading on would name a missing table rather than the kind.
@@ -1652,10 +1731,11 @@ function assertLocalePolicy(policy: LocaleUrlPolicy): void {
     assertXDefaultPath(policy.xDefaultPath);
   } else if (policy.kind === 'locale-host') {
     const origins = textEntries(policy.origins);
+    const originTable = tableOrNothing(policy.origins);
     for (const [locale, origin] of locales) {
       if (
         trustedOrigin(origin, `Origin for ${locale}`).origin !== origin ||
-        ownEntry(policy.origins, origin) !== locale
+        ownEntry(originTable, origin) !== locale
       ) {
         refuse(
           `serves ${locale} at ${JSON.stringify(origin)}, which is not a normalized origin its origin table reads back as that locale`,
@@ -1678,11 +1758,12 @@ function assertLocalePolicy(policy: LocaleUrlPolicy): void {
   } else {
     const prefixes = textEntries(policy.prefixes);
     const aliases = textEntries(policy.aliases);
+    const prefixTable = tableOrNothing(policy.prefixes);
     for (const [locale, prefix] of locales) {
       if (
         !validPrefix(prefix) ||
         roots.includes(prefix) ||
-        ownEntry(policy.prefixes, prefix) !== locale
+        ownEntry(prefixTable, prefix) !== locale
       ) {
         refuse(
           `spells ${locale} as ${JSON.stringify(prefix)}, which is not a path segment its prefix table reads back as that locale`,
@@ -1733,8 +1814,9 @@ function assertXDefaultPath(value: unknown): void {
 export function createLocaleNeutralPolicy(
   options: LocaleNeutralPolicyOptions,
 ): LocaleNeutralPolicy {
+  ɵrecordOption(options, 'The options of a locale-neutral policy');
   const locales: Record<string, ''> = {};
-  for (const value of options.locales) {
+  for (const value of ɵlistOption(options.locales, 'locales')) {
     const locale = canonicalLocale(value);
     if (locales[locale] !== undefined) {
       routeError(
@@ -1773,7 +1855,10 @@ export function createHostLocalePolicy(
 ): HostLocalePolicy {
   const locales: Record<string, string> = {};
   const origins: Record<string, string> = {};
-  for (const [localeValue, originValue] of Object.entries(options.origins)) {
+  ɵrecordOption(options, 'The options of a host policy');
+  for (const [localeValue, originValue] of Object.entries(
+    ɵrecordOption(options.origins, 'origins'),
+  )) {
     const locale = canonicalLocale(localeValue);
     const origin = trustedOrigin(originValue, `Origin for ${locale}`).origin;
     if (locales[locale] !== undefined || origins[origin] !== undefined) {
@@ -1849,6 +1934,13 @@ export function allowedLocaleHosts(policy: LocaleUrlPolicy): readonly string[] {
 export function createIdentifierParameterCodec(
   pattern: RegExp = /^[A-Za-z0-9][A-Za-z0-9._~-]{0,127}$/u,
 ): RouteParameterCodec<string> {
+  // Held to its kind first: text has neither flag, and would be refused by its first address.
+  if (!((pattern as unknown) instanceof RegExp)) {
+    routeError(
+      'A route parameter pattern must be a regular expression.',
+      'malformed-input',
+    );
+  }
   if (pattern.global || pattern.sticky) {
     routeError('A route parameter pattern cannot be global or sticky.');
   }
@@ -2005,6 +2097,24 @@ function safeParameterSegment(value: unknown): value is string {
 function checkRouteProjection(
   projection: RouteRuntimeProjection,
 ): RouteRuntimeProjection {
+  ɵrecordOption(projection, 'A route projection');
+  ɵrecordOption(
+    projection.generated,
+    'The generated half of a route projection',
+  );
+  ɵlistOption(
+    projection.generated.routes,
+    'The routes of a generated route projection',
+  );
+  optionalRecord(projection.parameters, 'The parameters of a route projection');
+  optionalRecord(
+    projection.localizedPaths,
+    'The localized paths of a route projection',
+  );
+  optionalRecord(
+    projection.historical,
+    'The historical outcomes of a route projection',
+  );
   // Generated code carries the profile it was written under, and this reads what it carries.
   const profile: unknown = projection.generated.profile;
   if (
@@ -2021,7 +2131,13 @@ function checkRouteProjection(
     string,
     Readonly<Record<string, RouteParameterCodec>>
   >();
-  for (const route of projection.generated.routes) {
+  // A copy, so an empty slot is read as the route it is not.
+  for (const route of Array.from(projection.generated.routes)) {
+    ɵrecordOption(route, 'A route of a generated route projection');
+    ɵlistOption(
+      route.parameterNames,
+      'The parameter names of a generated route',
+    );
     if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(route.id)) {
       routeError(
         `Generated route identity ${JSON.stringify(route.id)} is invalid.`,
@@ -2057,11 +2173,26 @@ function checkRouteProjection(
     ) {
       routeError(`Generated route ${route.id} has inconsistent parameters.`);
     }
-    const codecs = projection.parameters?.[route.id] ?? {};
+    const codecs =
+      optionalRecord(
+        ownEntry(projection.parameters, route.id),
+        `The parameters of route ${route.id}`,
+      ) ?? {};
     codecsById.set(route.id, codecs);
     for (const name of discovered) {
-      if (codecs[name] === undefined) {
+      const codec: unknown = ownEntry(codecs, name);
+      if (codec === undefined) {
         routeError(`Dynamic route ${route.id} requires a codec for ${name}.`);
+      }
+      const { parse, serialize } = ɵrecordOption(
+        codec,
+        `The codec of ${route.id}/${name}`,
+      ) as { readonly parse?: unknown; readonly serialize?: unknown };
+      if (typeof parse !== 'function' || typeof serialize !== 'function') {
+        routeError(
+          `The codec of ${route.id}/${name} must carry a parse and a serialize function.`,
+          'malformed-input',
+        );
       }
     }
   }
@@ -2075,7 +2206,9 @@ function checkRouteProjection(
         `Localized path configuration references unknown route ${JSON.stringify(routeId)}.`,
       );
     }
-    for (const [localeValue, path] of Object.entries(localized)) {
+    for (const [localeValue, path] of Object.entries(
+      ɵrecordOption(localized, `The localized paths of route ${routeId}`),
+    )) {
       const locale = canonicalLocale(localeValue);
       if (
         locale !== localeValue ||
@@ -2123,6 +2256,7 @@ function checkRouteProjection(
         `Historical route path ${JSON.stringify(path)} is unsafe or colliding.`,
       );
     }
+    ɵrecordOption(outcome, `The historical outcome of ${JSON.stringify(path)}`);
     if (outcome.kind === 'replacement') {
       const target = projection.generated.routes.find(
         ({ id }) => id === outcome.routeId,
@@ -3885,6 +4019,8 @@ export function localizedServerRoutes<
   declarations: readonly LocalizedServerRouteDeclaration<Mode, Projection>[],
   options: LocalizedServerRoutesOptions<Mode> = {},
 ): LocalizedServerRoutes<Mode> {
+  ɵlistOption(declarations, 'The declarations of the localized server routes');
+  ɵrecordOption(options, 'The options of the localized server routes');
   const projection = validateRouteProjection(projectionValue);
   const built = builtLocales(policy, configuration);
   // Under `locale-host` the one locale emitted is the locale of the origin the build answers at,

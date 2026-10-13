@@ -3288,7 +3288,7 @@ export const injections = Object.freeze([
     invariant:
       'A policy written out as an object is held to the tables a constructor writes, so a prefix table that reads a prefix as another locale is refused wherever the policy is read.',
     source: 'packages/runtime/core/src/routing.ts',
-    find: '        ownEntry(policy.prefixes, prefix) !== locale',
+    find: '        ownEntry(prefixTable, prefix) !== locale',
     replace: '        false',
     caughtBy: 'packages/runtime/test/written-out-locale-policies.test.ts',
   },
@@ -3310,6 +3310,24 @@ export const injections = Object.freeze([
     find: "    typeof value === 'string' &&\n    /^[a-z0-9](?:[a-z0-9-]",
     replace: '    /^[a-z0-9](?:[a-z0-9-]',
     caughtBy: 'packages/runtime/test/neutral-roots-empty-slot.test.ts',
+  },
+  {
+    id: 'option-of-another-kind-read-as-an-object',
+    invariant:
+      'An option declared as an object is refused as a configuration error when it is given a value of another kind.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: "  if (typeof given !== 'object' || given === null || Array.isArray(given)) {\n    return routeError(",
+    replace: "  if (typeof given === 'symbol') {\n    return routeError(",
+    caughtBy: 'packages/runtime/test/options-of-another-kind.test.ts',
+  },
+  {
+    id: 'option-of-another-kind-read-as-a-list',
+    invariant:
+      'An option declared as a list is refused as a configuration error when it is given a value of another kind.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '  if (!Array.isArray(value)) {\n    return routeError(',
+    replace: "  if (typeof value === 'symbol') {\n    return routeError(",
+    caughtBy: 'packages/runtime/test/options-of-another-kind.test.ts',
   },
   {
     id: 'written-out-policy-member-of-another-kind-read',

@@ -66,7 +66,11 @@ import {
   isBoundDocumentMessage,
   type RouteDocumentField,
 } from './document-messages.js';
-import { navigationScopes, refuseUndeclaredMode } from './navigation-scopes.js';
+import {
+  navigationScopes,
+  refuseOptionsOfAnotherKind,
+  refuseUndeclaredMode,
+} from './navigation-scopes.js';
 import { LocalizedPageOutcome } from './page-outcome.js';
 import { LANGUAGE_FIELD, addVaryField, setHeader } from './response-headers.js';
 import { LocalizedRouteParameters } from './route-parameters.js';
@@ -491,6 +495,7 @@ export class RouteLocalization {
   private readonly options: ResolvedRouteLocalizationOptions;
 
   constructor(options: RouteLocalizationOptions) {
+    refuseOptionsOfAnotherKind(options);
     refuseUndeclaredMode(options.mode);
     const declared = inject(LOCALE_URL_POLICY, { optional: true });
     if (declared === null) {

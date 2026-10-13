@@ -10,6 +10,8 @@ import {
   LocalizationError,
   type LocaleChangeMode,
   type LocalizationScope,
+  ɵlistOption,
+  ɵrecordOption,
 } from '@neolorn/equator/core';
 
 /**
@@ -30,6 +32,51 @@ export function refuseUndeclaredMode(mode: unknown): void {
     message:
       'The mode of the localized Router integration is coordinated or progressive.',
   });
+}
+
+/** One list of scopes held to a list of objects. */
+function refuseScopesOfAnotherKind(scopes: unknown, name: string): void {
+  // A copy, so an empty slot is read as the scope it is not.
+  for (const scope of Array.from(ɵlistOption(scopes, name) as unknown[])) {
+    ɵrecordOption(scope, `A scope in ${name}`);
+  }
+}
+
+/**
+ * Refuses options of the Router integration that are not of the kind their declaration names.
+ *
+ * Read as values of no known type, for the reason `refuseUndeclaredMode` gives. The options are an
+ * object, each scope option is a list of scopes or a table of such lists by route, and the two
+ * document tables are tables of objects. Refused where the configuration is given: read on a
+ * navigation, a value of another kind throws an error that names no option, on every navigation.
+ */
+export function refuseOptionsOfAnotherKind(options: unknown): void {
+  const given = ɵrecordOption(
+    options,
+    'The options of the localized Router integration',
+  ) as Readonly<Record<string, unknown>>;
+  for (const name of ['requiredScopes', 'progressiveScopes'] as const) {
+    const scopes = given[name];
+    if (scopes === undefined) continue;
+    if (Array.isArray(scopes)) {
+      refuseScopesOfAnotherKind(scopes, name);
+      continue;
+    }
+    for (const [routeId, listed] of Object.entries(
+      ɵrecordOption(scopes, name) as Readonly<Record<string, unknown>>,
+    )) {
+      refuseScopesOfAnotherKind(listed, `${name} of route ${routeId}`);
+    }
+  }
+  for (const name of ['documentMetadata', 'outcomeDocuments'] as const) {
+    const table = given[name];
+    if (table === undefined) continue;
+    for (const [key, declared] of Object.entries(
+      ɵrecordOption(table, name) as Readonly<Record<string, unknown>>,
+    )) {
+      ɵrecordOption(declared, `${name} of ${key}`);
+    }
+  }
 }
 
 /** What a navigation is deciding from. */
