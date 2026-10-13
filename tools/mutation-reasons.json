@@ -8033,18 +8033,18 @@
     {
       "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
-      "original": "'A zoned date-time requires a supported IANA time-zone identity and calendar.'",
+      "original": "'A zoned date-time requires a calendar name of lower-case subtags of three to eight letters and digits.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The sentence of the refusal zonedDateTime raises for a calendar the host does not have. Its code, outcome, reason and cause are the same with any text, and zoned-date-time-value.test.ts asserts those."
+      "reason": "The sentence of the refusal zonedDateTime raises for a calendar name that is not well formed. Its code, outcome and reason are the same with any text, and zoned-date-time-value.test.ts asserts those."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
-      "mutator": "CallExpression",
-      "original": "probe.format(0);",
-      "replacement": ";",
-      "category": "equivalent",
-      "reason": "The constructor on the line above has already refused a zone or a calendar name it cannot read with a RangeError, and formatting the epoch with a formatter that exists does not throw, so the call decides nothing the constructor and the comparison after it have not."
+      "mutator": "StringLiteral",
+      "original": "'The host does not count in the calendar the value names.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The sentence of the unsupported result formatZonedDateTime returns where the host resolved another calendar than the value names. Its code, outcome, target locale and reason are the same with any text, and zoned-date-time-host-capability.test.ts asserts those."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",

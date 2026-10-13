@@ -66,10 +66,15 @@ is refused where the value is created. The host is not asked about a name, so a 
 identity in every engine; whether the host has rules for a zone is reported where a value is
 formatted in it.
 
-A zoned date-time's calendar is one the host counts in, under the name the host gives it. A
-well-formed calendar name the host has no calendar for, which the host would format in the
-locale's own calendar without an error, is refused when the value is created, and so is an alias
-or another spelling of a calendar's name.
+A zoned date-time's calendar is a name written as UTS #35 Part 1 writes the type of a calendar:
+one or more subtags of three to eight lower-case ASCII letters and digits, joined by hyphens. A
+name written any other way is refused when the value is created. The host is asked about neither
+the zone nor the calendar there, so the same zone and calendar make the same value in every
+engine, and a value made in one can be read in another. What the host lacks is reported where the
+value is formatted: a zone the host has no rules for, a well-formed calendar name the host has no
+calendar for, which the host would format in the locale's own calendar without an error, and an
+alias or another spelling the host answers to under a different name each return the typed
+unsupported result of section 3, and nothing is formatted in another calendar.
 
 A release MUST NOT perform accounting, exchange, tax, cash rounding, business precision, rate
 calculation, percentage-point conversion, or implicit unit conversion. Those belong to the consumer

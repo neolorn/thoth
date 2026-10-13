@@ -100,17 +100,13 @@ const sharedFormatters = new FormatterCache(
 function invalidCanonicalValue(
   message: string,
   reason?: LocalizationDiagnostic['reason'],
-  cause?: unknown,
 ): never {
-  throw new LocalizationError(
-    {
-      code: 'invalid-message-input',
-      outcome: 'operational-failure',
-      message,
-      ...(reason === undefined ? {} : { reason }),
-    },
-    ...(cause === undefined ? [] : [{ cause }]),
-  );
+  throw new LocalizationError({
+    code: 'invalid-message-input',
+    outcome: 'operational-failure',
+    message,
+    ...(reason === undefined ? {} : { reason }),
+  });
 }
 
 function normalizeInteger(value: string, label: string): string {
@@ -343,8 +339,13 @@ export function timeZone(id: string): TimeZoneValue {
  * in an office somewhere. The instant fixes the moment and the zone fixes the wall clock, so the
  * pair survives a daylight-saving change that a wall clock alone would not.
  *
- * Throws for a zone or a calendar this platform does not support. A calendar is named as the
- * platform names it: `hebrew`, not an alias or another spelling of it.
+ * Throws for a zone the pinned time-zone database does not name, as `timeZone` does, and for a
+ * calendar whose name is not written as a calendar's is: subtags of three to eight lower-case
+ * ASCII letters and digits joined by hyphens, such as `hebrew` or `islamic-civil`.
+ *
+ * The host is not asked whether it has the zone's rules or counts in the calendar, so the same
+ * arguments make the same value in every engine and a value made in one can be read in another.
+ * A host that lacks either says so where the value is formatted, as an unsupported result.
  */
 export function zonedDateTime(
   instantValue: InstantValue,
@@ -352,23 +353,13 @@ export function zonedDateTime(
   calendar = 'iso8601',
 ): ZonedDateTimeValue {
   const canonicalTimeZone = timeZone(timeZoneId).id;
-  try {
-    const probe = new Intl.DateTimeFormat('en-US', {
-      timeZone: canonicalTimeZone,
-      calendar,
-    });
-    probe.format(0);
-    // A well-formed name the platform has no calendar for is not an error to `Intl`: it formats
-    // in the locale's own calendar. The value would then name one calendar and be counted in
-    // another, so the name is kept only where the platform answers with it.
-    if (probe.resolvedOptions().calendar !== calendar) {
-      throw new RangeError(`Unsupported calendar: ${calendar}`);
-    }
-  } catch (cause) {
+  if (
+    typeof calendar !== 'string' ||
+    !/^[a-z0-9]{3,8}(?:-[a-z0-9]{3,8})*$/u.test(calendar)
+  ) {
     return invalidCanonicalValue(
-      'A zoned date-time requires a supported IANA time-zone identity and calendar.',
+      'A zoned date-time requires a calendar name of lower-case subtags of three to eight letters and digits.',
       'malformed-input',
-      cause,
     );
   }
   return Object.freeze({
@@ -952,6 +943,23 @@ export function formatInstant(
   context: FormattingContext,
   options: Intl.DateTimeFormatOptions,
 ): FormattingResult {
+  return instantFormatted(value, context, options, undefined);
+}
+
+/**
+ * A moment formatted under a context, and held to a calendar where one is given.
+ *
+ * A host asked for a calendar it does not have raises nothing: it formats in the calendar of the
+ * locale. A value that names its calendar would then be shown counted in another, so the calendar
+ * the formatter says it counts in is compared with the one the value names, and a difference is
+ * reported and nothing is formatted.
+ */
+function instantFormatted(
+  value: InstantValue,
+  context: FormattingContext,
+  options: Intl.DateTimeFormatOptions,
+  calendar: string | undefined,
+): FormattingResult {
   if (context.timeZone === undefined && options.timeZone === undefined) {
     return unsupported(
       'Instant formatting requires an explicit deterministic time zone.',
@@ -969,6 +977,16 @@ export function formatInstant(
       formattingTag,
       instantOptions(context, options),
     );
+    if (
+      calendar !== undefined &&
+      formatter.resolvedOptions().calendar !== calendar
+    ) {
+      return unsupported(
+        'The host does not count in the calendar the value names.',
+        context,
+        'native-capability-rejected',
+      );
+    }
     return success(
       'instant',
       formatter.format(milliseconds),
@@ -1247,20 +1265,23 @@ export function formatPlainDateTime(
  * Like formatting an instant, except that the zone comes from the value rather than from the
  * context, so one page can show several of these in several zones without changing the context
  * between them. Options are required for the same reason.
+ *
+ * A value counted in a calendar other than `iso8601` is written in that calendar. A zone the host
+ * has no rules for, or a calendar it does not count in, comes back as an unsupported result: the
+ * value was made without asking the host, and this is where the host answers. A calendar written
+ * in the options is the call's own choice and is what the value is written in.
  */
 export function formatZonedDateTime(
   value: ZonedDateTimeValue,
   context: FormattingContext,
   options: Intl.DateTimeFormatOptions,
 ): FormattingResult {
-  const formatted = formatInstant(
+  const named = displayCalendar(value.calendar);
+  const formatted = instantFormatted(
     value.instant,
-    {
-      ...context,
-      timeZone: value.timeZone,
-      ...displayCalendar(value.calendar),
-    },
+    { ...context, timeZone: value.timeZone, ...named },
     options,
+    options.calendar === undefined ? named.calendar : undefined,
   );
   if (!formatted.ok) return formatted;
   return success(
