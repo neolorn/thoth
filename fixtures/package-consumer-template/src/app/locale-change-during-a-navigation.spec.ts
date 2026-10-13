@@ -370,14 +370,14 @@ describe('a locale change in place after a navigation has committed its locale a
     expect(await landed).toBeInstanceOf(NavigationCancel);
     const left = '/en-arab-xb/dossiers/dossier';
     for (let round = 0; round < 20; round += 1) {
-      if (localization.snapshot().route?.canonicalPath === left) break;
+      if (localization.snapshot()?.route?.canonicalPath === left) break;
       await settle();
     }
 
     // What the caller was told and what the state is are one locale.
     const snapshot = localization.snapshot();
-    expect(snapshot.primaryLocale).toBe('en-Arab-XB');
-    expect(snapshot.route?.canonicalPath).toBe(left);
+    expect(snapshot?.primaryLocale).toBe('en-Arab-XB');
+    expect(snapshot?.route?.canonicalPath).toBe(left);
     expect(platform.pathname).toBe(left);
     expect(document.documentElement.lang).toBe('en-Arab-XB');
   });
@@ -389,13 +389,13 @@ describe('a locale change in place after a navigation has committed its locale a
     drop();
     expect(await landed).toBeInstanceOf(NavigationCancel);
     for (let round = 0; round < 20; round += 1) {
-      if (localization.snapshot().route?.canonicalPath === ARRIVAL) break;
+      if (localization.snapshot()?.route?.canonicalPath === ARRIVAL) break;
       await settle();
     }
 
     const snapshot = localization.snapshot();
-    expect(snapshot.primaryLocale).toBe('en-US');
-    expect(snapshot.route?.canonicalPath).toBe(ARRIVAL);
+    expect(snapshot?.primaryLocale).toBe('en-US');
+    expect(snapshot?.route?.canonicalPath).toBe(ARRIVAL);
     expect(platform.pathname).toBe(ARRIVAL);
     expect(document.documentElement.lang).toBe('en-US');
   });
