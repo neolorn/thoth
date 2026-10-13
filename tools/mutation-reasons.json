@@ -3658,8 +3658,7 @@
       "original": "'The input exceeds the declared field limit.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "Diagnostic message text for input longer than the field; the status and the code carry the outcome. the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code",
-      "count": 7
+      "reason": "Diagnostic message text for input longer than the field; the status and the code carry the outcome, nothing compares the message and the suite asserts the status and the code"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4742,60 +4741,11 @@
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "profile.kind === 'plain-date' ||\n    profile.kind === 'plain-time'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainDate, parsePlainTime and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "profile.kind === 'plain-date' ||\n    profile.kind === 'plain-time' ||\n    profile.kind === 'instant'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainDate, parsePlainTime and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
       "mutator": "StringLiteral",
       "original": "'plain-date'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "In verifyFormattedInput the kind only picks the default limit, and text over it is refused again on the re-read (in parseLocalizedInput for a declared limit, parsePlainDate for this kind's default); in invariantInputIdentity the label only selects the arm for a date, which is compared after a valid re-read, and localizedDateText writes exactly the fields that arm names, so both identities agree whichever arm answers. Each place gives the same result and at most the message differs.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "profile.kind === 'plain-date'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainDate, parsePlainTime and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "LogicalOperator",
-      "original": "profile.kind === 'plain-date' ||\n    profile.kind === 'plain-time' ||\n    profile.kind === 'instant'",
-      "replacement": "(profile.kind === 'plain-date' || profile.kind === 'plain-time') && profile.kind === 'instant'",
-      "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainDate, parsePlainTime and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "LogicalOperator",
-      "original": "profile.kind === 'plain-date' ||\n    profile.kind === 'plain-time'",
-      "replacement": "profile.kind === 'plain-date' && profile.kind === 'plain-time'",
-      "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainDate, parsePlainTime and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "profile.kind === 'plain-time'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainTime for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "In invariantInputIdentity the label only selects the arm for a date, which is compared after a valid re-read, and localizedDateText writes exactly the fields that arm names, so both identities agree whichever arm answers."
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4803,32 +4753,7 @@
       "original": "'plain-time'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "In verifyFormattedInput the kind only picks the default limit, and text over it is refused again on the re-read (in parseLocalizedInput for a declared limit, parsePlainTime for this kind's default); in invariantInputIdentity the label only selects the arm for a time, which is compared after a valid re-read, and localizedTimeText refuses every time its pattern cannot write in full, so both identities agree whichever arm answers. Each place gives the same result and at most the message differs.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "profile.kind === 'instant'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "StringLiteral",
-      "original": "'instant'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "profile.kind === 'plain-date-time'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parsePlainDateTimeInput for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "In invariantInputIdentity the label only selects the arm for a time, which is compared after a valid re-read, and localizedTimeText refuses every time its pattern cannot write in full, so both identities agree whichever arm answers."
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4836,16 +4761,15 @@
       "original": "'plain-date-time'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "In verifyFormattedInput the kind only picks the default limit, and text over it is refused again on the re-read (in parseLocalizedInput for a declared limit, parsePlainDateTimeInput for this kind's default); in invariantInputIdentity the label only selects the arm for a date and time, which is compared after a valid re-read of text that holds both halves in full, so both identities agree whichever arm answers. Each place gives the same result and at most the message differs.",
-      "count": 2
+      "reason": "In invariantInputIdentity the label only selects the arm for a date and time, which is compared after a valid re-read of text that holds both halves in full, so both identities agree whichever arm answers."
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
       "mutator": "ConditionalExpression",
-      "original": "[...formatted.value.text].length >\n    (profile.maximumCharacters ?? defaultMaximumCharacters)",
+      "original": "[...formatted.value.text].length > fieldCharacterLimit(profile)",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parseNumeric, parsePlainDate, parsePlainTime, parsePlainDateTimeInput, parseTimeZoneInput, parseDurationInput and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it, by the field's limit, which parseLocalizedInput asks before anything else about the field and takes from the same fieldCharacterLimit; that returns the same invalid-localized-input failure and only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4853,7 +4777,7 @@
       "original": "[...formatted.value.text]",
       "replacement": "[]",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parseNumeric, parsePlainDate, parsePlainTime, parsePlainDateTimeInput, parseTimeZoneInput, parseDurationInput and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it, by the field's limit, which parseLocalizedInput asks before anything else about the field and takes from the same fieldCharacterLimit; that returns the same invalid-localized-input failure and only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4861,7 +4785,7 @@
       "original": "{\n    return formattingPolicyFailure(\n      'The formatted value exceeds the declared localized-input field limit.',\n      context,\n    );\n  }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it (in parseLocalizedInput for a declared limit, parseNumeric, parsePlainDate, parsePlainTime, parsePlainDateTimeInput, parseTimeZoneInput, parseDurationInput and parseRfc3339 for this kind's default), which returns the same invalid-localized-input failure; only the message differs"
+      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it, by the field's limit, which parseLocalizedInput asks before anything else about the field and takes from the same fieldCharacterLimit; that returns the same invalid-localized-input failure and only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",

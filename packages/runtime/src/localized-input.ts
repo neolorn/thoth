@@ -522,14 +522,6 @@ function parseNumeric(
   | PercentagePointsValue
 > {
   const source = canonicalInput(text);
-  if ([...source].length > (profile.maximumCharacters ?? 256)) {
-    return failed(
-      'policy-rejected',
-      text,
-      'The input exceeds the declared field limit.',
-      context,
-    );
-  }
   if (
     (profile.maximumFractionDigits !== undefined &&
       (!Number.isSafeInteger(profile.maximumFractionDigits) ||
@@ -772,6 +764,24 @@ function validCharacterLimit(value: number | undefined): boolean {
   );
 }
 
+/**
+ * The most characters a field reads: what its profile declares, and its kind's own limit where the
+ * profile declares none.
+ */
+function fieldCharacterLimit(profile: LocalizedInputProfile): number {
+  return (
+    (profile as LocalizedInputProfile & { readonly maximumCharacters?: number })
+      .maximumCharacters ??
+    (profile.kind === 'plain-date' ||
+    profile.kind === 'plain-time' ||
+    profile.kind === 'instant'
+      ? 64
+      : profile.kind === 'plain-date-time'
+        ? 128
+        : 256)
+  );
+}
+
 function validPatternLiteral(value: string, maximumLength = 16): boolean {
   return (
     typeof value === 'string' &&
@@ -867,14 +877,6 @@ function parsePlainDate(
       'unsupported-capability',
       text,
       'Strict localized date input for this calendar requires an enabled parsing provider.',
-      context,
-    );
-  }
-  if ([...source].length > (profile.maximumCharacters ?? 64)) {
-    return failed(
-      'policy-rejected',
-      text,
-      'The input exceeds the declared field limit.',
       context,
     );
   }
@@ -1049,14 +1051,6 @@ function parsePlainTime(
       'policy-rejected',
       text,
       'The declared localized time profile is invalid.',
-      context,
-    );
-  }
-  if ([...source].length > (profile.maximumCharacters ?? 64)) {
-    return failed(
-      'policy-rejected',
-      text,
-      'The input exceeds the declared field limit.',
       context,
     );
   }
@@ -1291,7 +1285,7 @@ function dateTimeHalf<Pattern extends object>(
   pattern: Pattern,
   profile: Extract<LocalizedInputProfile, { readonly kind: 'plain-date-time' }>,
 ): Pattern & { readonly maximumCharacters: number } {
-  return { ...pattern, maximumCharacters: profile.maximumCharacters ?? 128 };
+  return { ...pattern, maximumCharacters: fieldCharacterLimit(profile) };
 }
 
 function parsePlainDateTimeInput(
@@ -1319,14 +1313,6 @@ function parsePlainDateTimeInput(
       'policy-rejected',
       text,
       'The declared localized date-time profile is invalid.',
-      context,
-    );
-  }
-  if ([...source].length > (profile.maximumCharacters ?? 128)) {
-    return failed(
-      'policy-rejected',
-      text,
-      'The input exceeds the declared field limit.',
       context,
     );
   }
@@ -1457,14 +1443,6 @@ function parseTimeZoneInput(
       'policy-rejected',
       text,
       'The declared localized time-zone profile is invalid.',
-      context,
-    );
-  }
-  if ([...source].length > (profile.maximumCharacters ?? 256)) {
-    return failed(
-      'policy-rejected',
-      text,
-      'The input exceeds the declared field limit.',
       context,
     );
   }
@@ -1730,14 +1708,6 @@ function parseDurationInput(
       context,
     );
   }
-  if ([...source].length > (profile.maximumCharacters ?? 256)) {
-    return failed(
-      'policy-rejected',
-      text,
-      'The input exceeds the declared field limit.',
-      context,
-    );
-  }
   if (source.length === 0) {
     return failed(
       'incomplete',
@@ -1869,14 +1839,6 @@ function parseRfc3339(
       context,
     );
   }
-  if ([...source].length > (profile.maximumCharacters ?? 64)) {
-    return failed(
-      'policy-rejected',
-      text,
-      'The input exceeds the declared field limit.',
-      context,
-    );
-  }
   const match =
     /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?(Z|[+-]\d{2}:\d{2})$/u.exec(
       source,
@@ -1978,8 +1940,9 @@ function parseRfc3339(
  * for bad input, because unreadable input is the ordinary case in a form.
  *
  * The profile decides the value's type: a money profile returns an amount with its currency, a
- * date profile a calendar date, and so on. Text longer than the profile's own character limit, or
- * than the runtime's, is refused before it is read at all.
+ * date profile a calendar date, and so on. Text longer than the profile's own character limit, than
+ * the limit of the profile's kind where it declares none, or than the runtime's, is refused before
+ * it is read at all and before the platform is asked anything about the locale.
  */
 export function parseLocalizedInput<Profile extends LocalizedInputProfile>(
   text: string,
@@ -2006,6 +1969,16 @@ export function parseLocalizedInput<Profile extends LocalizedInputProfile>(
       'The localized input exceeds the fixed runtime ceiling.',
       context,
     ) as LocalizedInputResult<LocalizedInputValue<Profile>>;
+  }
+  // Asked before the context's numbering system and the locale's digits, which are the first
+  // questions put to the platform: text of any length would otherwise cost them.
+  if ([...canonicalInput(text)].length > fieldCharacterLimit(profile)) {
+    return failed(
+      'policy-rejected',
+      text,
+      'The input exceeds the declared field limit.',
+      context,
+    );
   }
   const refusal = numberingSystemRefusal(context);
   if (refusal === 'malformed') {
@@ -2408,18 +2381,7 @@ function verifyFormattedInput(
   context: FormattingContext,
 ): FormattingResult {
   if (!formatted.ok) return formatted;
-  const defaultMaximumCharacters =
-    profile.kind === 'plain-date' ||
-    profile.kind === 'plain-time' ||
-    profile.kind === 'instant'
-      ? 64
-      : profile.kind === 'plain-date-time'
-        ? 128
-        : 256;
-  if (
-    [...formatted.value.text].length >
-    (profile.maximumCharacters ?? defaultMaximumCharacters)
-  ) {
+  if ([...formatted.value.text].length > fieldCharacterLimit(profile)) {
     return formattingPolicyFailure(
       'The formatted value exceeds the declared localized-input field limit.',
       context,

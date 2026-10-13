@@ -168,6 +168,11 @@ invalid profile is policy-rejected, and a calendar the field does not read or a 
 no digits to read it in is an unsupported capability, for every text within the field's character
 limit, the empty text included.
 
+The character limit is asked first in every field, before the host is asked anything about the
+field's locale or its numbering system, so text of any length costs bounded work to refuse and is
+refused alike in every locale. A field whose profile declares no limit takes its kind's: 64
+characters for a date, a time, or an instant, 128 for a date-time, and 256 for every other kind.
+
 A release MAY preserve incomplete localized text during composition or editing. A release MUST NOT,
 on commit, select the first plausible interpretation, change a currency or a unit, or resolve a
 daylight-saving ambiguity silently.
