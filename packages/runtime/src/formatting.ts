@@ -1965,9 +1965,10 @@ function storedPersonNameField(
 function personNameWords(
   text: string,
 ): readonly { readonly word: string; readonly separator: string }[] {
+  // Both groups take part in every match: the second may be empty and is never absent.
   return [...text.matchAll(/([^\s\p{Pd}]+)([\s\p{Pd}]*)/gu)].map((match) => ({
-    word: match[1] ?? '',
-    separator: match[2] ?? '',
+    word: match[1] as string,
+    separator: match[2] as string,
   }));
 }
 
