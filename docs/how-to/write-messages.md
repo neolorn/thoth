@@ -23,6 +23,10 @@ messages:
 A scope is a directory. Write its catalogs, compile, and import the module. Nothing else declares
 it, because the directory is the declaration.
 
+Two kinds of name are taken, and `generate` reports `EQ1503` for a scope that uses one: the name of
+a module it writes for every project, such as `routes` or `recovery`, and a name Windows gives to a
+device, such as `con`.
+
 ```yaml i18n/greeting/en-US.yaml
 messages:
   welcome: Welcome back.
