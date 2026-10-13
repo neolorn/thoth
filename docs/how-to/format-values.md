@@ -20,9 +20,9 @@ money(decimal('19.99'), 'USD');
 
 The rest follow the same shape. `measurement(decimal('3.5'), 'kilometer')` carries its unit.
 `percent(decimal('0.15'))` carries its scale, so nothing has to guess whether `15` meant fifteen
-percent or fifteen hundredths. `plainDate(2026, 3, 14)` is a date with no time and no zone, and it
-takes a calendar when the calendar is not the locale's own. The reason these are values rather than
-numbers is [About canonical values](../explanation/about-values.md).
+percent or fifteen hundredths. `plainDate(2026, 3, 14)` is a date with no time and no zone. Its
+numbers are an ISO date, and it is written in the locale's calendar when it is formatted. The reason
+these are values rather than numbers is [About canonical values](../explanation/about-values.md).
 
 ## Format it
 
@@ -123,6 +123,9 @@ put the units in an order Equator would have to guess.
 
 A zoned date-time fails with the same code where the host has no calendar under the value's name
 or no rules for its zone, rather than being written in another calendar.
+
+`plainDate` takes a calendar name as a fourth argument, and the numbers are then that calendar's.
+`formatPlainDate` fails with the same code for a date in any calendar but `iso8601`.
 
 ## Format in a template
 

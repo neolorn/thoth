@@ -19,8 +19,9 @@ passing it through unchanged preserves it.
 The same reasoning runs through the rest. `measurement(decimal('3.5'), 'kilometer')` carries its
 unit. `percent(decimal('0.15'))` carries its scale, so nothing has to guess whether `15` meant
 fifteen percent or fifteen hundredths. `plainDate(2026, 3, 14)` is a date with no time and no zone,
-which is what a birthday is, and it takes a calendar when the calendar is not the locale's own. A
-zoned date-time carries its zone; a duration carries its units.
+which is what a birthday is. Its numbers are an ISO date, and the calendar it is read in is chosen
+when it is formatted, by the locale. A zoned date-time carries its zone; a duration carries its
+units.
 
 A time zone is a name from the time zone database Equator pins. `timeZone` and `zonedDateTime` check
 the name, and the calendar's, without asking the host, so the same name makes the same value in a
