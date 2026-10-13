@@ -7,7 +7,8 @@ diagnostics are about your sources. The runtime's outcomes are about what happen
 
 Every finding carries a code. The code is what you search for, what you suppress against, and what
 you count, and it means the same thing across releases. The sentence beside it is for a person and
-may be reworded; a build script that reacts to a class of finding matches on the code.
+may be reworded; a build script that reacts to a class of finding matches on the code. A later
+release can add a code, so a sink or a script that switches on one keeps a default branch.
 
 `packages/toolkit/DIAGNOSTICS.md` ships inside the toolkit package, so it is readable from an
 install with no network. It is generated from the code union itself, which is why it cannot list a
@@ -50,7 +51,7 @@ An event stream keyed on an unbounded value costs in proportion to traffic. A fa
 once per render would emit one event per frame.
 
 So the same failure inside a short window is one event, and every field an event carries is drawn
-from a closed set rather than from a visitor's input. The cardinality of your metrics is a function of
+from a set the release declares rather than from a visitor's input. The cardinality of your metrics is a function of
 your configuration rather than of your traffic.
 
 ## Telling the two apart

@@ -55,6 +55,10 @@ These are the surfaces a release does not break without saying so:
 A change that breaks a supported consumer at one of those is a breaking change, whether or not the
 consumer was expected to rely on it.
 
+A minor release can add a value to the `code` of an observability event, or to the diagnostic code
+a toolkit event carries. A value is not withdrawn or given another meaning while the event format
+keeps its major version, so a sink that switches on a code keeps a default branch.
+
 ## Surfaces outside the contract
 
 Some things are visible in your `node_modules` and are still outside the contract:
