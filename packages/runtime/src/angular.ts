@@ -582,6 +582,13 @@ export function withPersistence(
   });
 }
 
+const LOCALE_SOURCES = Object.freeze([
+  'url',
+  'stored',
+  'browser',
+  'default',
+] as const satisfies readonly LocalizationLocaleSource[]);
+
 /**
  * Which sources decide the locale of a first request, and in what order.
  *
@@ -610,13 +617,6 @@ export function withPersistence(
  * itself, two of them eventually disagree, and the resulting bug is invisible until a visitor sees
  * one region of the page in a language the rest of it is not using.
  */
-const LOCALE_SOURCES = Object.freeze([
-  'url',
-  'stored',
-  'browser',
-  'default',
-] as const satisfies readonly LocalizationLocaleSource[]);
-
 export function withLocaleSources(
   ...sources: readonly LocalizationLocaleSource[]
 ): LocalizationFeature<'locale-sources'> {
