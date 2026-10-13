@@ -58,7 +58,8 @@ function refuseAddressThatIsNotText(href: unknown): void {
  * Takes an origin-relative address and returns the binding to hand to a link slot. Throws for
  * anything that could leave the application: a scheme, a protocol-relative address, a backslash a
  * parser might fold, a character that makes a rendered address read as somewhere else, or a length
- * past the runtime's bound.
+ * past the runtime's bound. An address that is not text throws with the reason `malformed-input`,
+ * which tells a call written wrongly from an address the checks refused.
  *
  * Refusing rather than repairing is the point. The words around a link come from a catalog, and a
  * catalog is the file most likely to have arrived from outside the team that wrote the code.
@@ -95,7 +96,9 @@ export function internalDestination(href: string): TrustedDestination {
  * The allowlist is required and may not be empty: there is no call that means any origin at all.
  * Each entry must be an HTTPS origin with no credentials, path, query or fragment, and the address
  * must be HTTPS at one of them. Anything else throws, as does an address carrying a character that
- * makes it read as somewhere it does not go.
+ * makes it read as somewhere it does not go. An address that is not text and an allowlist entry
+ * that is not such an origin throw with the reason `malformed-input`; an address the list does not
+ * hold throws with none.
  */
 export function externalDestination(
   href: string,
