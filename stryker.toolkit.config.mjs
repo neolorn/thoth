@@ -65,30 +65,6 @@ export default {
     'packages/toolkit/src/message-format.ts',
   ],
 
-  /**
-   * The timeout, derived from what these suites actually do rather than left at the default.
-   *
-   * Stryker gives each mutant `netTime * timeoutFactor + timeoutMS + overhead`, where `netTime` is
-   * the measured time of the tests related to that mutant and `overhead` is measured separately.
-   * The default `timeoutMS` of 5000 is therefore five seconds of pure slack on top of two terms
-   * that are already measured, and across 939 tests in these two suites the median test is 0.84ms,
-   * the p90 is 306ms and the p99 is 2.7s. For the overwhelming majority of mutants the flat term is
-   * the entire timeout, so a hanging mutant costs about 5.7s to score when the work it interrupted
-   * was under a millisecond.
-   *
-   * 1000ms instead. What the flat term has to cover is run-to-run variance, since overhead is
-   * counted already and the tests themselves are scaled by the factor. Measured variance under a
-   * fully loaded machine is 1.31x, so `timeoutFactor: 2` inherited from the base carries it with
-   * margin, and 1000ms is still more than a thousand times the median test and three times the p90.
-   * A hanging mutant now costs about 1.7s rather than 5.7s.
-   *
-   * Being too aggressive here is not a neutral error. A timeout is reported as a killed mutant, so
-   * an impatient timeout counts real survivors as detected and flatters the score. That is why the
-   * factor is not reduced alongside the flat term: the term that was wrong was the one measuring
-   * nothing.
-   */
-  timeoutMS: 1000,
-
   htmlReporter: { fileName: 'tmp/mutation-toolkit/index.html' },
   jsonReporter: { fileName: 'tmp/mutation-toolkit/report.json' },
   tempDirName: 'tmp/mutation-toolkit-sandbox',

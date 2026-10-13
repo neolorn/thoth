@@ -5,6 +5,9 @@
  * whatever else is going. Its verdicts are timed: a mutant is given a multiple of what its tests
  * took in the dry run, and one that runs out of it is scored as killed. So a run beside a gate, or
  * beside another mutation run, scores survivors as detected and nothing in the report says so.
+ * Both configurations set the multiple to eight and add ten seconds, so a mutant that is only slow
+ * reaches its verdict. That does not cover a test that fails on its own time limit beside other
+ * work, which scores its mutant as killed whatever the clock, so the run still goes alone.
  *
  * This takes the lock every heavy job takes (`heavy-job-lock.mjs`), lowers itself below normal so
  * Stryker and its workers inherit that, and hands Stryker the processor budget the gate runs on

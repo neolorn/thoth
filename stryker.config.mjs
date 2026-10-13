@@ -134,7 +134,7 @@ export default {
    * which is comparable to this scope's 17,765; it is that a large share of the toolkit's 531-test
    * suite is related to any one mutant, so a mutant that hangs costs the full timeout against a
    * nineteen-second suite before it is scored. `stryker.toolkit.config.mjs` takes the part of it
-   * worth reading and sets a timeout the numbers support.
+   * worth reading.
    */
   mutate: [
     'packages/runtime/src/**/*.ts',
@@ -215,8 +215,22 @@ export default {
    */
   disableBail: true,
 
-  // The default is 1.5x the measured run plus 5s. These suites are between one and twenty seconds
-  // whole, so a single slow mutant is easily inside the noise of a busy machine, and a timeout is
-  // reported as a killed mutant, which counts as detected and quietly flatters the score.
-  timeoutFactor: 2,
+  /**
+   * A patient clock: eight times what a mutant's tests took in the dry run, plus ten seconds.
+   *
+   * A timeout is reported as a killed mutant, so every mutant the clock reaches first is a
+   * survivor the reading hides, and which ones it hides changes from one reading to the next. The
+   * dry run has the machine to itself and the mutants run many at a time, below normal priority and
+   * inside whatever share of the processors the machine allows, where a held process stalls for
+   * whole scheduling intervals. At twice the dry run plus one second a toolkit reading scored 752
+   * of 2,832 mutants as timed out; at these values it scored 9 of 2,839, and the difference
+   * was survivors.
+   *
+   * What these values cost is time on a mutant that never ends: ten seconds and more where one
+   * second was enough to give up. A reading that hides survivors is wrong and a slow one is not,
+   * so both configurations take these values, and a reading needs no option on the command line
+   * to be one that counts.
+   */
+  timeoutFactor: 8,
+  timeoutMS: 10_000,
 };
