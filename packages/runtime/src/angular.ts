@@ -1084,10 +1084,14 @@ function defaultLocaleAnnouncement(snapshot: LocalizationSnapshot): string {
  */
 class RoutingCommitHook implements LocalizationCommitHook {
   step: ((locale: string) => void) | undefined;
-  refusal: ((locale: string) => void) | undefined;
+  refusal:
+    | ((locale: string, route: LocalizationRouteSnapshot | undefined) => void)
+    | undefined;
 
   apply(snapshot: LocalizationSnapshot): void {
-    this.refusal?.(snapshot.primaryLocale);
+    // With the record the commit carries, which is what tells a change made in place from one a
+    // navigation makes for its own destination.
+    this.refusal?.(snapshot.primaryLocale, snapshot.route);
   }
 
   committed(snapshot: LocalizationSnapshot): void {

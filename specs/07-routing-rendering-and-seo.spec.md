@@ -433,7 +433,9 @@ another origin serves it. Where the route on screen has no address in the target
 parameter has no spelling there or because a declared spelling is one the route's codec refuses, a
 release MUST end the change as failed with the diagnostic the address was refused with, MUST NOT
 commit a locale the address bar cannot follow, and MUST NOT send the document to another origin. A
-locale change a navigation makes is answered for the navigation's destination instead.
+locale change a navigation makes is answered for the navigation's destination instead. A release
+MUST answer a change made in place while a navigation is in flight for the route on screen, as it
+answers any other, because that navigation can still be cancelled.
 
 A release MUST publish a snapshot only through a transaction, including when a single scope
 finishes loading, so every commit observer sees the same kind of event.

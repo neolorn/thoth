@@ -140,8 +140,14 @@ export interface RoutingCommitSteps {
   /**
    * Resolve the route on screen in the locale about to commit, throwing where it has no address
    * there. The throw fails the change with its diagnostic, and nothing is published.
+   *
+   * `route` is the record the commit carries: the page on screen for a change made in place, and
+   * the destination for a change a navigation makes, which is how the two are told apart.
    */
-  readonly resolveRoute: (locale: string) => void;
+  readonly resolveRoute: (
+    locale: string,
+    route: LocalizationRouteSnapshot | undefined,
+  ) => void;
   /** Bring the address bar into line with the route and the locale now current. */
   readonly writeAddress: () => void;
   /** Project the document metadata, the head, and the addresses the switcher offers. */

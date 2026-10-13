@@ -407,6 +407,14 @@ export const injections = Object.freeze([
     replace: '    void locale;',
   },
   {
+    id: 'locale-change-unasked-during-a-navigation',
+    invariant:
+      'A locale change made in place while a navigation is in flight is answered for the page on screen.',
+    source: 'packages/runtime/router/src/route-localization.ts',
+    find: '      !isRecordOf(route, active)',
+    replace: '      (isRecordOf(route, active) || true)',
+  },
+  {
     id: 'document-sent-to-an-origin-with-no-address',
     invariant:
       "A locale change to another origin, on a page with no spelling in that locale, ends as failed and does not send the document to that origin's root.",

@@ -285,6 +285,24 @@ function derivedScopes(
   return entry?.scopes ?? Object.freeze([]);
 }
 
+/**
+ * Whether a route record a commit carries is the record of this page.
+ *
+ * A record names its route and the address the page was resolved at, and the two together are one
+ * page: a navigation to the same route with another parameter, or in another locale, is resolved
+ * at another address.
+ */
+function isRecordOf(
+  route: LocalizationRouteSnapshot | undefined,
+  context: RouteLocalizationContext,
+): boolean {
+  return (
+    route !== undefined &&
+    route.routeId === context.resolution.routeId &&
+    route.canonicalPath === context.resolution.canonicalPath
+  );
+}
+
 function navigationDiagnostic(message: string): LocalizationDiagnostic {
   return Object.freeze({
     code: 'route-unavailable',
@@ -513,7 +531,7 @@ export class RouteLocalization {
     // Claimed in one call, and given up in one, because they belong to the same integration: an
     // adapter that is torn down leaves no half-registered sequence behind.
     this.localization.ɵclaimRoutingCommit({
-      resolveRoute: (locale) => this.refuseUnaddressed(locale),
+      resolveRoute: (locale, route) => this.refuseUnaddressed(locale, route),
       writeAddress: () => this.addressSync.ɵreconcile(),
       projectDocument: (locale) => {
         this.onLocaleCommitted(locale);
@@ -1259,14 +1277,24 @@ export class RouteLocalization {
    * language, the address and the head are in the old one, and the change has reported that it
    * committed. So the same build is made here first, where its refusal fails the change instead.
    *
-   * Nothing is asked while a navigation is in flight. The change is then the navigation's own, or
-   * is overtaken by it, and the address that follows is the destination's, which the Router
-   * writes.
+   * A commit a navigation makes is not asked about the page on screen. It carries the record of
+   * the navigation's destination, and the address that follows is the destination's, which the
+   * Router writes. A change made in place while a navigation is in flight carries the record of
+   * the page on screen and is asked like any other, because that navigation may yet be cancelled,
+   * and the page it left would then stand in a locale it has no address in.
    */
-  private refuseUnaddressed(locale: string): void {
-    if (this.router.getCurrentNavigation() !== null) return;
+  private refuseUnaddressed(
+    locale: string,
+    route: LocalizationRouteSnapshot | undefined,
+  ): void {
     const active = untracked(this.context);
     if (active === undefined) return;
+    if (
+      this.router.getCurrentNavigation() !== null &&
+      !isRecordOf(route, active)
+    ) {
+      return;
+    }
     this.reresolve(active, locale);
   }
 

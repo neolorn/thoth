@@ -2326,6 +2326,12 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "7. Locale switching",
+      "statement": "A release MUST answer a change made in place while a navigation is in flight for the route on screen, as it answers any other, because that navigation can still be cancelled.",
+      "checks": ["assurance-runtime:locale-change-unasked-during-a-navigation"]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "7. Locale switching",
       "statement": "A release MUST publish a snapshot only through a transaction, including when a single scope finishes loading, so every commit observer sees the same kind of event.",
       "checks": ["assurance-runtime:scope-load-published-without-a-transaction"]
     },
