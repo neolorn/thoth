@@ -271,6 +271,11 @@ this one. If any catalog has such a message and the context names no `timeZone`,
 refuses to start and says so, rather than failing the first time a reader is shown a date. Name the
 zone here, or write `timeZone` on the expression.
 
+A `timeZone` or a `calendar` written on an expression is judged when the message is compiled, and
+the answer does not depend on the machine that compiles it. The zone is a name of the time zone
+database Equator pins, so `timeZone=|+05:00|` is `EQ1204`. The calendar is any name written as a
+calendar name, and one the rendering host does not count in is reported when the date is formatted.
+
 ## Choose relative time thresholds
 
 `withRelativeTimePolicy` sets which unit a distance between two moments is said in.
