@@ -31,6 +31,10 @@ The toolkit has no command for the exchange. `formatCatalog` returns the importe
 text of a new file in canonical form, so comments and block scalars in the translated file are not
 kept.
 
+Each of the four functions returns a result rather than throwing for content it cannot take. Check
+`ok`, then read the document, the catalog or the text from `value`; a result that is not `ok`
+carries `diagnostics` alone.
+
 Nothing about your build, your routes or your project goes into the document, and nothing in the
 document can introduce markup or a destination into your page, which is
 [About the trust model for translated content](../explanation/about-trusted-content.md).
