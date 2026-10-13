@@ -2387,6 +2387,14 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "7. Locale switching",
+      "statement": "Where that navigation is cancelled or fails instead, a release MUST put back the page it left in the locale the change committed, and MUST NOT put back the locale from before the navigation, because the change committed and its caller was told so.",
+      "checks": [
+        "assurance-runtime:cancelled-navigation-undoes-a-change-made-in-place"
+      ]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "7. Locale switching",
       "statement": "A release MUST publish a snapshot only through a transaction, including when a single scope finishes loading, so every commit observer sees the same kind of event.",
       "checks": ["assurance-runtime:scope-load-published-without-a-transaction"]
     },

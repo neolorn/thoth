@@ -13,7 +13,7 @@ import {
   type Event as RouterEvent,
   type Routes,
 } from '@angular/router';
-import { filter, firstValueFrom } from 'rxjs';
+import { ReplaySubject, filter, firstValueFrom } from 'rxjs';
 import {
   Localization,
   createPathPrefixLocalePolicy,
@@ -45,7 +45,9 @@ import { runtimeExtensions } from './runtime-extensions';
  * A navigation commits its locale before its destination is on screen, so there is a second
  * stretch: after that commit and before the arrival, which a resolver of the application's own
  * holds open here. A change made in place then is answered for the destination as well, and where
- * it commits, the page that arrives is written in the locale that is committed.
+ * it commits, the page that arrives is written in the locale that is committed. Where the
+ * navigation is cancelled instead, the change still committed and told its caller so, and the page
+ * the navigation left is put back in that locale.
  */
 
 const POLICY = createPathPrefixLocalePolicy({
@@ -88,8 +90,11 @@ class Blank {}
 let held: Promise<boolean> | undefined;
 /** Called when a navigation reaches the guard while it is held. */
 let reached: (() => void) | undefined;
-/** What the application's own resolver waits on. Absent, it answers at once. */
-let loading: Promise<true> | undefined;
+/**
+ * What the application's own resolver waits on. Absent, it answers at once. Completed without an
+ * answer, it cancels the navigation, as a resolver that finds nothing to show does.
+ */
+let loading: ReplaySubject<true> | undefined;
 
 const ROUTES: Routes = [
   {
@@ -201,6 +206,8 @@ interface Committed {
   readonly landed: Promise<RouterEvent>;
   /** Let the application's resolver answer. */
   readonly load: () => void;
+  /** End the application's resolver without an answer, which cancels the navigation. */
+  readonly drop: () => void;
   readonly settle: () => Promise<void>;
 }
 
@@ -211,10 +218,14 @@ interface Committed {
 async function navigationCommitted(): Promise<Committed> {
   const { answer, landed, localization, platform, settle } =
     await navigationHeld();
-  let load: () => void = () => undefined;
-  loading = new Promise<true>((resolve) => {
-    load = () => resolve(true);
-  });
+  // Replayed, so an answer given before the Router asks is the answer it reads.
+  const waited = new ReplaySubject<true>(1);
+  loading = waited;
+  const load = (): void => {
+    waited.next(true);
+    waited.complete();
+  };
+  const drop = (): void => waited.complete();
   answer(true);
   // The navigation's own commit is the one that carries the destination's record.
   for (let round = 0; round < 20; round += 1) {
@@ -224,7 +235,7 @@ async function navigationCommitted(): Promise<Committed> {
   expect(localization.snapshot()?.route?.canonicalPath).toBe(DESTINATION);
   expect(TestBed.inject(Router).getCurrentNavigation()).not.toBeNull();
   expect(platform.pathname).toBe(ARRIVAL);
-  return { localization, platform, landed, load, settle };
+  return { localization, platform, landed, load, drop, settle };
 }
 
 afterEach(() => {
@@ -342,5 +353,50 @@ describe('a locale change in place after a navigation has committed its locale a
     expect(snapshot?.route?.canonicalPath).toBe('/en-arab-xb/dossiers/other');
     expect(platform.pathname).toBe('/en-arab-xb/dossiers/other');
     expect(document.documentElement.lang).toBe('en-Arab-XB');
+  });
+
+  it('keeps the locale the change committed when the navigation is then cancelled, at the page it left', async () => {
+    const { drop, landed, localization, platform, settle } =
+      await navigationCommitted();
+
+    const result = await localization.changeLocale('en-Arab-XB');
+
+    expect(result).toMatchObject({
+      status: 'committed',
+      targetLocale: 'en-Arab-XB',
+    });
+
+    drop();
+    expect(await landed).toBeInstanceOf(NavigationCancel);
+    const left = '/en-arab-xb/dossiers/dossier';
+    for (let round = 0; round < 20; round += 1) {
+      if (localization.snapshot().route?.canonicalPath === left) break;
+      await settle();
+    }
+
+    // What the caller was told and what the state is are one locale.
+    const snapshot = localization.snapshot();
+    expect(snapshot.primaryLocale).toBe('en-Arab-XB');
+    expect(snapshot.route?.canonicalPath).toBe(left);
+    expect(platform.pathname).toBe(left);
+    expect(document.documentElement.lang).toBe('en-Arab-XB');
+  });
+
+  it('puts back the snapshot from before the navigation when it is cancelled and no change was made in place', async () => {
+    const { drop, landed, localization, platform, settle } =
+      await navigationCommitted();
+
+    drop();
+    expect(await landed).toBeInstanceOf(NavigationCancel);
+    for (let round = 0; round < 20; round += 1) {
+      if (localization.snapshot().route?.canonicalPath === ARRIVAL) break;
+      await settle();
+    }
+
+    const snapshot = localization.snapshot();
+    expect(snapshot.primaryLocale).toBe('en-US');
+    expect(snapshot.route?.canonicalPath).toBe(ARRIVAL);
+    expect(platform.pathname).toBe(ARRIVAL);
+    expect(document.documentElement.lang).toBe('en-US');
   });
 });

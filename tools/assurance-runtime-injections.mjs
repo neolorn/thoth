@@ -415,6 +415,15 @@ export const injections = Object.freeze([
     replace: '    void locale;',
   },
   {
+    id: 'cancelled-navigation-undoes-a-change-made-in-place',
+    invariant:
+      'A navigation cancelled after its commit puts the page it left back in the locale a change made in place since has committed.',
+    source: 'packages/runtime/router/src/route-localization.ts',
+    find: '    return committed === pending.context.resolution.locale\n      ? undefined\n      : committed;',
+    replace:
+      '    return committed === pending.context.resolution.locale\n      ? undefined\n      : undefined;',
+  },
+  {
     id: 'locale-change-unasked-during-a-navigation',
     invariant:
       'A locale change made in place while a navigation is in flight is answered for the page on screen.',

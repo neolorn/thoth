@@ -602,7 +602,10 @@ export class RouteLocalization {
         // the previous snapshot back is what keeps the specification's promise that a cancelled or
         // failed navigation leaves the snapshot, document, and URL as they were.
         if (pending?.result !== undefined) {
-          void this.restoreSnapshot(pending.previousSnapshot);
+          void this.restoreSnapshot(
+            pending.previousSnapshot,
+            this.standingLocale(pending),
+          );
         }
         // A navigation that never arrived leaves nothing to return the visitor to.
         this.interaction.ɵdiscard();
@@ -1563,12 +1566,36 @@ export class RouteLocalization {
       : undefined;
   }
 
+  /**
+   * The locale the page a navigation left is put back in, where that navigation never arrived.
+   *
+   * The navigation's own commit is undone with it, so the locale is the one from before. A change
+   * made in place after that commit is another transaction: it committed, it told its caller so,
+   * and it was answered for the page on screen because the navigation could still be cancelled.
+   * Section 7 of `specs/07-routing-rendering-and-seo.spec.md` lets that locale stand, and
+   * `undefined` here leaves the choice to the snapshot being put back.
+   */
+  private standingLocale(pending: PendingRoute): string | undefined {
+    const committed = this.localization.snapshot()?.primaryLocale;
+    return committed === pending.context.resolution.locale
+      ? undefined
+      : committed;
+  }
+
+  /**
+   * Puts back the route and the scopes of a snapshot, in its own locale or in the one given.
+   *
+   * The route record is the snapshot's, which names its address in the snapshot's locale. Put back
+   * in another locale, the commit's own head step re-resolves the page for it and restates the
+   * record, as it does for any change made in place.
+   */
   private async restoreSnapshot(
     snapshot: ReturnType<Localization['snapshot']>,
+    locale?: string,
   ): Promise<boolean> {
     if (snapshot === undefined) return false;
     const result = await this.localization.changeLocale(
-      snapshot.primaryLocale,
+      locale ?? snapshot.primaryLocale,
       {
         mode: this.options.mode ?? 'coordinated',
         requiredScopes: snapshot.requiredScopes,
