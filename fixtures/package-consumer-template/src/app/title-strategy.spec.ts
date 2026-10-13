@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { TestBed } from '@angular/core/testing';
 import { NavigationEnd, Router, TitleStrategy } from '@angular/router';
@@ -64,6 +64,7 @@ const OPTIONS = {
 async function bootstrap(
   titleStrategy: 'installed' | 'omitted',
   address = '/second',
+  options: Parameters<typeof provideLocalizedRouter>[1] = OPTIONS,
 ): Promise<{
   readonly atNavigationEnd: string;
   readonly afterNavigation: string;
@@ -71,7 +72,7 @@ async function bootstrap(
   TestBed.resetTestingModule();
   await TestBed.configureTestingModule({
     providers: [
-      provideLocalizedRouter(routes, OPTIONS),
+      provideLocalizedRouter(routes, options),
       provideLocalizationTesting(
         {
           configuration,
@@ -124,6 +125,22 @@ describe('who writes the document title after a navigation', () => {
     const { afterNavigation } = await bootstrap('installed');
     expect(afterNavigation).toBe(TITLE_EN);
     expect(afterNavigation).not.toBe(DECLARED_TITLE);
+  });
+
+  it('writes the declared title where Equator projects none for the route', async () => {
+    // No `document` callback and no declared metadata, so the head Equator projects carries no
+    // title and the strategy is left with the one the route declares, as Angular's own would be.
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    // Emptied first, so the title read afterwards is the one this navigation wrote.
+    document.title = '';
+    try {
+      const { afterNavigation } = await bootstrap('installed', '/second', {
+        origin: OPTIONS.origin,
+      });
+      expect(afterNavigation).toBe(DECLARED_TITLE);
+    } finally {
+      vi.restoreAllMocks();
+    }
   });
 
   it('loses the projected title to the declared one when the line is omitted', async () => {

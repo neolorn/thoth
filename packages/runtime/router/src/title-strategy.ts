@@ -25,11 +25,11 @@ import { DocumentLocalization } from '@neolorn/equator';
  * omitting it changes what the page says.
  *
  * The fallback is Angular's behaviour exactly, not a narrowed version of it. For a route Equator
- * has no title for, this writes what `DefaultTitleStrategy` would have written, including its
- * `newTitle || ''` for an empty one (`@angular/platform-browser` 22.2.1,
- * `Title.setTitle`). `Title` is not injected to do it: that service lives in
- * `@angular/platform-browser`, which is not a peer of this package, and all it does is assign
- * `document.title`, which is also how `DocumentLocalization` writes.
+ * has no title for, this writes what `DefaultTitleStrategy` would have written, an empty title
+ * included: `Title.setTitle` assigns `newTitle || ''` (`@angular/platform-browser` 22.2.1), which
+ * for the text `buildTitle` answers is the text itself. `Title` is not injected to do it: that
+ * service lives in `@angular/platform-browser`, which is not a peer of this package, and all it
+ * does is assign `document.title`, which is also how `DocumentLocalization` writes.
  */
 @Injectable()
 export class LocalizedTitleStrategy extends TitleStrategy {
@@ -53,6 +53,6 @@ export class LocalizedTitleStrategy extends TitleStrategy {
       return;
     }
     const declared = this.buildTitle(snapshot);
-    if (declared !== undefined) this.documentRef.title = declared || '';
+    if (declared !== undefined) this.documentRef.title = declared;
   }
 }
