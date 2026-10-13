@@ -17,6 +17,7 @@ import {
 import { filter, firstValueFrom } from 'rxjs';
 import {
   Localization,
+  LocalizationError,
   createHostLocalePolicy,
   createPathPrefixLocalePolicy,
   withFormattingContext,
@@ -51,7 +52,8 @@ import { runtimeExtensions } from './runtime-extensions';
  * the navigation with the address untouched, and the error carries the diagnostic the change ended
  * with. `RouteLocalization` is constructed here the way an application that does not use
  * `provideLocalizedRouter` constructs it, which is also the one way it is handed a host policy with
- * no origin, or with an origin that is not one.
+ * no origin, or with an origin that is not one. The second is refused where the adapter is
+ * constructed.
  */
 
 const PATH_PREFIX = createPathPrefixLocalePolicy({
@@ -330,23 +332,38 @@ describe('a navigation whose locale lives on another origin', () => {
 });
 
 describe('a host policy and an origin that is not one', () => {
-  it('moves the document for every locale, the default one included', async () => {
-    const { assigned, localization } = configured(HOST, {
-      origin: 'not an origin',
+  it('refuses the adapter where it is constructed, as a configuration fault', () => {
+    let thrown: unknown;
+    try {
+      configured(HOST, { origin: 'not an origin' });
+      TestBed.inject(RouteLocalization);
+    } catch (error: unknown) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(LocalizationError);
+    expect((thrown as LocalizationError).diagnostic).toMatchObject({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      reason: 'malformed-input',
     });
+  });
+
+  it('constructs the adapter with an origin written with a trailing slash, and is at home there', async () => {
+    const { assigned, localization } = configured(HOST, {
+      origin: `${ORIGIN}/`,
+    });
+    TestBed.inject(RouteLocalization);
     await localization.initialize();
 
+    expect((await localization.changeLocale('en-US')).status).not.toBe(
+      'redirected',
+    );
+    expect(assigned).toEqual([]);
     expect(await localization.changeLocale('ar-EG')).toMatchObject({
       status: 'redirected',
       address: 'https://ar.site.example',
     });
-    expect(await localization.changeLocale('en-US')).toMatchObject({
-      status: 'redirected',
-      address: 'https://site.example',
-    });
-    expect(assigned).toEqual([
-      'https://ar.site.example',
-      'https://site.example',
-    ]);
+    expect(assigned).toEqual(['https://ar.site.example']);
   });
 });

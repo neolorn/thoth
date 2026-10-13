@@ -508,6 +508,10 @@ export class RouteLocalization {
       projection: declared.projection,
       configuration: declared.configuration,
     });
+    this.ownOrigin = RouteLocalization.originOf(
+      options.origin,
+      declared.policy,
+    );
 
     if (this.routerConfiguration?.urlUpdateStrategy === 'eager') {
       // The adapter commits the locale immediately before the router activates the destination, so
@@ -633,7 +637,7 @@ export class RouteLocalization {
     const { policy } = this.options;
     if (policy.kind !== 'locale-host') return undefined;
     const origin = policy.locales[locale];
-    if (origin === undefined || origin === this.declaredOrigin()) {
+    if (origin === undefined || origin === this.ownOrigin) {
       return undefined;
     }
     const active = untracked(this.context);
@@ -679,13 +683,33 @@ export class RouteLocalization {
    * form. Comparing the two spellings directly would make `https://example.com/` a different origin
    * from `https://example.com` and claim a locale change that is already at home.
    */
-  private declaredOrigin(): string | undefined {
-    const declared = this.options.origin;
+  private readonly ownOrigin: string | undefined;
+
+  /**
+   * Reads the origin an adapter was given, refusing one that is not an origin under a host policy.
+   *
+   * An adapter constructed without `provideLocalizedRouter` has not passed its check, and under a
+   * host policy an origin that does not parse equals none of the policy's, so every locale, the one
+   * on screen included, would be a move to another document.
+   */
+  private static originOf(
+    declared: string | undefined,
+    policy: LocaleUrlPolicy,
+  ): string | undefined {
     if (declared === undefined) return undefined;
     try {
       return new URL(declared).origin;
-    } catch {
-      return undefined;
+    } catch (cause) {
+      if (policy.kind !== 'locale-host') return undefined;
+      throw new LocalizationError(
+        {
+          code: 'invalid-configuration',
+          outcome: 'operational-failure',
+          reason: 'malformed-input',
+          message: `Localized routing under a "locale-host" policy was given {origin: ${JSON.stringify(declared)}}, which is not an origin. Pass the origin this build answers at, scheme included.`,
+        },
+        { cause },
+      );
     }
   }
 
