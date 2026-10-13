@@ -6060,22 +6060,6 @@
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
-      "mutator": "StringLiteral",
-      "original": "'en'",
-      "replacement": "\"\"",
-      "category": "message-wording",
-      "reason": "dateOptionProblem returns only the summary of an EQ1204 that is reported either way. An empty locale makes every trial throw, so the one change is that a message whose time zone is valid, and whose formatter was refused for another option, is told its time zone is wrong instead of that its options cannot be used together."
-    },
-    {
-      "file": "packages/toolkit/src/message-format.ts",
-      "mutator": "StringLiteral",
-      "original": "'UTC'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "The placeholder zone is replaced by the spread on the next line whenever the tried option is timeZone, which is the only constructed rule and so the only option tried, and its value is never \"input\" here because line 1055 returns before dateOptionProblem is called."
-    },
-    {
-      "file": "packages/toolkit/src/message-format.ts",
       "mutator": "ConditionalExpression",
       "original": "error.type !== 'missing-syntax'",
       "replacement": "false",
