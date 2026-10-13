@@ -297,6 +297,22 @@ describe('an event repeated inside one second', () => {
     ]);
   });
 
+  it('is not a repeat where one event carries a member as empty text and the other does not carry it', () => {
+    const { events, emit } = reporting();
+    // A reason is not bounded as an identity is, so an untyped caller can hand an empty one.
+    const empty = '' as unknown as NonNullable<
+      LocalizationEventInput['reason']
+    >;
+
+    emit({ status: 'failed', reason: empty });
+    emit({ status: 'failed' });
+
+    expect(events).toStrictEqual([
+      { ...BARE_EVENT, status: 'failed', reason: empty },
+      { ...BARE_EVENT, status: 'failed' },
+    ]);
+  });
+
   it('remembers 128 failures and gives up the oldest first', () => {
     const { events, emit } = reporting();
     const scopes = Array.from({ length: 129 }, (_, index) => `scope-${index}`);

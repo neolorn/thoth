@@ -221,15 +221,18 @@ function emitLocalizationEvent(
     event.status === 'superseded'
   ) {
     const now = Date.now();
-    const key = [
+    // Written as JSON, which quotes each member and writes one the event does not carry as
+    // `null`, so no two events that differ in a member share a key: an absent member is not an
+    // empty one, and no text inside a member reads as the boundary between two.
+    const key = JSON.stringify([
       event.code,
       event.phase,
       event.status,
-      event.reason ?? '',
-      event.providerId ?? '',
-      event.scopeId ?? '',
-      event.targetLocale ?? '',
-    ].join('\u0000');
+      event.reason,
+      event.providerId,
+      event.scopeId,
+      event.targetLocale,
+    ]);
     const previous = failures.get(key);
     if (
       previous !== undefined &&
@@ -238,8 +241,8 @@ function emitLocalizationEvent(
       return;
     }
     if (failures.size >= MAXIMUM_FAILURE_IDENTITIES) {
-      const oldest = failures.keys().next().value as string | undefined;
-      if (oldest !== undefined) failures.delete(oldest);
+      // The map is full here, so it has an oldest key.
+      failures.delete(failures.keys().next().value as string);
     }
     failures.set(key, now);
   }
