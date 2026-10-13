@@ -396,7 +396,11 @@ export interface MessageLiteralVariantKey {
  */
 export interface MessageCatchallVariantKey {
   readonly kind: 'catchall';
-  /** The name it was written under, kept for round-tripping the source rather than for matching. */
+  /**
+   * Absent from every model the parser returns: MessageFormat writes the catch-all as `*`, and
+   * the parser keeps no text for it. The data model the key is read from allows a value, and one
+   * that is given is carried and never matched against.
+   */
   readonly value?: string;
 }
 
