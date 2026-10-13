@@ -123,6 +123,17 @@ export function provideArticles(): EnvironmentProviders {
 `prepare` may return a promise, and the transition waits for it. A participant that rejects fails the
 switch, which leaves the page in the locale it was already in rather than half moved.
 
+`commit`, `rollback`, `discard` and `dispose` answer at once, because every participant is told in
+one pass. A `commit` that returns a promise fails the switch. A promise from one of the other three
+is reported to the observability sink and changes nothing about how the switch ended.
+
+The context a hook receives names the arriving locale as `targetLocale`, the formatting context that
+will be in force as `formatting`, and the change as `transitionId`. Its `signal` is aborted when the
+change is abandoned or overtaken, after `prepare` has answered as well as before, and a participant
+whose signal is aborted is not asked to commit. A context you build with
+`createLocalizationContext({ requestContext })` hands that value to its participants as
+`context.requestContext`, so a store on a server fetches for the request it is serving.
+
 A participant registered later, from a component that has just been created, joins from the next
 transition onward. The initial load has already run by then.
 
