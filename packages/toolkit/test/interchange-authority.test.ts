@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import {
   exportXliff22,
-  formatCatalog,
   importXliff22,
   parseCatalog,
   type Catalog,
   type CatalogParseOptions,
 } from '../src/index.js';
+import { writtenCatalog } from './fixtures.js';
 
 /**
  * An interchange document contributes translations and nothing else.
@@ -65,9 +65,9 @@ describe('a returned interchange document', () => {
     expect(imported.value.messages['title']).toMatchObject({
       message: 'Paramètres',
     });
-    expect(formatCatalog(imported.value)).toBe(formatCatalog(target));
-    expect(formatCatalog(source)).toBe(
-      formatCatalog(catalog(SOURCE_TEXT, sourceOptions)),
+    expect(writtenCatalog(imported.value)).toBe(writtenCatalog(target));
+    expect(writtenCatalog(source)).toBe(
+      writtenCatalog(catalog(SOURCE_TEXT, sourceOptions)),
     );
   });
 

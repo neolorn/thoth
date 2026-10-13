@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  formatCatalog,
   parseCatalog,
   parseConfiguration,
   type CatalogParseOptions,
@@ -10,6 +9,7 @@ import { formatCatalogSource } from '../src/catalog.js';
 import { formatConfiguration } from '../src/configuration.js';
 import { canonicalizeLocale } from '../src/locales.js';
 import { parseMessageSemanticModel } from '../src/message-format.js';
+import { writtenCatalog } from './fixtures.js';
 
 /**
  * Round-trip, idempotence and differential properties over generated input.
@@ -305,7 +305,7 @@ describe('a catalog survives the model round trip', () => {
       expect(parsed.ok, source).toBe(true);
       if (!parsed.ok) continue;
 
-      const written = formatCatalog(parsed.value);
+      const written = writtenCatalog(parsed.value);
       const reparsed = parseCatalog(written, OPTIONS);
       expect(reparsed.ok, written).toBe(true);
       if (!reparsed.ok) continue;

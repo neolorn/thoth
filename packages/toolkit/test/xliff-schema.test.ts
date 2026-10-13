@@ -6,7 +6,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   exportXliff22,
-  formatCatalog,
   importXliff22,
   parseCatalog,
   type Catalog,
@@ -14,6 +13,7 @@ import {
 } from '../src/index.js';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+import { writtenCatalog } from './fixtures.js';
 
 /**
  * Every document this package writes, against the schema OASIS publishes for the version it claims.
@@ -189,7 +189,7 @@ describe('Equator XLIFF 2.2 documents against the OASIS schema', () => {
     const imported = importXliff22({ document: exported.value, source });
     expect(imported.ok).toBe(true);
     if (!imported.ok) return;
-    expect(formatCatalog(imported.value)).toBe(formatCatalog(target));
+    expect(writtenCatalog(imported.value)).toBe(writtenCatalog(target));
     claimCapability('capability:xliff');
   });
 });

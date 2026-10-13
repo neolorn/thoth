@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  formatCatalog,
   parseCatalog,
   parseConfiguration,
   type CatalogParseOptions,
 } from '../src/index.js';
 import { formatConfiguration } from '../src/configuration.js';
+import { writtenCatalog } from './fixtures.js';
 
 const sourceCatalogOptions: CatalogParseOptions = {
   role: 'source',
@@ -314,13 +314,13 @@ describe('Equator canonical catalogs', () => {
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
 
-    const formatted = formatCatalog(parsed.value);
+    const formatted = writtenCatalog(parsed.value);
     expect(formatted.indexOf('a.first')).toBeLessThan(
       formatted.indexOf('z.last'),
     );
     const reparsed = parseCatalog(formatted, sourceCatalogOptions);
     expect(reparsed).toEqual(parsed);
-    expect(formatCatalog(reparsed.ok ? reparsed.value : parsed.value)).toBe(
+    expect(writtenCatalog(reparsed.ok ? reparsed.value : parsed.value)).toBe(
       formatted,
     );
   });

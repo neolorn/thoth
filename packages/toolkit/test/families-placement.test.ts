@@ -7,11 +7,8 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import {
-  formatCatalog,
-  parseCatalog,
-  type CatalogParseOptions,
-} from '../src/index.js';
+import { parseCatalog, type CatalogParseOptions } from '../src/index.js';
+import { writtenCatalog } from './fixtures.js';
 
 const source: CatalogParseOptions = {
   role: 'source',
@@ -43,7 +40,7 @@ describe('a families mapping', () => {
 
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    expect(formatCatalog(parsed.value)).toMatch(/^families:$/mu);
+    expect(writtenCatalog(parsed.value)).toMatch(/^families:$/mu);
   });
 
   it('is omitted from a source catalog whose scope has none', () => {
@@ -51,7 +48,7 @@ describe('a families mapping', () => {
 
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    expect(formatCatalog(parsed.value)).not.toContain('families');
+    expect(writtenCatalog(parsed.value)).not.toContain('families');
   });
 
   it('is refused in a target catalog', () => {

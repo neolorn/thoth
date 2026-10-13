@@ -129,8 +129,8 @@ const synchronous: readonly (readonly [string, () => unknown])[] = [
     () => formatCatalog(undefined as never),
   ],
   [
-    'formatCatalog: catalog.messages must be an object, not an array.',
-    () => formatCatalog({ ...identity, messages: [], families: {} } as never),
+    'formatCatalog: options must be an object, not a string.',
+    () => formatCatalog({} as never, SECRET as never),
   ],
   [
     'createPseudoCatalog: source must be an object, not a string.',

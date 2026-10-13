@@ -27,8 +27,9 @@ A message without variants reaches the translator as text, with its placeholders
 XLIFF inline codes a translation tool protects. A message with variants, one written with `.match`,
 travels as its MessageFormat 2 text, and the translator edits the variants in that syntax.
 
-The toolkit has no command for the exchange. `formatCatalog` writes the imported catalog as a new
-file in canonical form, so comments and block scalars in the translated file are not kept.
+The toolkit has no command for the exchange. `formatCatalog` returns the imported catalog as the
+text of a new file in canonical form, so comments and block scalars in the translated file are not
+kept.
 
 Nothing about your build, your routes or your project goes into the document, and nothing in the
 document can introduce markup or a destination into your page, which is

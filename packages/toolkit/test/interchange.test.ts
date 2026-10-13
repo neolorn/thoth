@@ -5,7 +5,6 @@ import {
   PSEUDO_LOCALE_ACCENTED,
   createPseudoCatalog,
   exportXliff22,
-  formatCatalog,
   importXliff22,
   parseCatalog,
   type Catalog,
@@ -14,6 +13,7 @@ import {
 import { pseudoLocalizeMessage } from '../src/pseudo-localization.js';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+import { writtenCatalog } from './fixtures.js';
 
 const sourceOptions: CatalogParseOptions = {
   role: 'source',
@@ -92,7 +92,7 @@ describe('Equator XLIFF 2.2 interchange', () => {
     });
     expect(imported.ok).toBe(true);
     if (!imported.ok) return;
-    expect(formatCatalog(imported.value)).toBe(formatCatalog(target));
+    expect(writtenCatalog(imported.value)).toBe(writtenCatalog(target));
     claimCapability('capability:xliff');
   });
 
@@ -122,7 +122,7 @@ describe('Equator XLIFF 2.2 interchange', () => {
     const imported = importXliff22({ document: exported.value, source });
     expect(imported.ok, JSON.stringify(imported)).toBe(true);
     if (!imported.ok) return;
-    expect(formatCatalog(imported.value)).toBe(formatCatalog(wide));
+    expect(writtenCatalog(imported.value)).toBe(writtenCatalog(wide));
   });
 
   it('refuses a document type declaration where XML allows one, after the XML declaration', () => {
@@ -154,7 +154,7 @@ describe('Equator XLIFF 2.2 interchange', () => {
     ).toBe(false);
 
     const changedSource = catalog(
-      formatCatalog(source).replace('Hello ', 'Welcome '),
+      writtenCatalog(source).replace('Hello ', 'Welcome '),
       sourceOptions,
     );
     const stale = importXliff22({
@@ -440,7 +440,7 @@ describe('Equator XLIFF import of a document Equator did not write', () => {
     const imported = importXliff22({ document, source: foreignSource });
     expect(imported.ok).toBe(true);
     if (!imported.ok) return;
-    expect(formatCatalog(imported.value)).toBe(formatCatalog(foreignTarget));
+    expect(writtenCatalog(imported.value)).toBe(writtenCatalog(foreignTarget));
     claimCapability('capability:xliff');
   });
 
@@ -608,11 +608,11 @@ describe('an XLIFF unit whose id is not an xs:NMTOKEN', () => {
  */
 describe('an XLIFF unit that does not belong to the source catalog', () => {
   const wider = catalog(
-    `${formatCatalog(source)}  farewell: "Goodbye."\n`,
+    `${writtenCatalog(source)}  farewell: "Goodbye."\n`,
     sourceOptions,
   );
   const widerTarget = catalog(
-    `${formatCatalog(target)}  farewell: "مع السلامة."\n`,
+    `${writtenCatalog(target)}  farewell: "مع السلامة."\n`,
     targetOptions,
   );
 

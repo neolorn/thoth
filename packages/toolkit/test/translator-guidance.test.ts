@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   exportXliff22,
-  formatCatalog,
   importXliff22,
   parseCatalog,
   type Catalog,
@@ -10,6 +9,7 @@ import {
 } from '../src/index.js';
 
 import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
+import { writtenCatalog } from './fixtures.js';
 
 /**
  * Notes and target state across the XLIFF boundary.
@@ -167,7 +167,7 @@ describe('guidance reaching the translator', () => {
 
     // And back out to YAML, which is where the round trip actually ends: guidance that survives
     // only in memory has not survived anything.
-    expect(formatCatalog(imported.value)).toBe(formatCatalog(annotated));
+    expect(writtenCatalog(imported.value)).toBe(writtenCatalog(annotated));
     claimCapability('capability:xliff');
   });
 });

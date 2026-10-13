@@ -1480,18 +1480,42 @@ export function formatCatalogSource(
   );
 }
 
+/** What `formatCatalog` is told beside the catalog. */
+export interface CatalogFormatOptions {
+  /**
+   * The registry the catalog's extension functions and segment types come from.
+   *
+   * Needed only for a catalog assembled by the caller that names one: what `parseCatalog`
+   * returned was judged under its own registry.
+   */
+  readonly extensions?: ExtensionRegistry;
+}
+
 /**
  * Write a catalog that does not exist yet, from the model.
  *
  * Correct only where there is no authored file to preserve: an interchange import creating a
  * target catalog for the first time. Anything editing a file a person wrote goes through
  * `formatCatalogSource`.
+ *
+ * Returns the text of the file, as `exportXliff22` and `formatCatalogSource` return theirs. A
+ * catalog the caller assembled is judged first as `parseCatalog` judges the same content, so one
+ * that no file could hold is refused with those diagnostics and nothing is written for it.
  */
-export function formatCatalog(catalog: Catalog): string {
-  requireArgument('formatCatalog', 'catalog', catalog, {
-    required: { messages: 'record' },
-    optional: { families: 'record' },
+export function formatCatalog(
+  catalog: Catalog,
+  options: CatalogFormatOptions = {},
+): ToolkitResult<string> {
+  requireArgument('formatCatalog', 'catalog', catalog, 'record');
+  requireArgument('formatCatalog', 'options', options, {
+    optional: { extensions: EXTENSION_REGISTRY_ARGUMENT },
   });
+  const admitted = admitOneCatalog(catalog, { extensions: options.extensions });
+  return admitted.ok ? toolkitSuccess(catalogText(admitted.value)) : admitted;
+}
+
+/** The canonical text of a catalog already judged, which is what `formatCatalog` returns. */
+export function catalogText(catalog: Catalog): string {
   const value = {
     messages: Object.fromEntries(
       Object.entries(catalog.messages).map(([messageId, message]) => [

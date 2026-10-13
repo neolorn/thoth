@@ -20,6 +20,7 @@ export { formatCatalog, parseCatalog } from './catalog.js';
 export type {
   Catalog,
   CatalogFamily,
+  CatalogFormatOptions,
   CatalogMessage,
   CatalogParseOptions,
   CatalogRole,

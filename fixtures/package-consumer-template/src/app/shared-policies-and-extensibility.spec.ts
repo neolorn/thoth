@@ -524,7 +524,7 @@ describe('built-toolkit lifecycle', () => {
     });
     expect(imported.ok).toBe(true);
     if (!imported.ok) return;
-    expect(formatCatalog(imported.value)).toBe(formatCatalog(target));
+    expect(formatCatalog(imported.value)).toEqual(formatCatalog(target));
 
     const pseudo = createPseudoCatalog(source, {
       locale: PSEUDO_LOCALE_ACCENTED,

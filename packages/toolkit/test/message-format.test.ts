@@ -2,7 +2,6 @@ import { DraftFunctions, DefaultFunctions } from 'messageformat/functions';
 import { describe, expect, it } from 'vitest';
 
 import {
-  formatCatalog,
   parseCatalog,
   type CatalogParseOptions,
   type MessageCustomFunction,
@@ -11,6 +10,7 @@ import {
   MESSAGE_FUNCTION_PROFILE,
   parseMessageSemanticModel,
 } from '../src/message-format.js';
+import { writtenCatalog } from './fixtures.js';
 
 const catalogOptions: CatalogParseOptions = {
   role: 'source',
@@ -251,7 +251,7 @@ describe('MessageFormat catalog integration', () => {
       },
     });
     expect(result.value.messages['spacer']).not.toHaveProperty('semantics');
-    expect(formatCatalog(result.value)).toContain(
+    expect(writtenCatalog(result.value)).toContain(
       'greeting: "Hello {$name :string}"',
     );
   });

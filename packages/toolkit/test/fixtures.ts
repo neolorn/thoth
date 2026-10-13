@@ -1,4 +1,9 @@
-import { parseConfiguration, type ProjectConfiguration } from '../src/index.js';
+import {
+  formatCatalog,
+  parseConfiguration,
+  type Catalog,
+  type ProjectConfiguration,
+} from '../src/index.js';
 
 /**
  * A project configuration for a test, built by the parser that reads a real one.
@@ -48,3 +53,16 @@ export function testProjectConfiguration(
  * with the test's time limit, and far above what the wait costs, so it ends only on a hang.
  */
 export const WAIT_BOUND_MS = 100_000;
+
+/** The text `formatCatalog` writes for a catalog the test knows it accepts. */
+export function writtenCatalog(catalog: Catalog): string {
+  const written = formatCatalog(catalog);
+  if (!written.ok) {
+    throw new Error(
+      `The catalog under test cannot be written: ${written.diagnostics
+        .map(({ code, summary }) => `${code} ${summary}`)
+        .join('; ')}`,
+    );
+  }
+  return written.value;
+}

@@ -9,7 +9,7 @@
 
 import { requireArgument, type ArgumentShape } from './call-arguments.js';
 import type { Catalog, CatalogMessage } from './catalog.js';
-import { admitCatalogs, formatCatalog } from './catalog.js';
+import { admitCatalogs, catalogText } from './catalog.js';
 import {
   createAuthoredChangePlan,
   type AuthoredChangePlan,
@@ -214,7 +214,7 @@ function changedCatalogFiles(
   const beforeByPath = new Map(
     request.catalogs.map((catalog) => [
       catalogPath(catalog),
-      formatCatalog(catalog),
+      catalogText(catalog),
     ]),
   );
   const touched = new Set<string>();
@@ -306,7 +306,7 @@ function changedCatalogFiles(
 
   const afterByPath = new Map<string, string>();
   for (const catalog of catalogs.values()) {
-    afterByPath.set(catalogPath(catalog), formatCatalog(catalog));
+    afterByPath.set(catalogPath(catalog), catalogText(catalog));
   }
   const changes = [...touched].sort(compareCodeUnit).map((path) => ({
     path,
