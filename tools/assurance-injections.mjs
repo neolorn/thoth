@@ -2782,14 +2782,33 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/plain-date-calendar.test.ts',
   },
   {
-    id: 'plain-date-time-context-calendar-over-the-call',
+    id: 'plain-date-time-context-calendar-ignored',
     invariant:
-      "An ISO plain date-time is written in the calendar the call names over the formatting context's.",
+      "An ISO plain date-time is written in the calendar the formatting context names, under the call's own.",
     source: 'packages/runtime/src/formatting.ts',
-    find: "      ...displayCalendar(context.calendar),\n      ...displayCalendar(value.date.calendar),\n      ...options,\n      timeZone: 'UTC',",
-    replace:
-      "      ...displayCalendar(value.date.calendar),\n      ...options,\n      timeZone: 'UTC',\n      ...displayCalendar(context.calendar),",
+    find: '      ...displayCalendar(context.calendar),\n      ...displayCalendar(value.date.calendar),',
+    replace: '      ...displayCalendar(value.date.calendar),',
     caughtBy: 'packages/runtime/test/plain-date-context-calendar.test.ts',
+  },
+  {
+    id: 'plain-time-context-hour-cycle-over-the-call',
+    invariant:
+      "A plain time is written in the hour cycle the call names over the formatting context's.",
+    source: 'packages/runtime/src/formatting.ts',
+    find: 'dateTime(formattingTag, {\n      ...(context.hourCycle === undefined\n        ? {}\n        : { hourCycle: context.hourCycle }),\n      ...options,',
+    replace:
+      'dateTime(formattingTag, {\n      ...options,\n      ...(context.hourCycle === undefined\n        ? {}\n        : { hourCycle: context.hourCycle }),',
+    caughtBy: 'packages/runtime/test/call-named-hour-cycle.test.ts',
+  },
+  {
+    id: 'plain-date-time-context-hour-cycle-over-the-call',
+    invariant:
+      "A plain date-time is written in the hour cycle the call names over the formatting context's.",
+    source: 'packages/runtime/src/formatting.ts',
+    find: '      ...displayCalendar(value.date.calendar),\n      ...(context.hourCycle === undefined\n        ? {}\n        : { hourCycle: context.hourCycle }),\n      ...options,',
+    replace:
+      '      ...displayCalendar(value.date.calendar),\n      ...options,\n      ...(context.hourCycle === undefined\n        ? {}\n        : { hourCycle: context.hourCycle }),',
+    caughtBy: 'packages/runtime/test/call-named-hour-cycle.test.ts',
   },
   {
     id: 'message-time-zone-overridden-by-context',

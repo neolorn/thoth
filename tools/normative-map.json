@@ -3040,7 +3040,9 @@
         "assurance:instant-options-override-caller",
         "assurance:message-time-zone-overridden-by-context",
         "assurance:plain-date-context-calendar-ignored",
-        "assurance:plain-date-time-context-calendar-over-the-call"
+        "assurance:plain-date-time-context-calendar-ignored",
+        "assurance:plain-time-context-hour-cycle-over-the-call",
+        "assurance:plain-date-time-context-hour-cycle-over-the-call"
       ]
     },
     {

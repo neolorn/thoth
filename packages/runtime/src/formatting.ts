@@ -1178,7 +1178,7 @@ function plainTimeMilliseconds(value: PlainTimeValue): number {
  * Writes a time of day in the locale's clock: its hour cycle, its separator, its day period.
  *
  * Defaults to hours, minutes and seconds. Whether it comes out as a twelve or twenty-four hour
- * clock follows the locale, or the hour cycle the context names.
+ * clock follows the hour cycle the options name, else the one the context names, else the locale.
  */
 export function formatPlainTime(
   value: PlainTimeValue,
@@ -1207,11 +1207,11 @@ export function formatPlainTime(
       return unsupportedNumberingSystem(context);
     }
     const formatter = sharedFormatters.dateTime(formattingTag, {
-      ...options,
-      timeZone: 'UTC',
       ...(context.hourCycle === undefined
         ? {}
         : { hourCycle: context.hourCycle }),
+      ...options,
+      timeZone: 'UTC',
     });
     const milliseconds = plainTimeMilliseconds(value);
     return success(
@@ -1289,11 +1289,11 @@ export function formatPlainDateTime(
     const formatter = sharedFormatters.dateTime(formattingTag, {
       ...displayCalendar(context.calendar),
       ...displayCalendar(value.date.calendar),
-      ...options,
-      timeZone: 'UTC',
       ...(context.hourCycle === undefined
         ? {}
         : { hourCycle: context.hourCycle }),
+      ...options,
+      timeZone: 'UTC',
     });
     const refusal = plainCalendarRefusal(
       formatter,
