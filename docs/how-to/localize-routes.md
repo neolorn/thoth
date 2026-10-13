@@ -26,6 +26,10 @@ The policy states how a locale appears in a URL. The projection states which rou
 addresses, and it starts from the generated one, so a route you add later is covered without a second
 list.
 
+Write the creator's options as literals, as above. `generate` compares the policy with
+`equator.config.json` and with your route paths only where it reads an option from the call itself,
+and reports `EQ1417` naming each option it did not read.
+
 ## Compose them
 
 Pass both to `withRouting` among the features `provideLocalization` receives:
@@ -67,6 +71,10 @@ Four creators, all exported from `@neolorn/equator`:
 `createPathPrefixLocalePolicy` is the default choice. It takes `omitDefaultPrefix` to serve the
 default locale without its prefix. `createDefaultLocalePrefixPolicy` takes the same options without
 that one, because it always writes the prefix.
+
+Build the policy with a creator. A policy object written out by hand is accepted only where it holds
+what a creator writes for its kind, and is refused with `invalid-configuration` wherever it is read
+otherwise.
 
 Each policy costs something different, and a host policy changes what a locale switch is, which is
 [About how routing derives addresses](../explanation/about-addresses.md).
