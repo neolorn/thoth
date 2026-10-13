@@ -69,13 +69,22 @@ export type ToolkitEventStatus =
 export interface ToolkitObservabilityEvent {
   /** The event shape's version. */
   readonly profile: typeof TOOLKIT_OBSERVABILITY_PROFILE;
-  /** Which of the three areas this is about. */
+  /**
+   * Which area this is about.
+   *
+   * The type lists the codes this version writes. A later version may write one more within the
+   * same profile, so a sink that switches on the code keeps a default branch.
+   */
   readonly code: ToolkitEventCode;
   /** Which part of the work, in words. */
   readonly phase: ToolkitEventPhase;
   /** How it ended. */
   readonly status: ToolkitEventStatus;
-  /** The first diagnostic's code, on a failure, so a log can say why without carrying the text. */
+  /**
+   * The first diagnostic's code, on a failure, so a log can say why without carrying the text.
+   *
+   * Open as `code` is: a later version may report a diagnostic this one does not have.
+   */
   readonly diagnosticCode?: ToolkitDiagnosticCode;
   /** Which package's catalogs this concerns. */
   readonly providerId?: string;

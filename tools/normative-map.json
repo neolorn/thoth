@@ -352,6 +352,12 @@
     {
       "spec": "01-standards-profile.spec.md",
       "section": "13. Generated serialization",
+      "statement": "A reader accepts a value it does not know, so adding a value to one is compatible, and a release MUST NOT withdraw a value or give it another meaning within a major version of the format.",
+      "checks": ["plant:verify:format-shapes:value-withdrawn-from-an-open-set"]
+    },
+    {
+      "spec": "01-standards-profile.spec.md",
+      "section": "13. Generated serialization",
       "statement": "The shape of each major version of such a format, and whether its readers refuse unknown fields, MUST be recorded in the repository and compared with the declarations the built packages publish.",
       "checks": [
         "plant:verify:format-shapes:optional-field-added-to-an-open-format",

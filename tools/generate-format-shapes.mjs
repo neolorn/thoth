@@ -60,6 +60,11 @@ const schema = (name) => `dist/toolkit/schemas/${name}.v1.schema.json`;
  *
  * `closed` is also the entry for a reader that ignores unknown fields but rewrites the data and so
  * loses them, and for a format read only by applications, whose readers Equator cannot see.
+ *
+ * `openValues` names the fields whose set of values is open: the section has a reader of an
+ * observability event accept a code it does not know, so a value added to one of these is a
+ * compatible change. The declaration still lists the values this build writes, and the record
+ * holds them under `open`.
  */
 const FORMATS = Object.freeze([
   {
@@ -120,6 +125,7 @@ const FORMATS = Object.freeze([
   {
     stamp: 'equator-runtime-observability-event/1',
     readers: 'closed',
+    openValues: ['code'],
     declarations: [
       {
         file: 'dist/runtime/types/neolorn-equator.d.ts',
@@ -130,6 +136,7 @@ const FORMATS = Object.freeze([
   {
     stamp: 'equator-toolkit-observability-event/1',
     readers: 'closed',
+    openValues: ['code', 'diagnosticCode'],
     declarations: [toolkit('observability', 'ToolkitObservabilityEvent')],
   },
   {
@@ -419,8 +426,46 @@ function discriminant(members) {
   });
 }
 
+/** A recorded shape with the named top-level fields marked as open sets of literal values. */
+function withOpenValues(shape, names, path) {
+  for (const name of names) {
+    const field = shape.object?.[name];
+    assert.ok(
+      field,
+      `${path}.${name} is named as an open set and is not a field.`,
+    );
+    const values = field.type.union ?? [field.type];
+    assert.ok(
+      values.every((value) => typeof value.literal === 'string'),
+      `${path}.${name} is named as an open set and is not a set of string literals.`,
+    );
+    field.type = { open: values.map(({ literal }) => literal) };
+  }
+  return shape;
+}
+
 function differences(before, after, readers, path, out) {
   if (JSON.stringify(before) === JSON.stringify(after)) return out;
+  if (before.open && after.open) {
+    for (const value of after.open) {
+      if (before.open.includes(value)) continue;
+      out.push({
+        path,
+        change: `value ${JSON.stringify(value)} added to an open set`,
+        incompatible: false,
+      });
+    }
+    // A reader may still be handed data an earlier writer made, so a value is never withdrawn.
+    for (const value of before.open) {
+      if (after.open.includes(value)) continue;
+      out.push({
+        path,
+        change: `value ${JSON.stringify(value)} removed from an open set`,
+        incompatible: true,
+      });
+    }
+    return out;
+  }
   if (before.object && after.object) {
     for (const [name, field] of Object.entries(before.object)) {
       const now = after.object[name];
@@ -563,30 +608,36 @@ function stampsInBuiltCode() {
  * ------------------------------------------------------------------ */
 
 const current = Object.fromEntries(
-  FORMATS.map(({ stamp, readers, declarations = [], schemas = [] }) => {
-    const entry = { readers };
-    if (declarations.length > 0) {
-      entry.declarations = Object.fromEntries(
-        declarations.map((declaration) => [
-          `${declaration.file}#${declaration.type}`,
-          shapeOf(declaredType(declaration), declaration.type),
-        ]),
-      );
-      // The record is of the format the stamp names only if one of its declarations carries it.
-      assert.ok(
-        JSON.stringify(entry.declarations).includes(
-          JSON.stringify({ literal: stamp }),
-        ),
-        `${stamp}: none of its declarations carries the stamp, so they are not its shape.`,
-      );
-    }
-    if (schemas.length > 0) {
-      entry.schemas = Object.fromEntries(
-        schemas.map((file) => [file, schemaDigest(file)]),
-      );
-    }
-    return [stamp, entry];
-  }),
+  FORMATS.map(
+    ({ stamp, readers, declarations = [], schemas = [], openValues = [] }) => {
+      const entry = { readers };
+      if (declarations.length > 0) {
+        entry.declarations = Object.fromEntries(
+          declarations.map((declaration) => [
+            `${declaration.file}#${declaration.type}`,
+            withOpenValues(
+              shapeOf(declaredType(declaration), declaration.type),
+              openValues,
+              declaration.type,
+            ),
+          ]),
+        );
+        // The record is of the format the stamp names only if one of its declarations carries it.
+        assert.ok(
+          JSON.stringify(entry.declarations).includes(
+            JSON.stringify({ literal: stamp }),
+          ),
+          `${stamp}: none of its declarations carries the stamp, so they are not its shape.`,
+        );
+      }
+      if (schemas.length > 0) {
+        entry.schemas = Object.fromEntries(
+          schemas.map((file) => [file, schemaDigest(file)]),
+        );
+      }
+      return [stamp, entry];
+    },
+  ),
 );
 
 const recorded = JSON.parse(readFileSync(recordPath, 'utf8')).formats;

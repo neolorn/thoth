@@ -321,6 +321,10 @@ is incompatible for a reader that refuses unknown fields, and for a reader that 
 and so loses the field. For a reader that ignores unknown fields, adding an optional field that no
 reader needs to interpret is compatible.
 
+The `code` of an observability event and the diagnostic code it carries are open sets of values. A
+reader accepts a value it does not know, so adding a value to one is compatible, and a release MUST
+NOT withdraw a value or give it another meaning within a major version of the format.
+
 A stamp whose writer and every reader ship in one package at one version, on data that does not
 outlive the run or render that wrote it, names a shape and owes no compatibility.
 

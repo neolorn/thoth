@@ -868,6 +868,28 @@ export const stageSelfTests = Object.freeze({
         refusal:
           /equator-route-projection\/1: \S+#GeneratedRouteProjection\.\S*\.id: type changed from "string" to "number" \(incompatible\)/u,
       },
+      // The record holds a code this build does not write: the build withdrew it.
+      {
+        id: 'value-withdrawn-from-an-open-set',
+        plant: editJson('tools/format-shapes.json', (record) => {
+          record.formats['equator-toolkit-observability-event/1'].declarations[
+            'dist/toolkit/observability.d.ts#ToolkitObservabilityEvent'
+          ].object.code.type.open.push('EQ-E1000');
+        }),
+        refusal:
+          /equator-toolkit-observability-event\/1: \S+#ToolkitObservabilityEvent\.code: value "EQ-E1000" removed from an open set \(incompatible\)/u,
+      },
+      // Compatible, and still a difference the record does not hold.
+      {
+        id: 'value-added-to-an-open-set',
+        plant: editJson('tools/format-shapes.json', (record) => {
+          record.formats['equator-toolkit-observability-event/1'].declarations[
+            'dist/toolkit/observability.d.ts#ToolkitObservabilityEvent'
+          ].object.code.type.open.pop();
+        }),
+        refusal:
+          /equator-toolkit-observability-event\/1: \S+#ToolkitObservabilityEvent\.code: value "EQ-E1003" added to an open set \(compatible\)/u,
+      },
       {
         id: 'published-schema-admits-other-data',
         plant: editJson(
