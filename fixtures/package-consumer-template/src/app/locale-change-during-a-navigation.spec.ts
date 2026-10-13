@@ -66,11 +66,16 @@ const ORIGIN = 'https://site.example';
 const ARRIVAL = '/en-us/dossiers/dossier';
 const DESTINATION = '/en-us/dossiers/other';
 
-/** The dossier's codec, writing no spelling for Arabic. */
+/** The dossiers that have no Arabic spelling. Absent, none has one. */
+let withoutArabic: ((slug: string) => boolean) | undefined;
+
+/** The dossier's codec, writing no spelling for Arabic for the dossiers above. */
 const WITHOUT_ARABIC: RouteParameterCodec<string> = Object.freeze({
   parse: (slug: string) => dossierSlugCodec.parse(slug),
   serialize: (slug: string, context?: RouteParameterContext) =>
-    context?.locale === 'ar-EG' ? undefined : slug,
+    context?.locale === 'ar-EG' && (withoutArabic?.(slug) ?? true)
+      ? undefined
+      : slug,
 });
 
 const PROJECTION: typeof appRouteProjection = Object.freeze({
@@ -261,6 +266,7 @@ afterEach(() => {
   reached = undefined;
   loading = undefined;
   unwritable = false;
+  withoutArabic = undefined;
   vi.restoreAllMocks();
   TestBed.resetTestingModule();
   history.replaceState(null, '', '/');
@@ -327,6 +333,35 @@ describe('a locale change in place while a navigation to another page is in flig
 
 describe('a locale change in place after a navigation has committed its locale and before it lands', () => {
   it('ends as failed where the destination has no address in the target locale, and the navigation lands as it was going to', async () => {
+    const { landed, load, localization, platform, settle } =
+      await navigationCommitted();
+    const before = localization.snapshot();
+
+    const result = await localization.changeLocale('ar-EG');
+
+    expect(result).toMatchObject({
+      status: 'failed',
+      targetLocale: 'ar-EG',
+      diagnostic: {
+        code: 'route-unavailable',
+        outcome: 'localized-representation-unavailable',
+      },
+    });
+    expect(localization.snapshot()).toBe(before);
+
+    load();
+    expect(await landed).toBeInstanceOf(NavigationEnd);
+    await settle();
+
+    expect(localization.snapshot()?.primaryLocale).toBe('en-US');
+    expect(platform.pathname).toBe(DESTINATION);
+    expect(document.documentElement.lang).toBe('en-US');
+  });
+
+  it('ends as failed where the page on screen has an address in the target locale and the destination has none', async () => {
+    // Only the destination is without an Arabic spelling, so the refusal can come from nothing
+    // but the question asked about the destination.
+    withoutArabic = (slug) => slug === 'other';
     const { landed, load, localization, platform, settle } =
       await navigationCommitted();
     const before = localization.snapshot();

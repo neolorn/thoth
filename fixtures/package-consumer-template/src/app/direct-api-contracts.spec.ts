@@ -322,6 +322,41 @@ describe('route and SEO contracts, called directly', () => {
       ).not.toBe('success');
     }
 
+    // The codec asked directly, in each direction. Resolving reads a segment and then writes what
+    // it read, and building writes a value and then reads what it wrote, so on either path one
+    // half of the codec answers for the other. Asked on its own, each half answers for itself.
+    const identifier = createIdentifierParameterCodec();
+    for (const refusedText of [
+      '-leading-hyphen',
+      'has a space',
+      '../etc',
+      'x'.repeat(129),
+      '',
+    ]) {
+      expect(identifier.parse(refusedText)).toStrictEqual({ ok: false });
+      expect(identifier.serialize(refusedText)).toBeUndefined();
+    }
+    expect(identifier.parse('handbook')).toStrictEqual({
+      ok: true,
+      value: 'handbook',
+    });
+    expect(identifier.serialize('handbook')).toBe('handbook');
+
+    // A declared spelling is only ever read, so the read is all that stands between a spelling
+    // the pattern refuses and an address that carries it.
+    expect(() =>
+      buildLocalizedRoute(
+        routePolicy,
+        appRouteProjection,
+        'topic',
+        'en-US',
+        { topic: 'handbook' },
+        [],
+        undefined,
+        { topic: { 'en-US': '-leading-hyphen' } },
+      ),
+    ).toThrow(/declared an en-US spelling for parameter topic/u);
+
     // Building is the other direction. The codec declines the value by writing nothing, so the
     // route has no address there, and the build says so with a typed refusal and never as the
     // application's code throwing.
