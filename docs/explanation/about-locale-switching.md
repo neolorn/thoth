@@ -53,6 +53,10 @@ A page can have an address in one locale and none in another, where a route para
 spelling there. A switch to that locale from such a page ends as `failed` with `route-unavailable`,
 and the words, the address and the document's `lang` stay as they were.
 
+A switch made while a navigation is on its way is the visitor's latest choice, so it outlives that
+navigation. Where the navigation is then cancelled or fails, or lands on a page whose document
+cannot be written, the visitor is back on the page they left, in the locale they switched to.
+
 ## Application state
 
 A switch reuses the running application rather than reloading the document, so state survives it: a
