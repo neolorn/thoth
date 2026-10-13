@@ -6773,33 +6773,6 @@
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "oldest === undefined",
-      "replacement": "true",
-      "category": "performance-only",
-      "reason": "The loop in numberSyntax and in profileAffixes then stops before it evicts, so the cache keeps every entry; an entry is derived from its key alone, so only memory changes and never a result.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
-      "original": "oldest === undefined",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "numberSyntax and profileAffixes ask for the oldest key only inside a loop that runs while the map holds more than 64 entries, so the key is always a string and the break this condition guards is never taken.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "EqualityOperator",
-      "original": "oldest === undefined",
-      "replacement": "oldest !== undefined",
-      "category": "performance-only",
-      "reason": "The loop in numberSyntax and in profileAffixes then stops before it evicts, so the cache keeps every entry; an entry is derived from its key alone, so only memory changes and never a result.",
-      "count": 2
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
       "mutator": "BlockStatement",
       "original": "{\n    return [];\n  }",
       "replacement": "{}",
@@ -6832,22 +6805,6 @@
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n    // A currency or unit the platform refuses has no spelling to learn; the field then reads a\n    // bare number, or refuses where the profile requires the marker.\n    learned.clear();\n  }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "Everything that throws inside the try of profileAffixes is the construction of the number formatter for a currency or unit the platform refuses, which happens before the first spelling is learned, so the map the catch clears is already empty."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "CallExpression",
-      "original": "learned.clear();",
-      "replacement": ";",
-      "category": "equivalent",
-      "reason": "Everything that throws inside the try of profileAffixes is the construction of the number formatter for a currency or unit the platform refuses, which happens before the first spelling is learned, so the map the catch clears is already empty."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
       "mutator": "ArithmeticOperator",
       "original": "right.prefix.length +\n        right.suffix.length",
       "replacement": "right.prefix.length - right.suffix.length",
@@ -6877,14 +6834,6 @@
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "the literal is the diagnostic message handed to failed() or formattingPolicyFailure(); nothing compares it and the suite asserts the status and the code"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n    value = undefined;\n  }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "In parsePlainDate the variable is declared without a value just above the try, so it is already undefined when plainDate throws and the assignment in the catch changes nothing."
     },
     {
       "file": "packages/runtime/src/localized-input.ts",

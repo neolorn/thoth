@@ -233,9 +233,8 @@ function numberSyntax(context: FormattingContext): NumberSyntax {
   });
   numberSyntaxCache.set(cacheKey, syntax);
   while (numberSyntaxCache.size > 64) {
-    const oldest = numberSyntaxCache.keys().next().value as string | undefined;
-    if (oldest === undefined) break;
-    numberSyntaxCache.delete(oldest);
+    // A map that holds an entry has a first key, and every key here is text.
+    numberSyntaxCache.delete(numberSyntaxCache.keys().next().value as string);
   }
   return syntax;
 }
@@ -405,8 +404,8 @@ function profileAffixes(
     }
   } catch {
     // A currency or unit the platform refuses has no spelling to learn; the field then reads a
-    // bare number, or refuses where the profile requires the marker.
-    learned.clear();
+    // bare number, or refuses where the profile requires the marker. The refusal comes from
+    // building the formatter, before any spelling is kept, so there is nothing to discard.
   }
   const affixes = Object.freeze(
     [...learned.values()].sort(
@@ -418,9 +417,8 @@ function profileAffixes(
   );
   profileAffixCache.set(cacheKey, affixes);
   while (profileAffixCache.size > 64) {
-    const oldest = profileAffixCache.keys().next().value as string | undefined;
-    if (oldest === undefined) break;
-    profileAffixCache.delete(oldest);
+    // A map that holds an entry has a first key, and every key here is text.
+    profileAffixCache.delete(profileAffixCache.keys().next().value as string);
   }
   return affixes;
 }
@@ -936,7 +934,7 @@ function parsePlainDate(
   try {
     value = plainDate(year, month, day, calendar);
   } catch {
-    value = undefined;
+    // Fields that are no date leave no value, and the refusal below is the answer for that.
   }
   if (value === undefined || !existsInGregorian(value)) {
     return failed(
