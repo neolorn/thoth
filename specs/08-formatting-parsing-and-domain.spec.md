@@ -164,6 +164,12 @@ asking the host, and MUST return the typed unsupported result of section 3 from 
 that writes digits where the host has no digits under a well-formed name, which a host given the
 name does not report. The reasons are a calendar's.
 
+A collation reaches an ordering from the operation alone, and is held to the rule as well. A
+release MUST refuse a collation that is not written as the type of a collation is, the same syntax,
+without asking the host, and MUST return the typed unsupported result of section 3 where the host
+answers a well-formed name with another collation, which a host does without an error for a
+collation it does not have and for one the locale does not have.
+
 A release MUST let a locale declare only what is a fact about how it is written: its numbering
 system, its calendar, and its hour cycle. A time zone is not one of those, so a release MUST keep
 the time zone application-wide, because it belongs to the reader or the deployment rather than to

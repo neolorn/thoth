@@ -3156,6 +3156,15 @@
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "4. The formatting context",
+      "statement": "A release MUST refuse a collation that is not written as the type of a collation is, the same syntax, without asking the host, and MUST return the typed unsupported result of section 3 where the host answers a well-formed name with another collation, which a host does without an error for a collation it does not have and for one the locale does not have.",
+      "checks": [
+        "assurance:collation-name-left-to-the-host",
+        "assurance:collation-the-host-lacks-ordered-by-the-default"
+      ]
+    },
+    {
+      "spec": "08-formatting-parsing-and-domain.spec.md",
+      "section": "4. The formatting context",
       "statement": "A release MUST let a locale declare only what is a fact about how it is written: its numbering system, its calendar, and its hour cycle.",
       "checks": ["assurance-runtime:locale-formatting-declaration-ignored"]
     },

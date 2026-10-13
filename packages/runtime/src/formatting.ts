@@ -52,6 +52,7 @@ import {
   isCalendarName,
   numberingSystemReason,
 } from './evaluator';
+import { isUnicodeKeywordType } from './message-function-options';
 import {
   PERSON_NAME_FORMALITIES,
   PERSON_NAME_LENGTHS,
@@ -2330,6 +2331,10 @@ export function selectPlural(
  * Returns -1, 0 or 1, for sorting. Use it for any list a reader sees: accented letters, digraphs
  * and case all sort differently by locale, and a byte comparison gets a name list wrong in most
  * languages.
+ *
+ * A collation the options name is written in lower case, as in `phonebk`. One the host does not
+ * have for the locale comes back as an unsupported result: a host given such a name raises nothing
+ * and would order by the default of the locale.
  */
 export function compareLocalized(
   left: string,
@@ -2350,10 +2355,30 @@ export function compareLocalized(
       context,
     );
   }
+  const collation: unknown = options.collation;
+  if (collation !== undefined && !isUnicodeKeywordType(collation)) {
+    return capabilityFailure(
+      "The collation asked for is not written as a collation's name.",
+      context,
+      'malformed-input',
+    );
+  }
   try {
-    const result = sharedFormatters
-      .collator(context.locale, options)
-      .compare(left, right);
+    const collator = sharedFormatters.collator(context.locale, options);
+    // A host asked for a collation it does not have, or one the locale does not have, raises
+    // nothing and orders by the default of the locale, so the collation it answers with is
+    // compared with the one asked for.
+    if (
+      collation !== undefined &&
+      hostAnswer(collator)['collation'] !== collation
+    ) {
+      return capabilityFailure(
+        'The host does not order this locale by the collation asked for.',
+        context,
+        'native-capability-rejected',
+      );
+    }
+    const result = collator.compare(left, right);
     return Object.freeze({
       ok: true,
       value: result < 0 ? -1 : result > 0 ? 1 : 0,

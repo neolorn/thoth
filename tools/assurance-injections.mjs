@@ -2137,6 +2137,24 @@ export const injections = Object.freeze([
       'packages/runtime/test/date-formatter-calendar-capability.test.ts',
   },
   {
+    id: 'collation-the-host-lacks-ordered-by-the-default',
+    invariant:
+      'A collation a call names that the host answers with another is reported as an unsupported formatting capability, and nothing is ordered by the default of the locale in its place.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: "      hostAnswer(collator)['collation'] !== collation",
+    replace: '      false',
+    caughtBy: 'packages/runtime/test/named-collation.test.ts',
+  },
+  {
+    id: 'collation-name-left-to-the-host',
+    invariant:
+      "A collation that is not written as a collation's name is refused before the host is asked, so an upper-case spelling the host would read is not a collation on one engine and a refusal on another.",
+    source: 'packages/runtime/src/formatting.ts',
+    find: '  if (collation !== undefined && !isUnicodeKeywordType(collation)) {',
+    replace: '  if (false) {',
+    caughtBy: 'packages/runtime/test/named-collation.test.ts',
+  },
+  {
     id: 'message-date-written-in-a-context-calendar-of-iso8601',
     invariant:
       'A date a message writes under a context whose calendar is iso8601 is written in the calendar of the locale, as the direct formatting API writes it.',

@@ -7743,6 +7743,22 @@
       "reason": "The sentence of the unsupported result a date formatter returns where the host answered the calendar it was asked for with another. Its code, outcome, target locale and reason are the same with any text, and date-formatter-calendar-capability.test.ts asserts those."
     },
     {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "StringLiteral",
+      "original": "\"The collation asked for is not written as a collation's name.\"",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The sentence of the unsupported result an ordering returns for a collation that is not written as a collation's name. Its code, outcome, target locale and reason are the same with any text, and named-collation.test.ts asserts those."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "StringLiteral",
+      "original": "'The host does not order this locale by the collation asked for.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The sentence of the unsupported result an ordering returns for a collation the host answered with another. Its code, outcome, target locale and reason are the same with any text, and named-collation.test.ts asserts those."
+    },
+    {
       "file": "packages/runtime/core/src/routing.ts",
       "mutator": "BlockStatement",
       "original": "{\n    locale = undefined;\n  }",
