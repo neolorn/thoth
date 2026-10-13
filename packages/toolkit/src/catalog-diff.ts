@@ -19,7 +19,7 @@ import {
   type SemanticGraph,
   type SemanticMessage,
 } from './semantic-model.js';
-import { compareCodePoint } from './sorted-records.js';
+import { compareCodeUnit } from './sorted-records.js';
 
 /**
  * What happened to one message between two versions of a project.
@@ -247,7 +247,7 @@ export function diffCatalogSets(
     ...beforeMessages.keys(),
     ...afterMessages.keys(),
   ]);
-  for (const identity of [...identities].sort(compareCodePoint)) {
+  for (const identity of [...identities].sort(compareCodeUnit)) {
     if (moves.has(identity) || reverseMoves.has(identity)) continue;
     const prior = beforeMessages.get(identity);
     const current = afterMessages.get(identity);
@@ -271,7 +271,7 @@ export function diffCatalogSets(
     readonly afterIdentity: string;
     readonly moved: boolean;
   }> = [];
-  for (const identity of [...beforeMessages.keys()].sort(compareCodePoint)) {
+  for (const identity of [...beforeMessages.keys()].sort(compareCodeUnit)) {
     const target = moves.get(identity) ?? identity;
     if (afterMessages.has(target)) {
       pairs.push({
@@ -312,7 +312,7 @@ export function diffCatalogSets(
     ]);
     locales.delete(request.before.configuration.sourceLocale);
     locales.delete(request.after.configuration.sourceLocale);
-    for (const locale of [...locales].sort(compareCodePoint)) {
+    for (const locale of [...locales].sort(compareCodeUnit)) {
       const priorTarget = catalogMessageFingerprint(
         request.before,
         pair.beforeIdentity,
@@ -368,7 +368,7 @@ export function diffCatalogSets(
     }
   }
   const ordered = [...entries.values()].sort((left, right) =>
-    compareCodePoint(entryKey(left), entryKey(right)),
+    compareCodeUnit(entryKey(left), entryKey(right)),
   );
   const digest = digestCanonicalJson(
     'equator-semantic-catalog-diff/1',

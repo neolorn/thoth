@@ -48,7 +48,7 @@ import { admitHostCompatibility } from './host-compatibility.js';
 import { containedPath } from './output-host.js';
 import { RESOURCE_LIMITS } from './resource-limits.js';
 import { GENERATED_ABI_PROFILE } from './semantic-model.js';
-import { compareCodePoint } from './sorted-records.js';
+import { compareCodeUnit } from './sorted-records.js';
 import { portablePath } from './file-system.js';
 
 /** A source file supplied directly rather than read from disk, for analysing something in memory. */
@@ -3879,7 +3879,7 @@ export function analyzeApplication(
     return toolkitFailure(diagnostics);
   }
   usages.sort((left, right) =>
-    compareCodePoint(
+    compareCodeUnit(
       `${left.sourcePath}\u0000${left.start.toString().padStart(12, '0')}\u0000${left.identity}`,
       `${right.sourcePath}\u0000${right.start.toString().padStart(12, '0')}\u0000${right.identity}`,
     ),
@@ -3923,13 +3923,13 @@ export function analyzeApplication(
   );
 
   routes.sort((left, right) =>
-    compareCodePoint(
+    compareCodeUnit(
       `${left.sourcePath}\u0000${left.start.toString().padStart(12, '0')}`,
       `${right.sourcePath}\u0000${right.start.toString().padStart(12, '0')}`,
     ),
   );
   components.sort((left, right) =>
-    compareCodePoint(left.sourcePath, right.sourcePath),
+    compareCodeUnit(left.sourcePath, right.sourcePath),
   );
 
   // What only a lazy route reaches. A file behind a boundary that something eager also imports is
@@ -3990,7 +3990,7 @@ export function analyzeApplication(
       [...staticImportClosure(program, entries)]
         .filter((path) => !eagerClosure.has(path))
         .map((path) => portablePath(projectRoot, path))
-        .sort(compareCodePoint),
+        .sort(compareCodeUnit),
     );
   };
 
@@ -4033,7 +4033,7 @@ export function analyzeApplication(
   const deferredSourcePaths = [...lazyClosure]
     .filter((path) => !eagerClosure.has(path))
     .map((path) => portablePath(projectRoot, path))
-    .sort(compareCodePoint);
+    .sort(compareCodeUnit);
   // Non-blocking findings must still reach the caller; a successful analysis
   // that silently drops its advisories hides consumer-source problems.
   return toolkitSuccess(
@@ -4042,7 +4042,7 @@ export function analyzeApplication(
       deferredSourcePaths: Object.freeze(deferredSourcePaths),
       selectsApplicationRuntime,
       recoveryMessageIdentities: Object.freeze(
-        [...recoveryMessageIdentities].sort(compareCodePoint),
+        [...recoveryMessageIdentities].sort(compareCodeUnit),
       ),
       ...(declaredRoutePolicy === undefined
         ? {}

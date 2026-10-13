@@ -41,7 +41,7 @@ import type { MessageCustomFunction } from './message-format.js';
 import { isMessageName } from './message-format-syntax.js';
 import { RESOURCE_LIMITS } from './resource-limits.js';
 import { EXTENSION_REGISTRY_SCHEMA } from './schemas.js';
-import { compareCodePoint } from './sorted-records.js';
+import { compareCodeUnit } from './sorted-records.js';
 import { constructJsonValue, jsonNestingExceeds } from './json-tree.js';
 
 /** The version stamp on an extension registry file, checked before one is read. */
@@ -475,7 +475,7 @@ export function defineExtensionRegistry(
     );
   }
   descriptors.sort((left, right) =>
-    compareCodePoint(
+    compareCodeUnit(
       `${left.kind}\u0000${left.id}`,
       `${right.kind}\u0000${right.id}`,
     ),

@@ -60,7 +60,7 @@ import {
   type ExtensionValueType,
   type RichSlotKindDescriptorInput,
 } from './extensions.js';
-import { compareCodePoint, frozenRecord } from './sorted-records.js';
+import { compareCodeUnit, frozenRecord } from './sorted-records.js';
 
 /**
  * The version stamp on the interface between generated code and the runtime.
@@ -784,7 +784,7 @@ function effectiveInputs(
   const contracts: EffectiveInputContract[] = [];
   for (const name of message.semantics.externalInputs) {
     const inheritedContract = inherited.get(name);
-    const explicitTypes = [...(usages.get(name) ?? [])].sort(compareCodePoint);
+    const explicitTypes = [...(usages.get(name) ?? [])].sort(compareCodeUnit);
     if (explicitTypes.length > 1) {
       diagnostics.push(
         semanticDiagnostic(
@@ -998,7 +998,7 @@ function effectiveSlots(
       ),
     );
   }
-  for (const name of [...names].sort(compareCodePoint)) {
+  for (const name of [...names].sort(compareCodeUnit)) {
     const refinement = message.slots[name];
     const inherited = inheritedSlots?.get(name);
     const counts = summaries.map((summary) => summary.counts.get(name) ?? 0);
@@ -1098,7 +1098,7 @@ function effectiveSlots(
       );
     }
     const allowedParents =
-      refinement?.within ?? [...parents].sort(compareCodePoint);
+      refinement?.within ?? [...parents].sort(compareCodeUnit);
     if (
       refinement?.within !== undefined &&
       [...parents].some((parent) => !refinement.within?.includes(parent))
@@ -1147,7 +1147,7 @@ function effectiveSlots(
         shape,
         optional: inferredOptional,
         repeatable: inferredRepeatable,
-        within: Object.freeze([...allowedParents].sort(compareCodePoint)),
+        within: Object.freeze([...allowedParents].sort(compareCodeUnit)),
         ...(refinement?.description === undefined
           ? {}
           : { description: refinement.description }),
@@ -1595,7 +1595,7 @@ function parseFamilyTemplate(
     );
     return undefined;
   }
-  const segmentNames = Object.keys(authored.segments).sort(compareCodePoint);
+  const segmentNames = Object.keys(authored.segments).sort(compareCodeUnit);
   if (segmentNames.some((name) => !placeholders.has(name))) {
     diagnostics.push(
       semanticDiagnostic(
@@ -1676,7 +1676,7 @@ function familyMatch(
   }
   return frozenRecord(
     Object.entries(segments).sort(([left], [right]) =>
-      compareCodePoint(left, right),
+      compareCodeUnit(left, right),
     ),
   );
 }
@@ -1700,7 +1700,7 @@ function analyzeFamilies(
   const projectedNames = new Map<string, string>();
   const memberships = new Map<string, string>();
   for (const [name, authored] of Object.entries(catalog.families).sort(
-    ([left], [right]) => compareCodePoint(left, right),
+    ([left], [right]) => compareCodeUnit(left, right),
   )) {
     const existingTemplate = templates.get(authored.template);
     const projectedName = name.replace(/-([a-z0-9])/gu, (_, value: string) =>
@@ -1874,7 +1874,7 @@ function referencedExtensions(
   }
   return Object.freeze(
     [...keys]
-      .sort(compareCodePoint)
+      .sort(compareCodeUnit)
       .map((key) => {
         const [kind, id] = key.split('\u0000') as [
           ExtensionDescriptor['kind'],
@@ -1918,7 +1918,7 @@ export function analyzeCatalogSet(
   // Ordered by the key each group is held under, so no two groups compare as equal and the order
   // is one whatever order the catalogs came in.
   for (const [, catalogs] of [...groups].sort(([left], [right]) =>
-    compareCodePoint(left, right),
+    compareCodeUnit(left, right),
   )) {
     const exemplar = catalogs[0];
     if (exemplar === undefined) continue;
@@ -1981,7 +1981,7 @@ export function analyzeCatalogSet(
       .filter(
         (catalog) => catalog !== sourceCatalog && catalog.role === 'target',
       )
-      .sort((left, right) => compareCodePoint(left.locale, right.locale));
+      .sort((left, right) => compareCodeUnit(left.locale, right.locale));
     for (const target of targets) {
       for (const messageId of Object.keys(target.messages)) {
         if (sourceCatalog.messages[messageId] === undefined) {
@@ -2135,7 +2135,7 @@ export function analyzeCatalogSet(
       );
     }
     semanticMessages.sort((left, right) =>
-      compareCodePoint(left.messageId, right.messageId),
+      compareCodeUnit(left.messageId, right.messageId),
     );
     const semanticFamilies = analyzeFamilies(
       sourceCatalog,
@@ -2197,7 +2197,7 @@ export function analyzeCatalogSet(
           message.slots.map((slot) => `${slot.kind}:${slot.shape}`),
         ),
       ),
-    ].sort(compareCodePoint);
+    ].sort(compareCodeUnit);
     const semanticRegistryFingerprint = digestCanonicalJson(
       'equator-scope-semantic-registry/1',
       {
@@ -2215,7 +2215,7 @@ export function analyzeCatalogSet(
         scopeId: sourceCatalog.scopeId,
         sourceLocale: sourceCatalog.locale,
         availableLocales: Object.freeze(
-          [...byLocale.keys()].sort(compareCodePoint) as CanonicalLocale[],
+          [...byLocale.keys()].sort(compareCodeUnit) as CanonicalLocale[],
         ),
         messages: Object.freeze(semanticMessages),
         families: semanticFamilies,

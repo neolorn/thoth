@@ -11,7 +11,7 @@ import {
   type ToolkitDiagnostic,
   type ToolkitResult,
 } from './diagnostics.js';
-import { compareCodePoint } from './sorted-records.js';
+import { compareCodeUnit } from './sorted-records.js';
 
 /** The version stamp on an output plan, checked before one is compared against a manifest. */
 export const OUTPUT_PLAN_PROFILE = 'equator-output-plan/1' as const;
@@ -188,7 +188,7 @@ export function createOutputPlan(
     );
   }
   if (diagnostics.length > 0) return toolkitFailure(diagnostics);
-  files.sort((left, right) => compareCodePoint(left.path, right.path));
+  files.sort((left, right) => compareCodeUnit(left.path, right.path));
   const planDigest = digestCanonicalJson(
     'equator-output-plan/1',
     files.map(planFileJson),
@@ -321,7 +321,7 @@ export function parseCompletionManifest(
       }),
     );
   }
-  parsedFiles.sort((left, right) => compareCodePoint(left.path, right.path));
+  parsedFiles.sort((left, right) => compareCodeUnit(left.path, right.path));
   const expectedPlanDigest = digestCanonicalJson(
     'equator-output-plan/1',
     parsedFiles.map((file) => ({

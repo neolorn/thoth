@@ -49,7 +49,7 @@ import {
   type CompletionManifest,
   type OutputPlan,
 } from './output-plan.js';
-import { compareCodePoint } from './sorted-records.js';
+import { compareCodeUnit } from './sorted-records.js';
 import { pathExists, writeSynced } from './file-system.js';
 
 /**
@@ -275,7 +275,7 @@ async function collectFiles(root: string): Promise<readonly string[]> {
     }
   };
   await visit(root);
-  files.sort(compareCodePoint);
+  files.sort(compareCodeUnit);
   return files;
 }
 
@@ -686,9 +686,9 @@ export async function applyOutputPlan(
     );
   }
   const written = [...state.value.missing, ...state.value.changed].sort(
-    compareCodePoint,
+    compareCodeUnit,
   );
-  const removed = [...state.value.stale].sort(compareCodePoint);
+  const removed = [...state.value.stale].sort(compareCodeUnit);
   if (request.dryRun === true) {
     await releaseLock();
     return toolkitSuccess(
@@ -727,7 +727,7 @@ export async function applyOutputPlan(
     ].sort((left, right) => {
       if (left === COMPLETION_MANIFEST_PATH) return 1;
       if (right === COMPLETION_MANIFEST_PATH) return -1;
-      return compareCodePoint(left, right);
+      return compareCodeUnit(left, right);
     });
     const operations: TransactionOperation[] = [];
     for (const path of operationPaths) {
@@ -953,7 +953,7 @@ export async function cleanOutput(
           resolve(roots.workRoot, ...path.split('/')),
         ),
       ),
-    ].sort(compareCodePoint);
+    ].sort(compareCodeUnit);
     if (request.dryRun === true) {
       return toolkitSuccess(
         Object.freeze({

@@ -95,7 +95,7 @@ import {
   type CleanOutputResult,
   type OutputFreshness,
 } from './output-host.js';
-import { compareCodePoint } from './sorted-records.js';
+import { compareCodeUnit } from './sorted-records.js';
 import {
   pathExists,
   pathMetadata,
@@ -1053,7 +1053,7 @@ async function discoverCatalogs(
   // Conventional catalog files that were found and read off disk but never became a catalog.
   const unreadable: string[] = [];
   const scopeEntries = await readdir(catalogRoot, { withFileTypes: true });
-  scopeEntries.sort((left, right) => compareCodePoint(left.name, right.name));
+  scopeEntries.sort((left, right) => compareCodeUnit(left.name, right.name));
   for (const scopeEntry of scopeEntries) {
     if (scopeEntry.isSymbolicLink() || !scopeEntry.isDirectory()) {
       diagnostics.push(
@@ -1065,9 +1065,7 @@ async function discoverCatalogs(
     }
     const scopeRoot = resolve(catalogRoot, scopeEntry.name);
     const localeEntries = await readdir(scopeRoot, { withFileTypes: true });
-    localeEntries.sort((left, right) =>
-      compareCodePoint(left.name, right.name),
-    );
+    localeEntries.sort((left, right) => compareCodeUnit(left.name, right.name));
     for (const localeEntry of localeEntries) {
       if (
         localeEntry.isSymbolicLink() ||
@@ -1166,7 +1164,7 @@ async function discoverCatalogs(
     return toolkitFailure(diagnostics);
   }
   catalogs.sort((left, right) =>
-    compareCodePoint(left.portablePath, right.portablePath),
+    compareCodeUnit(left.portablePath, right.portablePath),
   );
   return toolkitSuccess(Object.freeze(catalogs), diagnostics);
 }
@@ -1215,7 +1213,7 @@ function angularApplication(
   }
   const candidates: AngularApplication[] = [];
   for (const [projectName, rawProject] of Object.entries(projects).sort(
-    ([left], [right]) => compareCodePoint(left, right),
+    ([left], [right]) => compareCodeUnit(left, right),
   )) {
     if (
       typeof rawProject !== 'object' ||
@@ -1280,7 +1278,7 @@ function angularApplication(
   }
   const unique = [
     ...new Map(candidates.map((entry) => [entry.tsConfig, entry])).values(),
-  ].sort((left, right) => compareCodePoint(left.tsConfig, right.tsConfig));
+  ].sort((left, right) => compareCodeUnit(left.tsConfig, right.tsConfig));
   if (unique.length > 1) {
     return toolkitFailure([
       projectDiagnostic(
@@ -1397,7 +1395,7 @@ function externalTemplatePaths(
     ts.forEachChild(node, visit);
   };
   visit(sourceFile);
-  return [...paths].sort(compareCodePoint);
+  return [...paths].sort(compareCodeUnit);
 }
 
 // Machine-specific locations that describe where a project sits rather than
@@ -1433,7 +1431,7 @@ function portableCompilerOptions(
             key,
             portableValue(nested),
           ])
-          .sort(([left], [right]) => compareCodePoint(left, right)),
+          .sort(([left], [right]) => compareCodeUnit(left, right)),
       );
     }
     return null;
@@ -1447,7 +1445,7 @@ function portableCompilerOptions(
       key,
       portableValue(value),
     ])
-    .sort(([left], [right]) => compareCodePoint(left, right));
+    .sort(([left], [right]) => compareCodeUnit(left, right));
   return Object.freeze(Object.fromEntries(entries));
 }
 
@@ -1502,7 +1500,7 @@ async function loadAnalysisGraph(
         !containedPath(path, location.workRoot) &&
         !portablePath(location.ownerRoot, path).startsWith('node_modules/'),
     )
-    .sort(compareCodePoint);
+    .sort(compareCodeUnit);
   const diagnostics: ToolkitDiagnostic[] = [];
   if (rootNames.length > RESOURCE_LIMITS.analysisSourceFiles) {
     diagnostics.push(
@@ -1598,7 +1596,7 @@ async function loadAnalysisGraph(
     }
   }
   const sources = [...sourceMap.entries()]
-    .sort(([left], [right]) => compareCodePoint(left, right))
+    .sort(([left], [right]) => compareCodeUnit(left, right))
     .map(([path, contents]) => Object.freeze({ path, contents }));
   return toolkitSuccess(
     Object.freeze({
@@ -1784,8 +1782,7 @@ function parseCompilerState(value: unknown): CompilerState | undefined {
     inputs.some(
       (input, index) =>
         index > 0 &&
-        compareCodePoint(inputs[index - 1]?.identity ?? '', input.identity) >=
-          0,
+        compareCodeUnit(inputs[index - 1]?.identity ?? '', input.identity) >= 0,
     )
   ) {
     return undefined;
@@ -2416,7 +2413,7 @@ async function applyTextChanges(
     )
     .filter(({ previous, contents }) => previous !== contents)
     .sort((left, right) =>
-      compareCodePoint(left.portablePath, right.portablePath),
+      compareCodeUnit(left.portablePath, right.portablePath),
     );
   if (dryRun || changed.length === 0) {
     return toolkitSuccess(
@@ -2893,7 +2890,7 @@ export async function initializeProject(
   const files = catalogRootMissing
     ? Object.freeze(
         [...applied.value.files, 'i18n'].sort((left, right) =>
-          compareCodePoint(left, right),
+          compareCodeUnit(left, right),
         ),
       )
     : applied.value.files;
@@ -3050,7 +3047,7 @@ export async function uninstallProject(
       for (const file of files) await rm(file.absolutePath, { force: true });
     }
     catalogs = Object.freeze(
-      files.map((file) => file.portablePath).sort(compareCodePoint),
+      files.map((file) => file.portablePath).sort(compareCodeUnit),
     );
     removed.push(...catalogs);
   }
@@ -3058,8 +3055,8 @@ export async function uninstallProject(
   return toolkitSuccess(
     Object.freeze({
       changed: removed.length > 0,
-      removed: Object.freeze([...new Set(removed)].sort(compareCodePoint)),
-      retained: Object.freeze([...retained].sort(compareCodePoint)),
+      removed: Object.freeze([...new Set(removed)].sort(compareCodeUnit)),
+      retained: Object.freeze([...retained].sort(compareCodeUnit)),
       catalogs,
     }),
     [...cleaned.diagnostics, ...applied.diagnostics],

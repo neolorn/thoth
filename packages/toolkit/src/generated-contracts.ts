@@ -25,7 +25,7 @@ import {
   type SemanticMessage,
   type SemanticScope,
 } from './semantic-model.js';
-import { compareCodePoint } from './sorted-records.js';
+import { compareCodeUnit } from './sorted-records.js';
 
 export interface GeneratedContractFile {
   readonly path: string;
@@ -109,7 +109,7 @@ function inputBaseType(input: EffectiveInputContract): string {
   if (input.enum !== undefined) {
     return input.enum
       .map((value) => JSON.stringify(value))
-      .sort(compareCodePoint)
+      .sort(compareCodeUnit)
       .join(' | ');
   }
   switch (input.type) {
@@ -231,7 +231,7 @@ function renderFamilies(scope: SemanticScope): string {
 
 function renderProjectionNode(node: ProjectionNode): string {
   const children = [...node.children.entries()].sort(([left], [right]) =>
-    compareCodePoint(left, right),
+    compareCodeUnit(left, right),
   );
   if (children.length === 0) {
     if (node.message === undefined) {
@@ -566,7 +566,7 @@ function indexModule(
     return deferred === undefined ? `  provisionalScope(${row}),` : `  ${row},`;
   });
   const aliases = Object.entries(graph.aliases)
-    .sort(([left], [right]) => compareCodePoint(left, right))
+    .sort(([left], [right]) => compareCodeUnit(left, right))
     .map(([alias, locale]) => `  ${quote(alias)}: ${quote(locale)},`);
   // One name per configured locale, looked up at build time so the visitor's engine does not get
   // a vote. A locale CLDR has no name for is left out rather than given its tag: the runtime falls
@@ -683,7 +683,7 @@ function routeModule(
     ].join('\n');
   }
   const ordered = [...routes].sort((left, right) =>
-    compareCodePoint(
+    compareCodeUnit(
       `${left.id}\u0000${left.path}\u0000${left.sourcePath ?? ''}`,
       `${right.id}\u0000${right.path}\u0000${right.sourcePath ?? ''}`,
     ),
@@ -752,7 +752,7 @@ function recoveryModule(
     ),
   );
   const rows: string[] = [];
-  for (const identity of [...new Set(identities)].sort(compareCodePoint)) {
+  for (const identity of [...new Set(identities)].sort(compareCodeUnit)) {
     const message = messages.get(identity);
     if (
       message === undefined ||
@@ -819,6 +819,6 @@ export function generateContracts(
   if (diagnostics.some(({ severity }) => severity === 'error')) {
     return toolkitFailure(diagnostics);
   }
-  files.sort((left, right) => compareCodePoint(left.path, right.path));
+  files.sort((left, right) => compareCodeUnit(left.path, right.path));
   return toolkitSuccess(Object.freeze(files), diagnostics);
 }

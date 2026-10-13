@@ -44,7 +44,7 @@ import {
   isSafeStructuralText,
   isSafeXmlText,
 } from './unicode-safety.js';
-import { compareCodePoint } from './sorted-records.js';
+import { compareCodeUnit } from './sorted-records.js';
 import { escapeXml } from './xml-text.js';
 
 /**
@@ -1283,7 +1283,7 @@ function exportAdmittedXliff22(
   }
   const units: string[] = [];
   for (const [messageId, sourceMessage] of Object.entries(source.messages).sort(
-    ([left], [right]) => compareCodePoint(left, right),
+    ([left], [right]) => compareCodeUnit(left, right),
   )) {
     if (!XML_NMTOKEN.test(messageId)) {
       return toolkitFailure([
@@ -1429,7 +1429,7 @@ function parseContract(unit: XmlElement): XliffUnitContract | undefined {
           const value = JSON.parse(text) as Record<string, unknown>;
           const representation = value['representation'];
           if (
-            Object.keys(value).sort(compareCodePoint).join(',') !==
+            Object.keys(value).sort(compareCodeUnit).join(',') !==
               'identity,messageId,profile,representation,sourceFingerprint' ||
             value['profile'] !== XLIFF_PROFILE ||
             typeof value['identity'] !== 'string' ||

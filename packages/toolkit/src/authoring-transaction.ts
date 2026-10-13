@@ -42,7 +42,7 @@ import {
   type ToolkitObservabilityOptions,
 } from './observability.js';
 import { RESOURCE_LIMITS } from './resource-limits.js';
-import { compareCodePoint } from './sorted-records.js';
+import { compareCodeUnit } from './sorted-records.js';
 import {
   constructJsonValue,
   duplicateJsonKeys,
@@ -201,8 +201,8 @@ function exactKeys(
   value: Readonly<Record<string, unknown>>,
   expected: readonly string[],
 ): boolean {
-  const keys = Object.keys(value).sort(compareCodePoint);
-  const sortedExpected = [...expected].sort(compareCodePoint);
+  const keys = Object.keys(value).sort(compareCodeUnit);
+  const sortedExpected = [...expected].sort(compareCodeUnit);
   return (
     keys.length === sortedExpected.length &&
     keys.every((key, index) => key === sortedExpected[index])
@@ -437,7 +437,7 @@ export function createAuthoredChangePlan(
       }),
     );
   }
-  normalized.sort((left, right) => compareCodePoint(left.path, right.path));
+  normalized.sort((left, right) => compareCodeUnit(left.path, right.path));
   const digest = digestCanonicalJson('equator-authored-change-plan/1', {
     id,
     kind,

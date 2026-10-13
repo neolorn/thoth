@@ -30,12 +30,12 @@ const scriptDocument = JSON.parse(
 );
 assert.equal(likelyDocument.supplemental.version._cldrVersion, '48');
 
-const compareCodePoint = (left, right) =>
+const compareCodeUnit = (left, right) =>
   left < right ? -1 : left > right ? 1 : 0;
 const rtlScripts = Object.entries(scriptDocument.scriptMetadata)
   .filter(([, metadata]) => metadata.rtl === 'YES')
   .map(([script]) => script)
-  .sort(compareCodePoint);
+  .sort(compareCodeUnit);
 
 // The strong right-to-left character class.
 //
@@ -564,7 +564,7 @@ const parentLocales = JSON.parse(
 
 const orderedParentLocales = Object.fromEntries(
   Object.entries(parentLocales).sort(([left], [right]) =>
-    compareCodePoint(left, right),
+    compareCodeUnit(left, right),
   ),
 );
 const undParents = Object.values(parentLocales).filter(
@@ -581,7 +581,7 @@ const endonymUniverse = [
     ...defaultContentLocales,
     ...PSEUDO_LOCALES,
   ]),
-].sort(compareCodePoint);
+].sort(compareCodeUnit);
 
 // CLDR inheritance, which is not truncation: `en-CC`'s parent is `en-001`, not `en`.
 const inheritanceChain = (locale) => {
@@ -810,7 +810,7 @@ function aliasLanguageId(text) {
     id.variants.push(subtags[index++]);
   if (index !== subtags.length) return undefined;
   if (new Set(id.variants).size !== id.variants.length) return undefined;
-  id.variants.sort(compareCodePoint);
+  id.variants.sort(compareCodeUnit);
   return id;
 }
 
@@ -882,7 +882,7 @@ function compareAliasRules(left, right) {
       rightFields[field].length,
     );
     for (let position = 0; position < length; position += 1) {
-      const order = compareCodePoint(
+      const order = compareCodeUnit(
         leftFields[field][position] ?? '',
         rightFields[field][position] ?? '',
       );
@@ -925,7 +925,7 @@ const likelyRegions = Object.fromEntries(
       const [language, script] = key.split('-');
       return script !== undefined && laterRegions.has(likelyRegion(language));
     })
-    .sort(compareCodePoint)
+    .sort(compareCodeUnit)
     .map((key) => [key, likelyRegion(key)]),
 );
 

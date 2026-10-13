@@ -57,7 +57,7 @@ import {
   emitToolkitEvent,
   type ToolkitObservabilityOptions,
 } from './observability.js';
-import { compareCodePoint } from './sorted-records.js';
+import { compareCodeUnit } from './sorted-records.js';
 
 /** The version stamp on the state a compilation carries forward, checked before one is reused. */
 export const COMPILER_STATE_PROFILE = 'equator-compiler-state/1' as const;
@@ -238,7 +238,7 @@ function deferredScopeIds(
     if (!deferredPaths.has(path)) eager.add(scopeId);
   }
   return Object.freeze(
-    [...seen].filter((scopeId) => !eager.has(scopeId)).sort(compareCodePoint),
+    [...seen].filter((scopeId) => !eager.has(scopeId)).sort(compareCodeUnit),
   );
 }
 
@@ -292,7 +292,7 @@ function routeScopes(
   }
   return Object.freeze(
     [...needed.values()]
-      .sort((left, right) => compareCodePoint(left.scopeId, right.scopeId))
+      .sort((left, right) => compareCodeUnit(left.scopeId, right.scopeId))
       .map((scope) => Object.freeze(scope)),
   );
 }
@@ -310,7 +310,7 @@ function unusedSourceMessages(
     const unused = scope.messages
       .filter(({ identity }) => !reached.has(identity))
       .map(({ messageId }) => messageId)
-      .sort(compareCodePoint);
+      .sort(compareCodeUnit);
     if (unused.length === 0) continue;
     const listed = unused.slice(0, 20);
     diagnostics.push(
@@ -421,12 +421,12 @@ function compilerInputDigests(
                 `request.analysis.rootNames[${index}]`,
               ),
             )
-            .sort(compareCodePoint),
+            .sort(compareCodeUnit),
           ...(request.analysis.typeNames === undefined
             ? {}
             : {
                 typeNames: [...request.analysis.typeNames].sort(
-                  compareCodePoint,
+                  compareCodeUnit,
                 ),
               }),
           ...(request.analysis.compilerOptionsDigestInput === undefined
@@ -443,7 +443,7 @@ function compilerInputDigests(
         identity: 'recovery-message-identities',
         digest: digestCanonicalJson(
           'equator-compiler-recovery-input/1',
-          [...recoveryMessageIdentities].sort(compareCodePoint),
+          [...recoveryMessageIdentities].sort(compareCodeUnit),
         ),
       }),
     );
@@ -488,7 +488,7 @@ function compilerInputDigests(
       }),
     );
   }
-  inputs.sort((left, right) => compareCodePoint(left.identity, right.identity));
+  inputs.sort((left, right) => compareCodeUnit(left.identity, right.identity));
   return Object.freeze(inputs);
 }
 
@@ -535,7 +535,7 @@ function invalidationDecision(
   );
   const changedInputs = [...new Set([...prior.keys(), ...current.keys()])]
     .filter((identity) => prior.get(identity) !== current.get(identity))
-    .sort(compareCodePoint);
+    .sort(compareCodeUnit);
   return Object.freeze({
     kind: changedInputs.length === 0 ? 'none' : 'inputs-changed',
     changedInputs: Object.freeze(changedInputs),
@@ -653,7 +653,7 @@ function compileProjectCore(
       ...(analysis?.recoveryMessageIdentities ?? []),
     ]
       .filter((identity, index, values) => values.indexOf(identity) === index)
-      .sort(compareCodePoint),
+      .sort(compareCodeUnit),
   );
 
   if (
@@ -721,10 +721,10 @@ function compileProjectCore(
     );
     const missingFromPolicy = [...configured]
       .filter((locale) => !declared.has(locale) && !pseudoLocales.has(locale))
-      .sort(compareCodePoint);
+      .sort(compareCodeUnit);
     const missingFromConfiguration = [...declared]
       .filter((locale) => !configured.has(locale) && !pseudoLocales.has(locale))
-      .sort(compareCodePoint);
+      .sort(compareCodeUnit);
     const span = {
       path: ['routes', policyLocales.sourcePath] as readonly string[],
     };

@@ -46,7 +46,7 @@ import type {
   SemanticMessage,
   SemanticScope,
 } from './semantic-model.js';
-import { compareCodePoint } from './sorted-records.js';
+import { compareCodeUnit } from './sorted-records.js';
 
 /**
  * The version stamp on every compiled catalog, which a loader checks before reading one.
@@ -568,7 +568,7 @@ function compileCatalog(
   const sourceMessages: CatalogMessage[] = [];
   const alignedSemanticMessages: SemanticMessage[] = [];
   for (const [messageId, message] of Object.entries(catalog.messages).sort(
-    ([left], [right]) => compareCodePoint(left, right),
+    ([left], [right]) => compareCodeUnit(left, right),
   )) {
     const semantic = semanticMessages.get(messageId);
     if (semantic === undefined) continue;
@@ -716,7 +716,7 @@ function requiredFeatures(catalog: CompiledCatalog): readonly string[] {
       features.add('context-time-zone');
     }
   }
-  return Object.freeze([...features].sort(compareCodePoint));
+  return Object.freeze([...features].sort(compareCodeUnit));
 }
 
 /**
@@ -778,10 +778,10 @@ function catalogDescriptor(
     providers.set(catalog.key.providerId, entries);
   }
   const providerSets = [...providers.entries()]
-    .sort(([left], [right]) => compareCodePoint(left, right))
+    .sort(([left], [right]) => compareCodeUnit(left, right))
     .map(([providerId, providerCatalogs]) => {
       providerCatalogs.sort((left, right) =>
-        compareCodePoint(
+        compareCodeUnit(
           artifactIdentity(artifactAddress(left)),
           artifactIdentity(artifactAddress(right)),
         ),
@@ -926,7 +926,7 @@ function recoveryRepresentations(
     }
   }
   result.sort((left, right) =>
-    compareCodePoint(
+    compareCodeUnit(
       `${left.identity}\u0000${left.locale}`,
       `${right.identity}\u0000${right.locale}`,
     ),
@@ -959,7 +959,7 @@ export function compileLocalArtifacts(
     catalogs.push(compileCatalog(request.graph, scope, catalog, diagnostics));
   }
   catalogs.sort((left, right) =>
-    compareCodePoint(
+    compareCodeUnit(
       `${left.key.providerId}\u0000${left.key.scopeId}\u0000${left.key.catalogLocale}`,
       `${right.key.providerId}\u0000${right.key.scopeId}\u0000${right.key.catalogLocale}`,
     ),

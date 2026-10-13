@@ -27,7 +27,7 @@ import type {
   ApplicationAnalysis,
   MessageUsage,
 } from './static-analysis.js';
-import { compareCodePoint } from './sorted-records.js';
+import { compareCodeUnit } from './sorted-records.js';
 
 /** Where a message lives, as the three parts that identify it. */
 export interface MessageRefactorIdentity {
@@ -150,7 +150,7 @@ function changedSourceFiles(
   }
   const changes: AuthoredFileChangeInput[] = [];
   for (const [path, usages] of [...byPath.entries()].sort(([left], [right]) =>
-    compareCodePoint(left, right),
+    compareCodeUnit(left, right),
   )) {
     const source = sourceForPath(request.sources, path);
     if (source === undefined) {
@@ -308,7 +308,7 @@ function changedCatalogFiles(
   for (const catalog of catalogs.values()) {
     afterByPath.set(catalogPath(catalog), formatCatalog(catalog));
   }
-  const changes = [...touched].sort(compareCodePoint).map((path) => ({
+  const changes = [...touched].sort(compareCodeUnit).map((path) => ({
     path,
     ...(beforeByPath.get(path) === undefined
       ? {}

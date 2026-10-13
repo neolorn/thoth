@@ -31,7 +31,7 @@ import {
 import { NUMBER_LITERAL_PATTERN } from './message-format-syntax.js';
 import { RESOURCE_LIMITS } from './resource-limits.js';
 import { untrustedText } from './untrusted-text.js';
-import { compareCodePoint, frozenRecord } from './sorted-records.js';
+import { compareCodeUnit, frozenRecord } from './sorted-records.js';
 
 export type StandardMessageFunctionName =
   | 'string'
@@ -474,7 +474,7 @@ function normalizeOptions(
 ): MessageOptionMap {
   return frozenRecord(
     Object.entries(options ?? {})
-      .sort(([left], [right]) => compareCodePoint(left, right))
+      .sort(([left], [right]) => compareCodeUnit(left, right))
       .map(([name, value]) => [name, normalizeValue(value)] as const),
   );
 }
@@ -484,7 +484,7 @@ function normalizeAttributes(
 ): MessageAttributeMap {
   return frozenRecord(
     Object.entries(attributes ?? {})
-      .sort(([left], [right]) => compareCodePoint(left, right))
+      .sort(([left], [right]) => compareCodeUnit(left, right))
       .map(
         ([name, value]) =>
           [
@@ -791,7 +791,7 @@ export function parseMessageSemanticModel(
         !standardFunctionNames.has(name as StandardMessageFunctionName) &&
         !customFunctionNames.has(name),
     )
-    .sort(compareCodePoint);
+    .sort(compareCodeUnit);
   if (unsupportedFunctions.length > 0) {
     return toolkitFailure(
       unsupportedFunctions.map((name) =>
@@ -1142,7 +1142,7 @@ export function parseMessageSemanticModel(
   };
 
   if (message.type === 'select') {
-    const selecting = [...selectorNames].sort(compareCodePoint);
+    const selecting = [...selectorNames].sort(compareCodeUnit);
     for (const selector of message.selectors) {
       const name = annotatingFunction(selector.name);
       if (name === undefined || selectorNames.has(name)) continue;
@@ -1173,9 +1173,9 @@ export function parseMessageSemanticModel(
     canonicalSource: stringifyMessage(message),
     declarations: normalizeDeclarations(message.declarations),
     externalInputs: Object.freeze(
-      [...validation.variables].sort(compareCodePoint),
+      [...validation.variables].sort(compareCodeUnit),
     ),
-    functions: Object.freeze([...validation.functions].sort(compareCodePoint)),
+    functions: Object.freeze([...validation.functions].sort(compareCodeUnit)),
     resultKind: isStructured() ? ('structured' as const) : ('plain' as const),
     ...(message.comment === undefined ? {} : { comment: message.comment }),
   };

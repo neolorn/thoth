@@ -8,7 +8,7 @@
  * fingerprint.
  */
 import { createHash } from 'node:crypto';
-import { compareCodePoint } from './sorted-records.js';
+import { compareCodeUnit } from './sorted-records.js';
 
 export interface CanonicalJsonArray extends ReadonlyArray<CanonicalJsonValue> {}
 
@@ -75,7 +75,7 @@ function canonicalize(value: CanonicalJsonValue): string {
 
   const record = value as Readonly<Record<string, CanonicalJsonValue>>;
   return `{${Object.keys(record)
-    .sort(compareCodePoint)
+    .sort(compareCodeUnit)
     .map((key) => {
       assertValidUnicode(key);
       return `${JSON.stringify(key)}:${canonicalize(record[key] as CanonicalJsonValue)}`;
