@@ -122,10 +122,10 @@ An empty slot in a list of roots is not text, so a constructor and a reading of 
 policy both refuse it as a root that is not a path segment. A constructor refuses an empty slot in
 a list of locales, and a locale that is not text, the same way, as a locale that is not a tag.
 
-An option a constructor, a provider or a feature declares as an object, as a list, as a function or
-as one of a set of named values is of that kind, the options themselves and each feature handed to a
-provider included. A release MUST refuse a value of another kind, `null` included, with the
-`invalid-configuration` diagnostic where the configuration is given, and MUST NOT read text as a
+An option a constructor, a provider or a feature declares as an object, as a list, as a function, as
+text or as one of a set of named values is of that kind, the options themselves and each feature
+handed to a provider included. A release MUST refuse a value of another kind, `null` included, with
+the `invalid-configuration` diagnostic where the configuration is given, and MUST NOT read text as a
 table of its characters, a number as an empty table, or an object as a list.
 
 The policy states intent and the build decides which locales exist. A release MUST intersect

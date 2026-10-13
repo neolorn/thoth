@@ -44,6 +44,7 @@ import {
   ɵfunctionOption,
   ɵlistOption,
   ɵrecordOption,
+  ɵtextOption,
 } from '@neolorn/equator/core';
 
 interface DeferredPlan {
@@ -394,6 +395,9 @@ export function provideLocalizationTesting(
  * delivers an object catalog admission refuses, which leaves the helper unusable. The compiled
  * artifact is a named field for that reason: `catalog` and `{ key }` are indistinguishable to a
  * reader when only one of them is spelled out.
+ *
+ * Refuses, with `invalid-configuration`, a value that is not a list, an entry or a key that is
+ * not an object, and a key whose provider, scope or locale is not text.
  */
 export function createInMemoryCatalogLoaders(
   catalogs: readonly {
@@ -413,10 +417,17 @@ export function createInMemoryCatalogLoaders(
       entry,
       'A catalog of createInMemoryCatalogLoaders()',
     ) as { readonly key?: unknown };
-    ɵrecordOption(
+    const key = ɵrecordOption(
       given.key,
       'The key of a catalog of createInMemoryCatalogLoaders()',
-    );
+    ) as Readonly<Record<string, unknown>>;
+    // The three members are joined into the identity a loader is found by.
+    for (const member of ['providerId', 'scopeId', 'catalogLocale']) {
+      ɵtextOption(
+        key[member],
+        `${member} of the key of a catalog of createInMemoryCatalogLoaders()`,
+      );
+    }
   }
   return Object.freeze(
     Object.fromEntries(

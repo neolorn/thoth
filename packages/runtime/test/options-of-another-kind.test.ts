@@ -18,6 +18,7 @@ import {
   validateRouteProjection,
   ɵfunctionOption,
   ɵnamedOption,
+  ɵtextOption,
   type GeneratedConfiguration,
   type LocalizationSetup,
 } from '@neolorn/equator/core';
@@ -35,9 +36,10 @@ import { compileSet, loadersFor, scope } from './catalog-store-harness.js';
  * and the generated configuration it reads, the server routes, the options of the Router
  * integration, and the localization context.
  *
- * An option declared as a function, or as one of a set of named values, is held the same way. The
- * features that take one are built inside an Angular application, so the cases here call the two
- * checks those features call, and the sink of a context, which a unit test can hand over.
+ * An option declared as a function, as text, or as one of a set of named values, is held the same
+ * way. The features and the testing helpers that take one are built inside an Angular application,
+ * so the cases here call the checks they call, and the sink of a context, which a unit test can
+ * hand over.
  */
 
 /** Every kind of value that is not an object. */
@@ -402,6 +404,29 @@ describe('an option declared as a function', () => {
   it('is taken as given when it is one', () => {
     const given = (): number => 1;
     expect(ɵfunctionOption(given, 'The option')).toBe(given);
+  });
+});
+
+describe('an option declared as text', () => {
+  it.each([
+    ['nothing', undefined],
+    ['null', null],
+    ['a number', 7],
+    ['a boolean', true],
+    ['a list of text', ['text']],
+    ['an object', { toString: () => 'text' }],
+    ['a function', () => 'text'],
+  ])('is refused when it is %s', (_, value) => {
+    expect(refusal(() => ɵtextOption(value, 'The option'))).toMatchObject({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      reason: 'malformed-input',
+    });
+  });
+
+  it('is taken as given when it is text, empty text included', () => {
+    expect(ɵtextOption('shell', 'The option')).toBe('shell');
+    expect(ɵtextOption('', 'The option')).toBe('');
   });
 });
 

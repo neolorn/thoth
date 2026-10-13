@@ -1960,6 +1960,7 @@
         "assurance:option-of-another-kind-read-as-an-object",
         "assurance:option-of-another-kind-read-as-a-list",
         "assurance:option-of-another-kind-called-as-a-function",
+        "assurance:option-of-another-kind-written-as-text",
         "assurance:option-outside-its-named-values-let-through",
         "assurance:observability-sink-of-another-kind-stored"
       ]

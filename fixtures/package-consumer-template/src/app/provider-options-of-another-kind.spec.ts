@@ -187,6 +187,25 @@ const OBJECTS: readonly (readonly [string, (value: never) => unknown])[] = [
   ],
 ];
 
+const NOT_TEXT: readonly unknown[] = [
+  undefined,
+  null,
+  7,
+  true,
+  ['text'],
+  { a: 1 },
+];
+
+const TEXTS: readonly (readonly [string, (value: never) => unknown])[] = (
+  ['providerId', 'scopeId', 'catalogLocale'] as const
+).map((member) => [
+  `createInMemoryCatalogLoaders, ${member} of the key of a catalog`,
+  (v: never) =>
+    createInMemoryCatalogLoaders([
+      { key: { ...KEY, [member]: v }, catalog: {} },
+    ]),
+]);
+
 const FUNCTIONS: readonly (readonly [string, (value: never) => unknown])[] = [
   [
     'withLocalizationClock, now of the clock',
@@ -245,6 +264,14 @@ describe('a provider option declared as an object', () => {
 describe('a provider option declared as a list', () => {
   for (const [option, call] of LISTS) {
     it.each(NOT_A_LIST)(`${option} is refused when it is %j`, (value) => {
+      expect(refusal(() => call(value as never))).toBe('invalid-configuration');
+    });
+  }
+});
+
+describe('a provider option declared as text', () => {
+  for (const [option, call] of TEXTS) {
+    it.each(NOT_TEXT)(`${option} is refused when it is %j`, (value) => {
       expect(refusal(() => call(value as never))).toBe('invalid-configuration');
     });
   }

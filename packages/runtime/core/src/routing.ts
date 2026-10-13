@@ -1220,6 +1220,22 @@ export function ɵfunctionOption<Shape>(value: Shape, name: string): Shape {
 }
 
 /**
+ * An option held to the text its declaration names, or the refusal of anything else.
+ *
+ * Written into an identity as given, a value of another kind becomes the text of its own name,
+ * and the identity then matches nothing and says nothing of the option that produced it.
+ */
+export function ɵtextOption<Shape>(value: Shape, name: string): Shape {
+  if (typeof value !== 'string') {
+    return routeError(
+      `${name} must be text, and ${kindOf(value)} was given.`,
+      'malformed-input',
+    );
+  }
+  return value;
+}
+
+/**
  * An option held to the values its declaration names, or the refusal of anything else.
  *
  * A reader compares the option against each name in turn and takes a value that matches none as

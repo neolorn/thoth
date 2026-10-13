@@ -3502,6 +3502,16 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/options-of-another-kind.test.ts',
   },
   {
+    id: 'option-of-another-kind-written-as-text',
+    invariant:
+      'An option declared as text is refused as a configuration error when it is given a value of another kind.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: "  if (typeof value !== 'string') {\n    return routeError(\n      `${name} must be text",
+    replace:
+      "  if (typeof value === 'symbol') {\n    return routeError(\n      `${name} must be text",
+    caughtBy: 'packages/runtime/test/options-of-another-kind.test.ts',
+  },
+  {
     id: 'option-outside-its-named-values-let-through',
     invariant:
       'An option declared as one of a set of named values is refused as a configuration error when it is given any other value.',
