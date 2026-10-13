@@ -48,7 +48,12 @@ import {
 } from './identities.js';
 import { canonicalizeLocale, type CanonicalLocale } from './locales.js';
 import {
+  EXTENSION_REGISTRY_ARGUMENT,
+  requireArgument,
+} from './call-arguments.js';
+import {
   parseMessageSemanticModel,
+  type MessageCustomFunction,
   type MessageSemanticModel,
 } from './message-format.js';
 import {
@@ -969,6 +974,21 @@ export function parseCatalog(
   sourceValue: unknown,
   options: CatalogParseOptions,
 ): ToolkitResult<Catalog> {
+  requireArgument('parseCatalog', 'options', options, {
+    optional: { extensions: EXTENSION_REGISTRY_ARGUMENT },
+  });
+  return parseCatalogText(
+    sourceValue,
+    options,
+    messageCustomFunctions(options.extensions),
+  );
+}
+
+function parseCatalogText(
+  sourceValue: unknown,
+  options: CatalogParseOptions,
+  customFunctions: readonly MessageCustomFunction[],
+): ToolkitResult<Catalog> {
   const sourceText = untrustedText(
     sourceValue,
     'EQ1101',
@@ -1149,7 +1169,6 @@ export function parseCatalog(
     }
   }
 
-  const customFunctions = messageCustomFunctions(options.extensions);
   const messageSemantics = new Map<string, MessageSemanticModel>();
   for (const [messageId, authored] of Object.entries(
     objectValue['messages'] as JsonObject,
@@ -1469,6 +1488,10 @@ export function formatCatalogSource(
  * `formatCatalogSource`.
  */
 export function formatCatalog(catalog: Catalog): string {
+  requireArgument('formatCatalog', 'catalog', catalog, {
+    required: { messages: 'record' },
+    optional: { families: 'record' },
+  });
   const value = {
     messages: Object.fromEntries(
       Object.entries(catalog.messages).map(([messageId, message]) => [
@@ -1494,4 +1517,176 @@ export function formatCatalog(catalog: Catalog): string {
     lineWidth: 0,
     simpleKeys: true,
   });
+}
+
+/**
+ * The catalogs that need no judging: one `admitCatalog` judged, and one the toolkit built itself
+ * out of a catalog that was.
+ */
+const admittedCatalogs = new WeakSet<object>();
+
+/**
+ * Records a catalog the toolkit built from admitted content, a pseudo-locale or an imported
+ * translation, so handing it back to an entry point does not write and parse it again.
+ */
+export function builtCatalog(catalog: Catalog): Catalog {
+  admittedCatalogs.add(catalog);
+  return catalog;
+}
+
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** Whether a message has the members `authoredMessage` reads, each of the kind it reads them as. */
+function writableMessage(value: unknown): value is CatalogMessage {
+  if (!isRecord(value)) return false;
+  if (value['kind'] !== 'message' && value['kind'] !== 'empty') return false;
+  const refinements = [value['inputs'], value['slots']];
+  return refinements.every(
+    (record) => isRecord(record) && Object.values(record).every(isRecord),
+  );
+}
+
+/**
+ * What a catalog object would be as an authored file, whatever its members hold.
+ *
+ * A member that has the catalog's own shape is written the way `formatCatalog` writes it. One
+ * that does not is written as it stands, so the schema the parser applies is what refuses it and
+ * the refusal is the one a file holding the same thing gets.
+ */
+function authoredDocument(catalog: Readonly<Record<string, unknown>>): unknown {
+  const authoredEntries = (
+    record: unknown,
+    authored: (entry: unknown) => unknown,
+  ): unknown =>
+    isRecord(record)
+      ? Object.fromEntries(
+          Object.entries(record).map(([key, entry]) => [key, authored(entry)]),
+        )
+      : record;
+  const families = catalog['families'];
+  return {
+    messages: authoredEntries(catalog['messages'], (message) =>
+      writableMessage(message) ? authoredMessage(message) : message,
+    ),
+    ...(families === undefined ||
+    (isRecord(families) && Object.keys(families).length === 0)
+      ? {}
+      : {
+          families: authoredEntries(families, (family) =>
+            isRecord(family) &&
+            typeof family['template'] === 'string' &&
+            isRecord(family['segments'])
+              ? authoredFamily(family as unknown as CatalogFamily)
+              : family,
+          ),
+        }),
+  };
+}
+
+/**
+ * Judges a catalog a caller hands a programmatic entry point, before anything reads it.
+ *
+ * What `parseCatalog` returned has been judged and is answered as it is. Any other object is a
+ * catalog nobody has read: it is written as the file it would be and parsed under its own role,
+ * identity and locale, so it is refused for what `parseCatalog` refuses and with the same
+ * diagnostics, and what compiles is what its message text says and not a model the caller placed
+ * beside the text. The diagnostics carry no position, because the text they would point into is
+ * one no file holds.
+ */
+export function admitCatalog(
+  catalog: Catalog,
+  known: KnownExtensions = {},
+): ToolkitResult<Catalog> {
+  return admitOneCatalog(catalog, known);
+}
+
+/**
+ * The extensions a handed-over catalog may name: a registry, or the message functions alone where
+ * an entry point is given those and no registry.
+ */
+export interface KnownExtensions {
+  readonly extensions?: ExtensionRegistry | undefined;
+  readonly customFunctions?: readonly MessageCustomFunction[] | undefined;
+}
+
+/** Admits each catalog of a set, and refuses the set with every refusal when any is refused. */
+export function admitCatalogs(
+  catalogs: readonly Catalog[],
+  known: KnownExtensions = {},
+): ToolkitResult<readonly Catalog[]> {
+  const admitted = catalogs.map((catalog) => admitOneCatalog(catalog, known));
+  const refused = admitted.flatMap((result) =>
+    result.ok ? [] : result.diagnostics,
+  );
+  return refused.length > 0
+    ? toolkitFailure(refused)
+    : toolkitSuccess(
+        Object.freeze(
+          admitted.flatMap((result) => (result.ok ? [result.value] : [])),
+        ),
+      );
+}
+
+function admitOneCatalog(
+  catalog: Catalog,
+  { extensions, customFunctions }: KnownExtensions,
+): ToolkitResult<Catalog> {
+  if (catalogSourceText.has(catalog) || admittedCatalogs.has(catalog)) {
+    return toolkitSuccess(catalog);
+  }
+  const handed = catalog as unknown as Readonly<Record<string, unknown>>;
+  let parsed: ToolkitResult<Catalog>;
+  try {
+    const role = handed['role'];
+    if (role !== 'source' && role !== 'target') {
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'EQ1102',
+          'Catalog role must be "source" or "target".',
+          { path: ['role'] },
+        ),
+      ]);
+    }
+    const sourcePath = handed['sourcePath'];
+    parsed = parseCatalogText(
+      stringify(authoredDocument(handed), {
+        defaultKeyType: 'PLAIN',
+        defaultStringType: 'QUOTE_DOUBLE',
+        doubleQuotedAsJSON: true,
+        lineWidth: 0,
+        simpleKeys: true,
+      }),
+      {
+        role,
+        providerId: handed['providerId'] as string,
+        scopeId: handed['scopeId'] as string,
+        locale: handed['locale'] as string,
+        ...(typeof sourcePath === 'string' ? { sourcePath } : {}),
+        ...(extensions === undefined ? {} : { extensions }),
+      },
+      customFunctions ?? messageCustomFunctions(extensions),
+    );
+  } catch {
+    // A member that cannot be read or written as data: an accessor that throws, a value YAML has
+    // no form for. Nothing narrower can be said about it without reading it again.
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1101',
+        'A catalog handed over as an object holds a value that cannot be written as catalog data.',
+      ),
+    ]);
+  }
+  if (!parsed.ok) {
+    return toolkitFailure(
+      parsed.diagnostics.map(({ code, summary, severity, path }) =>
+        toolkitDiagnostic(code, summary, { severity, path }),
+      ),
+    );
+  }
+  // A copy, so the text this was parsed from is not kept as the place its diagnostics point into.
+  const admitted: Catalog = Object.freeze({ ...parsed.value });
+  admittedCatalogs.add(admitted);
+  return toolkitSuccess(admitted);
 }

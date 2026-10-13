@@ -3776,6 +3776,21 @@
     },
     {
       "spec": "10-compiler-and-tooling.spec.md",
+      "section": "2. The compiler core and its hosts",
+      "statement": "A release MUST throw a `TypeError` that names the function, the argument, and the type received and never the value when a programmatic entry point is called with an argument that is not its documented shape, and an asynchronous entry point rejects with that error.",
+      "checks": ["assurance:call-argument-shape-unchecked"]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
+      "section": "2. The compiler core and its hosts",
+      "statement": "A release MUST judge a catalog or a configuration that a caller assembles and hands to a programmatic entry point as `parseCatalog` and `parseConfiguration` judge the same content read from a file, and MUST report what they refuse with their diagnostics and no source position.",
+      "checks": [
+        "assurance:handed-over-catalog-unjudged",
+        "assurance:handed-over-configuration-unjudged"
+      ]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
       "section": "3. First generation",
       "statement": "A release MUST NOT write the provisional overlay, import it at run time, cache it as an authority, or expose it as a second generated interface.",
       "checks": ["assurance:provisional-overlay-published-as-output"]

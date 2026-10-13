@@ -27,6 +27,12 @@ const owner = {
 
 const projectRoot = 'F:\\work\\app';
 
+// The refusal names the member of the request that named the file.
+const ROOT_NAME =
+  'compileProject: request.analysis.rootNames[0] must be a file inside request.analysis.projectRoot';
+const SOURCE =
+  'compileProject: request.analysis.sources[0].path must be a file inside request.analysis.projectRoot';
+
 /** The input identities of a compilation whose analysis has this one file as root and source. */
 function identities(
   path: string,
@@ -51,7 +57,9 @@ describe('an analysis input outside the project', () => {
     ['that is the directory above the project', 'F:\\work'],
   ])('is refused when it is %s', (_where, path) => {
     expect(() => identities(path, 'root name')).toThrow(TypeError);
+    expect(() => identities(path, 'root name')).toThrow(ROOT_NAME);
     expect(() => identities(path, 'source')).toThrow(TypeError);
+    expect(() => identities(path, 'source')).toThrow(SOURCE);
   });
 
   it('is named relative to the project when it is inside it', () => {

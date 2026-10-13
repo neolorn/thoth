@@ -33,6 +33,10 @@ import {
   sortedSchemaErrors,
 } from './schema-validation.js';
 import { inspectTree } from './bounded-data.js';
+import {
+  EXTENSION_REGISTRY_ARGUMENT,
+  requireArgument,
+} from './call-arguments.js';
 import type { MessageCustomFunction } from './message-format.js';
 import { isMessageName } from './message-format-syntax.js';
 import { RESOURCE_LIMITS } from './resource-limits.js';
@@ -654,6 +658,14 @@ export function extensionDescriptor<Kind extends ExtensionDescriptor['kind']>(
   kind: Kind,
   id: string,
 ): Extract<ExtensionDescriptor, { readonly kind: Kind }> | undefined {
+  if (registry !== undefined) {
+    requireArgument(
+      'extensionDescriptor',
+      'registry',
+      registry,
+      EXTENSION_REGISTRY_ARGUMENT,
+    );
+  }
   return registry?.descriptors.find(
     (
       descriptor,

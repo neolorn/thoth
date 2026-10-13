@@ -1,9 +1,13 @@
-import type { Catalog } from './catalog.js';
+import { requireArgument, type ArgumentShape } from './call-arguments.js';
+import { admitCatalogs, type Catalog } from './catalog.js';
 import {
   digestCanonicalJson,
   type CanonicalJsonValue,
 } from './canonical-json.js';
-import type { ProjectConfiguration } from './configuration.js';
+import {
+  admitConfiguration,
+  type ProjectConfiguration,
+} from './configuration.js';
 import {
   toolkitFailure,
   toolkitSuccess,
@@ -11,6 +15,7 @@ import {
 } from './diagnostics.js';
 import {
   analyzeCatalogSet,
+  type CatalogSetAnalysisRequest,
   type SemanticGraph,
   type SemanticMessage,
 } from './semantic-model.js';
@@ -162,11 +167,52 @@ function addEntry(
  * A rename must be declared through `identityMoves`; without that it reads as a deletion and an
  * addition, which throws away the translations.
  */
+const SNAPSHOT_ARGUMENT: ArgumentShape = {
+  required: { configuration: 'record', catalogs: ['record'] },
+};
+
+/** One snapshot with its configuration and its catalogs judged as their parsers judge them. */
+function admitSnapshot(
+  snapshot: CatalogDiffSnapshot,
+): ToolkitResult<CatalogDiffSnapshot> {
+  const configuration = admitConfiguration(snapshot.configuration);
+  const catalogs = admitCatalogs(snapshot.catalogs, {
+    extensions: (snapshot as CatalogSetAnalysisRequest).extensions,
+  });
+  if (!configuration.ok || !catalogs.ok) {
+    return toolkitFailure([
+      ...configuration.diagnostics,
+      ...catalogs.diagnostics,
+    ]);
+  }
+  return toolkitSuccess(
+    Object.freeze({
+      ...snapshot,
+      configuration: configuration.value,
+      catalogs: catalogs.value,
+    }),
+  );
+}
+
 export function diffCatalogSets(
   request: CatalogDiffRequest,
 ): ToolkitResult<CatalogDiff> {
-  const before = analyzeCatalogSet(request.before);
-  const after = analyzeCatalogSet(request.after);
+  requireArgument('diffCatalogSets', 'request', request, {
+    required: { before: SNAPSHOT_ARGUMENT, after: SNAPSHOT_ARGUMENT },
+    optional: {
+      identityMoves: [{ required: { from: 'text', to: 'text' } }],
+    },
+  });
+  const admittedBefore = admitSnapshot(request.before);
+  const admittedAfter = admitSnapshot(request.after);
+  if (!admittedBefore.ok || !admittedAfter.ok) {
+    return toolkitFailure([
+      ...admittedBefore.diagnostics,
+      ...admittedAfter.diagnostics,
+    ]);
+  }
+  const before = analyzeCatalogSet(admittedBefore.value);
+  const after = analyzeCatalogSet(admittedAfter.value);
   const diagnostics = [...before.diagnostics, ...after.diagnostics];
   if (!before.ok || !after.ok) return toolkitFailure(diagnostics);
 

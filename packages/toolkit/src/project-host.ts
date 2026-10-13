@@ -42,9 +42,10 @@ import {
   type TranslationState,
 } from './translation-state.js';
 import { INIT_OPTIONS } from './cli-options.generated.js';
+import { projectOptions, requireArgument } from './call-arguments.js';
 import {
   completenessPolicy,
-  pseudoLocaleTags,
+  configurationWithPseudoLocales,
   formatConfiguration,
   parseConfiguration,
   type InitConfiguration,
@@ -1669,13 +1670,7 @@ export async function loadProject(
   const configurationValue =
     pseudo.value.length === 0
       ? configuration.value.value
-      : Object.freeze({
-          ...configuration.value.value,
-          locales: Object.freeze([
-            ...configuration.value.value.locales,
-            ...pseudoLocaleTags(configuration.value.value),
-          ]),
-        });
+      : configurationWithPseudoLocales(configuration.value.value);
 
   return toolkitSuccess(
     Object.freeze({
@@ -2049,6 +2044,12 @@ async function compileProjectFromDiskInternal(
 export async function compileProjectFromDisk(
   selection: ProjectSelection = {},
 ): Promise<ToolkitResult<ProjectCompilation>> {
+  requireArgument(
+    'compileProjectFromDisk',
+    'selection',
+    selection,
+    projectOptions(),
+  );
   const compiled = await compileProjectFromDiskInternal(selection);
   return compiled.ok
     ? toolkitSuccess(
@@ -2262,6 +2263,7 @@ async function generateProjectCore(
 export async function generateProject(
   options: GenerateProjectOptions = {},
 ): Promise<ToolkitResult<GenerateProjectResult>> {
+  requireArgument('generateProject', 'options', options, projectOptions());
   return (await generateFromInputs(options)).result;
 }
 
@@ -2329,6 +2331,16 @@ async function generateFromInputs(
 export async function checkProject(
   options: CheckProjectOptions = {},
 ): Promise<ToolkitResult<CheckProjectResult>> {
+  requireArgument(
+    'checkProject',
+    'options',
+    options,
+    projectOptions({
+      fix: 'flag',
+      requireCompleteTargets: 'flag',
+      requireFreshOutput: 'flag',
+    }),
+  );
   let fixedFiles: readonly string[] = Object.freeze([]);
   if (options.fix === true) {
     const formatted = await formatProject(options);
@@ -2509,6 +2521,7 @@ async function applyTextChanges(
 export async function formatProject(
   options: FormatProjectOptions = {},
 ): Promise<ToolkitResult<FormatProjectResult>> {
+  requireArgument('formatProject', 'options', options, projectOptions());
   const project = await loadProject(options);
   if (!project.ok) return project;
   const changes: TextFileChange[] = [];
@@ -2790,6 +2803,12 @@ function updatedPackageSource(
 export async function initializeProject(
   options: InitProjectOptions,
 ): Promise<ToolkitResult<InitProjectResult>> {
+  requireArgument(
+    'initializeProject',
+    'options',
+    options,
+    projectOptions({ configuration: 'record' }),
+  );
   const location = await initOwner(options);
   if (!location.ok) return location;
   const packageManifest = await readPackageManifest(location.value, true);
@@ -2933,6 +2952,12 @@ export async function initializeProject(
 export async function uninstallProject(
   options: UninstallProjectOptions = {},
 ): Promise<ToolkitResult<UninstallProjectResult>> {
+  requireArgument(
+    'uninstallProject',
+    'options',
+    options,
+    projectOptions({ catalogs: 'flag' }),
+  );
   const location = await discoverProject(options);
   if (!location.ok) return location;
   const dryRun = options.dryRun === true;
@@ -3055,6 +3080,7 @@ export async function uninstallProject(
 export async function cleanProject(
   options: CleanProjectOptions = {},
 ): Promise<ToolkitResult<CleanOutputResult>> {
+  requireArgument('cleanProject', 'options', options, projectOptions());
   const location = await discoverProject(options);
   if (!location.ok) return location;
   return cleanOutput({
@@ -3114,6 +3140,15 @@ function watchedInputs(loaded: ToolkitResult<LoadedProject>): string {
 export async function watchProject(
   options: WatchProjectOptions,
 ): Promise<ToolkitResult<WatchProjectResult>> {
+  requireArgument(
+    'watchProject',
+    'options',
+    options,
+    projectOptions(
+      { debounceMilliseconds: 'number', onCycle: 'function' },
+      { signal: { required: { addEventListener: 'function' } } },
+    ),
+  );
   const location = await discoverProject(options);
   if (!location.ok) return location;
   const application = await selectAngularApplication(location.value.ownerRoot);

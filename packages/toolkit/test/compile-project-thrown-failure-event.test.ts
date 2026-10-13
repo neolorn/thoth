@@ -1,3 +1,5 @@
+import { resolve } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -5,7 +7,6 @@ import {
   compileProject,
   parseCatalog,
   type Catalog,
-  type CompileProjectRequest,
   type ToolkitObservabilityEvent,
 } from '../src/index.js';
 import { testProjectConfiguration } from './fixtures.js';
@@ -14,10 +15,10 @@ import { testProjectConfiguration } from './fixtures.js';
  * What a sink hears when a compilation throws.
  *
  * A compilation answers with diagnostics, and a sink that heard it start hears it succeed or fail.
- * A request that cannot be read is not a compilation with diagnostics: reading it throws, and the
- * throw is the caller's to see as it is. The sink still hears the end of what it heard start, so a
- * log never holds a compilation that began and did nothing, and the error reaches the caller
- * unchanged.
+ * A request naming an analysis input outside its project is not a compilation with diagnostics: it
+ * is a mistake in the call, found while the inputs are fingerprinted, and it throws. The sink still
+ * hears the end of what it heard start, so a log never holds a compilation that began and did
+ * nothing, and the error reaches the caller unchanged.
  */
 
 function catalog(): Catalog {
@@ -56,26 +57,28 @@ describe('a compilation that throws while a sink is listening', () => {
 
   it('reports the failure in the compilation phase and throws what was thrown', () => {
     const events: ToolkitObservabilityEvent[] = [];
-    const unreadable = new Error('the catalogs under test cannot be read');
-    const request = {
-      owner: OWNER,
-      configuration: testProjectConfiguration(['en-US']),
-      get catalogs(): readonly Catalog[] {
-        throw unreadable;
-      },
-      observability: {
-        emit: (event: ToolkitObservabilityEvent) => void events.push(event),
-      },
-    } satisfies CompileProjectRequest;
+    const projectRoot = resolve('project-under-test');
 
     let thrown: unknown;
     try {
-      compileProject(request);
+      compileProject({
+        owner: OWNER,
+        configuration: testProjectConfiguration(['en-US']),
+        catalogs: [catalog()],
+        analysis: {
+          projectRoot,
+          rootNames: [resolve(projectRoot, '..', 'elsewhere', 'main.ts')],
+        },
+        observability: { emit: (event) => void events.push(event) },
+      });
     } catch (error) {
       thrown = error;
     }
 
-    expect(thrown).toBe(unreadable);
+    expect(thrown).toBeInstanceOf(TypeError);
+    expect((thrown as Error).message).toContain(
+      'compileProject: request.analysis.rootNames[0] must be a file inside request.analysis.projectRoot',
+    );
     expect(
       events.map(({ code, phase, status, diagnosticCode }) => ({
         code,

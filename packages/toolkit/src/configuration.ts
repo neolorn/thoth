@@ -7,6 +7,7 @@ import {
 } from 'jsonc-parser';
 
 import { inspectTree } from './bounded-data.js';
+import { requireArgument } from './call-arguments.js';
 import { untrustedSource } from './untrusted-text.js';
 import {
   toolkitDiagnostic,
@@ -273,6 +274,9 @@ export function parseConfiguration(
   sourceValue: unknown,
   options: ConfigurationParseOptions = {},
 ): ToolkitResult<ProjectConfiguration> {
+  requireArgument('parseConfiguration', 'options', options, {
+    optional: { sourcePath: 'text' },
+  });
   // A non-string reached Buffer.byteLength and threw a raw TypeError out of a function whose
   // contract is to return a diagnostic instead of throwing.
   const sourceText = untrustedSource(
@@ -778,19 +782,105 @@ export function parseConfiguration(
     return toolkitFailure(diagnostics);
   }
 
-  return toolkitSuccess(
-    Object.freeze({
-      schemaVersion: 1,
-      sourceLocale: sourceLocale.value,
-      defaultLocale: defaultLocale.value,
-      locales: Object.freeze(locales),
-      personNameLocales: Object.freeze(personNameLocales),
-      pseudoLocales: Object.freeze(Object.fromEntries(pseudoLocales)),
-      aliases: freezeLocaleRecord(aliases),
-      formatting: Object.freeze(Object.fromEntries(formatting)),
-      inProgress: Object.freeze(Object.fromEntries(inProgress)),
-      parentLocales: freezeLocaleRecord(parentLocales),
-    }),
+  const configuration: ProjectConfiguration = Object.freeze({
+    schemaVersion: 1,
+    sourceLocale: sourceLocale.value,
+    defaultLocale: defaultLocale.value,
+    locales: Object.freeze(locales),
+    personNameLocales: Object.freeze(personNameLocales),
+    pseudoLocales: Object.freeze(Object.fromEntries(pseudoLocales)),
+    aliases: freezeLocaleRecord(aliases),
+    formatting: Object.freeze(Object.fromEntries(formatting)),
+    inProgress: Object.freeze(Object.fromEntries(inProgress)),
+    parentLocales: freezeLocaleRecord(parentLocales),
+  });
+  parsedConfigurations.add(configuration);
+  return toolkitSuccess(configuration);
+}
+
+/** What `parseConfiguration` returned, which `admitConfiguration` answers without reading again. */
+const parsedConfigurations = new WeakSet<object>();
+
+/**
+ * A parsed configuration with its declared pseudo-locales among its locales.
+ *
+ * A build that asked for pseudo-locales compiles them as locales, and no configuration file can
+ * say that: a tag in both lists is refused there. The host builds this from a configuration the
+ * parser returned, so it is admitted as that one was.
+ */
+export function configurationWithPseudoLocales(
+  configuration: ProjectConfiguration,
+): ProjectConfiguration {
+  const extended: ProjectConfiguration = Object.freeze({
+    ...configuration,
+    locales: Object.freeze([
+      ...configuration.locales,
+      ...pseudoLocaleTags(configuration),
+    ]),
+  });
+  if (parsedConfigurations.has(configuration)) {
+    parsedConfigurations.add(extended);
+  }
+  return extended;
+}
+
+/** The members a parsed configuration always carries and a configuration file may leave out. */
+const OMITTED_WHEN_EMPTY: ReadonlySet<string> = new Set([
+  'personNameLocales',
+  'pseudoLocales',
+  'aliases',
+  'formatting',
+  'inProgress',
+  'parentLocales',
+]);
+
+/**
+ * Judges a configuration a caller hands a programmatic entry point, before anything reads it.
+ *
+ * What `parseConfiguration` returned has been judged and is answered as it is. Any other object is
+ * a configuration nobody has read: it is written as the file it would be and parsed, so it is
+ * refused for what `parseConfiguration` refuses and with the same diagnostics. The diagnostics
+ * carry no position, because the text they would point into is one no file holds.
+ */
+export function admitConfiguration(
+  configuration: ProjectConfiguration,
+): ToolkitResult<ProjectConfiguration> {
+  if (parsedConfigurations.has(configuration)) {
+    return toolkitSuccess(configuration);
+  }
+  let source: string | undefined;
+  try {
+    source = JSON.stringify(
+      Object.fromEntries(
+        Object.entries(configuration).filter(
+          ([member, value]) =>
+            !(
+              OMITTED_WHEN_EMPTY.has(member) &&
+              typeof value === 'object' &&
+              value !== null &&
+              Object.keys(value).length === 0
+            ),
+        ),
+      ),
+    );
+  } catch {
+    // An accessor that throws, a cycle, a value JSON has no form for.
+    source = undefined;
+  }
+  if (source === undefined) {
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1001',
+        'A configuration handed over as an object holds a value that cannot be written as JSON.',
+      ),
+    ]);
+  }
+  const parsed = parseConfiguration(source);
+  if (parsed.ok) return parsed;
+  return toolkitFailure(
+    parsed.diagnostics.map(({ code, summary, severity, path }) =>
+      toolkitDiagnostic(code, summary, { severity, path }),
+    ),
   );
 }
 

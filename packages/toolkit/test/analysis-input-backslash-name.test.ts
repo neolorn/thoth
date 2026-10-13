@@ -26,6 +26,12 @@ const owner = {
 
 const projectRoot = '/work/app';
 
+// The refusal names the member of the request that named the file.
+const ROOT_NAME =
+  'compileProject: request.analysis.rootNames[0] must be a portable file name under request.analysis.projectRoot';
+const SOURCE =
+  'compileProject: request.analysis.sources[0].path must be a portable file name under request.analysis.projectRoot';
+
 /** The input identities of a compilation whose analysis has this one file as root and source. */
 function identities(
   path: string,
@@ -49,7 +55,9 @@ describe('an analysis input whose portable name would have an empty segment', ()
     ['a backslash at its end', '/work/app/src/main.ts\\'],
   ])('is refused when its name holds %s', (_what, path) => {
     expect(() => identities(path, 'root name')).toThrow(TypeError);
+    expect(() => identities(path, 'root name')).toThrow(ROOT_NAME);
     expect(() => identities(path, 'source')).toThrow(TypeError);
+    expect(() => identities(path, 'source')).toThrow(SOURCE);
   });
 
   it('is named with forward slashes when no segment of it is empty', () => {

@@ -17,11 +17,20 @@ import {
   type CanonicalJsonObject,
   type CanonicalJsonValue,
 } from './canonical-json.js';
-import type { Catalog, CatalogMessage } from './catalog.js';
-import type { ProjectConfiguration } from './configuration.js';
+import {
+  OBSERVABILITY_ARGUMENT,
+  requireArgument,
+  type ArgumentShape,
+} from './call-arguments.js';
+import { admitCatalog, type Catalog, type CatalogMessage } from './catalog.js';
+import {
+  admitConfiguration,
+  type ProjectConfiguration,
+} from './configuration.js';
 import { canonicalizeLocale } from './locales.js';
 import {
   toolkitDiagnostic,
+  toolkitFailure,
   toolkitSuccess,
   type ToolkitDiagnostic,
   type ToolkitResult,
@@ -321,25 +330,11 @@ function unusedSourceMessages(
   return Object.freeze(diagnostics);
 }
 
-/**
- * `JSON.stringify` as it behaves rather than as it is declared.
- *
- * The declaration promises a string back. Nothing comes back for `undefined`, for a function or
- * for a symbol, and the values reaching here are a project's rather than this code's own.
- */
-function serializeJson(value: unknown): string | undefined {
-  return JSON.stringify(value);
+function canonicalValue(value: object): CanonicalJsonValue {
+  return JSON.parse(JSON.stringify(value)) as CanonicalJsonValue;
 }
 
-function canonicalValue(value: unknown): CanonicalJsonValue {
-  const serialized = serializeJson(value);
-  if (serialized === undefined) {
-    throw new TypeError('Equator compiler input is not JSON serializable.');
-  }
-  return JSON.parse(serialized) as CanonicalJsonValue;
-}
-
-function catalogMessageInput(message: CatalogMessage): unknown {
+function catalogMessageInput(message: CatalogMessage): object {
   return {
     kind: message.kind,
     ...(message.kind === 'message'
@@ -354,7 +349,16 @@ function catalogMessageInput(message: CatalogMessage): unknown {
   };
 }
 
-function portableAnalysisPath(projectRoot: string, path: string): string {
+/**
+ * An analysis input's name relative to the project, which is what a compilation's state holds.
+ *
+ * `argument` is the member of the request that named the file, so a refusal says which one.
+ */
+function portableAnalysisPath(
+  projectRoot: string,
+  path: string,
+  argument: string,
+): string {
   const absolute = isAbsolute(path)
     ? resolve(path)
     : resolve(projectRoot, path);
@@ -365,7 +369,7 @@ function portableAnalysisPath(projectRoot: string, path: string): string {
     isAbsolute(portable)
   ) {
     throw new TypeError(
-      `Equator analysis input is outside the selected project: ${path}`,
+      `compileProject: ${argument} must be a file inside request.analysis.projectRoot, and ${JSON.stringify(path)} is outside it.`,
     );
   }
   const normalized = portable.replaceAll('\\', '/');
@@ -376,7 +380,9 @@ function portableAnalysisPath(projectRoot: string, path: string): string {
       .split('/')
       .some((segment) => segment === '' || segment === '.' || segment === '..')
   ) {
-    throw new TypeError(`Equator analysis input path is not portable: ${path}`);
+    throw new TypeError(
+      `compileProject: ${argument} must be a portable file name under request.analysis.projectRoot, and ${JSON.stringify(path)} is not one.`,
+    );
   }
   return normalized;
 }
@@ -408,7 +414,13 @@ function compilerInputDigests(
         identity: 'analysis-graph',
         digest: digestCanonicalJson('equator-compiler-analysis-graph/1', {
           rootNames: [...request.analysis.rootNames]
-            .map((path) => portableAnalysisPath(projectRoot, path))
+            .map((path, index) =>
+              portableAnalysisPath(
+                projectRoot,
+                path,
+                `request.analysis.rootNames[${index}]`,
+              ),
+            )
             .sort(compareCodePoint),
           ...(request.analysis.typeNames === undefined
             ? {}
@@ -459,9 +471,13 @@ function compilerInputDigests(
       }),
     );
   }
-  for (const source of request.analysis?.sources ?? []) {
+  for (const [index, source] of (request.analysis?.sources ?? []).entries()) {
     const projectRoot = resolve(request.analysis?.projectRoot ?? '.');
-    const sourcePath = portableAnalysisPath(projectRoot, source.path);
+    const sourcePath = portableAnalysisPath(
+      projectRoot,
+      source.path,
+      `request.analysis.sources[${index}].path`,
+    );
     inputs.push(
       Object.freeze({
         identity: `source:${sourcePath}`,
@@ -1008,6 +1024,57 @@ function compileProjectCore(
   );
 }
 
+const COMPILE_PROJECT_REQUEST: ArgumentShape = {
+  required: {
+    configuration: 'record',
+    catalogs: ['record'],
+    owner: { required: { providerId: 'text', generatedRootPath: 'text' } },
+  },
+  optional: {
+    extensions: 'record',
+    analysis: {
+      required: { projectRoot: 'text', rootNames: ['text'] },
+      optional: {
+        sources: [{ required: { path: 'text', contents: 'text' } }],
+        typeNames: ['text'],
+        maxDiagnostics: 'number',
+        compilerOptions: 'record',
+        compilerOptionsDigestInput: 'data',
+      },
+    },
+    recoveryMessageIdentities: ['text'],
+    previousState: 'record',
+    requireCompleteTargets: 'flag',
+    observability: OBSERVABILITY_ARGUMENT,
+  },
+};
+
+/**
+ * Compiles a request once its configuration and catalogs have been judged.
+ *
+ * A caller can hand over a configuration or a catalog no parser has read, so each is admitted
+ * first, and everything after this compiles what was admitted and never the object handed over.
+ */
+function compileAdmitted(
+  request: CompileProjectRequest,
+): ToolkitResult<CompileProjectResult> {
+  const configuration = admitConfiguration(request.configuration);
+  const catalogs = request.catalogs.map((catalog) =>
+    admitCatalog(catalog, { extensions: request.extensions }),
+  );
+  const refused = [configuration, ...catalogs].flatMap((admitted) =>
+    admitted.ok ? [] : admitted.diagnostics,
+  );
+  if (!configuration.ok || refused.length > 0) return toolkitFailure(refused);
+  return compileProjectCore({
+    ...request,
+    configuration: configuration.value,
+    catalogs: catalogs.flatMap((admitted) =>
+      admitted.ok ? [admitted.value] : [],
+    ),
+  });
+}
+
 /**
  * Compiles a project from catalogs already in memory, and touches no files.
  *
@@ -1025,8 +1092,14 @@ function compileProjectCore(
 export function compileProject(
   request: CompileProjectRequest,
 ): ToolkitResult<CompileProjectResult> {
+  requireArgument(
+    'compileProject',
+    'request',
+    request,
+    COMPILE_PROJECT_REQUEST,
+  );
   const sink = request.observability;
-  if (sink === undefined) return compileProjectCore(request);
+  if (sink === undefined) return compileAdmitted(request);
   emitToolkitEvent(sink, {
     code: TOOLKIT_EVENT_CODES.compilation,
     phase: 'compilation',
@@ -1034,7 +1107,7 @@ export function compileProject(
   });
   let result: ToolkitResult<CompileProjectResult>;
   try {
-    result = compileProjectCore(request);
+    result = compileAdmitted(request);
   } catch (error) {
     emitToolkitEvent(sink, {
       code: TOOLKIT_EVENT_CODES.compilation,

@@ -7309,14 +7309,6 @@
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "StringLiteral",
-      "original": "'Equator compiler input is not JSON serializable.'",
-      "replacement": "\"\"",
-      "category": "message-wording",
-      "reason": "The sentence of the TypeError canonicalValue throws for an input with no JSON form; compiler-input-digests.test.ts asserts the TypeError and nothing reads its text."
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
       "mutator": "ConditionalExpression",
       "original": "portable === '..'",
       "replacement": "false",
@@ -7330,14 +7322,6 @@
       "replacement": "portable.endsWith(`..${sep}`)",
       "category": "message-wording",
       "reason": "path.relative never returns a trailing separator, so endsWith is always false here; a path that begins with '..' and a separator then reaches the segment check on line 377, where its leading '..' throws the same TypeError with the not-portable sentence in place of the outside-the-project one."
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "StringLiteral",
-      "original": "`Equator analysis input is outside the selected project: ${path}`",
-      "replacement": "``",
-      "category": "message-wording",
-      "reason": "The sentence of the TypeError portableAnalysisPath throws for a path outside the project; analysis-input-outside-the-project.test.ts asserts the TypeError for each such path and nothing reads its text."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7474,14 +7458,6 @@
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The two paths this moves between the two checks, the directory above the project and the project itself, are refused with a TypeError by either check; only which of the two sentences the error carries changes."
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "StringLiteral",
-      "original": "`Equator analysis input path is not portable: ${path}`",
-      "replacement": "``",
-      "category": "message-wording",
-      "reason": "The literal is the sentence of the TypeError thrown for an analysis input whose name is not portable; analysis-input-path-portability.test.ts asserts the type of the error at this site and nothing reads its text."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",

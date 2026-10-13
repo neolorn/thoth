@@ -7,8 +7,9 @@
  * whose source disagree about what a message is called.
  */
 
+import { requireArgument, type ArgumentShape } from './call-arguments.js';
 import type { Catalog, CatalogMessage } from './catalog.js';
-import { formatCatalog } from './catalog.js';
+import { admitCatalogs, formatCatalog } from './catalog.js';
 import {
   createAuthoredChangePlan,
   type AuthoredChangePlan,
@@ -329,7 +330,28 @@ function changedCatalogFiles(
  * that is already taken. Applying a rename plan is a separate step, and it is refused there if a
  * file it expects has changed since.
  */
+const IDENTITY_ARGUMENT: ArgumentShape = {
+  required: { providerId: 'text', scopeId: 'text', messageId: 'text' },
+};
+
 export function planMessageRefactor(
+  request: MessageRefactorRequest,
+): ToolkitResult<MessageRefactorPlan> {
+  requireArgument('planMessageRefactor', 'request', request, {
+    required: {
+      from: IDENTITY_ARGUMENT,
+      to: IDENTITY_ARGUMENT,
+      catalogs: ['record'],
+      analysis: { required: { messageUsages: ['record'] } },
+      sources: [{ required: { path: 'text', contents: 'text' } }],
+    },
+  });
+  const catalogs = admitCatalogs(request.catalogs);
+  if (!catalogs.ok) return catalogs;
+  return planAdmittedMessageRefactor({ ...request, catalogs: catalogs.value });
+}
+
+function planAdmittedMessageRefactor(
   request: MessageRefactorRequest,
 ): ToolkitResult<MessageRefactorPlan> {
   const providerFrom = parseProviderId(request.from.providerId);

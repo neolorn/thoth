@@ -9,11 +9,14 @@
 
 import { parseCST, type CST } from 'messageformat/cst';
 
-import type {
-  Catalog,
-  CatalogMessage,
-  EmptyCatalogMessage,
-  TextCatalogMessage,
+import { OBSERVABILITY_ARGUMENT, requireArgument } from './call-arguments.js';
+import {
+  admitCatalog,
+  builtCatalog,
+  type Catalog,
+  type CatalogMessage,
+  type EmptyCatalogMessage,
+  type TextCatalogMessage,
 } from './catalog.js';
 import {
   digestCanonicalJson,
@@ -1212,6 +1215,21 @@ function unitContent(
 }
 
 function exportXliff22Core(request: XliffExportRequest): ToolkitResult<string> {
+  const admittedSource = admitCatalog(request.source);
+  if (!admittedSource.ok) return admittedSource;
+  const admittedTarget =
+    request.target === undefined ? undefined : admitCatalog(request.target);
+  if (admittedTarget?.ok === false) return admittedTarget;
+  return exportAdmittedXliff22({
+    ...request,
+    source: admittedSource.value,
+    ...(admittedTarget === undefined ? {} : { target: admittedTarget.value }),
+  });
+}
+
+function exportAdmittedXliff22(
+  request: XliffExportRequest,
+): ToolkitResult<string> {
   const { source, target } = request;
   if (source.role !== 'source') {
     return toolkitFailure([
@@ -1346,6 +1364,10 @@ function exportXliff22Core(request: XliffExportRequest): ToolkitResult<string> {
 export function exportXliff22(
   request: XliffExportRequest,
 ): ToolkitResult<string> {
+  requireArgument('exportXliff22', 'request', request, {
+    required: { source: 'record' },
+    optional: { target: 'record', observability: OBSERVABILITY_ARGUMENT },
+  });
   const sink = request.observability;
   if (sink === undefined) return exportXliff22Core(request);
   const eventContext = {
@@ -1648,6 +1670,14 @@ function importedMessage(
 function importXliff22Core(
   request: XliffImportRequest,
 ): ToolkitResult<Catalog> {
+  const source = admitCatalog(request.source);
+  if (!source.ok) return source;
+  return importAdmittedXliff22({ ...request, source: source.value });
+}
+
+function importAdmittedXliff22(
+  request: XliffImportRequest,
+): ToolkitResult<Catalog> {
   if (request.source.role !== 'source') {
     return toolkitFailure([
       toolkitDiagnostic(
@@ -1902,17 +1932,19 @@ function importXliff22Core(
     ]);
   }
   return toolkitSuccess(
-    Object.freeze({
-      role: 'target',
-      providerId: request.source.providerId,
-      scopeId: request.source.scopeId,
-      locale: targetLocale.value,
-      ...(request.sourcePath === undefined
-        ? {}
-        : { sourcePath: request.sourcePath }),
-      messages: Object.freeze(messages),
-      families: Object.freeze({}),
-    }),
+    builtCatalog(
+      Object.freeze({
+        role: 'target',
+        providerId: request.source.providerId,
+        scopeId: request.source.scopeId,
+        locale: targetLocale.value,
+        ...(request.sourcePath === undefined
+          ? {}
+          : { sourcePath: request.sourcePath }),
+        messages: Object.freeze(messages),
+        families: Object.freeze({}),
+      }),
+    ),
     diagnostics,
   );
 }
@@ -1930,6 +1962,10 @@ function importXliff22Core(
 export function importXliff22(
   request: XliffImportRequest,
 ): ToolkitResult<Catalog> {
+  requireArgument('importXliff22', 'request', request, {
+    required: { source: 'record' },
+    optional: { observability: OBSERVABILITY_ARGUMENT },
+  });
   const sink = request.observability;
   if (sink === undefined) return importXliff22Core(request);
   const eventContext = {

@@ -4,9 +4,8 @@
  * A family is generated under its name with each hyphen dropped and the letter after it raised, so
  * `order-x` is generated as `orderX`. A catalog read from a file cannot hold a second family that
  * lands there, because a family name in a file is lower-case. A catalog handed over as an object
- * can: `diffCatalogSets` takes the catalogs it is given, and one built or edited in code may name a
- * family `orderX` outright. The two families would then be generated as one name, so the second is
- * refused where it is declared, naming both families and the name they share.
+ * is judged as the file it would be, so one built or edited in code that names a family `orderX`
+ * outright is refused for the name, as the file is, before the two could be generated as one.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -82,12 +81,17 @@ function diff(catalog: Catalog) {
 }
 
 describe('two open families generated under one name', () => {
-  it('cannot both be read from a file', () => {
+  it('cannot both be read from a file, nor handed over as an object', () => {
     const catalog = parseCatalog(
       [
         'messages:',
+        '  status.ready: Ready',
         '  stage.ready: Ready',
         'families:',
+        '  order-x:',
+        '    template: "status.{state}"',
+        '    segments:',
+        '      state: demo:state',
         '  orderX:',
         '    template: "stage.{state}"',
         '    segments:',
@@ -103,23 +107,20 @@ describe('two open families generated under one name', () => {
         extensions: registry(),
       },
     );
-
     expect(catalog.ok).toBe(false);
-  });
 
-  it('are refused in a catalog handed over as an object, naming both and the name', () => {
     const result = diff(withFamily(parsed(), 'orderX'));
-
     expect(result.ok).toBe(false);
-    const refusals = result.diagnostics.filter(({ code }) => code === 'EQ1305');
-    expect(refusals.map(({ path }) => path)).toEqual([
-      ['families', 'orderX'],
-      ['families', 'orderX'],
+    const refusal = ({
+      code,
+      summary,
+      path,
+    }: (typeof result.diagnostics)[0]) => ({ code, summary, path });
+    // One refusal for each snapshot the catalog is in.
+    expect(result.diagnostics.map(refusal)).toEqual([
+      ...catalog.diagnostics.map(refusal),
+      ...catalog.diagnostics.map(refusal),
     ]);
-    for (const { summary } of refusals) {
-      expect(summary).toContain('"order-x"');
-      expect(summary).toContain('"orderX"');
-    }
   });
 
   it('are both taken where the second is generated under a name of its own', () => {

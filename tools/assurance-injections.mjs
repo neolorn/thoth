@@ -88,6 +88,35 @@ export const injections = Object.freeze([
     caughtBy: 'packages/toolkit/test/untrusted-input.test.ts',
   },
   {
+    id: 'call-argument-shape-unchecked',
+    invariant:
+      'A call whose argument is not its documented shape throws a TypeError naming the function and the argument.',
+    source: 'packages/toolkit/src/call-arguments.ts',
+    find: '    if (!matches(value)) refuse(expected);',
+    replace: '    if (false as boolean) refuse(expected);',
+    caughtBy: 'packages/toolkit/test/call-argument-shapes.test.ts',
+  },
+  {
+    id: 'handed-over-catalog-unjudged',
+    invariant:
+      'A catalog a caller assembles is judged as parseCatalog judges the same content.',
+    source: 'packages/toolkit/src/catalog.ts',
+    find: '  if (catalogSourceText.has(catalog) || admittedCatalogs.has(catalog)) {',
+    replace: '  if (true as boolean) {',
+    caughtBy: 'packages/toolkit/test/handed-over-catalogs.test.ts',
+  },
+  {
+    id: 'handed-over-configuration-unjudged',
+    invariant:
+      'A configuration a caller assembles is judged as parseConfiguration judges the same content.',
+    source: 'packages/toolkit/src/configuration.ts',
+    find: '  if (parsedConfigurations.has(configuration)) {\n    return toolkitSuccess(configuration);',
+    replace:
+      '  if (true as boolean) {\n    return toolkitSuccess(configuration);',
+    caughtBy:
+      'packages/toolkit/test/compile-project-handed-over-content.test.ts',
+  },
+  {
     id: 'translator-notes-dropped',
     invariant:
       'Authored description and context reach the translator as XLIFF notes.',

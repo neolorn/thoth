@@ -11,6 +11,12 @@ import {
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 
 import {
+  AUTHORED_CHANGE_ARGUMENT,
+  OBSERVABILITY_ARGUMENT,
+  requireArgument,
+} from './call-arguments.js';
+
+import {
   parseTree,
   printParseErrorCode,
   type Node as JsonNode,
@@ -476,6 +482,15 @@ export function createAuthoredChangePlan(
 export function createMigrationPlan(
   request: MigrationPlanRequest,
 ): ToolkitResult<AuthoredChangePlan> {
+  requireArgument('createMigrationPlan', 'request', request, {
+    required: {
+      id: 'text',
+      domain: 'text',
+      fromVersion: 'text',
+      toVersion: 'text',
+      changes: [AUTHORED_CHANGE_ARGUMENT],
+    },
+  });
   if (
     !/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/u.test(request.fromVersion) ||
     !/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/u.test(request.toVersion) ||
@@ -719,6 +734,22 @@ async function applyAuthoredChangePlanCore(
 export async function applyAuthoredChangePlan(
   options: ApplyAuthoredPlanOptions,
 ): Promise<ToolkitResult<ApplyAuthoredPlanResult>> {
+  requireArgument('applyAuthoredChangePlan', 'options', options, {
+    required: {
+      ownerRoot: 'text',
+      plan: {
+        required: {
+          profile: 'text',
+          id: 'text',
+          kind: 'text',
+          changes: [AUTHORED_CHANGE_ARGUMENT],
+          regenerate: 'flag',
+          digest: 'text',
+        },
+      },
+    },
+    optional: { dryRun: 'flag', observability: OBSERVABILITY_ARGUMENT },
+  });
   const sink = options.observability;
   if (sink === undefined) return applyAuthoredChangePlanCore(options);
   emitToolkitEvent(sink, {

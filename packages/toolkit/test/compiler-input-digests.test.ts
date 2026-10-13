@@ -92,16 +92,6 @@ describe('the inputs a compilation is fingerprinted by', () => {
     expect(recovery([first])).not.toBe(recovery([second]));
     expect(recovery([first])).not.toBe(recovery([first, second]));
   });
-
-  it('refuse a configuration that has no JSON form with a TypeError', () => {
-    // A function has no JSON form, and neither has a value that was never passed. Both are a
-    // mistake in the request, reported as one, and not as the parse failure of a text nobody wrote.
-    for (const configuration of [undefined, () => 'en-US']) {
-      expect(() => digests({ configuration: configuration as never })).toThrow(
-        TypeError,
-      );
-    }
-  });
 });
 
 /**

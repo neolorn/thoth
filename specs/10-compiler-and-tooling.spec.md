@@ -48,6 +48,13 @@ received and never the value. A declared parameter type is not that check, becau
 arrive from configuration files, command lines, and consumer build scripts, where no type is present
 to enforce anything.
 
+A release MUST throw a `TypeError` that names the function, the argument, and the type received and
+never the value when a programmatic entry point is called with an argument that is not its documented
+shape, and an asynchronous entry point rejects with that error. A release MUST judge a catalog or a
+configuration that a caller assembles and hands to a programmatic entry point as `parseCatalog` and
+`parseConfiguration` judge the same content read from a file, and MUST report what they refuse with
+their diagnostics and no source position.
+
 ## 3. First generation
 
 A clean first generation happens inside one compiler invocation, in one order:

@@ -9,7 +9,14 @@
 
 import { parseMessage, stringifyMessage, type Model } from 'messageformat';
 
-import type { Catalog, CatalogMessage, TextCatalogMessage } from './catalog.js';
+import { requireArgument } from './call-arguments.js';
+import {
+  admitCatalog,
+  builtCatalog,
+  type Catalog,
+  type CatalogMessage,
+  type TextCatalogMessage,
+} from './catalog.js';
 import {
   toolkitDiagnostic,
   toolkitFailure,
@@ -396,6 +403,21 @@ export function createPseudoCatalog(
   source: Catalog,
   options: PseudoLocaleOptions,
 ): ToolkitResult<Catalog> {
+  requireArgument('createPseudoCatalog', 'source', source, 'record');
+  requireArgument('createPseudoCatalog', 'options', options, {
+    optional: { customFunctions: ['record'] },
+  });
+  const admitted = admitCatalog(source, {
+    customFunctions: options.customFunctions ?? [],
+  });
+  if (!admitted.ok) return admitted;
+  return createAdmittedPseudoCatalog(admitted.value, options);
+}
+
+function createAdmittedPseudoCatalog(
+  source: Catalog,
+  options: PseudoLocaleOptions,
+): ToolkitResult<Catalog> {
   if (source.role !== 'source') {
     return toolkitFailure([
       toolkitDiagnostic(
@@ -421,14 +443,16 @@ export function createPseudoCatalog(
     messages[messageId] = transformed.value;
   }
   return toolkitSuccess(
-    Object.freeze({
-      role: 'target',
-      providerId: source.providerId,
-      scopeId: source.scopeId,
-      locale: locale.value,
-      messages: Object.freeze(messages),
-      families: Object.freeze({}),
-    }),
+    builtCatalog(
+      Object.freeze({
+        role: 'target',
+        providerId: source.providerId,
+        scopeId: source.scopeId,
+        locale: locale.value,
+        messages: Object.freeze(messages),
+        families: Object.freeze({}),
+      }),
+    ),
     diagnostics,
   );
 }
