@@ -129,6 +129,41 @@ describe('withoutDocumentLocale withdraws every document effect and nothing else
     });
   });
 
+  it.each([
+    ['states neither', undefined, undefined],
+    ['states both', HOST_LANGUAGE, HOST_DIRECTION],
+  ] as const)(
+    'puts back a host document that %s when the first commit fails',
+    async (_label, language, direction) => {
+      const root = document.documentElement;
+      if (language === undefined) root.removeAttribute('lang');
+      if (direction === undefined) root.removeAttribute('dir');
+      const localization = setup(false);
+      // Fails after the document step has written, and before any snapshot is published, so there
+      // is no earlier snapshot to put back and the document is returned to what it stated.
+      localization.registerParticipant({
+        id: 'failing-commit',
+        prepare: (context) => ({
+          status: 'ready',
+          representation: {
+            kind: 'locale-bound',
+            supplyingLocale: context.targetLocale,
+            direction: 'ltr',
+          },
+        }),
+        commit: () => {
+          throw new Error('intentional participant failure');
+        },
+      });
+
+      await expect(localization.initialize()).rejects.toBeDefined();
+
+      expect(localization.snapshot()).toBeUndefined();
+      expect(root.getAttribute('lang')).toBe(language ?? null);
+      expect(root.getAttribute('dir')).toBe(direction ?? null);
+    },
+  );
+
   it('leaves the host document exactly as it found it when withdrawn', async () => {
     const localization = setup(true);
     await localization.initialize();

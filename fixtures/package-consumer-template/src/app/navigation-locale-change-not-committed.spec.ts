@@ -101,12 +101,35 @@ class Blank {}
 
 /** The address the application's resolver hands to `prepare` for the page it is loading. */
 let prepared = '/en-us/second';
+/** Whether the application's `document` callback throws. */
+let unwritable = false;
+/** Whether the root refuses to be entered, by a guard that throws. */
+let closed = false;
+
+/** The dynamic half of a page's document, from an application whose callback can fail. */
+const DOCUMENT_CALLBACK: NonNullable<
+  RouteLocalizationOptions['document']
+> = () => {
+  if (unwritable) throw new Error('The page has no document to write.');
+  return {};
+};
 
 const ROUTES: Routes = [
-  { path: '', component: Blank },
+  {
+    path: '',
+    component: Blank,
+    canActivate: [
+      () => {
+        if (closed) throw new Error('The root is closed.');
+        return true;
+      },
+    ],
+  },
   {
     path: 'second',
     component: Blank,
+    // Asked again on a reload of the same address, as a page that refetches its record is.
+    runGuardsAndResolvers: 'always',
     resolve: {
       localized: () => inject(RouteLocalization).prepare(prepared),
     },
@@ -233,6 +256,8 @@ function refusal(event: RouterEvent): RouteLocalizationError['resolution'] {
 
 afterEach(() => {
   prepared = '/en-us/second';
+  unwritable = false;
+  closed = false;
   vi.restoreAllMocks();
   TestBed.resetTestingModule();
   history.replaceState(null, '', '/');
@@ -272,6 +297,86 @@ describe('a navigation whose locale change fails', () => {
     });
     expect(localization.snapshot()).toBe(before);
     expect(router.url).toBe('/');
+  });
+});
+
+describe('a navigation that lands and whose document cannot be written', () => {
+  it('reports that the page it left was put back where the Router is still at that page', async () => {
+    const { arrive, ended, localization, routeLocalization, router } =
+      configured(PATH_PREFIX, { origin: ORIGIN, document: DOCUMENT_CALLBACK });
+    await arrive();
+    expect(await router.navigateByUrl('/second')).toBe(true);
+    const before = localization.snapshot();
+
+    // The same address again, so the address to put back is the one the Router already holds, and
+    // a navigation to it would be skipped and answer that it did not happen.
+    unwritable = true;
+    const end = ended();
+    void router.navigateByUrl('/second', { onSameUrlNavigation: 'reload' });
+
+    expect(await end).toBeInstanceOf(NavigationEnd);
+    expect(await routeLocalization.settled()).toMatchObject({
+      status: 'failed',
+      targetLocale: 'en-US',
+      diagnostic: {
+        code: 'effect-failed',
+        message:
+          'Localized route document effects failed and the prior representation was restored.',
+      },
+    });
+    expect(router.url).toBe('/second');
+    expect(localization.snapshot()?.primaryLocale).toBe('en-US');
+    expect(localization.snapshot()?.route).toEqual(before?.route);
+  });
+
+  it('reports that the page it left was put back where the Router returns to it', async () => {
+    const { arrive, ended, routeLocalization, router } = configured(
+      PATH_PREFIX,
+      { origin: ORIGIN, document: DOCUMENT_CALLBACK },
+    );
+    await arrive();
+
+    unwritable = true;
+    const end = ended();
+    void router.navigateByUrl('/second');
+
+    expect(await end).toBeInstanceOf(NavigationEnd);
+    expect(await routeLocalization.settled()).toMatchObject({
+      status: 'failed',
+      diagnostic: {
+        code: 'effect-failed',
+        message:
+          'Localized route document effects failed and the prior representation was restored.',
+      },
+    });
+    expect(router.url).toBe('/');
+  });
+
+  it('reports that the page it left was not fully put back where the Router cannot return to it', async () => {
+    const { arrive, ended, routeLocalization, router } = configured(
+      PATH_PREFIX,
+      { origin: ORIGIN, document: DOCUMENT_CALLBACK },
+    );
+    await arrive();
+
+    // The way back is refused by a guard that throws, which rejects the navigation that would
+    // have put the address back.
+    unwritable = true;
+    closed = true;
+    const end = ended();
+    void router.navigateByUrl('/second');
+
+    expect(await end).toBeInstanceOf(NavigationEnd);
+    expect(await routeLocalization.settled()).toMatchObject({
+      status: 'failed',
+      targetLocale: 'en-US',
+      diagnostic: {
+        code: 'effect-failed',
+        message:
+          'Localized route document effects failed and the prior representation could not be fully restored.',
+      },
+    });
+    expect(router.url).toBe('/second');
   });
 });
 

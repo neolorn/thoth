@@ -231,6 +231,23 @@ describe('a route document declared by route id', () => {
     expect(named[0]).toContain('"route:renamed-away"');
     // The keys that do name routes are not reported, so this cannot pass by reporting everything.
     expect(named[0]).not.toContain('names "route:second"');
+    expect(named[0]).toContain('so that entry describes nothing.');
+  });
+
+  it('reports every declaration naming a route that does not exist, in one warning', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await configure({
+      ...DECLARED,
+      'route:renamed-away': DECLARED['route:second'],
+      'route:removed': DECLARED['route:second'],
+    });
+    const named = warn.mock.calls
+      .map((call) => (typeof call[0] === 'string' ? call[0] : ''))
+      .filter((message) => message.includes('documentMetadata'));
+    expect(named).toHaveLength(1);
+    expect(named[0]).toContain(
+      'names "route:renamed-away", "route:removed", which no route in the projection declares, so those entries describe nothing.',
+    );
   });
 });
 
