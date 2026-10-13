@@ -1239,6 +1239,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/coordinated-progressive-scopes.test.ts',
   },
   {
+    id: 'page-put-back-in-the-locale-from-before-a-change-in-place',
+    invariant:
+      'The page a navigation left is put back in the locale a change made in place has committed since the navigation committed its own.',
+    source: 'packages/runtime/router/src/navigation-scopes.ts',
+    find: '    committed === undefined || committed === left.navigationLocale\n      ? snapshot.primaryLocale\n      : committed,',
+    replace: '    snapshot.primaryLocale,',
+    caughtBy: 'packages/runtime/test/navigation-page-put-back.test.ts',
+  },
+  {
     id: 'social-locale-written-as-a-language-tag',
     invariant: 'The social locale is written in the language_TERRITORY form.',
     source: 'packages/runtime/core/src/locale-profile.ts',

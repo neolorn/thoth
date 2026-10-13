@@ -22,7 +22,10 @@ import {
   type RouteParameterCodec,
   type RouteParameterContext,
 } from '@neolorn/equator';
-import { provideLocalizedRouter } from '@neolorn/equator/router';
+import {
+  RouteLocalization,
+  provideLocalizedRouter,
+} from '@neolorn/equator/router';
 import { provideLocalizationTesting } from '@neolorn/equator/testing';
 import { configuration } from '#i18n';
 import { catalogLoaders } from '#i18n/catalog-loaders';
@@ -47,7 +50,9 @@ import { runtimeExtensions } from './runtime-extensions';
  * holds open here. A change made in place then is answered for the destination as well, and where
  * it commits, the page that arrives is written in the locale that is committed. Where the
  * navigation is cancelled instead, the change still committed and told its caller so, and the page
- * the navigation left is put back in that locale.
+ * the navigation left is put back in that locale. A navigation that lands and whose document
+ * cannot be written ends the same way, and the application's `document` callback throwing for the
+ * destination is what makes one here.
  */
 
 const POLICY = createPathPrefixLocalePolicy({
@@ -95,6 +100,8 @@ let reached: (() => void) | undefined;
  * answer, it cancels the navigation, as a resolver that finds nothing to show does.
  */
 let loading: ReplaySubject<true> | undefined;
+/** Whether the application's `document` callback throws for the destination. */
+let unwritable = false;
 
 const ROUTES: Routes = [
   {
@@ -148,7 +155,18 @@ async function navigationHeld(): Promise<InFlight> {
         provide: MOCK_PLATFORM_LOCATION_CONFIG,
         useValue: { startUrl: `${ORIGIN}${ARRIVAL}` },
       },
-      provideLocalizedRouter(ROUTES, { origin: ORIGIN }),
+      provideLocalizedRouter(ROUTES, {
+        origin: ORIGIN,
+        document: (context) => {
+          if (
+            unwritable &&
+            context.resolution.canonicalPath.endsWith('/dossiers/other')
+          ) {
+            throw new Error('The destination has no document to write.');
+          }
+          return {};
+        },
+      }),
       provideLocalizationTesting(
         {
           configuration,
@@ -242,6 +260,7 @@ afterEach(() => {
   held = undefined;
   reached = undefined;
   loading = undefined;
+  unwritable = false;
   vi.restoreAllMocks();
   TestBed.resetTestingModule();
   history.replaceState(null, '', '/');
@@ -380,6 +399,67 @@ describe('a locale change in place after a navigation has committed its locale a
     expect(snapshot?.route?.canonicalPath).toBe(left);
     expect(platform.pathname).toBe(left);
     expect(document.documentElement.lang).toBe('en-Arab-XB');
+  });
+
+  it('keeps the locale the change committed when the navigation lands and its document cannot be written, at the page it left', async () => {
+    const { landed, load, localization, platform, settle } =
+      await navigationCommitted();
+
+    const result = await localization.changeLocale('en-Arab-XB');
+
+    expect(result).toMatchObject({
+      status: 'committed',
+      targetLocale: 'en-Arab-XB',
+    });
+
+    unwritable = true;
+    load();
+    expect(await landed).toBeInstanceOf(NavigationEnd);
+    const left = '/en-arab-xb/dossiers/dossier';
+    for (let round = 0; round < 20; round += 1) {
+      if (
+        localization.snapshot()?.route?.canonicalPath === left &&
+        platform.pathname === left
+      ) {
+        break;
+      }
+      await settle();
+    }
+
+    // The navigation reports that its document failed, and the change made in place stands.
+    expect(await TestBed.inject(RouteLocalization).settled()).toMatchObject({
+      status: 'failed',
+      targetLocale: 'en-US',
+    });
+    const snapshot = localization.snapshot();
+    expect(snapshot?.primaryLocale).toBe('en-Arab-XB');
+    expect(snapshot?.route?.canonicalPath).toBe(left);
+    expect(platform.pathname).toBe(left);
+    expect(document.documentElement.lang).toBe('en-Arab-XB');
+  });
+
+  it('puts back the snapshot from before the navigation when it lands and its document cannot be written, and no change was made in place', async () => {
+    const { landed, load, localization, platform, settle } =
+      await navigationCommitted();
+
+    unwritable = true;
+    load();
+    expect(await landed).toBeInstanceOf(NavigationEnd);
+    for (let round = 0; round < 20; round += 1) {
+      if (
+        localization.snapshot()?.route?.canonicalPath === ARRIVAL &&
+        platform.pathname === ARRIVAL
+      ) {
+        break;
+      }
+      await settle();
+    }
+
+    const snapshot = localization.snapshot();
+    expect(snapshot?.primaryLocale).toBe('en-US');
+    expect(snapshot?.route?.canonicalPath).toBe(ARRIVAL);
+    expect(platform.pathname).toBe(ARRIVAL);
+    expect(document.documentElement.lang).toBe('en-US');
   });
 
   it('puts back the snapshot from before the navigation when it is cancelled and no change was made in place', async () => {

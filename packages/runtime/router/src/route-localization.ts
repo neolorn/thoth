@@ -68,6 +68,7 @@ import {
 } from './document-messages.js';
 import {
   navigationScopes,
+  putBackPageLeft,
   refuseOptionsOfAnotherKind,
   refuseUndeclaredMode,
 } from './navigation-scopes.js';
@@ -602,10 +603,7 @@ export class RouteLocalization {
         // the previous snapshot back is what keeps the specification's promise that a cancelled or
         // failed navigation leaves the snapshot, document, and URL as they were.
         if (pending?.result !== undefined) {
-          void this.restoreSnapshot(
-            pending.previousSnapshot,
-            this.standingLocale(pending),
-          );
+          void this.putBack(pending);
         }
         // A navigation that never arrived leaves nothing to return the visitor to.
         this.interaction.ɵdiscard();
@@ -981,13 +979,11 @@ export class RouteLocalization {
     result: LocaleChangeResult,
   ): Promise<LocaleChangeResult> {
     const { resolution } = pending.context;
-    const previousSnapshot = pending.previousSnapshot;
     let addresses: Readonly<Record<string, string>> | undefined;
     try {
       addresses = this.projectDocument(pending.context);
     } catch {
-      const representationRestored =
-        await this.restoreSnapshot(previousSnapshot);
+      const representationRestored = await this.putBack(pending);
       const urlRestored = await this.restoreUrl(pending.previousUrl);
       return Object.freeze({
         status: 'failed',
@@ -1576,57 +1572,13 @@ export class RouteLocalization {
       : undefined;
   }
 
-  /**
-   * The locale the page a navigation left is put back in, where that navigation never arrived.
-   *
-   * The navigation's own commit is undone with it, so the locale is the one from before. A change
-   * made in place after that commit is another transaction: it committed, it told its caller so,
-   * and it was answered for the page on screen because the navigation could still be cancelled.
-   * Section 7 of `specs/07-routing-rendering-and-seo.spec.md` lets that locale stand, and
-   * `undefined` here leaves the choice to the snapshot being put back.
-   */
-  private standingLocale(pending: PendingRoute): string | undefined {
-    const committed = this.localization.snapshot()?.primaryLocale;
-    return committed === pending.context.resolution.locale
-      ? undefined
-      : committed;
-  }
-
-  /**
-   * Puts back the route and the scopes of a snapshot, in its own locale or in the one given.
-   *
-   * The route record is the snapshot's, which names its address in the snapshot's locale. Put back
-   * in another locale, the commit's own head step re-resolves the page for it and restates the
-   * record, as it does for any change made in place.
-   */
-  private async restoreSnapshot(
-    snapshot: ReturnType<Localization['snapshot']>,
-    locale?: string,
-  ): Promise<boolean> {
-    if (snapshot === undefined) return false;
-    const result = await this.localization.changeLocale(
-      locale ?? snapshot.primaryLocale,
-      {
-        mode: this.options.mode ?? 'coordinated',
-        requiredScopes: snapshot.requiredScopes,
-        route: snapshot.route ?? null,
-      },
-    );
-    if (result.status !== 'committed') return false;
-    const required = new Set(
-      snapshot.requiredScopes.map(
-        ({ providerId, scopeId }) => `${providerId}\u0000${scopeId}`,
-      ),
-    );
-    try {
-      for (const scope of snapshot.loadedScopes) {
-        if (required.has(`${scope.providerId}\u0000${scope.scopeId}`)) continue;
-        await this.localization.ensureScope(scope);
-      }
-      return true;
-    } catch {
-      return false;
-    }
+  /** Puts back the page a navigation left, for every way it ends without its own. */
+  private putBack(pending: PendingRoute): Promise<boolean> {
+    return putBackPageLeft(this.localization, {
+      mode: this.options.mode ?? 'coordinated',
+      previousSnapshot: pending.previousSnapshot,
+      navigationLocale: pending.context.resolution.locale,
+    });
   }
 
   private async restoreUrl(url: string): Promise<boolean> {

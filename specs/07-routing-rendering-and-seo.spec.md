@@ -455,9 +455,10 @@ leave the snapshot and the Router's address as they were. A release MUST answer 
 while a navigation is in flight for the route on screen, as it answers any other, because that navigation
 can still be cancelled. Where that navigation has already committed its locale and has not landed, a
 release MUST answer the change for the navigation's destination as well, and MUST write the page
-that lands in the locale that is committed. Where that navigation is cancelled or fails instead, a
-release MUST put back the page it left in the locale the change committed, and MUST NOT put back the
-locale from before the navigation, because the change committed and its caller was told so.
+that lands in the locale that is committed. Where that navigation is cancelled or fails instead, or
+lands and the writing of its document throws, a release MUST put back the page it left in the locale
+the change committed, and MUST NOT put back the locale from before the navigation, because the
+change committed and its caller was told so.
 
 A release MUST publish a snapshot only through a transaction, including when a single scope
 finishes loading, so every commit observer sees the same kind of event.

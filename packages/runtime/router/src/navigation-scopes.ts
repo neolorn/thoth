@@ -9,7 +9,10 @@
 import {
   LocalizationError,
   type LocaleChangeMode,
+  type LocaleChangeOptions,
+  type LocaleChangeResult,
   type LocalizationScope,
+  type LocalizationSnapshot,
   ɵlistOption,
   ɵrecordOption,
 } from '@neolorn/equator/core';
@@ -133,4 +136,73 @@ export function navigationScopes(
     ),
     alongside: alongside ? input.progressive : NONE,
   });
+}
+
+/** What putting a page back reads and asks of the localization context. */
+export interface PageLeftLocalization {
+  snapshot(): LocalizationSnapshot | undefined;
+  changeLocale(
+    locale: string,
+    options?: LocaleChangeOptions,
+  ): Promise<LocaleChangeResult>;
+  ensureScope(scope: LocalizationScope): Promise<void>;
+}
+
+/** A navigation that committed its locale and did not arrive, or arrived and could not be written. */
+export interface NavigationLeft {
+  /** The mode the integration was configured with. */
+  readonly mode: LocaleChangeMode;
+  /** The snapshot from before the navigation committed. Absent, there is no page to put back. */
+  readonly previousSnapshot: LocalizationSnapshot | undefined;
+  /** The locale the navigation committed. */
+  readonly navigationLocale: string;
+}
+
+/**
+ * Puts back the route and the scopes of the page a navigation left, and answers whether it did.
+ *
+ * The navigation's own commit is undone, so the locale is the one from before it. A change made in
+ * place after that commit is another transaction: it committed, it told its caller so, and it was
+ * answered for the page on screen because the navigation could still end without arriving. Section
+ * 7 of `specs/07-routing-rendering-and-seo.spec.md` lets that locale stand, so the page is put
+ * back in whatever locale is committed where that is not the navigation's.
+ *
+ * One function for every way a navigation ends without its page, so a navigation that is cancelled,
+ * one that fails and one whose document cannot be written all leave the same locale. The route
+ * record is the snapshot's, which names its address in the snapshot's locale. Put back in another
+ * locale, the commit's own head step re-resolves the page for it and restates the record, as it
+ * does for any change made in place.
+ */
+export async function putBackPageLeft(
+  localization: PageLeftLocalization,
+  left: NavigationLeft,
+): Promise<boolean> {
+  const snapshot = left.previousSnapshot;
+  if (snapshot === undefined) return false;
+  const committed = localization.snapshot()?.primaryLocale;
+  const result = await localization.changeLocale(
+    committed === undefined || committed === left.navigationLocale
+      ? snapshot.primaryLocale
+      : committed,
+    {
+      mode: left.mode,
+      requiredScopes: snapshot.requiredScopes,
+      route: snapshot.route ?? null,
+    },
+  );
+  if (result.status !== 'committed') return false;
+  const required = new Set(
+    snapshot.requiredScopes.map(
+      ({ providerId, scopeId }) => `${providerId}\u0000${scopeId}`,
+    ),
+  );
+  try {
+    for (const scope of snapshot.loadedScopes) {
+      if (required.has(`${scope.providerId}\u0000${scope.scopeId}`)) continue;
+      await localization.ensureScope(scope);
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
