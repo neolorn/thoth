@@ -3145,6 +3145,17 @@
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "4. The formatting context",
+      "statement": "A release MUST format with the numbering system an operation names over the context's, MUST refuse one that is not written as UTS #35 Part 1 writes the type of a numbering system, one or more subtags of three to eight lower-case ASCII letters and digits joined by hyphens, without asking the host, and MUST return the typed unsupported result of section 3 from every formatter that writes digits where the host has no digits under a well-formed name, which a host given the name does not report.",
+      "checks": [
+        "assurance:call-numbering-system-not-held-to-the-rule",
+        "assurance:numbering-system-name-judged-by-the-host-list",
+        "assurance:malformed-numbering-system-reported-as-a-capability",
+        "assurance:field-numbering-system-name-left-to-the-host"
+      ]
+    },
+    {
+      "spec": "08-formatting-parsing-and-domain.spec.md",
+      "section": "4. The formatting context",
       "statement": "A release MUST let a locale declare only what is a fact about how it is written: its numbering system, its calendar, and its hour cycle.",
       "checks": ["assurance-runtime:locale-formatting-declaration-ignored"]
     },

@@ -126,6 +126,11 @@ A date fails with the same code where the host has no calendar under the name it
 whether the call, the value or the formatting context named it, rather than being written in
 another calendar. A zoned date-time fails with it too where the host has no rules for its zone.
 
+A formatter that writes digits fails with it where the host has no digits under the numbering
+system it was asked for, whether the call or the formatting context named it, rather than writing
+the digits of the locale. A calendar and a numbering system are named in lower case, as in
+`islamic-civil` and `arab`.
+
 `plainDate` takes a calendar name as a fourth argument, in lower case as in `islamic-civil`, and
 the numbers are then that calendar's.
 A `gregory` date is the ISO date of the same numbers and is written in the Gregorian calendar

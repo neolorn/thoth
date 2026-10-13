@@ -237,18 +237,36 @@ function supportedNumberingSystems(): ReadonlySet<string> {
  *
  * This tag is for constructing formatters and is never the locale Equator reports as active.
  * Nothing reads `resolvedOptions().locale`, which would report `ar-EG-u-nu-latn` here.
+ *
+ * The numbering system is the one the operation names, else the context's, and it is held to one
+ * rule whichever named it. A name that is not written as a numbering system's is refused before
+ * the host is asked anything, and a well-formed one the host has no digits for is refused from the
+ * host's own list: a formatter given either as an option raises nothing for most of them and
+ * writes the digits of the locale. `undefined` is the answer to both, and
+ * `numberingSystemReason` says which.
  */
 export function formattingLocale(
   context: FormattingContext,
+  named?: unknown,
 ): string | undefined {
-  const { locale, numberingSystem } = context;
-  if (numberingSystem === undefined) return locale;
+  const numberingSystem = named ?? context.numberingSystem;
+  if (numberingSystem === undefined) return context.locale;
+  if (!isUnicodeKeywordType(numberingSystem)) return undefined;
   if (!supportedNumberingSystems().has(numberingSystem)) return undefined;
   try {
-    return new Intl.Locale(locale, { numberingSystem }).toString();
+    return new Intl.Locale(context.locale, { numberingSystem }).toString();
   } catch {
     return undefined;
   }
+}
+
+/** Why `formattingLocale` had no tag for a numbering system: its name, or the host's data. */
+export function numberingSystemReason(
+  numberingSystem: unknown,
+): 'malformed-input' | 'native-capability-rejected' {
+  return isUnicodeKeywordType(numberingSystem)
+    ? 'native-capability-rejected'
+    : 'malformed-input';
 }
 
 /**
@@ -1068,7 +1086,7 @@ function numericResolved(
       `:${functionName} was asked for the numbering system "${String(
         environment.formatting.numberingSystem,
       )}", which this runtime has no data for.`,
-      'native-capability-rejected',
+      numberingSystemReason(environment.formatting.numberingSystem),
     );
   }
   let formatter: Intl.NumberFormat;
@@ -1197,7 +1215,7 @@ function dateResolved(
       `:${functionName} was asked for the numbering system "${String(
         environment.formatting.numberingSystem,
       )}", which this runtime has no data for.`,
-      'native-capability-rejected',
+      numberingSystemReason(environment.formatting.numberingSystem),
     );
   }
   let formatter: Intl.DateTimeFormat;

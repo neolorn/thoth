@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   decimal,
@@ -30,7 +30,17 @@ import {
  * for others.
  */
 
-const MALFORMED: readonly string[] = ['', 'no', 'not valid', 'latn-'];
+// The last three a host reads as the system they spell in lower case, or looks up and does not
+// find; how a name is written is not the host's to decide.
+const MALFORMED: readonly string[] = [
+  '',
+  'no',
+  'not valid',
+  'latn-',
+  'LATN',
+  'Arab',
+  'arabicext',
+];
 // Well formed, and not a numbering system any host has.
 const UNKNOWN = 'zzzz';
 
@@ -132,6 +142,24 @@ describe('a field under a context that declares no numbering system', () => {
 });
 
 describe('a field read under a numbering system that is not an identifier', () => {
+  it('is refused without the host being asked whether the name is one', () => {
+    const asked = vi.spyOn(Intl, 'Locale');
+    const listed = vi.spyOn(Intl, 'supportedValuesOf');
+
+    for (const numberingSystem of MALFORMED) {
+      expect(
+        parseLocalizedInput(
+          '5',
+          { kind: 'decimal' },
+          { locale: 'en-US', numberingSystem },
+        ).status,
+      ).toBe('policy-rejected');
+    }
+    expect(asked).not.toHaveBeenCalled();
+    expect(listed).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
+
   for (const locale of ['en-US', 'ar-EG']) {
     for (const numberingSystem of MALFORMED) {
       it(`is refused as an invalid configuration in ${locale} for ${JSON.stringify(numberingSystem)}`, () => {

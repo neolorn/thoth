@@ -52,6 +52,7 @@ import {
   timeZone,
 } from './formatting';
 import { FormatterCache, formattingLocale, isCalendarName } from './evaluator';
+import { isUnicodeKeywordType } from './message-function-options';
 import { RUNTIME_LIMITS, codePointLengthAtMost } from './runtime-safety';
 
 interface NumberSyntax {
@@ -127,21 +128,17 @@ function valid<Value>(text: string, value: Value): LocalizedInputResult<Value> {
  * What is wrong with the numbering system a context declares, if anything.
  *
  * Decided once, before a field is read or written, because the platform does not decide it the
- * same way everywhere: a number formatter throws on a malformed identifier and quietly writes the
- * locale's own digits for a well-formed one it has no data for. A field that went on would give a
- * caller who asked for one set of digits another.
+ * same way everywhere: a number formatter throws on some malformed identifiers, reads others as
+ * the system they spell in another case, and quietly writes the locale's own digits for a
+ * well-formed one it has no data for. A field that went on would give a caller who asked for one
+ * set of digits another. Whether the name is written as one is decided without the host.
  */
 function numberingSystemRefusal(
   context: FormattingContext,
 ): 'malformed' | 'unavailable' | undefined {
   const numberingSystem: unknown = context.numberingSystem;
   if (numberingSystem === undefined) return undefined;
-  if (typeof numberingSystem !== 'string') return 'malformed';
-  try {
-    new Intl.Locale('und', { numberingSystem });
-  } catch {
-    return 'malformed';
-  }
+  if (!isUnicodeKeywordType(numberingSystem)) return 'malformed';
   return formattingLocale(context) === undefined ? 'unavailable' : undefined;
 }
 

@@ -349,8 +349,8 @@ export const injections = Object.freeze([
     // The validation is deliberately left intact, so what this removes is only the delivery. A test
     // that checked for the refusal alone would stay green.
     source: 'packages/runtime/src/evaluator.ts',
-    find: `    return new Intl.Locale(locale, { numberingSystem }).toString();`,
-    replace: `    return locale;`,
+    find: `    return new Intl.Locale(context.locale, { numberingSystem }).toString();`,
+    replace: `    return context.locale;`,
     caughtBy: 'packages/runtime/test/numeric-formatting.test.ts',
   },
   {
@@ -2135,6 +2135,45 @@ export const injections = Object.freeze([
     replace: '    void answer;',
     caughtBy:
       'packages/runtime/test/date-formatter-calendar-capability.test.ts',
+  },
+  {
+    id: 'call-numbering-system-not-held-to-the-rule',
+    invariant:
+      "A numbering system a call names is held to the rule the context's is, so a well-formed name the host has no digits for is reported by every formatter that writes digits and nothing is written in the digits of the locale.",
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '  const numberingSystem = named ?? context.numberingSystem;\n  if (numberingSystem === undefined) return context.locale;',
+    replace:
+      '  const numberingSystem = context.numberingSystem ?? (named === undefined ? undefined : undefined);\n  if (numberingSystem === undefined) return context.locale;',
+    caughtBy: 'packages/runtime/test/named-numbering-system.test.ts',
+  },
+  {
+    id: 'numbering-system-name-judged-by-the-host-list',
+    invariant:
+      "Whether a numbering system's name is written as one is decided before the host is asked for the systems it has.",
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '  if (!isUnicodeKeywordType(numberingSystem)) return undefined;',
+    replace: '',
+    caughtBy: 'packages/runtime/test/named-numbering-system.test.ts',
+  },
+  {
+    id: 'malformed-numbering-system-reported-as-a-capability',
+    invariant:
+      'A numbering system whose name is not written as one is refused as malformed input, and not reported as digits the host lacks.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: "  return isUnicodeKeywordType(numberingSystem)\n    ? 'native-capability-rejected'",
+    replace:
+      "  return typeof numberingSystem !== 'object'\n    ? 'native-capability-rejected'",
+    caughtBy: 'packages/runtime/test/named-numbering-system.test.ts',
+  },
+  {
+    id: 'field-numbering-system-name-left-to-the-host',
+    invariant:
+      'A field under a numbering system whose name is not written as one is refused as an invalid configuration without the host being asked, so an upper-case spelling a host reads is not a capability the host lacks.',
+    source: 'packages/runtime/src/localized-input.ts',
+    find: "  if (!isUnicodeKeywordType(numberingSystem)) return 'malformed';",
+    replace:
+      "  if (typeof numberingSystem !== 'string') return 'malformed';\n  try {\n    new Intl.Locale('und', { numberingSystem });\n  } catch {\n    return 'malformed';\n  }",
+    caughtBy: 'packages/runtime/test/localized-input-numbering-system.test.ts',
   },
   {
     id: 'plain-date-calendar-name-looser-than-a-zoned-one',

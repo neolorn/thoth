@@ -2646,7 +2646,7 @@
     {
       "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
-      "original": "`This runtime has no data for the numbering system \"${String(\n      context.numberingSystem,\n    )}\".`",
+      "original": "`This runtime cannot write in the numbering system \"${String(\n      numberingSystem,\n    )}\".`",
       "replacement": "``",
       "category": "message-wording",
       "reason": "The literal is the message of the unsupported-numbering-system diagnostic; it is read by a person and nothing compares, parses or returns it as data apart from the diagnostic's message field."

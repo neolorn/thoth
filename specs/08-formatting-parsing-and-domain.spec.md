@@ -156,6 +156,14 @@ alias of one it has. The first carries the reason `malformed-input` and the seco
 `native-capability-rejected`. A context that names `iso8601` names no calendar to write in, and a
 date under it is written in the locale's own.
 
+A numbering system reaches a formatter from the operation or from the context, and is held to the
+same rule. A release MUST format with the numbering system an operation names over the context's,
+MUST refuse one that is not written as UTS #35 Part 1 writes the type of a numbering system, one or
+more subtags of three to eight lower-case ASCII letters and digits joined by hyphens, without
+asking the host, and MUST return the typed unsupported result of section 3 from every formatter
+that writes digits where the host has no digits under a well-formed name, which a host given the
+name does not report. The reasons are a calendar's.
+
 A release MUST let a locale declare only what is a fact about how it is written: its numbering
 system, its calendar, and its hour cycle. A time zone is not one of those, so a release MUST keep
 the time zone application-wide, because it belongs to the reader or the deployment rather than to

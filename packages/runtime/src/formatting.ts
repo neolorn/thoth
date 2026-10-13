@@ -50,6 +50,7 @@ import {
   formattingLocale,
   hostAnswer,
   isCalendarName,
+  numberingSystemReason,
 } from './evaluator';
 import {
   PERSON_NAME_FORMALITIES,
@@ -659,16 +660,21 @@ function unsupported(
  * Neither form reports one on its own: a well-formed but unsupported value falls back to the
  * locale default and renders, through the option and through the extension alike. Without this the
  * caller asks for digits that do not exist, is told nothing, and is shown different ones.
+ *
+ * The numbering system is the one the call named, else the context's, as `formattingLocale` reads
+ * it.
  */
 function unsupportedNumberingSystem(
   context: FormattingContext,
+  named: unknown,
 ): Extract<FormattingResult, { readonly ok: false }> {
+  const numberingSystem = named ?? context.numberingSystem;
   return unsupported(
-    `This runtime has no data for the numbering system "${String(
-      context.numberingSystem,
+    `This runtime cannot write in the numbering system "${String(
+      numberingSystem,
     )}".`,
     context,
-    'native-capability-rejected',
+    numberingSystemReason(numberingSystem),
   );
 }
 
@@ -747,9 +753,9 @@ function numberResult(
   const number = nativeNumber(amount, context);
   if (typeof number !== 'number') return number;
   try {
-    const formattingTag = formattingLocale(context);
+    const formattingTag = formattingLocale(context, options.numberingSystem);
     if (formattingTag === undefined) {
-      return unsupportedNumberingSystem(context);
+      return unsupportedNumberingSystem(context, options.numberingSystem);
     }
     const formatter = cache.number(formattingTag, {
       ...options,
@@ -970,9 +976,9 @@ export function formatInstant(
   const milliseconds = instantMilliseconds(value, context);
   if (typeof milliseconds !== 'number') return milliseconds;
   try {
-    const formattingTag = formattingLocale(context);
+    const formattingTag = formattingLocale(context, options.numberingSystem);
     if (formattingTag === undefined) {
-      return unsupportedNumberingSystem(context);
+      return unsupportedNumberingSystem(context, options.numberingSystem);
     }
     const formatter = dateFormatter(
       formattingTag,
@@ -1127,9 +1133,9 @@ export function formatPlainDate(
   const milliseconds = plainDateMilliseconds(value, context);
   if (typeof milliseconds !== 'number') return milliseconds;
   try {
-    const formattingTag = formattingLocale(context);
+    const formattingTag = formattingLocale(context, options.numberingSystem);
     if (formattingTag === undefined) {
-      return unsupportedNumberingSystem(context);
+      return unsupportedNumberingSystem(context, options.numberingSystem);
     }
     const formatter = dateFormatter(
       formattingTag,
@@ -1201,9 +1207,9 @@ export function formatPlainTime(
     );
   }
   try {
-    const formattingTag = formattingLocale(context);
+    const formattingTag = formattingLocale(context, options.numberingSystem);
     if (formattingTag === undefined) {
-      return unsupportedNumberingSystem(context);
+      return unsupportedNumberingSystem(context, options.numberingSystem);
     }
     const formatter = dateFormatter(
       formattingTag,
@@ -1286,9 +1292,9 @@ export function formatPlainDateTime(
   );
   date.setUTCFullYear(value.date.year, value.date.month - 1, value.date.day);
   try {
-    const formattingTag = formattingLocale(context);
+    const formattingTag = formattingLocale(context, options.numberingSystem);
     if (formattingTag === undefined) {
-      return unsupportedNumberingSystem(context);
+      return unsupportedNumberingSystem(context, options.numberingSystem);
     }
     const formatter = dateFormatter(
       formattingTag,
@@ -1389,9 +1395,9 @@ export function formatNumberRange(
   const endNumber = nativeNumber(end, context);
   if (typeof endNumber !== 'number') return endNumber;
   try {
-    const formattingTag = formattingLocale(context);
+    const formattingTag = formattingLocale(context, options.numberingSystem);
     if (formattingTag === undefined) {
-      return unsupportedNumberingSystem(context);
+      return unsupportedNumberingSystem(context, options.numberingSystem);
     }
     const formatter = sharedFormatters.number(formattingTag, {
       ...options,
@@ -1456,9 +1462,9 @@ export function formatInstantRange(
   const endMilliseconds = instantMilliseconds(end, context);
   if (typeof endMilliseconds !== 'number') return endMilliseconds;
   try {
-    const formattingTag = formattingLocale(context);
+    const formattingTag = formattingLocale(context, options.numberingSystem);
     if (formattingTag === undefined) {
-      return unsupportedNumberingSystem(context);
+      return unsupportedNumberingSystem(context, options.numberingSystem);
     }
     const built = dateFormatter(
       formattingTag,
@@ -1551,9 +1557,9 @@ export function formatDuration(
     seconds: signed(seconds),
   });
   try {
-    const formattingTag = formattingLocale(context);
+    const formattingTag = formattingLocale(context, options['numberingSystem']);
     if (formattingTag === undefined) {
-      return unsupportedNumberingSystem(context);
+      return unsupportedNumberingSystem(context, options['numberingSystem']);
     }
     const formatter = new constructor(formattingTag, {
       ...options,
@@ -1643,9 +1649,13 @@ export function formatRelativeTime(
   const number = nativeNumber(value, context);
   if (typeof number !== 'number') return number;
   try {
-    const formattingTag = formattingLocale(context);
+    // Typed loosely because the type definitions Equator compiles against do not give the
+    // relative-time formatter the numbering system ECMA-402 gives it.
+    const named = (options as { readonly numberingSystem?: unknown })
+      .numberingSystem;
+    const formattingTag = formattingLocale(context, named);
     if (formattingTag === undefined) {
-      return unsupportedNumberingSystem(context);
+      return unsupportedNumberingSystem(context, named);
     }
     const formatter = sharedFormatters.relativeTime(formattingTag, {
       ...options,
