@@ -1123,8 +1123,8 @@ export const stageSelfTests = Object.freeze({
         id: 'formatter-store-unbounded',
         plant: plantText(
           'dist/runtime/fesm2022/neolorn-equator.mjs',
-          'while (this.values.size > this.maximumEntries) {',
-          'while (false) {',
+          'while (this.values.size > this.maximumEntries)',
+          'while (false)',
         ),
         measures: ['the shared formatter store is bounded by its ceiling'],
         refusal: /FAIL +the shared formatter store is bounded by its ceiling/u,
