@@ -6781,22 +6781,6 @@
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "OptionalChaining",
-      "original": "negative?.negative",
-      "replacement": "negative.negative",
-      "category": "equivalent",
-      "reason": "In profileAffixes the negative spelling is taken from the same formatter as the positive one and the host writes it in the same pattern with a sign added, so where affixPattern found a number and a marker in the positive spelling it finds them in the negative one and the value is never undefined there; measured over every language the host has data for, 135 compound units, eight currencies and the percent style, with no exception."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ArithmeticOperator",
-      "original": "right.prefix.length +\n        right.suffix.length",
-      "replacement": "right.prefix.length - right.suffix.length",
-      "category": "equivalent",
-      "reason": "The comparator in profileAffixes then orders the spellings differently, but parseNumeric takes the first one that matches the text, and on the host data no positive spelling of one plural category also matches a negative spelling learned before it, so the first match is the same; measured over every language the host has data for, 135 compound units, eight currencies and the percent style, where the order differed in 839 lists and the first match in none."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
       "mutator": "ConditionalExpression",
       "original": "profileAffixCache.size > 64",
       "replacement": "false",
