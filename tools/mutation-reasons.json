@@ -7375,14 +7375,6 @@
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
-      "mutator": "ConditionalExpression",
-      "original": "key.value === undefined",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "A catch-all key from parseMessage is the object { type: \"*\" } and nothing else, so key.value is undefined for every message and the branch that copies a value is never taken."
-    },
-    {
-      "file": "packages/toolkit/src/message-format.ts",
       "mutator": "BooleanLiteral",
       "original": "true",
       "replacement": "false",
@@ -7485,14 +7477,6 @@
       "replacement": ";",
       "category": "equivalent",
       "reason": "A name can repeat only on a chain that reaches a declaration with no function whose operand is itself or a later name, and lines 760 to 770 refuse that as a duplicate declaration or a selector with no annotation before the walk runs; with no repeat, seen is never what ends the loop."
-    },
-    {
-      "file": "packages/toolkit/src/message-format.ts",
-      "mutator": "ConditionalExpression",
-      "original": "message.comment === undefined",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "parseMessage returns a message with type, declarations and a pattern or selectors and variants, and never a comment, so message.comment is undefined for every source and the branch that copies it is never taken."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",

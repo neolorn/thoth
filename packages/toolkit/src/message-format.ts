@@ -403,12 +403,6 @@ export interface MessageLiteralVariantKey {
  */
 export interface MessageCatchallVariantKey {
   readonly kind: 'catchall';
-  /**
-   * Absent from every model the parser returns: MessageFormat writes the catch-all as `*`, and
-   * the parser keeps no text for it. The data model the key is read from allows a value, and one
-   * that is given is carried and never matched against.
-   */
-  readonly value?: string;
 }
 
 /** One position of one variant's key list: an exact value to match, or the catch-all. */
@@ -430,7 +424,6 @@ interface MessageSemanticBase {
   readonly externalInputs: readonly string[];
   readonly functions: readonly string[];
   readonly resultKind: 'plain' | 'structured';
-  readonly comment?: string;
 }
 
 /** A message that says one thing, with no branching in it. */
@@ -460,8 +453,8 @@ export interface SelectMessageSemanticModel extends MessageSemanticBase {
  *
  * What `parseMessageSemanticModel` returns and what everything downstream reads. Both arms carry
  * the original source, a canonical spelling of it that two equivalent writings share, the names the
- * message declares, the inputs it takes from outside, the functions it calls, whether it renders as
- * plain text or as parts, and the author's comment.
+ * message declares, the inputs it takes from outside, the functions it calls, and whether it
+ * renders as plain text or as parts.
  *
  * Check `kind` to tell a plain message from a selecting one.
  */
@@ -578,10 +571,9 @@ function normalizeVariantKey(
 ): MessageVariantKey {
   return key.type === 'literal'
     ? Object.freeze({ kind: 'literal', value: key.value })
-    : Object.freeze({
-        kind: 'catchall',
-        ...(key.value === undefined ? {} : { value: key.value }),
-      });
+    : // MessageFormat writes the catch-all as `*` and the parser keeps no text for it, so the key
+      // has a kind and nothing else.
+      Object.freeze({ kind: 'catchall' });
 }
 
 function normalizeVariants(
@@ -1184,7 +1176,6 @@ export function parseMessageSemanticModel(
     ),
     functions: Object.freeze([...validation.functions].sort(compareCodeUnit)),
     resultKind: isStructured() ? ('structured' as const) : ('plain' as const),
-    ...(message.comment === undefined ? {} : { comment: message.comment }),
   };
 
   return toolkitSuccess(
