@@ -178,6 +178,13 @@ the language, and one page is read in one zone whichever language it is in.
 A context transferred from a server render applies to the locale it was rendered for. A release MUST
 NOT let it become the default for another locale.
 
+A context is carried as it is given. Making one, and admitting one transferred from a server
+render, judge the shape and the size of its members and nothing else about them, and what an
+application declares for a locale is judged by its syntax where the configuration is read. Each
+operation judges the time zone, the calendar, the numbering system and the hour cycle it reads, so
+what is wrong in a context is reported where a value is formatted or a field is read under it, and
+a member no operation reads is never a failure.
+
 ## 5. Relative time
 
 Relative-time presentation is divided by owner, and a release MUST hold that division.
