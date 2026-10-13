@@ -2137,6 +2137,16 @@ export const injections = Object.freeze([
       'packages/runtime/test/date-formatter-calendar-capability.test.ts',
   },
   {
+    id: 'message-date-written-in-a-context-calendar-of-iso8601',
+    invariant:
+      'A date a message writes under a context whose calendar is iso8601 is written in the calendar of the locale, as the direct formatting API writes it.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: "    ...(environment.formatting.calendar === undefined ||\n    environment.formatting.calendar === 'iso8601'",
+    replace: '    ...(environment.formatting.calendar === undefined',
+    caughtBy:
+      'packages/runtime/test/date-formatter-calendar-capability.test.ts',
+  },
+  {
     id: 'call-numbering-system-not-held-to-the-rule',
     invariant:
       "A numbering system a call names is held to the rule the context's is, so a well-formed name the host has no digits for is reported by every formatter that writes digits and nothing is written in the digits of the locale.",

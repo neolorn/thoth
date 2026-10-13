@@ -267,6 +267,53 @@ describe('a date written by a message', () => {
     );
   });
 
+  it('is written in the calendar of the locale where the context names iso8601, as a formatter writes it', () => {
+    const named = render('{$d :date}', WHEN, { d: date }, under('iso8601'));
+
+    expect(named).toBe(
+      render('{$d :date}', WHEN, { d: date }, under(undefined)),
+    );
+    // The host has a calendar under the name, and writes a date in it another way.
+    expect(
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: 'UTC',
+        calendar: 'iso8601',
+        dateStyle: 'long',
+      }).format(date),
+    ).not.toBe(
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: 'UTC',
+        dateStyle: 'long',
+      }).format(date),
+    );
+  });
+
+  it('is written in iso8601 where the message names it', () => {
+    expect(
+      render(
+        '{$d :date calendar=iso8601}',
+        WHEN,
+        { d: date },
+        under('buddhist'),
+      ),
+    ).not.toBe(render('{$d :date}', WHEN, { d: date }, under('buddhist')));
+    expect(
+      render(
+        '{$d :date calendar=iso8601}',
+        WHEN,
+        { d: date },
+        under(undefined),
+      ),
+    ).toBe(
+      render(
+        '{$d :date calendar=iso8601}',
+        WHEN,
+        { d: date },
+        under('buddhist'),
+      ),
+    );
+  });
+
   it.each(['zzzzzz', 'islamicc'])(
     'reports the calendar %s of the context, which the host answers with another',
     (calendar) => {

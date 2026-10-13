@@ -1180,7 +1180,11 @@ function dateResolved(
     ...(environment.formatting.timeZone === undefined
       ? {}
       : { timeZone: environment.formatting.timeZone }),
-    ...(environment.formatting.calendar === undefined
+    // A context that names `iso8601` names no calendar to write in, here as in the direct
+    // formatting API: the date is written in the calendar of the locale. A host has a calendar
+    // under that name and writes the year first in it.
+    ...(environment.formatting.calendar === undefined ||
+    environment.formatting.calendar === 'iso8601'
       ? {}
       : { calendar: environment.formatting.calendar }),
     // Sent beside a `hour12` the message writes as well. The two describe the same thing, and
