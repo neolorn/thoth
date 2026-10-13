@@ -3345,6 +3345,14 @@
     {
       "spec": "09-safe-content-and-ux.spec.md",
       "section": "3. Rendering a rich message",
+      "statement": "An address that is not text is a call written wrongly, for a destination on another site and for one inside the application alike, and a release MUST refuse it with the reason `malformed-input`.",
+      "checks": [
+        "assurance:address-that-is-not-text-refused-without-its-reason"
+      ]
+    },
+    {
+      "spec": "09-safe-content-and-ux.spec.md",
+      "section": "3. Rendering a rich message",
       "statement": "A release MUST admit an address only when it is HTTPS at one of those origins and carries no credentials.",
       "checks": ["assurance:address-under-another-scheme-admitted"]
     },

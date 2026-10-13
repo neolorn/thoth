@@ -4883,6 +4883,16 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/asset-declaration-and-selection.test.ts',
   },
   {
+    id: 'address-that-is-not-text-refused-without-its-reason',
+    invariant:
+      'A rich-message destination whose address is not text is refused with the reason malformed-input.',
+    source: 'packages/runtime/src/destinations.ts',
+    find: "  if (typeof href !== 'string') {",
+    replace: "  if (typeof href !== 'string' && href === '') {",
+    caughtBy:
+      'packages/runtime/test/rich-message-destination-admission.test.ts',
+  },
+  {
     id: 'allowlist-entry-refused-without-its-reason',
     invariant:
       'An allowlist entry that is not a credential-free HTTPS origin refuses the call with the reason malformed-input.',

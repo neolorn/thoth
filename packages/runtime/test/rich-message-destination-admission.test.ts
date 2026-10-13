@@ -75,16 +75,25 @@ describe('the text of a destination', () => {
   const policyRefusal = (href: unknown) =>
     refusalOf(() => externalDestination(href as string, ORIGINS));
 
-  it('is refused by policy when it is not a string', () => {
+  it('is refused as malformed input when it is not a string', () => {
     for (const href of [42, null, undefined, {}, ['https://example.com/']]) {
-      const refusal = policyRefusal(href);
-      expect(refusal?.diagnostic.code).toBe('invalid-rich-message');
-      expect(refusal?.diagnostic.reason).toBeUndefined();
+      for (const refusal of [
+        policyRefusal(href),
+        refusalOf(() => internalDestination(href as string)),
+      ]) {
+        expect(refusal?.diagnostic.code).toBe('invalid-rich-message');
+        expect(refusal?.diagnostic.outcome).toBe('operational-failure');
+        expect(refusal?.diagnostic.reason).toBe('malformed-input');
+      }
     }
-    expect(
-      refusalOf(() => internalDestination(42 as unknown as string))?.diagnostic
-        .code,
-    ).toBe('invalid-rich-message');
+  });
+
+  it('is refused as malformed input when it is not a string, before the allowlist is read', () => {
+    const refusal = refusalOf(() =>
+      externalDestination(42 as unknown as string, []),
+    );
+
+    expect(refusal?.diagnostic.reason).toBe('malformed-input');
   });
 
   it('is refused by policy when it is empty', () => {

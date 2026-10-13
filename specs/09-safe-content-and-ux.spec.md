@@ -65,7 +65,9 @@ reason `malformed-input`, so a caller can tell a list that was written wrongly f
 list does not hold. A release MUST admit an address only when it is HTTPS at one of those origins
 and carries no credentials. An address under another scheme whose origin reads as an allowed one,
 such as a `blob:` address, is refused like any other address the list does not hold, with no
-reason.
+reason. An address that is not text is a call written wrongly, for a destination on another site
+and for one inside the application alike, and a release MUST refuse it with the reason
+`malformed-input`.
 
 Every rich contract projects to plain text. A release MUST preserve localized text, formatted
 values, and the children of a container slot in that projection, and MUST NOT let a destination, a

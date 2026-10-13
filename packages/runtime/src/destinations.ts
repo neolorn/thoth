@@ -38,6 +38,21 @@ function invalidDestination(
 }
 
 /**
+ * Refuses an address that is not text, with the reason a caller tells a call written wrongly by.
+ *
+ * Taken as a value of no known type, because the declared type is the caller's claim, and an
+ * address read from a record or a response makes none.
+ */
+function refuseAddressThatIsNotText(href: unknown): void {
+  if (typeof href !== 'string') {
+    invalidDestination(
+      'A rich-message destination must be text.',
+      'malformed-input',
+    );
+  }
+}
+
+/**
  * Builds a link inside this application for a slot in a structured message.
  *
  * Takes an origin-relative address and returns the binding to hand to a link slot. Throws for
@@ -49,6 +64,7 @@ function invalidDestination(
  * catalog is the file most likely to have arrived from outside the team that wrote the code.
  */
 export function internalDestination(href: string): TrustedDestination {
+  refuseAddressThatIsNotText(href);
   if (
     unsafeUrlText(href, RUNTIME_LIMITS.destinationCodeUnits) ||
     !href.startsWith('/') ||
@@ -86,6 +102,7 @@ export function externalDestination(
   allowedOrigins: readonly string[],
   target: '_blank' | '_self' = '_blank',
 ): TrustedDestination {
+  refuseAddressThatIsNotText(href);
   if (
     unsafeUrlText(href, RUNTIME_LIMITS.destinationCodeUnits) ||
     !Array.isArray(allowedOrigins) ||
@@ -109,9 +126,9 @@ export function externalDestination(
   }
   const origins = new Set(
     allowedOrigins.map((origin) => {
-      // Every refused entry carries the reason, and a refused address carries none: the list is
-      // the application's own, so a caller reads from it whether the list was written wrongly or
-      // the address is one the list does not hold.
+      // Every refused entry carries the reason, and an address the list does not hold carries
+      // none: the list is the application's own, so a caller reads from it whether the list was
+      // written wrongly or the address is one the list does not hold.
       if (unsafeUrlText(origin, RUNTIME_LIMITS.destinationOriginCodeUnits)) {
         return invalidDestination(
           'An external destination allowlist origin is invalid.',
