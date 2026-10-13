@@ -1809,6 +1809,18 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "2. Route identity and parameters",
+      "statement": "A codec that throws while an address is read is a defect in the consumer application, and a release MUST fail the resolution with a typed failure that names the route, the parameter, and the locale and keeps the thrown error as its cause.",
+      "checks": ["assurance:codec-throw-left-untyped"]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "2. Route identity and parameters",
+      "statement": "The request handler MUST answer that failure as it answers a render that failed, and MUST NOT answer the address as not found.",
+      "checks": ["assurance:codec-failure-answered-as-not-found"]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "2. Route identity and parameters",
       "statement": "A release MUST fall back to the codec for a locale the declaration omits, and MUST drop a locale with no spelling from the alternate cluster rather than guess one.",
       "checks": ["assurance:declared-spelling-borrowed-across-locales"]
     },

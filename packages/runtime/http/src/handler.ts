@@ -13,6 +13,7 @@
 // entry point's graph rather than beside it, and the primary re-exports it from here. That is the
 // layering the right way up: the base does not depend on the integration.
 import {
+  LocalizationError,
   allowedLocaleHosts,
   builtLocalePolicy,
   canonicalizeLanguageTag,
@@ -388,15 +389,33 @@ export function createLocaleRequestHandler(
     // carries a parsed URL, and parsing one resolves dot segments and rewrites a backslash, so the
     // path on it is not always what was asked for. The origin is the one the adapter put on the
     // request, which under a host policy is what names the locale.
-    const resolution = resolveLocalizedRoute(
-      rawTargetOf(request) ?? `${url.pathname}${url.search}`,
-      policy,
-      options.projection,
-      {
-        origin: url.origin,
-        ...(preferred === undefined ? {} : { locale: preferred }),
-      },
+    const resolution = resolvedOrCodecFailure(() =>
+      resolveLocalizedRoute(
+        rawTargetOf(request) ?? `${url.pathname}${url.search}`,
+        policy,
+        options.projection,
+        {
+          origin: url.origin,
+          ...(preferred === undefined ? {} : { locale: preferred }),
+        },
+      ),
     );
+    if (resolution instanceof LocalizationError) {
+      // The address was never read, so it is neither a page nor a missing one. What failed is the
+      // consumer application's own code, as a render that drew nothing is, and it is answered as
+      // that render is: the same status, kept out of every cache.
+      reportCodecFailure(reported, resolution.diagnostic.message);
+      const failed = pageOutcomeHttpDescriptor(RENDER_FAILED, UNRESOLVED);
+      return new Response(null, {
+        status: failed.status,
+        headers: {
+          ...routeCacheHeaders(
+            { ...UNRESOLVED, cache: failed.cache },
+            { ...options.cache, localePreference },
+          ),
+        },
+      });
+    }
 
     // Classified before anything dispatches on it, which is the order
     // `specs/07-routing-rendering-and-seo.spec.md` section 4 states: the target is validated, then
@@ -623,6 +642,50 @@ const RENDER_FAILED: PageOutcomeOperationalFailure = Object.freeze({
   outcome: 'operational-failure',
   status: 500,
 });
+
+/**
+ * What an address stands for before anything has resolved it: no language, no indexing class, and
+ * nothing a cache may keep. A failure answered from here states only itself.
+ */
+const UNRESOLVED: RouteHttpDescriptor = Object.freeze({
+  status: 200,
+  cache: 'private-no-store',
+});
+
+/**
+ * The resolution, or the failure of a route parameter codec that threw while the address was read.
+ *
+ * Only that failure is handed back. Every other throw is about the configuration the handler was
+ * made with, which no request can answer for.
+ */
+function resolvedOrCodecFailure(
+  resolve: () => RouteResolution,
+): RouteResolution | LocalizationError {
+  try {
+    return resolve();
+  } catch (error: unknown) {
+    if (
+      error instanceof LocalizationError &&
+      error.diagnostic.reason === 'consumer-code-threw'
+    ) {
+      return error;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Says once, where a developer will see it, that a route parameter codec threw.
+ *
+ * Once per handler, for the reason `reportEmptyRender` gives: the cause is how the codec was
+ * written, and the addresses that reach it are unbounded and supplied by the request.
+ */
+function reportCodecFailure(reported: Set<string>, message: string): void {
+  if (!inDevelopment()) return;
+  if (reported.has('codec-threw')) return;
+  reported.add('codec-threw');
+  console.warn(`[Equator] ${message} The response is 500.`);
+}
 
 /**
  * What an error status a renderer sent without declaring it is answered with: that status, kept

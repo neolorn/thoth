@@ -486,6 +486,25 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/address-translation.test.ts',
   },
   {
+    id: 'codec-throw-left-untyped',
+    invariant:
+      'A route parameter codec that throws while an address is read fails the resolution with a typed failure naming the route, the parameter and the locale.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '      const parsed = askCodec(context, () => codec.parse(actual, context));',
+    replace: '      const parsed = codec.parse(actual, context);',
+    caughtBy: 'packages/runtime/test/route-codec-that-throws.test.ts',
+  },
+  {
+    id: 'codec-failure-answered-as-not-found',
+    invariant:
+      'The request handler answers a codec that threw as a render that failed, never as an address that is missing.',
+    source: 'packages/runtime/http/src/handler.ts',
+    find: '        status: failed.status,\n        headers: {\n          ...routeCacheHeaders(\n            { ...UNRESOLVED, cache: failed.cache },',
+    replace:
+      '        status: 404,\n        headers: {\n          ...routeCacheHeaders(\n            { ...UNRESOLVED, cache: failed.cache },',
+    caughtBy: 'packages/runtime/test/route-codec-that-throws.test.ts',
+  },
+  {
     id: 'declined-parameter-matched-anyway',
     invariant:
       'An address whose parameter the codec declines to parse does not match the route.',

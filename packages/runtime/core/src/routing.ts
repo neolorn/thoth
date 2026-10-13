@@ -245,6 +245,10 @@ export interface RouteParameterContext {
  * declines to match, resolution answers `not-found`, and the address is handed back unchanged for
  * the application to answer: the same outcome as a URL naming no route at all. That is the safe
  * failure, because the alternative is serving one page's content at another page's address.
+ *
+ * A codec that throws while an address is read has not declined it. Resolution then throws a
+ * `LocalizationError` that names the route, the parameter and the locale and carries what was
+ * thrown as its `cause`, and the request handler answers 500, as for a render that failed.
  */
 export interface RouteParameterCodec<Value = unknown> {
   /** Reads one segment of an address. Returns `{ok: false}` rather than throwing on a refusal. */
@@ -1898,6 +1902,36 @@ function parameterContext(
   });
 }
 
+/**
+ * One question put to a route's codec while an address is read.
+ *
+ * A codec declines a spelling by answering that it did not parse, and that answer is an address
+ * that names no route. A throw is not that answer. It is a defect in the consumer application's
+ * codec, so it leaves here as a failure that says where it happened, and the address is not
+ * reported as missing on the strength of it.
+ */
+function askCodec<Answer>(
+  context: RouteParameterContext,
+  ask: () => Answer,
+): Answer {
+  try {
+    return ask();
+  } catch (cause: unknown) {
+    throw new LocalizationError(
+      Object.freeze({
+        code: 'invalid-configuration',
+        outcome: 'operational-failure',
+        message: `The codec for parameter ${context.parameterName} of route ${context.routeId} threw while an address was read in ${String(context.locale)}. A codec declines a spelling by answering \`{ ok: false }\`, and writes every value it has read.`,
+        reason: 'consumer-code-threw',
+        ...(context.locale === undefined
+          ? {}
+          : { targetLocale: context.locale }),
+      }),
+      { cause },
+    );
+  }
+}
+
 function safeParameterSegment(value: unknown): value is string {
   return (
     typeof value === 'string' &&
@@ -2390,12 +2424,14 @@ function matchIndexedRoute(
         break;
       }
       const context = parameterContext(route.id, name, locale);
-      const parsed = codec.parse(actual, context);
+      const parsed = askCodec(context, () => codec.parse(actual, context));
       if (!parsed.ok || parsed.value === undefined) {
         matched = false;
         break;
       }
-      const canonical = codec.serialize(parsed.value, context);
+      const canonical = askCodec(context, () =>
+        codec.serialize(parsed.value, context),
+      );
       if (canonical === undefined || !safeParameterSegment(canonical)) {
         matched = false;
         break;
