@@ -3796,31 +3796,15 @@
           "object": {
             "code": {
               "type": {
-                "union": [
-                  {
-                    "literal": "EQ-E2001"
-                  },
-                  {
-                    "literal": "EQ-E2002"
-                  },
-                  {
-                    "literal": "EQ-E2003"
-                  },
-                  {
-                    "literal": "EQ-E2004"
-                  },
-                  {
-                    "literal": "EQ-E2005"
-                  },
-                  {
-                    "literal": "EQ-E2006"
-                  },
-                  {
-                    "literal": "EQ-E2007"
-                  },
-                  {
-                    "literal": "EQ-E2008"
-                  }
+                "open": [
+                  "EQ-E2001",
+                  "EQ-E2002",
+                  "EQ-E2003",
+                  "EQ-E2004",
+                  "EQ-E2005",
+                  "EQ-E2006",
+                  "EQ-E2007",
+                  "EQ-E2008"
                 ]
               }
             },
@@ -4016,17 +4000,7 @@
           "object": {
             "code": {
               "type": {
-                "union": [
-                  {
-                    "literal": "EQ-E1001"
-                  },
-                  {
-                    "literal": "EQ-E1002"
-                  },
-                  {
-                    "literal": "EQ-E1003"
-                  }
-                ]
+                "open": ["EQ-E1001", "EQ-E1002", "EQ-E1003"]
               }
             },
             "count": {
@@ -4036,202 +4010,72 @@
             "diagnosticCode": {
               "optional": true,
               "type": {
-                "union": [
-                  {
-                    "literal": "EQ1001"
-                  },
-                  {
-                    "literal": "EQ1002"
-                  },
-                  {
-                    "literal": "EQ1003"
-                  },
-                  {
-                    "literal": "EQ1004"
-                  },
-                  {
-                    "literal": "EQ1005"
-                  },
-                  {
-                    "literal": "EQ1006"
-                  },
-                  {
-                    "literal": "EQ1007"
-                  },
-                  {
-                    "literal": "EQ1008"
-                  },
-                  {
-                    "literal": "EQ1101"
-                  },
-                  {
-                    "literal": "EQ1102"
-                  },
-                  {
-                    "literal": "EQ1103"
-                  },
-                  {
-                    "literal": "EQ1104"
-                  },
-                  {
-                    "literal": "EQ1105"
-                  },
-                  {
-                    "literal": "EQ1201"
-                  },
-                  {
-                    "literal": "EQ1202"
-                  },
-                  {
-                    "literal": "EQ1203"
-                  },
-                  {
-                    "literal": "EQ1204"
-                  },
-                  {
-                    "literal": "EQ1205"
-                  },
-                  {
-                    "literal": "EQ1206"
-                  },
-                  {
-                    "literal": "EQ1301"
-                  },
-                  {
-                    "literal": "EQ1302"
-                  },
-                  {
-                    "literal": "EQ1303"
-                  },
-                  {
-                    "literal": "EQ1304"
-                  },
-                  {
-                    "literal": "EQ1305"
-                  },
-                  {
-                    "literal": "EQ1306"
-                  },
-                  {
-                    "literal": "EQ1307"
-                  },
-                  {
-                    "literal": "EQ1308"
-                  },
-                  {
-                    "literal": "EQ1309"
-                  },
-                  {
-                    "literal": "EQ1310"
-                  },
-                  {
-                    "literal": "EQ1311"
-                  },
-                  {
-                    "literal": "EQ1401"
-                  },
-                  {
-                    "literal": "EQ1402"
-                  },
-                  {
-                    "literal": "EQ1403"
-                  },
-                  {
-                    "literal": "EQ1404"
-                  },
-                  {
-                    "literal": "EQ1405"
-                  },
-                  {
-                    "literal": "EQ1406"
-                  },
-                  {
-                    "literal": "EQ1407"
-                  },
-                  {
-                    "literal": "EQ1408"
-                  },
-                  {
-                    "literal": "EQ1409"
-                  },
-                  {
-                    "literal": "EQ1410"
-                  },
-                  {
-                    "literal": "EQ1411"
-                  },
-                  {
-                    "literal": "EQ1412"
-                  },
-                  {
-                    "literal": "EQ1413"
-                  },
-                  {
-                    "literal": "EQ1414"
-                  },
-                  {
-                    "literal": "EQ1415"
-                  },
-                  {
-                    "literal": "EQ1416"
-                  },
-                  {
-                    "literal": "EQ1417"
-                  },
-                  {
-                    "literal": "EQ1501"
-                  },
-                  {
-                    "literal": "EQ1502"
-                  },
-                  {
-                    "literal": "EQ1503"
-                  },
-                  {
-                    "literal": "EQ1601"
-                  },
-                  {
-                    "literal": "EQ1602"
-                  },
-                  {
-                    "literal": "EQ1603"
-                  },
-                  {
-                    "literal": "EQ1701"
-                  },
-                  {
-                    "literal": "EQ1702"
-                  },
-                  {
-                    "literal": "EQ1703"
-                  },
-                  {
-                    "literal": "EQ1704"
-                  },
-                  {
-                    "literal": "EQ1705"
-                  },
-                  {
-                    "literal": "EQ1706"
-                  },
-                  {
-                    "literal": "EQ1801"
-                  },
-                  {
-                    "literal": "EQ1802"
-                  },
-                  {
-                    "literal": "EQ1803"
-                  },
-                  {
-                    "literal": "EQ1804"
-                  },
-                  {
-                    "literal": "EQ1805"
-                  },
-                  {
-                    "literal": "EQ1806"
-                  }
+                "open": [
+                  "EQ1001",
+                  "EQ1002",
+                  "EQ1003",
+                  "EQ1004",
+                  "EQ1005",
+                  "EQ1006",
+                  "EQ1007",
+                  "EQ1008",
+                  "EQ1101",
+                  "EQ1102",
+                  "EQ1103",
+                  "EQ1104",
+                  "EQ1105",
+                  "EQ1201",
+                  "EQ1202",
+                  "EQ1203",
+                  "EQ1204",
+                  "EQ1205",
+                  "EQ1206",
+                  "EQ1301",
+                  "EQ1302",
+                  "EQ1303",
+                  "EQ1304",
+                  "EQ1305",
+                  "EQ1306",
+                  "EQ1307",
+                  "EQ1308",
+                  "EQ1309",
+                  "EQ1310",
+                  "EQ1311",
+                  "EQ1401",
+                  "EQ1402",
+                  "EQ1403",
+                  "EQ1404",
+                  "EQ1405",
+                  "EQ1406",
+                  "EQ1407",
+                  "EQ1408",
+                  "EQ1409",
+                  "EQ1410",
+                  "EQ1411",
+                  "EQ1412",
+                  "EQ1413",
+                  "EQ1414",
+                  "EQ1415",
+                  "EQ1416",
+                  "EQ1417",
+                  "EQ1501",
+                  "EQ1502",
+                  "EQ1503",
+                  "EQ1601",
+                  "EQ1602",
+                  "EQ1603",
+                  "EQ1701",
+                  "EQ1702",
+                  "EQ1703",
+                  "EQ1704",
+                  "EQ1705",
+                  "EQ1706",
+                  "EQ1801",
+                  "EQ1802",
+                  "EQ1803",
+                  "EQ1804",
+                  "EQ1805",
+                  "EQ1806"
                 ]
               }
             },
