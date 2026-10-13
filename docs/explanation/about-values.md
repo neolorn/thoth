@@ -58,8 +58,7 @@ parsing it first.
 ## Where a convention is set
 
 `withFormattingContext` sets what every formatter starts from: the numbering system, the calendar,
-the time zone, the currency display, and the rest of what a locale can be written more than one way
-in. It is one setting for the application.
+the hour cycle and the time zone. It is one setting for the application.
 
 That is why the numbering system a locale is written in is declared where the locales are declared. An
 application shipping `ar-EG` and `fa-IR` cannot say with a single application-wide value that one is

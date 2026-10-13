@@ -262,9 +262,9 @@ argument.
 ## Set the conventions once
 
 `withFormattingContext` sets what every formatter starts from: the numbering system, the calendar,
-the time zone, the currency display, and the rest of what a locale can be written more than one way
-in. It is one setting for the application, and what that means for a project shipping both `ar-EG`
-and `fa-IR` is [About canonical values](../explanation/about-values.md).
+the hour cycle and the time zone. It is one setting for the application, and what that means for a
+project shipping both `ar-EG` and `fa-IR` is
+[About canonical values](../explanation/about-values.md).
 
 A message that formats a date or a time and names no zone, such as `{$when :date}`, is written in
 this one. If any catalog has such a message and the context names no `timeZone`, the application
