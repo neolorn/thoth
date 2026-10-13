@@ -250,6 +250,20 @@ export function formattingLocale(
   }
 }
 
+/**
+ * Whether a value is written as a calendar's name is.
+ *
+ * UTS #35 writes the type of a calendar as one or more subtags of three to eight ASCII letters and
+ * digits joined by hyphens, in lower case in its canonical form. Decided here and not by the host:
+ * a host reads an upper-case spelling as the calendar it spells and answers under another name.
+ */
+export function isCalendarName(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    /^[a-z0-9]{3,8}(?:-[a-z0-9]{3,8})*$/u.test(value)
+  );
+}
+
 function unsupportedFormatting(
   message: string,
   reason?: LocalizationDiagnostic['reason'],
@@ -1149,6 +1163,12 @@ function dateResolved(
       `:${functionName} requires an explicit deterministic time zone.`,
     );
   }
+  if (options.calendar !== undefined && !isCalendarName(options.calendar)) {
+    unsupportedFormatting(
+      `:${functionName} was asked for a calendar that is not written as a calendar's name.`,
+      'malformed-input',
+    );
+  }
   // Same tag as the numeric path above. `DateTimeFormat` does honour the `numberingSystem` option,
   // so this is not a fix: it is the same construction everywhere, so that no future surface can
   // be the one nobody remembered to update.
@@ -1169,6 +1189,17 @@ function dateResolved(
       `:${functionName} received unsupported formatting options.`,
       'native-capability-rejected',
       cause,
+    );
+  }
+  // A host asked for a calendar it does not have raises nothing and writes in the calendar of the
+  // locale, so the calendar it answers with is compared with the one asked for.
+  if (
+    options.calendar !== undefined &&
+    formatter.resolvedOptions().calendar !== options.calendar
+  ) {
+    unsupportedFormatting(
+      `:${functionName} was asked for the calendar "${options.calendar}", which this runtime does not count in.`,
+      'native-capability-rejected',
     );
   }
   return Object.freeze({

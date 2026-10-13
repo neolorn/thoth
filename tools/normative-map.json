@@ -3048,6 +3048,16 @@
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "4. The formatting context",
+      "statement": "A release MUST refuse a calendar that is not written as section 2 writes a calendar's name without asking the host, and MUST return the typed unsupported result of section 3 from every date formatter where the host answers a well-formed name with another calendar, which a host does without an error for a calendar it does not have and for an alias of one it has.",
+      "checks": [
+        "assurance:calendar-name-left-to-the-host",
+        "assurance:context-calendar-the-host-lacks-written-in-another",
+        "assurance:message-date-calendar-the-host-lacks-written-in-another"
+      ]
+    },
+    {
+      "spec": "08-formatting-parsing-and-domain.spec.md",
+      "section": "4. The formatting context",
       "statement": "A release MUST let a locale declare only what is a fact about how it is written: its numbering system, its calendar, and its hour cycle.",
       "checks": ["assurance-runtime:locale-formatting-declaration-ignored"]
     },

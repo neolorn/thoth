@@ -1969,6 +1969,22 @@
     {
       "file": "packages/runtime/src/evaluator.ts",
       "mutator": "StringLiteral",
+      "original": "`:${functionName} was asked for a calendar that is not written as a calendar's name.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The literal is the text of the refusal raised when a date function is asked for a calendar that is not written as a calendar's name; the suite compares its code and reason and nothing reads the text."
+    },
+    {
+      "file": "packages/runtime/src/evaluator.ts",
+      "mutator": "StringLiteral",
+      "original": "`:${functionName} was asked for the calendar \"${options.calendar}\", which this runtime does not count in.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The literal is the text of the refusal raised when the host answers the calendar a date function asked for with another; the suite compares its code and reason and nothing reads the text."
+    },
+    {
+      "file": "packages/runtime/src/evaluator.ts",
+      "mutator": "StringLiteral",
       "original": "'A compiled message expression is invalid.'",
       "replacement": "\"\"",
       "category": "message-wording",
@@ -2697,7 +2713,8 @@
       "original": "context.hourCycle === undefined",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "An hourCycle key holding undefined is read by Intl.DateTimeFormat as absent and is dropped by the JSON.stringify that builds the cache key in evaluator.ts stableOptions, so the formatter and its cache entry are the same."
+      "reason": "An hourCycle key holding undefined is read by Intl.DateTimeFormat as absent and is dropped by the JSON.stringify that builds the cache key in evaluator.ts stableOptions, so the formatter and its cache entry are the same.",
+      "count": 2
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -7640,10 +7657,10 @@
     {
       "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
-      "original": "'The host does not count in the calendar the plain date names.'",
+      "original": "\"The calendar asked for is not written as a calendar's name.\"",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The sentence of the unsupported result formatPlainDate and formatPlainDateTime return where the host resolved another calendar than gregory for a date counted in it. Its code, outcome, target locale and reason are the same with any text, and plain-date-calendar.test.ts asserts those."
+      "reason": "The sentence of the unsupported result a date formatter returns for a calendar that is not written as a calendar's name. Its code, outcome, target locale and reason are the same with any text, and date-formatter-calendar-capability.test.ts asserts those."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -7744,10 +7761,10 @@
     {
       "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
-      "original": "'The host does not count in the calendar the value names.'",
+      "original": "'The host does not count in the calendar asked for.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The sentence of the unsupported result formatZonedDateTime returns where the host resolved another calendar than the value names. Its code, outcome, target locale and reason are the same with any text, and zoned-date-time-host-capability.test.ts asserts those."
+      "reason": "The sentence of the unsupported result a date formatter returns where the host answered the calendar it was asked for with another. Its code, outcome, target locale and reason are the same with any text, and date-formatter-calendar-capability.test.ts asserts those."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",

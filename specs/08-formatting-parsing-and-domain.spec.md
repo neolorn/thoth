@@ -144,6 +144,15 @@ over the context's. The context's calendar is the one a date that names none of 
 in: an instant, and a plain date or date-time counted in `iso8601`, whose fields say which day it
 is and not how the day is written.
 
+A calendar reaches a date formatter from the operation, from the value, or from the context, and
+is held to one rule whichever named it. A release MUST refuse a calendar that is not written as
+section 2 writes a calendar's name without asking the host, and MUST return the typed unsupported
+result of section 3 from every date formatter where the host answers a well-formed name with
+another calendar, which a host does without an error for a calendar it does not have and for an
+alias of one it has. The first carries the reason `malformed-input` and the second
+`native-capability-rejected`. A context that names `iso8601` names no calendar to write in, and a
+date under it is written in the locale's own.
+
 A release MUST let a locale declare only what is a fact about how it is written: its numbering
 system, its calendar, and its hour cycle. A time zone is not one of those, so a release MUST keep
 the time zone application-wide, because it belongs to the reader or the deployment rather than to

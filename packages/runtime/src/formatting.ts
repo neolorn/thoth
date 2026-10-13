@@ -45,7 +45,7 @@ import {
   type TimeZoneValue,
   type ZonedDateTimeValue,
 } from '@neolorn/equator/core';
-import { FormatterCache, formattingLocale } from './evaluator';
+import { FormatterCache, formattingLocale, isCalendarName } from './evaluator';
 import {
   PERSON_NAME_FORMALITIES,
   PERSON_NAME_LENGTHS,
@@ -360,10 +360,7 @@ export function zonedDateTime(
   calendar = 'iso8601',
 ): ZonedDateTimeValue {
   const canonicalTimeZone = timeZone(timeZoneId).id;
-  if (
-    typeof calendar !== 'string' ||
-    !/^[a-z0-9]{3,8}(?:-[a-z0-9]{3,8})*$/u.test(calendar)
-  ) {
+  if (!isCalendarName(calendar)) {
     return invalidCanonicalValue(
       'A zoned date-time requires a calendar name of lower-case subtags of three to eight letters and digits.',
       'malformed-input',
@@ -944,28 +941,15 @@ function instantMilliseconds(
  * A zone is required too, from the context or from the options. Without one there is no wall clock
  * to read the moment against, and that is reported rather than being taken as the host's zone,
  * which is the value that differs between a server and a browser.
+ *
+ * A calendar the options or the context name that the host does not count in comes back as an
+ * unsupported result, as it does from every formatter that writes a date: a host given such a name
+ * raises nothing and would write in the calendar of the locale.
  */
 export function formatInstant(
   value: InstantValue,
   context: FormattingContext,
   options: Intl.DateTimeFormatOptions,
-): FormattingResult {
-  return instantFormatted(value, context, options, undefined);
-}
-
-/**
- * A moment formatted under a context, and held to a calendar where one is given.
- *
- * A host asked for a calendar it does not have raises nothing: it formats in the calendar of the
- * locale. A value that names its calendar would then be shown counted in another, so the calendar
- * the formatter says it counts in is compared with the one the value names, and a difference is
- * reported and nothing is formatted.
- */
-function instantFormatted(
-  value: InstantValue,
-  context: FormattingContext,
-  options: Intl.DateTimeFormatOptions,
-  calendar: string | undefined,
 ): FormattingResult {
   if (context.timeZone === undefined && options.timeZone === undefined) {
     return unsupported(
@@ -980,20 +964,12 @@ function instantFormatted(
     if (formattingTag === undefined) {
       return unsupportedNumberingSystem(context);
     }
-    const formatter = sharedFormatters.dateTime(
+    const formatter = dateFormatter(
       formattingTag,
       instantOptions(context, options),
+      context,
     );
-    if (
-      calendar !== undefined &&
-      formatter.resolvedOptions().calendar !== calendar
-    ) {
-      return unsupported(
-        'The host does not count in the calendar the value names.',
-        context,
-        'native-capability-rejected',
-      );
-    }
+    if ('ok' in formatter) return formatter;
     return success(
       'instant',
       formatter.format(milliseconds),
@@ -1052,6 +1028,42 @@ function displayCalendar(calendar: string | undefined): {
 }
 
 /**
+ * The host's formatter for a date, or the refusal for a calendar it was asked for and cannot be
+ * held to.
+ *
+ * The calendar in the options is the one the call named, else the value's, else the context's. A
+ * name that is not written as a calendar's is refused before the host is asked. A host asked for
+ * a calendar it does not have raises nothing and writes in the calendar of the locale, so the
+ * calendar the formatter answers with is compared with the one asked for, and a difference is
+ * reported and nothing is written.
+ */
+function dateFormatter(
+  formattingTag: string,
+  options: Intl.DateTimeFormatOptions,
+  context: FormattingContext,
+): Intl.DateTimeFormat | Extract<FormattingResult, { readonly ok: false }> {
+  const calendar: unknown = options.calendar;
+  if (calendar === undefined) {
+    return sharedFormatters.dateTime(formattingTag, options);
+  }
+  if (!isCalendarName(calendar)) {
+    return unsupported(
+      "The calendar asked for is not written as a calendar's name.",
+      context,
+      'malformed-input',
+    );
+  }
+  const formatter = sharedFormatters.dateTime(formattingTag, options);
+  return formatter.resolvedOptions().calendar === calendar
+    ? formatter
+    : unsupported(
+        'The host does not count in the calendar asked for.',
+        context,
+        'native-capability-rejected',
+      );
+}
+
+/**
  * Whether a plain date in this calendar has the fields of the ISO date of the same day.
  *
  * `gregory` is the proleptic Gregorian calendar, which is the calendar ISO 8601 counts in, so the
@@ -1060,32 +1072,6 @@ function displayCalendar(calendar: string | undefined): {
  */
 function countsIsoDays(calendar: string): boolean {
   return calendar === 'iso8601' || calendar === 'gregory';
-}
-
-/**
- * The refusal for a plain date whose calendar the formatter did not count in, or `undefined`.
- *
- * A date in `gregory` names the calendar it is written in, under the one the call names. A host
- * asked for a calendar it does not have raises nothing and writes in the calendar of the locale,
- * so what the formatter says it counts in is compared with the name.
- */
-function plainCalendarRefusal(
-  formatter: Intl.DateTimeFormat,
-  value: PlainDateValue,
-  context: FormattingContext,
-  options: Intl.DateTimeFormatOptions,
-): FormattingResult | undefined {
-  const named =
-    options.calendar === undefined
-      ? displayCalendar(value.calendar).calendar
-      : undefined;
-  return named === undefined || formatter.resolvedOptions().calendar === named
-    ? undefined
-    : unsupported(
-        'The host does not count in the calendar the plain date names.',
-        context,
-        'native-capability-rejected',
-      );
 }
 
 function plainDateMilliseconds(
@@ -1135,14 +1121,17 @@ export function formatPlainDate(
     if (formattingTag === undefined) {
       return unsupportedNumberingSystem(context);
     }
-    const formatter = sharedFormatters.dateTime(formattingTag, {
-      ...displayCalendar(context.calendar),
-      ...displayCalendar(value.calendar),
-      ...options,
-      timeZone: 'UTC',
-    });
-    const refusal = plainCalendarRefusal(formatter, value, context, options);
-    if (refusal !== undefined) return refusal;
+    const formatter = dateFormatter(
+      formattingTag,
+      {
+        ...displayCalendar(context.calendar),
+        ...displayCalendar(value.calendar),
+        ...options,
+        timeZone: 'UTC',
+      },
+      context,
+    );
+    if ('ok' in formatter) return formatter;
     return success(
       'plain-date',
       formatter.format(milliseconds),
@@ -1206,13 +1195,18 @@ export function formatPlainTime(
     if (formattingTag === undefined) {
       return unsupportedNumberingSystem(context);
     }
-    const formatter = sharedFormatters.dateTime(formattingTag, {
-      ...(context.hourCycle === undefined
-        ? {}
-        : { hourCycle: context.hourCycle }),
-      ...options,
-      timeZone: 'UTC',
-    });
+    const formatter = dateFormatter(
+      formattingTag,
+      {
+        ...(context.hourCycle === undefined
+          ? {}
+          : { hourCycle: context.hourCycle }),
+        ...options,
+        timeZone: 'UTC',
+      },
+      context,
+    );
+    if ('ok' in formatter) return formatter;
     const milliseconds = plainTimeMilliseconds(value);
     return success(
       'plain-time',
@@ -1286,22 +1280,20 @@ export function formatPlainDateTime(
     if (formattingTag === undefined) {
       return unsupportedNumberingSystem(context);
     }
-    const formatter = sharedFormatters.dateTime(formattingTag, {
-      ...displayCalendar(context.calendar),
-      ...displayCalendar(value.date.calendar),
-      ...(context.hourCycle === undefined
-        ? {}
-        : { hourCycle: context.hourCycle }),
-      ...options,
-      timeZone: 'UTC',
-    });
-    const refusal = plainCalendarRefusal(
-      formatter,
-      value.date,
+    const formatter = dateFormatter(
+      formattingTag,
+      {
+        ...displayCalendar(context.calendar),
+        ...displayCalendar(value.date.calendar),
+        ...(context.hourCycle === undefined
+          ? {}
+          : { hourCycle: context.hourCycle }),
+        ...options,
+        timeZone: 'UTC',
+      },
       context,
-      options,
     );
-    if (refusal !== undefined) return refusal;
+    if ('ok' in formatter) return formatter;
     const milliseconds = date.getTime();
     return success(
       'plain-date-time',
@@ -1340,12 +1332,14 @@ export function formatZonedDateTime(
   context: FormattingContext,
   options: Intl.DateTimeFormatOptions,
 ): FormattingResult {
-  const named = displayCalendar(value.calendar);
-  const formatted = instantFormatted(
+  const formatted = formatInstant(
     value.instant,
-    { ...context, timeZone: value.timeZone, ...named },
+    {
+      ...context,
+      timeZone: value.timeZone,
+      ...displayCalendar(value.calendar),
+    },
     options,
-    options.calendar === undefined ? named.calendar : undefined,
   );
   if (!formatted.ok) return formatted;
   return success(
@@ -1456,10 +1450,14 @@ export function formatInstantRange(
     if (formattingTag === undefined) {
       return unsupportedNumberingSystem(context);
     }
-    const formatter = sharedFormatters.dateTime(
+    const built = dateFormatter(
       formattingTag,
       instantOptions(context, options),
-    ) as Intl.DateTimeFormat & Partial<NativeDateRangeFormatter>;
+      context,
+    );
+    if ('ok' in built) return built;
+    const formatter: Intl.DateTimeFormat & Partial<NativeDateRangeFormatter> =
+      built;
     if (
       typeof formatter.formatRange !== 'function' ||
       typeof formatter.formatRangeToParts !== 'function'

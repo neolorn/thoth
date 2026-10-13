@@ -2025,8 +2025,8 @@ export const injections = Object.freeze([
     invariant:
       'A zoned date-time whose calendar the host resolves to another is reported as an unsupported formatting capability, and is not written in the calendar the host fell back to.',
     source: 'packages/runtime/src/formatting.ts',
-    find: '      calendar !== undefined &&',
-    replace: '      false &&',
+    find: '  return formatter.resolvedOptions().calendar === calendar',
+    replace: '  return calendar === calendar',
     caughtBy: 'packages/runtime/test/zoned-date-time-host-capability.test.ts',
   },
   {
@@ -2038,6 +2038,36 @@ export const injections = Object.freeze([
     replace:
       "  } catch (cause) {\n    if (cause instanceof RangeError) throw cause;\n    return unsupported(\n      'The native date-time capability rejected this profile.',",
     caughtBy: 'packages/runtime/test/zoned-date-time-host-capability.test.ts',
+  },
+  {
+    id: 'context-calendar-the-host-lacks-written-in-another',
+    invariant:
+      'A calendar of the formatting context the host answers with another is reported by every date formatter as an unsupported formatting capability, and no date is written in the calendar the host fell back to.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: '  return formatter.resolvedOptions().calendar === calendar',
+    replace: '  return calendar === calendar',
+    caughtBy:
+      'packages/runtime/test/date-formatter-calendar-capability.test.ts',
+  },
+  {
+    id: 'calendar-name-left-to-the-host',
+    invariant:
+      "A calendar that is not written as a calendar's name is refused before the host is asked, so an upper-case spelling the host would read is not a calendar on one engine and a refusal on another.",
+    source: 'packages/runtime/src/formatting.ts',
+    find: '  if (!isCalendarName(calendar)) {\n    return unsupported(',
+    replace: '  if (false) {\n    return unsupported(',
+    caughtBy:
+      'packages/runtime/test/date-formatter-calendar-capability.test.ts',
+  },
+  {
+    id: 'message-date-calendar-the-host-lacks-written-in-another',
+    invariant:
+      'A date a message writes under a calendar the host answers with another is reported as an unsupported formatting capability.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '    formatter.resolvedOptions().calendar !== options.calendar',
+    replace: '    false',
+    caughtBy:
+      'packages/runtime/test/date-formatter-calendar-capability.test.ts',
   },
   {
     id: 'formatter-cache-key-omits-locale',
@@ -2759,8 +2789,8 @@ export const injections = Object.freeze([
     invariant:
       "An ISO plain date is written in the calendar the formatting context names, under the call's own.",
     source: 'packages/runtime/src/formatting.ts',
-    find: '      ...displayCalendar(context.calendar),\n      ...displayCalendar(value.calendar),',
-    replace: '      ...displayCalendar(value.calendar),',
+    find: '        ...displayCalendar(context.calendar),\n        ...displayCalendar(value.calendar),',
+    replace: '        ...displayCalendar(value.calendar),',
     caughtBy: 'packages/runtime/test/plain-date-context-calendar.test.ts',
   },
   {
@@ -2777,8 +2807,8 @@ export const injections = Object.freeze([
     invariant:
       "A plain date counted in gregory is written in the Gregorian calendar over the formatting context's.",
     source: 'packages/runtime/src/formatting.ts',
-    find: '      ...displayCalendar(context.calendar),\n      ...displayCalendar(value.calendar),',
-    replace: '      ...displayCalendar(context.calendar),',
+    find: '        ...displayCalendar(context.calendar),\n        ...displayCalendar(value.calendar),',
+    replace: '        ...displayCalendar(context.calendar),',
     caughtBy: 'packages/runtime/test/plain-date-calendar.test.ts',
   },
   {
@@ -2786,8 +2816,8 @@ export const injections = Object.freeze([
     invariant:
       "An ISO plain date-time is written in the calendar the formatting context names, under the call's own.",
     source: 'packages/runtime/src/formatting.ts',
-    find: '      ...displayCalendar(context.calendar),\n      ...displayCalendar(value.date.calendar),',
-    replace: '      ...displayCalendar(value.date.calendar),',
+    find: '        ...displayCalendar(context.calendar),\n        ...displayCalendar(value.date.calendar),',
+    replace: '        ...displayCalendar(value.date.calendar),',
     caughtBy: 'packages/runtime/test/plain-date-context-calendar.test.ts',
   },
   {
@@ -2795,9 +2825,9 @@ export const injections = Object.freeze([
     invariant:
       "A plain time is written in the hour cycle the call names over the formatting context's.",
     source: 'packages/runtime/src/formatting.ts',
-    find: 'dateTime(formattingTag, {\n      ...(context.hourCycle === undefined\n        ? {}\n        : { hourCycle: context.hourCycle }),\n      ...options,',
+    find: '      {\n        ...(context.hourCycle === undefined\n          ? {}\n          : { hourCycle: context.hourCycle }),\n        ...options,',
     replace:
-      'dateTime(formattingTag, {\n      ...options,\n      ...(context.hourCycle === undefined\n        ? {}\n        : { hourCycle: context.hourCycle }),',
+      '      {\n        ...options,\n        ...(context.hourCycle === undefined\n          ? {}\n          : { hourCycle: context.hourCycle }),',
     caughtBy: 'packages/runtime/test/call-named-hour-cycle.test.ts',
   },
   {
@@ -2805,9 +2835,9 @@ export const injections = Object.freeze([
     invariant:
       "A plain date-time is written in the hour cycle the call names over the formatting context's.",
     source: 'packages/runtime/src/formatting.ts',
-    find: '      ...displayCalendar(value.date.calendar),\n      ...(context.hourCycle === undefined\n        ? {}\n        : { hourCycle: context.hourCycle }),\n      ...options,',
+    find: '        ...displayCalendar(value.date.calendar),\n        ...(context.hourCycle === undefined\n          ? {}\n          : { hourCycle: context.hourCycle }),\n        ...options,',
     replace:
-      '      ...displayCalendar(value.date.calendar),\n      ...options,\n      ...(context.hourCycle === undefined\n        ? {}\n        : { hourCycle: context.hourCycle }),',
+      '        ...displayCalendar(value.date.calendar),\n        ...options,\n        ...(context.hourCycle === undefined\n          ? {}\n          : { hourCycle: context.hourCycle }),',
     caughtBy: 'packages/runtime/test/call-named-hour-cycle.test.ts',
   },
   {

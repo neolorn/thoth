@@ -122,8 +122,9 @@ A duration is written by the host's `Intl.DurationFormat`, and Node 22 does not 
 `formatDuration` and `localizedDuration` fail with `unsupported-formatting-capability` rather than
 put the units in an order Equator would have to guess.
 
-A zoned date-time fails with the same code where the host has no calendar under the value's name
-or no rules for its zone, rather than being written in another calendar.
+A date fails with the same code where the host has no calendar under the name it was asked for,
+whether the call, the value or the formatting context named it, rather than being written in
+another calendar. A zoned date-time fails with it too where the host has no rules for its zone.
 
 `plainDate` takes a calendar name as a fourth argument, and the numbers are then that calendar's.
 A `gregory` date is the ISO date of the same numbers and is written in the Gregorian calendar
