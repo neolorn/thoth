@@ -114,7 +114,7 @@ A message's rich slots do not form a valid structure: unclosed or mismatched, ne
 
 ### EQ1304
 
-A translation does not honour the source message's contract: it invents a message, changes or invents an input, or omits a required rich slot. Also a recovery identity that does not select an existing plain message with no inputs.
+A translation does not honour the source message's contract: it invents a message, changes or invents an input, or omits a required rich slot.
 
 ### EQ1305
 
@@ -218,7 +218,7 @@ The locale URL policy is not written out whole, so EQ1408 and EQ1409 were not ch
 
 ### EQ1501
 
-A compiled artifact cannot be produced from the accepted graph: a recovery identity that resolves to no single plain message, or a catalog absent from the graph.
+A compiled artifact cannot be produced from the accepted graph: a recovery identity that does not resolve to one existing plain message without inputs or slots, or a catalog absent from the graph.
 
 ### EQ1502
 
