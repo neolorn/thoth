@@ -119,7 +119,9 @@ configured external or remote catalog source. A release MUST exclude generated s
 compiled catalogs, catalog-set descriptors, caches, reports, pseudo-locales, interchange documents,
 build output, declaration-only dependencies, ignored content, and unrelated projects unless an
 explicit supported local role says otherwise, and MUST fail deterministically on a complete catalog
-or message identity collision outside a declared compatible override layer.
+or message identity collision outside a declared compatible override layer. A release MUST NOT read
+a TypeScript source that lies behind a link inside the owner, and MUST report it as a project
+diagnostic that names the source and the link by their paths relative to the owner.
 
 A consumer application's pages, products, articles, comments, user-authored values, and other
 runtime domain records MUST NOT become a compiler input, a generated message contract, a

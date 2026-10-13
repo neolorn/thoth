@@ -126,6 +126,25 @@ export const injections = Object.freeze([
     caughtBy: 'packages/toolkit/test/compile-project-owner-identity.test.ts',
   },
   {
+    id: 'linked-analysis-source-read',
+    invariant:
+      'A TypeScript source behind a link inside the owner is reported and not read.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '    const linked = await linkedSegment(location.ownerRoot, path);',
+    replace: '    const linked = undefined as string | undefined;',
+    caughtBy: 'packages/toolkit/test/host-environment-failures.test.ts',
+  },
+  {
+    id: 'generation-lock-kept-after-a-refused-inventory',
+    invariant:
+      'A generation refused for what its generated root holds gives its lock back.',
+    source: 'packages/toolkit/src/output-host.ts',
+    find: "    // throwing, so the refusal is reported as the root's and the lock is given back.\n    await releaseLock();",
+    replace:
+      "    // throwing, so the refusal is reported as the root's and the lock is given back.",
+    caughtBy: 'packages/toolkit/test/output-host-linked-content.test.ts',
+  },
+  {
     id: 'translator-notes-dropped',
     invariant:
       'Authored description and context reach the translator as XLIFF notes.',
@@ -1758,8 +1777,9 @@ export const injections = Object.freeze([
     invariant:
       'A corrupt incremental cache is ignored with an info note and recomputed, never a failure.',
     source: 'packages/toolkit/src/project-host.ts',
-    find: '    if (error instanceof SyntaxError) {',
-    replace: '    if (false) {',
+    find: "    if (error instanceof SyntaxError) return ignoredCompilerCache('a corrupt');",
+    replace:
+      "    if (false as boolean) return ignoredCompilerCache('a corrupt');",
     caughtBy: 'packages/toolkit/test/project-host.test.ts',
   },
   {

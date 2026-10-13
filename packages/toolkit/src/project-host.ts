@@ -453,16 +453,26 @@ async function assertOrdinaryContainedPath(
   if (!containedPath(target, ownerRoot)) {
     throw new TypeError(`Equator path escapes its selected owner: ${target}`);
   }
+  const linked = await linkedSegment(ownerRoot, target);
+  if (linked !== undefined) {
+    throw new TypeError(`Equator refuses linked project content: ${linked}`);
+  }
+}
+
+/** The first link on the way from the owner down to a path inside it, where there is one. */
+async function linkedSegment(
+  ownerRoot: string,
+  target: string,
+): Promise<string | undefined> {
   const portable = relative(ownerRoot, target);
   let current = ownerRoot;
   for (const segment of portable === '' ? [] : portable.split(sep)) {
     current = resolve(current, segment);
     const metadata = await pathMetadata(current);
-    if (metadata === undefined) break;
-    if (metadata.isSymbolicLink()) {
-      throw new TypeError(`Equator refuses linked project content: ${current}`);
-    }
+    if (metadata === undefined) return undefined;
+    if (metadata.isSymbolicLink()) return current;
   }
+  return undefined;
 }
 
 async function readUtf8(path: string, maximumBytes: number): Promise<string> {
@@ -1535,7 +1545,16 @@ async function loadAnalysisGraph(
     return true;
   };
   for (const path of rootNames) {
-    await assertOrdinaryContainedPath(location.ownerRoot, path);
+    // A root outside the owner was refused above, so a link on the way to this one is all that
+    // is left, and it is the project's fact to report and not a failure of the call.
+    const linked = await linkedSegment(location.ownerRoot, path);
+    if (linked !== undefined) {
+      return toolkitFailure([
+        projectDiagnostic(
+          `The selected TypeScript graph contains root ${JSON.stringify(portablePath(location.ownerRoot, path))} behind the link ${JSON.stringify(portablePath(location.ownerRoot, linked))}, and Equator reads no linked project content.`,
+        ),
+      ]);
+    }
     const read = await readAuthoredText(location.ownerRoot, path, {
       code: 'EQ1403',
       name: 'the analysis source',
@@ -1809,6 +1828,34 @@ function compilerCacheContents(ownerId: string, state: CompilerState): string {
   return `${JSON.stringify(envelope, null, 2)}\n`;
 }
 
+const COMPILER_CACHE_BYTES = 4 * 1024 * 1024;
+
+/**
+ * A cache that is on disk and is not used, with the advisory that says so.
+ *
+ * The empty owner identity is what makes the compilation that follows start from nothing.
+ */
+function ignoredCompilerCache(
+  what: 'a corrupt' | 'an incompatible' | 'a linked' | 'an oversized',
+): CachedCompilerState {
+  return Object.freeze({
+    ownerId: '',
+    state: Object.freeze({
+      profile: 'equator-compiler-state/1',
+      inputFingerprint: 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      outputPlanDigest: 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      inputs: Object.freeze([]),
+    }),
+    diagnostics: Object.freeze([
+      toolkitDiagnostic(
+        'EQ1703',
+        `Equator ignored ${what} incremental compiler cache and will recompute it.`,
+        { severity: 'info' },
+      ),
+    ]),
+  });
+}
+
 async function readCompilerCache(
   project: ProjectLocation,
 ): Promise<CachedCompilerState | undefined> {
@@ -1817,31 +1864,21 @@ async function readCompilerCache(
     ...COMPILER_CACHE_PATH.split('/'),
   );
   if (!(await pathExists(cachePath))) return undefined;
-  await assertOrdinaryContainedPath(project.ownerRoot, cachePath);
+  // The cache is disposable, so one that is not an ordinary file of a bounded size is passed over
+  // and recomputed, and neither followed nor read whole.
+  if ((await linkedSegment(project.ownerRoot, cachePath)) !== undefined) {
+    return ignoredCompilerCache('a linked');
+  }
+  const metadata = await pathMetadata(cachePath);
+  if (metadata === undefined) return undefined;
+  if (metadata.size > COMPILER_CACHE_BYTES) {
+    return ignoredCompilerCache('an oversized');
+  }
   let value: unknown;
   try {
-    value = JSON.parse(await readUtf8(cachePath, 4 * 1024 * 1024));
+    value = JSON.parse(await readUtf8(cachePath, COMPILER_CACHE_BYTES));
   } catch (error) {
-    if (error instanceof SyntaxError) {
-      return Object.freeze({
-        ownerId: '',
-        state: Object.freeze({
-          profile: 'equator-compiler-state/1',
-          inputFingerprint:
-            'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-          outputPlanDigest:
-            'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-          inputs: Object.freeze([]),
-        }),
-        diagnostics: Object.freeze([
-          toolkitDiagnostic(
-            'EQ1703',
-            'Equator ignored a corrupt incremental compiler cache and will recompute it.',
-            { severity: 'info' },
-          ),
-        ]),
-      });
-    }
+    if (error instanceof SyntaxError) return ignoredCompilerCache('a corrupt');
     throw error;
   }
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -1850,13 +1887,20 @@ async function readCompilerCache(
   const record = value as Record<string, unknown> | undefined;
   const state = parseCompilerState(record?.['state']);
   const ownerId = record?.['ownerId'];
-  const expectedDigest =
-    typeof ownerId === 'string' && state !== undefined
-      ? digestCanonicalJson('equator-compiler-cache-state/1', {
-          ownerId,
-          state: JSON.parse(JSON.stringify(state)),
-        })
-      : undefined;
+  let expectedDigest: string | undefined;
+  try {
+    expectedDigest =
+      typeof ownerId === 'string' && state !== undefined
+        ? digestCanonicalJson('equator-compiler-cache-state/1', {
+            ownerId,
+            state: JSON.parse(JSON.stringify(state)),
+          })
+        : undefined;
+  } catch {
+    // Canonical JSON refuses text that is not well-formed Unicode, which a cache this writer
+    // produced never holds. With no digest to compare, the cache is passed over below.
+    expectedDigest = undefined;
+  }
   if (
     record === undefined ||
     Object.keys(record).sort().join(',') !==
@@ -1866,22 +1910,7 @@ async function readCompilerCache(
     state === undefined ||
     record['stateDigest'] !== expectedDigest
   ) {
-    return Object.freeze({
-      ownerId: '',
-      state: Object.freeze({
-        profile: 'equator-compiler-state/1',
-        inputFingerprint: 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        outputPlanDigest: 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        inputs: Object.freeze([]),
-      }),
-      diagnostics: Object.freeze([
-        toolkitDiagnostic(
-          'EQ1703',
-          'Equator ignored an incompatible incremental compiler cache and will recompute it.',
-          { severity: 'info' },
-        ),
-      ]),
-    });
+    return ignoredCompilerCache('an incompatible');
   }
   return Object.freeze({
     ownerId,
@@ -3277,7 +3306,15 @@ export async function watchProject(
       ),
     ]);
   }
-  options.signal.addEventListener('abort', stop, { once: true });
+  try {
+    options.signal.addEventListener('abort', stop, { once: true });
+  } catch (error) {
+    // The signal is the caller's object and the watcher is open by here, so a signal that
+    // cannot be listened to is answered with the watcher closed before the error is passed on.
+    stop();
+    await closed;
+    throw error;
+  }
   await cycle();
   if (options.signal.aborted && !isRunning()) stop();
   await done;

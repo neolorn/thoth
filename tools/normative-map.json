@@ -3860,6 +3860,12 @@
     },
     {
       "spec": "10-compiler-and-tooling.spec.md",
+      "section": "4. Inputs and discovery",
+      "statement": "A release MUST NOT read a TypeScript source that lies behind a link inside the owner, and MUST report it as a project diagnostic that names the source and the link by their paths relative to the owner.",
+      "checks": ["assurance:linked-analysis-source-read"]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
       "section": "3. First generation",
       "statement": "A release MUST NOT write the provisional overlay, import it at run time, cache it as an authority, or expose it as a second generated interface.",
       "checks": ["assurance:provisional-overlay-published-as-output"]

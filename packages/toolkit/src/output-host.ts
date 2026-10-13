@@ -606,7 +606,9 @@ export async function inspectOutputFreshness(
 ): Promise<ToolkitResult<OutputFreshness>> {
   try {
     const roots = await validateRoots(request);
-    return freshness(roots.generatedRoot, request.ownerId, request.plan);
+    // Awaited inside the `try`, because the inventory walk refuses a link or a special file by
+    // throwing and a promise returned unawaited would carry that past the `catch`.
+    return await freshness(roots.generatedRoot, request.ownerId, request.plan);
   } catch (error) {
     return toolkitFailure([
       toolkitDiagnostic(
@@ -658,11 +660,20 @@ export async function applyOutputPlan(
       ]);
     }
   }
-  const state = await freshness(
-    roots.generatedRoot,
-    request.ownerId,
-    request.plan,
-  );
+  let state: ToolkitResult<OutputFreshness>;
+  try {
+    state = await freshness(roots.generatedRoot, request.ownerId, request.plan);
+  } catch (error) {
+    // The lock is held by here, and the inventory walk refuses a link or a special file by
+    // throwing, so the refusal is reported as the root's and the lock is given back.
+    await releaseLock();
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'EQ1601',
+        error instanceof Error ? error.message : String(error),
+      ),
+    ]);
+  }
   if (!state.ok) {
     await releaseLock();
     return state;
