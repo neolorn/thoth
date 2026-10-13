@@ -427,17 +427,14 @@ function semanticDiagnostic(
   const missing =
     anchor === undefined || anchor.resolved >= path.length
       ? ''
-      : ` Reported at ${pointerText(path.slice(0, anchor.resolved))}, because ${pointerText(path)} is not in this file.`;
+      : // Never the document root: a path here begins at `messages` or `families`, and the
+        // catalog it is reported in holds that key, so at least one step resolved.
+        ` Reported at ${path.slice(0, anchor.resolved).join('/')}, because ${path.join('/')} is not in this file.`;
   return toolkitDiagnostic(code, `${summary}${missing}`, {
     path,
     severity,
     ...(anchor === undefined ? {} : { span: anchor.span }),
   });
-}
-
-/** A JSON pointer as a reader would say it, and the document root said out loud. */
-function pointerText(path: readonly (string | number)[]): string {
-  return path.length === 0 ? 'the document root' : path.join('/');
 }
 
 function functionOperandType(
@@ -1231,14 +1228,10 @@ interface PluralSelector {
 function requiredPluralCategories(
   locale: string,
   kind: PluralSelectKind,
-): readonly string[] {
-  return (
-    pluralCategoriesForLocale(
-      kind === 'ordinal'
-        ? ORDINAL_PLURAL_CATEGORIES
-        : CARDINAL_PLURAL_CATEGORIES,
-      locale,
-    ) ?? ['other']
+): readonly string[] | undefined {
+  return pluralCategoriesForLocale(
+    kind === 'ordinal' ? ORDINAL_PLURAL_CATEGORIES : CARDINAL_PLURAL_CATEGORIES,
+    locale,
   );
 }
 
@@ -1282,7 +1275,7 @@ function pluralTableIndex(
  * script or region in another. It is on subtag boundaries, so `pt-PT` does not answer for `pt-PTX`.
  *
  * `undefined` rather than a default, so the caller decides what an unlisted language means. CLDR
- * expresses "only `other`" by omitting the language, and `requiredPluralCategories` says so.
+ * expresses "only `other`" by omitting the language, and the coverage check that reads this asks nothing of one.
  */
 export function pluralCategoriesForLocale(
   table: Readonly<Record<string, readonly string[]>>,
@@ -1390,7 +1383,9 @@ function validateTargetPluralCoverage(
     // The requirement is per selector, because one message can select cardinally at one position
     // and ordinally at another, and the two tables disagree for most languages.
     const required = requiredPluralCategories(targetCatalog.locale, kind);
-    if (required.length <= 1) continue;
+    // CLDR leaves a language out where `other` is its only category, and one category asks
+    // nothing of a target either way.
+    if (required === undefined || required.length <= 1) continue;
 
     const supplied = suppliedKeys(targetMessage.semantics, position);
     // An exact-value key such as `1` is a legitimate MF2 refinement, not a category, so it neither

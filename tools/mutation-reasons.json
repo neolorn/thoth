@@ -6071,14 +6071,6 @@
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "ConditionalExpression",
-      "original": "path.length === 0",
-      "replacement": "false",
-      "category": "message-wording",
-      "reason": "pointerText only builds the \"Reported at\" sentence appended to a diagnostic summary on line 409; without the test an anchor that resolved no segment is worded as an empty string instead of \"the document root\", and no code, path or span changes."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
       "mutator": "StringLiteral",
       "original": "`Custom message function option ${JSON.stringify(authored)} is incompatible with its portable descriptor.`",
       "replacement": "``",
@@ -6239,7 +6231,7 @@
       "original": "required.length <= 1",
       "replacement": "required.length < 1",
       "category": "equivalent",
-      "reason": "The two forms differ only for a row of exactly one category, and such a row is ['other'] in both pinned tables and in the default on line 1199. The filter on line 1342 drops 'other', so line 1345 continues for that row just as this line does."
+      "reason": "The two forms differ only for a row of exactly one category, and such a row is ['other'] in both pinned tables. The filter below drops 'other', so the loop continues for that row at the next test just as it does at this one."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6247,7 +6239,7 @@
       "original": "required.length <= 1",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "A row of one category is ['other']: every row of the two pinned tables contains 'other' and none is empty, and the default on line 1199 is ['other']. The filter on line 1342 drops 'other', nothing is missing, and line 1345 continues where this line would have."
+      "reason": "A row of one category is ['other']: every row of the two pinned tables contains 'other' and none is empty. The filter below drops 'other', nothing is missing, and the loop continues at the next test where this one would have."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7051,22 +7043,6 @@
       "replacement": "``",
       "category": "message-wording",
       "reason": "The whole summary of the EQ1302 finding for an input used under two operand types; its code and its path are what the cases compare."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "StringLiteral",
-      "original": "`Rich slot ${JSON.stringify(part.name)} closes ${JSON.stringify(opened ?? 'no open slot')}.`",
-      "replacement": "``",
-      "category": "message-wording",
-      "reason": "The whole summary of the EQ1303 finding for a closing element that names another slot; its code and its path are what the cases compare."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "LogicalOperator",
-      "original": "opened ?? 'no open slot'",
-      "replacement": "opened && 'no open slot'",
-      "category": "message-wording",
-      "reason": "The expression is interpolated into the summary of the EQ1303 finding on line 871 and read nowhere else: it chooses the text that stands for the slot that was open."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
