@@ -25,7 +25,7 @@ For a detailed description of the architecture and the contracts between the two
   - Pseudo-localization for layout and expansion testing.
   - Evaluator verified against the MessageFormat working group's conformance test suite on every release.
 - **Locales**
-  - Locale identifiers per [RFC 5646](https://www.rfc-editor.org/rfc/rfc5646), canonicalized through `Intl.getCanonicalLocales`.
+  - Locale identifiers per [RFC 5646](https://www.rfc-editor.org/rfc/rfc5646), canonicalized from pinned CLDR alias data, identical across engines.
   - Negotiation per [RFC 4647](https://www.rfc-editor.org/rfc/rfc4647) lookup, extended with script matching and [CLDR language matching](https://www.unicode.org/reports/tr35/tr35.html#LanguageMatching) data.
   - Resolution from the URL, a persisted preference, `Accept-Language`, or a configured default, in a declared order.
   - Persistence through cookies, browser storage, or an authenticated profile.

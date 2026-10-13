@@ -17,7 +17,7 @@ Catalogs are compiled by [`@neolorn/equator-toolkit`](https://www.npmjs.com/pack
   - Fallback through the [CLDR parent locale](https://www.unicode.org/reports/tr35/tr35.html#Parent_Locales) chain, then the source locale.
   - A recovery message and an accessible recovery renderer for the case where no catalog can be loaded.
 - **Locales**
-  - Identifiers per [RFC 5646](https://www.rfc-editor.org/rfc/rfc5646), canonicalized through `Intl.getCanonicalLocales`.
+  - Identifiers per [RFC 5646](https://www.rfc-editor.org/rfc/rfc5646), canonicalized from pinned CLDR alias data, identical across engines.
   - Negotiation per [RFC 4647](https://www.rfc-editor.org/rfc/rfc4647) lookup, extended with script matching and [CLDR language matching](https://www.unicode.org/reports/tr35/tr35.html#LanguageMatching) data.
   - Resolution from the URL, a persisted preference, `Accept-Language`, or a configured default, in a declared order.
   - Persistence through cookies, browser storage, or an authenticated profile.
