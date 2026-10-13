@@ -78,7 +78,7 @@
       "replacement": "\"Stryker was here!\"",
       "category": "equivalent",
       "reason": "It stands in for an absent header only, and the replacement text spells no directive that lines 916 to 931 read, so the reading is the same empty one. It stands in for a missing argument only, and neither the empty string nor the replacement matches the digits pattern beside it, so the lifetime is 0 either way. createPathPrefixLocalePolicy holds every prefix to validPrefix, at least one character (lines 1156 and 1376), and refuses a default locale outside the set (line 1388), so the default locale's prefix is never undefined or empty once line 4946 has let a policy through. With an empty prefix the general branch returns the same path: `startsWith('')` holds, `slice(0)` is the path, and the path is never empty because line 5158 takes it from pathOnlyTarget, which begins with \"/\".",
-      "count": 4
+      "count": 3
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -247,34 +247,10 @@
     {
       "file": "packages/runtime/core/src/routing.ts",
       "mutator": "StringLiteral",
-      "original": "`${label} must be a trusted absolute HTTP origin.`",
-      "replacement": "``",
-      "category": "message-wording",
-      "reason": "The literal is the text of the refusal message for an origin that is not a URL; the refusal is asserted by its code and outcome, and nothing compares the wording."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "StringLiteral",
       "original": "`${label} must use HTTP or HTTPS.`",
       "replacement": "``",
       "category": "message-wording",
       "reason": "The literal is the text of the refusal message for an origin that is not HTTP or HTTPS; the refusal is asserted by its code and outcome, and nothing compares the wording."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "StringLiteral",
-      "original": "`${label} must be a credential-free HTTP origin only.`",
-      "replacement": "``",
-      "category": "message-wording",
-      "reason": "The literal is the text of the refusal message for an origin that carries more than an origin; the refusal is asserted by its code and outcome, and nothing compares the wording."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "StringLiteral",
-      "original": "'x-default must be an origin-relative trusted path.'",
-      "replacement": "\"\"",
-      "category": "message-wording",
-      "reason": "The literal is the text of the refusal message for an x-default path that is not origin-relative; the refusal is asserted by its code and outcome, and nothing compares the wording."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -509,7 +485,7 @@
       "replacement": "\"\"",
       "category": "equivalent",
       "reason": "the separator of the address quoted inside the refusal message This is the literal the path is compared with, not the one written: the comparison then never holds, and the other arm writes canonicalPath, which is the same slash where it did hold. Every text then starts with the prefix and is returned unchecked, and text the check on the line after would refuse resolves as malformed in the default locale, which both callers answer as they do for no target. An empty `pathOnly` gives the same string in both arms, and the root then takes the other arm, where the prefix followed by \"/\" answers a 308 correction that followPermanentRedirect follows to the same resolution.",
-      "count": 4
+      "count": 2
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -601,7 +577,7 @@
       "replacement": "true",
       "category": "equivalent",
       "reason": "localeNeutralRoots holds strings, so includes(undefined) is false and the condition has the same value with the guard removed localeIntent(undefined) tests the text \"undefined\", nine letters, against a pattern that allows three, so it is false exactly as the guard is The first segment is undefined only for the root address, and includes(undefined) is false for the list of strings a policy holds as its roots, so the block is skipped either way.",
-      "count": 4
+      "count": 3
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -2564,14 +2540,6 @@
     },
     {
       "file": "packages/runtime/src/formatting.ts",
-      "mutator": "ConditionalExpression",
-      "original": "probe.getUTCDate() !== day",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "setUTCFullYear with a month of 1 to 12 and a day of 1 to 31 either lands on the date asked for or overflows the day into the next month (or yields an invalid date, where all three getters are NaN), so the month and the day clauses each fail exactly when any of the three does and plainDate bound the fields that make it so."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
       "original": "'An ISO plain date does not exist.'",
       "replacement": "\"\"",
@@ -2694,26 +2662,10 @@
     {
       "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
-      "original": "'The native formatter cannot represent this exact decimal without precision loss.'",
-      "replacement": "\"\"",
-      "category": "message-wording",
-      "reason": "The literal is the message of the refusal of a decimal the number type would round; it is read by a person and nothing compares, parses or returns it as data apart from the diagnostic's message field."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "StringLiteral",
       "original": "'The formatted result exceeds the fixed runtime output ceiling.'",
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The literal is the message of the output-ceiling refusal; it is read by a person and nothing compares, parses or returns it as data apart from the diagnostic's message field."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "StringLiteral",
-      "original": "'The native number-formatting capability rejected this profile.'",
-      "replacement": "\"\"",
-      "category": "message-wording",
-      "reason": "The literal is the message of the refusal the native number formatter raised; it is read by a person and nothing compares, parses or returns it as data apart from the diagnostic's message field."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -3039,14 +2991,6 @@
     },
     {
       "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "typeof locale !== 'string'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The locale list holds only strings (line 1081), so an alias target that is not a string fails locales.includes(locale) on line 1095."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
       "mutator": "StringLiteral",
       "original": "'Generated localization scopes contain a duplicate identity.'",
       "replacement": "\"\"",
@@ -3178,14 +3122,6 @@
     {
       "file": "packages/runtime/src/localization.ts",
       "mutator": "StringLiteral",
-      "original": "'scope-unavailable'",
-      "replacement": "\"\"",
-      "category": "unreachable",
-      "reason": "A rejected lease carries scope-unavailable only from LocalCatalogStore.artifact (catalog-runtime.ts:1094) for a locale with no artifact, and acquireScope asks only for locales store.has admitted (1518-1523) after refusing a missing source catalog at 1557."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "StringLiteral",
       "original": "'requiredScopes'",
       "replacement": "\"\"",
       "category": "message-wording",
@@ -3313,7 +3249,7 @@
       "replacement": "this.active.publicSnapshot",
       "category": "equivalent",
       "reason": "active is undefined here only after dispose, which aborted the transition controller (2929); the catch at 2413 reports an aborted transition as cancelled whatever was thrown. this.active is undefined after 2287 only once dispose has run, and dispose aborts this controller (2929), so the check on 2371 throws before this line reads it. The committed snapshot is set by the initialization awaited on line 2287 and cleared only by dispose (line 2959), which aborts the pending controller first (line 2929), and line 2371 throws on an aborted signal with no await between it and this line. active is undefined here only after dispose, which aborted the transition controller (2929); the catch at 2413 reports an aborted transition as cancelled whatever was thrown. this.active is undefined after 2287 only once dispose has run, and dispose aborts this controller (2929), so the check on 2371 throws before this line reads it. The committed snapshot is set by the initialization awaited on line 2287 and cleared only by dispose (line 2959), which aborts the pending controller first (line 2929), and line 2371 throws on an aborted signal with no await between it and this line.",
-      "count": 4
+      "count": 2
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -3551,8 +3487,7 @@
       "original": "false",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "numberOptions is used to render the single digits 0 to 9, 1.1 and plus or minus 1, none of which is long enough to be grouped, and numberSyntax sets useGrouping itself for the one rendering that is. a month or a day of a date plainDate admits has at most two digits, which no locale groups, and a larger hand-built field fails the round trip either way",
-      "count": 2
+      "reason": "numberOptions is used to render the single digits 0 to 9, 1.1 and plus or minus 1, none of which is long enough to be grouped, and numberSyntax sets useGrouping itself for the one rendering that is. a month or a day of a date plainDate admits has at most two digits, which no locale groups, and a larger hand-built field fails the round trip either way"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -3610,7 +3545,7 @@
       "replacement": "\"Stryker was here!\"",
       "category": "equivalent",
       "reason": "The default applies only to a two-field text, which passes parsePlainTime only at minute precision, where the seconds field is never read the initial value is read only at fraction precision, where parsePlainTime has replaced it the default applies only at minute precision, where parsePlainTime does not read the seconds digits the default applies only outside fraction precision, where parsePlainTime does not read the fraction digits fractionField is read only in parsePlainTime, under precision === 'fraction', and parsePlainTime has assigned it by then, so its initial text is never read. secondDigits takes its default only under precision 'minute', where the list holds two fields, and parsePlainTime reads it only under another precision. fractionDigits takes its default only where precision is not 'fraction', and parsePlainTime reads it only under precision 'fraction'. The fraction field is read only where the profile reads a fraction, and on that path it is assigned from the split seconds field before it is read, so its starting text is never seen. The default applies only where the profile reads hours and minutes alone, and every later read of the seconds digits is behind a test that the precision is not minute. The default applies only where the profile reads no fraction, and every later read of the fraction digits is behind a test that the precision is fraction.",
-      "count": 7
+      "count": 5
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4435,14 +4370,6 @@
     {
       "file": "packages/runtime/src/localized-input.ts",
       "mutator": "ConditionalExpression",
-      "original": "!validTimePattern(profile)",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "text written under an invalid pattern is refused when verifyFormattedInput re-reads it (parsePlainTime), which returns the same invalid-localized-input failure; only the message differs"
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "ConditionalExpression",
       "original": "(profile.precision === 'minute' &&\n      (value.second !== 0 || value.nanosecond !== 0)) ||\n    (profile.precision === 'second' && value.nanosecond !== 0)",
       "replacement": "false",
       "category": "equivalent",
@@ -4511,7 +4438,7 @@
       "replacement": "{}",
       "category": "equivalent",
       "reason": "Without this early return localizedDateText, localizedTimeText, localizedDurationText or localizedTimeZoneText either throws on a local the try left unassigned, which formatLocalizedInput reports, or writes text that verifyFormattedInput reads back as a different value; each gives the same invalid-localized-input failure and only the message differs.",
-      "count": 4
+      "count": 3
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -6378,14 +6305,6 @@
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "OptionalChaining",
-      "original": "byName.get(current)?.value",
-      "replacement": "byName.get(current).value",
-      "category": "unreachable",
-      "reason": "Every name the walk reaches has a declaration: the MessageFormat parser refuses a .match selector that no declaration annotates (missing-selector-annotation, reported by parseMessageSemanticModel as EQ1202), and a binding to a name nothing declares carries no annotation, so byName.get(current) in pluralSelectorPositions is never undefined for a message parseCatalog admitted."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
       "mutator": "StringLiteral",
       "original": "'plural'",
       "replacement": "\"\"",
@@ -6589,30 +6508,6 @@
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "Regex",
-      "original": "/-([a-z0-9])/gu",
-      "replacement": "/-([^a-z0-9])/gu",
-      "category": "equivalent",
-      "reason": "Because a family name is held to [a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)* (schemas.ts lines 401 to 404), a hyphen is always followed by a lower-case letter and the changed pattern never matches, leaving the projected name equal to the family name. The name is read only to find two families that project alike, and distinct names stay distinct under both projections: the original is one-to-one on that grammar, since each capital marks where a hyphen was."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "ConditionalExpression",
-      "original": "existingProjection !== undefined",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "Two families cannot project to one generated name: a family name is held to [a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)* (schemas.ts lines 401 to 404) and the projection on lines 1693 to 1695 is one-to-one on that grammar, since each capital it writes marks a removed hyphen. existingProjection on line 1696 is therefore always undefined."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "CallExpression",
-      "original": "projectedNames.set(projectedName, name);",
-      "replacement": ";",
-      "category": "equivalent",
-      "reason": "projectedNames is read only by the lookup on line 1696, and that lookup never finds an earlier family, because a family name is held to [a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)* (schemas.ts lines 401 to 404) and the projection on line 1693 is one-to-one on that grammar. An empty map answers the same undefined."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
       "mutator": "StringLiteral",
       "original": "`Open family ${JSON.stringify(name)} has no current source member.`",
       "replacement": "``",
@@ -6698,14 +6593,6 @@
       "replacement": "\"\"",
       "category": "equivalent",
       "reason": "at the comparison in referencedExtensions: the registry refuses a descriptor in the equator namespace (descriptorError in extensions.ts), so the key added for a built-in segment finds no descriptor in the lookup that follows and is dropped"
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "ConditionalExpression",
-      "original": "reference === undefined",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "the MessageFormat parser refuses a selector no declaration annotates (missing-selector-annotation, reported by parseMessageSemanticModel), so the walk along the bindings in pluralSelectorPositions always ends at a function"
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7352,25 +7239,9 @@
       "file": "packages/toolkit/src/semantic-model.ts",
       "mutator": "ConditionalExpression",
       "original": "existingTemplate !== undefined",
-      "replacement": "true",
-      "category": "message-wording",
-      "reason": "The condition on line 1717 only chooses between two summaries of one EQ1305 finding with one path, the duplicate-template sentence and the generated-name sentence, so the change puts the first sentence on both."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "ConditionalExpression",
-      "original": "existingTemplate !== undefined",
       "replacement": "false",
       "category": "message-wording",
       "reason": "The condition on line 1717 only chooses between two summaries of one EQ1305 finding with one path, the duplicate-template sentence and the generated-name sentence, so the change puts the second sentence on both."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "EqualityOperator",
-      "original": "existingTemplate !== undefined",
-      "replacement": "existingTemplate === undefined",
-      "category": "message-wording",
-      "reason": "The condition on line 1717 only chooses between two summaries of one EQ1305 finding with one path, the duplicate-template sentence and the generated-name sentence, so the change swaps which sentence a finding carries."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
