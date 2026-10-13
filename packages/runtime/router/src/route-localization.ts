@@ -67,6 +67,7 @@ import {
   type RouteDocumentField,
 } from './document-messages.js';
 import {
+  derivedScopes,
   navigationScopes,
   putBackPageLeft,
   refuseOptionsOfAnotherKind,
@@ -277,15 +278,6 @@ function configuredScopes(
       routeId
     ] ?? Object.freeze([])
   );
-}
-
-/** The scopes the generated route table says this route brings in. */
-function derivedScopes(
-  projection: RouteRuntimeProjection,
-  routeId: string,
-): readonly LocalizationScope[] {
-  const entry = projection.generated.routes.find(({ id }) => id === routeId);
-  return entry?.scopes ?? Object.freeze([]);
 }
 
 /**
@@ -714,14 +706,9 @@ export class RouteLocalization {
     declared: string | undefined,
     policy: LocaleUrlPolicy,
   ): string | undefined {
-    if (policy.kind !== 'locale-host') {
-      if (declared === undefined) return undefined;
-      try {
-        return new URL(declared).origin;
-      } catch {
-        return undefined;
-      }
-    }
+    // Read under a host policy alone, by `crossOriginAddress`: every other policy keeps every
+    // locale in one origin, so there is no other origin to tell this one from.
+    if (policy.kind !== 'locale-host') return undefined;
     const refuse = (problem: string, cause?: unknown): never => {
       throw new LocalizationError(
         {

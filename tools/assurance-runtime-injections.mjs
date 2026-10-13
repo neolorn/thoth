@@ -32,7 +32,7 @@ export const injections = Object.freeze([
     id: 'route-scopes-not-derived',
     invariant:
       'A route loads the scopes the generated table says it needs, without the application listing them.',
-    source: 'packages/runtime/router/src/route-localization.ts',
+    source: 'packages/runtime/router/src/navigation-scopes.ts',
     // The whole body, and both parameters kept referenced. Taking the derivation out leaves the
     // lookup with no reader and the parameters with no use, and `noUnusedLocals` and
     // `noUnusedParameters` refuse to compile either, so the injected build failed rather than
@@ -41,13 +41,11 @@ export const injections = Object.freeze([
     // used, and it is the honest shape here too: this is the derivation switched off.
     find: [
       '  const entry = projection.generated.routes.find(({ id }) => id === routeId);',
-      '  return entry?.scopes ?? Object.freeze([]);',
+      '  return entry?.scopes ?? NONE;',
     ].join('\n'),
-    replace: [
-      '  void projection;',
-      '  void routeId;',
-      '  return Object.freeze([]);',
-    ].join('\n'),
+    replace: ['  void projection;', '  void routeId;', '  return NONE;'].join(
+      '\n',
+    ),
   },
   {
     id: 'progressive-scope-left-out-of-a-first-render',

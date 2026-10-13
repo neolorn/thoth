@@ -13,6 +13,7 @@ import {
   type LocaleChangeResult,
   type LocalizationScope,
   type LocalizationSnapshot,
+  type RouteRuntimeProjection,
   ɵlistOption,
   ɵrecordOption,
 } from '@neolorn/equator/core';
@@ -82,6 +83,22 @@ export function refuseOptionsOfAnotherKind(options: unknown): void {
   }
 }
 
+const NONE: readonly LocalizationScope[] = Object.freeze([]);
+
+/**
+ * The scopes the generated route table says a route brings in.
+ *
+ * None for a route the table lists without any: generation leaves the field out where the first
+ * render already carries everything the route reads.
+ */
+export function derivedScopes(
+  projection: RouteRuntimeProjection,
+  routeId: string,
+): readonly LocalizationScope[] {
+  const entry = projection.generated.routes.find(({ id }) => id === routeId);
+  return entry?.scopes ?? NONE;
+}
+
 /** What a navigation is deciding from. */
 export interface NavigationScopeInput {
   /** The mode the integration was configured with. */
@@ -115,8 +132,6 @@ function mergeScopes(
   }
   return Object.freeze([...merged.values()]);
 }
-
-const NONE: readonly LocalizationScope[] = Object.freeze([]);
 
 export function navigationScopes(
   input: NavigationScopeInput,
