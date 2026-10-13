@@ -73,6 +73,64 @@ const packageSourceRoots = () => {
   return roots.sort();
 };
 
+/**
+ * A mutation reading in which every recorded mutant survives where its text stands, written into
+ * the copy as two reports, one per package, with `edit` applied: the one thing wrong with it.
+ * Answers the plant and the arguments that name the reports to the stage.
+ */
+const plantReading = (edit) => {
+  const names = ['reading-runtime.json', 'reading-toolkit.json'];
+  return {
+    args: (root) => ['--report', ...names.map((name) => resolve(root, name))],
+    plant: async (root) => {
+      const record = JSON.parse(
+        readFileSync(resolve(root, 'tools/mutation-reasons.json'), 'utf8'),
+      );
+      const reports = names.map(() => ({ files: {} }));
+      const placed = [];
+      for (const entry of record.survivors) {
+        const report =
+          reports[entry.file.startsWith('packages/toolkit/') ? 1 : 0];
+        report.files[entry.file] ??= {
+          source: readFileSync(resolve(root, entry.file), 'utf8').replaceAll(
+            '\r\n',
+            '\n',
+          ),
+          mutants: [],
+        };
+        const { source, mutants } = report.files[entry.file];
+        const position = (offset) => {
+          const before = source.slice(0, offset);
+          return {
+            line: before.split('\n').length,
+            column: offset - before.lastIndexOf('\n'),
+          };
+        };
+        const own = [];
+        let from = 0;
+        for (let place = 0; place < (entry.count ?? 1); place += 1) {
+          const start = source.indexOf(entry.original, from);
+          from = start + entry.original.length;
+          own.push({
+            mutatorName: entry.mutator,
+            replacement: entry.replacement,
+            status: 'Survived',
+            coveredBy: ['planted'],
+            testsCompleted: 1,
+            location: { start: position(start), end: position(from) },
+          });
+        }
+        mutants.push(...own);
+        placed.push(own);
+      }
+      edit({ record, reports, mutantsOf: (index) => placed[index] });
+      for (const [index, name] of names.entries()) {
+        await writeFile(resolve(root, name), JSON.stringify(reports[index]));
+      }
+    },
+  };
+};
+
 // Made up per run, because the export gate reads this file as evidence of use, and a planted name
 // written here would be one this file already uses.
 const plantedExport = `planted${Date.now().toString(36)}`;
@@ -517,6 +575,55 @@ export const stageSelfTests = Object.freeze({
           record.survivors[0].file = 'packages/runtime/src/planted.ts';
         }),
         refusal: /the file does not exist/u,
+      },
+      // The reading's half. Each refusal ends at the count of one finding where the plant makes
+      // one, so the rest of the planted reading is seen to pass.
+      {
+        id: 'reading-kills-a-recorded-mutant',
+        ...plantReading(({ mutantsOf }) => {
+          mutantsOf(0)[0].status = 'Killed';
+        }),
+        refusal:
+          /survivors\[0\] [^\n]*the entry counts \d+ and the reports score \d+ as survived \(scored otherwise: Killed 1\)[^]*failed: 1 finding/u,
+      },
+      {
+        id: 'reading-leaves-a-recorded-file-out',
+        ...plantReading(({ record, reports }) => {
+          for (const report of reports) {
+            delete report.files[record.survivors[0].file];
+          }
+        }),
+        refusal: /survivors\[0\] [^\n]*the file is in no report given/u,
+      },
+      {
+        id: 'reading-holds-a-survivor-nobody-recorded',
+        ...plantReading(({ mutantsOf, reports, record }) => {
+          const [report] = reports.filter(
+            ({ files }) => record.survivors[0].file in files,
+          );
+          report.files[record.survivors[0].file].mutants.push({
+            ...mutantsOf(0)[0],
+            replacement: 'planted',
+          });
+        }),
+        refusal:
+          /survived and has no reason: [^\n]* => planted[^]*failed: 1 finding/u,
+      },
+      {
+        id: 'reading-cut-a-survivor-short',
+        ...plantReading(({ mutantsOf }) => {
+          mutantsOf(0)[0].testsCompleted = 0;
+        }),
+        refusal: /with 0 of 1 planned tests run, which is no verdict/u,
+      },
+      {
+        id: 'reading-holds-a-file-twice',
+        ...plantReading(({ record, reports }) => {
+          const { file } = record.survivors[0];
+          const [holder] = reports.filter(({ files }) => file in files);
+          for (const report of reports) report.files[file] = holder.files[file];
+        }),
+        refusal: /is in two reports, [^\n]*so they are not one reading/u,
       },
     ],
   },

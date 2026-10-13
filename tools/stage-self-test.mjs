@@ -15,6 +15,10 @@
  * its own `nodeArgs` withdraws the observing mechanism instead of editing the copy. It must still
  * change something, so a plant that edits nothing and runs with the stage's own flags is refused.
  *
+ * Some stages read more when the command line names it, as the mutation record reads the reports
+ * of a reading. A plant for that half gives `args`, a function of the copy that answers the
+ * arguments its run adds, and plants what they name.
+ *
  * No run may change what it reads. `specs/12-verification.spec.md` section 9 forbids a failing run
  * rewriting the baseline it fails against, and a refusal read from the output cannot see that: a
  * stage that records its baseline while refusing prints the same words as one that does not. So
@@ -155,11 +159,18 @@ export async function verifyStagePlants({
   const pristine = resolve(base, 'pristine');
   const work = resolve(base, 'work');
   const out = (line) => process.stdout.write(`${line}\n`);
-  const run = (flags) => {
+  const run = (flags, added) => {
     const began = Date.now();
     const result = spawnSync(
       process.execPath,
-      [...flags, resolve(repositoryRoot, script), ...args, '--inputs', work],
+      [
+        ...flags,
+        resolve(repositoryRoot, script),
+        ...args,
+        '--inputs',
+        work,
+        ...added,
+      ],
       { cwd: repositoryRoot, encoding: 'utf8', timeout },
     );
     return { ...result, ms: Date.now() - began };
@@ -173,9 +184,9 @@ export async function verifyStagePlants({
   const repositoryBefore = inputDigests(repositoryRoot, inputs);
   // Read after the plant rather than from the pristine copy, so what a plant edits is not taken
   // for something the run wrote.
-  const runComparing = (flags) => {
+  const runComparing = (flags, added = []) => {
     const before = inputDigests(work, inputs);
-    const result = run(flags);
+    const result = run(flags, added);
     return {
       ...result,
       changed: changedInputs(before, inputDigests(work, inputs)),
@@ -228,6 +239,7 @@ export async function verifyStagePlants({
       id,
       plant,
       nodeArgs: planted,
+      args: added,
       refusal,
       rewrites,
       measures = [],
@@ -281,7 +293,7 @@ export async function verifyStagePlants({
         failures.push(`${id}: the plant could not be planted: ${error}`);
         continue;
       }
-      const result = runComparing(flags);
+      const result = runComparing(flags, added?.(work));
       out(`${id}: status ${result.status} in ${result.ms} ms`);
       const printed = `${result.stdout}${result.stderr}`;
       reportMeasurements(id, measures, printed);

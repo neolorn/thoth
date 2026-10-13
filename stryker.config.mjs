@@ -38,10 +38,12 @@
  *
  * **The survivors that stay are recorded.** `tools/mutation-reasons.json` lists each mutant no test
  * could notice, with its category and a sentence about that site, and
- * `node tools/verify-mutation-reasons.mjs --report tmp/mutation/report.json` fails on a survivor
- * with a verdict that the file does not list. The gate holds the file to the source it describes,
- * so a recorded line cannot be edited without the record being looked at. A survivor is answered
- * with a test first; the file is for the rest.
+ * `node tools/verify-mutation-reasons.mjs --report tmp/mutation/report.json
+ * tmp/mutation-toolkit/report.json` reads both halves together. It fails on a survivor with a
+ * verdict that the file does not list, and on an entry of the file that neither report scores as
+ * survived. The gate holds the file to the source it describes, so a recorded line cannot be
+ * edited without the record being looked at. A survivor is answered with a test first; the file is
+ * for the rest.
  *
  * ## The first reading of the report
  *

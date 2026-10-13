@@ -13,15 +13,21 @@
  * declares, and the reason is written. An entry whose text has gone is refused, so an edit to a
  * line with a recorded mutant has to look at the record.
  *
- * With `--report <stryker json>` it is the reading's half. Every survivor in the report must have
- * an entry. A survivor is a verdict only where every test planned for the mutant ran: a runner
- * that stops a mutant's tests at the first failure scores a run cut short with no failure recorded
- * as survived, with fewer tests completed than planned. Both configurations set `disableBail`, so
- * a report that carries such a mutant was not taken with them, and it is refused. An entry no
- * survivor matched is counted and printed, not refused, because a recorded mutant that timed out
- * in one run is still the same mutant.
+ * With `--report <stryker json>...` it is the reading's half, and it takes every report of the
+ * reading together: the runtime's and the toolkit's, or one per module where a half is read in
+ * parts. Every survivor in them must have an entry. A survivor is a verdict only where every test
+ * planned for the mutant ran: a runner that stops a mutant's tests at the first failure scores a
+ * run cut short with no failure recorded as survived, with fewer tests completed than planned.
+ * Both configurations set `disableBail`, so a report that carries such a mutant was not taken
+ * with them, and it is refused.
  *
- * Usage: node tools/verify-mutation-reasons.mjs [--report <path>]
+ * Every entry must in turn be a survivor in one of the reports, as many times as it counts. An
+ * entry the reading scored another way describes a mutant a test notices or a line the suites do
+ * not reach, so its reason answers nothing, and it is refused with the scores the reports give
+ * that mutant. An entry whose file no report holds is refused the same way, which is why the
+ * reports are read together and not one at a time.
+ *
+ * Usage: node tools/verify-mutation-reasons.mjs [--report <path>...]
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -108,53 +114,100 @@ for (const id of categories.keys()) {
   if (!used.has(id)) fail(`${RECORD}: the category ${id} has no entry.`);
 }
 
-const reportIndex = process.argv.indexOf('--report');
+// Every argument after `--report` up to the next option is a report.
+const reportPaths = [];
+for (
+  let index = process.argv.indexOf('--report') + 1;
+  index > 0 &&
+  index < process.argv.length &&
+  !process.argv[index].startsWith('--');
+  index += 1
+) {
+  reportPaths.push(process.argv[index]);
+}
 let read = '';
-if (reportIndex !== -1) {
-  const report = JSON.parse(
-    readFileSync(resolve(process.argv[reportIndex + 1]), 'utf8'),
-  );
+if (process.argv.includes('--report')) {
+  if (reportPaths.length === 0) fail('--report names no report.');
   const seen = new Map();
+  // How the reports score each mutant, so a refused entry says what its mutant did instead of
+  // surviving.
+  const scores = new Map();
+  const reportOf = new Map();
   let survivors = 0;
   let unsettled = 0;
-  let unmatched = 0;
-  for (const [file, { source, mutants }] of Object.entries(report.files)) {
-    const lines = source.replaceAll('\r\n', '\n').split('\n');
-    const starts = [0];
-    for (const line of lines) starts.push(starts.at(-1) + line.length + 1);
-    const offset = ({ line, column }) => starts[line - 1] + column - 1;
-    const text = lines.join('\n');
-    for (const mutant of mutants) {
-      if (mutant.status !== 'Survived') continue;
-      if ((mutant.testsCompleted ?? 0) < (mutant.coveredBy ?? []).length) {
-        unsettled += 1;
+  for (const reportPath of reportPaths) {
+    const report = JSON.parse(readFileSync(resolve(reportPath), 'utf8'));
+    for (const [file, { source, mutants }] of Object.entries(report.files)) {
+      if (reportOf.has(file)) {
         fail(
-          `${file}:${mutant.location.start.line} ${mutant.mutatorName} is scored as survived with ${mutant.testsCompleted ?? 0} of ${(mutant.coveredBy ?? []).length} planned tests run, which is no verdict. Take the reading with disableBail.`,
+          `${file} is in two reports, ${reportOf.get(file)} and ${reportPath}, so they are not one reading.`,
         );
         continue;
       }
-      survivors += 1;
-      const key = keyOf({
-        file,
-        mutator: mutant.mutatorName,
-        original: text
-          .slice(offset(mutant.location.start), offset(mutant.location.end))
-          .slice(0, ORIGINAL_LIMIT),
-        replacement: mutant.replacement ?? '',
-      });
-      seen.set(key, (seen.get(key) ?? 0) + 1);
-      const entry = entries.get(key);
-      if (entry === undefined || seen.get(key) > entry.count) {
-        fail(
-          `${file}:${mutant.location.start.line} ${mutant.mutatorName} survived and has no reason: ${JSON.parse(key)[2].slice(0, 80)} => ${(mutant.replacement ?? '').slice(0, 60)}`,
-        );
+      reportOf.set(file, reportPath);
+      const lines = source.replaceAll('\r\n', '\n').split('\n');
+      const starts = [0];
+      for (const line of lines) starts.push(starts.at(-1) + line.length + 1);
+      const offset = ({ line, column }) => starts[line - 1] + column - 1;
+      const text = lines.join('\n');
+      for (const mutant of mutants) {
+        const key = keyOf({
+          file,
+          mutator: mutant.mutatorName,
+          original: text
+            .slice(offset(mutant.location.start), offset(mutant.location.end))
+            .slice(0, ORIGINAL_LIMIT),
+          replacement: mutant.replacement ?? '',
+        });
+        const cutShort =
+          mutant.status === 'Survived' &&
+          (mutant.testsCompleted ?? 0) < (mutant.coveredBy ?? []).length;
+        const score = cutShort ? 'no verdict' : mutant.status;
+        const byScore = scores.get(key) ?? new Map();
+        byScore.set(score, (byScore.get(score) ?? 0) + 1);
+        scores.set(key, byScore);
+        if (mutant.status !== 'Survived') continue;
+        if (cutShort) {
+          unsettled += 1;
+          fail(
+            `${file}:${mutant.location.start.line} ${mutant.mutatorName} is scored as survived with ${mutant.testsCompleted ?? 0} of ${(mutant.coveredBy ?? []).length} planned tests run, which is no verdict. Take the reading with disableBail.`,
+          );
+          continue;
+        }
+        survivors += 1;
+        seen.set(key, (seen.get(key) ?? 0) + 1);
+        const entry = entries.get(key);
+        if (entry === undefined || seen.get(key) > entry.count) {
+          fail(
+            `${file}:${mutant.location.start.line} ${mutant.mutatorName} survived and has no reason: ${JSON.parse(key)[2].slice(0, 80)} => ${(mutant.replacement ?? '').slice(0, 60)}`,
+          );
+        }
       }
     }
   }
   for (const [key, entry] of entries) {
-    if ((seen.get(key) ?? 0) < entry.count) unmatched += 1;
+    const survived = seen.get(key) ?? 0;
+    if (survived >= entry.count) continue;
+    const mutant =
+      `${String(entry.original).slice(0, 80)} => ${String(entry.replacement).slice(0, 60)}`.replaceAll(
+        '\n',
+        ' ',
+      );
+    if (!reportOf.has(entry.file)) {
+      fail(
+        `${entry.where}: the file is in no report given, so nothing shows the mutant survives: ${mutant}`,
+      );
+      continue;
+    }
+    const others = [...(scores.get(key) ?? [])]
+      .filter(([score]) => score !== 'Survived')
+      .map(([score, places]) => `${score} ${places}`)
+      .sort();
+    fail(
+      `${entry.where}: the entry counts ${entry.count} and the reports score ${survived} as survived (${others.length === 0 ? 'no other mutant has this text' : `scored otherwise: ${others.join(', ')}`}): ${mutant}`,
+    );
   }
-  read = `, ${survivors} survivor(s) in the report, ${unsettled} more with no verdict, ${unmatched} entr${unmatched === 1 ? 'y' : 'ies'} the report did not score as survived`;
+  read = `, ${survivors} survivor(s) in ${reportPaths.length} report(s), ${unsettled} more with no verdict`;
 }
 
 if (failures.length > 0) {
