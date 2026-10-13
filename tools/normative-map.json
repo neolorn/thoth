@@ -2884,13 +2884,20 @@
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "3. Formatting",
       "statement": "A release MUST feature-detect a capability before relying on it, and MUST return a typed unsupported result, or use an explicitly installed adapter, where required behavior is absent or inconsistent.",
-      "checks": ["assurance:unsupported-numbering-system-renders-anyway"]
+      "checks": [
+        "assurance:unsupported-numbering-system-renders-anyway",
+        "assurance:zoned-calendar-the-host-lacks-formatted-in-another",
+        "assurance:zone-the-host-has-no-rules-for-thrown"
+      ]
     },
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "3. Formatting",
       "statement": "A release MUST NOT approximate one silently.",
-      "checks": ["assurance:unsupported-numbering-system-renders-anyway"]
+      "checks": [
+        "assurance:unsupported-numbering-system-renders-anyway",
+        "assurance:zoned-calendar-the-host-lacks-formatted-in-another"
+      ]
     },
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",

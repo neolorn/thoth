@@ -1917,6 +1917,25 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/time-zone-identity.test.ts',
   },
   {
+    id: 'zoned-calendar-the-host-lacks-formatted-in-another',
+    invariant:
+      'A zoned date-time whose calendar the host resolves to another is reported as an unsupported formatting capability, and is not written in the calendar the host fell back to.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: '      calendar !== undefined &&',
+    replace: '      false &&',
+    caughtBy: 'packages/runtime/test/zoned-date-time-host-capability.test.ts',
+  },
+  {
+    id: 'zone-the-host-has-no-rules-for-thrown',
+    invariant:
+      'A zoned date-time in a zone the host has no rules for is reported as an unsupported formatting capability, and the host error does not leave the formatter.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: "  } catch {\n    return unsupported(\n      'The native date-time capability rejected this profile.',",
+    replace:
+      "  } catch (cause) {\n    if (cause instanceof RangeError) throw cause;\n    return unsupported(\n      'The native date-time capability rejected this profile.',",
+    caughtBy: 'packages/runtime/test/zoned-date-time-host-capability.test.ts',
+  },
+  {
     id: 'formatter-cache-key-omits-locale',
     invariant:
       "A cached number formatter is keyed on its full locale tag, so a request for other digits is never handed another locale's formatter.",
