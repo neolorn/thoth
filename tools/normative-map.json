@@ -1508,6 +1508,12 @@
     {
       "spec": "06-runtime-and-angular.spec.md",
       "section": "7. Locale transitions",
+      "statement": "A release MUST refuse a request that names any other mode with the `invalid-configuration` diagnostic, and MUST NOT start a transition for it.",
+      "checks": ["assurance:undeclared-change-mode-run-as-progressive"]
+    },
+    {
+      "spec": "06-runtime-and-angular.spec.md",
+      "section": "7. Locale transitions",
       "statement": "In coordinated mode a release MUST validate the request, resolve the route and formatting context, load and admit every required scope, wait for every required participant, build one candidate snapshot, and keep the current view rendered and usable until that candidate commits.",
       "checks": ["assurance-runtime:required-participants-not-awaited"]
     },

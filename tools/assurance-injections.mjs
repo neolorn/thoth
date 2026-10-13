@@ -608,6 +608,16 @@ export const injections = Object.freeze([
     caughtBy: 'packages/toolkit/test/derived-locale-policy.test.ts',
   },
   {
+    id: 'undeclared-change-mode-run-as-progressive',
+    invariant:
+      'A locale change that names a mode other than coordinated or progressive is refused as a configuration fault.',
+    source: 'packages/runtime/src/localization.ts',
+    find: "    if (mode !== 'coordinated' && mode !== 'progressive') {",
+    replace:
+      "    if (mode !== 'coordinated' && mode !== 'progressive' && mode === '') {",
+    caughtBy: 'packages/runtime/test/change-locale-undeclared-mode.test.ts',
+  },
+  {
     id: 'restore-that-found-nothing-reported-as-superseded',
     invariant:
       'A restore that found nothing stored to move the page reports a status no other ending of a restore has.',

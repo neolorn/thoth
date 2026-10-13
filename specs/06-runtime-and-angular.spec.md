@@ -149,7 +149,9 @@ validated immutable catalog artifacts whose identity proves them interchangeable
 
 ## 7. Locale transitions
 
-A locale change is one transaction. Its mode is coordinated or progressive.
+A locale change is one transaction. Its mode is coordinated or progressive, and coordinated where
+the request names none. A release MUST refuse a request that names any other mode with the
+`invalid-configuration` diagnostic, and MUST NOT start a transition for it.
 
 In coordinated mode a release MUST validate the request, resolve the route and formatting
 context, load and admit every required scope, wait for every required participant, build one

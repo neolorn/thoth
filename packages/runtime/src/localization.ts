@@ -2326,8 +2326,18 @@ class LocalizationInternal {
     options: LocaleChangeOptions = {},
   ): Promise<LocaleChangeResult> {
     this.assertActive();
-    this.requestedChanges += 1;
     const mode = options.mode ?? 'coordinated';
+    // Refused rather than run as either mode: which of the two it runs as decides whether the page
+    // waits, and a value that is neither is a misspelling the caller has to see.
+    if (mode !== 'coordinated' && mode !== 'progressive') {
+      throw new LocalizationError(
+        operationalDiagnostic(
+          'invalid-configuration',
+          'The mode of a locale change is coordinated or progressive.',
+        ),
+      );
+    }
+    this.requestedChanges += 1;
     let locale: string;
     try {
       locale = this.canonicalLocale(localeValue);
