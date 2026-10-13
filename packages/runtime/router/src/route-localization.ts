@@ -696,31 +696,57 @@ export class RouteLocalization {
   private readonly ownOrigin: string | undefined;
 
   /**
-   * Reads the origin an adapter was given, refusing one that is not an origin under a host policy.
+   * Reads the origin an adapter was given, and under a host policy refuses a missing one, one that
+   * is not an origin, and one the policy does not name.
    *
-   * An adapter constructed without `provideLocalizedRouter` has not passed its check, and under a
-   * host policy an origin that does not parse equals none of the policy's, so every locale, the one
-   * on screen included, would be a move to another document.
+   * Section 3 of `specs/07-routing-rendering-and-seo.spec.md` requires the refusal at
+   * configuration. `provideLocalizedRouter` makes it first and says more; an adapter constructed
+   * without it has not passed that check, and with no origin of the policy's to be at home at,
+   * every locale, the one on screen included, would be a move to another document.
    */
   private static originOf(
     declared: string | undefined,
     policy: LocaleUrlPolicy,
   ): string | undefined {
-    if (declared === undefined) return undefined;
-    try {
-      return new URL(declared).origin;
-    } catch (cause) {
-      if (policy.kind !== 'locale-host') return undefined;
+    if (policy.kind !== 'locale-host') {
+      if (declared === undefined) return undefined;
+      try {
+        return new URL(declared).origin;
+      } catch {
+        return undefined;
+      }
+    }
+    const refuse = (problem: string, cause?: unknown): never => {
       throw new LocalizationError(
         {
           code: 'invalid-configuration',
           outcome: 'operational-failure',
-          reason: 'malformed-input',
-          message: `Localized routing under a "locale-host" policy was given {origin: ${JSON.stringify(declared)}}, which is not an origin. Pass the origin this build answers at, scheme included.`,
+          ...(cause === undefined ? {} : { reason: 'malformed-input' }),
+          message: `Localized routing under a "locale-host" policy ${problem}. Pass the origin this build answers at, scheme included: one of ${Object.keys(
+            policy.origins,
+          )
+            .map((origin) => JSON.stringify(origin))
+            .join(', ')}.`,
         },
-        { cause },
+        cause === undefined ? undefined : { cause },
+      );
+    };
+    if (declared === undefined) return refuse('was given no origin');
+    let origin: string;
+    try {
+      origin = new URL(declared).origin;
+    } catch (cause) {
+      return refuse(
+        `was given {origin: ${JSON.stringify(declared)}}, which is not an origin`,
+        cause,
       );
     }
+    if (!Object.hasOwn(policy.origins, origin)) {
+      return refuse(
+        `was given {origin: ${JSON.stringify(declared)}}, which the policy does not name`,
+      );
+    }
+    return origin;
   }
 
   /**

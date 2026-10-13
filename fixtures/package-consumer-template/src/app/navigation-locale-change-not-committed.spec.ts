@@ -52,8 +52,8 @@ import { runtimeExtensions } from './runtime-extensions';
  * the navigation with the address untouched, and the error carries the diagnostic the change ended
  * with. `RouteLocalization` is constructed here the way an application that does not use
  * `provideLocalizedRouter` constructs it, which is also the one way it is handed a host policy with
- * no origin, or with an origin that is not one. The second is refused where the adapter is
- * constructed.
+ * no origin, with an origin that is not one, or with one the policy does not name. Each is refused
+ * where the adapter is constructed.
  */
 
 const PATH_PREFIX = createPathPrefixLocalePolicy({
@@ -302,32 +302,55 @@ describe('a navigation whose locale change is overtaken', () => {
   });
 });
 
-describe('a navigation whose locale lives on another origin', () => {
-  it('fails the navigation as a route that is unavailable, because a redirect carries no diagnostic', async () => {
-    // No origin, so no locale is at home here and the change for every one of them is a move.
+describe('a navigation under a host policy, at the origin the build answers at', () => {
+  it('lands in the locale that origin serves and sends the document nowhere', async () => {
     const { arrive, assigned, ended, localization, routeLocalization, router } =
-      configured(HOST, {});
+      configured(HOST, { origin: ORIGIN });
     await arrive();
-    const before = localization.snapshot();
 
     prepared = '/second';
     const end = ended();
     void router.navigateByUrl('/second').catch(() => undefined);
 
-    expect(refusal(await end)).toMatchObject({
-      status: 'malformed',
-      httpStatus: 400,
-      presentationLocale: 'en-US',
-      diagnostic: { code: 'route-unavailable', outcome: 'operational-failure' },
+    expect(await end).toBeInstanceOf(NavigationEnd);
+    expect((await routeLocalization.settled()).status).not.toBe('redirected');
+    expect(assigned).toEqual([]);
+    expect(localization.snapshot()?.primaryLocale).toBe('en-US');
+    expect(router.url).toBe('/second');
+  });
+});
+
+describe('a host policy and no origin', () => {
+  it('refuses the adapter where it is constructed, as a configuration fault', () => {
+    let thrown: unknown;
+    try {
+      configured(HOST, {});
+      TestBed.inject(RouteLocalization);
+    } catch (error: unknown) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(LocalizationError);
+    expect((thrown as LocalizationError).diagnostic).toMatchObject({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
     });
-    expect(await routeLocalization.settled()).toMatchObject({
-      status: 'redirected',
-      targetLocale: 'en-US',
-      address: 'https://site.example',
+  });
+
+  it('refuses an origin the policy does not name the same way', () => {
+    let thrown: unknown;
+    try {
+      configured(HOST, { origin: 'https://other.example' });
+      TestBed.inject(RouteLocalization);
+    } catch (error: unknown) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(LocalizationError);
+    expect((thrown as LocalizationError).diagnostic).toMatchObject({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
     });
-    expect(assigned).toEqual(['https://site.example']);
-    expect(localization.snapshot()).toBe(before);
-    expect(router.url).toBe('/');
   });
 });
 
