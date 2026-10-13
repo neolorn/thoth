@@ -50,6 +50,17 @@ import { nodeConsumerProfiles } from './package-consumer-profiles.mjs';
  * that reads `tools/` some other way, through a test runner's configuration or a formatter, still
  * declares it.
  */
+/**
+ * Whether the build keeps a cache. `ng-packagr` writes one under each package's `node_modules`
+ * unless the environment says it is on a build server (`CI` set to `true`, in any case, or to
+ * `1`), where it writes none. The build's declaration follows the same reading, so the graph a
+ * hosted run is checked against is the one that run has: a write declared and never made is
+ * reported as drift, and so is one made and not declared.
+ */
+const buildKeepsACache = !(
+  process.env.CI?.toLowerCase() === 'true' || process.env.CI === '1'
+);
+
 const declared = Object.freeze([
   {
     id: 'format:check',
@@ -284,8 +295,13 @@ const declared = Object.freeze([
   {
     id: 'build',
     processors: 2,
-    reads: ['source:packages'],
-    writes: ['cache:build', 'dist:other', 'dist:runtime', 'dist:toolkit'],
+    reads: [...(buildKeepsACache ? [] : ['cache:build']), 'source:packages'],
+    writes: [
+      ...(buildKeepsACache ? ['cache:build'] : []),
+      'dist:other',
+      'dist:runtime',
+      'dist:toolkit',
+    ],
   },
   // Runs the stage below over a copy of what it reads, once unchanged and once per defect
   // `stage-plants.mjs` plants for it, and requires each to be refused by name. The copy is a folder
