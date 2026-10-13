@@ -1201,6 +1201,16 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/coordinated-progressive-scopes.test.ts',
   },
   {
+    id: 'abandoned-bootstrap-rejects-with-the-disposal',
+    invariant:
+      'An application start waiting on a context whose injector is destroyed settles, and does not reject with the disposal.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '      if (abandoned()) return;',
+    replace: '      void abandoned;',
+    caughtBy:
+      'packages/runtime/test/bootstrap-initialization-abandoned.test.ts',
+  },
+  {
     id: 'scope-named-as-both-accepted',
     invariant:
       'A locale change that names one scope as both required and progressive is refused.',

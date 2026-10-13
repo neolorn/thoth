@@ -51,6 +51,7 @@ import {
   Localization,
   createLocalizationRuntime,
   emitLocalizationRuntimeEvent,
+  initializedForBootstrap,
   localizationTransferSnapshot,
   type LocaleFromAddress,
   type LocaleUrlResolutionSetup,
@@ -2151,38 +2152,19 @@ export function provideLocalizationSetup(
       const localization = inject(Localization);
       const transferState = inject(TransferState);
       const platformId = inject(PLATFORM_ID);
-      return localization
-        .initialize()
-        .then(() => {
-          if (!isPlatformServer(platformId)) return;
+      let abandoned = false;
+      inject(DestroyRef).onDestroy(() => {
+        abandoned = true;
+      });
+      return initializedForBootstrap(localization, {
+        server: isPlatformServer(platformId),
+        abandoned: () => abandoned,
+        initialized: () => {
           const snapshot = localizationTransferSnapshot(localization);
           if (snapshot !== undefined)
             transferState.set(transferStateKey, snapshot);
-        })
-        .catch((error: unknown) => {
-          // A rejected app initializer aborts bootstrap, so Angular never creates the component
-          // tree, including whatever hosts <localization-recovery />. The result
-          // was an empty <body> on precisely the failure the recovery feature exists for: a chunk
-          // that 404s, a bad deploy, a catalog that will not load.
-          //
-          // The failure itself is not swallowed. initialize() has already set the lifecycle to
-          // 'failed', published the recovery representation and emitted a failed initialization
-          // event to the observability sink. No partial runtime is published: every message read
-          // still throws, so nothing renders half-localized.
-          //
-          // Recovery is only reachable if the consumer configured one. Without it there is nothing
-          // to show, and booting into an application whose every message throws is worse than the
-          // hard failure, so that case still rejects.
-          //
-          // A server render rejects either way. Its retry is a control no response can act on, and
-          // a page carrying it would be cached or written by a prerender and served afterwards as
-          // the address's own, so the deployment answers with its error and a build stops.
-          if (
-            isPlatformServer(platformId) ||
-            localization.recovery() === undefined
-          )
-            throw error;
-        });
+        },
+      });
     }),
     {
       // A page the server drew or the build wrote was decided without the stores only the browser

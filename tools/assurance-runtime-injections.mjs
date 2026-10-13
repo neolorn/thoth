@@ -1108,9 +1108,9 @@ export const injections = Object.freeze([
     id: 'server-render-answers-with-recovery',
     invariant:
       'A server bootstrap whose initial snapshot cannot be built rejects instead of rendering the recovery.',
-    source: 'packages/runtime/src/angular.ts',
-    find: '            isPlatformServer(platformId) ||\n            localization.recovery() === undefined',
-    replace: '            localization.recovery() === undefined',
+    source: 'packages/runtime/src/localization.ts',
+    find: '      if (server || localization.recovery() === undefined) throw error;',
+    replace: '      if (localization.recovery() === undefined) throw error;',
   },
   {
     id: 'overlay-adapter-built-with-the-configuration',
@@ -1178,9 +1178,8 @@ export const injections = Object.freeze([
     invariant:
       'Application bootstrap waits for initialization, so nothing renders before the primary locale and startup scopes are ready.',
     source: 'packages/runtime/src/angular.ts',
-    find: '      return localization\n        .initialize()\n        .then(() => {\n          if (!isPlatformServer(platformId)) return;',
-    replace:
-      '      void localization\n        .initialize()\n        .then(() => {\n          if (!isPlatformServer(platformId)) return;',
+    find: '      return initializedForBootstrap(localization, {',
+    replace: '      void initializedForBootstrap(localization, {',
   },
   {
     id: 'transferred-locale-renegotiated',

@@ -318,7 +318,11 @@ let that disposal reach another context or a consumer application's own store.
 
 Work that is waiting when its context is destroyed ends with the typed disposed failure: an
 initialization, a scope request, including one waiting for a change that overtook it, and a
-participant retry. A locale change in flight ends as cancelled.
+participant retry. A locale change in flight ends as cancelled. An application's start waits on
+its context's initialization through a promise the framework holds and no code of the application's
+can. Where the injector that owns the context is destroyed during that wait, a release MUST NOT
+reject that promise with the disposal, because no start is left for it to stop and nothing would
+handle it.
 
 A destroyed context holds no catalog, so no scope in it is ready. A release MUST report every
 scope of a destroyed context as failed with the typed disposed failure, one that was ready when the

@@ -3754,6 +3754,57 @@ export function createLocalizationRuntime(
   return new RuntimeLocalization(options);
 }
 
+/** What the application initializer is told beside the context it starts. */
+export interface BootstrapInitialization {
+  /** Whether this is a server render, which has no retry and so no recovery to boot into. */
+  readonly server: boolean;
+  /** Whether the injector that owns the context has been destroyed. */
+  readonly abandoned: () => boolean;
+  /** Run on a server once the context has started. */
+  readonly initialized: () => void;
+}
+
+/**
+ * Starts a context for an application's bootstrap, and settles when the bootstrap may go on.
+ *
+ * A rejected application initializer aborts bootstrap, so Angular never creates the component
+ * tree, including whatever hosts the recovery region. The result was an empty body on precisely
+ * the failure the recovery feature exists for: a chunk that fails to load, a bad deploy, a catalog
+ * that will not load.
+ *
+ * The failure itself is not swallowed. `initialize()` has already set the lifecycle to failed,
+ * published the recovery representation and emitted a failed initialization event to the
+ * observability sink. No partial runtime is published: every message read still throws, so nothing
+ * renders half-localized.
+ *
+ * Recovery is only reachable if the consumer configured one. Without it there is nothing to show,
+ * and booting into an application whose every message throws is worse than the hard failure, so
+ * that case still rejects.
+ *
+ * A server render rejects either way. Its retry is a control no response can act on, and a page
+ * carrying it would be cached or written by a prerender and served afterwards as the address's
+ * own, so the deployment answers with its error and a build stops.
+ *
+ * An injector destroyed while this waits disposes the context, and the wait ends with the typed
+ * disposed failure. That is not a start that failed. No bootstrap is left for it to stop, and the
+ * framework alone holds this promise, so the rejection would reach no code of the application's:
+ * the wait settles instead.
+ */
+export function initializedForBootstrap(
+  localization: Localization,
+  { server, abandoned, initialized }: BootstrapInitialization,
+): Promise<void> {
+  return localization
+    .initialize()
+    .then(() => {
+      if (server) initialized();
+    })
+    .catch((error: unknown) => {
+      if (abandoned()) return;
+      if (server || localization.recovery() === undefined) throw error;
+    });
+}
+
 export function localizationTransferSnapshot(
   localization: Localization,
 ): TransferSnapshot | undefined {

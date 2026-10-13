@@ -1737,6 +1737,12 @@
     {
       "spec": "06-runtime-and-angular.spec.md",
       "section": "11. Effects, persistence, and disposal",
+      "statement": "Where the injector that owns the context is destroyed during that wait, a release MUST NOT reject that promise with the disposal, because no start is left for it to stop and nothing would handle it.",
+      "checks": ["assurance:abandoned-bootstrap-rejects-with-the-disposal"]
+    },
+    {
+      "spec": "06-runtime-and-angular.spec.md",
+      "section": "11. Effects, persistence, and disposal",
       "statement": "A release MUST report every scope of a destroyed context as failed with the typed disposed failure, one that was ready when the context was destroyed included, and MUST NOT go on reporting the readiness the scope had.",
       "checks": ["assurance:destroyed-context-reports-a-scope-as-it-was"]
     },
