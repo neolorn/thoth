@@ -158,6 +158,37 @@ describe('waiting on work under a signal', () => {
     await expect(waiting).rejects.toBe(reason);
   });
 
+  // A caller may abort with `null`, and the platform then keeps `null` as the signal's reason.
+  it('answers a signal that had already aborted with no reason with an abort error', async () => {
+    const controller = new AbortController();
+    controller.abort(null);
+
+    const failure: unknown = await waitForSignal(
+      Promise.resolve('finished'),
+      controller.signal,
+    ).catch((error: unknown) => error);
+
+    expect(controller.signal.reason).toBeNull();
+    expect(failure).toBeInstanceOf(DOMException);
+    expect((failure as DOMException).name).toBe('AbortError');
+    expect((failure as DOMException).message).toBe('Aborted');
+  });
+
+  it('answers an abort with no reason that arrives during the wait with an abort error', async () => {
+    const controller = new AbortController();
+    const waiting = waitForSignal(
+      new Promise(() => undefined),
+      controller.signal,
+    );
+
+    controller.abort(null);
+    const failure: unknown = await waiting.catch((error: unknown) => error);
+
+    expect(failure).toBeInstanceOf(DOMException);
+    expect((failure as DOMException).name).toBe('AbortError');
+    expect((failure as DOMException).message).toBe('Aborted');
+  });
+
   /** A live signal that records every listener put on it and taken off it. */
   function watchedSignal() {
     const { signal } = new AbortController();
