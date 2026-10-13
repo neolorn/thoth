@@ -7,9 +7,10 @@ import { testProjectConfiguration } from './fixtures.js';
  * An analysis input whose file name holds backslashes.
  *
  * A compilation's state names its inputs with forward slashes, whatever the machine that wrote it
- * uses. Under POSIX rules a backslash is an ordinary character of a file name, so a name holding
- * two in a row becomes a name with nothing between two slashes once it is written the portable
- * way. No file has that name on any machine, and the input is refused.
+ * uses. Under POSIX rules a backslash is an ordinary character of a file name, and under Windows
+ * rules it separates two names, so a name that holds one is not the same file on both and cannot
+ * be written the portable way. It is refused on every platform, as a file Windows could not hold
+ * is.
  */
 
 // A backslash is part of a file name only under POSIX path rules, so the compiler is given those
@@ -48,8 +49,10 @@ function identities(
   }).inputs.map(({ identity }) => identity);
 }
 
-describe('an analysis input whose portable name would have an empty segment', () => {
+describe('an analysis input whose file name holds a backslash', () => {
   it.each([
+    ['one backslash', 'src\\main.ts'],
+    ['one backslash, under an absolute name', '/work/app/src/pages\\main.ts'],
     ['two backslashes in a row', 'src/pages\\\\main.ts'],
     ['a backslash after a slash', 'src/\\main.ts'],
     ['a backslash at its end', '/work/app/src/main.ts\\'],

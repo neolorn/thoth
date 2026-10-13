@@ -7293,14 +7293,6 @@
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "ConditionalExpression",
-      "original": "normalized.length === 0",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "An empty normalized path splits on '/' into one empty segment, which the segment check on line 377 of the same condition refuses, so the same TypeError with the same sentence is thrown with or without the length test."
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
       "mutator": "OptionalChaining",
       "original": "request.analysis?.projectRoot",
       "replacement": "request.analysis.projectRoot",

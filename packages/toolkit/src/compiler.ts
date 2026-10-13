@@ -372,13 +372,19 @@ function portableAnalysisPath(
       `compileProject: ${argument} must be a file inside request.analysis.projectRoot, and ${JSON.stringify(path)} is outside it.`,
     );
   }
-  const normalized = portable.replaceAll('\\', '/');
+  // Split by this platform's separator, so a backslash left inside a segment is one a POSIX file
+  // name holds. Windows reads that character as a separator, so the name is not one file on both.
+  const segments = portable.split(sep);
+  const normalized = segments.join('/');
   if (
-    normalized.length === 0 ||
     normalized.normalize('NFC') !== normalized ||
-    normalized
-      .split('/')
-      .some((segment) => segment === '' || segment === '.' || segment === '..')
+    segments.some(
+      (segment) =>
+        segment === '' ||
+        segment === '.' ||
+        segment === '..' ||
+        segment.includes('\\'),
+    )
   ) {
     throw new TypeError(
       `compileProject: ${argument} must be a portable file name under request.analysis.projectRoot, and ${JSON.stringify(path)} is not one.`,
