@@ -47,11 +47,12 @@ The reciprocal case is not a failure. An inbound address whose parameter the cod
 parse means the route does not match, and a release MUST hand that address back unchanged
 for the application to answer.
 
-Declining is an answer and a throw is not. A codec that throws while an address is read is a defect
-in the consumer application, and a release MUST fail the resolution with a typed failure that names
-the route, the parameter, and the locale and keeps the thrown error as its cause. The request
-handler MUST answer that failure as it answers a render that failed, and MUST NOT answer the address
-as not found.
+Declining is an answer and a throw is not. A codec that throws is a defect in the consumer
+application wherever it is asked: while an address is read, while one is built, while a prerender
+value is spelled, and while a replacement's parameters are checked. A release MUST fail the call
+with a typed failure that names the route, the parameter, and the locale where one is asked for,
+and keeps the thrown error as its cause. The request handler MUST answer that failure as it answers
+a render that failed, and MUST NOT answer the address as not found.
 
 A spelling that is a function of the value comes from the codec. A spelling stored beside the
 record cannot, because producing it is a fetch, so a consumer application declares it: per

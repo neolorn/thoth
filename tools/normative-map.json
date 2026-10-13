@@ -1815,8 +1815,11 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "2. Route identity and parameters",
-      "statement": "A codec that throws while an address is read is a defect in the consumer application, and a release MUST fail the resolution with a typed failure that names the route, the parameter, and the locale and keeps the thrown error as its cause.",
-      "checks": ["assurance:codec-throw-left-untyped"]
+      "statement": "A release MUST fail the call with a typed failure that names the route, the parameter, and the locale where one is asked for, and keeps the thrown error as its cause.",
+      "checks": [
+        "assurance:codec-throw-left-untyped",
+        "assurance:codec-throw-left-untyped-while-an-address-is-built"
+      ]
     },
     {
       "spec": "07-routing-rendering-and-seo.spec.md",

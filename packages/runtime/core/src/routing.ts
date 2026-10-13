@@ -246,9 +246,11 @@ export interface RouteParameterContext {
  * the application to answer: the same outcome as a URL naming no route at all. That is the safe
  * failure, because the alternative is serving one page's content at another page's address.
  *
- * A codec that throws while an address is read has not declined it. Resolution then throws a
- * `LocalizationError` that names the route, the parameter and the locale and carries what was
- * thrown as its `cause`, and the request handler answers 500, as for a render that failed.
+ * A codec that throws has not declined anything, wherever it is asked: while an address is read,
+ * while one is built, while a prerender value is spelled, or while a replacement is checked. The
+ * call then throws a `LocalizationError` that names the route, the parameter and the locale, where
+ * one is asked for, and carries what was thrown as its `cause`. The request handler answers such
+ * an address with 500, as for a render that failed.
  */
 export interface RouteParameterCodec<Value = unknown> {
   /** Reads one segment of an address. Returns `{ok: false}` rather than throwing on a refusal. */
@@ -1944,12 +1946,13 @@ function parameterContext(
 }
 
 /**
- * One question put to a route's codec while an address is read.
+ * One question put to a route's codec, wherever one is asked: an address read, an address built, a
+ * prerender value spelled, a replacement checked.
  *
- * A codec declines a spelling by answering that it did not parse, and that answer is an address
- * that names no route. A throw is not that answer. It is a defect in the consumer application's
- * codec, so it leaves here as a failure that says where it happened, and the address is not
- * reported as missing on the strength of it.
+ * A codec declines a spelling by answering that it did not parse, and a value by writing nothing.
+ * A throw is neither answer. It is a defect in the consumer application's codec, so it leaves here
+ * as a failure that says where it happened, and no address is reported as missing or as
+ * unavailable on the strength of it.
  */
 function askCodec<Answer>(
   context: RouteParameterContext,
@@ -1962,7 +1965,7 @@ function askCodec<Answer>(
       Object.freeze({
         code: 'invalid-configuration',
         outcome: 'operational-failure',
-        message: `The codec for parameter ${context.parameterName} of route ${context.routeId} threw while an address was read in ${String(context.locale)}. A codec declines a spelling by answering \`{ ok: false }\`, and writes every value it has read.`,
+        message: `The codec for parameter ${context.parameterName} of route ${context.routeId} threw${context.locale === undefined ? '' : ` in ${context.locale}`}. A codec declines a spelling by answering \`{ ok: false }\` and a value by writing \`undefined\`, and writes every value it has read.`,
         reason: 'consumer-code-threw',
         ...(context.locale === undefined
           ? {}
@@ -2128,9 +2131,9 @@ function checkRouteProjection(
             `Historical replacement ${path} requires parameter ${name}.`,
           );
         }
-        const serialized = codec.serialize(
-          value,
-          parameterContext(target.id, name),
+        const context = parameterContext(target.id, name);
+        const serialized = askCodec(context, () =>
+          codec.serialize(value, context),
         );
         if (serialized !== undefined && !safeParameterSegment(serialized)) {
           routeError(
@@ -3597,13 +3600,15 @@ function localizedRouteSegments(
       if (!safeParameterSegment(declared)) {
         return { ok: false, reason: 'unsafe', parameter: name };
       }
-      if (!codec.parse(declared, context).ok) {
+      if (!askCodec(context, () => codec.parse(declared, context)).ok) {
         return { ok: false, reason: 'declared-unreadable', parameter: name };
       }
       segments.push(declared);
       continue;
     }
-    const serialized = codec.serialize(parameters[name], context);
+    const serialized = askCodec(context, () =>
+      codec.serialize(parameters[name], context),
+    );
     if (serialized === undefined) {
       return { ok: false, reason: 'unrepresentable', parameter: name };
     }
@@ -3627,11 +3632,12 @@ function localizedRouteSegments(
     // parses and re-serializes every parameter it matches, so this is the cost the resolution side
     // has always paid, now paid symmetrically. A check that only ran in development would ship the
     // broken codec, which is the failure `validateConfig` demonstrates.
-    const read = codec.parse(serialized, context);
+    const read = askCodec(context, () => codec.parse(serialized, context));
     if (
       !read.ok ||
       read.value === undefined ||
-      codec.serialize(read.value, context) !== serialized
+      askCodec(context, () => codec.serialize(read.value, context)) !==
+        serialized
     ) {
       return { ok: false, reason: 'unreadable', parameter: name };
     }
@@ -4199,7 +4205,9 @@ function prerenderParameters(
         routeError(`Route ${route.id} has no codec for parameter ${name}.`);
       }
       const context = parameterContext(route.id, name, locale);
-      const text = codec.serialize(value[name], context);
+      const text = askCodec(context, () =>
+        codec.serialize(value[name], context),
+      );
       if (text === undefined) {
         // The value has no spelling in this locale. Silently dropping it would ship a build
         // where the page exists in one language and 404s in the other.
@@ -4223,11 +4231,11 @@ function prerenderParameters(
       // The address is one the build writes, so the codec has to read back what it wrote, as it
       // does for every other address that is built: a page rendered at a spelling its own route
       // does not resolve is a file no request is answered from.
-      const read = codec.parse(text, context);
+      const read = askCodec(context, () => codec.parse(text, context));
       if (
         !read.ok ||
         read.value === undefined ||
-        codec.serialize(read.value, context) !== text
+        askCodec(context, () => codec.serialize(read.value, context)) !== text
       ) {
         routeError(
           `Route ${route.id} parameter ${name} is spelled ${JSON.stringify(text)} in ${locale}, which its codec does not read back as that spelling, so it cannot be rendered ahead of time.`,

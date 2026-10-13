@@ -481,7 +481,7 @@ export const injections = Object.freeze([
     invariant:
       'A URL is built only where the parameter codec reads its own spelling back to the same text in the locale being built.',
     source: 'packages/runtime/core/src/routing.ts',
-    find: '    if (\n      !read.ok ||\n      read.value === undefined ||\n      codec.serialize(read.value, context) !== serialized\n    ) {',
+    find: '    if (\n      !read.ok ||\n      read.value === undefined ||\n      askCodec(context, () => codec.serialize(read.value, context)) !==\n        serialized\n    ) {',
     replace: '    if (false) {',
     caughtBy: 'packages/runtime/test/address-translation.test.ts',
   },
@@ -493,6 +493,15 @@ export const injections = Object.freeze([
     find: '      const parsed = askCodec(context, () => codec.parse(actual, context));',
     replace: '      const parsed = codec.parse(actual, context);',
     caughtBy: 'packages/runtime/test/route-codec-that-throws.test.ts',
+  },
+  {
+    id: 'codec-throw-left-untyped-while-an-address-is-built',
+    invariant:
+      'A route parameter codec that throws while an address is built fails the call with a typed failure naming the route, the parameter and the locale.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '    const read = askCodec(context, () => codec.parse(serialized, context));',
+    replace: '    const read = codec.parse(serialized, context);',
+    caughtBy: 'packages/runtime/test/route-codec-that-throws-building.test.ts',
   },
   {
     id: 'codec-failure-answered-as-not-found',
@@ -538,7 +547,7 @@ export const injections = Object.freeze([
     invariant:
       "A declared parameter spelling is emitted only where the route's own codec parses it.",
     source: 'packages/runtime/core/src/routing.ts',
-    find: '      if (!codec.parse(declared, context).ok) {',
+    find: '      if (!askCodec(context, () => codec.parse(declared, context)).ok) {',
     replace: '      if (false) {',
     caughtBy: 'packages/runtime/test/declared-parameter-spellings.test.ts',
   },
@@ -556,7 +565,7 @@ export const injections = Object.freeze([
     invariant:
       'A declared parameter spelling is not required to parse back to the value the page was addressed with.',
     source: 'packages/runtime/core/src/routing.ts',
-    find: '      if (!codec.parse(declared, context).ok) {',
+    find: '      if (!askCodec(context, () => codec.parse(declared, context)).ok) {',
     replace:
       '      if (codec.parse(declared, context).value !== parameters[name]) {',
     caughtBy: 'packages/runtime/test/declared-parameter-spellings.test.ts',
@@ -1021,7 +1030,7 @@ export const injections = Object.freeze([
     invariant:
       'A prerender parameter value whose spelling the codec does not read back as that spelling fails the build.',
     source: 'packages/runtime/core/src/routing.ts',
-    find: '        !read.ok ||\n        read.value === undefined ||\n        codec.serialize(read.value, context) !== text\n',
+    find: '        !read.ok ||\n        read.value === undefined ||\n        askCodec(context, () => codec.serialize(read.value, context)) !== text\n',
     replace: '        false\n',
     caughtBy: 'packages/runtime/test/prerender-parameter-segments.test.ts',
   },
