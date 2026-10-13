@@ -104,7 +104,7 @@ pnpm run stage:consumer-store
 pnpm run stage:npm-cache
 ```
 
-`stage:node-runtimes` downloads, and checks against their published digests, the lowest release of each Node line the packages support and the release the repository develops on, into `.runtimes/node`. `stage:consumer-store` puts the packages of every committed `pnpm-lock.yaml` under `fixtures/` in the pnpm store. `stage:npm-cache` puts the packages of the npm consumer's `package-lock.json` in `.runtimes/npm-cache`, where the suite's npm install reads them. Run all three on a new machine, and the last two again after `refresh:consumer-locks`.
+`stage:node-runtimes` downloads, and checks against their published digests, the lowest release of each Node line the packages support and the release the repository develops on, into `.runtimes/node`. `stage:consumer-store` puts the packages of every committed `pnpm-lock.yaml` under `fixtures/` in the pnpm store. `stage:npm-cache` puts the packages of the npm consumer's `package-lock.json` in `.runtimes/npm-cache`, where the suite's npm install reads them. Run all three on a new machine, and the last two again after `refresh:consumer-locks`. `stage:consumer-store` reads the built packages, because the fixtures' lockfiles name them, so run `pnpm run build` before it.
 
 ## Making a change
 

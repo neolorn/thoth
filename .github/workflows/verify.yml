@@ -102,6 +102,11 @@ jobs:
       # committed lockfiles name has to be in the store before the gate starts. The workspace
       # install does not put it there: the two resolve different versions of the same
       # transitives, and this is what found that out.
+      #
+      # Built first: those lockfiles name the built packages by path, and pnpm reads a package it
+      # is given by path before it fetches anything.
+      - run: pnpm run build
+
       - run: pnpm run stage:consumer-store
 
       - name: Gate

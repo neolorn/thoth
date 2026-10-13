@@ -49,6 +49,16 @@ assert.ok(
   `Found ${lockfiles.length} committed fixture lockfiles, which is fewer than the four consumer rows this repository ships. The search is wrong, not the repository.`,
 );
 
+// The fixtures take Equator as a `file:` dependency on the built packages, and `pnpm fetch` reads
+// a `file:` dependency's directory to list what it packs. Named here because the failure it
+// otherwise gets is an I/O error from inside pnpm about a path this script never mentions.
+for (const built of ['dist/runtime', 'dist/toolkit']) {
+  assert.ok(
+    existsSync(resolve(workspaceRoot, built, 'package.json')),
+    `${built} is not built. The consumer lockfiles name the built packages, so run \`pnpm run build\` before \`pnpm run stage:consumer-store\`.`,
+  );
+}
+
 const pnpm = (cwd, args) => {
   const win32 = process.platform === 'win32';
   return execFileSync(
