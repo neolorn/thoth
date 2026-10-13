@@ -1,8 +1,9 @@
 # How to read typed input
 
 `@neolorn/equator/forms` exports `LocalizedInput`, a directive that parses what a visitor typed in
-the committed locale and gives the form the value rather than the text. `١٢٣٫٥`, `123.5` and `123,5`
-are one amount, and the control returns that amount.
+the committed locale and gives the form the value rather than the text. `١٢٣٫٥` typed in Egyptian
+Arabic, `123.5` in American English and `123,5` in German are one amount, and the control returns
+that amount.
 
 ## Before you begin
 
@@ -39,7 +40,7 @@ holds such a write and renders it when the profile lands, so there is no orderin
 discover and nothing to buffer around.
 
 The control's value is the parsed value. What you read is `money(decimal('19.99'), 'USD')`, not
-`"١٩٫٩٩"`, and what your API receives is that value whichever script the visitor typed it in. Nothing
+`"١٩٫٩٩"`, and what your API receives is that value whichever locale the visitor typed it in. Nothing
 is rounded on the way through.
 
 ## Read the outcome
@@ -56,8 +57,10 @@ value.
 ## Assert what it parses
 
 The profile sets `requireCurrency`, which is why the visitor types `$19.99` rather than `19.99`;
-without it a bare number is read too. Parsing happens in the committed locale, so after a switch
-the field reads Arabic-Indic digits and refuses the Latin ones.
+without it a bare number is read too. Parsing happens in the committed locale, and a field reads the
+digits of one numbering system: the one the formatting context declares, or the locale's own where
+it declares none. After a switch to `ar-EG` the field reads Arabic-Indic digits and refuses the
+Latin ones. With `latn` declared it reads the Latin ones and refuses the others.
 
 ```ts src/app/forms.spec.ts
 import { afterEach, describe, expect, it } from 'vitest';
