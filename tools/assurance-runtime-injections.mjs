@@ -407,6 +407,14 @@ export const injections = Object.freeze([
     replace: '    void locale;',
   },
   {
+    id: 'locale-change-unasked-about-a-committed-destination',
+    invariant:
+      'A locale change made in place after a navigation committed its locale and before it landed is answered for the destination.',
+    source: 'packages/runtime/router/src/route-localization.ts',
+    find: '    if (destination !== undefined) this.reresolve(destination, locale);',
+    replace: '    void locale;',
+  },
+  {
     id: 'locale-change-unasked-during-a-navigation',
     invariant:
       'A locale change made in place while a navigation is in flight is answered for the page on screen.',

@@ -2345,6 +2345,14 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "7. Locale switching",
+      "statement": "Where that navigation has already committed its locale and has not landed, a release MUST answer the change for the navigation's destination as well, and MUST write the page that lands in the locale that is committed.",
+      "checks": [
+        "assurance-runtime:locale-change-unasked-about-a-committed-destination"
+      ]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "7. Locale switching",
       "statement": "A release MUST publish a snapshot only through a transaction, including when a single scope finishes loading, so every commit observer sees the same kind of event.",
       "checks": ["assurance-runtime:scope-load-published-without-a-transaction"]
     },
