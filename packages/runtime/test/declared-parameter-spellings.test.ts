@@ -154,7 +154,23 @@ describe('a declared route parameter spelling', () => {
         undefined,
         DECLARED,
       ),
-    ).toThrow(/cannot read its own ar-EG spelling back/u);
+    ).toThrow(
+      /was declared an ar-EG spelling for parameter slug that its codec does not read/u,
+    );
+    // The codec is not at fault here, and the refusal does not say it is: the declaration is what
+    // an application corrects.
+    expect(() =>
+      buildLocalizedRoute(
+        POLICY,
+        projectionWith(ENGLISH_ONLY),
+        'dossier',
+        'ar-EG',
+        { slug: 'dossier' },
+        [],
+        undefined,
+        DECLARED,
+      ),
+    ).not.toThrow(/cannot read its own/u);
 
     // The same codec and the same route build normally without the declaration, so the refusal
     // above is about the declared spelling rather than about this fixture being unbuildable.

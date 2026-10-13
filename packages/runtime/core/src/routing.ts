@@ -3549,7 +3549,11 @@ type LocalizedSegments =
   | {
       readonly ok: false;
       readonly reason:
-        'parameter-missing' | 'unrepresentable' | 'unsafe' | 'unreadable';
+        | 'parameter-missing'
+        | 'unrepresentable'
+        | 'unsafe'
+        | 'unreadable'
+        | 'declared-unreadable';
       readonly parameter: string;
     };
 
@@ -3596,7 +3600,7 @@ function localizedRouteSegments(
         return { ok: false, reason: 'unsafe', parameter: name };
       }
       if (!codec.parse(declared, context).ok) {
-        return { ok: false, reason: 'unreadable', parameter: name };
+        return { ok: false, reason: 'declared-unreadable', parameter: name };
       }
       segments.push(declared);
       continue;
@@ -4300,6 +4304,13 @@ function localizedRouteAddress(
     if (built.reason === 'unreadable') {
       routeError(
         `Route ${route.id} has a codec for parameter ${built.parameter} that cannot read its own ${locale} spelling back. \`parse(serialize(value, locale), locale)\` must return that value.`,
+      );
+    }
+    // The same failure from the other side: the spelling came from a declaration and the codec
+    // was asked only to read it, so the declaration is what the message names.
+    if (built.reason === 'declared-unreadable') {
+      routeError(
+        `Route ${route.id} was declared an ${locale} spelling for parameter ${built.parameter} that its codec does not read. A declared spelling must be one the codec's parse accepts in that locale.`,
       );
     }
     throw new LocalizationError(
