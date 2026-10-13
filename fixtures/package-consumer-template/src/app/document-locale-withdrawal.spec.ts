@@ -9,11 +9,12 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { PLATFORM_ID } from '@angular/core';
+import { PLATFORM_ID, inject, provideAppInitializer } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   Localization,
   provideLocalizationSetup,
+  withRecoveryMessage,
   withRouting,
   withoutDocumentLocale,
   withFormattingContext,
@@ -23,6 +24,7 @@ import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
+import { messages } from '#i18n/shell';
 
 import { runtimeExtensions } from './runtime-extensions';
 import { appRouteProjection, routePolicy } from './localization.routes';
@@ -97,6 +99,50 @@ function setup(withdrawn: boolean, routed = false) {
   return TestBed.inject(Localization);
 }
 
+/**
+ * An application whose first commit fails after the document step has written.
+ *
+ * The participant is registered by an initializer listed ahead of Equator's, so it is registered
+ * before the start begins and is one of the participants that start commits. Registered any later,
+ * it is no part of the start, which then commits without it. The recovery message is what lets the
+ * application's own start settle in a browser when Equator's does not.
+ */
+function setupWithAFailingFirstCommit() {
+  TestBed.resetTestingModule();
+  TestBed.configureTestingModule({
+    providers: [
+      provideAppInitializer(() => {
+        inject(Localization).registerParticipant({
+          id: 'failing-commit',
+          prepare: (context) => ({
+            status: 'ready',
+            representation: {
+              kind: 'locale-bound',
+              supplyingLocale: context.targetLocale,
+              direction: 'ltr',
+            },
+          }),
+          commit: () => {
+            throw new Error('intentional participant failure');
+          },
+        });
+      }),
+      provideLocalizationSetup(
+        {
+          configuration,
+          catalogSet,
+          catalogLoaders,
+          recoveryPayload,
+          extensions: runtimeExtensions,
+        },
+        withRecoveryMessage({ message: messages.recovery.unavailable }),
+        withFormattingContext({ timeZone: 'UTC' }),
+      ),
+    ],
+  });
+  return TestBed.inject(Localization);
+}
+
 describe('withoutDocumentLocale withdraws every document effect and nothing else', () => {
   beforeEach(() => {
     document.documentElement.setAttribute('lang', HOST_LANGUAGE);
@@ -138,27 +184,21 @@ describe('withoutDocumentLocale withdraws every document effect and nothing else
       const root = document.documentElement;
       if (language === undefined) root.removeAttribute('lang');
       if (direction === undefined) root.removeAttribute('dir');
-      const localization = setup(false);
-      // Fails after the document step has written, and before any snapshot is published, so there
-      // is no earlier snapshot to put back and the document is returned to what it stated.
-      localization.registerParticipant({
-        id: 'failing-commit',
-        prepare: (context) => ({
-          status: 'ready',
-          representation: {
-            kind: 'locale-bound',
-            supplyingLocale: context.targetLocale,
-            direction: 'ltr',
-          },
-        }),
-        commit: () => {
-          throw new Error('intentional participant failure');
+      const localization = setupWithAFailingFirstCommit();
+
+      // Section 11 of `specs/06-runtime-and-angular.spec.md`: the root language and direction
+      // stage with the snapshot, and a commit that fails is prevented. No snapshot was published
+      // before this one, so the document is returned to what the host stated.
+      await expect(localization.initialize()).rejects.toMatchObject({
+        diagnostic: {
+          code: 'participant-failed',
+          participantId: 'failing-commit',
+          targetLocale: 'en-US',
         },
       });
 
-      await expect(localization.initialize()).rejects.toBeDefined();
-
       expect(localization.snapshot()).toBeUndefined();
+      expect(localization.lifecycle()).toBe('failed');
       expect(root.getAttribute('lang')).toBe(language ?? null);
       expect(root.getAttribute('dir')).toBe(direction ?? null);
     },
