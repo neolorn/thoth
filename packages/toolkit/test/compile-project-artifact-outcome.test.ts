@@ -99,8 +99,8 @@ describe('a warning from compiling the artifacts', () => {
 });
 
 describe('recovery messages the payload refuses', () => {
-  // Plain text with no input, which the recovery roots accept, and a slot declared without being
-  // placed, which the payload does not: a recovery representation carries no slots.
+  // Plain text with no input, and a slot declared without being placed: a recovery representation
+  // carries no slots, so the selection is refused under the code every invalid recovery root gets.
   const withSlots = [
     'messages:',
     '  later:',

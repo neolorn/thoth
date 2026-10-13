@@ -669,6 +669,32 @@ function validateMessageFunctions(
   }
 }
 
+/**
+ * Why a message cannot be a recovery root, or nothing when it can.
+ *
+ * A recovery root is rendered when nothing else can be, so it is one existing plain message that
+ * needs nothing passed to it. The generated recovery module and the compiled recovery payload
+ * both ask, and this is the one answer and the one sentence both give.
+ */
+export function recoveryRootRefusal(
+  identity: string,
+  message: SemanticMessage | undefined,
+): ToolkitDiagnostic | undefined {
+  if (
+    message !== undefined &&
+    message.resultKind === 'plain' &&
+    message.inputs.length === 0 &&
+    message.slots.length === 0
+  ) {
+    return undefined;
+  }
+  return toolkitDiagnostic(
+    'EQ1501',
+    `Recovery identity ${JSON.stringify(identity)} must resolve to one plain message without inputs or slots.`,
+    { path: ['recovery', identity] },
+  );
+}
+
 function compatibleRefinement(
   inferred: PortableTypeId,
   refined: PortableTypeId,

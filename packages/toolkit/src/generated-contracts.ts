@@ -19,6 +19,7 @@ import { messagePartInCode } from './identities.js';
 import { localeEndonym, shippedFallbackChain } from './locales.js';
 import {
   GENERATED_ABI_PROFILE,
+  recoveryRootRefusal,
   type EffectiveInputContract,
   type SemanticFamily,
   type SemanticGraph,
@@ -754,18 +755,9 @@ function recoveryModule(
   const rows: string[] = [];
   for (const identity of [...new Set(identities)].sort(compareCodeUnit)) {
     const message = messages.get(identity);
-    if (
-      message === undefined ||
-      message.resultKind !== 'plain' ||
-      message.inputs.length > 0
-    ) {
-      diagnostics.push(
-        toolkitDiagnostic(
-          'EQ1304',
-          `Recovery identity ${JSON.stringify(identity)} must select an existing plain message with no inputs.`,
-          { path: ['recovery', identity] },
-        ),
-      );
+    const refusal = recoveryRootRefusal(identity, message);
+    if (message === undefined || refusal !== undefined) {
+      if (refusal !== undefined) diagnostics.push(refusal);
       continue;
     }
     rows.push(

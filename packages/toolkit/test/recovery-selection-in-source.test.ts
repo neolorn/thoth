@@ -136,7 +136,7 @@ describe('a recovery message selected in source', () => {
       generated.diagnostics.map(({ code, path }) => ({ code, path })),
     ).toEqual([
       {
-        code: 'EQ1304',
+        code: 'EQ1501',
         path: ['recovery', 'recovery-selection:shell:recovery.unavailable'],
       },
     ]);

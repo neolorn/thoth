@@ -185,7 +185,7 @@ describe('a recovery selection the overlay cannot be built from', () => {
     expect(
       compiled.diagnostics.map(({ code, path }) => ({ code, path })),
     ).toEqual([
-      { code: 'EQ1304', path: ['recovery', '@example/app:shell:absent'] },
+      { code: 'EQ1501', path: ['recovery', '@example/app:shell:absent'] },
     ]);
   });
 });

@@ -99,7 +99,7 @@ describe('a compilation that fails while a sink is listening', () => {
     );
 
     expect(compiled.ok).toBe(false);
-    expect(compiled.diagnostics.map(({ code }) => code)).toContain('EQ1304');
+    expect(compiled.diagnostics.map(({ code }) => code)).toEqual(['EQ1501']);
     expect(
       events.map(({ code, status, diagnosticCode }) => ({
         code,

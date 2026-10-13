@@ -38,13 +38,14 @@ import {
   type PersonNameProfileSet,
 } from './person-names.js';
 import { RESOURCE_LIMITS } from './resource-limits.js';
-import type {
-  EffectiveInputContract,
-  EffectiveSlotContract,
-  ReferencedExtension,
-  SemanticGraph,
-  SemanticMessage,
-  SemanticScope,
+import {
+  recoveryRootRefusal,
+  type EffectiveInputContract,
+  type EffectiveSlotContract,
+  type ReferencedExtension,
+  type SemanticGraph,
+  type SemanticMessage,
+  type SemanticScope,
 } from './semantic-model.js';
 import { compareCodeUnit } from './sorted-records.js';
 
@@ -894,21 +895,8 @@ function recoveryRepresentations(
     ),
   );
   for (const identity of selected) {
-    const message = semantic.get(identity);
-    if (
-      message === undefined ||
-      message.resultKind !== 'plain' ||
-      message.inputs.length > 0 ||
-      message.slots.length > 0
-    ) {
-      diagnostics.push(
-        toolkitDiagnostic(
-          'EQ1501',
-          `Recovery identity ${JSON.stringify(identity)} must resolve to one plain message without inputs or slots.`,
-          { path: ['recovery', identity] },
-        ),
-      );
-    }
+    const refusal = recoveryRootRefusal(identity, semantic.get(identity));
+    if (refusal !== undefined) diagnostics.push(refusal);
   }
   const result: RecoveryRepresentation[] = [];
   for (const catalog of catalogs) {

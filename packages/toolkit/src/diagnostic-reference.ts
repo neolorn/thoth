@@ -84,7 +84,7 @@ const REFERENCE = {
   EQ1303:
     "A message's rich slots do not form a valid structure: unclosed or mismatched, nested where nesting is refused, used both paired and standalone, of an unregistered or undeterminable kind, refined past what the source supports, or the per-message slot ceiling.",
   EQ1304:
-    "A translation does not honour the source message's contract: it invents a message, changes or invents an input, or omits a required rich slot. Also a recovery identity that does not select an existing plain message with no inputs.",
+    "A translation does not honour the source message's contract: it invents a message, changes or invents an input, or omits a required rich slot.",
   EQ1305:
     'Generated names collide, or an open family is not well formed: two identities projecting to one generated path, a repeated placeholder, a template with no fixed part, members whose contracts differ, or a message two families both match.',
   EQ1306:
@@ -134,7 +134,7 @@ const REFERENCE = {
   EQ1417:
     'The locale URL policy is not written out whole, so EQ1408 and EQ1409 were not checked for part of it. The advisory names each option of the call that builds the policy that the build did not read: the locale table, `defaultLocale`, `aliases` or `localeNeutralRoots`, where it or an entry in it comes from a constant, a function, a spread or a key that is not a literal, or has a spread written after it. It does not block a build. Write the named options as literals in the call to have them compared.',
   EQ1501:
-    'A compiled artifact cannot be produced from the accepted graph: a recovery identity that resolves to no single plain message, or a catalog absent from the graph.',
+    'A compiled artifact cannot be produced from the accepted graph: a recovery identity that does not resolve to one existing plain message without inputs or slots, or a catalog absent from the graph.',
   EQ1502: 'A compiled catalog exceeds the IR node or depth ceiling.',
   EQ1503:
     'The output plan or the completion manifest is invalid: a malformed or colliding output path, an attempt to replace the reserved completion marker, or a manifest whose header, entries or plan digest do not hold.',
