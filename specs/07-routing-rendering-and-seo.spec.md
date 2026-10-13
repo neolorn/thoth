@@ -441,7 +441,10 @@ release MUST end the change as failed with the diagnostic the address was refuse
 commit a locale the address bar cannot follow, and MUST NOT send the document to another origin. A
 locale change a navigation makes is answered for the navigation's destination instead. A release
 MUST answer a change made in place while a navigation is in flight for the route on screen, as it
-answers any other, because that navigation can still be cancelled.
+answers any other, because that navigation can still be cancelled. Where that navigation has
+already committed its locale and has not landed, a release MUST answer the change for the
+navigation's destination as well, and MUST write the page that lands in the locale that is
+committed.
 
 A release MUST publish a snapshot only through a transaction, including when a single scope
 finishes loading, so every commit observer sees the same kind of event.

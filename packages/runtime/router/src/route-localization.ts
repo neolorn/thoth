@@ -568,6 +568,17 @@ export class RouteLocalization {
           this.pending.delete(event.id);
           if (pending.result !== undefined) {
             this.commitPromise = this.applyDocument(pending, pending.result);
+            // A locale committed in place after this navigation committed its own found the head
+            // step waiting for this arrival, so the head just written is in the navigation's
+            // locale. Projected again here, for the locale that is committed.
+            const committed = this.localization.snapshot()?.primaryLocale;
+            if (
+              committed !== undefined &&
+              committed !== pending.context.resolution.locale &&
+              untracked(this.context) === pending.context
+            ) {
+              this.onLocaleCommitted(committed);
+            }
           }
         }
         // Last, and that is the whole reason it happens here. The locale commits in the resolver,
@@ -1302,20 +1313,47 @@ export class RouteLocalization {
    * Router writes. A change made in place while a navigation is in flight carries the record of
    * the page on screen and is asked like any other, because that navigation may yet be cancelled,
    * and the page it left would then stand in a locale it has no address in.
+   *
+   * A navigation commits its locale before its destination is on screen, and a change made in
+   * place after that commit carries the destination's record. It is asked about both pages: the
+   * destination, which is where the commit stands once the navigation ends, and the page still on
+   * screen, whose address the bar shows until then.
    */
   private refuseUnaddressed(
     locale: string,
     route: LocalizationRouteSnapshot | undefined,
   ): void {
     const active = untracked(this.context);
+    const destination =
+      this.router.getCurrentNavigation() === null
+        ? undefined
+        : this.committedDestination(route);
+    if (destination !== undefined) this.reresolve(destination, locale);
     if (active === undefined) return;
     if (
       this.router.getCurrentNavigation() !== null &&
+      destination === undefined &&
       !isRecordOf(route, active)
     ) {
       return;
     }
     this.reresolve(active, locale);
+  }
+
+  /**
+   * The destination of a navigation that has committed its locale and not yet landed, where a
+   * commit carries that destination's record.
+   *
+   * A navigation's own commit is made before its entry is kept here, so it finds nothing and is
+   * left to the navigation. A commit that does find one was made in place afterwards.
+   */
+  private committedDestination(
+    route: LocalizationRouteSnapshot | undefined,
+  ): RouteLocalizationContext | undefined {
+    for (const pending of this.pending.values()) {
+      if (isRecordOf(route, pending.context)) return pending.context;
+    }
+    return undefined;
   }
 
   /**

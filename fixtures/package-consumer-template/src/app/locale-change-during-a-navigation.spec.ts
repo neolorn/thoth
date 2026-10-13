@@ -41,6 +41,11 @@ import { runtimeExtensions } from './runtime-extensions';
  * locale it has no address in. The navigation here is held at a guard, which is where a slow
  * permission check or a confirmation prompt holds one, and the dossier on screen is a record that
  * exists in English only.
+ *
+ * A navigation commits its locale before its destination is on screen, so there is a second
+ * stretch: after that commit and before the arrival, which a resolver of the application's own
+ * holds open here. A change made in place then is answered for the destination as well, and where
+ * it commits, the page that arrives is written in the locale that is committed.
  */
 
 const POLICY = createPathPrefixLocalePolicy({
@@ -83,6 +88,8 @@ class Blank {}
 let held: Promise<boolean> | undefined;
 /** Called when a navigation reaches the guard while it is held. */
 let reached: (() => void) | undefined;
+/** What the application's own resolver waits on. Absent, it answers at once. */
+let loading: Promise<true> | undefined;
 
 const ROUTES: Routes = [
   {
@@ -96,6 +103,7 @@ const ROUTES: Routes = [
         return held;
       },
     ],
+    resolve: { loaded: () => loading ?? true },
   },
   { path: '**', component: Blank },
 ];
@@ -186,9 +194,43 @@ async function navigationHeld(): Promise<InFlight> {
   };
 }
 
+interface Committed {
+  readonly localization: Localization;
+  readonly platform: PlatformLocation;
+  /** How the navigation ends, once the resolver has answered. */
+  readonly landed: Promise<RouterEvent>;
+  /** Let the application's resolver answer. */
+  readonly load: () => void;
+  readonly settle: () => Promise<void>;
+}
+
+/**
+ * The dossier on screen in English, and a navigation to another dossier that has committed its
+ * locale and is held at the application's own resolver.
+ */
+async function navigationCommitted(): Promise<Committed> {
+  const { answer, landed, localization, platform, settle } =
+    await navigationHeld();
+  let load: () => void = () => undefined;
+  loading = new Promise<true>((resolve) => {
+    load = () => resolve(true);
+  });
+  answer(true);
+  // The navigation's own commit is the one that carries the destination's record.
+  for (let round = 0; round < 20; round += 1) {
+    if (localization.snapshot().route?.canonicalPath === DESTINATION) break;
+    await settle();
+  }
+  expect(localization.snapshot().route?.canonicalPath).toBe(DESTINATION);
+  expect(TestBed.inject(Router).getCurrentNavigation()).not.toBeNull();
+  expect(platform.pathname).toBe(ARRIVAL);
+  return { localization, platform, landed, load, settle };
+}
+
 afterEach(() => {
   held = undefined;
   reached = undefined;
+  loading = undefined;
   vi.restoreAllMocks();
   TestBed.resetTestingModule();
   history.replaceState(null, '', '/');
@@ -250,5 +292,55 @@ describe('a locale change in place while a navigation to another page is in flig
     answer(false);
     await landed;
     await settle();
+  });
+});
+
+describe('a locale change in place after a navigation has committed its locale and before it lands', () => {
+  it('ends as failed where the destination has no address in the target locale, and the navigation lands as it was going to', async () => {
+    const { landed, load, localization, platform, settle } =
+      await navigationCommitted();
+    const before = localization.snapshot();
+
+    const result = await localization.changeLocale('ar-EG');
+
+    expect(result).toMatchObject({
+      status: 'failed',
+      targetLocale: 'ar-EG',
+      diagnostic: {
+        code: 'route-unavailable',
+        outcome: 'localized-representation-unavailable',
+      },
+    });
+    expect(localization.snapshot()).toBe(before);
+
+    load();
+    expect(await landed).toBeInstanceOf(NavigationEnd);
+    await settle();
+
+    expect(localization.snapshot().primaryLocale).toBe('en-US');
+    expect(platform.pathname).toBe(DESTINATION);
+    expect(document.documentElement.lang).toBe('en-US');
+  });
+
+  it('commits where both pages have an address in the target locale, and the page that lands is written in it', async () => {
+    const { landed, load, localization, platform, settle } =
+      await navigationCommitted();
+
+    const result = await localization.changeLocale('en-Arab-XB');
+
+    expect(result).toMatchObject({
+      status: 'committed',
+      targetLocale: 'en-Arab-XB',
+    });
+
+    load();
+    expect(await landed).toBeInstanceOf(NavigationEnd);
+    await settle();
+
+    const snapshot = localization.snapshot();
+    expect(snapshot.primaryLocale).toBe('en-Arab-XB');
+    expect(snapshot.route?.canonicalPath).toBe('/en-arab-xb/dossiers/other');
+    expect(platform.pathname).toBe('/en-arab-xb/dossiers/other');
+    expect(document.documentElement.lang).toBe('en-Arab-XB');
   });
 });
