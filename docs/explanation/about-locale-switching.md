@@ -29,6 +29,21 @@ to show progress for.
 Lifecycle hooks run around the commit, for overlays and view transitions that need to know the moment
 the page changes.
 
+## Holding the whole page, or most of it
+
+A change is coordinated unless it asks otherwise: the commit waits for every scope the view renders,
+so the wait is as long as the slowest catalog. Text below the fold or behind an interaction does not
+have to be part of that wait. A progressive change commits with the scopes that are ready and loads
+the ones named as progressive beside it. Equator reports where each of those stands through
+`scopeReadiness` and decides nothing about the region that renders it: a placeholder, the previous
+content, or nothing at all is the application's choice, because only the application knows what
+that region is for.
+
+A scope is progressive only where there is an earlier view to keep on screen. A coordinated change
+loads it before committing, and a server render, a prerender and the first render in a browser load
+it before rendering, because none of them has anything to show in its place. A progressive scope
+that fails stays failed in its own region and does not undo the commit.
+
 ## A switch and a navigation
 
 A switch is not a navigation. The Router's URL is still the route you are on. Only the address the visitor sees carries the locale,

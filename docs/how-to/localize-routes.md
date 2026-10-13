@@ -85,6 +85,43 @@ Every policy takes `localeNeutralRoots`, a list of path roots that keep one addr
 Use it for a sign-in callback, a webhook receiver, or anything a third party has already recorded the
 address of.
 
+## Name further scopes for a route
+
+A navigation waits for the scopes the route's code uses, which `generate` derives from the route
+tree, so most applications name none. To hold a navigation for a further scope, name it in the
+second argument of `provideLocalizedRouter`:
+
+```text
+import { providerId, scopeId } from '#i18n/comments';
+
+const comments = { providerId, scopeId } as const;
+
+provideLocalizedRouter(routes, {
+  requiredScopes: { 'route:articles._': [comments] },
+});
+```
+
+A key is a `routeId`, the identity `generate` gave the route. A list in place of the record names
+the scopes for every route.
+
+To let a navigation complete before a scope arrives, name the scope in `progressiveScopes` and set
+`mode` to `progressive`:
+
+```text
+provideLocalizedRouter(routes, {
+  mode: 'progressive',
+  progressiveScopes: { 'route:articles._': [comments] },
+});
+```
+
+The page renders without the scope, and `scopeReadiness(comments)` on `Localization` reports
+`loading`, then `ready` or `failed`. What the region shows until then is yours to write. Under
+`coordinated`, which is the mode where you name none, and in a server render, a prerender and the
+first render in a browser under either mode, a progressive scope is loaded before the page renders,
+as a required one is. A `mode` that is neither word fails with `invalid-configuration` where the
+option is given. Why a change waits at all is
+[About how a locale switch is a transaction](../explanation/about-locale-switching.md).
+
 ## Serve a prefixed address from a static host
 
 Under a path policy the first segment of every address is a locale, so a host that serves files by

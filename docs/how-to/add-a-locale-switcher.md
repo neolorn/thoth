@@ -75,6 +75,26 @@ await localization.changeLocale(configuration.defaultLocale, { remember: false }
 Move to the default, or to whatever the visitor's client asks for. `remember: false` is what keeps
 that move from storing a fresh choice in place of the one just dropped.
 
+## Commit before every scope arrives
+
+`localeChoice` asks for a coordinated change, which holds the page until every scope the view
+renders is ready in the arriving locale. To commit sooner, call `changeLocale` from your own
+control, ask for a progressive change, and name the scopes the page can render without:
+
+```text
+await localization.changeLocale(choice.locale, {
+  mode: 'progressive',
+  progressiveScopes: [comments],
+});
+```
+
+A scope is the `{ providerId, scopeId }` pair its generated module exports. The change commits with
+the other scopes, and `scopeReadiness(comments)` reports `loading`, then `ready` or `failed`, for
+the region to render from. `requiredScopes` in the same options names the scopes the change waits
+for. Leave it out and the scopes the page already requires stand. The call throws
+`invalid-configuration` for a scope named in both lists, and for a progressive scope the page
+already requires.
+
 ## Assert that the switch is atomic
 
 `changeLocale(locale)` prepares everything the arriving locale needs and commits only when all of it
