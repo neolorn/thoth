@@ -2316,7 +2316,6 @@ function ownEntry<Value>(
 
 interface ParsedTarget {
   readonly segments: readonly string[];
-  readonly trailingSlash: boolean;
   readonly query: readonly RouteQueryValue[];
   readonly fragment?: string;
   readonly canonicalSuffix: string;
@@ -2423,7 +2422,6 @@ function parseTarget(target: string): ParsedTarget | undefined {
   const canonicalSuffix = `${canonicalQuery.length === 0 ? '' : `?${canonicalQuery}`}${canonicalFragment === undefined ? '' : `#${canonicalFragment}`}`;
   return Object.freeze({
     segments: Object.freeze(segments),
-    trailingSlash,
     query: Object.freeze(query),
     ...(fragment === undefined ? {} : { fragment }),
     canonicalSuffix,

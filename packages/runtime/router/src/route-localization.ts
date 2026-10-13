@@ -244,8 +244,6 @@ interface ResolvedRouteLocalizationOptions extends RouteLocalizationOptions {
 interface PendingRoute {
   readonly context: RouteLocalizationContext;
   readonly previousUrl: string;
-  readonly scopes: readonly LocalizationScope[];
-  readonly progressiveScopes: readonly LocalizationScope[];
   /** The snapshot to put back if this navigation never lands. */
   readonly previousSnapshot: LocalizationSnapshot | undefined;
   /**
@@ -882,8 +880,6 @@ export class RouteLocalization {
     this.pending.set(navigation.id, {
       context,
       previousUrl,
-      scopes,
-      progressiveScopes,
       previousSnapshot,
       result,
     });

@@ -6945,7 +6945,7 @@
       "original": "rawPath.length > 1",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "In parseTarget the length test only keeps the path \"/\" from counting as ending in a slash, and for that path cutting the last character and cutting none both leave the same empty text to split into segments. The trailingSlash member it also sets on the parsed target is read by nothing in the module, and the parsed target never leaves it."
+      "reason": "In parseTarget the length test only keeps the path \"/\" from counting as ending in a slash, and for that path cutting the last character and cutting none both leave the same empty text to split into segments."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -6953,7 +6953,7 @@
       "original": "rawPath.length > 1",
       "replacement": "rawPath.length >= 1",
       "category": "equivalent",
-      "reason": "In parseTarget the two comparisons differ only for a path of one character, which ends in a slash only when it is \"/\", and for that path cutting the last character and cutting none both leave the same empty text to split into segments. The trailingSlash member it also sets on the parsed target is read by nothing in the module, and the parsed target never leaves it."
+      "reason": "In parseTarget the two comparisons differ only for a path of one character, which ends in a slash only when it is \"/\", and for that path cutting the last character and cutting none both leave the same empty text to split into segments."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
