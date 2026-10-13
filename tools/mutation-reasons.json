@@ -4766,18 +4766,18 @@
     {
       "file": "packages/runtime/src/localized-input.ts",
       "mutator": "ConditionalExpression",
-      "original": "[...formatted.value.text].length > fieldCharacterLimit(profile)",
+      "original": "[...canonicalInput(formatted.value.text)].length >\n    fieldCharacterLimit(profile)",
       "replacement": "false",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it, by the field's limit, which parseLocalizedInput asks before anything else about the field and takes from the same fieldCharacterLimit; that returns the same invalid-localized-input failure and only the message differs"
+      "reason": "verifyFormattedInput counts the written text in its composed form against fieldCharacterLimit, and the re-read it makes next counts the same form against the same limit before anything else about the field, so text this test would refuse is refused there with the same invalid-localized-input failure on every platform, whatever form the platform writes in; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
       "mutator": "ArrayDeclaration",
-      "original": "[...formatted.value.text]",
+      "original": "[...canonicalInput(formatted.value.text)]",
       "replacement": "[]",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it, by the field's limit, which parseLocalizedInput asks before anything else about the field and takes from the same fieldCharacterLimit; that returns the same invalid-localized-input failure and only the message differs"
+      "reason": "verifyFormattedInput counts the written text in its composed form against fieldCharacterLimit, and the re-read it makes next counts the same form against the same limit before anything else about the field, so text this test would refuse is refused there with the same invalid-localized-input failure on every platform, whatever form the platform writes in; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",
@@ -4785,7 +4785,7 @@
       "original": "{\n    return formattingPolicyFailure(\n      'The formatted value exceeds the declared localized-input field limit.',\n      context,\n    );\n  }",
       "replacement": "{}",
       "category": "equivalent",
-      "reason": "text over the limit is refused again when verifyFormattedInput re-reads it, by the field's limit, which parseLocalizedInput asks before anything else about the field and takes from the same fieldCharacterLimit; that returns the same invalid-localized-input failure and only the message differs"
+      "reason": "verifyFormattedInput counts the written text in its composed form against fieldCharacterLimit, and the re-read it makes next counts the same form against the same limit before anything else about the field, so text this test would refuse is refused there with the same invalid-localized-input failure on every platform, whatever form the platform writes in; only the message differs"
     },
     {
       "file": "packages/runtime/src/localized-input.ts",

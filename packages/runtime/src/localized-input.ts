@@ -2379,7 +2379,12 @@ function verifyFormattedInput(
   context: FormattingContext,
 ): FormattingResult {
   if (!formatted.ok) return formatted;
-  if ([...formatted.value.text].length > fieldCharacterLimit(profile)) {
+  // Counted in the composed form, as the field's reader counts what it is given, so the two
+  // agree about every text whatever form the platform writes in.
+  if (
+    [...canonicalInput(formatted.value.text)].length >
+    fieldCharacterLimit(profile)
+  ) {
     return formattingPolicyFailure(
       'The formatted value exceeds the declared localized-input field limit.',
       context,
