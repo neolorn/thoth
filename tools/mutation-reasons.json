@@ -6468,14 +6468,6 @@
     {
       "file": "packages/toolkit/src/semantic-model.ts",
       "mutator": "ConditionalExpression",
-      "original": "case 'lower-kebab':\n      return nativeMessagePartPattern.test(value);",
-      "replacement": "case 'lower-kebab':",
-      "category": "equivalent",
-      "reason": "The guard on line 1623 has already returned false for a value nativeMessagePartPattern refuses, so this case answers true whenever it is reached. Falling through to the ascii-token case also answers true, because every string of [a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)* matches [A-Za-z][A-Za-z0-9-]*."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "ConditionalExpression",
       "original": "type === undefined",
       "replacement": "false",
       "category": "equivalent",

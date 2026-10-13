@@ -1638,13 +1638,14 @@ function familySegmentMatches(
   ) {
     return false;
   }
-  switch (descriptor?.syntax ?? 'lower-kebab') {
-    case 'lower-kebab':
-      return nativeMessagePartPattern.test(value);
+  switch (descriptor?.syntax) {
     case 'ascii-token':
       return /^[A-Za-z][A-Za-z0-9-]*$/u.test(value);
     case 'unicode-token':
       return /^[\p{L}\p{N}][\p{L}\p{N}-]*$/u.test(value);
+    default:
+      // Lower-kebab, which the pattern above has already held the value to.
+      return true;
   }
 }
 
