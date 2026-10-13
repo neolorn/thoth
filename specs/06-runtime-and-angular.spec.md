@@ -319,7 +319,9 @@ participant preparation, and no return to the ready state.
 A context destroyed while a commit is still being applied, before its snapshot is current, has no
 commit to stand. The change ends as one in flight does: a locale change as cancelled and an
 initialization with the typed disposed failure, and no snapshot is published to the destroyed
-context.
+context. A hook or a participant that destroys the context and then throws changes none of that:
+the change ends the same way, and an initialization keeps what was thrown as the cause of its
+disposed failure.
 
 ## 12. The testing surface
 

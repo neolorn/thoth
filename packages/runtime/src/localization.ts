@@ -2160,10 +2160,22 @@ class LocalizationInternal {
       .catch((thrown: unknown) => {
         // A commit hook is application code and throws whatever it throws. A caller branches on
         // the diagnostic, so what leaves here always carries one.
-        const error =
+        const typed =
           thrown instanceof LocalizationError
             ? thrown
             : new LocalizationError(asDiagnostic(thrown), { cause: thrown });
+        // A destroyed context has no attempt left to fail. Whatever stopped this one, a hook that
+        // threw after destroying the context included, the caller is told of the destruction.
+        const error =
+          this.disposed && typed.diagnostic.code !== 'disposed'
+            ? new LocalizationError(
+                operationalDiagnostic(
+                  'disposed',
+                  'The localization context is disposed.',
+                ),
+                { cause: thrown },
+              )
+            : typed;
         this.observability?.emit({
           code: RUNTIME_EVENT_CODES.initialization,
           phase: 'initialization',
