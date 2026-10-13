@@ -1915,11 +1915,11 @@ export function analyzeCatalogSet(
   }
 
   const scopes: SemanticScope[] = [];
-  for (const catalogs of [...groups.values()].sort((left, right) => {
-    const leftKey = `${left[0]?.providerId ?? ''}\u0000${left[0]?.scopeId ?? ''}`;
-    const rightKey = `${right[0]?.providerId ?? ''}\u0000${right[0]?.scopeId ?? ''}`;
-    return compareCodePoint(leftKey, rightKey);
-  })) {
+  // Ordered by the key each group is held under, so no two groups compare as equal and the order
+  // is one whatever order the catalogs came in.
+  for (const [, catalogs] of [...groups].sort(([left], [right]) =>
+    compareCodePoint(left, right),
+  )) {
     const exemplar = catalogs[0];
     if (exemplar === undefined) continue;
     const byLocale = new Map<string, Catalog>();

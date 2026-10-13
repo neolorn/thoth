@@ -7623,38 +7623,6 @@
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "OptionalChaining",
-      "original": "left[0]?.providerId",
-      "replacement": "left[0].providerId",
-      "category": "equivalent",
-      "reason": "Every list in `groups` is created on line 1914 and given a catalog on line 1915 before line 1916 stores it, so the first element of a group the sort on line 1920 compares is never undefined and the optional read is never the one taken."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "OptionalChaining",
-      "original": "left[0]?.scopeId",
-      "replacement": "left[0].scopeId",
-      "category": "equivalent",
-      "reason": "Every list in `groups` is created on line 1914 and given a catalog on line 1915 before line 1916 stores it, so the first element of a group the sort on line 1920 compares is never undefined and the optional read is never the one taken."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "OptionalChaining",
-      "original": "right[0]?.providerId",
-      "replacement": "right[0].providerId",
-      "category": "equivalent",
-      "reason": "Every list in `groups` is created on line 1914 and given a catalog on line 1915 before line 1916 stores it, so the first element of a group the sort on line 1920 compares is never undefined and the optional read is never the one taken."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "OptionalChaining",
-      "original": "right[0]?.scopeId",
-      "replacement": "right[0].scopeId",
-      "category": "equivalent",
-      "reason": "Every list in `groups` is created on line 1914 and given a catalog on line 1915 before line 1916 stores it, so the first element of a group the sort on line 1920 compares is never undefined and the optional read is never the one taken."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
       "mutator": "ConditionalExpression",
       "original": "exemplar === undefined",
       "replacement": "false",
