@@ -553,10 +553,11 @@ const personNameFieldKeys: readonly PersonNameFieldKey[] = Object.freeze([
  * English speaker. Takes the parts by role, each optionally in one of the variants a locale may
  * ask for, and at least one part must be given.
  *
- * Every part is trimmed and normalized. Throws for a language tag that is not canonical, for a
- * part longer than a name, for text carrying control or direction-override characters, which
- * are the ones that make a rendered name read as something other than what it says, and for text
- * that is not well-formed Unicode because it carries half of a surrogate pair.
+ * Every part is trimmed and normalized, and the language is kept in its canonical form, which the
+ * pinned locale data decides and the host does not. Throws for a language tag that is not well
+ * formed, for a part longer than a name, for text carrying control or direction-override
+ * characters, which are the ones that make a rendered name read as something other than what it
+ * says, and for text that is not well-formed Unicode because it carries half of a surrogate pair.
  */
 export function personName(
   language: string,
