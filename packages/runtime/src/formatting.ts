@@ -2315,9 +2315,8 @@ export function segmentText(
         segment: part.segment,
         index: part.index,
         input: part.input,
-        ...('isWordLike' in part && typeof part.isWordLike === 'boolean'
-          ? { wordLike: part.isWordLike }
-          : {}),
+        // Absent for every granularity but words, where ECMA-402 writes it as a boolean.
+        ...(part.isWordLike === undefined ? {} : { wordLike: part.isWordLike }),
       }),
     );
     return Object.freeze({ ok: true, value: Object.freeze(segments) });

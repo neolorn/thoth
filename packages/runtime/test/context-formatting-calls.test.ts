@@ -78,12 +78,6 @@ function withoutPlatformMethod(method: keyof PlatformLocale): void {
   Reflect.deleteProperty(Intl.Locale.prototype, method);
 }
 
-// The segmenter's own method, kept while a case answers in its place.
-const SEGMENT = Object.getOwnPropertyDescriptor(
-  Intl.Segmenter.prototype,
-  'segment',
-) as PropertyDescriptor;
-
 describe('a call on a localization context', () => {
   let localization: Runtime;
 
@@ -106,7 +100,6 @@ describe('a call on a localization context', () => {
       Object.defineProperty(Intl.Locale.prototype, removed[0], removed[1]);
       removed = undefined;
     }
-    Object.defineProperty(Intl.Segmenter.prototype, 'segment', SEGMENT);
   });
 
   it('formats in a locale whose answers differ from the default locale’s', () => {
@@ -366,17 +359,9 @@ describe('a call on a localization context', () => {
         { segment: 'ب', index: 1, input: 'اب' },
       ],
     });
-
-    Object.defineProperty(Intl.Segmenter.prototype, 'segment', {
-      ...SEGMENT,
-      value: (input: string) => [
-        { segment: input, index: 0, input, isWordLike: undefined },
-      ],
-    });
-
     expect(localization.segment('اب', { granularity: 'word' })).toStrictEqual({
       ok: true,
-      value: [{ segment: 'اب', index: 0, input: 'اب' }],
+      value: [{ segment: 'اب', index: 0, input: 'اب', wordLike: true }],
     });
   });
 
