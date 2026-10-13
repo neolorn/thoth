@@ -381,7 +381,9 @@ section 15.
 A release MUST answer with 308 only where strict parsing proves the request is a
 user-independent one-to-one variant of one final canonical URL, and MUST combine compatible host,
 locale, static-segment, slash, alias, and query corrections into a single hop. A release MUST
-NOT case-fold or rewrite a dynamic identity except through its codec or a declared mapping.
+NOT case-fold a dynamic identity, and MUST NOT rewrite one except through its codec, a declared
+mapping, or the normalization to Form C stated below, which a parameter is given before its codec
+reads it.
 
 A correction names a locale and a route beside its location. A release MUST report the locale and
 the route that the location resolves to for the same request, including under a locale-neutral

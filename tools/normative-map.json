@@ -2252,7 +2252,7 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "6. Canonicalization, query, and fragment",
-      "statement": "A release MUST NOT case-fold or rewrite a dynamic identity except through its codec or a declared mapping.",
+      "statement": "A release MUST NOT case-fold a dynamic identity, and MUST NOT rewrite one except through its codec, a declared mapping, or the normalization to Form C stated below, which a parameter is given before its codec reads it.",
       "checks": ["assurance:dynamic-identity-case-folded"]
     },
     {
