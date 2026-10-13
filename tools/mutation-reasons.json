@@ -328,26 +328,10 @@
     {
       "file": "packages/runtime/core/src/routing.ts",
       "mutator": "StringLiteral",
-      "original": "'A route parameter value violates its codec.'",
-      "replacement": "\"\"",
-      "category": "message-wording",
-      "reason": "The literal is the text of the refusal message for a value the identifier codec will not write; the refusal is asserted by its code and outcome, and nothing compares the wording."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "StringLiteral",
       "original": "'An integer route parameter codec requires an ordered safe range.'",
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The literal is the text of the refusal message for an integer codec range that is not ordered and safe; the refusal is asserted by its code and outcome, and nothing compares the wording."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "StringLiteral",
-      "original": "'An integer route parameter is outside its codec range.'",
-      "replacement": "\"\"",
-      "category": "message-wording",
-      "reason": "The literal is the text of the refusal message for an integer outside the codec range; the refusal is asserted by its code and outcome, and nothing compares the wording."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",

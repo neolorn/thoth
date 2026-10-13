@@ -1854,6 +1854,15 @@
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "2. Route identity and parameters",
+      "statement": "The codecs a release ships are codecs under the same contract: each MUST decline a value it refuses by writing nothing, so an address built from that value is refused as a route with no address there, and a release MUST NOT report that refusal as a codec that threw.",
+      "checks": [
+        "assurance:identifier-codec-throws-on-a-refused-value",
+        "assurance:integer-codec-throws-on-a-refused-value"
+      ]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "2. Route identity and parameters",
       "statement": "A release MUST fall back to the codec for a locale the declaration omits, and MUST drop a locale with no spelling from the alternate cluster rather than guess one.",
       "checks": ["assurance:declared-spelling-borrowed-across-locales"]
     },

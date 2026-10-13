@@ -3312,6 +3312,26 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/neutral-roots-empty-slot.test.ts',
   },
   {
+    id: 'identifier-codec-throws-on-a-refused-value',
+    invariant:
+      'The identifier codec declines a value its pattern refuses by writing nothing, and does not throw.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '    serialize: (value: string) => (pattern.test(value) ? value : undefined),',
+    replace:
+      "    serialize: (value: string) => {\n      if (!pattern.test(value)) throw new Error('refused');\n      return value;\n    },",
+    caughtBy: 'packages/runtime/test/built-in-codecs-decline.test.ts',
+  },
+  {
+    id: 'integer-codec-throws-on-a-refused-value',
+    invariant:
+      'The integer codec declines a value outside its range by writing nothing, and does not throw.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '        ? String(value)\n        : undefined,',
+    replace:
+      "        ? String(value)\n        : routeError('An integer route parameter is outside its codec range.'),",
+    caughtBy: 'packages/runtime/test/built-in-codecs-decline.test.ts',
+  },
+  {
     id: 'option-of-another-kind-read-as-an-object',
     invariant:
       'An option declared as an object is refused as a configuration error when it is given a value of another kind.',

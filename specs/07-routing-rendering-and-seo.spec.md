@@ -52,7 +52,10 @@ application wherever it is asked: while an address is read, while one is built, 
 value is spelled, and while a replacement's parameters are checked. A release MUST fail the call
 with a typed failure that names the route, the parameter, and the locale where one is asked for,
 and keeps the thrown error as its cause. The request handler MUST answer that failure as it answers
-a render that failed, and MUST NOT answer the address as not found.
+a render that failed, and MUST NOT answer the address as not found. The codecs a release ships are
+codecs under the same contract: each MUST decline a value it refuses by writing nothing, so an
+address built from that value is refused as a route with no address there, and a release MUST NOT
+report that refusal as a codec that threw.
 
 A spelling that is a function of the value comes from the codec. A spelling stored beside the
 record cannot, because producing it is a fetch, so a consumer application declares it: per

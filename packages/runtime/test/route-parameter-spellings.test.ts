@@ -56,13 +56,11 @@ const policy = () =>
   });
 
 describe('an identifier route parameter codec', () => {
-  it('writes what it would read, and refuses to write what it would not', () => {
+  it('writes what it would read, and writes nothing for what it would not', () => {
     const codec = createIdentifierParameterCodec();
     expect(codec.serialize('handbook-2')).toBe('handbook-2');
-    expect(codeOf(() => codec.serialize('has space'))).toBe(
-      'invalid-configuration',
-    );
-    expect(codeOf(() => codec.serialize(''))).toBe('invalid-configuration');
+    expect(codec.serialize('has space')).toBeUndefined();
+    expect(codec.serialize('')).toBeUndefined();
   });
 
   it('refuses a pattern that remembers where its last match ended', () => {
@@ -93,13 +91,13 @@ describe('what an integer route parameter codec answers', () => {
     expect(codec.parse('0')).toStrictEqual({ ok: false });
   });
 
-  it('writes a number in range and refuses one outside it', () => {
+  it('writes a number in range and writes nothing for one outside it', () => {
     const codec = createIntegerParameterCodec(1, 10);
     expect(codec.serialize(1)).toBe('1');
     expect(codec.serialize(10)).toBe('10');
-    expect(codeOf(() => codec.serialize(0))).toBe('invalid-configuration');
-    expect(codeOf(() => codec.serialize(11))).toBe('invalid-configuration');
-    expect(codeOf(() => codec.serialize(2.5))).toBe('invalid-configuration');
+    expect(codec.serialize(0)).toBeUndefined();
+    expect(codec.serialize(11)).toBeUndefined();
+    expect(codec.serialize(2.5)).toBeUndefined();
   });
 
   it('is built from any ordered pair of safe integers, and from none', () => {

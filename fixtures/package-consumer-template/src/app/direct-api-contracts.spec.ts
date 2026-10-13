@@ -1,4 +1,5 @@
 import {
+  LocalizationError,
   buildLocalizedRoute,
   compareLocalized,
   createIdentifierParameterCodec,
@@ -321,13 +322,25 @@ describe('route and SEO contracts, called directly', () => {
       ).not.toBe('success');
     }
 
-    // Building is the other direction and fails loudly rather than silently, because a link an
-    // application writes with a value its own codec refuses is a bug in the application.
-    expect(() =>
+    // Building is the other direction. The codec declines the value by writing nothing, so the
+    // route has no address there, and the build says so with a typed refusal and never as the
+    // application's code throwing.
+    let refused: unknown;
+    try {
       buildLocalizedRoute(routePolicy, appRouteProjection, 'topic', 'en-US', {
         topic: '../etc',
-      }),
-    ).toThrow(/violates its codec/u);
+      });
+    } catch (error) {
+      refused = error;
+    }
+    expect(refused).toBeInstanceOf(LocalizationError);
+    expect((refused as LocalizationError).diagnostic).toMatchObject({
+      code: 'route-unavailable',
+      outcome: 'localized-representation-unavailable',
+    });
+    expect((refused as LocalizationError).diagnostic.reason).not.toBe(
+      'consumer-code-threw',
+    );
 
     // Refused at construction: a global or sticky pattern carries `lastIndex` between calls, so
     // the same identifier would parse and then fail to parse.

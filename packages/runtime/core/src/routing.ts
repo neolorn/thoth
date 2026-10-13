@@ -1927,9 +1927,9 @@ export function allowedLocaleHosts(policy: LocaleUrlPolicy): readonly string[] {
  * a digit. Supply a pattern to narrow it. A global or sticky pattern is refused: a lastIndex
  * carried between calls makes the same text match on one call and not the next.
  *
- * `parse` reports a refusal rather than throwing, which resolves to a not-found. `serialize` throws
- * a `LocalizationError` on a value the pattern refuses: writing an address Equator cannot read back
- * is worse than failing where the mistake is.
+ * `parse` reports a refusal rather than throwing, which resolves to a not-found. `serialize` writes
+ * `undefined` for a value the pattern refuses, as any codec declines a value, so an address built
+ * from one is refused as a route with no address there.
  */
 export function createIdentifierParameterCodec(
   pattern: RegExp = /^[A-Za-z0-9][A-Za-z0-9._~-]{0,127}$/u,
@@ -1949,12 +1949,7 @@ export function createIdentifierParameterCodec(
       Object.freeze(
         pattern.test(value) ? { ok: true, value } : { ok: false },
       ) as RouteParameterParseResult<string>,
-    serialize: (value: string) => {
-      if (!pattern.test(value)) {
-        return routeError('A route parameter value violates its codec.');
-      }
-      return value;
-    },
+    serialize: (value: string) => (pattern.test(value) ? value : undefined),
   });
 }
 
@@ -1963,7 +1958,8 @@ export function createIdentifierParameterCodec(
  *
  * The bounds must be safe integers and ordered; anything else throws a `LocalizationError` when the
  * codec is built. Text outside the range, or carrying anything but digits and a leading sign, is
- * refused by `parse` and resolves to a not-found. `serialize` throws on a value out of range.
+ * refused by `parse` and resolves to a not-found. `serialize` writes `undefined` for a value out of
+ * range or not a whole number, as any codec declines a value.
  */
 export function createIntegerParameterCodec(
   minimum = Number.MIN_SAFE_INTEGER,
@@ -1990,14 +1986,10 @@ export function createIntegerParameterCodec(
           : { ok: false },
       );
     },
-    serialize: (value: number) => {
-      if (!Number.isSafeInteger(value) || value < minimum || value > maximum) {
-        return routeError(
-          'An integer route parameter is outside its codec range.',
-        );
-      }
-      return String(value);
-    },
+    serialize: (value: number) =>
+      Number.isSafeInteger(value) && value >= minimum && value <= maximum
+        ? String(value)
+        : undefined,
   });
 }
 

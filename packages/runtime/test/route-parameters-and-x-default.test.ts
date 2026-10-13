@@ -101,16 +101,14 @@ describe('an integer route parameter codec', () => {
     expect(parse(BOUNDED, '11')).toBeUndefined();
   });
 
-  it('serializes what it would parse back, and refuses what it would not', () => {
+  it('serializes what it would parse back, and writes nothing for what it would not', () => {
     expect(BOUNDED.serialize(1)).toBe('1');
     expect(BOUNDED.serialize(10)).toBe('10');
     expect(DEFAULT.serialize(-42)).toBe('-42');
     // The round trip is the property worth pinning: what the codec writes, the codec reads.
     expect(parse(BOUNDED, BOUNDED.serialize(7) as string)).toBe(7);
     for (const value of [0, 11, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(codeOf(() => BOUNDED.serialize(value))).toBe(
-        'invalid-configuration',
-      );
+      expect(BOUNDED.serialize(value)).toBeUndefined();
     }
   });
 
