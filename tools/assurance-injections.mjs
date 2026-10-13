@@ -1912,8 +1912,8 @@ export const injections = Object.freeze([
     invariant:
       "A time zone's stored identity is the pinned time-zone database's primary identifier, whatever spelling the host prefers.",
     source: 'packages/runtime/src/formatting.ts',
-    find: '      id: pinnedTimeZone(id) ?? pinnedTimeZone(host) ?? host,',
-    replace: '      id: host,',
+    find: "  return Object.freeze({ kind: 'time-zone', id: primary });",
+    replace: "  return Object.freeze({ kind: 'time-zone', id });",
     caughtBy: 'packages/runtime/test/time-zone-identity.test.ts',
   },
   {

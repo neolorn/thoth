@@ -55,12 +55,12 @@ describe('a refused canonical value', () => {
     expect(Object.hasOwn(failure, 'cause')).toBe(false);
   });
 
-  it('carries the reason and what the platform refused when the host decided', () => {
+  it('carries a reason and no cause when the pinned time-zone table refused', () => {
     const failure = refusal(() => timeZone('Mars/Olympus_Mons'));
 
     expect(failure.diagnostic.code).toBe('invalid-message-input');
     expect(failure.diagnostic.reason).toBe('malformed-input');
-    expect(failure.cause).toBeInstanceOf(RangeError);
+    expect(Object.hasOwn(failure, 'cause')).toBe(false);
   });
 });
 
@@ -301,35 +301,20 @@ describe('a time zone', () => {
     expect(timeZone('EST5EDT').id).toBe('EST5EDT');
   });
 
-  // The three below are refused before the host is asked, which is what an absent cause shows:
-  // the host would refuse each of them too, and would leave its own error behind.
-  it('refuses an empty identity without asking the host', () => {
-    const failure = refusal(() => timeZone(''));
-
-    expect(failure.diagnostic.reason).toBeUndefined();
-    expect(failure.cause).toBeUndefined();
-  });
-
-  it('refuses an identity longer than 255 code units without asking the host', () => {
-    const failure = refusal(() => timeZone('A'.repeat(256)));
-
-    expect(failure.diagnostic.reason).toBeUndefined();
-    expect(failure.cause).toBeUndefined();
-  });
-
-  it('refuses an identity that is not in normalization form C without asking the host', () => {
-    const decomposed = `Ame${String.fromCodePoint(0x301)}rica/New_York`;
-    const failure = refusal(() => timeZone(decomposed));
-
-    expect(failure.diagnostic.reason).toBeUndefined();
-    expect(failure.cause).toBeUndefined();
-  });
-
-  it('asks the host about an identity of exactly 255 code units', () => {
-    const failure = refusal(() => timeZone('A'.repeat(255)));
+  // A name is one of the pinned table's or it is refused, so a name of any length and in any
+  // normalization form gets the one answer.
+  it.each([
+    ['an empty identity', ''],
+    ['an identity of 100,000 code units', 'A'.repeat(100_000)],
+    [
+      'an identity that is not in normalization form C',
+      `Ame${String.fromCodePoint(0x301)}rica/New_York`,
+    ],
+  ])('refuses %s as a name the table does not carry', (_title, id) => {
+    const failure = refusal(() => timeZone(id));
 
     expect(failure.diagnostic.reason).toBe('malformed-input');
-    expect(failure.cause).toBeInstanceOf(RangeError);
+    expect(Object.hasOwn(failure, 'cause')).toBe(false);
   });
 });
 

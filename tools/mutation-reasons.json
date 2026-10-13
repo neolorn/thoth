@@ -2597,18 +2597,10 @@
     {
       "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
-      "original": "'A time zone requires a bounded canonical IANA identity.'",
+      "original": "'A time zone requires a name the pinned time-zone database carries.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The literal is the message of the refusal of an unbounded or unnormalized zone identity, which a person reads and nothing compares; the refusal's code and outcome are asserted."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "StringLiteral",
-      "original": "'A time zone requires a supported IANA time-zone identity.'",
-      "replacement": "\"\"",
-      "category": "message-wording",
-      "reason": "The literal is the message of the refusal of a zone the host does not know, which a person reads and nothing compares; the refusal's code and outcome are asserted."
+      "reason": "The literal is the message of the refusal of a zone name the pinned table does not carry, which a person reads and nothing compares; the refusal's code, outcome and reason are asserted."
     },
     {
       "file": "packages/runtime/src/formatting.ts",

@@ -59,8 +59,12 @@ to. A release MUST resolve a name the database added to replace a Zone, where th
 the former name as a Link, to that former name until the pinned release is two years or more later
 than the release that renamed it, the waiting period section 6.5.1 of that standard recommends,
 because an identifier stored earlier is one a system on older data cannot read. A name is matched
-without regard to case. A name the pinned release does not carry, which a fixed offset under `Etc/`
-and a zone newer than the release both are, keeps the host's spelling.
+without regard to the case of its ASCII letters, which are the only letters a name of the database
+has. The fixed offsets the release names under `Etc/` are Zones of it. A name the pinned release
+does not carry, which a clock offset such as `+05:00` and a zone newer than the release both are,
+is refused where the value is created. The host is not asked about a name, so a name has one
+identity in every engine; whether the host has rules for a zone is reported where a value is
+formatted in it.
 
 A zoned date-time's calendar is one the host counts in, under the name the host gives it. A
 well-formed calendar name the host has no calendar for, which the host would format in the

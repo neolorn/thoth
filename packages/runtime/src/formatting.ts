@@ -289,7 +289,9 @@ let primaryTimeZones: ReadonlyMap<string, string> | undefined;
  * table does not carry.
  *
  * Read without case, as the database's names are matched, and built on first use: an application
- * that never names a zone never pays for the map.
+ * that never names a zone never pays for the map. Case is folded over the ASCII letters alone,
+ * which are the only letters a name of the database has: the language's own lower-casing turns the
+ * Kelvin sign into the letter k, and would read a name no database carries as one it does.
  */
 function pinnedTimeZone(id: string): string | undefined {
   primaryTimeZones ??= new Map(
@@ -298,7 +300,9 @@ function pinnedTimeZone(id: string): string | undefined {
       return [name.toLowerCase(), primary];
     }),
   );
-  return primaryTimeZones.get(id.toLowerCase());
+  return primaryTimeZones.get(
+    id.replace(/[A-Z]/gu, (letter) => letter.toLowerCase()),
+  );
 }
 
 /**
@@ -312,34 +316,24 @@ function pinnedTimeZone(id: string): string | undefined {
  * country: `Africa/Timbuktu` is `Africa/Bamako`, and not the Ivory Coast zone it is linked to.
  *
  * The identity is the database's and not the host's. Hosts disagree about which spelling is
- * canonical, and a stored identity that changed with the host could not be compared or exchanged.
- * A name the pinned table does not carry, a fixed offset such as `Etc/GMT+5` or a zone newer than
- * the table, comes back in the host's spelling.
+ * canonical and about which zones exist, and a stored identity that changed with the host could
+ * not be compared or exchanged. The host is therefore not asked, and the answer is the same in
+ * every engine. The fixed offsets the database names, `Etc/GMT-14` to `Etc/GMT+12`, are zones of
+ * its table like any other.
  *
- * Throws for a name this platform does not know, which is the honest answer: a zone the host
- * cannot resolve has no offsets to format with.
+ * Throws for a name the pinned table does not carry: a clock offset such as `+05:00`, which is not
+ * a zone's name, and a zone newer than the table. Whether the host has rules for a zone is a
+ * separate question, answered where a value is formatted in it.
  */
 export function timeZone(id: string): TimeZoneValue {
-  if (id.length === 0 || id.length > 255 || id !== id.normalize('NFC')) {
+  const primary = typeof id === 'string' ? pinnedTimeZone(id) : undefined;
+  if (primary === undefined) {
     return invalidCanonicalValue(
-      'A time zone requires a bounded canonical IANA identity.',
-    );
-  }
-  try {
-    const host = new Intl.DateTimeFormat('en-US', {
-      timeZone: id,
-    }).resolvedOptions().timeZone;
-    return Object.freeze({
-      kind: 'time-zone',
-      id: pinnedTimeZone(id) ?? pinnedTimeZone(host) ?? host,
-    });
-  } catch (cause) {
-    return invalidCanonicalValue(
-      'A time zone requires a supported IANA time-zone identity.',
+      'A time zone requires a name the pinned time-zone database carries.',
       'malformed-input',
-      cause,
     );
   }
+  return Object.freeze({ kind: 'time-zone', id: primary });
 }
 
 /**
