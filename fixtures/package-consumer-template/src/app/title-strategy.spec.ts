@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { Injectable, type Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { NavigationEnd, Router, TitleStrategy } from '@angular/router';
+import {
+  NavigationEnd,
+  Router,
+  TitleStrategy,
+  type RouterStateSnapshot,
+} from '@angular/router';
 import {
   Localization,
   withRouting,
@@ -9,6 +15,7 @@ import {
 } from '@neolorn/equator';
 import {
   LocalizedTitleStrategy,
+  RouteLocalization,
   provideLocalizedRouter,
 } from '@neolorn/equator/router';
 import { provideLocalizationTesting } from '@neolorn/equator/testing';
@@ -28,7 +35,7 @@ import { localeInPath, localeOrigin, pagePath } from './addresses';
  *
  * Angular emits `NavigationEnd` and then calls `titleStrategy.updateTitle(...)` synchronously in
  * the same `tap` (`@angular/router` 22.2.1, `NavigationTransitions.setupNavigations`). Equator
- * writes the title during route resolution, before activation, so Angular's strategy always writes
+ * writes the title from its own subscriber to that event, so Angular's strategy always writes
  * afterwards. `DefaultTitleStrategy` writes whenever the route tree declares a title
  * (`updateTitle`), and `app.routes.ts` declares one, in English, on `second`.
  *
@@ -61,8 +68,28 @@ const OPTIONS = {
  * `DefaultTitleStrategy`, so this is the real omission rather than a substitution standing in for
  * one.
  */
+/** The title the strategy under test left in the document, read as each call to it returns. */
+const leftByTheStrategy: string[] = [];
+
+/** Equator's strategy, with the document read in the statement after it has written. */
+@Injectable()
+class ObservedTitleStrategy extends LocalizedTitleStrategy {
+  override updateTitle(snapshot: RouterStateSnapshot): void {
+    super.updateTitle(snapshot);
+    leftByTheStrategy.push(document.title);
+  }
+}
+
+/** A title per route, so the page a navigation left and the one it reached never share one. */
+const BY_ROUTE = {
+  origin: OPTIONS.origin,
+  document: ({ resolution }: { resolution: { routeId: string } }) => ({
+    title: `Projected for ${resolution.routeId}`,
+  }),
+} as const;
+
 async function bootstrap(
-  titleStrategy: 'installed' | 'omitted',
+  titleStrategy: 'installed' | 'omitted' | Type<TitleStrategy>,
   address = '/second',
   options: Parameters<typeof provideLocalizedRouter>[1] = OPTIONS,
 ): Promise<{
@@ -85,9 +112,17 @@ async function bootstrap(
         withRouting({ policy: routePolicy, projection: appRouteProjection }),
         withFormattingContext({ timeZone: 'UTC' }),
       ),
-      ...(titleStrategy === 'installed'
-        ? [{ provide: TitleStrategy, useClass: LocalizedTitleStrategy }]
-        : []),
+      ...(titleStrategy === 'omitted'
+        ? []
+        : [
+            {
+              provide: TitleStrategy,
+              useClass:
+                titleStrategy === 'installed'
+                  ? LocalizedTitleStrategy
+                  : titleStrategy,
+            },
+          ]),
     ],
   }).compileComponents();
 
@@ -125,6 +160,29 @@ describe('who writes the document title after a navigation', () => {
     const { afterNavigation } = await bootstrap('installed');
     expect(afterNavigation).toBe(TITLE_EN);
     expect(afterNavigation).not.toBe(DECLARED_TITLE);
+  });
+
+  it('writes the title of the page the navigation reached, not of the one it left', async () => {
+    // What pins the order the strategy relies on: Equator's subscriber has applied the incoming
+    // page's document by the time Angular calls `updateTitle`. Were the document applied any
+    // later, the strategy would read the projection of the page left and write its title here.
+    leftByTheStrategy.length = 0;
+    const { atNavigationEnd, afterNavigation } = await bootstrap(
+      ObservedTitleStrategy,
+      '/second',
+      BY_ROUTE,
+    );
+
+    expect(leftByTheStrategy[0]).toBe('Projected for route:_index');
+    expect(atNavigationEnd).toBe('Projected for route:second');
+    expect(leftByTheStrategy.at(-1)).toBe('Projected for route:second');
+    expect(afterNavigation).toBe('Projected for route:second');
+
+    // And nothing that finishes later moves it.
+    expect((await TestBed.inject(RouteLocalization).settled()).status).toBe(
+      'committed',
+    );
+    expect(document.title).toBe('Projected for route:second');
   });
 
   it('writes the declared title where Equator projects none for the route', async () => {

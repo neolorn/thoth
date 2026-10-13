@@ -7,10 +7,14 @@ import { DocumentLocalization } from '@neolorn/equator';
 /**
  * The one writer of `document.title` once a navigation has ended.
  *
- * Angular emits `NavigationEnd` and then calls `titleStrategy.updateTitle(...)` synchronously in
- * the same `tap` (`@angular/router` 22.2.1, `NavigationTransitions.setupNavigations`). Equator has
- * written the title long before that (`applyDocument` runs inside the canonical route resolver, before
- * activation) so the last write of every navigation belongs to whatever holds this token.
+ * Angular emits `NavigationEnd` and then calls `titleStrategy.updateTitle(...)`, one statement
+ * after the other in the same `tap` (`@angular/router` 22.2.1,
+ * `NavigationTransitions.setupNavigations`). The event passes through two plain subjects, the
+ * transitions' and the Router's, so every subscriber has returned before that second statement
+ * runs. `RouteLocalization` is one of them: it calls `applyDocument`, which projects the incoming
+ * page and hands it to `DocumentLocalization.apply` before its first `await`. So when Angular asks
+ * for the title, Equator has written the incoming page's and `current()` answers with that page's
+ * projection, and the last write of every navigation belongs to whatever holds this token.
  * `DefaultTitleStrategy` writes whenever the route tree declares a `title` (`updateTitle`), which
  * means a consumer following Angular's own documented route-title API silently replaces every
  * localized title with an English one. Nothing throws, nothing warns, and the page looks like
@@ -44,10 +48,13 @@ export class LocalizedTitleStrategy extends TitleStrategy {
 
   override updateTitle(snapshot: RouterStateSnapshot): void {
     const projected = this.localized?.current()?.title;
-    // Re-asserted rather than skipped. Equator wrote this value before activation, and between then
-    // and now the only thing that can have moved the title is something outside Equator, so writing
+    // Re-asserted rather than skipped. Equator wrote this value while `NavigationEnd` was being
+    // delivered, and a subscriber called after Equator's can have moved the title since, so writing
     // it again is what makes "the localized title survives the navigation" true rather than likely.
     // Assigning the value the document already holds is not a mutation the browser acts on.
+    //
+    // Where the incoming page's document could not be written, the projection is still the one of
+    // the page the navigation left, which is the page being put back.
     if (projected !== undefined) {
       this.documentRef.title = projected;
       return;
