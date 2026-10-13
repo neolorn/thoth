@@ -243,11 +243,13 @@ export const plants = Object.freeze([
   },
   {
     id: 'core-published-twice',
+    // In a block, because the bundle imports the name: a second declaration beside the import is
+    // a syntax error, and the stage would then stop on loading the bundle and name no defect.
     plant: (root) =>
       editText(
         root,
         'dist/runtime/fesm2022/neolorn-equator-http.mjs',
-        (text) => `${text}\nclass LocalizationError extends Error {}\n`,
+        (text) => `${text}\n{\n  class LocalizationError extends Error {}\n}\n`,
       ),
     refusal: /LocalizationError must be defined in exactly one bundle/u,
   },
