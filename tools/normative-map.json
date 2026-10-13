@@ -3029,7 +3029,9 @@
       "statement": "The options of one operation, a formatting call or a message expression, are narrower than all three, and a release MUST format with the time zone, calendar, or hour cycle an operation names over the context's.",
       "checks": [
         "assurance:instant-options-override-caller",
-        "assurance:message-time-zone-overridden-by-context"
+        "assurance:message-time-zone-overridden-by-context",
+        "assurance:plain-date-context-calendar-ignored",
+        "assurance:plain-date-time-context-calendar-over-the-call"
       ]
     },
     {

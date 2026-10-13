@@ -2755,6 +2755,25 @@ export const injections = Object.freeze([
     caughtBy: 'packages/toolkit/test/project-host.test.ts',
   },
   {
+    id: 'plain-date-context-calendar-ignored',
+    invariant:
+      "An ISO plain date is written in the calendar the formatting context names, under the call's own.",
+    source: 'packages/runtime/src/formatting.ts',
+    find: "      ...displayCalendar(context.calendar),\n      ...options,\n      timeZone: 'UTC',\n    });",
+    replace: "      ...options,\n      timeZone: 'UTC',\n    });",
+    caughtBy: 'packages/runtime/test/plain-date-context-calendar.test.ts',
+  },
+  {
+    id: 'plain-date-time-context-calendar-over-the-call',
+    invariant:
+      "An ISO plain date-time is written in the calendar the call names over the formatting context's.",
+    source: 'packages/runtime/src/formatting.ts',
+    find: "      ...displayCalendar(context.calendar),\n      ...options,\n      timeZone: 'UTC',\n      ...(context.hourCycle",
+    replace:
+      "      ...options,\n      timeZone: 'UTC',\n      ...displayCalendar(context.calendar),\n      ...(context.hourCycle",
+    caughtBy: 'packages/runtime/test/plain-date-context-calendar.test.ts',
+  },
+  {
     id: 'message-time-zone-overridden-by-context',
     invariant:
       "A time zone a message expression names is used over the formatting context's.",

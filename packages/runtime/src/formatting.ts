@@ -1068,6 +1068,9 @@ function plainDateMilliseconds(
  *
  * Defaults to a numeric day, month and year when no options are given. No zone is involved: a
  * plain date is the same date wherever it is read, which is why a birthday does not move.
+ *
+ * The calendar the date is written in is the one the options name, else the one the context names,
+ * else the locale's own, as for an instant.
  */
 export function formatPlainDate(
   value: PlainDateValue,
@@ -1086,9 +1089,9 @@ export function formatPlainDate(
       return unsupportedNumberingSystem(context);
     }
     const formatter = sharedFormatters.dateTime(formattingTag, {
+      ...displayCalendar(context.calendar),
       ...options,
       timeZone: 'UTC',
-      ...displayCalendar(value.calendar),
     });
     return success(
       'plain-date',
@@ -1186,6 +1189,8 @@ export function formatPlainTime(
  *
  * Defaults to numeric date fields with hours, minutes and seconds. Still no zone, so this is for a
  * wall-clock time whose place is understood from elsewhere on the page.
+ *
+ * The calendar is chosen as for a plain date: the options', else the context's, else the locale's.
  */
 export function formatPlainDateTime(
   value: PlainDateTimeValue,
@@ -1231,9 +1236,9 @@ export function formatPlainDateTime(
       return unsupportedNumberingSystem(context);
     }
     const formatter = sharedFormatters.dateTime(formattingTag, {
+      ...displayCalendar(context.calendar),
       ...options,
       timeZone: 'UTC',
-      ...displayCalendar(value.date.calendar),
       ...(context.hourCycle === undefined
         ? {}
         : { hourCycle: context.hourCycle }),

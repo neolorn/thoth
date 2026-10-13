@@ -21,7 +21,8 @@ money(decimal('19.99'), 'USD');
 The rest follow the same shape. `measurement(decimal('3.5'), 'kilometer')` carries its unit.
 `percent(decimal('0.15'))` carries its scale, so nothing has to guess whether `15` meant fifteen
 percent or fifteen hundredths. `plainDate(2026, 3, 14)` is a date with no time and no zone. Its
-numbers are an ISO date, and it is written in the locale's calendar when it is formatted. The reason
+numbers are an ISO date, and it is written in the formatting context's calendar when it is formatted,
+which is the locale's own unless the application or the call names another. The reason
 these are values rather than numbers is [About canonical values](../explanation/about-values.md).
 
 ## Format it
