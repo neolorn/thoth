@@ -43,6 +43,7 @@ import {
   type RouteDocumentField,
 } from './document-messages.js';
 import { LocalizedLocationStrategy } from './location-strategy.js';
+import { refuseUndeclaredMode } from './navigation-scopes.js';
 import { LocalizedUrlHandlingStrategy } from './url-handling-strategy.js';
 import { LocalizedTitleStrategy } from './title-strategy.js';
 import {
@@ -252,6 +253,9 @@ export function provideLocalizedRouter(
   // where an application builds it. Deferred to a navigation, the failure is a title with its
   // placeholders showing, on one route, in whichever locale that route was first opened in.
   refuseUnboundDocumentMessages(options);
+  // Here as well as where the integration is constructed, so the refusal is in the stack of the
+  // call that wrote the option.
+  refuseUndeclaredMode(options.mode);
 
   // `withRouterConfig` provides ROUTER_CONFIGURATION non-multi and `provideRouter` simply
   // concatenates every feature's providers, so a consumer passing their own replaces Equator's

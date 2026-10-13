@@ -1514,6 +1514,12 @@
     {
       "spec": "06-runtime-and-angular.spec.md",
       "section": "7. Locale transitions",
+      "statement": "The Router integration is configured with the mode its navigations change locale in, and a release MUST refuse a mode that is neither with the same diagnostic where that configuration is given, and MUST NOT leave it to the first navigation.",
+      "checks": ["assurance:undeclared-router-mode-left-to-a-navigation"]
+    },
+    {
+      "spec": "06-runtime-and-angular.spec.md",
+      "section": "7. Locale transitions",
       "statement": "In coordinated mode a release MUST validate the request, resolve the route and formatting context, load and admit every required scope, wait for every required participant, build one candidate snapshot, and keep the current view rendered and usable until that candidate commits.",
       "checks": ["assurance-runtime:required-participants-not-awaited"]
     },

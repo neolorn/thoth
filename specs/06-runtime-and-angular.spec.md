@@ -151,7 +151,10 @@ validated immutable catalog artifacts whose identity proves them interchangeable
 
 A locale change is one transaction. Its mode is coordinated or progressive, and coordinated where
 the request names none. A release MUST refuse a request that names any other mode with the
-`invalid-configuration` diagnostic, and MUST NOT start a transition for it.
+`invalid-configuration` diagnostic, and MUST NOT start a transition for it. The Router integration
+is configured with the mode its navigations change locale in, and a release MUST refuse a mode
+that is neither with the same diagnostic where that configuration is given, and MUST NOT leave it
+to the first navigation.
 
 In coordinated mode a release MUST validate the request, resolve the route and formatting
 context, load and admit every required scope, wait for every required participant, build one

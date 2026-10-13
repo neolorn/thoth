@@ -617,6 +617,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/toolkit/test/derived-locale-policy.test.ts',
   },
   {
+    id: 'undeclared-router-mode-left-to-a-navigation',
+    invariant:
+      'A Router integration configured with a mode other than coordinated or progressive is refused where the configuration is given.',
+    source: 'packages/runtime/router/src/navigation-scopes.ts',
+    find: "  if (mode === undefined || mode === 'coordinated' || mode === 'progressive') {",
+    replace: "  if (mode !== '') {",
+    caughtBy: 'packages/runtime/test/router-undeclared-mode.test.ts',
+  },
+  {
     id: 'undeclared-change-mode-run-as-progressive',
     invariant:
       'A locale change that names a mode other than coordinated or progressive is refused as a configuration fault.',

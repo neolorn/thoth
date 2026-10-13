@@ -159,6 +159,48 @@ describe('a localized router that cannot be started', () => {
     TestBed.resetTestingModule();
   });
 
+  it('refuses a mode that is neither coordinated nor progressive, where the router is provided', () => {
+    for (const mode of ['eager', 'Coordinated', '', 0, null]) {
+      expectConfigurationRefusal(
+        thrownBy(() =>
+          provideLocalizedRouter(routes, {
+            origin: ORIGIN,
+            mode: mode as never,
+          }),
+        ),
+      );
+    }
+    expect(
+      thrownBy(() =>
+        provideLocalizedRouter(routes, { origin: ORIGIN, mode: 'progressive' }),
+      ),
+    ).toBeUndefined();
+  });
+
+  it('refuses the Router integration built by hand with such a mode', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideLocalizationTesting(
+          SETUP,
+          withRouting({ policy: PATH_PREFIX, projection: appRouteProjection }),
+          withFormattingContext({ timeZone: 'UTC' }),
+        ),
+      ],
+    });
+
+    expectConfigurationRefusal(
+      thrownBy(() =>
+        TestBed.runInInjectionContext(
+          () => new RouteLocalization({ mode: 'eager' as never }),
+        ),
+      ),
+    );
+    await TestBed.inject(Localization).initialize();
+    TestBed.resetTestingModule();
+  });
+
   it('refuses a host policy given an origin that is not a URL', async () => {
     expectConfigurationRefusal(
       await started(

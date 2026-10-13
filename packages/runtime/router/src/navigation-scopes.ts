@@ -6,10 +6,31 @@
  * which a test can call without a Router.
  */
 
-import type {
-  LocaleChangeMode,
-  LocalizationScope,
+import {
+  LocalizationError,
+  type LocaleChangeMode,
+  type LocalizationScope,
 } from '@neolorn/equator/core';
+
+/**
+ * Refuses a mode the Router integration is configured with that is neither declared value.
+ *
+ * Read as a value of no known type, because the declared type is the caller's claim and a
+ * configuration written without type checking makes none. Refused where the configuration is
+ * given: left to the first navigation, every navigation fails on it and nothing says why until a
+ * page is opened.
+ */
+export function refuseUndeclaredMode(mode: unknown): void {
+  if (mode === undefined || mode === 'coordinated' || mode === 'progressive') {
+    return;
+  }
+  throw new LocalizationError({
+    code: 'invalid-configuration',
+    outcome: 'operational-failure',
+    message:
+      'The mode of the localized Router integration is coordinated or progressive.',
+  });
+}
 
 /** What a navigation is deciding from. */
 export interface NavigationScopeInput {
