@@ -64,7 +64,7 @@ A catalog repeats a key, or its text, or a translation an XLIFF import would wri
 
 ### EQ1104
 
-A provider, scope or message identity written in a catalog is malformed.
+A provider, scope or message identity written in a catalog is malformed, or the provider identity of the owner a compilation was handed is.
 
 ### EQ1105
 
@@ -248,11 +248,11 @@ The command cannot act on how it was invoked: an unknown or malformed argument, 
 
 ### EQ1702
 
-The project could not be selected or read: no Equator configuration inside the package boundary, a selection that is a symbolic link or not a directory, an owner `package.json` that is missing, unreadable or not an object, an owner `angular.json` that is unreadable, or a translation-state record that is present and cannot be read.
+The project could not be selected or read: no Equator configuration inside the package boundary, a selection that is a symbolic link or not a directory, an owner `package.json` that is missing, unreadable or not an object, an owner `angular.json` that is unreadable, a TypeScript source behind a link, or a translation-state record that is present and cannot be read.
 
 ### EQ1703
 
-An environment operation failed, or a disposable one was skipped: a corrupt or incompatible incremental cache, a cache that could not be persisted, a formatting refused because semantic equality was not proven, or a watcher that could not start or reconcile.
+An environment operation failed, or a disposable one was skipped: a corrupt, incompatible, oversized or linked incremental cache, a cache that could not be persisted, a formatting refused because semantic equality was not proven, or a watcher that could not start or reconcile.
 
 ### EQ1704
 

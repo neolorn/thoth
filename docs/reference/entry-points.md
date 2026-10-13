@@ -59,7 +59,7 @@ Composable from here: `provideLocalizationTesting`.
 
 The compiler behind the `equator` command, as a library. An application does not import this; a build script that needs the compiler without the command line does.
 
-Publishes 179 name(s).
+Publishes 180 name(s).
 
 ## Anything else
 
