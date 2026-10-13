@@ -32,8 +32,9 @@ The cost is that a visitor who has chosen a language can still land on a page in
 following a link. Equator takes that cost. The alternative changes what a URL means without saying
 so.
 
-An address naming a locale you do not serve goes through the same negotiation as any other request,
-and the visitor lands on the closest locale you do serve.
+An address naming a locale you do not serve is not negotiated into one you do. It is a page that is
+not there, answered with a 404 on a server, because another language at that address would not be
+the page the link named.
 
 ## Identity before comparison
 
