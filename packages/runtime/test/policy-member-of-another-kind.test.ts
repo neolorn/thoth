@@ -1,12 +1,15 @@
 /**
- * A path-prefix policy written out by hand with a member of another kind of policy beside its own.
+ * A policy written out by hand with a member of another kind of policy beside its own.
  *
- * A policy is read by its kind. An `origins` table on a path-prefix policy is not one of its
- * tables, so an address is written in the locale asked for, whatever origin the context names.
+ * Section 3 of `specs/07-routing-rendering-and-seo.spec.md` refuses such a policy as a
+ * configuration error wherever it is read. A policy is read by its kind, so an `origins` table on a
+ * path-prefix policy would decide nothing, and the application that wrote it expects it to.
  */
-import { expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import {
+  LocalizationError,
+  resolveLocalizedRoute,
   toExternalPath,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
@@ -21,12 +24,9 @@ const PROJECTION: RouteRuntimeProjection = {
       { id: 'route:second', path: 'second', parameterNames: [] },
     ],
   },
-  localizedPaths: {
-    'route:second': { 'en-US': 'second', 'ar-EG': 'thani' },
-  },
 };
 
-const POLICY = {
+const PREFIXED = {
   kind: 'path-prefix',
   defaultLocale: 'en-US',
   locales: { 'en-US': 'en-us', 'ar-EG': 'ar-eg' },
@@ -34,15 +34,94 @@ const POLICY = {
   aliases: {},
   localeNeutralRoots: [],
   omitDefaultPrefix: false,
-  origins: { 'https://ar.example': 'ar-EG' },
-} as unknown as LocaleUrlPolicy;
+};
 
-it('writes a path policy address in the active locale whatever the origin', () => {
+const NEUTRAL = {
+  kind: 'locale-neutral',
+  defaultLocale: 'en-US',
+  locales: { 'en-US': '', 'ar-EG': '' },
+  localeNeutralRoots: [],
+};
+
+const HOSTED = {
+  kind: 'locale-host',
+  defaultLocale: 'en-US',
+  locales: { 'en-US': 'https://example.com', 'ar-EG': 'https://example.eg' },
+  origins: { 'https://example.com': 'en-US', 'https://example.eg': 'ar-EG' },
+  localeNeutralRoots: [],
+};
+
+/** One value for each member that belongs to a kind and not to every kind. */
+const MEMBERS: Readonly<Record<string, unknown>> = {
+  prefixes: { 'en-us': 'en-US', 'ar-eg': 'ar-EG' },
+  aliases: {},
+  omitDefaultPrefix: false,
+  xDefaultPath: '/choose',
+  origins: { 'https://example.com': 'en-US', 'https://example.eg': 'ar-EG' },
+  xDefaultUrl: 'https://example.org',
+};
+
+const CASES: readonly (readonly [string, object, readonly string[]])[] = [
+  ['path-prefix', PREFIXED, ['origins', 'xDefaultUrl']],
+  [
+    'locale-neutral',
+    NEUTRAL,
+    ['prefixes', 'aliases', 'omitDefaultPrefix', 'origins', 'xDefaultUrl'],
+  ],
+  [
+    'locale-host',
+    HOSTED,
+    ['prefixes', 'aliases', 'omitDefaultPrefix', 'xDefaultPath'],
+  ],
+];
+
+const resolving = (policy: object) => () =>
+  resolveLocalizedRoute('/second', policy as LocaleUrlPolicy, PROJECTION);
+
+/** The diagnostic a call refuses with, or `undefined` when it did not refuse. */
+const refusal = (call: () => unknown) => {
+  try {
+    call();
+    return undefined;
+  } catch (error) {
+    if (error instanceof LocalizationError) return error.diagnostic;
+    throw error;
+  }
+};
+
+describe.each(CASES)('a written-out %s policy', (_kind, policy, foreign) => {
+  it('is read with its own members alone', () => {
+    expect(refusal(resolving(policy))).toBeUndefined();
+  });
+
+  it.each(foreign)('is refused with %s beside them', (member) => {
+    expect(
+      refusal(resolving({ ...policy, [member]: MEMBERS[member] })),
+    ).toMatchObject({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      message: expect.stringContaining(JSON.stringify(member)) as unknown,
+    });
+  });
+
+  it.each(foreign)('is read with %s present and undefined', (member) => {
+    expect(
+      refusal(resolving({ ...policy, [member]: undefined })),
+    ).toBeUndefined();
+  });
+});
+
+it('refuses the policy wherever it is read, an address written as much as one resolved', () => {
   expect(
-    toExternalPath('/second', 'en-US', {
-      policy: POLICY,
-      projection: PROJECTION,
-      origin: 'https://ar.example',
-    }),
-  ).toBe('/en-us/second');
+    refusal(() =>
+      toExternalPath('/second', 'en-US', {
+        policy: {
+          ...PREFIXED,
+          origins: MEMBERS['origins'],
+        } as unknown as LocaleUrlPolicy,
+        projection: PROJECTION,
+        origin: 'https://ar.example',
+      }),
+    ),
+  ).toMatchObject({ code: 'invalid-configuration' });
 });

@@ -3114,6 +3114,16 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/written-out-locale-policies.test.ts',
   },
   {
+    id: 'written-out-policy-member-of-another-kind-read',
+    invariant:
+      'A policy written out with a member that belongs to another kind of policy is refused wherever the policy is read.',
+    source: 'packages/runtime/core/src/routing.ts',
+    find: '  for (const member of OTHER_KIND_MEMBERS[policy.kind]) {',
+    replace:
+      '  for (const member of OTHER_KIND_MEMBERS[policy.kind].slice(0, 0)) {',
+    caughtBy: 'packages/runtime/test/policy-member-of-another-kind.test.ts',
+  },
+  {
     id: 'request-origin-that-is-not-text-ignored',
     invariant:
       'A request context whose origin is not text is refused, never read at the default origin.',

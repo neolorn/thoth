@@ -1512,6 +1512,26 @@ function trustedXDefaultPath(value: string | undefined): string | undefined {
   return value;
 }
 
+/** For each kind of policy, the members a constructor writes on another kind and never on it. */
+const OTHER_KIND_MEMBERS: Readonly<
+  Record<LocaleUrlPolicy['kind'], readonly string[]>
+> = Object.freeze({
+  'path-prefix': Object.freeze(['origins', 'xDefaultUrl']),
+  'locale-neutral': Object.freeze([
+    'prefixes',
+    'aliases',
+    'omitDefaultPrefix',
+    'origins',
+    'xDefaultUrl',
+  ]),
+  'locale-host': Object.freeze([
+    'prefixes',
+    'aliases',
+    'omitDefaultPrefix',
+    'xDefaultPath',
+  ]),
+});
+
 /** The policies already held to the tables a constructor writes, so each is read once. */
 const CHECKED_POLICIES = new WeakSet<object>();
 
@@ -1559,6 +1579,15 @@ function assertLocalePolicy(policy: LocaleUrlPolicy): void {
     routeError(
       `This ${policy.kind} locale URL policy ${problem}, which no policy constructor writes. Build the policy with its constructor, which checks each table against the others.`,
     );
+  // A policy is read by its kind, so another kind's member would decide nothing, and the
+  // application that wrote it expects it to.
+  for (const member of OTHER_KIND_MEMBERS[policy.kind]) {
+    if ((policy as unknown as Record<string, unknown>)[member] !== undefined) {
+      refuse(
+        `carries ${JSON.stringify(member)}, a member of another kind of policy`,
+      );
+    }
+  }
   const locales = textEntries(policy.locales);
   if (locales === undefined || locales.length === 0) {
     return refuse('names no locales');
