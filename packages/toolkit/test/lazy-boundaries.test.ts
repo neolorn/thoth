@@ -59,11 +59,6 @@ async function analyse(
   });
   if (!analysis.ok) throw new Error('analysis failed');
   const { deferredSourcePaths } = analysis.value;
-  if (deferredSourcePaths === undefined) {
-    // Not `?? []`: an absent list and an empty one are the same value to every assertion below,
-    // and only one of them is an answer.
-    throw new Error('the analysis reported no deferred-boundary list at all');
-  }
   return deferredSourcePaths;
 }
 

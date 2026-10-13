@@ -116,7 +116,7 @@ async function analyse(
   return {
     routes: analysis.value.routes,
     diagnostics: analysis.diagnostics,
-    deferredSourcePaths: analysis.value.deferredSourcePaths ?? [],
+    deferredSourcePaths: analysis.value.deferredSourcePaths,
   };
 }
 

@@ -5754,28 +5754,12 @@
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "OptionalChaining",
-      "original": "analysis?.routes",
-      "replacement": "analysis.routes",
-      "category": "equivalent",
-      "reason": "The loop is inside the block entered only when policyDeclaration, which is analysis?.routePolicy (line 790), is not undefined (line 792), so analysis is an object there and the optional read is never the one taken."
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
       "mutator": "ConditionalExpression",
       "original": "leading === undefined",
       "replacement": "false",
       "category": "equivalent",
       "reason": "On line 807 the value is element 0 of String.prototype.split, which always exists. On line 848 it is element 1 of an address absoluteAddress (static-analysis.ts line 1830) returned only because it begins with \"/\", so the split has at least two elements. Neither is ever undefined.",
       "count": 2
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "OptionalChaining",
-      "original": "analysis?.templateAddresses",
-      "replacement": "analysis.templateAddresses",
-      "category": "equivalent",
-      "reason": "The loop is inside the block entered only when policyDeclaration, which is analysis?.routePolicy (line 790), is not undefined (line 792), so analysis is an object there and the optional read is never the one taken."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7007,7 +6991,7 @@
     {
       "file": "packages/toolkit/src/compiler.ts",
       "mutator": "ConditionalExpression",
-      "original": "policyDeclaration.claimedSegments.length > 0",
+      "original": "analysis.routePolicy.claimedSegments.length > 0",
       "replacement": "true",
       "category": "equivalent",
       "reason": "With no claimed segment both lookup maps built inside the block are empty, so every route and every routerLink address finds no claim and is skipped; nothing is reported with or without the guard."
@@ -7222,14 +7206,6 @@
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "OptionalChaining",
-      "original": "request.analysis?.projectRoot",
-      "replacement": "request.analysis.projectRoot",
-      "category": "equivalent",
-      "reason": "The read is inside the loop over request.analysis?.sources ?? [] (line 461), whose body runs only when request.analysis holds a non-empty sources list, so request.analysis is never undefined or null where the chain is evaluated."
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
       "mutator": "MethodExpression",
       "original": "files\n      .filter(({ path }) => path.endsWith('.ts'))",
       "replacement": "files",
@@ -7303,8 +7279,8 @@
     {
       "file": "packages/toolkit/src/compiler.ts",
       "mutator": "EqualityOperator",
-      "original": "policyDeclaration.claimedSegments.length > 0",
-      "replacement": "policyDeclaration.claimedSegments.length >= 0",
+      "original": "analysis.routePolicy.claimedSegments.length > 0",
+      "replacement": "analysis.routePolicy.claimedSegments.length >= 0",
       "category": "equivalent",
       "reason": "With no claimed segments the block builds two empty maps, so `exact.get` and `folded.get` answer undefined for every route and every template address and neither loop pushes a diagnostic; nothing else in the block has an effect."
     },

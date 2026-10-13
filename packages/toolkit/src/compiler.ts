@@ -210,11 +210,7 @@ function deferredScopeIds(
   graph: SemanticGraph,
   analysis: ApplicationAnalysis,
 ): readonly string[] {
-  // Absent means nothing is known to be deferred, so everything is a startup scope. Both of this
-  // type's derived fields default in the conservative direction, because a caller that constructs
-  // an analysis by hand, the refactoring API takes one, must not have a behaviour invented for
-  // it, and being wrong the other way renders a component whose text never arrives.
-  const deferredPaths = new Set(analysis.deferredSourcePaths ?? []);
+  const deferredPaths = new Set(analysis.deferredSourcePaths);
   // A message used in a component's template is reported against the template, which is the file
   // a developer opens to change it. The module graph has never heard of that file: a `.html` is
   // not imported by anything, so read literally every template usage sits outside every lazy
@@ -478,22 +474,25 @@ function compilerInputDigests(
       }),
     );
   }
-  for (const [index, source] of (request.analysis?.sources ?? []).entries()) {
-    const projectRoot = resolve(request.analysis?.projectRoot ?? '.');
-    const sourcePath = portableAnalysisPath(
-      projectRoot,
-      source.path,
-      `request.analysis.sources[${index}].path`,
-    );
-    inputs.push(
-      Object.freeze({
-        identity: `source:${sourcePath}`,
-        digest: digestCanonicalJson(
-          'equator-compiler-static-source-input/1',
-          source.contents,
-        ),
-      }),
-    );
+  const { analysis } = request;
+  if (analysis?.sources !== undefined) {
+    const projectRoot = resolve(analysis.projectRoot);
+    for (const [index, source] of analysis.sources.entries()) {
+      const sourcePath = portableAnalysisPath(
+        projectRoot,
+        source.path,
+        `request.analysis.sources[${index}].path`,
+      );
+      inputs.push(
+        Object.freeze({
+          identity: `source:${sourcePath}`,
+          digest: digestCanonicalJson(
+            'equator-compiler-static-source-input/1',
+            source.contents,
+          ),
+        }),
+      );
+    }
   }
   inputs.sort((left, right) => compareCodeUnit(left.identity, right.identity));
   return Object.freeze(inputs);
@@ -811,11 +810,15 @@ function compileProjectCore(
   // A leading segment that is a route parameter is not checked here and cannot be: whether a slug
   // serializes to something the policy owns is decided per value, at runtime, which is where the
   // matching refusal lives.
-  const policyDeclaration = analysis?.routePolicy;
   if (
-    policyDeclaration !== undefined &&
-    policyDeclaration.claimedSegments.length > 0
+    analysis?.routePolicy !== undefined &&
+    analysis.routePolicy.claimedSegments.length > 0
   ) {
+    const {
+      routePolicy: policyDeclaration,
+      routes,
+      templateAddresses,
+    } = analysis;
     const exact = new Map(
       policyDeclaration.claimedSegments
         .filter((claim) => claim.kind === 'locale-neutral root')
@@ -826,7 +829,7 @@ function compileProjectCore(
         .filter((claim) => claim.kind !== 'locale-neutral root')
         .map((claim) => [claim.segment.toLowerCase(), claim] as const),
     );
-    for (const route of analysis?.routes ?? []) {
+    for (const route of routes) {
       const leading = route.path.split('/')[0];
       if (leading === undefined || leading.length === 0) continue;
       if (leading.startsWith(':')) continue;
@@ -867,7 +870,7 @@ function compileProjectCore(
     // so the neutral roots are excluded: a locale-neutral root is the one leading segment a
     // policy claims that survives the resolution, so an address that begins with one goes where it
     // says and is correct.
-    for (const address of analysis?.templateAddresses ?? []) {
+    for (const address of templateAddresses) {
       const leading = address.address.split('/')[1];
       if (leading === undefined || leading.length === 0) continue;
       const claim = folded.get(leading.toLowerCase());
@@ -1067,16 +1070,19 @@ function compileAdmitted(
   request: CompileProjectRequest,
 ): ToolkitResult<CompileProjectResult> {
   const configuration = admitConfiguration(request.configuration);
-  const catalogs = request.catalogs.map((catalog) =>
-    admitCatalog(catalog, { extensions: request.extensions }),
-  );
+  const catalogs: Catalog[] = [];
+  const refusedCatalogs: ToolkitDiagnostic[] = [];
+  for (const catalog of request.catalogs) {
+    const admitted = admitCatalog(catalog, { extensions: request.extensions });
+    if (admitted.ok) catalogs.push(admitted.value);
+    else refusedCatalogs.push(...admitted.diagnostics);
+  }
   // The owner's provider identity is hashed into the generated owner identity whatever the
   // catalogs are, so it is held to the provider grammar here and not left to a catalog to carry.
   const provider = parseProviderId(request.owner.providerId);
   const refused = [
-    ...[configuration, ...catalogs].flatMap((admitted) =>
-      admitted.ok ? [] : admitted.diagnostics,
-    ),
+    ...(configuration.ok ? [] : configuration.diagnostics),
+    ...refusedCatalogs,
     ...provider.diagnostics.map(({ code, summary }) =>
       toolkitDiagnostic(code, summary, { path: ['owner', 'providerId'] }),
     ),
@@ -1085,9 +1091,7 @@ function compileAdmitted(
   return compileProjectCore({
     ...request,
     configuration: configuration.value,
-    catalogs: catalogs.flatMap((admitted) =>
-      admitted.ok ? [admitted.value] : [],
-    ),
+    catalogs,
   });
 }
 

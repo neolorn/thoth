@@ -280,7 +280,7 @@ export interface ApplicationAnalysis {
    * either. Deriving the set is what lets Equator load only what the first render needs without any
    * application listing scopes by hand: the list was a workaround for analysis Equator can do.
    */
-  readonly deferredSourcePaths?: readonly string[];
+  readonly deferredSourcePaths: readonly string[];
 }
 
 function normalizePath(path: string): string {
