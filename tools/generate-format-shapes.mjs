@@ -18,7 +18,9 @@
  * It is for a major version no release has carried: the section's rule protects a reader of a
  * version, and a shape that has not left the repository has none, so moving its stamp would publish
  * a second major version of a format whose first nobody received. The record's own diff is where a
- * replacement is reviewed, and `--check` is unchanged by it.
+ * replacement is reviewed, and `--check` is unchanged by it. A stamp a release has carried is
+ * refused: `tools/released-format-stamps.json` lists them, and `--release` adds every recorded
+ * stamp to it, which is a step of a release and is committed with it.
  *
  * Every stamp literal in the built code must be a recorded format, a same-build stamp, or a digest
  * label, so a format added without a record is found rather than missed.
@@ -41,10 +43,47 @@ const replaced = new Set(
     ? []
     : (process.argv[replaceAt + 1] ?? '').split(',').filter((stamp) => stamp),
 );
+const recordPath = resolve(workspaceRoot, 'tools/format-shapes.json');
+const releasedPath = resolve(
+  workspaceRoot,
+  'tools/released-format-stamps.json',
+);
+const released = JSON.parse(readFileSync(releasedPath, 'utf8')).released;
+assert.ok(
+  Array.isArray(released) &&
+    released.every((stamp) => typeof stamp === 'string'),
+  'tools/released-format-stamps.json must hold a "released" list of stamps.',
+);
+for (const stamp of replaced) {
+  if (released.includes(stamp)) {
+    throw new Error(
+      `${stamp} has been released, so its shape is not replaced. An incompatible change moves its stamp.`,
+    );
+  }
+}
 if (check && replaced.size > 0) {
   throw new Error('--replace writes the record, and --check never does.');
 }
-const recordPath = resolve(workspaceRoot, 'tools/format-shapes.json');
+if (process.argv.includes('--release')) {
+  if (check || replaced.size > 0) {
+    throw new Error('--release takes no other option.');
+  }
+  const recorded = Object.keys(
+    JSON.parse(readFileSync(recordPath, 'utf8')).formats,
+  );
+  const stamps = [...new Set([...released, ...recorded])].sort();
+  writeFileSync(
+    releasedPath,
+    await format(JSON.stringify({ released: stamps }), {
+      ...(await resolveConfig(releasedPath)),
+      filepath: releasedPath,
+    }),
+  );
+  console.log(
+    `Released format stamps: ${stamps.length}, ${stamps.length - released.length} added.`,
+  );
+  process.exit(0);
+}
 
 const toolkit = (file, type) => ({ file: `dist/toolkit/${file}.d.ts`, type });
 const core = (type) => ({

@@ -16,6 +16,12 @@ The commands below are written for version `0.0.0`, which this project cannot pr
 
 2. **Set the version.** Update `version` in `package.json`, `packages/runtime/package.json`, and `packages/toolkit/package.json`. The three must match; the verification suite fails otherwise.
 
+   Then record the format stamps this release carries, so a later change cannot replace a shape a reader has received:
+
+   ```sh
+   node tools/generate-format-shapes.mjs --release
+   ```
+
 3. **Commit the release.**
 
    ```sh

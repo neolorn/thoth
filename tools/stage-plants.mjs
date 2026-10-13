@@ -824,6 +824,7 @@ export const stageSelfTests = Object.freeze({
       'dist/runtime/types',
       'dist/runtime/fesm2022',
       'tools/format-shapes.json',
+      'tools/released-format-stamps.json',
     ],
     plants: [
       {
@@ -867,6 +868,14 @@ export const stageSelfTests = Object.freeze({
         ),
         refusal:
           /equator-route-projection\/1: \S+#GeneratedRouteProjection\.\S*\.id: type changed from "string" to "number" \(incompatible\)/u,
+      },
+      {
+        id: 'released-stamp-replaced',
+        plant: editJson('tools/released-format-stamps.json', (file) => {
+          file.released.push('equator-work-owner/1');
+        }),
+        args: () => ['--replace', 'equator-work-owner/1'],
+        refusal: /equator-work-owner.1 has been released/u,
       },
       // The record holds a code this build does not write: the build withdrew it.
       {
