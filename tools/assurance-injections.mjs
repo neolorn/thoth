@@ -2070,6 +2070,24 @@ export const injections = Object.freeze([
       'packages/runtime/test/date-formatter-calendar-capability.test.ts',
   },
   {
+    id: 'plain-date-calendar-name-looser-than-a-zoned-one',
+    invariant:
+      "A plain date's calendar is held to the name syntax a zoned date-time's is, so an upper-case spelling, one character, or a subtag of nine is refused where the date is created.",
+    source: 'packages/runtime/src/formatting.ts',
+    find: '    day > 31 ||\n    !isCalendarName(calendar)',
+    replace: '    day > 31 ||\n    !/^[A-Za-z0-9-]{1,64}$/u.test(calendar)',
+    caughtBy: 'packages/runtime/test/canonical-value-admission.test.ts',
+  },
+  {
+    id: 'date-field-calendar-name-looser-than-a-value',
+    invariant:
+      "A date field's profile names its calendar in the syntax a value's calendar has, and a name written any other way makes the profile invalid.",
+    source: 'packages/runtime/src/localized-input.ts',
+    find: '    isCalendarName(calendar) &&',
+    replace: '    /^[A-Za-z0-9-]{1,64}$/u.test(calendar) &&',
+    caughtBy: 'packages/runtime/test/plain-date-input-profile.test.ts',
+  },
+  {
     id: 'formatter-cache-key-omits-locale',
     invariant:
       "A cached number formatter is keyed on its full locale tag, so a request for other digits is never handed another locale's formatter.",

@@ -24,7 +24,7 @@ when it is formatted: the one the call names, else the formatting context's, els
 A zoned date-time carries its zone; a duration carries its units.
 
 A time zone is a name from the time zone database Equator pins. `timeZone` and `zonedDateTime` check
-the name, and the calendar's, without asking the host, so the same name makes the same value in a
+the name, and `zonedDateTime` and `plainDate` a calendar's, without asking the host, so the same name makes the same value in a
 browser and on a server, and a clock offset such as `+05:00` is not one of the names. What a host
 cannot write is reported when the value is formatted.
 

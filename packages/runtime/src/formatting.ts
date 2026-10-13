@@ -198,7 +198,12 @@ export function instant(epochNanoseconds: string): InstantValue {
  * and exchanged, and `formatPlainDate` reports it as one it cannot write, because writing it needs
  * a conversion between calendars and Equator performs none.
  *
- * Throws for a date that does not exist. A date in `iso8601` or `gregory` is checked against the
+ * The calendar is named as a zoned date-time's is: lower-case subtags of three to eight letters
+ * and digits joined by hyphens, so `gregory` and `islamic-civil` and not `Gregory`. The host is
+ * not asked whether it has the calendar, and the same name makes the same value in every engine.
+ *
+ * Throws for a calendar named any other way and for a date that does not exist. A date in
+ * `iso8601` or `gregory` is checked against the
  * calendar, so the thirtieth of February is refused here rather than becoming the first of March
  * somewhere later. A date in another calendar is held to a month of 1 to 12 and a day of 1 to 31.
  */
@@ -216,7 +221,7 @@ export function plainDate(
     month > 12 ||
     day < 1 ||
     day > 31 ||
-    !/^[A-Za-z0-9-]{1,64}$/u.test(calendar)
+    !isCalendarName(calendar)
   ) {
     return invalidCanonicalValue('A plain date contains invalid civil fields.');
   }

@@ -126,7 +126,8 @@ A date fails with the same code where the host has no calendar under the name it
 whether the call, the value or the formatting context named it, rather than being written in
 another calendar. A zoned date-time fails with it too where the host has no rules for its zone.
 
-`plainDate` takes a calendar name as a fourth argument, and the numbers are then that calendar's.
+`plainDate` takes a calendar name as a fourth argument, in lower case as in `islamic-civil`, and
+the numbers are then that calendar's.
 A `gregory` date is the ISO date of the same numbers and is written in the Gregorian calendar
 whatever the context's is, which is what a date field of that calendar gives you. `formatPlainDate` fails with the
 same code for a date in any other calendar, because writing it would mean converting between

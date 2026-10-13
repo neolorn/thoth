@@ -51,7 +51,7 @@ import {
   plainTime,
   timeZone,
 } from './formatting';
-import { FormatterCache, formattingLocale } from './evaluator';
+import { FormatterCache, formattingLocale, isCalendarName } from './evaluator';
 import { RUNTIME_LIMITS, codePointLengthAtMost } from './runtime-safety';
 
 interface NumberSyntax {
@@ -826,7 +826,7 @@ function validDatePattern(profile: DatePatternWithLimit): boolean {
       profile.order,
     ) &&
     validPatternLiteral(profile.separator) &&
-    /^[A-Za-z0-9-]{1,64}$/u.test(calendar) &&
+    isCalendarName(calendar) &&
     validPlainDateBoundary(profile.minimum, calendar) &&
     validPlainDateBoundary(profile.maximum, calendar) &&
     !(

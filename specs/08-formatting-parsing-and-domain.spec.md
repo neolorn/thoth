@@ -76,7 +76,10 @@ calendar for, which the host would format in the locale's own calendar without a
 alias or another spelling the host answers to under a different name each return the typed
 unsupported result of section 3, and nothing is formatted in another calendar.
 
-A plain date is counted in `iso8601` unless it names another calendar. `gregory` is the proleptic
+A plain date is counted in `iso8601` unless it names another calendar, and the name is written as
+a zoned date-time's is and refused where the date is created if it is not: a value's calendar has
+one syntax whichever kind of value carries it, and a date field's profile is held to the same.
+`gregory` is the proleptic
 Gregorian calendar, which counts the days ISO 8601 does, so a date in it has the fields of the ISO
 date of the same day and is held to the same month lengths where it is created. A release MUST
 format a plain date or date-time counted in `gregory`, which is what a date field of that calendar

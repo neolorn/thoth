@@ -13,6 +13,7 @@ import {
   plainDate,
   plainTime,
   timeZone,
+  zonedDateTime,
 } from '../src/formatting.js';
 import { RUNTIME_LIMITS } from '../src/runtime-safety.js';
 
@@ -225,20 +226,32 @@ describe('a plain date', () => {
     refusal(() => plainDate(year, month, day, 'islamic-civil'));
   });
 
-  it('admits a calendar identifier of 64 characters', () => {
-    const calendar = 'a'.repeat(64);
+  it.each(['roc', 'gregory', 'islamic-civil', 'ethiopic-amete-alem', 'zzzzzz'])(
+    'admits the calendar name %s, which the host is not asked about',
+    (calendar) => {
+      expect(plainDate(1, 1, 1, calendar).calendar).toBe(calendar);
+    },
+  );
 
-    expect(plainDate(1, 1, 1, calendar).calendar).toBe(calendar);
-  });
-
+  // One syntax for a value's calendar: what a zoned date-time refuses, a plain date refuses.
   it.each([
     ['empty', ''],
-    ['65 long', 'a'.repeat(65)],
+    ['one character', 'x'],
+    ['a subtag of two characters', 'ab'],
+    ['a subtag of nine characters', 'gregorian'],
+    ['64 long', 'a'.repeat(64)],
+    ['in upper case', 'GREGORY'],
+    ['in mixed case', 'Hebrew'],
+    ['led by a hyphen', '-hebrew'],
+    ['ended by a hyphen', 'hebrew-'],
+    ['joined by two hyphens', 'islamic--civil'],
     ['spaced', 'islamic civil'],
     ['led by a space', ' hebrew'],
     ['ended by a space', 'hebrew '],
-  ])('refuses a calendar identifier that is %s', (_, calendar) => {
-    refusal(() => plainDate(1, 1, 1, calendar));
+    ['not text', 5],
+  ])('refuses a calendar name that is %s', (_, calendar) => {
+    refusal(() => plainDate(1, 1, 1, calendar as string));
+    refusal(() => zonedDateTime(instant('0'), 'UTC', calendar as string));
   });
 });
 

@@ -207,7 +207,7 @@ describe('a plain date counted in gregory', () => {
 });
 
 describe('a plain date counted in a calendar that is neither', () => {
-  it.each(['hebrew', 'buddhist', 'islamic-civil', 'GREGORY', 'gregorian'])(
+  it.each(['hebrew', 'buddhist', 'islamic-civil', 'zzzzzz'])(
     'is reported by the formatter and not thrown, in %s',
     (calendar) => {
       const refused = {

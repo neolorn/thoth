@@ -121,6 +121,9 @@ describe('a date pattern that does not hold together', () => {
     ['a calendar name starting off-grammar', { ...ISO, calendar: '!hebrew' }],
     ['a calendar name ending off-grammar', { ...ISO, calendar: 'hebrew!' }],
     ['an empty calendar name', { ...ISO, calendar: '' }],
+    ['a calendar name in upper case', { ...ISO, calendar: 'GREGORY' }],
+    ['a calendar name of one character', { ...ISO, calendar: 'g' }],
+    ['a calendar name of nine characters', { ...ISO, calendar: 'gregorian' }],
     ['a minimum that is no date', { ...ISO, minimum: rawDate(2023, 2, 30) }],
     ['a maximum that is no date', { ...ISO, maximum: rawDate(2025, 2, 30) }],
     [
