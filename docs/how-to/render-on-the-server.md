@@ -65,8 +65,9 @@ verifying a catalog does not depend on who asked for it.
 
 `renderedLocale()` returns the locale the server-rendered document was written in, and `undefined`
 when the browser rendered the page. When there was a server render, the runtime reads the locale
-stores again once hydration is over, so a remembered choice takes effect after the first view. What
-a locale change does to hydrated content is
+stores again once hydration is over, so a remembered choice takes effect after the first view. The
+sink you pass to `withObservability` is told how that read ended. What a locale change does to
+hydrated content is
 [About how a locale switch is a transaction](../explanation/about-locale-switching.md).
 
 ## Prerender

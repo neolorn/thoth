@@ -171,7 +171,8 @@ the browser restores from its back-forward cache, which comes back from memory w
 Equator checks a restored page in the browser. Where the locale your persistence stores remember
 differs from the one on screen, and the locale sources you configured would choose it at that
 address, the page changes to it. You write nothing for this, and the change is not remembered as a
-new choice, because the visitor made none.
+new choice, because the visitor made none. The sink you pass to `withObservability` is told how each
+check ended.
 
 ## Compute the headers without the handler
 
