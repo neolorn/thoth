@@ -43,7 +43,7 @@ function refusal(act: () => unknown): LocalizationError {
 }
 
 describe('changeLocale with a mode that is neither declared value', () => {
-  for (const mode of ['eager', 'Coordinated', '', 0, false, {}]) {
+  for (const mode of ['eager', 'Coordinated', '', 0, false, null, {}]) {
     it(`refuses ${JSON.stringify(mode)} as a configuration fault and starts nothing`, async () => {
       const localization = await started();
       const before = localization.snapshot();

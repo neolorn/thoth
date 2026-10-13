@@ -612,9 +612,8 @@ export const injections = Object.freeze([
     invariant:
       'A locale change that names a mode other than coordinated or progressive is refused as a configuration fault.',
     source: 'packages/runtime/src/localization.ts',
-    find: "    if (mode !== 'coordinated' && mode !== 'progressive') {",
-    replace:
-      "    if (mode !== 'coordinated' && mode !== 'progressive' && mode === '') {",
+    find: "      stated !== 'progressive'\n",
+    replace: "      stated !== 'progressive' &&\n      stated === ''\n",
     caughtBy: 'packages/runtime/test/change-locale-undeclared-mode.test.ts',
   },
   {

@@ -2326,10 +2326,16 @@ class LocalizationInternal {
     options: LocaleChangeOptions = {},
   ): Promise<LocaleChangeResult> {
     this.assertActive();
-    const mode = options.mode ?? 'coordinated';
-    // Refused rather than run as either mode: which of the two it runs as decides whether the page
-    // waits, and a value that is neither is a misspelling the caller has to see.
-    if (mode !== 'coordinated' && mode !== 'progressive') {
+    // Read as a value of no known type, because the declared type is the caller's claim and an
+    // untyped caller makes none. Refused rather than run as either mode: which of the two it runs
+    // as decides whether the page waits, and a value that is neither is a misspelling the caller
+    // has to see.
+    const stated: unknown = options.mode;
+    if (
+      stated !== undefined &&
+      stated !== 'coordinated' &&
+      stated !== 'progressive'
+    ) {
       throw new LocalizationError(
         operationalDiagnostic(
           'invalid-configuration',
@@ -2337,6 +2343,7 @@ class LocalizationInternal {
         ),
       );
     }
+    const mode = options.mode ?? 'coordinated';
     this.requestedChanges += 1;
     let locale: string;
     try {
