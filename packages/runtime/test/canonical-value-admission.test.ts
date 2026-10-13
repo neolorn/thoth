@@ -190,8 +190,9 @@ describe('a plain date', () => {
     );
   });
 
-  // Only an ISO date is checked against a calendar the platform can count in, so the cases below
-  // name another one: there the field ranges are the whole check.
+  // Only an ISO date and a Gregorian one, which count the same days, are checked against a
+  // calendar the platform can count in, so the cases below name another one: there the field
+  // ranges are the whole check.
   it('does not hold another calendar to the ISO month lengths', () => {
     expect(plainDate(1445, 2, 30, 'islamic-civil')).toEqual({
       kind: 'plain-date',

@@ -2759,18 +2759,36 @@ export const injections = Object.freeze([
     invariant:
       "An ISO plain date is written in the calendar the formatting context names, under the call's own.",
     source: 'packages/runtime/src/formatting.ts',
-    find: "      ...displayCalendar(context.calendar),\n      ...options,\n      timeZone: 'UTC',\n    });",
-    replace: "      ...options,\n      timeZone: 'UTC',\n    });",
+    find: '      ...displayCalendar(context.calendar),\n      ...displayCalendar(value.calendar),',
+    replace: '      ...displayCalendar(value.calendar),',
     caughtBy: 'packages/runtime/test/plain-date-context-calendar.test.ts',
+  },
+  {
+    id: 'gregorian-plain-date-refused-by-the-formatter',
+    invariant:
+      'A plain date counted in gregory, which a date field of that calendar reads, is a date the formatter writes.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: "  return calendar === 'iso8601' || calendar === 'gregory';",
+    replace: "  return calendar === 'iso8601';",
+    caughtBy: 'packages/runtime/test/plain-date-calendar.test.ts',
+  },
+  {
+    id: 'gregorian-plain-date-written-in-the-context-calendar',
+    invariant:
+      "A plain date counted in gregory is written in the Gregorian calendar over the formatting context's.",
+    source: 'packages/runtime/src/formatting.ts',
+    find: '      ...displayCalendar(context.calendar),\n      ...displayCalendar(value.calendar),',
+    replace: '      ...displayCalendar(context.calendar),',
+    caughtBy: 'packages/runtime/test/plain-date-calendar.test.ts',
   },
   {
     id: 'plain-date-time-context-calendar-over-the-call',
     invariant:
       "An ISO plain date-time is written in the calendar the call names over the formatting context's.",
     source: 'packages/runtime/src/formatting.ts',
-    find: "      ...displayCalendar(context.calendar),\n      ...options,\n      timeZone: 'UTC',\n      ...(context.hourCycle",
+    find: "      ...displayCalendar(context.calendar),\n      ...displayCalendar(value.date.calendar),\n      ...options,\n      timeZone: 'UTC',",
     replace:
-      "      ...options,\n      timeZone: 'UTC',\n      ...displayCalendar(context.calendar),\n      ...(context.hourCycle",
+      "      ...displayCalendar(value.date.calendar),\n      ...options,\n      timeZone: 'UTC',\n      ...displayCalendar(context.calendar),",
     caughtBy: 'packages/runtime/test/plain-date-context-calendar.test.ts',
   },
   {

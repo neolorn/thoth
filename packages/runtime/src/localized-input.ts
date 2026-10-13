@@ -801,19 +801,6 @@ function comparePlainDate(left: PlainDateValue, right: PlainDateValue): number {
   return 0;
 }
 
-/**
- * Whether a date `plainDate` built exists in the Gregorian calendar.
- *
- * `plainDate` holds the month to twelve and the day to thirty-one, so a date that does not exist
- * runs over into the next month and one outside the platform's range is no date at all. Either way
- * the day read back is not the day asked for, and for a date that exists it is.
- */
-function existsInGregorian(value: PlainDateValue): boolean {
-  const probe = new Date(0);
-  probe.setUTCFullYear(value.year, value.month - 1, value.day);
-  return probe.getUTCDate() === value.day;
-}
-
 function validPlainDateBoundary(
   value: PlainDateValue | undefined,
   calendar: string,
@@ -821,16 +808,11 @@ function validPlainDateBoundary(
   if (value === undefined || value.calendar !== calendar)
     return value === undefined;
   try {
-    // Throws for fields that are not a date's: a boundary written by hand can hold anything.
-    const canonical = plainDate(
-      value.year,
-      value.month,
-      value.day,
-      value.calendar,
-    );
-    // `plainDate` has asked this of an ISO date already. A calendar that is neither is refused
+    // Throws for fields that are not a date's, and for an ISO or a Gregorian date that does not
+    // exist: a boundary written by hand can hold anything. A calendar that is neither is refused
     // by the reader as one it cannot read, which is the truer report for it.
-    return calendar !== 'gregory' || existsInGregorian(canonical);
+    plainDate(value.year, value.month, value.day, value.calendar);
+    return true;
   } catch {
     return false;
   }
@@ -934,9 +916,10 @@ function parsePlainDate(
   try {
     value = plainDate(year, month, day, calendar);
   } catch {
-    // Fields that are no date leave no value, and the refusal below is the answer for that.
+    // Fields that are no date, or a date its calendar does not have, leave no value, and the
+    // refusal below is the answer for that.
   }
-  if (value === undefined || !existsInGregorian(value)) {
+  if (value === undefined) {
     return failed(
       'out-of-range',
       text,

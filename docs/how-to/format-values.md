@@ -126,7 +126,10 @@ A zoned date-time fails with the same code where the host has no calendar under 
 or no rules for its zone, rather than being written in another calendar.
 
 `plainDate` takes a calendar name as a fourth argument, and the numbers are then that calendar's.
-`formatPlainDate` fails with the same code for a date in any calendar but `iso8601`.
+A `gregory` date is the ISO date of the same numbers and is written in the Gregorian calendar
+whatever the context's is, which is what a date field of that calendar gives you. `formatPlainDate` fails with the
+same code for a date in any other calendar, because writing it would mean converting between
+calendars.
 
 ## Format in a template
 

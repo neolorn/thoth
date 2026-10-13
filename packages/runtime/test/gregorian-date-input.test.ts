@@ -14,9 +14,9 @@ import {
 /**
  * A date field under the Gregorian calendar reads and writes only dates that exist.
  *
- * `plainDate` asks that of an ISO date when it builds one, and of no other calendar, so for a
- * Gregorian date the field asks it itself: of the text it reads, of the value it writes, and of the
- * bounds its profile declares.
+ * `plainDate` asks that of a Gregorian date as of an ISO one when it builds either, and a value or
+ * a bound can also reach the field as an object nobody built. The field answers the same for both:
+ * of the text it reads, of the value it writes, and of the bounds its profile declares.
  */
 
 const EN: FormattingContext = Object.freeze({ locale: 'en-US' });
@@ -28,9 +28,10 @@ const GREGORIAN: LocalizedInputProfile = {
   calendar: 'gregory',
 };
 
-// Built by hand: `plainDate` builds a Gregorian date without asking whether it exists.
+// Written as an object: `plainDate` refuses a Gregorian date that does not exist, and some below
+// do not.
 const gregorian = (year: number, month: number, day: number): PlainDateValue =>
-  plainDate(year, month, day, 'gregory');
+  Object.freeze({ kind: 'plain-date', year, month, day, calendar: 'gregory' });
 
 describe('a Gregorian date read from a field', () => {
   it.each([

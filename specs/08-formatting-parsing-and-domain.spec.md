@@ -76,6 +76,16 @@ calendar for, which the host would format in the locale's own calendar without a
 alias or another spelling the host answers to under a different name each return the typed
 unsupported result of section 3, and nothing is formatted in another calendar.
 
+A plain date is counted in `iso8601` unless it names another calendar. `gregory` is the proleptic
+Gregorian calendar, which counts the days ISO 8601 does, so a date in it has the fields of the ISO
+date of the same day and is held to the same month lengths where it is created. A release MUST
+format a plain date or date-time counted in `gregory`, which is what a date field of that calendar
+reads, and MUST write it in the Gregorian calendar, under the calendar an operation names and over
+the context's. A date in any other calendar is three fields of that calendar, held where it is
+created to a month of 1 to 12 and a day of 1 to 31. Writing it needs a conversion between
+calendars, which a release does not perform, so the formatter returns the typed unsupported result
+of section 3 for it.
+
 A release MUST NOT perform accounting, exchange, tax, cash rounding, business precision, rate
 calculation, percentage-point conversion, or implicit unit conversion. Those belong to the consumer
 application's domain.

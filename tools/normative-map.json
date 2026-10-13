@@ -2932,6 +2932,15 @@
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "2. Canonical value contracts",
+      "statement": "A release MUST format a plain date or date-time counted in `gregory`, which is what a date field of that calendar reads, and MUST write it in the Gregorian calendar, under the calendar an operation names and over the context's.",
+      "checks": [
+        "assurance:gregorian-plain-date-refused-by-the-formatter",
+        "assurance:gregorian-plain-date-written-in-the-context-calendar"
+      ]
+    },
+    {
+      "spec": "08-formatting-parsing-and-domain.spec.md",
+      "section": "2. Canonical value contracts",
       "statement": "A release MUST NOT perform accounting, exchange, tax, cash rounding, business precision, rate calculation, percentage-point conversion, or implicit unit conversion.",
       "reason": "It excludes capabilities the runtime does not have, so there is no behavior to remove and see a test fail. The nearest observable property, that formatting reports rather than rounds an exact decimal it cannot represent, is its own statement elsewhere."
     },

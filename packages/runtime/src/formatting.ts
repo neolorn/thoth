@@ -189,11 +189,18 @@ export function instant(epochNanoseconds: string): InstantValue {
 /**
  * A calendar date with no time and no zone: a birthday, an invoice date, a holiday.
  *
- * Month counts from one, so March is 3. The calendar defaults to `iso8601`; naming another one
- * means the three numbers are read in that calendar's terms.
+ * Month counts from one, so March is 3. The calendar defaults to `iso8601`, and the date is then
+ * written in whichever calendar the formatting context names. `gregory` counts the same days: a
+ * date in it is the ISO date of the same numbers, and it is written in the Gregorian calendar
+ * whatever the context's is, which is what a date field of that calendar reads and writes back.
  *
- * Throws for a date that does not exist. An ISO date is checked against the calendar, so the
- * thirtieth of February is refused here rather than becoming the first of March somewhere later.
+ * Naming any other calendar means the three numbers are that calendar's. Such a date can be stored
+ * and exchanged, and `formatPlainDate` reports it as one it cannot write, because writing it needs
+ * a conversion between calendars and Equator performs none.
+ *
+ * Throws for a date that does not exist. A date in `iso8601` or `gregory` is checked against the
+ * calendar, so the thirtieth of February is refused here rather than becoming the first of March
+ * somewhere later. A date in another calendar is held to a month of 1 to 12 and a day of 1 to 31.
  */
 export function plainDate(
   year: number,
@@ -213,14 +220,14 @@ export function plainDate(
   ) {
     return invalidCanonicalValue('A plain date contains invalid civil fields.');
   }
-  if (calendar === 'iso8601') {
+  if (countsIsoDays(calendar)) {
     const probe = new Date(0);
     probe.setUTCFullYear(year, month - 1, day);
     // With the month held to twelve and the day to thirty-one above, a date that does not exist
     // runs over into the next month and one outside the platform's range is no date at all. Either
     // way the day read back is not the day asked for, and for a date that exists it is.
     if (probe.getUTCDate() !== day) {
-      return invalidCanonicalValue('An ISO plain date does not exist.');
+      return invalidCanonicalValue('The plain date does not exist.');
     }
   }
   return Object.freeze({ kind: 'plain-date', year, month, day, calendar });
@@ -1044,13 +1051,50 @@ function displayCalendar(calendar: string | undefined): {
   return calendar === undefined || calendar === 'iso8601' ? {} : { calendar };
 }
 
+/**
+ * Whether a plain date in this calendar has the fields of the ISO date of the same day.
+ *
+ * `gregory` is the proleptic Gregorian calendar, which is the calendar ISO 8601 counts in, so the
+ * year, month and day of a date in one are those of the same day in the other. No other calendar
+ * is: its fields would have to be converted, and the runtime converts nothing.
+ */
+function countsIsoDays(calendar: string): boolean {
+  return calendar === 'iso8601' || calendar === 'gregory';
+}
+
+/**
+ * The refusal for a plain date whose calendar the formatter did not count in, or `undefined`.
+ *
+ * A date in `gregory` names the calendar it is written in, under the one the call names. A host
+ * asked for a calendar it does not have raises nothing and writes in the calendar of the locale,
+ * so what the formatter says it counts in is compared with the name.
+ */
+function plainCalendarRefusal(
+  formatter: Intl.DateTimeFormat,
+  value: PlainDateValue,
+  context: FormattingContext,
+  options: Intl.DateTimeFormatOptions,
+): FormattingResult | undefined {
+  const named =
+    options.calendar === undefined
+      ? displayCalendar(value.calendar).calendar
+      : undefined;
+  return named === undefined || formatter.resolvedOptions().calendar === named
+    ? undefined
+    : unsupported(
+        'The host does not count in the calendar the plain date names.',
+        context,
+        'native-capability-rejected',
+      );
+}
+
 function plainDateMilliseconds(
   value: PlainDateValue,
   context: FormattingContext,
 ): number | FormattingResult {
-  if (value.calendar !== 'iso8601') {
+  if (!countsIsoDays(value.calendar)) {
     return unsupported(
-      'Native Date cannot safely construct non-ISO plain-date fields.',
+      'A plain date in a calendar other than iso8601 and gregory cannot be formatted.',
       context,
     );
   }
@@ -1069,8 +1113,11 @@ function plainDateMilliseconds(
  * Defaults to a numeric day, month and year when no options are given. No zone is involved: a
  * plain date is the same date wherever it is read, which is why a birthday does not move.
  *
- * The calendar the date is written in is the one the options name, else the one the context names,
- * else the locale's own, as for an instant.
+ * The calendar the date is written in is the one the options name, else `gregory` for a date
+ * counted in it, else the one the context names, else the locale's own.
+ *
+ * A date counted in a calendar other than `iso8601` and `gregory` comes back as an unsupported
+ * result, and so does a `gregory` date on a host that answers that name with another calendar.
  */
 export function formatPlainDate(
   value: PlainDateValue,
@@ -1090,9 +1137,12 @@ export function formatPlainDate(
     }
     const formatter = sharedFormatters.dateTime(formattingTag, {
       ...displayCalendar(context.calendar),
+      ...displayCalendar(value.calendar),
       ...options,
       timeZone: 'UTC',
     });
+    const refusal = plainCalendarRefusal(formatter, value, context, options);
+    if (refusal !== undefined) return refusal;
     return success(
       'plain-date',
       formatter.format(milliseconds),
@@ -1190,7 +1240,8 @@ export function formatPlainTime(
  * Defaults to numeric date fields with hours, minutes and seconds. Still no zone, so this is for a
  * wall-clock time whose place is understood from elsewhere on the page.
  *
- * The calendar is chosen as for a plain date: the options', else the context's, else the locale's.
+ * The calendar is chosen, and a date in a calendar that cannot be written is reported, as for a
+ * plain date.
  */
 export function formatPlainDateTime(
   value: PlainDateTimeValue,
@@ -1204,9 +1255,9 @@ export function formatPlainDateTime(
     second: 'numeric',
   },
 ): FormattingResult {
-  if (value.date.calendar !== 'iso8601') {
+  if (!countsIsoDays(value.date.calendar)) {
     return unsupported(
-      'Native Date cannot safely construct non-ISO plain date-time fields.',
+      'A plain date-time in a calendar other than iso8601 and gregory cannot be formatted.',
       context,
     );
   }
@@ -1237,12 +1288,20 @@ export function formatPlainDateTime(
     }
     const formatter = sharedFormatters.dateTime(formattingTag, {
       ...displayCalendar(context.calendar),
+      ...displayCalendar(value.date.calendar),
       ...options,
       timeZone: 'UTC',
       ...(context.hourCycle === undefined
         ? {}
         : { hourCycle: context.hourCycle }),
     });
+    const refusal = plainCalendarRefusal(
+      formatter,
+      value.date,
+      context,
+      options,
+    );
+    if (refusal !== undefined) return refusal;
     const milliseconds = date.getTime();
     return success(
       'plain-date-time',

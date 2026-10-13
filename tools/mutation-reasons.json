@@ -2541,7 +2541,7 @@
     {
       "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
-      "original": "'An ISO plain date does not exist.'",
+      "original": "'The plain date does not exist.'",
       "replacement": "\"\"",
       "category": "message-wording",
       "reason": "The literal is the message of the refusal of an ISO date that does not exist, which a person reads and nothing compares; the refusal's code and outcome are asserted."
@@ -2702,10 +2702,10 @@
     {
       "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
-      "original": "'Native Date cannot safely construct non-ISO plain-date fields.'",
+      "original": "'A plain date in a calendar other than iso8601 and gregory cannot be formatted.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The literal is the message of the refusal of a plain date in a calendar other than iso8601; it is read by a person and nothing compares, parses or returns it as data apart from the diagnostic's message field."
+      "reason": "The literal is the message of the refusal of a plain date in a calendar other than iso8601 and gregory; it is read by a person and nothing compares, parses or returns it as data apart from the diagnostic's message field."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -7632,10 +7632,18 @@
     {
       "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
-      "original": "'Native Date cannot safely construct non-ISO plain date-time fields.'",
+      "original": "'A plain date-time in a calendar other than iso8601 and gregory cannot be formatted.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The literal is the message of the diagnostic formatPlainDateTime returns when it refuses a date in a calendar other than the ISO one; the code, the outcome, the target locale and the absent reason of that refusal are the same with any text."
+      "reason": "The literal is the message of the diagnostic formatPlainDateTime returns when it refuses a date in a calendar other than the ISO and the Gregorian one; the code, the outcome, the target locale and the absent reason of that refusal are the same with any text."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "StringLiteral",
+      "original": "'The host does not count in the calendar the plain date names.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The sentence of the unsupported result formatPlainDate and formatPlainDateTime return where the host resolved another calendar than gregory for a date counted in it. Its code, outcome, target locale and reason are the same with any text, and plain-date-calendar.test.ts asserts those."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
