@@ -49,8 +49,9 @@ const WEIGHT_PARAMETER = /^\s*[Qq]\s*=\s*(\d+(?:\.\d+)?)\s*$/u;
 export function parseAcceptLanguage(header: string): readonly string[] {
   const entries: { readonly range: string; readonly quality: number }[] = [];
   for (const part of header.split(',', MAXIMUM_RANGES)) {
-    const [rangeText, ...parameters] = part.split(';');
-    const range = rangeText?.trim() ?? '';
+    // Splitting text always gives a first piece, the whole of it where there is no separator.
+    const [rangeText, ...parameters] = part.split(';') as [string, ...string[]];
+    const range = rangeText.trim();
     // The pattern is also what drops an empty range and `*`: it asks for at least one character
     // and admits no asterisk.
     if (

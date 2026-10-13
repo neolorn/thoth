@@ -17,14 +17,6 @@
     },
     {
       "file": "packages/runtime/core/src/locale-negotiation.ts",
-      "mutator": "OptionalChaining",
-      "original": "rangeText?.trim",
-      "replacement": "rangeText.trim",
-      "category": "equivalent",
-      "reason": "String.prototype.split returns at least one element for any string, so the first element is never undefined and the optional call is never the one taken."
-    },
-    {
-      "file": "packages/runtime/core/src/locale-negotiation.ts",
       "mutator": "EqualityOperator",
       "original": "separator < 0",
       "replacement": "separator <= 0",
