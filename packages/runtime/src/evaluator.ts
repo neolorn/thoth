@@ -311,9 +311,9 @@ export class FormatterCache {
     this.values.delete(key);
     this.values.set(key, value);
     while (this.values.size > this.maximumEntries) {
-      const oldest = this.values.keys().next().value as string | undefined;
-      if (oldest === undefined) break;
-      this.values.delete(oldest);
+      // The capacity is one or more, so a map above it holds an entry and has a first key, and
+      // every key here is text.
+      this.values.delete(this.values.keys().next().value as string);
     }
     return value;
   }

@@ -1604,14 +1604,6 @@
     {
       "file": "packages/runtime/src/evaluator.ts",
       "mutator": "ConditionalExpression",
-      "original": "oldest === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The loop on line 307 runs only while the map holds more entries than a capacity the constructor (lines 289 to 291) requires to be at least 1, so the map is not empty and its first key is never undefined; the break is never taken in either version."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "ConditionalExpression",
       "original": "typeof value === 'number'",
       "replacement": "true",
       "category": "equivalent",
