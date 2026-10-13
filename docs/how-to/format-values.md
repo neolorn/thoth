@@ -121,6 +121,9 @@ A duration is written by the host's `Intl.DurationFormat`, and Node 22 does not 
 `formatDuration` and `localizedDuration` fail with `unsupported-formatting-capability` rather than
 put the units in an order Equator would have to guess.
 
+A zoned date-time fails with the same code where the host has no calendar under the value's name
+or no rules for its zone, rather than being written in another calendar.
+
 ## Format in a template
 
 A value that a template renders takes a pipe instead, one for each canonical value kind:

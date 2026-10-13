@@ -22,6 +22,11 @@ fifteen percent or fifteen hundredths. `plainDate(2026, 3, 14)` is a date with n
 which is what a birthday is, and it takes a calendar when the calendar is not the locale's own. A
 zoned date-time carries its zone; a duration carries its units.
 
+A time zone is a name from the time zone database Equator pins. `timeZone` and `zonedDateTime` check
+the name, and the calendar's, without asking the host, so the same name makes the same value in a
+browser and on a server, and a clock offset such as `+05:00` is not one of the names. What a host
+cannot write is reported when the value is formatted.
+
 ## One source per fact
 
 The formatter's options are `Intl`'s own, minus the ones the value already decided. `formatMoney`
