@@ -2241,6 +2241,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/toolkit/test/function-option-vocabulary.test.ts',
   },
   {
+    id: 'declared-keyword-type-stated-a-second-time',
+    invariant:
+      'The numbering system and the calendar an application declares for a locale are held by the configuration schema to the pattern a name is held to wherever else it is given, so a declaration is not a name to the schema and something else to the formatters.',
+    source: 'packages/toolkit/src/schemas.ts',
+    find: '  pattern: UNICODE_KEYWORD_TYPE.source,',
+    replace: "  pattern: '^[A-Za-z0-9-]{1,64}$',",
+    caughtBy: 'packages/toolkit/test/keyword-type-one-definition.test.ts',
+  },
+  {
     id: 'formatter-cache-key-omits-locale',
     invariant:
       "A cached number formatter is keyed on its full locale tag, so a request for other digits is never handed another locale's formatter.",

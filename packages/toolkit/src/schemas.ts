@@ -3,6 +3,7 @@ import {
   MESSAGE_NAME_CHARACTERS,
   MESSAGE_NAME_PATTERN,
 } from './message-format-syntax.js';
+import { UNICODE_KEYWORD_TYPE } from './message-function-options.js';
 import { RESOURCE_LIMITS } from './resource-limits.js';
 
 const localeTextSchema = {
@@ -23,10 +24,13 @@ const nonemptyTextSchema = {
  * eight alphanumerics. Well-formedness is all a schema can decide here; whether a runtime has data
  * for a well-formed value is the formatting runtime's question, and it refuses rather than
  * approximating.
+ *
+ * The pattern is the one a calendar or a numbering system is held to wherever else it is named, by
+ * a message, a value or a formatting context, so a declaration cannot be a name here and not there.
  */
 const unicodeKeywordTypeSchema = {
   type: 'string',
-  pattern: '^[a-z0-9]{3,8}(?:-[a-z0-9]{3,8})*$',
+  pattern: UNICODE_KEYWORD_TYPE.source,
 } as const;
 
 const portableTypeIdSchema = {

@@ -134,7 +134,7 @@ export type MessageOptionRule =
  * the same value in every engine. Whether the host has the calendar or the digits a well-formed
  * name asks for is a separate question, answered where something is formatted with it.
  */
-const UNICODE_KEYWORD_TYPE = /^[a-z0-9]{3,8}(?:-[a-z0-9]{3,8})*$/u;
+export const UNICODE_KEYWORD_TYPE = /^[a-z0-9]{3,8}(?:-[a-z0-9]{3,8})*$/u;
 
 export function isUnicodeKeywordType(value: unknown): value is string {
   return typeof value === 'string' && UNICODE_KEYWORD_TYPE.test(value);
