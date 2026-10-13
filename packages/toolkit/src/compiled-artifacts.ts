@@ -295,7 +295,11 @@ export interface RecoveryRepresentation {
  * root pointed somewhere else. Re-owning is the correct outcome for both.
  */
 export interface OwnerIdentity {
-  /** The owning package's Equator provider identity, which is its package name. */
+  /**
+   * The owning package's Equator provider identity, which is its package name.
+   *
+   * `compileProject` refuses one outside the provider grammar with `EQ1104`.
+   */
   readonly providerId: string;
   /** Where this owner generates, as a portable path relative to the owner root. */
   readonly generatedRootPath: string;

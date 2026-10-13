@@ -53,7 +53,9 @@ never the value when a programmatic entry point is called with an argument that 
 shape, and an asynchronous entry point rejects with that error. A release MUST judge a catalog or a
 configuration that a caller assembles and hands to a programmatic entry point as `parseCatalog` and
 `parseConfiguration` judge the same content read from a file, and MUST report what they refuse with
-their diagnostics and no source position.
+their diagnostics and no source position. A release MUST refuse an owner identity whose provider is
+outside the provider grammar with the diagnostic that provider gets in a catalog, whether or not
+the request carries a catalog.
 
 ## 3. First generation
 

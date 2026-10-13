@@ -63,7 +63,7 @@ const REFERENCE = {
   EQ1103:
     'A catalog repeats a key, or its text, or a translation an XLIFF import would write into it, carries a bidi construction Equator refuses.',
   EQ1104:
-    'A provider, scope or message identity written in a catalog is malformed.',
+    'A provider, scope or message identity written in a catalog is malformed, or the provider identity of the owner a compilation was handed is.',
   EQ1105:
     'A target catalog declares `inputs` or `slots`. Those belong to the source catalog, and a target inherits them.',
   EQ1201:

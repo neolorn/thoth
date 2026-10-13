@@ -3854,6 +3854,12 @@
     },
     {
       "spec": "10-compiler-and-tooling.spec.md",
+      "section": "2. The compiler core and its hosts",
+      "statement": "A release MUST refuse an owner identity whose provider is outside the provider grammar with the diagnostic that provider gets in a catalog, whether or not the request carries a catalog.",
+      "checks": ["assurance:owner-provider-identity-unjudged"]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
       "section": "3. First generation",
       "statement": "A release MUST NOT write the provisional overlay, import it at run time, cache it as an authority, or expose it as a second generated interface.",
       "checks": ["assurance:provisional-overlay-published-as-output"]

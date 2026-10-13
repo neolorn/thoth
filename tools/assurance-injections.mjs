@@ -117,6 +117,15 @@ export const injections = Object.freeze([
       'packages/toolkit/test/compile-project-handed-over-content.test.ts',
   },
   {
+    id: 'owner-provider-identity-unjudged',
+    invariant:
+      'An owner identity whose provider is outside the provider grammar is refused, with or without catalogs.',
+    source: 'packages/toolkit/src/compiler.ts',
+    find: '  const provider = parseProviderId(request.owner.providerId);',
+    replace: "  const provider = parseProviderId('equator');",
+    caughtBy: 'packages/toolkit/test/compile-project-owner-identity.test.ts',
+  },
+  {
     id: 'translator-notes-dropped',
     invariant:
       'Authored description and context reach the translator as XLIFF notes.',

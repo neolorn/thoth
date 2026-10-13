@@ -27,6 +27,7 @@ import {
   admitConfiguration,
   type ProjectConfiguration,
 } from './configuration.js';
+import { parseProviderId } from './identities.js';
 import { canonicalizeLocale } from './locales.js';
 import {
   toolkitDiagnostic,
@@ -1060,6 +1061,7 @@ const COMPILE_PROJECT_REQUEST: ArgumentShape = {
  *
  * A caller can hand over a configuration or a catalog no parser has read, so each is admitted
  * first, and everything after this compiles what was admitted and never the object handed over.
+ * The owner's provider identity is judged with them.
  */
 function compileAdmitted(
   request: CompileProjectRequest,
@@ -1068,9 +1070,17 @@ function compileAdmitted(
   const catalogs = request.catalogs.map((catalog) =>
     admitCatalog(catalog, { extensions: request.extensions }),
   );
-  const refused = [configuration, ...catalogs].flatMap((admitted) =>
-    admitted.ok ? [] : admitted.diagnostics,
-  );
+  // The owner's provider identity is hashed into the generated owner identity whatever the
+  // catalogs are, so it is held to the provider grammar here and not left to a catalog to carry.
+  const provider = parseProviderId(request.owner.providerId);
+  const refused = [
+    ...[configuration, ...catalogs].flatMap((admitted) =>
+      admitted.ok ? [] : admitted.diagnostics,
+    ),
+    ...provider.diagnostics.map(({ code, summary }) =>
+      toolkitDiagnostic(code, summary, { path: ['owner', 'providerId'] }),
+    ),
+  ];
   if (!configuration.ok || refused.length > 0) return toolkitFailure(refused);
   return compileProjectCore({
     ...request,
