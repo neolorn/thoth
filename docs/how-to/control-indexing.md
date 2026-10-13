@@ -107,6 +107,9 @@ export class ArticleRoute {
 Declaring after the page is on screen is the ordinary case, because the load finishes after
 activation. Equator rebuilds the head when the declaration arrives.
 
+The status `pageOperationalFailure` takes is a whole number from 200 to 599, and the call throws
+`invalid-configuration` for any other.
+
 What it withdraws is what the address implied. A page declared absent or removed publishes no
 canonical link and no `hreflang` alternates, and carries `noindex`: an alternate link states that the
 same page exists in another language, so leaving one on a page that is not there makes that claim in
