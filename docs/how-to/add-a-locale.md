@@ -48,17 +48,22 @@ form its language needs, or a translation was written against a source message t
 changed. Ship the locale before its catalogs are finished with an `inProgress` entry, which is
 [How to translate catalogs](translate-catalogs.md).
 
-## Add a source of your own
+## Choose the sources a locale is resolved from
 
-Equator asks four sources for a visitor's locale, in a fixed order, and takes the first answer: the
-address, a persisted choice, `Accept-Language`, then `defaultLocale`. `withLocaleSources` inserts
-your own source into that order, for something the list cannot know: an account setting, a tenant's
-declared language, a value in your session.
+Equator asks four sources for a visitor's locale and takes the first answer: the address, a
+persisted choice, `Accept-Language`, then `defaultLocale`. `withLocaleSources` names the ones to
+ask and the order to ask them in:
 
-A source answers or declines. Declining passes the question along rather than ending it, so an
-account setting that is empty for a signed-out visitor still lets the browser be asked.
+```text
+withLocaleSources('url', 'stored', 'default')
+```
 
-Leaving `withLocaleSources` out selects the four above. For the order itself and how a requested
+That application never asks the browser. A source answers or declines, and declining passes the
+question along rather than ending it.
+
+Leaving `withLocaleSources` out selects the four above, in that order. A choice kept in your own
+account record is a store given to `withPersistence`, which is
+[How to add a locale switcher](add-a-locale-switcher.md). For the order itself and how a requested
 language is matched against the set you serve, read
 [About how a locale is resolved](../explanation/about-locale-resolution.md).
 

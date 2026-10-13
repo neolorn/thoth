@@ -523,4 +523,4 @@ it has no scrolling to do rather than anything about the application.
 - [How to localize your routes](how-to/localize-routes.md): the other locale policies, and what a
   visitor's address decides.
 - [About how a locale is resolved](explanation/about-locale-resolution.md): the order Equator asks
-  in, and how to add a source of your own.
+  in, and how to choose the sources it asks.

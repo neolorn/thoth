@@ -13,14 +13,15 @@ Equator asks four sources and takes the first answer:
 3. `Accept-Language`.
 4. `defaultLocale`.
 
-That order is what an application composing nothing gets. `withLocaleSources` inserts a source of
-your own, for something the list cannot know: an account setting, a tenant's declared language, a
-value in your session.
+That order is what an application composing nothing gets. `withLocaleSources` names the sources
+that are asked and the order they are asked in, as `'url'`, `'stored'`, `'browser'` and
+`'default'`, and a source it leaves out is never asked. A choice kept where the list cannot reach,
+such as an account record, comes in through the stored source, as a store of your own given to
+`withPersistence`.
 
-A source answers or declines. Declining passes the question along rather than ending it, so an
-account setting that is empty for a signed-out visitor still lets the browser be asked. Design a
-source of your own around that property: return nothing rather than a guess, and the sources behind
-you still work.
+A source answers or declines. Declining passes the question along rather than ending it, so a store
+that is empty for a signed-out visitor still lets the browser be asked. Write a store of your own
+around that property: return nothing rather than a guess, and the sources behind it still work.
 
 ## Precedence of the address
 
