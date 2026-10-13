@@ -94,7 +94,8 @@ table is, or give a function the build calls for them:
 Both forms are serialized per locale through the route's codecs, so one entry writes
 `/en-us/articles/handbook` and `/ar-eg/articles/دليل`. The function is called once for
 the route rather than once per locale, and a value with no spelling in some locale fails the build
-rather than being left out of that language.
+rather than being left out of that language. So does a value whose spelling in some locale is not
+one path segment, or is one the route's codec does not read back.
 
 A prerendered page is one file that every visitor is given, so a route declared `per-visitor` or
 `not-stored`, or indexed as `private`, fails the build that renders it, with the route and its
