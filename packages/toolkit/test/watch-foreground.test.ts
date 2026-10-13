@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { initializeProject, watchProject } from '../src/project-host.js';
+import { WAIT_BOUND_MS } from './fixtures.js';
 
 /**
  * Watch is the calling process, for exactly as long as the caller keeps it. Once a stopped watch
@@ -91,7 +92,7 @@ describe('watch', () => {
     }).finally(() => {
       returned = true;
     });
-    const deadline = Date.now() + 15_000;
+    const deadline = Date.now() + WAIT_BOUND_MS;
     while (during < 0 && Date.now() < deadline) {
       await new Promise((done) => setTimeout(done, 20));
     }
@@ -106,7 +107,7 @@ describe('watch', () => {
       'messages:\n  app-title: Foreground, edited after the return\n',
     );
     await vi.waitFor(() => expect(watchers()).toBe(before), {
-      timeout: 15_000,
+      timeout: WAIT_BOUND_MS,
       interval: 20,
     });
     expect(cycles).toBe(cyclesAtReturn);

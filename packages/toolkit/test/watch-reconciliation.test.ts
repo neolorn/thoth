@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { ToolkitResult } from '../src/index.js';
 import { initializeProject, watchProject } from '../src/project-host.js';
+import { WAIT_BOUND_MS } from './fixtures.js';
 
 /**
  * Watch reconciles fully at startup, treats every filesystem event as a hint to reconcile again,
@@ -188,7 +189,7 @@ describe('watch', () => {
     const root = await project();
     const { results, finish } = start(root, 20);
     try {
-      expect(await until(() => results.length >= 1, 15_000)).toBe(true);
+      expect(await until(() => results.length >= 1, WAIT_BOUND_MS)).toBe(true);
       expect(results[0]?.ok, JSON.stringify(results[0]?.diagnostics)).toBe(
         true,
       );
@@ -198,7 +199,7 @@ describe('watch', () => {
       // answer to not knowing what changed is to reconcile everything.
       await write(root, 'i18n/shell/en-US.yaml', catalog('Unnamed'));
       fire(null);
-      expect(await until(() => results.length >= 2, 15_000)).toBe(true);
+      expect(await until(() => results.length >= 2, WAIT_BOUND_MS)).toBe(true);
       expect(results[1]?.ok).toBe(true);
       expect(await generatedText(root)).toContain('Unnamed');
     } finally {
@@ -210,7 +211,7 @@ describe('watch', () => {
     const root = await project();
     const { results, finish } = start(root, 1_000);
     try {
-      expect(await until(() => results.length >= 1, 15_000)).toBe(true);
+      expect(await until(() => results.length >= 1, WAIT_BOUND_MS)).toBe(true);
 
       await write(root, 'i18n/shell/en-US.yaml', catalog('Half'));
       fire('i18n/shell/en-US.yaml');
@@ -218,7 +219,7 @@ describe('watch', () => {
       await write(root, 'i18n/shell/en-US.yaml', catalog('Whole and finished'));
       fire('i18n/shell/en-US.yaml');
 
-      expect(await until(() => results.length >= 2, 15_000)).toBe(true);
+      expect(await until(() => results.length >= 2, WAIT_BOUND_MS)).toBe(true);
       // Quiet for longer than the debounce, so a cycle started by the first event alone would
       // have had its chance to appear.
       await pause(1_500);
@@ -237,7 +238,7 @@ describe('watch', () => {
     const catalogPath = resolve(root, 'i18n/shell/en-US.yaml');
     const { results, finish } = start(root, 20);
     try {
-      expect(await until(() => results.length >= 1, 15_000)).toBe(true);
+      expect(await until(() => results.length >= 1, WAIT_BOUND_MS)).toBe(true);
 
       // The third version lands after the second generation has read the catalog and before it
       // publishes, which is the case where finishing the running cycle alone would publish stale
@@ -253,7 +254,7 @@ describe('watch', () => {
       await write(root, 'i18n/shell/en-US.yaml', catalog('Second'));
       fire('i18n/shell/en-US.yaml');
 
-      expect(await until(() => results.length >= 3, 15_000)).toBe(true);
+      expect(await until(() => results.length >= 3, WAIT_BOUND_MS)).toBe(true);
       expect(held).toBe(true);
       // The generation that read the second version sees its input change before publishing and
       // withholds it, and the rerun publishes the third.
@@ -305,7 +306,7 @@ describe('watch', () => {
     await write(root, 'package.json', `${JSON.stringify(manifest, null, 2)}\n`);
     const { results, finish } = start(root, 20);
     try {
-      expect(await until(() => results.length >= 1, 15_000)).toBe(true);
+      expect(await until(() => results.length >= 1, WAIT_BOUND_MS)).toBe(true);
       expect(results[0]?.ok, JSON.stringify(results[0]?.diagnostics)).toBe(
         true,
       );
@@ -331,8 +332,8 @@ describe('watch', () => {
       // The same watch still answers an edit, so the quiet above is the rule and not a dead watch.
       await write(root, 'i18n/shell/en-US.yaml', catalog('Nested'));
       fire('i18n/shell/en-US.yaml');
-      expect(await until(() => opened.length > 0, 15_000)).toBe(true);
-      expect(await until(() => results.length >= 2, 15_000)).toBe(true);
+      expect(await until(() => opened.length > 0, WAIT_BOUND_MS)).toBe(true);
+      expect(await until(() => results.length >= 2, WAIT_BOUND_MS)).toBe(true);
     } finally {
       await finish();
     }
@@ -358,7 +359,7 @@ describe('watch', () => {
       returned = true;
       return result;
     });
-    expect(await until(() => cycles >= 1, 15_000)).toBe(true);
+    expect(await until(() => cycles >= 1, WAIT_BOUND_MS)).toBe(true);
 
     controller.abort();
     expect(await until(() => emitClose !== undefined, 5_000)).toBe(true);
@@ -384,7 +385,7 @@ describe('watch', () => {
         cycles += 1;
       },
     });
-    expect(await until(() => cycles >= 1, 15_000)).toBe(true);
+    expect(await until(() => cycles >= 1, WAIT_BOUND_MS)).toBe(true);
 
     control.watcher?.emit('error', new Error('planted watcher failure'));
     const result = await watched;

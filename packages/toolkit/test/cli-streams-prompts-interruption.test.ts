@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { initializeProject } from '../src/project-host.js';
 
 import { runCli } from './cli-run.js';
+import { WAIT_BOUND_MS } from './fixtures.js';
 
 /**
  * What the executable puts on each stream, what it asks and when, and what it answers when it is
@@ -232,7 +233,7 @@ describe('an interrupted watch', () => {
     const current = () => watcher.current;
     const before = new Set(process.listeners('SIGINT'));
     const running = runCli(['watch', '--json', '--project', root]);
-    const deadline = Date.now() + 15_000;
+    const deadline = Date.now() + WAIT_BOUND_MS;
     while (current() === undefined && Date.now() < deadline) {
       await new Promise((done) => setTimeout(done, 10));
     }

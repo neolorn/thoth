@@ -40,3 +40,11 @@ export function testProjectConfiguration(
   }
   return parsed.value;
 }
+
+/**
+ * How long a test waits for something another party does: a watcher's first pass, a prompt.
+ *
+ * Under the suite's 120 s test bound, so a wait that runs out fails with its own assertion and not
+ * with the test's time limit, and far above what the wait costs, so it ends only on a hang.
+ */
+export const WAIT_BOUND_MS = 100_000;

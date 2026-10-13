@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { ToolkitResult } from '../src/index.js';
 import { initializeProject, watchProject } from '../src/project-host.js';
+import { WAIT_BOUND_MS } from './fixtures.js';
 
 /**
  * A filesystem event says something may have changed. A cycle that rereads the inputs and finds
@@ -171,7 +172,7 @@ async function fireAndLetTheCycleRun(
   expect(control.listener).toBeDefined();
   control.listener?.('change', fileName);
   expect(
-    await until(() => reread, 15_000),
+    await until(() => reread, WAIT_BOUND_MS),
     'the event started no cycle, so the quiet after it says nothing',
   ).toBe(true);
   control.onRead = undefined;
@@ -188,7 +189,7 @@ describe('watch', () => {
     const root = await project();
     const { results, events, finish } = start(root);
     try {
-      expect(await until(() => results.length >= 1, 15_000)).toBe(true);
+      expect(await until(() => results.length >= 1, WAIT_BOUND_MS)).toBe(true);
       expect(results[0]?.ok, JSON.stringify(results[0]?.diagnostics)).toBe(
         true,
       );
@@ -208,7 +209,7 @@ describe('watch', () => {
       // The same watch answers an edit, with the next sequence number.
       await write(root, CATALOG, catalog('Edited'));
       fire(CATALOG);
-      expect(await until(() => results.length >= 2, 15_000)).toBe(true);
+      expect(await until(() => results.length >= 2, WAIT_BOUND_MS)).toBe(true);
       expect(results[1]?.ok, JSON.stringify(results[1]?.diagnostics)).toBe(
         true,
       );
@@ -221,7 +222,7 @@ describe('watch', () => {
     const root = await project();
     const { results, events, finish } = start(root);
     try {
-      expect(await until(() => results.length >= 1, 15_000)).toBe(true);
+      expect(await until(() => results.length >= 1, WAIT_BOUND_MS)).toBe(true);
 
       await write(
         root,
@@ -229,7 +230,7 @@ describe('watch', () => {
         `${catalog('Started')}  broken: "unterminated\n`,
       );
       fire(CATALOG);
-      expect(await until(() => results.length >= 2, 15_000)).toBe(true);
+      expect(await until(() => results.length >= 2, WAIT_BOUND_MS)).toBe(true);
       expect(results[1]?.ok).toBe(false);
       const reported = events.length;
 
@@ -241,7 +242,7 @@ describe('watch', () => {
       // others, so this is a change and not a repeat.
       await write(root, CATALOG, catalog('Started'));
       fire(CATALOG);
-      expect(await until(() => results.length >= 3, 15_000)).toBe(true);
+      expect(await until(() => results.length >= 3, WAIT_BOUND_MS)).toBe(true);
       expect(results[2]?.ok, JSON.stringify(results[2]?.diagnostics)).toBe(
         true,
       );
@@ -254,13 +255,13 @@ describe('watch', () => {
     const root = await project();
     const { results, finish } = start(root);
     try {
-      expect(await until(() => results.length >= 1, 15_000)).toBe(true);
+      expect(await until(() => results.length >= 1, WAIT_BOUND_MS)).toBe(true);
 
       // A record a merge left unreadable stops the generation after its inputs were accepted.
       await write(root, TRANSLATION_STATE, '<<<<<<< ours\n');
       await write(root, CATALOG, catalog('Edited'));
       fire(CATALOG);
-      expect(await until(() => results.length >= 2, 15_000)).toBe(true);
+      expect(await until(() => results.length >= 2, WAIT_BOUND_MS)).toBe(true);
       expect(results[1]?.diagnostics.map(({ code }) => code)).toEqual([
         'EQ1702',
       ]);
@@ -268,7 +269,7 @@ describe('watch', () => {
       // Resolving the record changes no input, and the edit before it is still unpublished.
       await rm(resolve(root, TRANSLATION_STATE));
       fire(TRANSLATION_STATE);
-      expect(await until(() => results.length >= 3, 15_000)).toBe(true);
+      expect(await until(() => results.length >= 3, WAIT_BOUND_MS)).toBe(true);
       expect(results[2]?.ok, JSON.stringify(results[2]?.diagnostics)).toBe(
         true,
       );
