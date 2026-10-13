@@ -404,7 +404,7 @@ A failure with no more specific code. An error that is not a `LocalizationError`
 
 ### invalid-configuration
 
-The configuration, the generated artifacts, or the call do not fit together. Among the cases: the generated configuration and catalog set disagree, a generated scope, catalog descriptor or loader map is malformed or over its ceiling, a scope's source catalog is missing, `maximumCachedCatalogs` is out of range, required and progressive scopes overlap, the generated message handles were built for another runtime, a route declaration or parameter codec cannot be used, the `numberingSystem` handed to `parseLocalizedInput` or `formatLocalizedInput` is not a well-formed identifier, or `retry()` is called when initialization has not failed. In the browser, a transferred server snapshot that is not accepted is reported under this code.
+The configuration, the generated artifacts, or the call do not fit together. Among the cases: the generated configuration and catalog set disagree, a generated scope, catalog descriptor or loader map is malformed or over its ceiling, a scope's source catalog is missing, `maximumCachedCatalogs` is out of range, required and progressive scopes overlap, the generated message handles were built for another runtime, a route declaration or parameter codec cannot be used, a parameter codec throws, where the reason is `consumer-code-threw`, a locale URL policy written out as an object is not what a policy constructor writes, a `localeNeutralRoots` list has an empty slot, a locale handed to a policy constructor or an address builder is not text, a host policy is given no origin or one it does not name, the `mode` handed to `changeLocale`, `provideLocalizedRouter` or `RouteLocalization` is neither `coordinated` nor `progressive`, the `numberingSystem` handed to `parseLocalizedInput` or `formatLocalizedInput` is not a well-formed identifier, or `retry()` is called when initialization has not failed. In the browser, a transferred server snapshot that is not accepted is reported under this code.
 
 ### invalid-localized-input
 
@@ -440,7 +440,7 @@ A required participant has no representation for the locale, outcome `localized-
 
 ### route-unavailable
 
-A route cannot be produced in the locale. A route parameter with no spelling in the locale has outcome `localized-representation-unavailable` and keeps that address from being prerendered. The router raises it when a navigation did not commit a localized route transaction, and when a page declares an outcome such as not found while it is being prerendered, where no response exists to carry it.
+A route cannot be produced in the locale. A route parameter with no spelling in the locale has outcome `localized-representation-unavailable` and keeps that address from being prerendered. `changeLocale` ends as `failed` with it, and changes nothing, where the page on screen, or the destination of a navigation that has committed and not yet landed, has no address in the target locale. Under a host policy the document is then sent nowhere. The router raises it when a navigation did not commit a localized route transaction, and when a page declares an outcome such as not found while it is being prerendered, where no response exists to carry it.
 
 ### scope-unavailable
 
@@ -460,7 +460,7 @@ A request address was refused before routing: the target is structurally unsafe 
 
 ### unsupported-formatting-capability
 
-A value could not be formatted with what the host or the application provides: the host's `Intl` refuses the value or the options, or a formatting adapter is not registered, threw, or returned an invalid result or invalid parts.
+A value could not be formatted with what the host or the application provides: the host's `Intl` refuses the value or the options, the host does not know the time zone or does not count in the calendar a zoned date-time names, or a formatting adapter is not registered, threw, or returned an invalid result or invalid parts.
 
 ### unsupported-input-capability
 
