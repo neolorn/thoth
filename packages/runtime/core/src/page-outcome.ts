@@ -11,6 +11,7 @@
 // `@neolorn/equator/http`. Neither of those entry points may import the other, so the channel sits
 // in the base both already depend on.
 
+import { LocalizationError } from './contracts';
 import type { RouteHttpDescriptor } from './routing';
 
 /** An address that resolved to a route whose entity does not exist. */
@@ -79,14 +80,22 @@ export function pageGone(): PageOutcomeGone {
  *
  * Serving maintenance and reporting a failed load are both this. The status is the caller's because
  * Equator has no table for one, and it is checked here rather than where the response is built, so
- * a value that could not be sent is refused at the call that names it.
+ * a value that could not be sent is refused at the call that names it, with the typed
+ * configuration failure. The message names the kind of a value that is not a number and never
+ * the value.
  */
 export function pageOperationalFailure(
   status: number,
 ): PageOutcomeOperationalFailure {
-  if (!Number.isInteger(status) || status < 200 || status > 599) {
-    throw new RangeError(
-      `A declared operational failure carries an HTTP status between 200 and 599; received ${String(status)}.`,
+  const given: unknown = status;
+  if (!Number.isInteger(given) || status < 200 || status > 599) {
+    throw new LocalizationError(
+      Object.freeze({
+        code: 'invalid-configuration',
+        outcome: 'operational-failure',
+        message: `A declared operational failure carries an HTTP status between 200 and 599; received ${typeof given === 'number' ? String(given) : `a value of type ${typeof given}`}.`,
+        reason: 'malformed-input',
+      }),
     );
   }
   return Object.freeze({ outcome: 'operational-failure', status });

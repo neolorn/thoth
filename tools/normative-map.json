@@ -628,6 +628,12 @@
     {
       "spec": "03-locale-identity-and-resolution.spec.md",
       "section": "3. Canonical identity",
+      "statement": "A function that describes a tag it is handed, rather than a configured locale, throws the platform's `RangeError` for a tag the platform does not parse, and a release MUST refuse with a `RangeError` as well a tag that names no script and has none in the likely subtags data, so one function refuses in one class.",
+      "checks": ["assurance:locale-profile-without-a-script-let-through"]
+    },
+    {
+      "spec": "03-locale-identity-and-resolution.spec.md",
+      "section": "3. Canonical identity",
       "statement": "It MUST NOT rewrite a declared identity, a catalog key, a URL value, a cache key, or a persisted preference.",
       "checks": ["assurance:negotiation-answers-the-maximized-tag"]
     },
@@ -779,6 +785,12 @@
         "assurance:cookie-name-not-token",
         "assurance:cookie-samesite-none-insecure"
       ]
+    },
+    {
+      "spec": "03-locale-identity-and-resolution.spec.md",
+      "section": "8. Persistence",
+      "statement": "A release MUST make each of those refusals an `invalid-configuration` failure, as it makes every other option it refuses.",
+      "checks": ["assurance:cookie-refused-with-a-plain-error"]
     },
     {
       "spec": "03-locale-identity-and-resolution.spec.md",
@@ -2118,6 +2130,12 @@
       "section": "5. Navigation and HTTP outcomes",
       "statement": "A release MUST accept the declaration from both and MUST give them one type, because the two differ only in where the declaration is made.",
       "checks": ["assurance:renderer-declaration-ignored"]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "5. Navigation and HTTP outcomes",
+      "statement": "A release MUST refuse a status that is not a whole number from 200 to 599 at the call that declares it, with `invalid-configuration`.",
+      "checks": ["assurance:declared-status-out-of-range-let-through"]
     },
     {
       "spec": "07-routing-rendering-and-seo.spec.md",

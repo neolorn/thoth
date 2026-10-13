@@ -29,6 +29,7 @@ import {
   ɵopenPageOutcomeChannel,
   ɵrememberPageOutcome,
   ɵtakePageOutcome,
+  LocalizationError,
   type LocaleUrlPolicy,
   type PageOutcomeDeclaration,
   type RouteRuntimeProjection,
@@ -144,8 +145,22 @@ describe('the channel a declaration travels over', () => {
   it('refuses a status no response could carry', () => {
     // Refused where it is named rather than where the response is built, so the call that is wrong
     // is the call that fails.
-    expect(() => pageOperationalFailure(0)).toThrow(RangeError);
-    expect(() => pageOperationalFailure(600)).toThrow(RangeError);
+    for (const status of [0, 199, 600, 503.5, Number.NaN, '503', undefined]) {
+      let refused: unknown;
+      try {
+        pageOperationalFailure(status as number);
+      } catch (error) {
+        refused = error;
+      }
+      expect(refused, String(status)).toBeInstanceOf(LocalizationError);
+      expect(refused, String(status)).toMatchObject({
+        diagnostic: {
+          code: 'invalid-configuration',
+          outcome: 'operational-failure',
+          reason: 'malformed-input',
+        },
+      });
+    }
     expect(pageOperationalFailure(503)).toEqual({
       outcome: 'operational-failure',
       status: 503,

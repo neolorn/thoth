@@ -14,6 +14,7 @@ import { describe, expect, it } from 'vitest';
 import { createLocaleRequestHandler } from '../http/src/handler.js';
 import { type CookieStoreOptions, cookieStore } from '../src/persistence.js';
 import {
+  LocalizationError,
   type LocaleUrlPolicy,
   type RouteRuntimeProjection,
 } from '@neolorn/equator/core';
@@ -199,10 +200,45 @@ describe('a cookie configuration neither half will write', () => {
     ],
   ];
 
+  /** What a configuration is refused with, or nothing where it is accepted. */
+  const refusal = (configure: () => unknown): unknown => {
+    try {
+      configure();
+    } catch (error) {
+      return error;
+    }
+    return undefined;
+  };
+
   it('is refused by the browser store where it is configured', () => {
     for (const [what, options, rule] of refused) {
       expect(() => cookieStore(options), what).toThrow(rule);
       expect(() => cookieStore(options), what).toThrow(/Equator cookieStore/u);
+    }
+  });
+
+  it('is refused by both as a configuration the diagnostic names', () => {
+    for (const [what, options] of refused) {
+      for (const configure of [
+        () => cookieStore(options),
+        () =>
+          createLocaleRequestHandler({
+            policy: POLICY,
+            projection: PROJECTION,
+            cache: { successMaxAge: 600, permanentRedirectMaxAge: 86_400 },
+            cookie: options,
+          }),
+      ]) {
+        const error = refusal(configure);
+        expect(error, what).toBeInstanceOf(LocalizationError);
+        expect(error, what).toMatchObject({
+          diagnostic: {
+            code: 'invalid-configuration',
+            outcome: 'operational-failure',
+            reason: 'malformed-input',
+          },
+        });
+      }
     }
   });
 

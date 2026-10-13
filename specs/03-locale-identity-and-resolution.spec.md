@@ -39,7 +39,10 @@ Canonicalization MUST be deterministic across the toolkit, the server, and the b
 between runtimes MUST NOT change an identity anything compares, stores, or exchanges.
 
 Likely-subtag maximization MAY inform matching and direction analysis. It MUST NOT rewrite a declared
-identity, a catalog key, a URL value, a cache key, or a persisted preference.
+identity, a catalog key, a URL value, a cache key, or a persisted preference. A function that
+describes a tag it is handed, rather than a configured locale, throws the platform's `RangeError`
+for a tag the platform does not parse, and a release MUST refuse with a `RangeError` as well a tag
+that names no script and has none in the likely subtags data, so one function refuses in one class.
 
 A `-u-` extension is a formatting preference, validated separately, and is not part of a catalog's
 identity. A transform, private-use, or other extension receives no meaning without an explicit
@@ -197,7 +200,8 @@ The locale cookie a release writes, from its browser store or from its own reque
 be one a browser stores. A release MUST refuse at configuration a cookie name that is not a token, a
 path or domain a `Set-Cookie` header cannot carry, a lifetime that is not a positive number of
 seconds, and an attribute combination the browser's cookie storage model discards, such as
-`SameSite=None` without `Secure` or a `__Host-` name with a domain.
+`SameSite=None` without `Secure` or a `__Host-` name with a domain. A release MUST make each of
+those refusals an `invalid-configuration` failure, as it makes every other option it refuses.
 
 Persistence state is created per injector rather than per configuration, so a store declared in a
 shared application configuration cannot carry one server-rendered request's preference into the next.

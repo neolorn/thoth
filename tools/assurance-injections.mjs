@@ -2816,6 +2816,33 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/locale-cookie-defaults.test.ts',
   },
   {
+    id: 'cookie-refused-with-a-plain-error',
+    invariant:
+      'A cookie configuration that is refused is refused as an invalid-configuration failure.',
+    source: 'packages/runtime/core/src/cookie-attributes.ts',
+    find: "    throw new LocalizationError(\n      Object.freeze({\n        code: 'invalid-configuration',\n        outcome: 'operational-failure',\n        message: `Equator ${owner}: ${rule}`,\n        reason: 'malformed-input',\n      }),\n    );",
+    replace: '    throw new Error(`Equator ${owner}: ${rule}`);',
+    caughtBy: 'packages/runtime/test/locale-cookie-defaults.test.ts',
+  },
+  {
+    id: 'locale-profile-without-a-script-let-through',
+    invariant:
+      'A tag that names no script and has none in the likely subtags data is refused with a RangeError.',
+    source: 'packages/runtime/core/src/locale-profile.ts',
+    find: '  if (script === undefined) {',
+    replace: '  if (script === null) {',
+    caughtBy: 'packages/runtime/test/core-entry-point.test.ts',
+  },
+  {
+    id: 'declared-status-out-of-range-let-through',
+    invariant:
+      'A declared operational failure whose status is not a whole number from 200 to 599 is refused as an invalid-configuration failure.',
+    source: 'packages/runtime/core/src/page-outcome.ts',
+    find: '  if (!Number.isInteger(given) || status < 200 || status > 599) {',
+    replace: '  if (given === null) {',
+    caughtBy: 'packages/runtime/test/declared-page-outcome.test.ts',
+  },
+  {
     id: 'cookie-name-not-token',
     invariant: 'A cookie name that is not an RFC 6265 token is refused.',
     source: 'packages/runtime/core/src/cookie-attributes.ts',

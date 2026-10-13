@@ -7,6 +7,8 @@
  * configuration is evaluated instead.
  */
 
+import { LocalizationError } from './contracts';
+
 /** The attributes of the locale cookie, with the defaults already applied. */
 export interface ɵCookieAttributes {
   /** The cookie's name, which a `Set-Cookie` header carries only when it is a token. */
@@ -41,14 +43,23 @@ const ATTRIBUTE_VALUE = /^[ -:<-~]+$/u;
  * It refuses rather than repairs. Turning `Secure` on because `SameSite` is `None` would replace
  * what the application wrote with something else, which is the same silence one layer in.
  *
- * `owner` names the function the configuration was given to, so the message points at it.
+ * `owner` names the function the configuration was given to, so the message points at it. The
+ * refusal is the typed configuration failure every other refused option ends as, so one handler
+ * reads all of them.
  */
 export function ɵassertStorableCookie(
   owner: string,
   cookie: ɵCookieAttributes,
 ): void {
   const refuse = (rule: string): never => {
-    throw new Error(`Equator ${owner}: ${rule}`);
+    throw new LocalizationError(
+      Object.freeze({
+        code: 'invalid-configuration',
+        outcome: 'operational-failure',
+        message: `Equator ${owner}: ${rule}`,
+        reason: 'malformed-input',
+      }),
+    );
   };
   const discarded = (rule: string): never =>
     refuse(

@@ -272,10 +272,12 @@ made. A release that gave them separate shapes would require an application movi
 renderer into a page to rewrite what the check declares.
 
 The two arms are not spelled the same way. An operational failure carries its own status, because
-the release has no table for it. A routing outcome carries the fact and not the status: a release
-MUST take the absence of an entity and its permanent removal as facts and MUST derive the status
-from the table above, because the table above is the release's and an application writing a status
-into a declaration would be restating a rule the release already applies.
+the release has no table for it. A release MUST refuse a status that is not a whole number from 200
+to 599 at the call that declares it, with `invalid-configuration`. A routing outcome carries the
+fact and not the status: a release MUST take the absence of an entity and its permanent removal as
+facts and MUST derive the status from the table above, because the table above is the release's and
+an application writing a status into a declaration would be restating a rule the release already
+applies.
 
 A release MUST accept a declaration as a result distinct from the response a renderer
 otherwise returns, so a renderer that returns an ordinary response is unaffected and no status
@@ -442,17 +444,17 @@ address bar follow it, leaving the route, its parameters, and its history entry 
 switch itself, and a consumer application MUST change locale through the localization API rather
 than by navigating to a localized address.
 
-The address a change moves to is built before anything changes: the address the bar follows to
-where the target locale is served in this document, and the address the document is sent to where
-another origin serves it. Where the route on screen has no address in the target locale, because a
-parameter has no spelling there or because a declared spelling is one the route's codec refuses, a
-release MUST end the change as failed with the diagnostic the address was refused with, MUST NOT
-commit a locale the address bar cannot follow, and MUST NOT send the document to another origin. A
-locale change a navigation makes is answered for the navigation's destination instead. Where that
-change does not commit, a release MUST fail the navigation with the diagnostic the change ended
-with, or with `route-unavailable` where the change ended as redirected and carries none, and MUST
-leave the snapshot and the Router's address as they were. A release MUST answer a change made in place
-while a navigation is in flight for the route on screen, as it answers any other, because that navigation
+The address a change moves to is built before anything changes: the address the bar follows to where
+the target locale is served in this document, and the address the document is sent to where another
+origin serves it. Where the route on screen has no address in the target locale, because a parameter
+has no spelling there or because a declared spelling is one the route's codec refuses, a release
+MUST end the change as failed with the diagnostic the address was refused with, MUST NOT commit a
+locale the address bar cannot follow, and MUST NOT send the document to another origin. A locale
+change a navigation makes is answered for the navigation's destination instead. Where that change
+does not commit, a release MUST fail the navigation with the diagnostic the change ended with, or
+with `route-unavailable` where the change ended as redirected and carries none, and MUST leave the
+snapshot and the Router's address as they were. A release MUST answer a change made in place while a
+navigation is in flight for the route on screen, as it answers any other, because that navigation
 can still be cancelled. Where that navigation has already committed its locale and has not landed, a
 release MUST answer the change for the navigation's destination as well, and MUST write the page
 that lands in the locale that is committed. Where that navigation is cancelled or fails instead, or

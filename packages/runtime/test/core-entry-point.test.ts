@@ -76,6 +76,15 @@ describe('a locale profile', () => {
     expect(localeProfile('sr-RS').script).toBe('Cyrl');
   });
 
+  it('refuses a tag it cannot describe as the platform refuses a malformed one', () => {
+    // The platform throws a `RangeError` for a tag it does not parse. A tag that names no script
+    // and has none in the likely subtags data has no direction to report, and is refused with the
+    // same class, so a caller handles one kind of refusal from one function.
+    expect(() => localeProfile('not a tag')).toThrow(RangeError);
+    expect(() => localeProfile('tlh')).toThrow(RangeError);
+    expect(() => localeProfile('tlh')).toThrow(/no likely script/u);
+  });
+
   it('reads direction from the script rather than from the language or the region', () => {
     // Urdu is Arabic-script in Pakistan, which is the pair that catches a direction table keyed by
     // language or by region rather than by script.

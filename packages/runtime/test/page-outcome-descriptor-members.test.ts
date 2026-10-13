@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  LocalizationError,
   pageAbsent,
   pageGone,
   pageOperationalFailure,
@@ -84,9 +85,9 @@ describe('the statuses an operational failure may name', () => {
   });
 
   it('refuses the statuses on either side of them', () => {
-    expect(() => pageOperationalFailure(199)).toThrow(RangeError);
-    expect(() => pageOperationalFailure(600)).toThrow(RangeError);
-    expect(() => pageOperationalFailure(503.5)).toThrow(RangeError);
+    for (const status of [199, 600, 503.5]) {
+      expect(() => pageOperationalFailure(status)).toThrow(LocalizationError);
+    }
   });
 });
 
