@@ -21,7 +21,6 @@ import {
   MESSAGE_FUNCTION_OPTIONS,
   MESSAGE_OPTION_RULES,
   resolvedDateOptions,
-  dateTimeFormatOptions,
   extensionOptionProfile,
   inheritedOptions,
   messageOptionProblem,
@@ -29,6 +28,7 @@ import {
   type MessageOperandKind,
 } from './message-function-options.js';
 import { NUMBER_LITERAL_PATTERN } from './message-format-syntax.js';
+import { TIME_ZONE_IDENTITIES } from './time-zone-identities.generated.js';
 import { RESOURCE_LIMITS } from './resource-limits.js';
 import { untrustedText } from './untrusted-text.js';
 import { compareCodeUnit, frozenRecord } from './sorted-records.js';
@@ -146,38 +146,45 @@ export const PLURAL_SELECTOR_FUNCTIONS: ReadonlySet<string> = Object.freeze(
 ) as ReadonlySet<string>;
 
 /**
- * Which date option `Intl.DateTimeFormat` refuses, said in one line, or nothing where it takes
- * them all.
+ * Whether the pinned time-zone database gives a zone this name.
  *
- * The two options whose values are data rather than a rule, the time zone and the calendar, are
- * each built into a formatter alone, and the first that is refused alone is the one named: a
- * message writing a good `calendar` and a misspelt `timeZone` is told which of the two to fix.
- * That includes one this expression did not write: an option its operand's declaration carries is
- * not judged again against the table here.
+ * The table and not the host. Hosts disagree about which zones exist and take a clock offset for a
+ * name, so a message judged by the machine that compiles it would compile on one machine and not
+ * on another. Case is folded over the ASCII letters alone, which are the only letters a name of
+ * the database has, as the runtime folds it where a time zone value is made.
+ */
+let pinnedTimeZoneNames: ReadonlySet<string> | undefined;
+export function isPinnedTimeZoneName(value: string): boolean {
+  pinnedTimeZoneNames ??= new Set(
+    TIME_ZONE_IDENTITIES.split(' ').map((entry) =>
+      (entry.split('>')[0] as string).toLowerCase(),
+    ),
+  );
+  return pinnedTimeZoneNames.has(
+    value.replace(/[A-Z]/gu, (letter) => letter.toLowerCase()),
+  );
+}
+
+/**
+ * Which date option names data the pinned standards do not carry, said in one line, or nothing.
  *
- * Nothing else is tried, because nothing else is refused: every other date option is an enumerated
- * value the table has already judged, and `dateTimeFormatOptions` turns each into component values
- * the platform takes in every combination.
+ * The time zone is the one, and it is judged here because this package carries the table. That
+ * includes a zone this expression did not write: an option its operand's declaration carries is
+ * not judged again against the option table. `input` is not a name and is answered before this.
+ *
+ * No formatter is built. Every other date option is a value the option table has already judged,
+ * and `dateTimeFormatOptions` turns each into component values the platform takes in every
+ * combination.
  */
 function dateOptionProblem(
   functionName: string,
   resolved: Readonly<Record<string, string>>,
 ): string | undefined {
   for (const [name, rule] of Object.entries(MESSAGE_OPTION_RULES)) {
-    if (rule.kind !== 'constructed' && rule.kind !== 'platform') continue;
+    if (rule.kind !== 'constructed') continue;
     const value = resolved[name];
-    if (value === undefined) continue;
-    try {
-      new Intl.DateTimeFormat('en', {
-        // A zone is supplied because Equator refuses to format a date without one, and what is
-        // being decided here is whether the message's own options can be honoured. A message
-        // that writes no zone takes the consumer's, which is not this file's business.
-        timeZone: 'UTC',
-        ...dateTimeFormatOptions(functionName, { [name]: value }),
-      });
-    } catch {
-      return `MessageFormat option ${name}=${JSON.stringify(value)} on :${functionName} is not ${rule.describes}.`;
-    }
+    if (value === undefined || isPinnedTimeZoneName(value)) continue;
+    return `MessageFormat option ${name}=${JSON.stringify(value)} on :${functionName} is not ${rule.describes}.`;
   }
   return undefined;
 }

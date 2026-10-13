@@ -292,12 +292,6 @@ function valuesFor(name) {
     case 'identifier':
     case 'constructed':
       return SAMPLED[name] ?? [];
-    case 'platform':
-      // The sampled pair where there is one, so the walk stays the same size whatever ICU ships.
-      return (
-        SAMPLED[name] ??
-        [...table.supportedPlatformValues(rule.key)].slice(0, 2)
-      );
     case 'unsupported':
       // Written on purpose: an option Equator declines has to be refused, and a walk that skipped
       // it would never notice it being quietly accepted again.

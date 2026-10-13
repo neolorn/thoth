@@ -7077,14 +7077,6 @@
       "reason": "The change can only hand emitToolkitEvent a diagnosticCode key holding undefined, and emitToolkitEvent leaves the key off the event when its value is undefined, so the emitted event is the same."
     },
     {
-      "file": "packages/toolkit/src/message-format.ts",
-      "mutator": "ConditionalExpression",
-      "original": "rule.kind !== 'constructed' && rule.kind !== 'platform'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "Retrying an option of another kind alone cannot throw: a date function inherits only timeZone, calendar and hour12, hour12 reaches Intl.DateTimeFormat as a boolean, and every other option is written on the expression and judged against its enumerated values before dateOptionProblem is called, each of which dateTimeFormatOptions turns into component values Intl accepts. So the loop names the same option, or none, either way."
-    },
-    {
       "file": "packages/toolkit/src/semantic-model.ts",
       "mutator": "StringLiteral",
       "original": "`Custom message function ${JSON.stringify(reference.name)} requires an operand.`",

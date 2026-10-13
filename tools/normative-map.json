@@ -950,6 +950,15 @@
     {
       "spec": "04-message-authoring-and-catalogs.spec.md",
       "section": "6. Message bodies",
+      "statement": "A release MUST judge a `calendar` option by how a calendar's name is written and a `timeZone` option by the names the pinned time-zone database carries, as `08-formatting-parsing-and-domain.spec.md` section 2 states both, and MUST NOT ask the host about either.",
+      "checks": [
+        "assurance:message-calendar-option-judged-by-a-looser-rule",
+        "assurance:message-time-zone-option-left-to-the-host"
+      ]
+    },
+    {
+      "spec": "04-message-authoring-and-catalogs.spec.md",
+      "section": "6. Message bodies",
       "statement": "Inheritance MUST NOT become a second way past a closed descriptor.",
       "checks": ["assurance:inherited-options-bypass-descriptor"]
     },

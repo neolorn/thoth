@@ -644,8 +644,18 @@ export const stageSelfTests = Object.freeze({
       'packages/toolkit/src/locale-aliases.generated.ts',
       'standards/data/tzdata-2026e',
       'packages/runtime/src/time-zone-identities.generated.ts',
+      'packages/toolkit/src/time-zone-identities.generated.ts',
     ],
     plants: [
+      {
+        id: 'time-zone-table-of-the-toolkit-not-the-pinned-one',
+        plant: plantText(
+          'packages/toolkit/src/time-zone-identities.generated.ts',
+          'Asia/Calcutta>Asia/Kolkata',
+          'Asia/Calcutta>Asia/Dhaka',
+        ),
+        refusal: /The checked-in Equator time zone identity table is stale/u,
+      },
       {
         id: 'time-zone-link-not-the-pinned-one',
         plant: plantText(

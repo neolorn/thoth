@@ -95,43 +95,19 @@ export interface BooleanRule {
 }
 
 /**
- * An option whose valid values are a body of data rather than a rule, decided by constructing the
- * formatter that will receive it.
+ * An option whose valid values are a body of data rather than a rule.
  *
- * `timeZone` and `calendar` are the two. There are 418 canonical time zone identifiers in this
- * runtime and `Intl` accepts aliases beyond them; a regular expression over that is an
- * approximation of the TZDB with nothing keeping it current, and a second copy of an authority
- * stops agreeing with the first on the earliest update nobody mirrors. The authority that
- * decides is asked instead, exactly as it is for `roundingIncrement`, and `alternatives` names
- * the values the platform never sees because the specification gives them a meaning of their
- * own.
+ * `timeZone` is the one, and the data is the time-zone database the release pins. A message is
+ * judged against that table where it is compiled, so every machine gives it the same answer; the
+ * table is the compiler's to carry and this file gives no verdict. A value that arrives where a
+ * message is rendered, through a variable, is built into the formatter, and a zone the host has
+ * no rules for is reported there. `alternatives` names the values that are never a zone's name
+ * because the specification gives them a meaning of their own.
  */
 export interface ConstructedRule {
   readonly kind: 'constructed';
   readonly describes: string;
   readonly alternatives?: readonly string[];
-}
-
-/**
- * An option whose vocabulary the platform publishes, and which the platform will not refuse.
- *
- * `calendar` is the one, and it is separate from `constructed` because constructing the formatter
- * does not answer for it. `Intl.DateTimeFormat` throws on a malformed calendar identifier and
- * *silently formats in the locale's own calendar* for a well-formed one it has no data for:
- * `calendar=nosuch` renders a Gregorian date with nothing to say the option was dropped. That is
- * the accepted-and-never-read failure this table exists to prevent, so the vocabulary is read from
- * `Intl.supportedValuesOf`, which is the platform's own statement of what it has data for.
- *
- * Read rather than transcribed, for the same reason `roundingIncrement`'s combination rule is not
- * transcribed: a list of calendars in this file is a copy of ICU with nothing keeping it current.
- * A build machine and a browser can publish different lists, and the consequence is the one the
- * numeric side already records: a message refused here that a newer runtime would have accepted
- * costs an author a rewrite, and the reverse is caught again at render.
- */
-export interface PlatformValuesRule {
-  readonly kind: 'platform';
-  readonly key: 'calendar' | 'collation' | 'numberingSystem' | 'timeZone';
-  readonly describes: string;
 }
 
 /** An option the specification defines and Equator cannot implement at all. */
@@ -146,24 +122,22 @@ export type MessageOptionRule =
   | DigitSizeRule
   | EnumeratedRule
   | IdentifierRule
-  | PlatformValuesRule
   | UnsupportedRule;
 
 /**
- * `Intl.supportedValuesOf` walks ICU's tables to answer, so each list is read once. The evaluator
- * already does this for numbering systems and for the same reason.
+ * How the type of a Unicode locale keyword is written: the name of a calendar, of a numbering
+ * system, of a collation.
+ *
+ * UTS #35 Part 1 writes it as one or more subtags of three to eight ASCII letters and digits
+ * joined by hyphens, in lower case in its canonical form. Whether a name is one is decided by this
+ * and never by the host, so a message compiles to the same answer on every machine and a value is
+ * the same value in every engine. Whether the host has the calendar or the digits a well-formed
+ * name asks for is a separate question, answered where something is formatted with it.
  */
-const platformValues = new Map<string, ReadonlySet<string>>();
-export function supportedPlatformValues(
-  key: PlatformValuesRule['key'],
-): ReadonlySet<string> {
-  const cached = platformValues.get(key);
-  if (cached !== undefined) return cached;
-  const values: ReadonlySet<string> = Object.freeze(
-    new Set(Intl.supportedValuesOf(key)),
-  ) as ReadonlySet<string>;
-  platformValues.set(key, values);
-  return values;
+const UNICODE_KEYWORD_TYPE = /^[a-z0-9]{3,8}(?:-[a-z0-9]{3,8})*$/u;
+
+export function isUnicodeKeywordType(value: unknown): value is string {
+  return typeof value === 'string' && UNICODE_KEYWORD_TYPE.test(value);
 }
 
 const digits = (minimum: number, maximum: number): DigitSizeRule =>
@@ -360,10 +334,16 @@ export const MESSAGE_OPTION_RULES: Readonly<Record<string, MessageOptionRule>> =
       describes: 'a time zone identifier such as UTC or Europe/Paris',
       alternatives: Object.freeze(['input']),
     } as const),
+    /**
+     * A name and not a list. Which calendars exist is the host's data, and a list read from the
+     * machine that compiles would refuse on one machine what another accepts. A well-formed name
+     * the rendering host does not count in is reported where the date is formatted.
+     */
     calendar: Object.freeze({
-      kind: 'platform',
-      key: 'calendar',
-      describes: 'a calendar this runtime has data for',
+      kind: 'identifier',
+      pattern: UNICODE_KEYWORD_TYPE,
+      describes:
+        'a calendar name such as gregory or islamic-civil, written in lower case',
     } as const),
     hour12: Object.freeze({ kind: 'boolean' } as const),
   });
@@ -693,8 +673,7 @@ const NUMERIC_OPTION_NAMES: ReadonlySet<string> = Object.freeze(
  * a reader who has just written `roundingMode=nearest` needs the nine values, not a lookup.
  *
  * A `constructed` option gets no verdict here on purpose. Its vocabulary is a body of data rather
- * than a rule, so the answer comes from building the formatter that will receive it: the same
- * authority `roundingIncrement` is put to, one layer up in the compiler.
+ * than a rule, and the compiler holds the table that answers for it.
  */
 export function messageOptionProblem(
   functionName: string,
@@ -714,12 +693,6 @@ export function messageOptionProblem(
   switch (rule.kind) {
     case 'constructed':
       return undefined;
-    case 'platform': {
-      const values = supportedPlatformValues(rule.key);
-      return values.has(value)
-        ? undefined
-        : `is not ${rule.describes}; it has ${[...values].sort().join(', ')}`;
-    }
     case 'boolean':
       return value === 'true' || value === 'false'
         ? undefined

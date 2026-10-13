@@ -236,6 +236,29 @@ describe('a date written by a message', () => {
     },
   );
 
+  it.each(['zzzzzz', 'islamicc'])(
+    'reports the calendar %s the message names, which the host answers with another',
+    (calendar) => {
+      let thrown: unknown;
+      try {
+        render(
+          `{$d :date calendar=${calendar}}`,
+          WHEN,
+          { d: date },
+          under(undefined),
+        );
+      } catch (error) {
+        thrown = error;
+      }
+
+      expect(thrown).toBeInstanceOf(LocalizationError);
+      expect((thrown as LocalizationError).diagnostic).toMatchObject({
+        code: 'unsupported-formatting-capability',
+        reason: 'native-capability-rejected',
+      });
+    },
+  );
+
   it.each(['x', 'HEBREW', ''])(
     'refuses the calendar %j of the context, which is not written as one',
     (calendar) => {

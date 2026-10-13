@@ -45,6 +45,7 @@ import {
   dateTimeFormatOptions,
   extensionOptionProfile,
   inheritedOptions,
+  isUnicodeKeywordType,
   messageOptionProblem,
   numberFormatOptions,
   type MessageOperandKind,
@@ -258,10 +259,7 @@ export function formattingLocale(
  * a host reads an upper-case spelling as the calendar it spells and answers under another name.
  */
 export function isCalendarName(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    /^[a-z0-9]{3,8}(?:-[a-z0-9]{3,8})*$/u.test(value)
-  );
+  return isUnicodeKeywordType(value);
 }
 
 function unsupportedFormatting(

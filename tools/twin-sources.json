@@ -23,6 +23,10 @@
     {
       "runtime": "packages/runtime/core/src/locale-aliases.generated.ts",
       "toolkit": "packages/toolkit/src/locale-aliases.generated.ts"
+    },
+    {
+      "runtime": "packages/runtime/src/time-zone-identities.generated.ts",
+      "toolkit": "packages/toolkit/src/time-zone-identities.generated.ts"
     }
   ]
 }

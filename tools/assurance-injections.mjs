@@ -2145,6 +2145,25 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/plain-date-input-profile.test.ts',
   },
   {
+    id: 'message-calendar-option-judged-by-a-looser-rule',
+    invariant:
+      "A message's calendar option is judged by how a calendar's name is written, the syntax a value's calendar has, so an upper-case spelling a host would read is refused where the message is compiled.",
+    source: 'packages/toolkit/src/message-function-options.ts',
+    find: '      pattern: UNICODE_KEYWORD_TYPE,',
+    replace: '      pattern: /^[A-Za-z0-9-]{1,64}$/u,',
+    caughtBy: 'packages/toolkit/test/function-option-vocabulary.test.ts',
+  },
+  {
+    id: 'message-time-zone-option-left-to-the-host',
+    invariant:
+      "A message's time zone option is judged against the pinned time-zone database and not by building a formatter, so a clock offset the compiling host reads as a zone is refused on every machine.",
+    source: 'packages/toolkit/src/message-format.ts',
+    find: '    if (value === undefined || isPinnedTimeZoneName(value)) continue;',
+    replace:
+      "    if (value === undefined) continue;\n    try {\n      new Intl.DateTimeFormat('en', { timeZone: value });\n      continue;\n    } catch {\n      // Refused below.\n    }",
+    caughtBy: 'packages/toolkit/test/function-option-vocabulary.test.ts',
+  },
+  {
     id: 'formatter-cache-key-omits-locale',
     invariant:
       "A cached number formatter is keyed on its full locale tag, so a request for other digits is never handed another locale's formatter.",

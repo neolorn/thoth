@@ -296,8 +296,8 @@ describe('the options that change how a field is written rather than which', () 
 
   /**
    * The Buddhist era is the Gregorian year plus 543, which is arithmetic rather than a string this
-   * platform happens to produce. `calendar=nosuch` is refused at compile time precisely because
-   * `Intl` would have rendered this same Gregorian year and said nothing.
+   * platform happens to produce. A calendar the host does not count in is reported where the date
+   * is formatted, because `Intl` would have rendered this same Gregorian year and said nothing.
    */
   it('renders the era of the calendar it is given, from the message or from the context', () => {
     expect(rendered('When: {$d :date calendar=buddhist}')).toContain('2569');

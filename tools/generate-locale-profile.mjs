@@ -1413,10 +1413,12 @@ const timeZoneOutput = [
     ';',
   '',
 ].join('\n');
-const timeZoneOutputPath = resolve(
-  workspaceRoot,
+// The runtime gives a time zone value its identity and the toolkit judges the zone a message
+// names, and neither package can import the other, so both carry the same table.
+const timeZoneOutputPaths = [
   'packages/runtime/src/time-zone-identities.generated.ts',
-);
+  'packages/toolkit/src/time-zone-identities.generated.ts',
+].map((path) => resolve(workspaceRoot, path));
 
 const toolkitRtlOutputPath = resolve(
   workspaceRoot,
@@ -1491,11 +1493,13 @@ if (process.argv.includes('--check')) {
       'The checked-in Equator locale alias table is stale; run pnpm run generate:locale-profile.',
     );
   }
-  assert.equal(
-    await readFile(timeZoneOutputPath, 'utf8'),
-    timeZoneOutput,
-    'The checked-in Equator time zone identity table is stale; run pnpm run generate:locale-profile.',
-  );
+  for (const path of timeZoneOutputPaths) {
+    assert.equal(
+      await readFile(path, 'utf8'),
+      timeZoneOutput,
+      'The checked-in Equator time zone identity table is stale; run pnpm run generate:locale-profile.',
+    );
+  }
   console.log(
     `Verified ${rtlScripts.length} RTL scripts, ${rtlRanges.length} strong right-to-left code point ranges derived from Unicode 17.0.0 Bidi_Class, agreeing with the CLDR script data on every letter in Unicode and dropping ${droppedByBidiClass.length} context-resolved code points and no strong one, and cardinal plural categories for ${Object.keys(pluralCategories).length} languages and ordinal plural categories for ${Object.keys(ordinalCategories).length} languages from cldr-core 48.2.0, and ${encompassedPairs} encompassed-language pairs over ${Object.keys(encompassed).length} language subtags, every one ranked by CLDR at ${widestKept} or closer where two languages it does not relate stand at ${unrelatedDistance._distance} and its default matching threshold is ${DEFAULT_THRESHOLD}; likely-script resolution remains native Intl under the tested platform matrix; and ${Object.keys(endonyms).length} endonyms from cldr-localenames-full ${localeNamesManifest.version}, agreeing with this platform's ICU on ${endonymsComparedToIcu.length - endonymsDisagreeingWithIcu.length} of the ${endonymsComparedToIcu.length} locales it has display names for; and ${Object.keys(orderedParentLocales).length} declared parent locales from cldr-core ${manifest.version}, ${undParents} of which name root; and ${aliasRules.length} locale alias rules, ${discardedAliasRules} discarded as UTS #35 Annex C discards them, with ${Object.keys(likelyRegions).length} likely regions for the territory exception; and ${timeZoneEntries.length} time zone names from tzdata ${timeZoneRelease}, ${timeZoneLinkCount} of them resolved to another primary identifier.`,
   );
@@ -1570,13 +1574,15 @@ if (process.argv.includes('--check')) {
     }
   }
 
-  let currentTimeZones;
-  try {
-    currentTimeZones = await readFile(timeZoneOutputPath, 'utf8');
-  } catch (error) {
-    if (error?.code !== 'ENOENT') throw error;
-  }
-  if (currentTimeZones !== timeZoneOutput) {
-    await writeFile(timeZoneOutputPath, timeZoneOutput, 'utf8');
+  for (const path of timeZoneOutputPaths) {
+    let currentTimeZones;
+    try {
+      currentTimeZones = await readFile(path, 'utf8');
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+    }
+    if (currentTimeZones !== timeZoneOutput) {
+      await writeFile(path, timeZoneOutput, 'utf8');
+    }
   }
 }

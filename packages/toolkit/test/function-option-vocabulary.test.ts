@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { parseMessageSemanticModel } from '../src/message-format.js';
 
@@ -89,29 +89,85 @@ describe('the option vocabulary of the built-in functions', () => {
   });
 
   /**
-   * Two options whose valid values are a body of data rather than a rule, and which need two
-   * different authorities because the platform answers for one and not the other.
+   * A time zone's valid values are a body of data rather than a rule. A calendar is judged by how
+   * its name is written and not by which calendars the compiling machine has.
    */
-  describe('the two options whose vocabulary is data', () => {
-    it('refuses a time zone by constructing the formatter that would receive it', () => {
-      expect(refusal('{$d :date timeZone=|Nowhere/Nowhere|}')).toContain(
+  describe('the two options that name data', () => {
+    /**
+     * The pinned time-zone database decides, and the host is not asked: a host reads a clock
+     * offset as a zone and hosts differ in which zones they have, so a message judged by the
+     * machine that compiles it would compile on one machine and not on another.
+     */
+    it.each([
+      ['a zone', 'Asia/Tokyo'],
+      ['a former name the database links', 'Asia/Calcutta'],
+      ['a name in another case', 'europe/paris'],
+      ['a fixed offset the database names', 'Etc/GMT-14'],
+      ['UTC', 'UTC'],
+    ])('compiles %s without asking the host', (_title, zone) => {
+      const built = vi.spyOn(Intl, 'DateTimeFormat');
+
+      accepted(`{$d :date timeZone=|${zone}|}`);
+
+      expect(built).not.toHaveBeenCalled();
+      vi.restoreAllMocks();
+    });
+
+    it.each([
+      ['a name the database does not carry', 'Nowhere/Nowhere'],
+      ['a clock offset, which the host reads as a zone', '+05:00'],
+      ['a name with a space after it', 'UTC '],
+      ['the empty name', ''],
+    ])('refuses %s', (_title, zone) => {
+      // The host takes the offset, which is why it is not the judge.
+      expect(
+        () => new Intl.DateTimeFormat('en', { timeZone: '+05:00' }),
+      ).not.toThrow();
+      expect(refusal(`{$d :date timeZone=|${zone}|}`)).toContain(
         'is not a time zone identifier such as UTC or Europe/Paris',
       );
-      accepted('{$d :date timeZone=|Asia/Tokyo|}');
+    });
+
+    it('refuses a zone an operand carries that the database does not name', () => {
+      expect(
+        refusal('.local $x = {$d :datetime timeZone=|+05:00|}\n{{{$x :date}}}'),
+      ).toContain('is not a time zone identifier such as UTC or Europe/Paris');
     });
 
     /**
-     * Constructing the formatter does not answer for `calendar`, which is why it is read from
-     * `Intl.supportedValuesOf` instead. `Intl.DateTimeFormat` throws on a malformed identifier and
-     * *silently formats in the locale's own calendar* for a well-formed one it has no data for, so
-     * an unchecked `calendar=nosuch` renders a Gregorian date with nothing anywhere to say the
-     * option was dropped.
+     * Which calendars exist is the host's data, and the machine that compiles is not the one that
+     * renders. A name is judged by how UTS #35 writes one, so every machine gives a message the
+     * same answer, and a well-formed name the rendering host does not count in is reported where
+     * the date is formatted.
      */
-    it('refuses a calendar the platform accepts and would then ignore', () => {
-      expect(refusal('{$d :date calendar=nosuch}')).toContain(
-        'is not a calendar this runtime has data for',
+    it.each(['japanese', 'islamic-civil', 'ethiopic-amete-alem', 'nosuch'])(
+      'compiles the well-formed calendar name %s without asking the host',
+      (calendar) => {
+        const supported = vi.spyOn(Intl, 'supportedValuesOf');
+        const built = vi.spyOn(Intl, 'DateTimeFormat');
+
+        accepted(`{$d :date calendar=${calendar}}`);
+
+        expect(supported).not.toHaveBeenCalled();
+        expect(built).not.toHaveBeenCalled();
+        vi.restoreAllMocks();
+      },
+    );
+
+    it.each([
+      ['in upper case', 'HEBREW'],
+      ['in mixed case', 'Hebrew'],
+      ['of two characters', 'ab'],
+      ['of nine characters', 'gregorian'],
+      ['ended by a hyphen', '|hebrew-|'],
+      ['joined by two hyphens', '|islamic--civil|'],
+      ['with a space', '|islamic civil|'],
+      ['with a mark', '|!!|'],
+      ['that is empty', '||'],
+    ])('refuses a calendar name %s', (_title, calendar) => {
+      expect(refusal(`{$d :date calendar=${calendar}}`)).toContain(
+        'is not a calendar name such as gregory or islamic-civil, written in lower case',
       );
-      accepted('{$d :date calendar=japanese}');
     });
   });
 

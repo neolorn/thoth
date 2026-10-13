@@ -1,23 +1,27 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import type {
-  MessageExpression,
-  MessageSemanticModel,
-  PatternMessageSemanticModel,
+import {
+  isPinnedTimeZoneName,
+  type MessageExpression,
+  type MessageSemanticModel,
+  type PatternMessageSemanticModel,
 } from '../../toolkit/src/message-format.js';
 import type { CompiledInputContract } from '../src/catalog-runtime.js';
+import { timeZone } from '../src/formatting.js';
 import {
   MESSAGE_OPTION_RULES,
   MESSAGE_FUNCTION_OPTIONS,
   dateTimeFormatOptions,
+  isUnicodeKeywordType,
+  messageOptionProblem,
   numberFormatOptions,
-  supportedPlatformValues,
   type DigitSizeRule,
   type MessageOptionRule,
 } from '../src/message-function-options.js';
+import { TIME_ZONE_IDENTITIES } from '../src/time-zone-identities.generated.js';
 import { parse, render, renderSemantics } from './message-harness.js';
 
 /**
@@ -78,6 +82,39 @@ describe('the option table', () => {
       );
     },
   );
+
+  /**
+   * The compiler judges the zone a message names and the runtime the zone a value is made with,
+   * each from its own copy of the pinned table. One rule, so a name is a zone to both or to
+   * neither.
+   */
+  it('gives a time zone name one answer where a message compiles and where a value is made', () => {
+    const names = TIME_ZONE_IDENTITIES.split(' ').map(
+      (entry) => entry.split('>')[0] as string,
+    );
+    const asked = [
+      ...names,
+      ...names.map((name) => name.toUpperCase()),
+      ...names.map((name) => name.toLowerCase()),
+      '+05:00',
+      'Nowhere/Nowhere',
+      'UTC ',
+      '',
+      'Europe/' + String.fromCodePoint(0x212a) + 'iev',
+    ];
+    expect(names.length).toBeGreaterThan(400);
+    for (const name of asked) {
+      let made = true;
+      try {
+        timeZone(name);
+      } catch {
+        made = false;
+      }
+      expect(isPinnedTimeZoneName(name), name).toBe(made);
+    }
+    expect(isPinnedTimeZoneName('+05:00')).toBe(false);
+    expect(isPinnedTimeZoneName('europe/paris')).toBe(true);
+  });
 
   it('declares every option each function has and no others', () => {
     for (const [name, profile] of Object.entries(MESSAGE_FUNCTION_OPTIONS)) {
@@ -150,19 +187,26 @@ describe('the option table', () => {
   });
 
   /**
-   * Two of the four rule kinds answer with a value rather than with a rule, and only one of them can
-   * be probed by building the formatter. `Intl.supportedValuesOf` is the other, and the risk it
-   * carries is a mistyped key: `supportedValuesOf('calendars')` throws, and a key that named nothing
-   * would make every value of that option a refusal.
+   * A calendar is a name, and whether a name is one is the same answer on every machine. The
+   * host's own list is the witness that the rule is not narrower than what exists: every calendar
+   * this host publishes is written the way the rule requires.
    */
-  it('reads a platform vocabulary the platform actually publishes', () => {
-    const platformRules = Object.entries(MESSAGE_OPTION_RULES).filter(
-      ([, rule]) => rule.kind === 'platform',
-    );
-    expect(platformRules.length).toBeGreaterThan(0);
-    for (const [option, rule] of platformRules) {
-      if (rule.kind !== 'platform') throw new Error('rule shape changed');
-      expect(supportedPlatformValues(rule.key).size, option).toBeGreaterThan(0);
+  it('judges a calendar by how its name is written and never by the host', () => {
+    const supported = vi.spyOn(Intl, 'supportedValuesOf');
+    const accepts = (value: string): boolean =>
+      messageOptionProblem('date', 'calendar', value) === undefined;
+
+    expect(accepts('nosuch')).toBe(true);
+    expect(accepts('ethiopic-amete-alem')).toBe(true);
+    for (const value of ['HEBREW', 'ab', 'gregorian', 'hebrew-', '', 'a b']) {
+      expect(accepts(value), value).toBe(false);
+    }
+    expect(supported).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
+
+    for (const calendar of Intl.supportedValuesOf('calendar')) {
+      expect(accepts(calendar), calendar).toBe(true);
+      expect(isUnicodeKeywordType(calendar), calendar).toBe(true);
     }
   });
 
@@ -180,8 +224,10 @@ describe('the option table', () => {
           return rule.values;
         case 'boolean':
           return ['true', 'false'];
-        case 'platform':
-          return [...supportedPlatformValues(rule.key)];
+        case 'identifier':
+          // The date family has one, the calendar, and the names this host publishes are the ones
+          // a formatter can be built with.
+          return Intl.supportedValuesOf('calendar');
         case 'constructed':
           // `input` is not a zone; it names where to find one, and it is answered before the
           // formatter is built.

@@ -175,6 +175,14 @@ Six refusals follow from that rather than standing as separate rules:
   compiled, so the compiled catalog states that it needs one as a required feature
   (`05-compiled-artifacts-and-trust.spec.md` section 4), and the application supplies it.
 
+An option value that names data is judged where a message is compiled by the standards a release
+pins, so a message has one answer on every machine that compiles it. A release MUST judge a
+`calendar` option by how a calendar's name is written and a `timeZone` option by the names the
+pinned time-zone database carries, as `08-formatting-parsing-and-domain.spec.md` section 2 states
+both, and MUST NOT ask the host about either. A calendar whose name is well formed and which the
+rendering host does not count in is reported where the date is formatted, as section 4 of that
+specification requires.
+
 A registered function speaks MessageFormat's vocabulary rather than a release's. Its option names
 follow MessageFormat's `name` production, bounded in length and without that production's optional
 surrounding bidirectional controls, which are removed before a name reaches the toolkit and would
