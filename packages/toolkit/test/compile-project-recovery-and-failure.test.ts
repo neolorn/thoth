@@ -85,6 +85,23 @@ describe('a recovery message passed to compileProject', () => {
     ).toContain(RECOVERY);
     expect(plannedFile({}, 'recovery-payload.ts')).not.toContain(RECOVERY);
   });
+
+  it('is refused by name when no message has its identity', () => {
+    const compiled = compileProject(
+      request({ recoveryMessageIdentities: ['@example/app:shell:absent'] }),
+    );
+
+    expect(compiled.ok).toBe(false);
+    expect(
+      compiled.diagnostics.map(({ code, summary }) => ({ code, summary })),
+    ).toEqual([
+      {
+        code: 'EQ1501',
+        summary:
+          'Recovery identity "@example/app:shell:absent" must resolve to one plain message without inputs or slots.',
+      },
+    ]);
+  });
 });
 
 describe('a compilation that fails while a sink is listening', () => {

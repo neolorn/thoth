@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseCatalog } from '../src/index.js';
+import { compileProject, parseCatalog } from '../src/index.js';
 import { analyzeCatalogSet } from '../src/semantic-model.js';
 // Direct, because the anchor is an internal rule rather than public surface: widening the package's
 // API so a test can reach it would trade the thing being protected for the protection.
@@ -99,6 +99,39 @@ describe('a diagnostic about something that is not in the file', () => {
     expect(invented?.summary).not.toContain('Reported at');
     // Line 4, the message it is actually about.
     expect(invented?.span?.start.line).toBe(3);
+  });
+});
+
+describe('a diagnostic about a member a message does not write', () => {
+  it('names every step of the pointer that is in the file', () => {
+    // The message is in the file and writes no `slots`, so the pointer stops two steps in.
+    const compiled = compileProject({
+      owner: { providerId: 'home', generatedRootPath: 'src/generated/i18n' },
+      configuration: testProjectConfiguration(['en-US']),
+      catalogs: [
+        catalog(
+          'source',
+          'en-US',
+          'messages:\n  greeting: "{#b}Hi{/b} {#b/}"\n',
+        ),
+      ],
+    });
+
+    expect(compiled.ok).toBe(false);
+    expect(
+      compiled.diagnostics.map(({ code, summary, path }) => ({
+        code,
+        summary,
+        path,
+      })),
+    ).toEqual([
+      {
+        code: 'EQ1303',
+        summary:
+          'Rich slot "b" is used as both paired and standalone. Reported at messages/greeting, because messages/greeting/slots/b is not in this file.',
+        path: ['messages', 'greeting', 'slots', 'b'],
+      },
+    ]);
   });
 });
 

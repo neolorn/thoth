@@ -81,6 +81,18 @@ describe('a refusal of a catalog set', () => {
     ]);
   });
 
+  it('names every file a scope has when none is its source catalog', () => {
+    expect(
+      refusals([
+        source,
+        catalog('target', 'orders', 'fr', 'i18n/orders/fr.yaml'),
+        catalog('target', 'orders', 'en-US', 'i18n/orders/en-US.yaml'),
+      ]),
+    ).toEqual([
+      'Scope @example/app/orders requires one source catalog for en-US, and has i18n/orders/fr.yaml, i18n/orders/en-US.yaml.',
+    ]);
+  });
+
   it('names the file and the scope of a catalog with the wrong role', () => {
     expect(
       refusals([
