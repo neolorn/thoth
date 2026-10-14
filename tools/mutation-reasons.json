@@ -2479,8 +2479,7 @@
       "original": "[]",
       "replacement": "[\"Stryker was here\"]",
       "category": "equivalent",
-      "reason": "In invalidCanonicalValue the array is spread into the options position of the Error constructor, which installs a cause only from an object; a string there leaves the error without one, as the empty spread does. In parsePersonNamePattern the array is the token list, and a leading entry that is not a populated field is cut by trimToPopulated, which keeps only what lies from the first populated field to the last and keeps nothing when there is none.",
-      "count": 2
+      "reason": "In parsePersonNamePattern the array is the token list, and a leading entry that is not a populated field is cut by trimToPopulated, which keeps only what lies from the first populated field to the last and keeps nothing when there is none."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -2674,7 +2673,7 @@
       "replacement": "false",
       "category": "equivalent",
       "reason": "An hourCycle key holding undefined is read by Intl.DateTimeFormat as absent and is dropped by the JSON.stringify that builds the cache key in evaluator.ts stableOptions, so the formatter and its cache entry are the same.",
-      "count": 2
+      "count": 3
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -2996,7 +2995,7 @@
       "original": "'The localization context is disposed.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "Only the text of the disposed diagnostic changes, in assertActive(), commit(), initialize(), ensureScope() and dispose(); every place builds the same code and outcome, which are what the cases read, and the wording is not contract.",
+      "reason": "Only the text of the disposed diagnostic changes, in assertActive(), commit(), the two places of initialize() and ensureScope(); every place builds the same code and outcome, which are what the cases read there, and the wording is asserted where dispose() builds it.",
       "count": 5
     },
     {
@@ -3472,14 +3471,6 @@
       "mutator": "ConditionalExpression",
       "original": "numberSyntaxCache.size > 64",
       "replacement": "false",
-      "category": "performance-only",
-      "reason": "numberSyntaxCache only saves recomputing a syntax that is derived from the context alone, so the same syntax is returned whether or not the entry is found, kept, reordered or evicted. The bound only limits how many are kept."
-    },
-    {
-      "file": "packages/runtime/src/localized-input.ts",
-      "mutator": "EqualityOperator",
-      "original": "numberSyntaxCache.size > 64",
-      "replacement": "numberSyntaxCache.size <= 64",
       "category": "performance-only",
       "reason": "numberSyntaxCache only saves recomputing a syntax that is derived from the context alone, so the same syntax is returned whether or not the entry is found, kept, reordered or evicted. The bound only limits how many are kept."
     },
@@ -7717,14 +7708,6 @@
       "replacement": "false",
       "category": "equivalent",
       "reason": "initialRoute is read by value and handed to a preparation that takes undefined for no route, so an undefined member reads as an absent one."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "ConditionalExpression",
-      "original": "options.observability === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "An emitter over no sink returns before it builds an event, so nothing is emitted with or without it."
     },
     {
       "file": "packages/runtime/src/persistence.ts",
