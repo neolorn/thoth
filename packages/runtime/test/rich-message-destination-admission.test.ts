@@ -84,6 +84,9 @@ describe('the text of a destination', () => {
         expect(refusal?.diagnostic.code).toBe('invalid-rich-message');
         expect(refusal?.diagnostic.outcome).toBe('operational-failure');
         expect(refusal?.diagnostic.reason).toBe('malformed-input');
+        expect(refusal?.diagnostic.message).toBe(
+          'A rich-message destination must be text.',
+        );
       }
     }
   });

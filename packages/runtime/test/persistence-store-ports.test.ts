@@ -87,6 +87,16 @@ describe('the cookie store', () => {
     expect(document.written).toBeUndefined();
   });
 
+  it('forgets nothing while rendering on the server', async () => {
+    // An expiry is a write of the same cookie, and the response it would be set on is the host's.
+    const document = jar();
+    const store = cookieStoreOn('server', document);
+
+    await store.forget?.();
+
+    expect(document.written).toBeUndefined();
+  });
+
   it('writes the domain it was configured with', async () => {
     const document = jar();
     const store = cookieStoreOn('browser', document, {
