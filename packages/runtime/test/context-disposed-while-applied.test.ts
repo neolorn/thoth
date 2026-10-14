@@ -49,9 +49,14 @@ describe('a context destroyed by a hook while a snapshot is applied', () => {
     made = runtime({ options: { commitHooks: [hook] } });
     const { localization } = made;
 
-    const diagnostic = await rejectionOf(() => localization.initialize());
+    const failure: unknown = await localization
+      .initialize()
+      .catch((error: unknown) => error);
 
-    expect(diagnostic).toMatchObject({ code: 'disposed' });
+    expect(failure).toBeInstanceOf(LocalizationError);
+    expect(failure).toMatchObject({ diagnostic: { code: 'disposed' } });
+    // The disposal is the failure itself and stands for nothing else, so it carries no cause.
+    expect((failure as LocalizationError).cause).toBeUndefined();
     expect(localization.snapshot()).toBeUndefined();
     expect(told).toEqual([]);
   });

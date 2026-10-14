@@ -9,10 +9,12 @@
  */
 import { describe, expect, it } from 'vitest';
 
+import { LocalizationError } from '@neolorn/equator/core';
+
 import type { LocalizationCommitHook } from '../src/localization.js';
 import type { LocalizationPersistenceStore } from '../src/persistence.js';
 
-import { catalogKey, rejectionOf } from './catalog-store-harness.js';
+import { catalogKey } from './catalog-store-harness.js';
 import {
   LAZY,
   observed,
@@ -44,9 +46,13 @@ describe('a context disposed with work still running', () => {
     await until(() => registration.state().attempt.status === 'prepared');
     localization.dispose();
 
-    await expect(rejectionOf(() => initializing)).resolves.toMatchObject({
-      code: 'disposed',
-    });
+    const failure: unknown = await initializing.catch(
+      (error: unknown) => error,
+    );
+    expect(failure).toBeInstanceOf(LocalizationError);
+    expect(failure).toMatchObject({ diagnostic: { code: 'disposed' } });
+    // The disposal is the failure itself and stands for nothing else, so it carries no cause.
+    expect((failure as LocalizationError).cause).toBeUndefined();
     expect(applied).toStrictEqual([]);
   });
 

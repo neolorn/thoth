@@ -230,7 +230,11 @@ describe('disposing a context', () => {
         scope: scope('shell'),
         status: 'failed',
         supplyingLocales: [],
-        diagnostic: { code: 'disposed' },
+        diagnostic: {
+          code: 'disposed',
+          outcome: 'operational-failure',
+          message: 'The localization context is disposed.',
+        },
       });
       expect(readiness.transitionId).toBeUndefined();
     }
