@@ -282,26 +282,6 @@ describe('what the request handler does not answer as a codec that threw', () =>
     expect(warn).not.toHaveBeenCalled();
   });
 
-  it('refuses a caching floor it does not know on that answer, as on every other', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const handler = createLocaleRequestHandler({
-      policy: POLICY,
-      projection: projectionWith(THROWS_READING),
-      cache: { ...CACHE, pageCaching: 'shared' as never },
-      cookie: false,
-    });
-
-    await expect(
-      handler(new Request('https://site.example/ar-eg/articles/unread')),
-    ).rejects.toMatchObject({
-      diagnostic: {
-        code: 'invalid-configuration',
-        message:
-          '`pageCaching` is `per-visitor` or `not-stored` and cannot be "shared". A page is shared unless something raises it, so there is no value that means shared.',
-      },
-    });
-  });
-
   it('leaves an answer that is no answer to fail as it does, and does not report it as a throw', async () => {
     // The codec did not throw: it answered with nothing, and reading that answer is what fails.
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);

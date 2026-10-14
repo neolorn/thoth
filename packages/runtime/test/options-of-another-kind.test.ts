@@ -687,6 +687,43 @@ describe('an option declared as one of a set of named values', () => {
   });
 });
 
+describe('the caching floor of the request handler', () => {
+  // Section 3 of the routing specification holds an option declared as one of a set of named
+  // values to them where the configuration is given, so a floor nobody declared stops the handler
+  // from being made, and no request is answered under it.
+  it.each<readonly [string, unknown, string]>([
+    ['null', null, 'null'],
+    ['a class that does not exist', 'shared', 'other text'],
+    ['a class in another case', 'Per-Visitor', 'other text'],
+    ['a number', 7, 'a number'],
+    ['a list of one class', ['per-visitor'], 'a list'],
+    ['an object', { class: 'per-visitor' }, 'an object'],
+  ])('is refused where the handler is made when it is %s', (_, floor, kind) => {
+    expect(
+      refusal(() => handling({ cache: { ...CACHE, pageCaching: floor } })),
+    ).toStrictEqual({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      message: `pageCaching must be one of per-visitor, not-stored, and ${kind} was given.`,
+      reason: 'malformed-input',
+    });
+  });
+
+  it.each([undefined, 'per-visitor', 'not-stored'])(
+    'is taken when it is %j',
+    (floor) => {
+      expect(
+        handling({
+          cache: floor === undefined ? CACHE : { ...CACHE, pageCaching: floor },
+        }),
+      ).toBeTypeOf('function');
+      expect(handling({ cache: { ...CACHE, pageCaching: floor } })).toBeTypeOf(
+        'function',
+      );
+    },
+  );
+});
+
 describe('an observability sink', () => {
   const SINKS: readonly (readonly [string, unknown])[] = [
     ...NOT_AN_OBJECT.map(([label, value]) => [label, value] as const),

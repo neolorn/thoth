@@ -966,6 +966,14 @@
       "reason": "A typed failure leaves resolveLocalizedRoute from three places. assertLocalePolicy and the projection check both passed where the handler was made, on the policy and the projection this call hands over, and each keeps what it has checked. The third is askCodec, which gives every failure it raises this reason. So every LocalizationError caught here carries it."
     },
     {
+      "file": "packages/runtime/http/src/handler.ts",
+      "mutator": "ObjectLiteral",
+      "original": "{ ...options.cache, localePreference }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "The freshness handed to routeCacheHeaders for the answer to a codec that threw. That answer is private-no-store, which cacheLevel reads as not stored whatever the preference source, and no floor is above it, so the durations and the revalidation flag are never read; the floor itself was held to its two classes where the handler was made, so the check on it passes with or without it. The descriptor names no negotiated preference, so no Vary is written either way."
+    },
+    {
       "file": "packages/runtime/router/src/document-messages.ts",
       "mutator": "ArrowFunction",
       "original": "(name) => JSON.stringify(name)",

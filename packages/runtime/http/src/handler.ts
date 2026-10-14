@@ -27,6 +27,7 @@ import {
   ɵassertStorableCookie,
   type ɵCookieAttributes,
   ɵopenPageOutcomeChannel,
+  ɵnamedOption,
   ɵrecordOption,
   ɵtakePageOutcome,
   type DeclaredPageOutcomeDescriptor,
@@ -273,7 +274,8 @@ export interface LocaleRequestHandlerOptions {
    * How long each class of response may be held, and by whom.
    *
    * Read together with the cookie policy, which decides whether a shared cache may keep any of it
-   * at all, so a deployment that remembers a choice is not served another visitor's language.
+   * at all, so a deployment that remembers a choice is not served another visitor's language. A
+   * `pageCaching` that is neither of its two classes is refused where the handler is made.
    */
   readonly cache: RouteCacheDurations;
   /**
@@ -333,6 +335,15 @@ export function createLocaleRequestHandler(
 ): LocaleRequestHandler {
   ɵrecordOption(options, 'The options of createLocaleRequestHandler');
   ɵrecordOption(options.cache, 'cache');
+  // Held to its two classes here, so a floor nobody declared is refused where the handler is made
+  // and not by each request that reaches a page.
+  if (options.cache.pageCaching !== undefined) {
+    ɵnamedOption(
+      options.cache.pageCaching,
+      ['per-visitor', 'not-stored'],
+      'pageCaching',
+    );
+  }
   // Checked where the handler is made, and not by the first request that reads a route.
   validateRouteProjection(options.projection);
   const policy =

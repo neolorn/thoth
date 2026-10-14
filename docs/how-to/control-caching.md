@@ -83,7 +83,8 @@ cache: { successMaxAge: 300, permanentRedirectMaxAge: 86_400, pageCaching: 'per-
 ```
 
 Every page is raised to at least that level. A route can raise its own pages further. A redirect
-carries no page, so it keeps the level routing gave it.
+carries no page, so it keeps the level routing gave it. The value is `per-visitor` or `not-stored`, and
+`createLocaleRequestHandler` refuses any other when the handler is created.
 
 ## Let a page narrow its own caching
 
