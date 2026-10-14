@@ -42,37 +42,36 @@ import { compileSet, loadersFor, scope } from './catalog-store-harness.js';
  * hand over.
  */
 
-/** Every kind of value that is not an object. */
-const NOT_AN_OBJECT: readonly (readonly [string, unknown])[] = [
-  ['null', null],
-  ['text', 'text'],
-  ['a number', 7],
-  ['a boolean', true],
-  ['a list', ['x']],
-  ['an empty list', []],
-  ['a function', () => undefined],
+/** Every kind of value that is not an object, with the words a refusal names it in. */
+const NOT_AN_OBJECT: readonly (readonly [string, unknown, string])[] = [
+  ['null', null, 'null'],
+  ['text', 'text', 'a string'],
+  ['a number', 7, 'a number'],
+  ['a boolean', true, 'a boolean'],
+  ['a list', ['x'], 'a list'],
+  ['an empty list', [], 'a list'],
+  ['a function', () => undefined, 'a function'],
 ];
 
-/** Every kind of value that is not a list. */
-const NOT_A_LIST: readonly (readonly [string, unknown])[] = [
-  ['null', null],
-  ['text', 'text'],
-  ['a number', 7],
-  ['a boolean', true],
-  ['an object', { a: 1 }],
-  ['an empty object', {}],
-  ['a function', () => undefined],
+/** Every kind of value that is not a list, with the words a refusal names it in. */
+const NOT_A_LIST: readonly (readonly [string, unknown, string])[] = [
+  ['null', null, 'null'],
+  ['text', 'text', 'a string'],
+  ['a number', 7, 'a number'],
+  ['a boolean', true, 'a boolean'],
+  ['an object', { a: 1 }, 'an object'],
+  ['an empty object', {}, 'an object'],
+  ['a function', () => undefined, 'a function'],
 ];
 
-/** Every kind of value that is not a function. */
-const NOT_A_FUNCTION: readonly (readonly [string, unknown])[] = [
-  ['nothing', undefined],
-  ['null', null],
-  ['text', 'text'],
-  ['a number', 7],
-  ['a boolean', true],
-  ['a list', ['x']],
-  ['an object', { call: () => undefined }],
+/** Every kind of value that is not a function, with the words a refusal names it in. */
+const NOT_A_FUNCTION: readonly (readonly [string, unknown, string])[] = [
+  ['null', null, 'null'],
+  ['text', 'text', 'a string'],
+  ['a number', 7, 'a number'],
+  ['a boolean', true, 'a boolean'],
+  ['a list', ['x'], 'a list'],
+  ['an object', { call: () => undefined }, 'an object'],
 ];
 
 /** Every kind of value that is none of the names an option declares. */
@@ -357,39 +356,200 @@ const LISTS: readonly (readonly [string, (value: unknown) => unknown])[] = [
   ],
 ];
 
+/**
+ * The name each option is refused under.
+ *
+ * A refusal is read by whoever wrote the configuration, far from the call that checked it, so the
+ * name is what tells them which of several options to look at. The whole message is asserted for
+ * that reason: a check that named another option, or none, would refuse the same values.
+ */
+const NAMED: Readonly<Record<string, string>> = {
+  'createPathPrefixLocalePolicy(options)':
+    'The options of a path-prefix policy',
+  'createPathPrefixLocalePolicy locales': 'locales',
+  'createPathPrefixLocalePolicy aliases': 'aliases',
+  'createDefaultLocalePrefixPolicy(options)':
+    'The options of a default-locale-prefix policy',
+  'createDefaultLocalePrefixPolicy locales': 'locales',
+  'createDefaultLocalePrefixPolicy aliases': 'aliases',
+  'createLocaleNeutralPolicy(options)':
+    'The options of a locale-neutral policy',
+  'createHostLocalePolicy(options)': 'The options of a host policy',
+  'createHostLocalePolicy origins': 'origins',
+  'createLocaleRequestHandler(options)':
+    'The options of createLocaleRequestHandler',
+  'createLocaleRequestHandler policy': 'A locale URL policy',
+  'createLocaleRequestHandler projection': 'A route projection',
+  'createLocaleRequestHandler cache': 'cache',
+  'createLocaleRequestHandler cookie': 'cookie',
+  'createLocaleRequestHandler configuration': 'The generated configuration',
+  'a projection': 'A route projection',
+  'a projection, generated': 'The generated half of a route projection',
+  'a projection, a generated route': 'A route of a generated route projection',
+  'a projection, parameters': 'The parameters of a route projection',
+  'a projection, the parameters of a route': 'The parameters of route item',
+  'a projection, a codec': 'The codec of item/id',
+  'a projection, localizedPaths': 'The localized paths of a route projection',
+  'a projection, the localized paths of a route':
+    'The localized paths of route item',
+  'a projection, historical': 'The historical outcomes of a route projection',
+  'a projection, a historical outcome': 'The historical outcome of "retired"',
+  'localizedServerRoutes options': 'The options of the localized server routes',
+  'the Router integration, options':
+    'The options of the localized Router integration',
+  'the Router integration, a scope': 'A scope in requiredScopes',
+  'the Router integration, documentMetadata': 'documentMetadata',
+  'the Router integration, the document metadata of a route':
+    'documentMetadata of home',
+  'the Router integration, outcomeDocuments': 'outcomeDocuments',
+  'a localization context, options': 'The options of a localization context',
+  'a localization context, setup': 'The setup of a localization context',
+  'createPathPrefixLocalePolicy localeNeutralRoots': 'localeNeutralRoots',
+  'createDefaultLocalePrefixPolicy localeNeutralRoots': 'localeNeutralRoots',
+  'createLocaleNeutralPolicy locales': 'locales',
+  'createLocaleNeutralPolicy localeNeutralRoots': 'localeNeutralRoots',
+  'createHostLocalePolicy localeNeutralRoots': 'localeNeutralRoots',
+  'a generated configuration, locales':
+    'The locales of the generated configuration',
+  'a projection, the generated routes':
+    'The routes of a generated route projection',
+  'a projection, the parameter names of a generated route':
+    'The parameter names of a generated route',
+  'localizedServerRoutes declarations':
+    'The declarations of the localized server routes',
+  'the Router integration, the scopes of a route':
+    'progressiveScopes of route home',
+  'a localization context, bootstrapScopes': 'bootstrapScopes',
+};
+
+/** What a policy written out by hand is refused with, which names the table and not its kind. */
+const WRITTEN_OUT = (said: string): string =>
+  `This ${said}, which no policy constructor writes. Build the policy with its constructor, which checks each table against the others.`;
+const UNLISTED: Readonly<Record<string, (value: unknown) => string>> = {
+  'createIdentifierParameterCodec(pattern)': () =>
+    'A route parameter pattern must be a regular expression.',
+  'a written-out path-prefix policy, locales': () =>
+    WRITTEN_OUT('path-prefix locale URL policy names no locales'),
+  'a written-out path-prefix policy, prefixes': () =>
+    WRITTEN_OUT(
+      'path-prefix locale URL policy spells en-US as "en-us", which is not a path segment its prefix table reads back as that locale',
+    ),
+  'a written-out path-prefix policy, aliases': () =>
+    WRITTEN_OUT('path-prefix locale URL policy carries no alias table'),
+  'a written-out host policy, locales': () =>
+    WRITTEN_OUT('locale-host locale URL policy names no locales'),
+  'a written-out host policy, origins': () =>
+    WRITTEN_OUT(
+      'locale-host locale URL policy serves en-US at "https://en.example", which is not a normalized origin its origin table reads back as that locale',
+    ),
+  'a written-out locale-neutral policy, locales': () =>
+    WRITTEN_OUT('locale-neutral locale URL policy names no locales'),
+  'a written-out path-prefix policy, localeNeutralRoots': (value) =>
+    WRITTEN_OUT(
+      `path-prefix locale URL policy lists ${JSON.stringify(value)} as its locale-neutral roots, which are not distinct path segments`,
+    ),
+  'a written-out host policy, localeNeutralRoots': (value) =>
+    WRITTEN_OUT(
+      `locale-host locale URL policy lists ${JSON.stringify(value)} as its locale-neutral roots, which are not distinct path segments`,
+    ),
+  'a written-out locale-neutral policy, localeNeutralRoots': (value) =>
+    WRITTEN_OUT(
+      `locale-neutral locale URL policy lists ${JSON.stringify(value)} as its locale-neutral roots, which are not distinct path segments`,
+    ),
+};
+
+/** The whole diagnostic an option is refused with when it is given a value of another kind. */
+const refusedWith = (
+  option: string,
+  declared: 'an object' | 'a list',
+  value: unknown,
+  kind: string,
+) => {
+  const name = NAMED[option];
+  if (name !== undefined) {
+    return {
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      message: `${name} must be ${declared}, and ${kind} was given.`,
+      reason: 'malformed-input',
+    };
+  }
+  const unlisted = UNLISTED[option];
+  if (unlisted === undefined)
+    throw new Error(`No refusal is written down for ${option}.`);
+  return {
+    code: 'invalid-configuration',
+    outcome: 'operational-failure',
+    message: unlisted(value),
+    ...(option.startsWith('a written-out')
+      ? {}
+      : { reason: 'malformed-input' }),
+  };
+};
+
 describe('an option declared as an object', () => {
   for (const [option, call] of OBJECTS) {
-    it.each(NOT_AN_OBJECT)(`${option} is refused when it is %s`, (_, value) => {
-      expect(refusal(() => call(value))).toMatchObject({
-        code: 'invalid-configuration',
-        outcome: 'operational-failure',
-      });
-    });
+    it.each(NOT_AN_OBJECT)(
+      `${option} is refused when it is %s`,
+      (_, value, kind) => {
+        expect(refusal(() => call(value))).toStrictEqual(
+          refusedWith(option, 'an object', value, kind),
+        );
+      },
+    );
   }
 });
 
 describe('an option declared as a list', () => {
   for (const [option, call] of LISTS) {
-    it.each(NOT_A_LIST)(`${option} is refused when it is %s`, (_, value) => {
-      expect(refusal(() => call(value))).toMatchObject({
-        code: 'invalid-configuration',
-        outcome: 'operational-failure',
-      });
-    });
+    it.each(NOT_A_LIST)(
+      `${option} is refused when it is %s`,
+      (_, value, kind) => {
+        expect(refusal(() => call(value))).toStrictEqual(
+          refusedWith(option, 'a list', value, kind),
+        );
+      },
+    );
   }
 });
 
+describe('a locale that is not text', () => {
+  it.each<readonly [string, unknown]>([
+    ['a number', 7],
+    ['null', null],
+    ['a list of one tag', ['en-US']],
+    ['an object', { tag: 'en-US' }],
+  ])('is refused in a list of locales when it is %s', (_, locale) => {
+    expect(
+      refusal(() => neutral({ locales: ['en-US', locale] })),
+    ).toStrictEqual({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      message: 'A route locale that is not text is invalid.',
+      reason: 'malformed-input',
+    });
+  });
+});
+
 describe('a scope option of the Router integration', () => {
-  it.each([null, 'text', 7, true, () => undefined])(
-    'is refused when it is neither a list nor a table: %j',
-    (value) => {
-      for (const name of ['requiredScopes', 'progressiveScopes']) {
-        expect(
-          refusal(() => refuseOptionsOfAnotherKind({ [name]: value })),
-        ).toMatchObject({ code: 'invalid-configuration' });
-      }
-    },
-  );
+  it.each([
+    [null, 'null'],
+    ['text', 'a string'],
+    [7, 'a number'],
+    [true, 'a boolean'],
+    [() => undefined, 'a function'],
+  ])('is refused when it is neither a list nor a table: %j', (value, kind) => {
+    for (const name of ['requiredScopes', 'progressiveScopes']) {
+      expect(
+        refusal(() => refuseOptionsOfAnotherKind({ [name]: value })),
+      ).toStrictEqual({
+        code: 'invalid-configuration',
+        outcome: 'operational-failure',
+        message: `${name} must be an object, and ${kind} was given.`,
+        reason: 'malformed-input',
+      });
+    }
+  });
 });
 
 describe('the codec of a route parameter', () => {
@@ -426,10 +586,20 @@ describe('the codec of a route parameter', () => {
 });
 
 describe('an option declared as a function', () => {
-  it.each(NOT_A_FUNCTION)('is refused when it is %s', (_, value) => {
-    expect(refusal(() => ɵfunctionOption(value, 'The option'))).toMatchObject({
+  it.each(NOT_A_FUNCTION)('is refused when it is %s', (_, value, kind) => {
+    expect(refusal(() => ɵfunctionOption(value, 'The option'))).toStrictEqual({
       code: 'invalid-configuration',
       outcome: 'operational-failure',
+      message: `The option must be a function, and ${kind} was given.`,
+      reason: 'malformed-input',
+    });
+  });
+
+  it('is refused when it is left out', () => {
+    expect(
+      refusal(() => ɵfunctionOption(undefined, 'The option')),
+    ).toMatchObject({
+      code: 'invalid-configuration',
       reason: 'malformed-input',
     });
   });
@@ -442,17 +612,24 @@ describe('an option declared as a function', () => {
 
 describe('an option declared as text', () => {
   it.each([
-    ['nothing', undefined],
-    ['null', null],
-    ['a number', 7],
-    ['a boolean', true],
-    ['a list of text', ['text']],
-    ['an object', { toString: () => 'text' }],
-    ['a function', () => 'text'],
-  ])('is refused when it is %s', (_, value) => {
-    expect(refusal(() => ɵtextOption(value, 'The option'))).toMatchObject({
+    ['null', null, 'null'],
+    ['a number', 7, 'a number'],
+    ['a boolean', true, 'a boolean'],
+    ['a list of text', ['text'], 'a list'],
+    ['an object', { toString: () => 'text' }, 'an object'],
+    ['a function', () => 'text', 'a function'],
+  ])('is refused when it is %s', (_, value, kind) => {
+    expect(refusal(() => ɵtextOption(value, 'The option'))).toStrictEqual({
       code: 'invalid-configuration',
       outcome: 'operational-failure',
+      message: `The option must be text, and ${kind} was given.`,
+      reason: 'malformed-input',
+    });
+  });
+
+  it('is refused when it is left out', () => {
+    expect(refusal(() => ɵtextOption(undefined, 'The option'))).toMatchObject({
+      code: 'invalid-configuration',
       reason: 'malformed-input',
     });
   });
@@ -481,6 +658,12 @@ describe('an option declared as one of a set of named values', () => {
     ).toBe('The option must be one of url, stored, and other text was given.');
   });
 
+  it('names the kind of a value that is not text', () => {
+    expect(
+      refusal(() => ɵnamedOption(7, ['url', 'stored'], 'The option'))?.message,
+    ).toBe('The option must be one of url, stored, and a number was given.');
+  });
+
   it('is taken as given when it is one of them', () => {
     expect(ɵnamedOption('stored', ['url', 'stored'], 'The option')).toBe(
       'stored',
@@ -490,7 +673,7 @@ describe('an option declared as one of a set of named values', () => {
 
 describe('an observability sink', () => {
   const SINKS: readonly (readonly [string, unknown])[] = [
-    ...NOT_AN_OBJECT,
+    ...NOT_AN_OBJECT.map(([label, value]) => [label, value] as const),
     ['an object with no emit', {}],
     ['an object whose emit is text', { emit: 'text' }],
   ];
