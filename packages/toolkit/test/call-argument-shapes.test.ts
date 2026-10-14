@@ -91,6 +91,28 @@ const synchronous: readonly (readonly [string, () => unknown])[] = [
       ),
   ],
   [
+    'compileProject: request.analysis.sources[0].contents must be a string, not a number.',
+    () =>
+      compileProject(
+        request({
+          analysis: {
+            projectRoot: '.',
+            rootNames: [],
+            sources: [{ path: 'a.ts', contents: 7 }],
+          },
+        }),
+      ),
+  ],
+  [
+    'compileProject: request.analysis.typeNames[0] must be a string, not a number.',
+    () =>
+      compileProject(
+        request({
+          analysis: { projectRoot: '.', rootNames: [], typeNames: [7] },
+        }),
+      ),
+  ],
+  [
     'compileProject: request.analysis.compilerOptionsDigestInput.target must be JSON data, not a function.',
     () =>
       compileProject(
@@ -106,6 +128,10 @@ const synchronous: readonly (readonly [string, () => unknown])[] = [
   [
     'compileProject: request.recoveryMessageIdentities must be an array, not a string.',
     () => compileProject(request({ recoveryMessageIdentities: SECRET })),
+  ],
+  [
+    'compileProject: request.recoveryMessageIdentities[0] must be a string, not a number.',
+    () => compileProject(request({ recoveryMessageIdentities: [7] })),
   ],
   [
     'compileProject: request.observability.emit must be a function, not undefined.',

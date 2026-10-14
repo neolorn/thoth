@@ -93,6 +93,8 @@ describe('the generated root of the owner compileProject is handed', () => {
     'src\\i18n',
     'src//i18n',
     'src/i18n/',
+    // Not in Normalization Form C: the composed spelling of the same name is a different string.
+    'src/cafe\u0301',
   ])('is thrown back when it is %j', (generatedRootPath) => {
     expect(() =>
       compileProject({

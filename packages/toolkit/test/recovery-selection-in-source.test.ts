@@ -30,8 +30,14 @@ async function write(
 
 const json = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`;
 
-/** A project whose source selects `recovery.unavailable`, authored as the given message. */
-async function project(recoveryMessage: string): Promise<string> {
+/**
+ * A project whose source selects `recovery.unavailable`, authored as the given message, with the
+ * given members added to its configuration.
+ */
+async function project(
+  recoveryMessage: string,
+  configuration: object = {},
+): Promise<string> {
   const root = await mkdtemp(resolve(tmpdir(), 'recovery-selection-'));
   temporaryRoots.push(root);
 
@@ -56,6 +62,7 @@ async function project(recoveryMessage: string): Promise<string> {
       sourceLocale: 'en-US',
       defaultLocale: 'en-US',
       locales: ['en-US'],
+      ...configuration,
     }),
   );
   await write(
@@ -140,6 +147,42 @@ describe('a recovery message selected in source', () => {
         path: ['recovery', 'recovery-selection:shell:recovery.unavailable'],
       },
     ]);
+  });
+
+  describe('in a project whose artifacts compile with a warning', () => {
+    // Klingon is a well-formed language subtag the pinned release carries no person-name patterns
+    // for, which compiling the artifacts reports as a warning.
+    const configuration = { personNameLocales: ['tlh'] };
+
+    it('is refused with nothing from the artifacts, which are never compiled', async () => {
+      const root = await project('Unavailable for {$name}.', configuration);
+
+      const generated = await generateProject({ project: root });
+
+      expect(generated.ok).toBe(false);
+      expect(
+        generated.diagnostics.map(({ code, path }) => ({ code, path })),
+      ).toEqual([
+        {
+          code: 'EQ1501',
+          path: ['recovery', 'recovery-selection:shell:recovery.unavailable'],
+        },
+      ]);
+    });
+
+    it('is accepted with that warning when it is plain, as the control', async () => {
+      const root = await project(
+        'Localization is temporarily unavailable.',
+        configuration,
+      );
+
+      const generated = await generateProject({ project: root });
+
+      expect(generated.ok).toBe(true);
+      expect(
+        generated.diagnostics.map(({ code, severity }) => ({ code, severity })),
+      ).toEqual([{ code: 'EQ1004', severity: 'warning' }]);
+    });
   });
 
   it('is accepted when it is plain and takes no inputs', async () => {

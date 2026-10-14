@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   compileProject,
+  defineExtensionRegistry,
   parseCatalog,
   parseConfiguration,
   type Catalog,
@@ -129,6 +130,57 @@ describe('a catalog handed to compileProject as an object', () => {
       );
     },
   );
+
+  describe('when it calls a function of a registry', () => {
+    const registry = defineExtensionRegistry([
+      {
+        kind: 'message-function',
+        id: 'demo:uppercase',
+        operandType: 'string',
+        options: {},
+        resultType: 'string',
+        selector: 'none',
+        maximumOutputLength: 128,
+      },
+    ]);
+    if (!registry.ok) throw new Error(JSON.stringify(registry.diagnostics));
+    const text = 'messages:\n  title: "Hello {$name :demo:uppercase}"\n';
+    const calling = parseCatalog(text, {
+      ...identity,
+      extensions: registry.value,
+    });
+    if (!calling.ok) throw new Error(JSON.stringify(calling.diagnostics));
+    const parsed = calling.value;
+
+    it('compiles as the parsed catalog does when the request carries that registry', () => {
+      const compileWith = (catalog: Catalog) =>
+        compileProject({
+          owner,
+          configuration: testProjectConfiguration(['en-US']),
+          catalogs: [catalog],
+          extensions: registry.value,
+        });
+      const fromParsed = compileWith(parsed);
+      const assembled = compileWith({ ...parsed });
+
+      expect(fromParsed.ok).toBe(true);
+      expect(assembled.diagnostics).toEqual(fromParsed.diagnostics);
+      expect(assembled.ok).toBe(true);
+      if (!fromParsed.ok || !assembled.ok) return;
+      expect(assembled.value.artifacts.outputPlan.planDigest).toBe(
+        fromParsed.value.artifacts.outputPlan.planDigest,
+      );
+    });
+
+    it('is refused as parseCatalog refuses it when the request carries none', () => {
+      // The control: the same object, judged with no registry, names a function nobody registered.
+      const expected = parseCatalog(text, identity);
+      expect(expected.ok).toBe(false);
+      const result = compile([{ ...parsed }]);
+      expect(result.ok).toBe(false);
+      expect(codes(result)).toEqual(codes(expected));
+    });
+  });
 
   it('carries no position, since no file holds what the diagnostic is about', () => {
     const result = compile([{ ...parsedCatalog(), scopeId: 'shell.tsb' }]);
