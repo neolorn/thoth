@@ -5,6 +5,7 @@ import {
   LocalizationError,
   createPathPrefixLocalePolicy,
   resolveLocalizedRoute,
+  validateRouteProjection,
   type RouteParameterCodec,
   type RouteRuntimeProjection,
 } from '@neolorn/equator/core';
@@ -67,8 +68,13 @@ function failureOf(action: () => unknown): unknown {
 }
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
+
+/** What the failure says after naming where the codec threw. */
+const ADVICE =
+  'A codec declines a spelling by answering `{ ok: false }` and a value by writing `undefined`, and writes every value it has read.';
 
 describe('resolving an address whose parameter codec throws', () => {
   it('fails with a typed failure naming the route, the parameter and the locale', () => {
@@ -90,10 +96,37 @@ describe('resolving an address whose parameter codec throws', () => {
       },
       cause: THROWN,
     });
-    const { message } = (failure as LocalizationError).diagnostic;
-    expect(message).toContain('article');
-    expect(message).toContain('slug');
-    expect(message).toContain('ar-EG');
+    expect((failure as LocalizationError).diagnostic).toStrictEqual({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      message: `The codec for parameter slug of route article threw in ar-EG. ${ADVICE}`,
+      reason: 'consumer-code-threw',
+      targetLocale: 'ar-EG',
+    });
+  });
+
+  it('names no locale where the codec is asked outside any, for a replacement a projection declares', () => {
+    const failure = failureOf(() =>
+      validateRouteProjection({
+        ...projectionWith(THROWS_WRITING),
+        historical: {
+          retired: {
+            kind: 'replacement',
+            routeId: 'article',
+            parameters: { slug: 'unwritten' },
+          },
+        },
+      }),
+    );
+
+    expect(failure).toBeInstanceOf(LocalizationError);
+    expect((failure as LocalizationError).cause).toBe(THROWN);
+    expect((failure as LocalizationError).diagnostic).toStrictEqual({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      message: `The codec for parameter slug of route article threw. ${ADVICE}`,
+      reason: 'consumer-code-threw',
+    });
   });
 
   it('fails the same way where the codec throws writing the canonical spelling', () => {
@@ -225,5 +258,75 @@ describe('the request handler at an address whose parameter codec throws', () =>
     expect(line).toContain('article');
     expect(line).toContain('slug');
     expect(line).toContain('ar-EG');
+  });
+});
+
+describe('what the request handler does not answer as a codec that threw', () => {
+  const CACHE = { successMaxAge: 600, permanentRedirectMaxAge: 86_400 };
+
+  it('says nothing in production, and still answers 500', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.stubEnv('NODE_ENV', 'production');
+    const handler = createLocaleRequestHandler({
+      policy: POLICY,
+      projection: projectionWith(THROWS_READING),
+      cache: CACHE,
+      cookie: false,
+    });
+
+    const answered = await handler(
+      new Request('https://site.example/ar-eg/articles/unread'),
+    );
+
+    expect(answered.status).toBe(500);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('refuses a caching floor it does not know on that answer, as on every other', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const handler = createLocaleRequestHandler({
+      policy: POLICY,
+      projection: projectionWith(THROWS_READING),
+      cache: { ...CACHE, pageCaching: 'shared' as never },
+      cookie: false,
+    });
+
+    await expect(
+      handler(new Request('https://site.example/ar-eg/articles/unread')),
+    ).rejects.toMatchObject({
+      diagnostic: {
+        code: 'invalid-configuration',
+        message:
+          '`pageCaching` is `per-visitor` or `not-stored` and cannot be "shared". A page is shared unless something raises it, so there is no value that means shared.',
+      },
+    });
+  });
+
+  it('leaves an answer that is no answer to fail as it does, and does not report it as a throw', async () => {
+    // The codec did not throw: it answered with nothing, and reading that answer is what fails.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const render = vi.fn(() => new Response('<!doctype html>'));
+    const handler = createLocaleRequestHandler({
+      policy: POLICY,
+      projection: projectionWith({
+        parse: () => undefined as never,
+        serialize: (value) => String(value),
+      }),
+      cache: CACHE,
+      cookie: false,
+      render,
+    });
+
+    const failure: unknown = await handler(
+      new Request('https://site.example/ar-eg/articles/unread'),
+    ).then(
+      () => undefined,
+      (error: unknown) => error,
+    );
+
+    expect(failure).toBeInstanceOf(TypeError);
+    expect((failure as TypeError).message).toContain("'ok'");
+    expect(render).not.toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalled();
   });
 });

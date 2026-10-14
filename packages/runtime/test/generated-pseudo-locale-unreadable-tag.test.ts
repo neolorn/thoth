@@ -24,6 +24,13 @@ describe('a pseudo-locale list naming a tag the platform cannot read', () => {
     expect(ɵisGeneratedPseudoLocales([UNREADABLE], [UNREADABLE])).toBe(false);
   });
 
+  it('is not a list a build writes where an entry is a list of one such tag', () => {
+    // The platform reads a list of one tag as that tag, so only its kind tells it from the text.
+    const entry = ['en-Latn-XA'];
+    expect(new Intl.Locale(entry as never).toString()).toBe('en-Latn-XA');
+    expect(ɵisGeneratedPseudoLocales([entry], [entry])).toBe(false);
+  });
+
   it('is told apart from the same list with the tag a build writes', () => {
     expect(ɵisGeneratedPseudoLocales(['en-Latn-XA'], ['en-Latn-XA'])).toBe(
       true,

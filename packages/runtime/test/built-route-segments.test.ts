@@ -180,6 +180,31 @@ describe('a parameter of a built address', () => {
     }
   });
 
+  it('is reported as missing where its codec is gone, and not as a codec that threw', () => {
+    const projection: {
+      -readonly [
+        Key in keyof RouteRuntimeProjection
+      ]: RouteRuntimeProjection[Key];
+    } = projectionWith(TEXT);
+    buildLocalizedRoute(PREFIXED, projection, 'article', 'en-US', {
+      slug: 'handbook',
+    });
+    projection.parameters = { article: {} };
+    let refused: unknown;
+    try {
+      buildLocalizedRoute(PREFIXED, projection, 'article', 'en-US', {
+        slug: 'handbook',
+      });
+    } catch (error) {
+      refused = error;
+    }
+    expect((refused as LocalizationError).diagnostic).toStrictEqual({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      message: 'Route article requires parameter slug.',
+    });
+  });
+
   it('is unavailable in a locale its codec writes nothing for', () => {
     const englishOnly: RouteParameterCodec = {
       parse: (value: string) => ({ ok: true, value }),

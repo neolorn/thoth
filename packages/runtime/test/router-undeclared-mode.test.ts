@@ -28,9 +28,11 @@ describe('the mode of the Router integration', () => {
     (mode) => {
       expect(
         refusal(() => refuseUndeclaredMode(mode))?.diagnostic,
-      ).toMatchObject({
+      ).toStrictEqual({
         code: 'invalid-configuration',
         outcome: 'operational-failure',
+        message:
+          'The mode of the localized Router integration is coordinated or progressive.',
       });
     },
   );

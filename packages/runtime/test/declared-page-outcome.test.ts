@@ -165,8 +165,35 @@ describe('the channel a declaration travels over', () => {
       outcome: 'operational-failure',
       status: 503,
     });
-    claimCapability('outcome:pageOperationalFailure');
   });
+
+  it.each<readonly [unknown, string]>([
+    [199, '199'],
+    [600, '600'],
+    [503.5, '503.5'],
+    [Number.NaN, 'NaN'],
+    ['503', 'a value of type string'],
+    [true, 'a value of type boolean'],
+    [null, 'a value of type object'],
+    [undefined, 'a value of type undefined'],
+  ])(
+    'names a number it refuses, and only the kind of anything else: %j',
+    (status, said) => {
+      let refused: unknown;
+      try {
+        pageOperationalFailure(status as number);
+      } catch (error) {
+        refused = error;
+      }
+      expect((refused as LocalizationError).diagnostic).toStrictEqual({
+        code: 'invalid-configuration',
+        outcome: 'operational-failure',
+        message: `A declared operational failure carries an HTTP status between 200 and 599; received ${said}.`,
+        reason: 'malformed-input',
+      });
+      claimCapability('outcome:pageOperationalFailure');
+    },
+  );
 });
 
 describe('the response a declared outcome produces', () => {

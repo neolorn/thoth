@@ -521,9 +521,12 @@ describe('a codec the projection no longer holds when the values are asked for',
   it('refuses where the route has no codecs left', async () => {
     const error = await refusal('route');
     expect(error).toBeInstanceOf(LocalizationError);
-    expect((error as LocalizationError).diagnostic.code).toBe(
-      'invalid-configuration',
-    );
+    // Named as the codec that is missing, and not as one that threw when it was asked.
+    expect((error as LocalizationError).diagnostic).toStrictEqual({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      message: 'Route article has no codec for parameter slug.',
+    });
   });
 
   it('refuses where the projection has no codecs left', async () => {
