@@ -5892,14 +5892,6 @@
     {
       "file": "packages/toolkit/src/message-format.ts",
       "mutator": "ConditionalExpression",
-      "original": "value === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The loop reaches this line only for timeZone, the one constructed rule. Without the guard an absent timeZone is tried: dateTimeFormatOptions reads an undefined zone as absent (message-function-options.ts line 833), the formatter is built from \"en\", UTC and the default fields of the function, which constructs, and the loop moves on as the guard did."
-    },
-    {
-      "file": "packages/toolkit/src/message-format.ts",
-      "mutator": "ConditionalExpression",
       "original": "error.type !== 'missing-syntax'",
       "replacement": "false",
       "category": "equivalent",
@@ -6076,14 +6068,6 @@
       "replacement": "``",
       "category": "message-wording",
       "reason": "The text is the summary of the EQ1302 diagnostic for a refinement type outside the portable set; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "StringLiteral",
-      "original": "`Input ${JSON.stringify(inputName)} cannot refine inferred ${inferred} input to ${refined}.`",
-      "replacement": "``",
-      "category": "message-wording",
-      "reason": "The text is the summary of the EQ1302 diagnostic for a refinement type that contradicts the inferred one; a summary is read by a person and compared by nothing, and the diagnostic's code and path are unchanged."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6925,22 +6909,6 @@
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "ConditionalExpression",
-      "original": "portable === '..' ||\n    portable.startsWith(`..${sep}`)",
-      "replacement": "false",
-      "category": "message-wording",
-      "reason": "A relative path that is \"..\" or begins with \"..\" and a separator has \"..\" as its first segment, so when portableAnalysisPath's first test lets it through, the segment test eleven lines below throws for it. Both throw a TypeError, and only the sentence it carries differs."
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "LogicalOperator",
-      "original": "portable === '..' ||\n    portable.startsWith(`..${sep}`)",
-      "replacement": "portable === '..' && portable.startsWith(`..${sep}`)",
-      "category": "message-wording",
-      "reason": "No text both equals \"..\" and begins with \"..\" and a separator, so the changed clause is never true, and a path above the project reaches portableAnalysisPath's segment test, which throws for its leading \"..\" segment. Both throw a TypeError, and only the sentence it carries differs."
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
       "mutator": "StringLiteral",
       "original": "'have addresses'",
       "replacement": "\"\"",
@@ -7149,22 +7117,6 @@
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "ConditionalExpression",
-      "original": "portable === '..'",
-      "replacement": "false",
-      "category": "message-wording",
-      "reason": "A path that is the directory above the project is not absolute and so falls to the segment check on line 377, where its one segment '..' throws the same TypeError; only the sentence changes, from outside the selected project to not portable."
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "MethodExpression",
-      "original": "portable.startsWith(`..${sep}`)",
-      "replacement": "portable.endsWith(`..${sep}`)",
-      "category": "message-wording",
-      "reason": "path.relative never returns a trailing separator, so endsWith is always false here; a path that begins with '..' and a separator then reaches the segment check on line 377, where its leading '..' throws the same TypeError with the not-portable sentence in place of the outside-the-project one."
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
       "mutator": "MethodExpression",
       "original": "files\n      .filter(({ path }) => path.endsWith('.ts'))",
       "replacement": "files",
@@ -7298,6 +7250,14 @@
       "replacement": "[...(request.recoveryMessageIdentities ?? []), ...(analysis?.recoveryMessageIdentities ?? [])]",
       "category": "equivalent",
       "reason": "The list is read three ways after this line: for being empty, which a repeated identity cannot change, and by recoveryModule and recoveryRepresentations, each of which puts it through a Set before reading it."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "MethodExpression",
+      "original": "[\n      ...(request.recoveryMessageIdentities ?? []),\n      ...(analysis?.recoveryMessageIdentities ?? []),\n    ]\n      .filter((identity, index, values) => values.indexOf(identity) === index)\n      .sort(compareCodeUnit)",
+      "replacement": "[...(request.recoveryMessageIdentities ?? []), ...(analysis?.recoveryMessageIdentities ?? [])].filter((identity, index, values) => values.indexOf(identity) === index)",
+      "category": "equivalent",
+      "reason": "Nothing reads the order of the list. Line 667 tests it for being empty. generateContracts hands it to recoveryModule, which sorts the identities itself (generated-contracts.ts line 756). compileLocalArtifacts is reached only when that generation refused none of them (line 999), so recoveryRepresentations, which reads the list through a Set, finds nothing to refuse in the loop on compiled-artifacts.ts line 908 and sorts the representations it returns (line 925)."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7443,7 +7403,7 @@
       "original": "typeof part !== 'string'",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "On line 560 the test that follows, part.kind === 'expression', is already false for a text part, because a string has no `kind`; the same parts are collected with or without the type test."
+      "reason": "On line 573 the test that follows, part.kind === 'expression', is already false for a text part, because a string has no `kind`; the same parts are collected with or without the type test."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -7451,7 +7411,32 @@
       "original": "'string'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "With the literal emptied the type test on line 560 is true for every part, and the test that follows, part.kind === 'expression', is already false for a text part, because a string has no `kind`; the same parts are collected."
+      "reason": "With the literal emptied the type test on line 573 is true for every part, and the test that follows, part.kind === 'expression', is already false for a text part, because a string has no `kind`; the same parts are collected. On line 525 the emptied literal makes the skip false for every part, and a text part goes on to part.kind === 'expression' on line 528, which is false for it for the same reason.",
+      "count": 2
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "ConditionalExpression",
+      "original": "typeof part === 'string'",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "Without the skip a text part goes on to the test on line 528, part.kind === 'expression', which is false for a string because a string has no `kind`, so registerExpression is called for the same parts."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "BlockStatement",
+      "original": "{\n      continue;\n    }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "Without the skip a text part goes on to the test on line 528, part.kind === 'expression', which is false for a string because a string has no `kind`, so registerExpression is called for the same parts."
+    },
+    {
+      "file": "packages/toolkit/src/semantic-model.ts",
+      "mutator": "ConditionalExpression",
+      "original": "message.resultKind === 'plain'",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "A message is structured only when its pattern holds markup (message-format.ts line 963), and a graph is accepted only when every closing part closes one that opened (lines 902 to 913). A structured message in an accepted graph therefore has an opening or standalone part, which adds its name to the slot counts (line 919), and effectiveSlots makes a slot contract of every counted name (lines 1028 and 1184), so the slots test on line 702 refuses it as this one did."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
