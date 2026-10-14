@@ -524,6 +524,69 @@ describe('an observability sink', () => {
   });
 });
 
+// A refusal is read far from the call that caused it, so it names the option and the call.
+describe('the refusal of a localization context', () => {
+  const setup = () => {
+    const set = compileSet();
+    return {
+      configuration: set.configuration,
+      catalogSet: set.descriptor,
+      catalogLoaders: loadersFor(set),
+    } as unknown as LocalizationSetup;
+  };
+
+  it('names the options and the setup of createLocalizationContext()', () => {
+    expect(
+      refusal(() => createLocalizationContext(null as never))?.message,
+    ).toBe(
+      'The options of createLocalizationContext() must be an object, and null was given.',
+    );
+    expect(
+      refusal(() => createLocalizationContext({ setup: 7 } as never))?.message,
+    ).toBe(
+      'The setup of createLocalizationContext() must be an object, and a number was given.',
+    );
+  });
+
+  it('names the options, the setup and the scope list of a context built from them', () => {
+    expect(
+      refusal(() => createLocalizationRuntime(null as never))?.message,
+    ).toBe(
+      'The options of a localization context must be an object, and null was given.',
+    );
+    expect(
+      refusal(() => context((valid) => ({ ...valid, setup: 7 })))?.message,
+    ).toBe(
+      'The setup of a localization context must be an object, and a number was given.',
+    );
+    expect(
+      refusal(() =>
+        context((valid) => ({ ...valid, bootstrapScopes: [SHELL, SHELL] })),
+      )?.message,
+    ).toBe('bootstrapScopes contains a duplicate generated scope.');
+  });
+
+  it('names the sink and its emit function', () => {
+    expect(
+      refusal(() => createLocalizationEventEmitter(null as never))?.message,
+    ).toBe('The observability sink must be an object, and null was given.');
+    expect(
+      refusal(() => createLocalizationEventEmitter({ emit: 'text' } as never))
+        ?.message,
+    ).toBe(
+      'emit of The observability sink must be a function, and a string was given.',
+    );
+    expect(
+      refusal(() =>
+        createLocalizationContext({
+          setup: setup(),
+          observability: 7 as never,
+        }),
+      )?.message,
+    ).toBe('The observability sink must be an object, and a number was given.');
+  });
+});
+
 describe('options of the kind their declaration names', () => {
   it('are taken by each constructor', () => {
     expect(
