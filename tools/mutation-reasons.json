@@ -679,14 +679,6 @@
     {
       "file": "packages/runtime/core/src/routing.ts",
       "mutator": "StringLiteral",
-      "original": "`Route ${route.id} requires parameter ${built.parameter}.`",
-      "replacement": "``",
-      "category": "message-wording",
-      "reason": "The text of the refusal for a missing route parameter; the cases assert its invalid-configuration code."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "StringLiteral",
       "original": "'The route parameter has no localized representation for the requested locale.'",
       "replacement": "\"\"",
       "category": "message-wording",
@@ -2983,14 +2975,6 @@
     },
     {
       "file": "packages/runtime/src/localization.ts",
-      "mutator": "StringLiteral",
-      "original": "'bootstrapScopes'",
-      "replacement": "\"\"",
-      "category": "message-wording",
-      "reason": "The label is only interpolated into the two diagnostic messages of normalizeScopes (lines 1379 and 1391) and nothing compares it."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
       "mutator": "MethodExpression",
       "original": "Math.max(1, this.store.artifactCount * 8)",
       "replacement": "Math.min(1, this.store.artifactCount * 8)",
@@ -3029,14 +3013,6 @@
       "replacement": "``",
       "category": "message-wording",
       "reason": "Only the text of the scope ceiling diagnostic changes; its code and fields are asserted and the wording is not contract."
-    },
-    {
-      "file": "packages/runtime/src/localization.ts",
-      "mutator": "StringLiteral",
-      "original": "`${label} contains a duplicate generated scope.`",
-      "replacement": "``",
-      "category": "message-wording",
-      "reason": "Only the text of the duplicate scope diagnostic changes; its code and fields are asserted and the wording is not contract."
     },
     {
       "file": "packages/runtime/src/localization.ts",
