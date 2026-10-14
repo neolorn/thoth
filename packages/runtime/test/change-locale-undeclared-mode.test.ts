@@ -58,6 +58,7 @@ describe('changeLocale with a mode that is neither declared value', () => {
       expect(error.diagnostic).toMatchObject({
         code: 'invalid-configuration',
         outcome: 'operational-failure',
+        message: 'The mode of a locale change is coordinated or progressive.',
       });
       expect(localization.snapshot()).toBe(before);
       expect(localization.lastResult()).toBe(last);

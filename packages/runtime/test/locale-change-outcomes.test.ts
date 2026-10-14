@@ -388,6 +388,20 @@ describe('the scopes of a locale change', () => {
     localization.dispose();
   });
 
+  it('keeps, in coordinated mode, a progressive scope the committed snapshot requires where it stood', async () => {
+    const { localization } = await ready();
+    await localization.changeLocale('en-US', { requiredScopes: [SHELL, LAZY] });
+
+    await expect(
+      localization.changeLocale('ar-EG', { progressiveScopes: [SHELL] }),
+    ).resolves.toMatchObject({ status: 'committed', mode: 'coordinated' });
+    // A coordinated change waits for the scope either way, so naming it moves it nowhere.
+    expect(
+      localization.snapshot()?.requiredScopes.map((scope) => scope.scopeId),
+    ).toStrictEqual(['shell', 'lazy']);
+    localization.dispose();
+  });
+
   it('refuses a scope one call names as required and as progressive', async () => {
     const { localization } = await ready();
 
