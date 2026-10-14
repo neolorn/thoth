@@ -56,14 +56,6 @@
       "reason": "With the literal emptied the clause skips an empty hreflang, which new Intl.Locale also refuses with a RangeError, and \"x-default\" goes on to openGraphLocale, which answers undefined for it because the tag does not match unicode_locale_id (UTS 35: a language subtag is two, three or five to eight letters). Both are skipped by either path on every conforming engine; measured on Node 22.22.3, 24.15.0, 26.0.0 and 26.10.0."
     },
     {
-      "file": "packages/runtime/core/src/page-outcome.ts",
-      "mutator": "StringLiteral",
-      "original": "`A declared operational failure carries an HTTP status between 200 and 599; received ${typeof given === 'number' ? String(given) : `a value of type ${typeof given}`}.`",
-      "replacement": "``",
-      "category": "message-wording",
-      "reason": "The text of the configuration failure for a status outside 200 to 599; the tests assert the diagnostic and nothing reads the text."
-    },
-    {
       "file": "packages/runtime/core/src/routing.ts",
       "mutator": "StringLiteral",
       "original": "''",
@@ -552,8 +544,8 @@
       "original": "first !== undefined",
       "replacement": "true",
       "category": "equivalent",
-      "reason": "localeNeutralRoots holds strings, so includes(undefined) is false and the condition has the same value with the guard removed localeIntent(undefined) tests the text \"undefined\", nine letters, against a pattern that allows three, so it is false exactly as the guard is The first segment is undefined only for the root address, and includes(undefined) is false for the list of strings a policy holds as its roots, so the block is skipped either way.",
-      "count": 3
+      "reason": "localeNeutralRoots holds strings, so includes(undefined) is false and the condition has the same value with the guard removed localeIntent(undefined) tests the text \"undefined\", nine letters, against a pattern that allows three, so it is false exactly as the guard is The first segment is undefined only for the root address, and includes(undefined) is false for the list of strings a policy holds as its roots, so the block is skipped either way. In resolveHostRoute the first segment is undefined only for the root address, and includes(undefined) is false for the list of text a checked policy holds as its roots, so the block is skipped either way.",
+      "count": 4
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -675,14 +667,6 @@
       "replacement": "() => undefined",
       "category": "message-wording",
       "reason": "`named` is the quoted list of the policy's origins, and it is only interpolated into the refusal messages of hostBuildLocale on lines 3969 and 3980."
-    },
-    {
-      "file": "packages/runtime/core/src/routing.ts",
-      "mutator": "StringLiteral",
-      "original": "`Route ${route.id} has no codec for parameter ${name}.`",
-      "replacement": "``",
-      "category": "message-wording",
-      "reason": "The text of the refusal for a parameter with no codec; the cases assert its invalid-configuration code."
     },
     {
       "file": "packages/runtime/core/src/routing.ts",
@@ -948,6 +932,38 @@
       "replacement": "true",
       "category": "equivalent",
       "reason": "When the tag is not well formed `locale` is undefined, and the mutant then returns either `locale`, which is undefined, or undefined, so servedLocale answers undefined on both arms as the original does."
+    },
+    {
+      "file": "packages/runtime/http/src/handler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "first !== undefined",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "In bypasses the first segment is undefined only for the root address, and includes(undefined) is false for the list of text a policy holds as its roots once allowedLocaleHosts has held it to its tables where the handler is made, so the block is skipped either way."
+    },
+    {
+      "file": "packages/runtime/http/src/handler.ts",
+      "mutator": "ObjectLiteral",
+      "original": "{\n  status: 200,\n  cache: 'private-no-store',\n}",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "UNRESOLVED is read in two places, both in the answer to a codec that threw. pageOutcomeHttpDescriptor reads its contentLanguage, variesBy and robots, which are absent with or without these members, and the descriptor handed to routeCacheHeaders has its cache replaced by the failed one first and its status read only to tell a 307 or a 308 from every other value."
+    },
+    {
+      "file": "packages/runtime/http/src/handler.ts",
+      "mutator": "StringLiteral",
+      "original": "'private-no-store'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "UNRESOLVED is read in two places, both in the answer to a codec that threw. pageOutcomeHttpDescriptor reads its contentLanguage, variesBy and robots, which are absent with or without these members, and the descriptor handed to routeCacheHeaders has its cache replaced by the failed one first and its status read only to tell a 307 or a 308 from every other value."
+    },
+    {
+      "file": "packages/runtime/http/src/handler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "error.diagnostic.reason === 'consumer-code-threw'",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "A typed failure leaves resolveLocalizedRoute from three places. assertLocalePolicy and the projection check both passed where the handler was made, on the policy and the projection this call hands over, and each keeps what it has checked. The third is askCodec, which gives every failure it raises this reason. So every LocalizationError caught here carries it."
     },
     {
       "file": "packages/runtime/router/src/document-messages.ts",
@@ -7644,6 +7660,46 @@
       "replacement": "{}",
       "category": "equivalent",
       "reason": "The variable is declared without a value and assigned only inside the try, so it is already undefined when the catch runs."
+    },
+    {
+      "file": "packages/runtime/core/src/routing.ts",
+      "mutator": "ConditionalExpression",
+      "original": "typeof value !== 'string'",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "In ɵnamedOption the names are text, so `names.includes` is false for a value that is not text and the refusal on the next line is entered with or without this test. The message reads the kind of the value with a test of its own."
+    },
+    {
+      "file": "packages/runtime/core/src/routing.ts",
+      "mutator": "ConditionalExpression",
+      "original": "typeof given === 'object'",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "tableOrNothing then hands on text, a number, a boolean or a function as the table, and its two callers in assertLocalePolicy read it through ownEntry alone, for an origin or a prefix. `Object.hasOwn` finds a key only in text, an index or `length`, and the character or the number held there is never the canonical locale tag the caller compares it with, so each refuses as it does for no table."
+    },
+    {
+      "file": "packages/runtime/core/src/routing.ts",
+      "mutator": "ConditionalExpression",
+      "original": "policy.kind !== 'locale-host' || origin === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "originLocale then reads on where the guard returned undefined, and returns undefined there too: an origin that is undefined throws in `new URL` inside the try, whose catch returns undefined, and a policy of another kind carries no origins, which assertLocalePolicy refuses on it, so ownEntry returns undefined for it."
+    },
+    {
+      "file": "packages/runtime/core/src/routing.ts",
+      "mutator": "LogicalOperator",
+      "original": "policy.kind !== 'locale-host' || origin === undefined",
+      "replacement": "policy.kind !== 'locale-host' && origin === undefined",
+      "category": "equivalent",
+      "reason": "originLocale then reads on where the guard returned undefined, and returns undefined there too: an origin that is undefined throws in `new URL` inside the try, whose catch returns undefined, and a policy of another kind carries no origins, which assertLocalePolicy refuses on it, so ownEntry returns undefined for it."
+    },
+    {
+      "file": "packages/runtime/core/src/routing.ts",
+      "mutator": "ConditionalExpression",
+      "original": "policy.kind !== 'locale-host'",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "originLocale then reads on where the guard returned undefined, and returns undefined there too: an origin that is undefined throws in `new URL` inside the try, whose catch returns undefined, and a policy of another kind carries no origins, which assertLocalePolicy refuses on it, so ownEntry returns undefined for it."
     },
     {
       "file": "packages/runtime/src/formatting-runtime.ts",
