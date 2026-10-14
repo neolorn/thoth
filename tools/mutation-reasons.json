@@ -7229,14 +7229,6 @@
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "StringLiteral",
-      "original": "'..'",
-      "replacement": "\"\"",
-      "category": "message-wording",
-      "reason": "The two paths this moves between the two checks, the directory above the project and the project itself, are refused with a TypeError by either check; only which of the two sentences the error carries changes."
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
       "mutator": "ConditionalExpression",
       "original": "request.analysis.sources === undefined",
       "replacement": "false",

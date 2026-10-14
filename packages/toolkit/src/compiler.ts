@@ -371,17 +371,13 @@ function portableAnalysisPath(
   }
   // Split by this platform's separator, so a backslash left inside a segment is one a POSIX file
   // name holds. Windows reads that character as a separator, so the name is not one file on both.
+  // relative() resolves both paths first, so no segment is ".", a ".." can only lead and is refused
+  // above, and an empty segment is the project itself.
   const segments = portable.split(sep);
   const normalized = segments.join('/');
   if (
     normalized.normalize('NFC') !== normalized ||
-    segments.some(
-      (segment) =>
-        segment === '' ||
-        segment === '.' ||
-        segment === '..' ||
-        segment.includes('\\'),
-    )
+    segments.some((segment) => segment === '' || segment.includes('\\'))
   ) {
     throw new TypeError(
       `compileProject: ${argument} must be a portable file name under request.analysis.projectRoot, and ${JSON.stringify(path)} is not one.`,
