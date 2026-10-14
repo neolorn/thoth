@@ -595,11 +595,13 @@ describe('an option declared as a function', () => {
     });
   });
 
-  it('is refused when it is left out', () => {
+  it('is refused when it is left out, named as undefined with no article', () => {
     expect(
       refusal(() => ɵfunctionOption(undefined, 'The option')),
-    ).toMatchObject({
+    ).toStrictEqual({
       code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      message: 'The option must be a function, and undefined was given.',
       reason: 'malformed-input',
     });
   });
@@ -627,9 +629,11 @@ describe('an option declared as text', () => {
     });
   });
 
-  it('is refused when it is left out', () => {
-    expect(refusal(() => ɵtextOption(undefined, 'The option'))).toMatchObject({
+  it('is refused when it is left out, named as undefined with no article', () => {
+    expect(refusal(() => ɵtextOption(undefined, 'The option'))).toStrictEqual({
       code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      message: 'The option must be text, and undefined was given.',
       reason: 'malformed-input',
     });
   });
@@ -656,6 +660,18 @@ describe('an option declared as one of a set of named values', () => {
       refusal(() => ɵnamedOption('cookie', ['url', 'stored'], 'The option'))
         ?.message,
     ).toBe('The option must be one of url, stored, and other text was given.');
+  });
+
+  it.each<readonly [string, unknown, string]>([
+    ['left out', undefined, 'undefined'],
+    ['null', null, 'null'],
+    ['a symbol', Symbol.iterator, 'a symbol'],
+    ['a big integer', 7n, 'a bigint'],
+  ])('names a value that is %s as it reads in a sentence', (_, value, kind) => {
+    expect(
+      refusal(() => ɵnamedOption(value, ['url', 'stored'], 'The option'))
+        ?.message,
+    ).toBe(`The option must be one of url, stored, and ${kind} was given.`);
   });
 
   it('names the kind of a value that is not text', () => {

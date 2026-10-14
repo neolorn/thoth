@@ -1162,9 +1162,15 @@ function routeError(
   );
 }
 
-/** What a value is, in the words a refusal names it with. */
+/**
+ * What a value is, in the words a refusal names it with.
+ *
+ * A value left out is named as `null` is, with no article: it is the one type whose name does not
+ * read as a kind of thing.
+ */
 function kindOf(value: unknown): string {
   if (value === null) return 'null';
+  if (value === undefined) return 'undefined';
   if (Array.isArray(value)) return 'a list';
   return typeof value === 'object' ? 'an object' : `a ${typeof value}`;
 }
