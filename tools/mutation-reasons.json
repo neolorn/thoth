@@ -7006,14 +7006,6 @@
     {
       "file": "packages/toolkit/src/semantic-model.ts",
       "mutator": "StringLiteral",
-      "original": "`Rich slot ${JSON.stringify(name)} is used as both paired and standalone.`",
-      "replacement": "``",
-      "category": "message-wording",
-      "reason": "The whole summary of the EQ1303 finding for a slot used both paired and standalone; its code and its path are what the cases compare."
-    },
-    {
-      "file": "packages/toolkit/src/semantic-model.ts",
-      "mutator": "StringLiteral",
       "original": "`Built-in rich slot ${JSON.stringify(name)} must be paired.`",
       "replacement": "``",
       "category": "message-wording",
