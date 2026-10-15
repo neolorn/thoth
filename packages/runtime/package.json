@@ -1,6 +1,6 @@
 {
   "name": "@neolorn/equator",
-  "version": "1.3.0-rc.2",
+  "version": "1.0.0-rc.1",
   "description": "Localization runtime for Angular applications.",
   "homepage": "https://github.com/neolorn/equator/tree/main/packages/runtime#readme",
   "keywords": [

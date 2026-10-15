@@ -1,6 +1,6 @@
 {
   "name": "@neolorn/equator-toolkit",
-  "version": "1.3.0-rc.2",
+  "version": "1.0.0-rc.1",
   "description": "Compiler and developer tooling for Equator localization projects.",
   "homepage": "https://github.com/neolorn/equator/tree/main/packages/toolkit#readme",
   "keywords": [

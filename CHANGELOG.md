@@ -3,19 +3,254 @@
 All notable changes to Equator are recorded here, for `@neolorn/equator` and
 `@neolorn/equator-toolkit`, which share a version.
 
-The 0.x line and the betas were never published. `1.0.0-rc.2` was the first publish, under the
-`next` tag.
+`1.0.0-rc.1` is the first release under this name, and a release candidate for `1.0.0`. Everything
+below it is how the library got there: the 0.x line, which was never published, and nine
+milestones. Six were published under the project's earlier name, and each of those headings carries
+the number it was published as and the date of that release. The two betas and the first release
+candidate of that line were never published and carry no date. None of them is a version of the two
+packages above.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
-follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The 0.x line is the alpha
-stage, then the betas, then the release candidates that carry the changes breaking an earlier call.
+follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The 0.x line is the alpha stage,
+then the betas, then the release candidates and the milestones that followed them.
 
-## [1.3.0-rc.1] - 2026-09-15
+## [1.0.0-rc.1] - 2026-10-15
+
+The first release candidate of Equator, a localization framework for Angular applications.
+
+It installs on Node `^22.22.3 || ^24.15.0 || ^26.0.0`. The runtime takes `@angular/core` and
+`@angular/common` at `>=22.0.0 <23.0.0` and `rxjs` at `>=7.4.0 <8.0.0` as peers, with
+`@angular/router`, `@angular/forms` and `@angular/ssr` at `>=22.0.0 <23.0.0` as optional peers of
+the entry points that use them. The toolkit takes `@angular/compiler` at `>=22.0.0 <23.0.0` and
+`typescript` at `>=6.0.2 <6.1.0`.
+
+The standards profile is `equator-1`: Unicode 17.0.0, CLDR and LDML 48.2, MessageFormat as LDML 48.2
+defines it, XLIFF 2.2 Committee Specification 01, the sitemaps.org 0.9 protocol, the IANA Language
+Subtag Registry dated 2026-09-17, and the IANA Time Zone Database 2026e. The runtime depends on `tslib`
+and nothing else. The toolkit depends on `yaml` 2.9.1, `ajv` 8.20.0, `jsonc-parser` 3.3.1,
+`messageformat` 4.0.0 and `tslib`.
+
+It is built and run on Angular 22.2.1, 22.0.4 and 22.0.0, TypeScript 6.0.3 and 6.0.2, RxJS 7.8.2
+and 7.4.0, Node 22.22.3, 24.15.0, 26.0.0 and 26.10.0, and Chromium, Firefox and WebKit through
+Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the combinations.
 
 ### Added
 
-- `LocalizedPageOutcome` in `@neolorn/equator/core`, with `pageAbsent`, `pageGone` and
-  `pageOperationalFailure`. A page states that its address is not there, that it is gone, or that it
+- `@neolorn/equator`, the runtime, with seven entry points: the primary, `/core`, `/http`,
+  `/router`, `/forms`, `/ssr` and `/testing`. An entry point you do not import adds no code and no
+  peer.
+- `@neolorn/equator/core` and `@neolorn/equator/http` import no Angular, so a worker or a server
+  that is not the Angular one can load them.
+- `@neolorn/equator-toolkit`, the compiler and the `equator` command line, with the same operations
+  as a library and the JSON Schemas of its file formats as exports.
+- `equator init` writes `equator.config.json` from the source locale, the default locale and the
+  locales the project supports. `aliases`, `parentLocales`, `formatting`, `inProgress`,
+  `personNameLocales` and `pseudoLocales` are the optional fields.
+- `equator generate` compiles the catalogs into typed modules under `#i18n`, with a
+  `provideLocalization` that has the project's setup already bound.
+- `createLocalizationContext` builds a localization context where there is no application to
+  inject from: a server handler, a script or a test. `injectLocalization` reaches `Localization` in
+  a component, a directive or a service.
+- A failure is a `LocalizationError` whose diagnostic carries a code, an outcome and a reason.
+- `provideLocalizationSetup` and the features it composes: `withRouting`, `withPersistence`,
+  `withLocaleSources`, `withFormattingContext`, `withRelativeTimePolicy`, `withLocalizationClock`,
+  `withLocaleAnnouncement`, `withOverlayLocale`, `withExtensions`, `withObservability`,
+  `withRecoveryMessage` and `withoutDocumentLocale`.
+- Catalogs are YAML, one file per scope and locale at `i18n/<scope>/<locale>.yaml`, with message
+  bodies in MessageFormat 2.
+- The MessageFormat functions `:string`, `:number`, `:integer`, `:offset`, `:currency`, `:percent`,
+  `:unit`, `:datetime`, `:date` and `:time`, with plural, ordinal and select variants.
+- Each message is a typed handle. A missing, extra or mistyped input fails the build, in TypeScript
+  and in a template.
+- `inputs` and `slots` on a source message narrow what the toolkit inferred, and `description` and
+  `context` carry guidance to the translator.
+- Rich messages with the slot kinds `emphasis`, `strong`, `code`, `link` and `action`. The
+  application binds a link's destination with `internalDestination` or `externalDestination`, and an
+  action's handler.
+- `families` in a source catalog, for a set of messages chosen by a value known only at run time.
+- The `localize` pipe and the `localized-message` component put a message on the page.
+- `[localizedLabel]` writes a message into `aria-label`, `aria-placeholder`,
+  `aria-roledescription`, `aria-valuetext`, `alt`, `placeholder` or `title`.
+- Scopes are derived from the templates and the route tree. A scope used only behind a lazy route
+  loads with that route, and the rest load at startup.
+- `requiredScopes` and `progressiveScopes` on `provideLocalizedRouter` name further scopes for a
+  route. In `coordinated` mode, the default, a navigation and a locale change wait for both lists,
+  and a first render waits for them on the server, in a prerender and in the browser.
+- A missing translation falls back through the locales the target inherits from, then to the
+  source locale. `parentLocales` replaces one step of that chain.
+- `withRecoveryMessage` and the `localization-recovery` component, for the case where no catalog
+  loads.
+- A translation whose source wording changed since it was written is reported as stale, and one
+  that omits a plural category its locale needs is reported with `EQ1308`.
+- Locale identifiers are canonical BCP 47 tags, checked against the pinned CLDR release and
+  language subtag registry. `canonicalizeLanguageTag` is the same check as a function.
+- The locale is resolved from the address, a stored choice, the browser's languages, then the
+  default. `withLocaleSources` changes the order.
+- `negotiateLocale` and `parseAcceptLanguage` match a language preference list against the
+  supported locales, by RFC 4647 lookup, then by script, then by a language written under another
+  subtag.
+- `withPersistence` with `cookieStore`, `localStorageStore`, `profileStore` and `memoryStore`. Only
+  a locale the visitor chose is written.
+- `Localization.forgetRememberedLocale` removes the stored choice, and
+  `changeLocale(locale, { remember: false })` moves the page without storing one.
+- `formatting` in `equator.config.json` declares the numbering system, calendar or hour cycle a
+  locale is written with.
+- `Localization.changeLocale` changes the locale as one transaction, in `coordinated` or
+  `progressive` mode, and ends as committed, cancelled, superseded, failed or redirected. A change
+  to a locale the current route has no address in ends as failed and changes nothing, and a change
+  asked for while the application is starting waits for the start.
+- `Localization.registerParticipant` joins application content to a locale change, as required or
+  progressive. A participant is given the request context its localization context was built with,
+  and a signal that is aborted when its change is abandoned or overtaken.
+- `localeChoices` and the `[localeChoice]` directive build a switcher whose options point at the
+  current page in each locale.
+- The document's `lang` and `dir` follow the committed locale, and a locale change is announced to
+  a screen reader. `withLocaleAnnouncement` replaces the wording.
+- Focus, the caret and the scroll position are restored after a locale change, including one that
+  changes the writing direction.
+- `withOverlayLocale` renders one locale over the committed one, for reviewing a translation in
+  place.
+- `provideLocalizedRouter` and `withRouting` give every route an address in every locale, from a
+  URL policy and the generated route projection.
+- URL policies that carry the locale in a path prefix, in the origin, or outside the address:
+  `createPathPrefixLocalePolicy`, `createDefaultLocalePrefixPolicy`, `createHostLocalePolicy` and
+  `createLocaleNeutralPolicy`. Every policy takes `localeNeutralRoots`, the path roots that keep
+  one address in every locale.
+- A route and its parameters can be spelled per locale, and an earlier address of a route
+  redirects permanently to the current one. `createIdentifierParameterCodec` and
+  `createIntegerParameterCodec` read and write a parameter, and `LocalizedRouteParameters` reads
+  them in a component.
+- `defineRouteProjection`, `buildLocalizedRoute`, `localizedRouteAddresses` and
+  `resolveLocalizedRoute` build and resolve addresses with the route identities and parameter names
+  checked at build.
+- An address with no locale redirects with 307, a noncanonical one with 308, an unsupported locale
+  or a missing page answers 404, a removed page 410, and an unsafe request target 400. A spelling
+  that is not in Unicode Normalization Form C is noncanonical. A slash and a question mark in a
+  query or a fragment are data, so `?next=/account` resolves and survives a redirect.
+- A page that is missing, gone or in an unsupported locale is rendered in the locale the
+  response's `Content-Language` names.
+- The canonical link, the `hreflang` alternates and `x-default` are written into the head from the
+  route projection, only for locales the address serves.
+- `LocalizedTitleStrategy`, the `document` callback and `documentMessage` write a localized title
+  and description. `outcomeDocuments` titles the responses that have no route.
+- An Open Graph block where the deployment supplies an image.
+- `projectSitemap` returns the sitemap files with `hreflang` alternates, split into an index and
+  numbered files past the protocol's limits.
+- A route declares its indexing class and its caching through `withRouting`, and
+  `routeHttpDescriptor` and `routeCacheHeaders` return the headers they produce.
+- `LocalizedPageOutcome`, with `pageAbsent`, `pageGone` and `pageOperationalFailure`: a page states
+  that its address is not there, is gone, or failed, and the response carries it.
+- `declarePageOutcome` and `declareOperationalFailure` in `@neolorn/equator/http` state the same
+  from a renderer. A document sent with a declaration is sent as given, with the declared status
+  and the caching and indexing of the declared outcome.
+- `provideLocalizedServerRendering` and `localizedServerRoutes` build the server route table from
+  the routes and the locales, with a prerendered address for each locale.
+- A server-rendered or prerendered page hydrates in the locale it was rendered in.
+- `createLocaleRequestHandler` answers a request with the redirect, the status, the language and
+  indexing headers, the cache directives and the preference cookie decided. A page's own
+  `Cache-Control` is read directive by directive, so its `no-store` stands. `toNodeListener`,
+  `toWebRequest` and `writeNodeResponse` adapt the handler to a Node server.
+- Canonical value types and their factories: `decimal`, `money`, `measurement`, `percent`,
+  `percentagePoints`, `instant`, `plainDate`, `plainTime`, `plainDateTime`, `zonedDateTime`,
+  `duration`, `timeZone` and `personName`.
+- `timeZone` returns the primary identifier the pinned time zone database gives a name, as ECMA-402
+  section 6.5 defines it. A former name linked across a border resolves to a zone of its own
+  country, and a name the database replaces resolves to the former one for two years.
+- `formatNumber`, `formatNumberRange`, `formatMoney`, `formatMeasurement`, `formatPercent`,
+  `formatPercentagePoints`, `formatInstant`, `formatInstantRange`, `formatPlainDate`,
+  `formatPlainTime`, `formatPlainDateTime`, `formatZonedDateTime`, `formatDuration`, `formatList`
+  and `formatDisplayName` format through the host's `Intl`.
+- A pipe for each value kind: `localizedDecimal`, `localizedMoney`, `localizedMeasurement`,
+  `localizedPercent`, `localizedPercentagePoints`, `localizedInstant`, `localizedPlainDate`,
+  `localizedPlainTime`, `localizedPlainDateTime`, `localizedZonedDateTime` and `localizedDuration`.
+- The zone of a value is checked against the pinned time zone database, and a calendar and a
+  numbering system by the name syntax UTS #35 gives them, so a value is valid on every host or on
+  none. Where the host cannot write one, the function that formats the value returns
+  `unsupported-formatting-capability`. Node 22.22.3 has no `Intl.DurationFormat`, so
+  `formatDuration` and `localizedDuration` return it there.
+- `withFormattingContext` sets the time zone, calendar, numbering system and hour cycle every
+  formatter starts from. What a call names stands over the context.
+- `formatRelativeTime` with `withRelativeTimePolicy` for the units and the range, and
+  `withLocalizationClock`, `systemClock` and `fixedClock` for what now is.
+- `formatPersonName` formats a structured name from the CLDR person-name patterns, for the
+  project's locales and those in `personNameLocales`.
+- `compareLocalized`, `segmentText`, `selectPlural` and `localeMetadata`, which gives a locale's
+  direction and the first day and the weekend of its week.
+- `parseLocalizedInput` and `formatLocalizedInput` read and write a typed value in a field. A parse
+  is valid, incomplete, invalid, ambiguous, out of range, unsupported or rejected by policy. A
+  money, measurement or percent field asks for its currency, unit or percent sign only where the
+  profile requires it, a measurement field reads the unit in every plural spelling the locale
+  writes, and a value is written with every fraction digit it has unless the profile sets a
+  maximum.
+- `[localizedInput]` in `@neolorn/equator/forms` binds that parsing to an `input` or a `textarea`
+  in Angular Forms.
+- `presentIssue`, `issueMessage` and `issueMessageId` pair a failure code from a validator or a
+  backend to a message by name, with a generic presentation for a code nothing matches.
+- `localizedAsset`, `neutralAsset`, `fixedLanguageAsset` and `resolveLocalizedAsset` select an
+  asset per locale and direction.
+- `contentPresentation` and `languagePresentation` give content the application supplies its own
+  language and direction, including content whose language is unknown.
+- Translated content is data. A catalog cannot introduce markup, a script, a URL or a handler, and
+  an interpolated value is isolated from the direction of the text around it.
+- Authored catalogs refuse directional overrides and embeddings, unbalanced isolates, and the byte
+  order mark.
+- Compiled catalogs carry content digests and compatibility fingerprints and are checked before
+  they are used. `RUNTIME_LIMITS` holds the ceilings on catalog size, nesting depth and evaluation
+  steps.
+- Five extension contracts: message functions, identifier segments, rich slot kinds, formatting
+  adapters and parsing adapters. `defineExtensionRegistry` and `extensionDescriptor` declare them
+  to the toolkit, and `defineRuntimeExtensions` and `withExtensions` bind the handlers.
+- The `equator` commands `init`, `generate`, `check`, `format`, `clean`, `uninstall`, `watch` and
+  `migrate`, with `--project`, `--json` and `--dry-run`. Exit codes are 0, 1 for diagnostics, 2 for
+  the invocation or the configuration, 3 for the environment, and 130 when interrupted.
+- `equator check` is read-only. `--fix` applies canonical formatting, `--require-complete` fails on
+  a locale that omits a source message, and `--require-fresh` fails on generated output that is out
+  of date.
+- `inProgress` in `equator.config.json` names the locales still being translated, whose
+  completeness findings do not block.
+- `equator format` formats the configuration and the catalogs, and keeps the comments in a catalog.
+- `equator clean` removes generated output. `equator uninstall` removes Equator from a project and
+  keeps the authored catalogs unless `--catalogs` is given.
+- `equator watch` regenerates in one foreground process as the inputs change, and starts no work
+  for a cycle whose inputs did not change. A stopped watch delivers no further cycle and holds
+  nothing that keeps the process alive.
+- `initializeProject`, `generateProject`, `checkProject`, `formatProject`, `cleanProject`,
+  `uninstallProject`, `watchProject`, `compileProject` and `compileProjectFromDisk` are the same
+  operations for a build script. Importing the toolkit starts none of them.
+- `exportXliff22` and `importXliff22` exchange translations as XLIFF 2.2, with notes, context and
+  translation state kept across the round trip.
+- `pseudoLocales` in `equator.config.json`, generated only by `--pseudo`, with length change and
+  boundary markers set independently. `PSEUDO_LOCALE_ACCENTED` and `PSEUDO_LOCALE_BIDI`
+  name the two tags UTS #35 defines.
+- `diffCatalogSets` classifies what changed between two catalog sets, and `planMessageRefactor`
+  plans a rename or a move of a message across its catalogs and usages.
+- `equator migrate --plan` previews or applies one authored change plan. `createMigrationPlan` and
+  `applyAuthoredChangePlan` are the same for a build script.
+- `parseCatalog` and `parseConfiguration` read the authored files, `formatCatalogSource` rewrites
+  a catalog and keeps its comments, and `formatCatalog` writes the text of a new one.
+- Diagnostics carry stable `EQ` codes, listed in the
+  [diagnostics reference](docs/reference/diagnostics.md) and in `DIAGNOSTICS.md` inside the
+  toolkit. `EQ1806` reports an Angular or TypeScript version outside the supported range before the
+  compiler runs.
+- `withObservability` sends runtime outcomes to a sink the application supplies, including how a
+  restore from the back-forward cache or from a server render ended. The event codes are
+  `RUNTIME_EVENT_CODES` in the runtime and `TOOLKIT_EVENT_CODES` in the toolkit, and an event
+  carries no message content.
+- The [cost reference](docs/reference/cost.md) states what each entry point adds to a build, in
+  bytes.
+- `@neolorn/equator/testing`: `provideLocalizationTesting`, `LocalizationTestingController`,
+  `ControllableLocalizationParticipant`, `createInMemoryCatalogLoaders`, `renderedText` and
+  `resetLocalizationTestEnvironment`.
+- `createLocalizedServerSeat` and `answeredHead` in `@neolorn/equator/testing` answer an address
+  through the request handler and read back the status, the headers and the head, with no socket
+  and no browser.
+
+## Milestone 1.3.0-rc.1 - 2026-09-15
+
+### Added
+
+- `LocalizedPageOutcome` in `@neolorn/equator/router`, with `pageAbsent`, `pageGone` and
+  `pageOperationalFailure` in `@neolorn/equator/core`. A page states that its address is not there, that it is gone, or that it
   failed, and the response carries what it said.
 - `declarePageOutcome` in `@neolorn/equator/http`, which states the same three from a renderer.
 - `RouteLocalizationContext.pageOutcome`, so the `document` callback writes a head for the state the
@@ -53,7 +288,7 @@ stage, then the betas, then the release candidates that carry the changes breaki
 - The Open Graph block is written only where an image is supplied. A declaration carrying a site
   name and no image wrote `og:image` with no value and a card tag beside it.
 
-## [1.2.0] - 2026-09-15
+## Milestone 1.2.0 - 2026-09-15
 
 ### Fixed
 
@@ -67,7 +302,7 @@ stage, then the betas, then the release candidates that carry the changes breaki
   family, so `noUnusedLocals` no longer reports unread declarations in one that does not.
 - A finding inside a generated module names the module it is in.
 
-## [1.1.0] - 2026-09-13
+## Milestone 1.1.0 - 2026-09-13
 
 ### Added
 
@@ -84,7 +319,7 @@ stage, then the betas, then the release candidates that carry the changes breaki
   wins where the two disagree, the report a release owes a developer when a declaration did not
   travel, and the cache classification a carried declaration takes.
 
-## [1.0.1] - 2026-09-13
+## Milestone 1.0.1 - 2026-09-13
 
 ### Fixed
 
@@ -99,11 +334,11 @@ stage, then the betas, then the release candidates that carry the changes breaki
   target that arrived, that a refused target never reaches the renderer, and that the status
   reporting an operational failure is the consumer application's to declare.
 
-## [1.0.0] - 2026-09-12
+## Milestone 1.0.0 - 2026-09-12
 
 The first stable release, at the surface 1.0.0-rc.2 settled.
 
-## [1.0.0-rc.2]
+## Milestone 1.0.0-rc.2 - 2026-09-12
 
 ### Added
 
@@ -119,7 +354,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 - `EQUATOR_XLIFF_EXTENSION_NAMESPACE`.
 
-## [1.0.0-rc.1]
+## Milestone 1.0.0-rc.1
 
 ### Added
 
@@ -141,7 +376,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 - The retry control in the recovery surface takes a message, and renders in the page's own language
   rather than in English.
 
-## [1.0.0-beta.2]
+## Milestone 1.0.0-beta.2
 
 ### Added
 
@@ -151,7 +386,7 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
 
 - Both packages publish to the public registry.
 
-## [1.0.0-beta.1]
+## Milestone 1.0.0-beta.1
 
 ### Added
 
@@ -725,3 +960,5 @@ The first stable release, at the surface 1.0.0-rc.2 settled.
   uses.
 - Catalogs compile to artifacts that are identical for identical input.
 - The `equator` command line drives a project.
+
+[1.0.0-rc.1]: https://github.com/neolorn/equator/releases/tag/v1.0.0-rc.1
