@@ -1961,6 +1961,22 @@
     {
       "file": "packages/runtime/src/evaluator.ts",
       "mutator": "StringLiteral",
+      "original": "`:${functionName} was asked for a time zone this runtime does not read.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The literal is the text of the refusal raised when the host does not read the time zone a date function was given; the suite compares its code, reason and cause and nothing reads the text."
+    },
+    {
+      "file": "packages/runtime/src/evaluator.ts",
+      "mutator": "BlockStatement",
+      "original": "{\n    return false;\n  }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "the caller (in dateResolved) only tests the result of hostReadsTimeZone for truthiness, and undefined is as false as false"
+    },
+    {
+      "file": "packages/runtime/src/evaluator.ts",
+      "mutator": "StringLiteral",
       "original": "'A compiled message expression is invalid.'",
       "replacement": "\"\"",
       "category": "message-wording",

@@ -62,4 +62,33 @@ describe('a date function under a zone the platform refuses', () => {
       expect(failure.cause).toBeInstanceOf(RangeError);
     },
   );
+
+  it.each(['time', 'datetime'])(
+    'keeps the refusal of an hour cycle the platform refuses under :%s in a zone it reads apart',
+    (name) => {
+      const failure = refusalOf(() =>
+        renderArtifact(
+          {
+            body: patternBody([
+              expression(variable('when'), {
+                name,
+                options: {},
+              }),
+            ]),
+            inputs: WHEN,
+          },
+          { when: new Date(Date.UTC(2024, 0, 2, 15, 4)) },
+          undefined,
+          { locale: 'en-US', timeZone: 'UTC', hourCycle: 'h99' as 'h23' },
+        ),
+      );
+
+      expect(failure.diagnostic).toMatchObject({
+        code: 'invalid-message-input',
+        outcome: 'operational-failure',
+        reason: 'native-capability-rejected',
+      });
+      expect(failure.cause).toBeInstanceOf(RangeError);
+    },
+  );
 });

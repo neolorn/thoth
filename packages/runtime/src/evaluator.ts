@@ -1249,8 +1249,8 @@ function dateResolved(
   } catch (cause) {
     // The message path carries no time-zone table, so the host is the judge of a zone from the
     // context or a variable, and a name it does not read is what it lacks, not what the message
-    // got wrong. The zone is asked about alone so that a refusal of another option stays the
-    // message's own.
+    // got wrong. The zone is asked about alone, so that only a zone the host does not read is
+    // reported here and another option the host refuses keeps the refusal below.
     if (!hostReadsTimeZone(formattingTag, options.timeZone, environment)) {
       unsupportedFormatting(
         `:${functionName} was asked for a time zone this runtime does not read.`,
