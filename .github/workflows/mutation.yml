@@ -1,43 +1,25 @@
 # Mutation testing, on request.
 #
-# Deliberately not a stage in `verify`. Equator already mutation-tests by hand, with 53 declared
-# injections across two harnesses taking more than half the gate's stage time, and those are the
-# mutations somebody thought of. This is the general form, and its cost is why it is not automatic:
-# roughly 36,000 mutants across the two packages, against suites that take seconds each.
+# Not a stage in `verify`. The gate already mutation-tests by hand, with the declared injections of
+# its two assurance harnesses: the mutations somebody thought of. This is the general form, tens of
+# thousands of mutants, and its cost is why it is not automatic.
 #
 # What comes out is a reading list, not a verdict. `thresholds.break` is null, so a score cannot
-# fail this job; only an error can. Survivors worth guarding become injections in
-# `verify-assurance.mjs` and `verify-assurance-runtime.mjs`, which the gate runs.
+# fail this job; only an error can. Each survivor is answered with a test, or recorded with its
+# reason in `tools/mutation-reasons.json`, and
+# `node tools/verify-mutation-reasons.mjs --report <every part's report.json>` reads the parts
+# together.
 #
-# The scope is the runtime package. `stryker.config.mjs` carries why, and it is a measurement
-# rather than a judgement about which package matters: the toolkit's own 15,662 mutants did not
-# finish in fifteen minutes locally, and a job that cannot finish is not a job.
+# A reading is taken in parts, because a hosted job ends at 330 minutes and a whole half takes many
+# times that on a runner's four workers. `tools/mutation-shards.json` divides each half between
+# parts, and `tools/mutation-shards.mjs` says how a part reads its share and why every mutant is
+# read by exactly one part. The division was estimated from local readings to take 240 minutes or
+# less per part, which leaves room inside the 330 for the install and the initial test run.
 #
-# ## Why this is dispatch and not a schedule
-#
-# The repository is public, so standard runners are free and unmetered and the reason this was
-# rationed while it was private no longer applies. What a reading costs now is time: the runtime
-# half is 1 hour 43 minutes of job, and the toolkit half is 1h37m, 2h15m and 2h08m, six hours of
-# job time inside 2h15m of wall because the three run beside each other. Both are affordable and
-# neither is automatic, because what a reading produces is a list of survivors somebody has to read
-# and turn into injections. A schedule would take one on the weeks nothing changed, and a reading
-# nobody acts on teaches everyone to skip the next one.
-#
-# Take it here rather than locally when the number is what matters. The two disagree and this one
-# is the honest half: the same 18,051 mutants score 69.05% covered on four workers and 71.60% on
-# twenty-four, because the wider concurrency makes mutants time out that four run to a verdict, and
-# a timeout is scored as a kill. Locally the run is 15 minutes against 103, which is the one to use
-# while chasing a particular survivor rather than a score.
-#
-# Readings live beside the configuration that produced them, the runtime one in
-# `stryker.config.mjs` and the toolkit one in `stryker.toolkit.config.mjs`, each saying what it was
-# taken on.
+# Dispatch rather than a schedule: a reading produces survivors somebody has to read, and a
+# schedule would take one on the weeks nothing changed.
 name: mutation
 
-# Dispatch only, with no schedule. The included minutes are one pool shared by every private
-# repository on the account, and this is the most expensive job that can spend them, so it runs
-# when somebody wants a reading and not otherwise. A weekly cron spends the pool on the weeks where
-# nothing changed, and the weeks where something did are the ones worth reading anyway.
 on:
   workflow_dispatch:
     inputs:
@@ -56,17 +38,15 @@ concurrency:
 permissions:
   contents: read
 
-# The default is the cheap half, so a dispatch made without reading this file costs about forty
-# minutes rather than most of a day. The toolkit half is asked for on purpose.
 jobs:
-  runtime:
-    if: inputs.scope != 'toolkit'
+  # The parts each half has, checked to cover every file once before any part starts, so a plan
+  # that would read a mutant twice or not at all fails in seconds rather than after hours.
+  plan:
     runs-on: ubuntu-latest
-    # Measured on this repository rather than estimated: 18,051 mutants in 1 hour 43 minutes on
-    # this four-core runner, against 15 minutes 12 seconds on a 32-thread machine. Three hours
-    # leaves room, on the reasoning the gate's own timeout carries: a slow green is a result and a
-    # killed run is not.
-    timeout-minutes: 180
+    timeout-minutes: 15
+    outputs:
+      runtime: ${{ steps.parts.outputs.runtime }}
+      toolkit: ${{ steps.parts.outputs.toolkit }}
 
     steps:
       - uses: actions/checkout@v7
@@ -75,7 +55,41 @@ jobs:
         with:
           node-version-file: .node-version
 
-      # The same pin, read from the same place as the gate's workflow.
+      - name: Install pnpm
+        run: |
+          version="$(node -p "require('./package.json').packageManager.split('@')[1]")"
+          npm install --global "pnpm@${version}"
+          pnpm --version
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check the parts
+        run: node tools/mutation-shards.mjs check
+
+      - name: List the parts
+        id: parts
+        run: |
+          matrix="$(node tools/mutation-shards.mjs matrix)"
+          echo "runtime=$(node -p "JSON.stringify(${matrix}.runtime)")" >> "$GITHUB_OUTPUT"
+          echo "toolkit=$(node -p "JSON.stringify(${matrix}.toolkit)")" >> "$GITHUB_OUTPUT"
+
+  runtime:
+    needs: plan
+    if: inputs.scope != 'toolkit'
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        part: ${{ fromJSON(needs.plan.outputs.runtime) }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
       - name: Install pnpm
         run: |
           version="$(node -p "require('./package.json').packageManager.split('@')[1]")"
@@ -94,44 +108,41 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # No engines and no Node builds: this runs the two fast vitest suites and nothing else.
+      # The checkout is the job's own and is thrown away with it, so the part's directives can be
+      # written into its sources.
+      - name: Mark this part's mutants
+        id: part
+        run: >
+          echo "mutate=$(node tools/mutation-shards.mjs apply runtime ${{ matrix.part }}
+          --disposable-checkout)" >> "$GITHUB_OUTPUT"
+
       # The worker count is named because `tools/run-mutation.mjs` otherwise hands Stryker two
       # thirds of the machine, which is right on a working machine and would narrow this runner.
       - name: Mutate
-        run: pnpm run mutation --concurrency 4
+        run: >
+          node tools/run-mutation.mjs stryker.config.mjs --concurrency 4
+          --mutate "${{ steps.part.outputs.mutate }}"
 
       # The whole point of the run. The HTML report is how a survivor is read: the mutant, the line,
-      # and the tests that did not notice. Nothing else is left on a runner.
+      # and the tests that did not notice.
       - name: Keep the report
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: mutation-runtime-${{ github.run_id }}
+          name: mutation-runtime-${{ matrix.part }}-${{ github.run_id }}
           path: tmp/mutation
           if-no-files-found: warn
           retention-days: 90
 
-  # One job per module rather than one job for the slice, and the reason is the measurement.
-  # Sampled at the concurrency this runner uses, the three together are between one and six hours,
-  # and the spread is that wide because the cost is not in the mutant count. It is in which tests
-  # cover a module: `compiler.ts` is a quarter of the mutants and two thirds of the time, because
-  # the tests that reach it are the five-second project host integration tests.
-  #
-  # A single job would sit against the platform's six-hour ceiling with no margin, and a job killed
-  # at the ceiling still bills for every minute it burned. Split, each part fits with room, the
-  # total billed time is the same because billing is per job minute, and a module that goes wrong
-  # costs one third of a reading instead of all of it.
   toolkit:
+    needs: plan
     if: inputs.scope != 'runtime'
     runs-on: ubuntu-latest
     timeout-minutes: 330
     strategy:
       fail-fast: false
       matrix:
-        module:
-          - semantic-model
-          - compiler
-          - message-format
+        part: ${{ fromJSON(needs.plan.outputs.toolkit) }}
 
     steps:
       - uses: actions/checkout@v7
@@ -158,18 +169,28 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # `--mutate` replaces the configured list rather than filtering it, which is what this needs:
-      # one module per job, from the same configuration the whole slice uses.
+      # The checkout is the job's own and is thrown away with it, so the part's directives can be
+      # written into its sources.
+      - name: Mark this part's mutants
+        id: part
+        run: >
+          echo "mutate=$(node tools/mutation-shards.mjs apply toolkit ${{ matrix.part }}
+          --disposable-checkout)" >> "$GITHUB_OUTPUT"
+
+      # The worker count is named because `tools/run-mutation.mjs` otherwise hands Stryker two
+      # thirds of the machine, which is right on a working machine and would narrow this runner.
       - name: Mutate
         run: >
-          pnpm exec stryker run stryker.toolkit.config.mjs
-          --mutate packages/toolkit/src/${{ matrix.module }}.ts
+          node tools/run-mutation.mjs stryker.toolkit.config.mjs --concurrency 4
+          --mutate "${{ steps.part.outputs.mutate }}"
 
+      # The whole point of the run. The HTML report is how a survivor is read: the mutant, the line,
+      # and the tests that did not notice.
       - name: Keep the report
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: mutation-toolkit-${{ matrix.module }}-${{ github.run_id }}
+          name: mutation-toolkit-${{ matrix.part }}-${{ github.run_id }}
           path: tmp/mutation-toolkit
           if-no-files-found: warn
           retention-days: 90
