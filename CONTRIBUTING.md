@@ -62,13 +62,13 @@ pnpm run test:toolkit
 pnpm run test:runtime
 ```
 
-The full verification suite builds both packages, installs the packed tarballs into consumer applications with pnpm and with npm, runs those applications on three Angular versions and three browser engines, executes every code example in the documentation, and checks the generated reference pages against the packages:
+The full verification suite builds both packages, installs them into consumer applications with pnpm and their packed tarballs into one with npm, runs those applications on three Angular versions and three browser engines, executes every code example in the documentation, and checks the generated reference pages against the packages:
 
 ```sh
 pnpm run verify
 ```
 
-It takes about three hours on a machine with 32 logical processors, most of it in `verify:assurance:runtime`, which rebuilds the runtime once for each behavior it removes. Run it on the finished change before opening a pull request. If a stage cannot run in your environment, say so in the pull request.
+It takes about two and a half hours on a machine with 32 logical processors, most of it in `verify:assurance:runtime`, which rebuilds the runtime once for each behavior it removes. Run it on the finished change before opening a pull request. If a stage cannot run in your environment, say so in the pull request.
 
 To run some of its stages the way the suite runs them, name them:
 
