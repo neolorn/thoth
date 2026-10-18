@@ -242,7 +242,7 @@ diagnostic and, where the value is otherwise valid for the applicable selector, 
 catch-all variant; where no safe pattern remains, recovery renders at the selected boundary. A
 release MUST NOT coerce the value, substitute a permitted member, or interpolate the invalid value.
 
-The canonical formatter orders input keys by code point and their fields as `type`, `enum`,
+The canonical formatter orders input keys by UTF-16 code unit and their fields as `type`, `enum`,
 `optional`, `nullable`, `description`, omitting false defaults and an empty mapping.
 
 ## 8. Rich slots
@@ -303,9 +303,10 @@ An interactive slot MUST NOT contain or be contained by another interactive slot
 only text and safely formatted values. Every rich contract has a deterministic safe text projection,
 and a standalone custom kind MUST provide one.
 
-The canonical formatter orders slot keys by code point, uses the scalar form when `kind` is the only
-refinement, otherwise orders fields as `kind`, `shape`, `optional`, `repeatable`, `within`,
-`description`, sorts `within` by code point, and omits inferred defaults and an empty mapping.
+The canonical formatter orders slot keys by UTF-16 code unit, uses the scalar form when `kind` is
+the only refinement, otherwise orders fields as `kind`, `shape`, `optional`, `repeatable`,
+`within`, `description`, sorts `within` by UTF-16 code unit, and omits inferred defaults and an
+empty mapping.
 
 ## 9. Generated handles
 
@@ -363,8 +364,8 @@ An external identifier becomes a handle only through a generated family-bound or
 resolver. A release MUST NOT expose an unrestricted lookup by arbitrary string, and MUST NOT
 perform a fuzzy match, a hidden alias lookup, or a guessed prefix.
 
-The canonical formatter orders family names by code point, uses the scalar form where `segments` is
-absent, otherwise orders `template` then `segments`, and omits an empty mapping.
+The canonical formatter orders family names by UTF-16 code unit, uses the scalar form where
+`segments` is absent, otherwise orders `template` then `segments`, and omits an empty mapping.
 
 ## 11. Source revisions
 
