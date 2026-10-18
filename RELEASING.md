@@ -46,7 +46,13 @@ The commands below are written for version `0.0.0`, which this project cannot pr
 
    Two lines must appear: `refs/tags/v0.0.0` and `refs/tags/v0.0.0^{}`. The second confirms the tag is annotated, and its object must equal what `git rev-parse v0.0.0^{}` prints locally, which is the release commit reaching the remote under the tag. One line means a lightweight tag arrived; no lines mean the tag was left behind. Neither is a release.
 
-6. **Publish the verified archives.** Publish the archives the suite produced rather than repacking:
+6. **Publish the verified archives.** Publish the archives the suite produced rather than repacking, and only once they match the hosted run. The push in step 5 starts the `verify` workflow on the release commit; wait for it to pass, then compare the hashes its "Hash the verified archives" step printed with those of the local archives:
+
+   ```sh
+   sha256sum release/runtime/0.0.0/*.tgz release/toolkit/0.0.0/*.tgz
+   ```
+
+   Both lines must match the hosted run's. The build is reproducible, so a mismatch means the two runs did not build the same thing; find out why before anything is published.
 
    ```sh
    npm publish release/runtime/0.0.0/neolorn-equator-0.0.0.tgz

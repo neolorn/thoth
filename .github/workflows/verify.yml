@@ -122,6 +122,14 @@ jobs:
       - name: Gate
         run: node tools/verify.mjs
 
+      # The archives a green gate kept, by hash. The build is reproducible across operating systems,
+      # so these are the hashes of the archives a release publishes, and RELEASING publishes only
+      # archives whose hashes match this run's on the release commit.
+      - name: Hash the verified archives
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          sha256sum "release/runtime/${version}"/*.tgz "release/toolkit/${version}"/*.tgz
+
       # The per-stage logs and traces the run wrote. They are what a red verdict is diagnosed from,
       # and on a hosted runner there is nothing else left to look at.
       - name: Keep the run's logs
