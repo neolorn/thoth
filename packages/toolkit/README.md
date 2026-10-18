@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/@neolorn/equator-toolkit?style=flat-square)](https://www.npmjs.com/package/@neolorn/equator-toolkit)
 [![license](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/neolorn/equator/blob/main/LICENSE)
 
-**@neolorn/equator-toolkit** is the build-time half of [Equator](https://github.com/neolorn/equator). It reads the authored YAML catalogs, validates them against the [MessageFormat 2](https://www.unicode.org/reports/tr35/tr35-messageFormat.html) specification and the source language, analyzes the application's templates and routes to derive scopes and localized addresses, and generates the typed `#i18n` modules [`@neolorn/equator`](https://www.npmjs.com/package/@neolorn/equator) imports.
+**@neolorn/equator-toolkit** is the build-time half of [Equator](https://github.com/neolorn/equator). It reads the authored YAML catalogs, validates them against the [MessageFormat 2](https://www.unicode.org/reports/tr35/tr35-78/tr35-messageFormat.html) specification and the source language, analyzes the application's templates and routes to derive scopes and localized addresses, and generates the typed `#i18n` modules [`@neolorn/equator`](https://www.npmjs.com/package/@neolorn/equator) imports.
 
 ## Features
 

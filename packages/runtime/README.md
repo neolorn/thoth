@@ -12,13 +12,13 @@ Catalogs are compiled by [`@neolorn/equator-toolkit`](https://www.npmjs.com/pack
 ## Features
 
 - **Messages**
-  - [MessageFormat 2](https://www.unicode.org/reports/tr35/tr35-messageFormat.html) syntax with plural, ordinal, and select variants, and rich content slots bound to Angular components.
+  - [MessageFormat 2](https://www.unicode.org/reports/tr35/tr35-78/tr35-messageFormat.html) syntax with plural, ordinal, and select variants, and rich content slots bound to Angular components.
   - Typed message handles, so a key that does not exist is a compile error and a message that takes an input cannot be rendered without one.
-  - Fallback through the [CLDR parent locale](https://www.unicode.org/reports/tr35/tr35.html#Parent_Locales) chain, then the source locale.
+  - Fallback through the [CLDR parent locale](https://www.unicode.org/reports/tr35/tr35-78/tr35.html#Parent_Locales) chain, then the source locale.
   - A recovery message and an accessible recovery renderer for the case where no catalog can be loaded.
 - **Locales**
   - Identifiers per [RFC 5646](https://www.rfc-editor.org/rfc/rfc5646), canonicalized from pinned CLDR alias data, identical across engines.
-  - Negotiation per [RFC 4647](https://www.rfc-editor.org/rfc/rfc4647) lookup, extended with script matching and [CLDR language matching](https://www.unicode.org/reports/tr35/tr35.html#LanguageMatching) data.
+  - Negotiation per [RFC 4647](https://www.rfc-editor.org/rfc/rfc4647) lookup, extended with script matching and [CLDR language matching](https://www.unicode.org/reports/tr35/tr35-78/tr35.html#LanguageMatching) data.
   - Resolution from the URL, a persisted preference, `Accept-Language`, or a configured default, in a declared order.
   - Persistence through cookies, browser storage, or an authenticated profile.
 - **Routing and rendering**

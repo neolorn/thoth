@@ -55,7 +55,7 @@ and date conventions, and what it inherits from. That is why adding a locale is 
 Equator uses the lookup from [RFC 4647](https://www.rfc-editor.org/rfc/rfc4647), which truncates a
 range from the right until it matches: `en-GB` finds `en`, and `pt` finds `pt-BR` when that is the
 Portuguese you ship. Script matching and
-[CLDR language matching](https://www.unicode.org/reports/tr35/tr35.html#LanguageMatching) data extend
+[CLDR language matching](https://www.unicode.org/reports/tr35/tr35-78/tr35.html#LanguageMatching) data extend
 it.
 
 Where the standard stops, Equator adds one step. A range that matched nothing by truncation is
@@ -73,7 +73,7 @@ message when the committed one omits it.
 
 A locale that omits a message is answered by the locale it inherits from, and only then by the source
 locale. The chain is
-[CLDR's parent locale](https://www.unicode.org/reports/tr35/tr35.html#Parent_Locales) chain, walked to
+[CLDR's parent locale](https://www.unicode.org/reports/tr35/tr35-78/tr35.html#Parent_Locales) chain, walked to
 its end rather than stopped after one step, so `en-AU` gives `en-001`, then `en`. You write an
 Australian string only where Australian English differs.
 

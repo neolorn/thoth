@@ -104,7 +104,7 @@ messages:
 writes them, and both travel in the recovery payload so they arrive in the reader's language even
 though no catalog could be loaded.
 
-`learn-more` and `help-link` carry [MessageFormat 2](https://www.unicode.org/reports/tr35/tr35-messageFormat.html)
+`learn-more` and `help-link` carry [MessageFormat 2](https://www.unicode.org/reports/tr35/tr35-78/tr35-messageFormat.html)
 slots: `{#strong}...{/strong}` marks a span that the application renders. A `description` travels
 with the message to whoever translates it.
 

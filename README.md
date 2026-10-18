@@ -8,7 +8,7 @@
 
 ## Introduction
 
-**Equator** is an open-source localization framework for Angular applications, with support for [MessageFormat 2](https://www.unicode.org/reports/tr35/tr35-messageFormat.html) messages, localized routing, locale-aware formatting and parsing, server-side rendering and prerendering, and [XLIFF 2.2](https://docs.oasis-open.org/xliff/xliff-core/v2.2/xliff-core-v2.2.html) interchange. It is built on [Unicode CLDR](https://cldr.unicode.org/) locale data and designed to be standards-compliant, type-safe, and derived from the application's own sources rather than from hand-maintained registries.
+**Equator** is an open-source localization framework for Angular applications, with support for [MessageFormat 2](https://www.unicode.org/reports/tr35/tr35-78/tr35-messageFormat.html) messages, localized routing, locale-aware formatting and parsing, server-side rendering and prerendering, and [XLIFF 2.2](https://docs.oasis-open.org/xliff/xliff-core/v2.2/xliff-core-v2.2.html) interchange. It is built on [Unicode CLDR](https://cldr.unicode.org/) locale data and designed to be standards-compliant, type-safe, and derived from the application's own sources rather than from hand-maintained registries.
 
 Equator is delivered as two packages. [`@neolorn/equator`](./packages/runtime/) is the runtime: locale resolution, message evaluation, formatting through `Intl`, and the Angular integration for routing, forms, and server rendering. [`@neolorn/equator-toolkit`](./packages/toolkit/) is the compiler and the `equator` command line: it compiles YAML catalogs into typed modules under `#i18n`, analyzes the application's templates and routes to derive scopes and localized addresses, and validates catalogs against the MessageFormat 2 specification. Its `exportXliff22` and `importXliff22` functions exchange translations in XLIFF 2.2.
 
@@ -17,16 +17,16 @@ For a detailed description of the architecture and the contracts between the two
 ## Features
 
 - **Messages**
-  - [MessageFormat 2](https://www.unicode.org/reports/tr35/tr35-messageFormat.html) syntax (LDML 48.2) with plural, ordinal, and select variants, number and date functions, and rich content slots bound to Angular components.
+  - [MessageFormat 2](https://www.unicode.org/reports/tr35/tr35-78/tr35-messageFormat.html) syntax (LDML 48.2) with plural, ordinal, and select variants, number and date functions, and rich content slots bound to Angular components.
   - Catalogs authored in YAML, compiled into typed message handles; inputs and slots are checked by the TypeScript compiler.
   - Message scopes derived from template and route analysis, loaded on demand per route with bounded in-memory caching.
-  - Locale fallback through the [CLDR parent locale](https://www.unicode.org/reports/tr35/tr35.html#Parent_Locales) chain, with per-locale overrides.
+  - Locale fallback through the [CLDR parent locale](https://www.unicode.org/reports/tr35/tr35-78/tr35.html#Parent_Locales) chain, with per-locale overrides.
   - A recovery message and an accessible recovery renderer for the case where catalogs cannot be loaded.
   - Pseudo-localization for layout and expansion testing.
   - Evaluator verified against the MessageFormat working group's conformance test suite on every release.
 - **Locales**
   - Locale identifiers per [RFC 5646](https://www.rfc-editor.org/rfc/rfc5646), canonicalized from pinned CLDR alias data, identical across engines.
-  - Negotiation per [RFC 4647](https://www.rfc-editor.org/rfc/rfc4647) lookup, extended with script matching and [CLDR language matching](https://www.unicode.org/reports/tr35/tr35.html#LanguageMatching) data.
+  - Negotiation per [RFC 4647](https://www.rfc-editor.org/rfc/rfc4647) lookup, extended with script matching and [CLDR language matching](https://www.unicode.org/reports/tr35/tr35-78/tr35.html#LanguageMatching) data.
   - Resolution from the URL, a persisted preference, `Accept-Language`, or a configured default, in a declared order.
   - Persistence through cookies, browser storage, or an authenticated profile.
   - Per-locale declarations for numbering system, calendar, and hour cycle.

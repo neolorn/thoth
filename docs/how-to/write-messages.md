@@ -120,7 +120,7 @@ it never shows.
 
 ## Write a placeholder
 
-Placeholders are [MessageFormat 2](https://www.unicode.org/reports/tr35/tr35-messageFormat.html).
+Placeholders are [MessageFormat 2](https://www.unicode.org/reports/tr35/tr35-78/tr35-messageFormat.html).
 
 `{$name}` is a value you supply. The handle types it, so a message that takes a name cannot be
 rendered without one.
