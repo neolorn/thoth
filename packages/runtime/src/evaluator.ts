@@ -284,6 +284,7 @@ export function isCalendarName(value: unknown): value is string {
 function unsupportedFormatting(
   message: string,
   reason?: LocalizationDiagnostic['reason'],
+  cause?: unknown,
 ): never {
   throw new LocalizationError(
     Object.freeze({
@@ -292,6 +293,7 @@ function unsupportedFormatting(
       message,
       ...(reason === undefined ? {} : { reason }),
     }),
+    cause === undefined ? undefined : { cause },
   );
 }
 
@@ -1158,6 +1160,25 @@ function numericSelection(
   });
 }
 
+/**
+ * Whether the host reads a time zone's name as a zone.
+ *
+ * Asked only after a date formatter could not be built, through the same bounded cache, because a
+ * name from a message variable is content and a set of the names seen would grow with it.
+ */
+function hostReadsTimeZone(
+  formattingTag: string,
+  timeZone: string | undefined,
+  environment: EvaluationEnvironment,
+): boolean {
+  try {
+    environment.formatterCache.dateTime(formattingTag, { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function dateResolved(
   raw: unknown,
   functionName: 'date' | 'datetime' | 'time',
@@ -1226,6 +1247,17 @@ function dateResolved(
   try {
     formatter = environment.formatterCache.dateTime(formattingTag, options);
   } catch (cause) {
+    // The message path carries no time-zone table, so the host is the judge of a zone from the
+    // context or a variable, and a name it does not read is what it lacks, not what the message
+    // got wrong. The zone is asked about alone so that a refusal of another option stays the
+    // message's own.
+    if (!hostReadsTimeZone(formattingTag, options.timeZone, environment)) {
+      unsupportedFormatting(
+        `:${functionName} was asked for a time zone this runtime does not read.`,
+        'native-capability-rejected',
+        cause,
+      );
+    }
     invalidInput(
       `:${functionName} received unsupported formatting options.`,
       'native-capability-rejected',

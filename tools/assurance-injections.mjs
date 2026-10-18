@@ -3076,6 +3076,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/date-option-rendering.test.ts',
   },
   {
+    id: 'message-time-zone-the-host-does-not-read-reported-as-input',
+    invariant:
+      'A time zone from the formatting context or a message variable that the host does not read is reported by a message as an unsupported formatting capability, as the direct formatters report it.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '    if (!hostReadsTimeZone(formattingTag, options.timeZone, environment)) {',
+    replace: '    if (false) {',
+    caughtBy: 'packages/runtime/test/time-zone-host-judged.test.ts',
+  },
+  {
     id: 'context-time-zone-feature-not-marked',
     invariant:
       'A catalog with a date or time expression that names no time zone is marked as requiring the context time zone.',

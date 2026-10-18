@@ -3170,6 +3170,16 @@
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "4. The formatting context",
+      "statement": "A release MUST return the typed unsupported result of section 3, with the reason `native-capability-rejected`, from every date formatter and every message function that writes a date where the host does not read the name it is given as a zone, and MUST NOT write the date in another zone.",
+      "checks": [
+        "assurance:message-time-zone-the-host-does-not-read-reported-as-input",
+        "assurance:zone-the-host-has-no-rules-for-thrown",
+        "assurance:message-time-zone-overridden-by-context"
+      ]
+    },
+    {
+      "spec": "08-formatting-parsing-and-domain.spec.md",
+      "section": "4. The formatting context",
       "statement": "A release MUST let a locale declare only what is a fact about how it is written: its numbering system, its calendar, and its hour cycle.",
       "checks": ["assurance-runtime:locale-formatting-declaration-ignored"]
     },

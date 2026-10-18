@@ -4,8 +4,8 @@
  * `specs/08-formatting-parsing-and-domain.spec.md` section 4 has a date formatted in the time zone
  * the formatting context carries when the expression names none. A context can carry a zone the
  * platform has no rules for, and the platform then throws on the formatter itself. The refusal
- * that reaches the caller is the evaluator's own, it says the platform refused, and the platform's
- * error is its cause.
+ * that reaches the caller is the typed unsupported result section 4 gives a zone the host does not
+ * read, it says the platform refused, and the platform's error is its cause.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -55,7 +55,7 @@ describe('a date function under a zone the platform refuses', () => {
       const failure = refusalOf(() => rendered(name, NO_SUCH_ZONE));
 
       expect(failure.diagnostic).toMatchObject({
-        code: 'invalid-message-input',
+        code: 'unsupported-formatting-capability',
         outcome: 'operational-failure',
         reason: 'native-capability-rejected',
       });

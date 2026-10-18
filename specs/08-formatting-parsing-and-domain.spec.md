@@ -170,6 +170,17 @@ without asking the host, and MUST return the typed unsupported result of section
 answers a well-formed name with another collation, which a host does without an error for a
 collation it does not have and for one the locale does not have.
 
+A time zone reaches a date formatter from the operation, from the context, or in a message from a
+variable, and the host judges it there. A release MUST return the typed unsupported result of
+section 3, with the reason `native-capability-rejected`, from every date formatter and every
+message function that writes a date where the host does not read the name it is given as a zone,
+and MUST NOT write the date in another zone. A host reads an alias, a link, another spelling and a
+clock offset such as `+05:00` as the zone they name and may answer under a name of its own, so its
+answer is not compared with the name asked for. The pinned table of section 2 judges the zone of a
+value where the value is made, and a zone a message writes as a literal where the message is
+compiled. The message path carries no time-zone table, because every application that renders a
+message would carry it, so a zone from the context or a variable is the host's to judge.
+
 A release MUST let a locale declare only what is a fact about how it is written: its numbering
 system, its calendar, and its hour cycle. A time zone is not one of those, so a release MUST keep
 the time zone application-wide, because it belongs to the reader or the deployment rather than to
