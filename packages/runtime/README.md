@@ -27,7 +27,7 @@ Catalogs are compiled by [`@neolorn/equator-toolkit`](https://www.npmjs.com/pack
   - Locale switching as a transaction: catalogs load first, then the document, the routes, focus, and scroll position move together.
   - A locale switcher directive that keeps the visitor on the current page, with `lang`, `dir`, `aria-current`, and `href` handled.
 - **Formatting and parsing**
-  - Numbers, currencies, percentages, units, dates, times, durations, relative times, lists, and person names, through `Intl` with pinned CLDR 48.2 data.
+  - Numbers, currencies, percentages, units, dates, times, durations, relative times, and lists, formatted by the host's `Intl`. Pinned CLDR 48.2 data serves locale identity, parent locales, display names, and person-name patterns.
   - Canonical value types for decimals, money, dates, times, zoned date-times, measurements, and durations.
   - Locale-aware parsing of user input, and an Angular Forms integration.
 - **Safety**
@@ -141,7 +141,7 @@ Read the facade from a component to render or switch from code:
   protected readonly localization = injectLocalization();
 ```
 
-The [tutorial](https://github.com/neolorn/equator/blob/main/docs/tutorial.md) builds the application these lines come from, and every code block in the documentation is executed against the published packages on each release.
+The [tutorial](https://github.com/neolorn/equator/blob/main/docs/tutorial.md) builds the application these lines come from, and every code block in the documentation is executed against the built packages by the verification suite before each release.
 
 ## Documentation
 

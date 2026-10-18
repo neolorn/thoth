@@ -46,7 +46,7 @@ For a detailed description of the architecture and the contracts between the two
   - Localized assets, selected per locale and direction.
   - A request handler for Node servers outside Angular, through `@neolorn/equator/http`.
 - **Formatting and parsing**
-  - Numbers, currencies, percentages, units, dates, times, durations, relative times, lists, and person names, through `Intl` with pinned CLDR 48.2 data.
+  - Numbers, currencies, percentages, units, dates, times, durations, relative times, and lists, formatted by the host's `Intl`. Pinned CLDR 48.2 data serves locale identity, parent locales, display names, and person-name patterns.
   - Canonical value types for decimals, money, dates, times, zoned date-times, measurements, and durations.
   - Locale-aware parsing of user input and an Angular Forms integration.
   - Collation and text segmentation.
@@ -105,7 +105,7 @@ The runtime's [quick start](./packages/runtime/README.md#quick-start) shows the 
 - [Explanation](./docs/README.md#explanation): how locale resolution, compilation, routing, and the trust model work.
 - [Specifications](./specs/README.md): the normative description of what Equator accepts, produces, and guarantees.
 
-All code examples in the documentation are executed against the published packages as part of every release.
+All code examples in the documentation are executed against the built packages by the verification suite before each release.
 
 ## Compatibility
 
