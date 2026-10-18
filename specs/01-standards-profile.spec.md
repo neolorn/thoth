@@ -26,6 +26,8 @@ The profile covers:
 - MessageFormat syntax and semantics;
 - XLIFF translation interchange;
 - the sitemap protocol a release writes, which `07-routing-rendering-and-seo.spec.md` owns;
+- the ECMA-402 edition whose rules a message's number options are judged by, which
+  `04-message-authoring-and-catalogs.spec.md` section 6 owns;
 - a release's own schemas and durable formats;
 - the compiler-host, runtime, and browser ranges, which `02-packages-and-platform.spec.md` owns.
 
@@ -54,6 +56,8 @@ one bounded table from a locked source and generates it into a package:
 | Parent locales                                                 | `cldr-core`                             |
 | Person-name patterns for the locales an application configures | `cldr-person-names-full`                |
 | Plural categories                                              | `cldr-core`                             |
+| The single units ECMAScript sanctions                          | ECMA-402 13th edition, section 6.6.2    |
+| The fraction digits a currency is written with                 | `cldr-core`                             |
 
 A release MUST derive every such table from a source recorded under section 4, and MUST NOT
 ship a source package's data wholesale. Each generated table names the release it came from, and is
@@ -100,8 +104,8 @@ lock with its digest, or the lock MUST record why its license requires none. Eve
 The locked sources are the CLDR `core.zip` release, the `cldr-core`, `cldr-localenames-full`, and
 `cldr-person-names-full` packages, the MessageFormat conformance suite for the pinned edition, the
 IANA Language Subtag Registry snapshot, the Unicode `DerivedBidiClass` file, the IANA Time Zone
-Database release, the OASIS XLIFF schemas, the W3C XML namespace and XHTML schemas, and the
-sitemaps.org schemas.
+Database release, the measurement unit section of ECMA-402's 13th edition, the OASIS XLIFF
+schemas, the W3C XML namespace and XHTML schemas, and the sitemaps.org schemas.
 
 Every vendored digest is recomputed before anything derives from the source it covers. An edited
 file, a partial download, and a line-ending change all leave a source that still parses.
@@ -397,6 +401,6 @@ the one `standards/sources.lock.json` records.
 - RFC 4647, Matching of Language Tags: `https://www.rfc-editor.org/rfc/rfc4647`
 - RFC 7493, The I-JSON Message Format: `https://www.rfc-editor.org/rfc/rfc7493`
 - RFC 4648, The Base16, Base32, and Base64 Data Encodings: `https://www.rfc-editor.org/rfc/rfc4648`
-- ECMA-402, ECMAScript Internationalization API Specification:
-  `https://ecma-international.org/publications-and-standards/standards/ecma-402/`
+- ECMA-402, ECMAScript Internationalization API Specification, 13th edition, June 2026:
+  `https://402.ecma-international.org/13.0/`
 - FIPS 180-4, Secure Hash Standard: `https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf`

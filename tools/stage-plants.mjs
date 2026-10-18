@@ -452,6 +452,17 @@ export const stageSelfTests = Object.freeze({
           /language-subtag-registry-2026-09-17\.txt is \d+ bytes, the lock says/u,
       },
       {
+        // One byte, so the length still matches and only the digest can see it.
+        id: 'standard-extract-one-byte-edited',
+        plant: plantText(
+          'standards/data/ecma-402-13.0-measurement-unit-identifiers.html',
+          '<td>acre</td>',
+          '<td>Acre</td>',
+        ),
+        refusal:
+          /ecma-402-13\.0-measurement-unit-identifiers\.html hashes to [0-9a-f]+, the lock says/u,
+      },
+      {
         id: 'conformance-suite-edited',
         plant: plantText(
           `${suiteRoot}/test/README.md`,
@@ -645,8 +656,40 @@ export const stageSelfTests = Object.freeze({
       'standards/data/tzdata-2026e',
       'packages/runtime/src/time-zone-identities.generated.ts',
       'packages/toolkit/src/time-zone-identities.generated.ts',
+      'standards/data/ecma-402-13.0-measurement-unit-identifiers.html',
+      'packages/toolkit/src/sanctioned-units.generated.ts',
+      'packages/toolkit/src/currency-digits.generated.ts',
     ],
     plants: [
+      {
+        id: 'sanctioned-unit-table-not-the-pinned-one',
+        plant: plantText(
+          'packages/toolkit/src/sanctioned-units.generated.ts',
+          '"second","stone",',
+          '"second",',
+        ),
+        refusal:
+          /The checked-in table of the units ECMA-402 sanctions is stale/u,
+      },
+      {
+        id: 'unit-quotient-rule-not-the-transcribed-one',
+        plant: plantText(
+          'standards/data/ecma-402-13.0-measurement-unit-identifiers.html',
+          'occurs exactly once',
+          'occurs at least once',
+        ),
+        refusal:
+          /IsWellFormedUnitIdentifier in the pinned ECMA-402 edition is not the algorithm/u,
+      },
+      {
+        id: 'currency-digits-not-the-pinned-ones',
+        plant: plantText(
+          'packages/toolkit/src/currency-digits.generated.ts',
+          '"JPY":0',
+          '"JPY":2',
+        ),
+        refusal: /The checked-in table of currency fraction digits is stale/u,
+      },
       {
         id: 'time-zone-table-of-the-toolkit-not-the-pinned-one',
         plant: plantText(

@@ -2241,6 +2241,43 @@ export const injections = Object.freeze([
     caughtBy: 'packages/toolkit/test/function-option-vocabulary.test.ts',
   },
   {
+    id: 'message-number-options-left-to-the-host',
+    invariant:
+      "A message's number options are judged by the pinned ECMA-402 edition's rules and not by building a formatter, so a host that refuses or accepts every option set compiles every message to the same answer.",
+    source: 'packages/toolkit/src/message-format.ts',
+    find: '        numberFormatRefusal(formatting) !== undefined ||',
+    replace:
+      "        (() => {\n          try {\n            new Intl.NumberFormat('en', formatting as Intl.NumberFormatOptions);\n            return false;\n          } catch {\n            return true;\n          }\n        })() ||",
+    caughtBy: 'packages/toolkit/test/number-options-without-the-host.test.ts',
+  },
+  {
+    id: 'unit-judged-as-any-core-unit-identifier',
+    invariant:
+      "A message's unit is one the pinned ECMA-402 edition sanctions, alone or as one quotient of two, and a well-formed core unit identifier the edition does not sanction is refused.",
+    source: 'packages/toolkit/src/number-format-rules.ts',
+    find: '  SANCTIONED.has(unit);',
+    replace: '  /^[a-z]+(?:-[a-z]+)*$/u.test(unit);',
+    caughtBy: 'packages/toolkit/test/number-options-without-the-host.test.ts',
+  },
+  {
+    id: 'currency-digits-not-the-pinned-ones',
+    invariant:
+      'The fraction digits a currency is written with come from the pinned CLDR release where the ECMA-402 rules read them, so a rounding increment beside one inherited fraction-digit bound is judged by the currency.',
+    source: 'packages/toolkit/src/number-format-rules.ts',
+    find: '  CURRENCY_DIGITS[currency] ?? 2;',
+    replace: '  2;',
+    caughtBy: 'packages/toolkit/test/number-options-without-the-host.test.ts',
+  },
+  {
+    id: 'rounding-increment-only-the-edition-accepts-compiled',
+    invariant:
+      'An option set the pinned ECMA-402 edition accepts only by lowering the default maximum fraction digits, and V8 refuses, is refused where the message is compiled.',
+    source: 'packages/toolkit/src/message-format.ts',
+    find: '        unsupportedNumberFormatCombination(formatting) !== undefined',
+    replace: '        false',
+    caughtBy: 'packages/toolkit/test/number-options-without-the-host.test.ts',
+  },
+  {
     id: 'declared-keyword-type-stated-a-second-time',
     invariant:
       'The numbering system and the calendar an application declares for a locale are held by the configuration schema to the pattern a name is held to wherever else it is given, so a declaration is not a name to the schema and something else to the formatters.',

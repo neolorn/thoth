@@ -963,6 +963,26 @@
     {
       "spec": "04-message-authoring-and-catalogs.spec.md",
       "section": "6. Message bodies",
+      "statement": "A release MUST judge a `unit` option, and the options a numeric expression resolves to taken together, by the rules the pinned ECMA-402 edition gives the `Intl.NumberFormat` constructor, reading the units that edition sanctions from its own text and the fraction digits a currency is written with from the pinned CLDR release, and MUST NOT ask the host.",
+      "checks": [
+        "assurance:message-number-options-left-to-the-host",
+        "assurance:unit-judged-as-any-core-unit-identifier",
+        "assurance:currency-digits-not-the-pinned-ones",
+        "plant:verify:locale-profile:sanctioned-unit-table-not-the-pinned-one",
+        "plant:verify:locale-profile:currency-digits-not-the-pinned-ones"
+      ]
+    },
+    {
+      "spec": "04-message-authoring-and-catalogs.spec.md",
+      "section": "6. Message bodies",
+      "statement": "A release MUST refuse such an option set where the message is compiled, declaring the combination unsupported as `01-standards-profile.spec.md` section 5 permits, rather than compile a message that would throw where it is rendered.",
+      "checks": [
+        "assurance:rounding-increment-only-the-edition-accepts-compiled"
+      ]
+    },
+    {
+      "spec": "04-message-authoring-and-catalogs.spec.md",
+      "section": "6. Message bodies",
       "statement": "Inheritance MUST NOT become a second way past a closed descriptor.",
       "checks": ["assurance:inherited-options-bypass-descriptor"]
     },

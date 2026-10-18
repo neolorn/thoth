@@ -458,7 +458,7 @@ derived from such an event at an explicit boundary without changing the event.
 
 ## 12. Primary references
 
-- ECMA-402, ECMAScript Internationalization API Specification:
-  `https://ecma-international.org/publications-and-standards/standards/ecma-402/`
+- ECMA-402, ECMAScript Internationalization API Specification, 13th edition, June 2026:
+  `https://402.ecma-international.org/13.0/`
 - IANA Time Zone Database: `https://www.iana.org/time-zones`
 - ISO 4217, Currency codes: `https://www.iso.org/iso-4217-currency-codes.html`

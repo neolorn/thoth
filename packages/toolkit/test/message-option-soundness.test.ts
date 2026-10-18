@@ -3,13 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { parseMessageSemanticModel } from '../src/message-format.js';
 
 /**
- * When the whole option set of an expression is put to the formatter, and when it is not.
+ * When the whole option set of an expression is judged as a set, and when it is not.
  *
  * Some option sets are refused only together: `roundingIncrement` beside the wrong fraction digits
- * is the case used here. That question is asked of `Intl` with every option present, so it is asked
- * only when every option is known and each one is sound on its own. An option already refused is
- * reported once, for its own reason, and an option whose value arrives at render time leaves the
- * set unknown rather than wrong.
+ * is the case used here. That question is put to the pinned ECMA-402 rules with every option
+ * present, so it is asked only when every option is known and each one is sound on its own. An
+ * option already refused is reported once, for its own reason, and an option whose value arrives at
+ * render time leaves the set unknown rather than wrong.
  */
 
 function summaries(source: string): readonly string[] {
@@ -18,7 +18,7 @@ function summaries(source: string): readonly string[] {
   return result.diagnostics.map(({ summary }) => summary);
 }
 
-// Refused by `Intl.NumberFormat` as a set: the increment needs equal fraction digits beside it.
+// Refused as a set: the increment needs equal fraction digits beside it.
 const TOGETHER = /cannot be used together/u;
 
 describe('the whole option set of a number expression', () => {

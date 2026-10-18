@@ -357,8 +357,8 @@ describe('numeric options at render', () => {
   /**
    * The option whose validity is not a property of its value. `roundingIncrement` needs an explicit
    * fraction-digit range and `:percent` has one by default, so the same option is refused on one
-   * function and formats on another, which is why the compiler builds the formatter rather than
-   * transcribing ECMA-402's rule.
+   * function and formats on another, which is why the compiler judges the whole option set rather
+   * than each option alone.
    */
   it('accepts roundingIncrement where the surrounding options allow it', () => {
     expect(

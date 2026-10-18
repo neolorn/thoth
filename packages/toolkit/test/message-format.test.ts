@@ -582,8 +582,8 @@ describe('Equator MessageFormat numeric options', () => {
   /**
    * The check that cannot be a table. `roundingIncrement` is a legal option whose validity depends
    * on the options around it, and the surrounding options can be inherited from a declaration three
-   * lines up, so the compiler resolves the whole option set and builds the formatter the runtime
-   * would build, rather than transcribing ECMA-402's rule into a file nothing keeps current.
+   * lines up, so the compiler resolves the whole option set the runtime would build the formatter
+   * with and judges it by the pinned ECMA-402 rules.
    */
   it('refuses a combination of options that no formatter can honour', () => {
     expect(summaryFor('{1 :number roundingIncrement=5}')).toContain(

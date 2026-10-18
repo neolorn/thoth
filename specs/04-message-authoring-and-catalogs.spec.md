@@ -183,6 +183,16 @@ both, and MUST NOT ask the host about either. A calendar whose name is well form
 rendering host does not count in is reported where the date is formatted, as section 4 of that
 specification requires.
 
+The options of a numeric function are judged the same way. A release MUST judge a `unit` option,
+and the options a numeric expression resolves to taken together, by the rules the pinned ECMA-402
+edition gives the `Intl.NumberFormat` constructor, reading the units that edition sanctions from its
+own text and the fraction digits a currency is written with from the pinned CLDR release, and MUST
+NOT ask the host. The edition lowers the default maximum fraction digits to the minimum when a
+`roundingIncrement` other than 1 is given, and V8 does not, so it throws for an option set the
+edition accepts only because of that step. A release MUST refuse such an option set where the
+message is compiled, declaring the combination unsupported as `01-standards-profile.spec.md`
+section 5 permits, rather than compile a message that would throw where it is rendered.
+
 A registered function speaks MessageFormat's vocabulary rather than a release's. Its option names
 follow MessageFormat's `name` production, bounded in length and without that production's optional
 surrounding bidirectional controls, which are removed before a name reaches the toolkit and would

@@ -1420,6 +1420,143 @@ const timeZoneOutputPaths = [
   'packages/toolkit/src/time-zone-identities.generated.ts',
 ].map((path) => resolve(workspaceRoot, path));
 
+// The single unit identifiers ECMA-402 sanctions, from Table 2 of section 6.6.2 in the pinned
+// edition's own text. The toolkit judges a message's `unit` option by IsWellFormedUnitIdentifier
+// over this table rather than by asking the build host, so a message has one answer on every
+// machine that compiles it.
+const unitSource = sourcesLock.dataSources?.ecma402MeasurementUnitIdentifiers;
+assert.ok(
+  typeof unitSource?.projectSnapshot === 'string' &&
+    typeof unitSource?.version === 'string',
+  'standards/sources.lock.json does not pin the ECMA-402 measurement unit clause.',
+);
+const unitClause = await readFile(
+  resolve(workspaceRoot, 'standards', unitSource.projectSnapshot),
+  'utf8',
+);
+const clauseText = (id) => {
+  const start = unitClause.indexOf(`<emu-clause id="${id}"`);
+  assert.ok(start >= 0, `The pinned ECMA-402 extract has no clause ${id}.`);
+  const algorithm = /<emu-alg>([\s\S]*?)<\/emu-alg>/u.exec(
+    unitClause.slice(start),
+  );
+  assert.ok(algorithm !== null, `Clause ${id} has no algorithm steps.`);
+  return algorithm[1]
+    .replace(/<\/li>/gu, ' ')
+    .replace(/<[^>]+>/gu, '')
+    .replace(/&quot;/gu, '"')
+    .replace(/\s+/gu, ' ')
+    .trim();
+};
+// packages/toolkit/src/number-format-rules.ts transcribes these steps. An edition that changes
+// them stops here, so the transcription is read again rather than left to disagree with its pin.
+assert.equal(
+  clauseText('sec-iswellformedunitidentifier'),
+  [
+    '1. If IsSanctionedSingleUnitIdentifier(unitIdentifier) is true, then a. Return true.',
+    '2. Let i be StringIndexOf(unitIdentifier, "-per-", 0).',
+    '3. If i is not-found or StringIndexOf(unitIdentifier, "-per-", i + 1) is not not-found, then a. Return false.',
+    '4. Assert: The five-character substring "-per-" occurs exactly once in unitIdentifier, at index i.',
+    '5. Let numerator be the substring of unitIdentifier from 0 to i.',
+    '6. Let denominator be the substring of unitIdentifier from i + 5.',
+    '7. If IsSanctionedSingleUnitIdentifier(numerator) and IsSanctionedSingleUnitIdentifier(denominator) are both true, then a. Return true.',
+    '8. Return false.',
+  ].join(' '),
+  'IsWellFormedUnitIdentifier in the pinned ECMA-402 edition is not the algorithm packages/toolkit/src/number-format-rules.ts transcribes.',
+);
+assert.equal(
+  clauseText('sec-issanctionedsingleunitidentifier'),
+  '1. If unitIdentifier is listed in Table 2 below, return true. 2. Else, return false.',
+  'IsSanctionedSingleUnitIdentifier in the pinned ECMA-402 edition no longer reads Table 2.',
+);
+const unitTable =
+  /<emu-table id="table-sanctioned-single-unit-identifiers"[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/u.exec(
+    unitClause,
+  );
+assert.ok(
+  unitTable !== null,
+  'The pinned ECMA-402 extract has no Table 2 of sanctioned single units.',
+);
+const sanctionedUnits = [...unitTable[1].matchAll(/<td>([^<]*)<\/td>/gu)].map(
+  ([, unit]) => unit,
+);
+assert.equal(
+  sanctionedUnits.length,
+  [...unitTable[1].matchAll(/<tr>/gu)].length,
+  'A row of Table 2 in the pinned ECMA-402 extract is not one identifier in one cell.',
+);
+for (const unit of sanctionedUnits) {
+  // Section 6.6: the canonical form is lower-case Basic Latin letters with medial hyphens.
+  assert.match(
+    unit,
+    /^[a-z]+(?:-[a-z]+)*$/u,
+    `${unit} in Table 2 is not a core unit identifier in canonical form.`,
+  );
+}
+assert.deepEqual(
+  sanctionedUnits,
+  [...new Set(sanctionedUnits)].sort(compareCodeUnit),
+  'Table 2 of the pinned ECMA-402 extract is not a sorted list of distinct identifiers.',
+);
+const unitEdition = /^ECMA-402 (\d+(?:st|nd|rd|th)) edition, \w+ \d{4}$/u.exec(
+  unitSource.version,
+);
+assert.ok(
+  unitEdition !== null,
+  'standards/sources.lock.json names the ECMA-402 edition in a form this generator does not read.',
+);
+const sanctionedUnitOutput = [
+  `/** Generated from ECMA-402 ${unitEdition[1]} edition, section 6.6.2, by tools/generate-locale-profile.mjs. */`,
+  '',
+  '/** The single unit identifiers Table 2 of the pinned edition sanctions, in code unit order. */',
+  '// prettier-ignore',
+  `export const SANCTIONED_SINGLE_UNITS: readonly string[] = Object.freeze(${JSON.stringify(sanctionedUnits)});`,
+  '',
+].join('\n');
+const sanctionedUnitOutputPath = resolve(
+  workspaceRoot,
+  'packages/toolkit/src/sanctioned-units.generated.ts',
+);
+
+// CurrencyDigits, which ECMA-402 section 16.5.1 leaves to the implementation: the number of
+// fraction digits a currency is written with, or 2 where nothing is known. The constructor reads it
+// for a currency's default fraction digits, and whether `roundingIncrement` beside one inherited
+// fraction-digit bound is accepted depends on it. The pinned CLDR release is the data the profile
+// pins for every such fact, so the toolkit reads it from there rather than from the build host.
+const currencyDocument = JSON.parse(
+  await readFile(resolve(cldrRoot, 'supplemental/currencyData.json'), 'utf8'),
+);
+const currencyFractions = currencyDocument.supplemental.currencyData.fractions;
+assert.equal(
+  currencyFractions.DEFAULT?._digits,
+  '2',
+  'cldr-core no longer gives a currency it says nothing about 2 fraction digits, which is what ECMA-402 CurrencyDigits returns for one.',
+);
+const currencyDigits = Object.entries(currencyFractions)
+  .filter(([code]) => code !== 'DEFAULT')
+  .map(([code, { _digits: digits }]) => {
+    assert.match(code, /^[A-Z]{3}$/u, `${code} is not a currency code.`);
+    assert.match(digits, /^\d$/u, `${code} gives no fraction digits.`);
+    return [code, Number(digits)];
+  })
+  .filter(([, digits]) => digits !== 2)
+  .sort(([left], [right]) => compareCodeUnit(left, right));
+const currencyDigitsOutput = [
+  `/** Generated from cldr-core ${manifest.version} by tools/generate-locale-profile.mjs. */`,
+  '',
+  '/**',
+  ' * The fraction digits of every currency the release writes with other than 2, which is what',
+  ' * ECMA-402 CurrencyDigits answers for a currency nothing is known about.',
+  ' */',
+  '// prettier-ignore',
+  `export const CURRENCY_DIGITS: Readonly<Record<string, number>> = Object.freeze(${JSON.stringify(Object.fromEntries(currencyDigits))});`,
+  '',
+].join('\n');
+const currencyDigitsOutputPath = resolve(
+  workspaceRoot,
+  'packages/toolkit/src/currency-digits.generated.ts',
+);
+
 const toolkitRtlOutputPath = resolve(
   workspaceRoot,
   'packages/toolkit/src/rtl-scripts.generated.ts',
@@ -1493,6 +1630,16 @@ if (process.argv.includes('--check')) {
       'The checked-in Equator locale alias table is stale; run pnpm run generate:locale-profile.',
     );
   }
+  assert.equal(
+    await readFile(sanctionedUnitOutputPath, 'utf8'),
+    sanctionedUnitOutput,
+    'The checked-in table of the units ECMA-402 sanctions is stale; run pnpm run generate:locale-profile.',
+  );
+  assert.equal(
+    await readFile(currencyDigitsOutputPath, 'utf8'),
+    currencyDigitsOutput,
+    'The checked-in table of currency fraction digits is stale; run pnpm run generate:locale-profile.',
+  );
   for (const path of timeZoneOutputPaths) {
     assert.equal(
       await readFile(path, 'utf8'),
@@ -1501,7 +1648,7 @@ if (process.argv.includes('--check')) {
     );
   }
   console.log(
-    `Verified ${rtlScripts.length} RTL scripts, ${rtlRanges.length} strong right-to-left code point ranges derived from Unicode 17.0.0 Bidi_Class, agreeing with the CLDR script data on every letter in Unicode and dropping ${droppedByBidiClass.length} context-resolved code points and no strong one, and cardinal plural categories for ${Object.keys(pluralCategories).length} languages and ordinal plural categories for ${Object.keys(ordinalCategories).length} languages from cldr-core 48.2.0, and ${encompassedPairs} encompassed-language pairs over ${Object.keys(encompassed).length} language subtags, every one ranked by CLDR at ${widestKept} or closer where two languages it does not relate stand at ${unrelatedDistance._distance} and its default matching threshold is ${DEFAULT_THRESHOLD}; likely-script resolution remains native Intl under the tested platform matrix; and ${Object.keys(endonyms).length} endonyms from cldr-localenames-full ${localeNamesManifest.version}, agreeing with this platform's ICU on ${endonymsComparedToIcu.length - endonymsDisagreeingWithIcu.length} of the ${endonymsComparedToIcu.length} locales it has display names for; and ${Object.keys(orderedParentLocales).length} declared parent locales from cldr-core ${manifest.version}, ${undParents} of which name root; and ${aliasRules.length} locale alias rules, ${discardedAliasRules} discarded as UTS #35 Annex C discards them, with ${Object.keys(likelyRegions).length} likely regions for the territory exception; and ${timeZoneEntries.length} time zone names from tzdata ${timeZoneRelease}, ${timeZoneLinkCount} of them resolved to another primary identifier.`,
+    `Verified ${rtlScripts.length} RTL scripts, ${rtlRanges.length} strong right-to-left code point ranges derived from Unicode 17.0.0 Bidi_Class, agreeing with the CLDR script data on every letter in Unicode and dropping ${droppedByBidiClass.length} context-resolved code points and no strong one, and cardinal plural categories for ${Object.keys(pluralCategories).length} languages and ordinal plural categories for ${Object.keys(ordinalCategories).length} languages from cldr-core 48.2.0, and ${encompassedPairs} encompassed-language pairs over ${Object.keys(encompassed).length} language subtags, every one ranked by CLDR at ${widestKept} or closer where two languages it does not relate stand at ${unrelatedDistance._distance} and its default matching threshold is ${DEFAULT_THRESHOLD}; likely-script resolution remains native Intl under the tested platform matrix; and ${Object.keys(endonyms).length} endonyms from cldr-localenames-full ${localeNamesManifest.version}, agreeing with this platform's ICU on ${endonymsComparedToIcu.length - endonymsDisagreeingWithIcu.length} of the ${endonymsComparedToIcu.length} locales it has display names for; and ${Object.keys(orderedParentLocales).length} declared parent locales from cldr-core ${manifest.version}, ${undParents} of which name root; and ${aliasRules.length} locale alias rules, ${discardedAliasRules} discarded as UTS #35 Annex C discards them, with ${Object.keys(likelyRegions).length} likely regions for the territory exception; and ${timeZoneEntries.length} time zone names from tzdata ${timeZoneRelease}, ${timeZoneLinkCount} of them resolved to another primary identifier; and ${sanctionedUnits.length} single units ECMA-402 ${unitEdition[1]} edition sanctions, and ${currencyDigits.length} currencies cldr-core ${manifest.version} writes with other than 2 fraction digits.`,
   );
 } else {
   let current;
@@ -1572,6 +1719,19 @@ if (process.argv.includes('--check')) {
     if (currentAliases !== localeAliasOutput) {
       await writeFile(path, localeAliasOutput, 'utf8');
     }
+  }
+
+  for (const [path, generated] of [
+    [sanctionedUnitOutputPath, sanctionedUnitOutput],
+    [currencyDigitsOutputPath, currencyDigitsOutput],
+  ]) {
+    let current;
+    try {
+      current = await readFile(path, 'utf8');
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+    }
+    if (current !== generated) await writeFile(path, generated, 'utf8');
   }
 
   for (const path of timeZoneOutputPaths) {

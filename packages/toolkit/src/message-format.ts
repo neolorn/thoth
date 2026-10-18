@@ -28,6 +28,11 @@ import {
   type MessageOperandKind,
 } from './message-function-options.js';
 import { NUMBER_LITERAL_PATTERN } from './message-format-syntax.js';
+import {
+  numberFormatRefusal,
+  unsupportedNumberFormatCombination,
+  type NumberFormatOptionValue,
+} from './number-format-rules.js';
 import { TIME_ZONE_IDENTITIES } from './time-zone-identities.generated.js';
 import { RESOURCE_LIMITS } from './resource-limits.js';
 import { untrustedText } from './untrusted-text.js';
@@ -1080,27 +1085,27 @@ export function parseMessageSemanticModel(
        * The last check, and the one that cannot be a table.
        *
        * `roundingIncrement` is a legal MessageFormat option whose validity is not a property of its
-       * value: ECMA-402 accepts it only alongside an explicit `minimumFractionDigits` equal to
-       * `maximumFractionDigits`, and refuses it outright next to a significant-digit option or a
-       * `roundingPriority` other than `auto`. So `{42 :number roundingIncrement=5}` conforms to the
-       * message specification and throws when it is formatted.
+       * value: ECMA-402 accepts it only where the fraction digits around it resolve to one number,
+       * and refuses it outright beside a significant-digit option or a `roundingPriority` other
+       * than `auto`. A `unit` is valid only if ECMA-402 sanctions it. So
+       * `{42 :number roundingIncrement=5 maximumSignificantDigits=2}` conforms to the message
+       * specification and throws when it is formatted.
        *
-       * Transcribing that rule would put a second copy of ECMA-402 in this file for nothing to keep
-       * current. Building the formatter asks the authority that actually decides, with the same
-       * options the evaluator will build it with, and option validation is locale-independent, so
-       * a fixed locale here answers for every locale the message ships to.
-       *
-       * A newer runtime could accept something this compiler's `Intl` refuses, or the reverse. The
-       * first direction costs a message an author can rewrite; the second is caught again at render
-       * and reported as a diagnostic rather than thrown, which is where a version difference
-       * between a build machine and a browser belongs.
+       * The pinned edition's rules answer, over the same options the evaluator will build the
+       * formatter with, and the build host is not asked, so the answer is the same on every machine.
+       * Option validation is locale-independent, so no locale is needed for it. What the edition
+       * accepts and V8 is known to refuse is declared unsupported and refused here too, so no
+       * message compiles that Node or Chromium would throw on. An engine that differs from the
+       * edition in some other way is reported where the message is rendered.
        */
-      try {
-        new Intl.NumberFormat(
-          'en',
-          numberFormatOptions(functionRef.name, resolved.options),
-        );
-      } catch {
+      const formatting = numberFormatOptions(
+        functionRef.name,
+        resolved.options,
+      ) as Readonly<Record<string, NumberFormatOptionValue>>;
+      if (
+        numberFormatRefusal(formatting) !== undefined ||
+        unsupportedNumberFormatCombination(formatting) !== undefined
+      ) {
         optionDiagnostic(
           `MessageFormat options on :${functionRef.name} cannot be used together: ${Object.entries(
             resolved.options,

@@ -7,7 +7,8 @@
     "cldrLdml": "48.2",
     "messageFormat": "LDML 48.2",
     "xliff": "2.2 Committee Specification 01",
-    "sitemap": "sitemaps.org 0.9"
+    "sitemap": "sitemaps.org 0.9",
+    "ecma402": "ECMA-402 13th edition, June 2026"
   },
   "dataSources": {
     "cldrCore": {
@@ -208,7 +209,7 @@
           "released": "2022-08-10"
         }
       ],
-      "renamesRole": "Each time the database added a Zone to replace an existing one and kept the former name as a Link, with the release that did it. ECMA-402 section 6.5.1 recommends that the new name resolve to the former one for two years, and no file of a release dates its Links, so the dates are written here: `released` is the day in the `Release` heading of the release's own NEWS file, read from the verified archive, for the pinned release above and for each renaming release. tools/generate-locale-profile.mjs holds every entry against the pinned `backward` and `zone.tab`, and stops at a rename a newer pin brings that has no entry. An entry is never removed; the latest one stays so that the rule always has a rename to be held against.",
+      "renamesRole": "Each time the database added a Zone to replace an existing one and kept the former name as a Link, with the release that did it. ECMA-402 section 6.5 recommends that the new name resolve to the former one for two years, and no file of a release dates its Links, so the dates are written here: `released` is the day in the `Release` heading of the release's own NEWS file, read from the verified archive, for the pinned release above and for each renaming release. tools/generate-locale-profile.mjs holds every entry against the pinned `backward` and `zone.tab`, and stops at a rename a newer pin brings that has no entry. An entry is never removed; the latest one stays so that the rule always has a rename to be held against.",
       "crossCheck": {
         "method": "The release archive was verified against its detached OpenPGP signature before extraction, and the vendored files were taken from that verified archive and from nothing else. The signature is the tz coordinator's, the key the release announcements are signed with.",
         "artifact": "tzdata2026e.tar.gz",
@@ -269,6 +270,54 @@
             "algorithm": "SHA-256",
             "encoding": "hex",
             "value": "e2e8e31c4e10f44576c79345e76060591dbb3eef6ce14e006afc8a373caa9593"
+          }
+        }
+      }
+    },
+    "ecma402MeasurementUnitIdentifiers": {
+      "version": "ECMA-402 13th edition, June 2026",
+      "url": "https://402.ecma-international.org/13.0/index.html",
+      "projectSnapshot": "data/ecma-402-13.0-measurement-unit-identifiers.html",
+      "role": "Development-only derivation input. tools/generate-locale-profile.mjs derives packages/toolkit/src/sanctioned-units.generated.ts, the single unit identifiers Table 2 of section 6.6.2 sanctions, from this extract, and the toolkit judges a message's `unit` option by IsWellFormedUnitIdentifier (section 6.6.1) over that table. Only the generated table reaches a published package.",
+      "bytes": 9289,
+      "digest": {
+        "algorithm": "SHA-256",
+        "encoding": "hex",
+        "value": "aceeb4bc31a6ed8242daf6a95ae1b0157dba67b9571fe5ba2dfd810506efdcae"
+      },
+      "snapshotLayout": "Section 6.6, Measurement Unit Identifiers, cut from the edition's HTML byte for byte: the `emu-clause` element whose id is `sec-measurement-unit-identifiers`, from byte offset 192940 up to byte offset 202229 of the published file. It holds IsWellFormedUnitIdentifier (6.6.1), IsSanctionedSingleUnitIdentifier with its Table 2 (6.6.2) and AvailableCanonicalUnits (6.6.3). Nothing inside the cut is changed. The rest of what the toolkit holds number options to is algorithm steps, which packages/toolkit/src/number-format-rules.ts transcribes and cites by section; it is not data, so it is not vendored.",
+      "crossCheck": {
+        "method": "The edition's HTML was hashed as downloaded, and the extract and the notice were cut from that file and from nothing else. The PDF rendering of the same edition, which Ecma International publishes beside it, was acquired separately: its Table 2 lists the same 45 identifiers in the same order.",
+        "artifact": "index.html",
+        "artifactBytes": 1286848,
+        "artifactDigest": {
+          "algorithm": "SHA-256",
+          "encoding": "hex",
+          "value": "9607614caef710e78a2dba9e157198c0da1deb69251d33f1d06274bd3408d703"
+        },
+        "rendering": {
+          "url": "https://ecma-international.org/wp-content/uploads/ECMA-402_13th_edition_june_2026.pdf",
+          "bytes": 2440092,
+          "digest": {
+            "algorithm": "SHA-256",
+            "encoding": "hex",
+            "value": "ed560ae669c16c2dda45c0974206165f93e3120f928c5f164e4a4feea82dc95a"
+          }
+        },
+        "result": "identical"
+      },
+      "license": {
+        "name": "Ecma International Copyright Notice and Copyright License",
+        "url": "https://402.ecma-international.org/13.0/index.html#sec-copyright-and-software-license",
+        "notice": "© 2026 Ecma International",
+        "terms": "The edition may be copied in whole or in part on condition that its copyright notice and its Copyright License and Disclaimer are included on every copy, and its content may not be modified. The extract is a part copied without modification, and the notice file is the edition's own Copyright & Software License annex, the `emu-annex` element whose id is `sec-copyright-and-software-license`, cut byte for byte from offset 1281206 up to offset 1286269 of the same file.",
+        "noticeFile": {
+          "path": "data/ecma-402-13.0.NOTICE.html",
+          "bytes": 5063,
+          "digest": {
+            "algorithm": "SHA-256",
+            "encoding": "hex",
+            "value": "c4b62865ec1c7ff357c3872cb67004ceb92b8beaaaed1f2be2db9a63d94dca76"
           }
         }
       }
@@ -515,6 +564,7 @@
     "xliffCore": "https://docs.oasis-open.org/xliff/xliff-core/v2.2/cs01/xliff-core-v2.2-cs01-part1.html",
     "xliffExtended": "https://docs.oasis-open.org/xliff/xliff-core/v2.2/cs01/xliff-extended-v2.2-cs01-part2.html",
     "sitemapProtocol": "https://www.sitemaps.org/protocol.html",
+    "ecma402": "https://402.ecma-international.org/13.0/",
     "sitemapHreflang": "https://developers.google.com/search/docs/specialty/international/localized-versions"
   }
 }

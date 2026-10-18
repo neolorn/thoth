@@ -739,14 +739,14 @@ export function messageOptionProblem(
  * What a function accepts governs what may be *written* on it and the discard lists govern what
  * survives inheritance; by the time options reach here both questions have been answered.
  *
- * Shared with the compiler so it can build exactly the formatter the evaluator will build and
- * refuse at compile time what would otherwise throw at render. That matters most for
- * `roundingIncrement`, whose validity is not a property of its value at all: `{42 :number
- * roundingIncrement=5}` is a legal MessageFormat expression and `Intl` refuses it, because ECMA-402
- * requires an explicit `minimumFractionDigits` equal to `maximumFractionDigits` and no
- * significant-digit option beside it. That constraint is deliberately not transcribed here:
- * transcribing it would put a second copy of ECMA-402 in a file nothing keeps current. Constructing
- * the formatter asks the only authority that decides.
+ * Shared with the compiler so it judges exactly the options the evaluator will build the formatter
+ * with, and refuses at compile time what would otherwise throw at render. That matters most for
+ * `roundingIncrement`, whose validity is not a property of its value at all: it depends on the
+ * fraction digits the whole set resolves to, so `{42 :number roundingIncrement=5
+ * maximumSignificantDigits=2}` is a legal MessageFormat expression that ECMA-402 refuses. The
+ * compiler holds the set to the pinned edition's rules, transcribed in
+ * `packages/toolkit/src/number-format-rules.ts` rather than here, because the evaluator has no use
+ * for them: it builds the formatter, and the host answers for an option set no compiler saw.
  *
  * Every value is expected to have been through `numberOptionProblem` already, which is why
  * there is no second check here. One authority on what a valid option is, called before this.
