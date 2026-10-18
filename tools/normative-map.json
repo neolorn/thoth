@@ -628,8 +628,12 @@
     {
       "spec": "03-locale-identity-and-resolution.spec.md",
       "section": "3. Canonical identity",
-      "statement": "A function that describes a tag it is handed, rather than a configured locale, throws the platform's `RangeError` for a tag the platform does not parse, and a release MUST refuse with a `RangeError` as well a tag that names no script and has none in the likely subtags data, so one function refuses in one class.",
-      "checks": ["assurance:locale-profile-without-a-script-let-through"]
+      "statement": "A release MUST refuse that way a value that is not text, a tag the platform does not parse, with the platform's error as the cause, and a tag that names no script and has none in the likely subtags data, so one function refuses in one class.",
+      "checks": [
+        "assurance:locale-profile-without-a-script-let-through",
+        "assurance:locale-tag-refused-with-the-platform-error",
+        "assurance:locale-profile-takes-a-value-that-is-not-text"
+      ]
     },
     {
       "spec": "03-locale-identity-and-resolution.spec.md",

@@ -1,4 +1,8 @@
-import type { LocaleDirection } from './contracts';
+import {
+  LocalizationError,
+  type LocaleDirection,
+  type LocalizationDiagnostic,
+} from './contracts';
 import { RTL_SCRIPTS } from './locale-profile.generated';
 
 const rtlScripts = new Set<string>(RTL_SCRIPTS);
@@ -55,18 +59,40 @@ function localeLanguageSubtag(parsed: Intl.Locale): string {
 /**
  * Resolves a locale tag into its language, script, region and direction.
  *
- * Throws a `RangeError` on a tag the engine will not parse, and on one whose script cannot be
- * determined even after maximizing, since there is then nothing to decide a direction from. Use
- * `directionForLocale` where only the direction is wanted and a bad tag should not throw.
+ * Throws a `LocalizationError` with the code `invalid-configuration` and the reason
+ * `malformed-input` for a value that is not text, for a tag the platform does not parse, whose
+ * error is the cause, and for a tag whose script cannot be determined even after maximizing, since
+ * there is then nothing to decide a direction from. Use `directionForLocale` where only the
+ * direction is wanted and a bad tag should not throw.
  */
 export function localeProfile(locale: string): LocaleProfile {
-  const parsed = new Intl.Locale(locale);
+  // An `Intl.Locale` is accepted by the platform's constructor and is not a tag, and the address
+  // builders refuse a locale that is not text the same way.
+  if (typeof locale !== 'string') {
+    throw new LocalizationError(
+      malformedTag('A locale tag that is not text has no profile.'),
+    );
+  }
+  let parsed: Intl.Locale;
+  try {
+    parsed = new Intl.Locale(locale);
+  } catch (cause) {
+    throw new LocalizationError(
+      malformedTag('A locale tag the platform does not parse has no profile.'),
+      { cause },
+    );
+  }
   const maximized = parsed.maximize();
   const language = localeLanguageSubtag(parsed);
   const script = parsed.script ?? maximized.script;
   const region = parsed.region ?? maximized.region;
   if (script === undefined) {
-    throw new RangeError('Equator locale profile has no likely script.');
+    // The platform parsed the tag and raised nothing, so the refusal carries no cause.
+    throw new LocalizationError(
+      malformedTag(
+        'A locale tag that names no script and has no likely script has no profile.',
+      ),
+    );
   }
   return Object.freeze({
     locale: parsed.toString(),
@@ -74,6 +100,20 @@ export function localeProfile(locale: string): LocaleProfile {
     script,
     ...(region === undefined ? {} : { region }),
     direction: rtlScripts.has(script) ? 'rtl' : 'ltr',
+  });
+}
+
+/**
+ * The refusal of a tag a profile cannot be made for.
+ *
+ * The message does not repeat the tag, because a tag handed here can be text a visitor wrote.
+ */
+function malformedTag(message: string): LocalizationDiagnostic {
+  return Object.freeze({
+    code: 'invalid-configuration',
+    outcome: 'operational-failure',
+    message,
+    reason: 'malformed-input',
   });
 }
 

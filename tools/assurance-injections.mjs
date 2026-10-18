@@ -2932,11 +2932,29 @@ export const injections = Object.freeze([
   {
     id: 'locale-profile-without-a-script-let-through',
     invariant:
-      'A tag that names no script and has none in the likely subtags data is refused with a RangeError.',
+      'A tag that names no script and has none in the likely subtags data is refused as an invalid-configuration failure.',
     source: 'packages/runtime/core/src/locale-profile.ts',
     find: '  if (script === undefined) {',
     replace: '  if (script === null) {',
     caughtBy: 'packages/runtime/test/core-entry-point.test.ts',
+  },
+  {
+    id: 'locale-tag-refused-with-the-platform-error',
+    invariant:
+      'A tag the platform does not parse is refused as an invalid-configuration failure whose cause is the platform error.',
+    source: 'packages/runtime/core/src/locale-profile.ts',
+    find: "    throw new LocalizationError(\n      malformedTag('A locale tag the platform does not parse has no profile.'),\n      { cause },\n    );",
+    replace: '    throw cause;',
+    caughtBy: 'packages/runtime/test/locale-tag-refusal.test.ts',
+  },
+  {
+    id: 'locale-profile-takes-a-value-that-is-not-text',
+    invariant:
+      'A locale handed to localeProfile that is not text is refused as a tag that is not one.',
+    source: 'packages/runtime/core/src/locale-profile.ts',
+    find: "  if (typeof locale !== 'string') {",
+    replace: '  if (false) {',
+    caughtBy: 'packages/runtime/test/locale-tag-refusal.test.ts',
   },
   {
     id: 'declared-status-out-of-range-let-through',

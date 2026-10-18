@@ -76,12 +76,12 @@ describe('a locale profile', () => {
     expect(localeProfile('sr-RS').script).toBe('Cyrl');
   });
 
-  it('refuses a tag it cannot describe as the platform refuses a malformed one', () => {
-    // The platform throws a `RangeError` for a tag it does not parse. A tag that names no script
-    // and has none in the likely subtags data has no direction to report, and is refused with the
-    // same class, so a caller handles one kind of refusal from one function.
-    expect(() => localeProfile('not a tag')).toThrow(RangeError);
-    expect(() => localeProfile('tlh')).toThrow(RangeError);
+  it('refuses a tag it cannot describe as it refuses a malformed one', () => {
+    // A tag the platform does not parse and a tag that names no script and has none in the likely
+    // subtags data are both refused with the typed configuration failure, so a caller handles one
+    // kind of refusal from one function.
+    expect(() => localeProfile('not a tag')).toThrow(LocalizationError);
+    expect(() => localeProfile('tlh')).toThrow(LocalizationError);
     expect(() => localeProfile('tlh')).toThrow(/no likely script/u);
   });
 
@@ -98,10 +98,9 @@ describe('a locale profile', () => {
     // These two sit beside each other in one file and disagree on the same input by design: a
     // caller laying out a page cannot use an exception, and a caller asking for a profile cannot
     // use a guess. Asserted together, because the pair is what a consumer gets wrong.
-    expect(() => localeProfile('not a locale')).toThrow(RangeError);
+    expect(() => localeProfile('not a locale')).toThrow(LocalizationError);
     expect(directionForLocale('not a locale')).toBe('ltr');
-    // A well-formed tag CLDR has no likely script for. It reaches Equator's own error rather than
-    // Intl's, and it is the one place this function throws something it wrote itself.
+    // A well-formed tag CLDR has no likely script for, which the platform parses without an error.
     expect(() => localeProfile('xx')).toThrow('has no likely script');
     expect(directionForLocale('xx')).toBe('ltr');
   });

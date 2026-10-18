@@ -40,9 +40,11 @@ between runtimes MUST NOT change an identity anything compares, stores, or excha
 
 Likely-subtag maximization MAY inform matching and direction analysis. It MUST NOT rewrite a declared
 identity, a catalog key, a URL value, a cache key, or a persisted preference. A function that
-describes a tag it is handed, rather than a configured locale, throws the platform's `RangeError`
-for a tag the platform does not parse, and a release MUST refuse with a `RangeError` as well a tag
-that names no script and has none in the likely subtags data, so one function refuses in one class.
+describes a tag it is handed, rather than a configured locale, refuses a tag it cannot describe
+with the typed `invalid-configuration` failure and the reason `malformed-input`, as an address
+builder refuses a locale that is not a tag. A release MUST refuse that way a value that is not text,
+a tag the platform does not parse, with the platform's error as the cause, and a tag that names no
+script and has none in the likely subtags data, so one function refuses in one class.
 
 A `-u-` extension is a formatting preference, validated separately, and is not part of a catalog's
 identity. A transform, private-use, or other extension receives no meaning without an explicit

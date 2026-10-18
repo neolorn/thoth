@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { contentPresentation, languagePresentation } from '@neolorn/equator';
+import { LocalizationError } from '@neolorn/equator/core';
 
 import { claimCapability } from '../../tools/capability-claims-in-tests.mjs';
 
@@ -91,8 +92,20 @@ describe('content whose language is not known', () => {
   it('still rejects a malformed tag', () => {
     // Garbage is a programming error, not an unknown. Silently returning 'auto' here would hide a
     // consumer bug behind a legitimate-looking answer.
-    expect(() => contentPresentation('!!bad')).toThrow();
-    expect(() => contentPresentation('')).toThrow();
+    for (const tag of ['!!bad', '']) {
+      let failure: unknown;
+      try {
+        contentPresentation(tag);
+      } catch (error) {
+        failure = error;
+      }
+      expect(failure).toBeInstanceOf(LocalizationError);
+      expect((failure as LocalizationError).diagnostic).toMatchObject({
+        code: 'invalid-configuration',
+        reason: 'malformed-input',
+      });
+      expect((failure as LocalizationError).cause).toBeInstanceOf(RangeError);
+    }
     claimCapability('entry:@neolorn/equator');
   });
 });

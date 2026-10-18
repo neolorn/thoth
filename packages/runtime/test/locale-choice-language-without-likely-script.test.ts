@@ -8,12 +8,12 @@
  */
 import { expect, it } from 'vitest';
 
-import { localeProfile } from '@neolorn/equator/core';
+import { LocalizationError, localeProfile } from '@neolorn/equator/core';
 
 import { configured, runtime } from './transaction-runtime-harness.js';
 
 it('is the first subtag of the tag', () => {
-  expect(() => localeProfile('tlh-AQ')).toThrow(RangeError);
+  expect(() => localeProfile('tlh-AQ')).toThrow(LocalizationError);
 
   const { localization } = runtime({
     set: configured('locales', ['en-US', 'ar-EG', 'tlh-AQ']),

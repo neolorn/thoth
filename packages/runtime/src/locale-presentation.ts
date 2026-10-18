@@ -61,12 +61,15 @@ const UNDETERMINED = 'und';
  * - `zxx` is language-independent and defers, because a reference or a code has no language to
  *   take a direction from;
  * - a malformed tag still throws, because a tag that cannot be parsed is a programming error
- *   rather than an undetermined language.
+ *   rather than an undetermined language. It throws what `localeProfile` throws: a
+ *   `LocalizationError` with the code `invalid-configuration` and the reason `malformed-input`.
  */
 export function contentPresentation(language?: string): ContentPresentation {
   if (language === undefined) {
     return Object.freeze({ direction: 'auto', classification: 'unknown' });
   }
+  // Refused by the profile before its subtags are read, which a value that is not text has none of.
+  if (typeof language !== 'string') return contentPresentationOf(language);
 
   // A split always yields a first element, which is the whole tag when it has no hyphen.
   const primary = (language.split('-')[0] as string).toLowerCase();
@@ -88,6 +91,10 @@ export function contentPresentation(language?: string): ContentPresentation {
     });
   }
 
+  return contentPresentationOf(language);
+}
+
+function contentPresentationOf(language: string): ContentPresentation {
   const profile = localeProfile(language);
   return Object.freeze({
     language: profile.locale,
@@ -104,8 +111,8 @@ function hasScriptSubtag(language: string): boolean {
 /**
  * The tag and direction for content known to be in a particular language.
  *
- * For a language name in a switcher, a quotation, a sample. Throws for a tag that cannot be
- * parsed; use `contentPresentation` for content whose language is not known.
+ * For a language name in a switcher, a quotation, a sample. Throws what `localeProfile` throws
+ * for a tag it cannot describe; use `contentPresentation` for content whose language is not known.
  */
 export function languagePresentation(language: string): LanguagePresentation {
   const profile = localeProfile(language);
@@ -120,7 +127,8 @@ export function languagePresentation(language: string): LanguagePresentation {
  *
  * Looks for the locale's script first, then its language, then the registry's default, and returns
  * `undefined` when the registry has none of the three. Script before language, because line height
- * and font stack follow the writing system rather than the tongue.
+ * and font stack follow the writing system rather than the tongue. Throws what `localeProfile`
+ * throws for a tag it cannot describe.
  */
 export function resolveTypography(
   locale: string,
