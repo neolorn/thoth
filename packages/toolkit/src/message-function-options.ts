@@ -248,9 +248,9 @@ export const MESSAGE_OPTION_RULES: Readonly<Record<string, MessageOptionRule>> =
     add: digits(0, 99),
     subtract: digits(0, 99),
     /**
-     * A Unicode Currency Identifier is three ASCII letters (UTS #35). Case is not folded: the
-     * identifier is defined in upper case and `Intl` refuses anything else, so accepting `eur`
-     * would mean a message that compiles and throws.
+     * A Unicode Currency Identifier is three ASCII letters (UTS #35). Case is not folded, although
+     * `Intl` would fold it: `money` takes a code only in capitals, so a currency a message names is
+     * spelled the one way a money value spells it.
      */
     currency: Object.freeze({
       kind: 'identifier',
@@ -280,8 +280,8 @@ export const MESSAGE_OPTION_RULES: Readonly<Record<string, MessageOptionRule>> =
     } as const),
     /**
      * A CLDR unit identifier, in the "core" form `Intl` takes: lower-case segments joined by `-`,
-     * with an optional `per-` compound. The `measure-unit/` prefixed long form is not accepted, for
-     * the same reason `eur` is not: `Intl` refuses it.
+     * with an optional `per-` compound. The `measure-unit/` prefixed long form is not accepted:
+     * `Intl` refuses it.
      */
     unit: Object.freeze({
       kind: 'identifier',

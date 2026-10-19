@@ -96,10 +96,11 @@ if (RULES === undefined || FUNCTIONS === undefined) {
  * that makes each one visible.
  *
  * This is about observation rather than about the specification, which is why it is here and not in
- * the product's table. `roundingIncrement` is ignored by ECMA-402 unless the fraction digits are
- * fixed and equal; `roundingPriority` only arbitrates when both a fraction and a significant-digit
- * constraint are present; `trailingZeroDisplay` needs a trailing zero to strip. Written alone, all
- * three render exactly like the bare message and would be reported as inert.
+ * the product's table. `roundingIncrement` is refused unless the fraction digits are written fixed
+ * and equal, since V8 throws for it without them; `roundingPriority` only arbitrates when both a
+ * fraction and a significant-digit constraint are present; `trailingZeroDisplay` needs a trailing
+ * zero to strip. Written alone, the first is refused and the other two render exactly like the bare
+ * message and would be reported as inert.
  *
  * Every entry is checked against the table below, so a name that stops being an option fails this
  * file rather than sitting here describing something that no longer exists.
