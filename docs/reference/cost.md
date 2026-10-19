@@ -27,6 +27,15 @@ The bytes of each entry point's own module in each build, before compression, as
 | `@neolorn/equator/ssr`     |                         0 |                      0 |                        0 |                      0 |                   0 |                   153 |
 | `@neolorn/equator/testing` |                         0 |                      0 |                        0 |                      0 |                   0 |                     0 |
 
+## Locale data in the runtime
+
+The tables the formatters walk where a context names a locale the host has no data for, generated from the pinned CLDR release and measured as they stand in the primary entry point's module. They are why such a locale is written the same way on every host, and they count toward that entry point.
+
+| Table                                                             | Bytes |  gzip | Brotli |
+| ----------------------------------------------------------------- | ----: | ----: | -----: |
+| The parent locales of the pinned CLDR release, for each component | 4,254 |   845 |    688 |
+| The likely script of each language the host may have data for     | 1,999 | 1,127 |    947 |
+
 ## Applications
 
 Everything each build emits, including Angular and the application itself.
@@ -81,7 +90,7 @@ Each entry point as published, unminified, and each package as installed, source
 
 | Entry point                |   Bytes |   gzip | Brotli |
 | -------------------------- | ------: | -----: | -----: |
-| `@neolorn/equator`         | 425,652 | 89,160 | 71,947 |
+| `@neolorn/equator`         | 430,231 | 91,145 | 73,370 |
 | `@neolorn/equator/core`    | 118,781 | 30,879 | 24,969 |
 | `@neolorn/equator/forms`   |   7,177 |  2,251 |  1,958 |
 | `@neolorn/equator/http`    |  13,826 |  4,159 |  3,624 |
@@ -91,5 +100,5 @@ Each entry point as published, unminified, and each package as installed, source
 
 | Package                    | Files |     Bytes |
 | -------------------------- | ----: | --------: |
-| `@neolorn/equator`         |    38 | 3,185,187 |
-| `@neolorn/equator-toolkit` |   234 | 3,924,616 |
+| `@neolorn/equator`         |    38 | 3,204,523 |
+| `@neolorn/equator-toolkit` |   238 | 4,003,071 |

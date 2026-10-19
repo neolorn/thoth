@@ -296,6 +296,59 @@ for (const { specifier } of ENTRY_POINTS) {
   );
 }
 line();
+// Read from the published bundle rather than the generated sources, so the figure is what an
+// application receives and the stage reads nothing it does not already read.
+const runtimeBundle = readFileSync(
+  resolve(workspaceRoot, 'dist/runtime/fesm2022/neolorn-equator.mjs'),
+  'utf8',
+);
+const tableLiteral = (name) => {
+  const head = `const ${name} = Object.freeze(`;
+  const start = runtimeBundle.indexOf(head);
+  assert.ok(start !== -1, `${name} is not in the runtime bundle.`);
+  let depth = 0;
+  for (
+    let index = start + head.length;
+    index < runtimeBundle.length;
+    index += 1
+  ) {
+    const character = runtimeBundle[index];
+    if (character === '{') depth += 1;
+    if (character === '}') depth -= 1;
+    if (depth === 0) return runtimeBundle.slice(start, index + 1);
+  }
+  throw new Error(`${name} does not close in the runtime bundle.`);
+};
+const LOCALE_TABLES = [
+  {
+    names: [
+      'PARENT_LOCALES',
+      'COLLATION_PARENT_LOCALES',
+      'PLURAL_PARENT_LOCALES',
+      'SEGMENTATION_PARENT_LOCALES',
+    ],
+    about: 'The parent locales of the pinned CLDR release, for each component',
+  },
+  {
+    names: ['LIKELY_SCRIPTS'],
+    about: 'The likely script of each language the host may have data for',
+  },
+];
+
+line('## Locale data in the runtime');
+line();
+line(
+  "The tables the formatters walk where a context names a locale the host has no data for, generated from the pinned CLDR release and measured as they stand in the primary entry point's module. They are why such a locale is written the same way on every host, and they count toward that entry point.",
+);
+line();
+line('| Table | Bytes | gzip | Brotli |');
+line('| --- | ---: | ---: | ---: |');
+for (const { names, about } of LOCALE_TABLES) {
+  line(
+    `| ${about} | ${triple(compressed(Buffer.from(names.map(tableLiteral).join('\n'))))} |`,
+  );
+}
+line();
 line('## Applications');
 line();
 line(
