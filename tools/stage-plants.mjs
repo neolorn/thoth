@@ -650,6 +650,7 @@ export const stageSelfTests = Object.freeze({
       'packages/toolkit/src/plural-categories.generated.ts',
       'packages/toolkit/src/endonyms.generated.ts',
       'packages/toolkit/src/parent-locales.generated.ts',
+      'packages/toolkit/src/language-scripts.generated.ts',
       'packages/runtime/src/parent-locales.generated.ts',
       'packages/runtime/src/likely-scripts.generated.ts',
       'packages/toolkit/src/rtl-scripts.generated.ts',
