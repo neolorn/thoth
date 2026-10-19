@@ -1081,6 +1081,40 @@ function dateFormatter(
 }
 
 /**
+ * The refusal for a zone an operation names for a plain value, or `undefined` where it may be
+ * written under it.
+ *
+ * A plain value has no zone, and its fields are written as they are, which is what writing them
+ * in UTC does. The host judges a zone an operation names, so every name it reads as UTC is
+ * accepted as `UTC` is: `Etc/UTC`, `GMT` and their links. A name it does not read is what it
+ * lacks, and any other zone would move the fields.
+ */
+function zoneOfPlainValue(
+  timeZone: string | undefined,
+  context: FormattingContext,
+): Extract<FormattingResult, { readonly ok: false }> | undefined {
+  if (timeZone === undefined) return undefined;
+  let answered: unknown;
+  try {
+    answered = hostAnswer(sharedFormatters.dateTime('und', { timeZone }))[
+      'timeZone'
+    ];
+  } catch {
+    return unsupported(
+      'A plain value was given a time zone this runtime does not read.',
+      context,
+      'native-capability-rejected',
+    );
+  }
+  return answered === 'UTC'
+    ? undefined
+    : unsupported(
+        'A plain value is written at its own fields, in no zone but UTC.',
+        context,
+      );
+}
+
+/**
  * Whether a plain date in this calendar has the fields of the ISO date of the same day.
  *
  * `gregory` is the proleptic Gregorian calendar, which is the calendar ISO 8601 counts in, so the
@@ -1201,12 +1235,8 @@ export function formatPlainTime(
       context,
     );
   }
-  if (options.timeZone !== undefined && options.timeZone !== 'UTC') {
-    return unsupported(
-      'Plain-time formatting cannot apply a time zone.',
-      context,
-    );
-  }
+  const plainTimeZone = zoneOfPlainValue(options.timeZone, context);
+  if (plainTimeZone !== undefined) return plainTimeZone;
   try {
     const formattingTag = formattingLocale(context, options.numberingSystem);
     if (formattingTag === undefined) {
@@ -1272,12 +1302,8 @@ export function formatPlainDateTime(
       context,
     );
   }
-  if (options.timeZone !== undefined && options.timeZone !== 'UTC') {
-    return unsupported(
-      'Plain date-time formatting cannot apply a time zone.',
-      context,
-    );
-  }
+  const plainTimeZone = zoneOfPlainValue(options.timeZone, context);
+  if (plainTimeZone !== undefined) return plainTimeZone;
   if (value.time.nanosecond % 1_000_000 !== 0) {
     return unsupported(
       'Native Date formatting cannot preserve sub-millisecond plain date-time precision.',

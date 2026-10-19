@@ -3209,6 +3209,12 @@
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "4. The formatting context",
+      "statement": "A plain time or date-time has no zone and is written at its own fields, which writing it in UTC does, so a release MUST write it under a zone an operation names where the host reads that zone as UTC, whatever name the zone is given there, and MUST return the typed unsupported result of section 3 under any other zone.",
+      "checks": ["assurance:plain-value-zone-read-as-utc-by-spelling"]
+    },
+    {
+      "spec": "08-formatting-parsing-and-domain.spec.md",
+      "section": "4. The formatting context",
       "statement": "A release MUST let a locale declare only what is a fact about how it is written: its numbering system, its calendar, and its hour cycle.",
       "checks": ["assurance-runtime:locale-formatting-declaration-ignored"]
     },

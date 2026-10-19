@@ -3132,6 +3132,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/time-zone-host-judged.test.ts',
   },
   {
+    id: 'plain-value-zone-read-as-utc-by-spelling',
+    invariant:
+      'A plain time or date-time is written under a zone an operation names wherever the host reads that zone as UTC, whatever name it is given.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: "  return answered === 'UTC'\n    ? undefined",
+    replace: "  return timeZone === 'UTC'\n    ? undefined",
+    caughtBy: 'packages/runtime/test/plain-value-zone-read-as-utc.test.ts',
+  },
+  {
     id: 'context-time-zone-feature-not-marked',
     invariant:
       'A catalog with a date or time expression that names no time zone is marked as requiring the context time zone.',

@@ -7472,10 +7472,10 @@
     {
       "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
-      "original": "'Plain-time formatting cannot apply a time zone.'",
+      "original": "'A plain value is written at its own fields, in no zone but UTC.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The literal is the message of the diagnostic formatPlainTime returns when it refuses a time zone other than UTC; the code, the outcome, the target locale and the absent reason of that refusal are the same with any text."
+      "reason": "The literal is the message of the diagnostic formatPlainTime and formatPlainDateTime return when the host reads the zone an operation names as one other than UTC; the code, the outcome, the target locale and the absent reason of that refusal are the same with any text, and plain-value-zone-read-as-utc.test.ts asserts those."
     },
     {
       "file": "packages/runtime/src/formatting.ts",
@@ -7496,10 +7496,10 @@
     {
       "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
-      "original": "'Plain date-time formatting cannot apply a time zone.'",
+      "original": "'A plain value was given a time zone this runtime does not read.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The literal is the message of the diagnostic formatPlainDateTime returns when it refuses a time zone other than UTC; the code, the outcome, the target locale and the absent reason of that refusal are the same with any text."
+      "reason": "The literal is the message of the diagnostic formatPlainTime and formatPlainDateTime return when the host does not read the zone an operation names; the code, the outcome, the target locale and the reason of that refusal are the same with any text, and plain-value-zone-read-as-utc.test.ts asserts those."
     },
     {
       "file": "packages/runtime/src/formatting.ts",

@@ -182,7 +182,10 @@ compiled. The message path carries no time-zone table, because every application
 message would carry it, so a zone from the context or a variable is the host's to judge. An hour
 cycle the context names is judged by the host the same way, and a release MUST return the same
 typed unsupported result from every date formatter and every message function where the host does
-not read it.
+not read it. A plain time or date-time has no zone and is written at its own fields, which writing
+it in UTC does, so a release MUST write it under a zone an operation names where the host reads
+that zone as UTC, whatever name the zone is given there, and MUST return the typed unsupported
+result of section 3 under any other zone.
 
 A release MUST let a locale declare only what is a fact about how it is written: its numbering
 system, its calendar, and its hour cycle. A time zone is not one of those, so a release MUST keep
