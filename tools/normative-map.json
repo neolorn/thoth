@@ -3226,6 +3226,16 @@
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "4. The formatting context",
+      "statement": "A release MUST walk the chain of the component the operation's data comes from: plural selection the plurals component, ordering the collations component, segmentation the segmentations component, and every other operation the main one, so `sr-Latn` takes the plural rules of `sr` while its numbers inherit from root.",
+      "checks": [
+        "assurance:plural-chain-not-the-plurals-component",
+        "assurance:collation-chain-not-the-collations-component",
+        "assurance:segmentation-chain-not-the-segmentations-component"
+      ]
+    },
+    {
+      "spec": "08-formatting-parsing-and-domain.spec.md",
+      "section": "4. The formatting context",
       "statement": "A release MUST report a fallback, as `fallback` on the first two and `valueFallback` on the third, where that locale differs from the context's in language or in script, and MUST NOT report one where it differs in neither: `en` answering for `en-US` is not a fallback, and `fr-HT` writing for `ht` and `zh` answering for `zh-TW` are.",
       "checks": [
         "assurance:fallback-reported-for-the-same-writing",

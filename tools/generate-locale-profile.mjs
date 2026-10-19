@@ -558,9 +558,40 @@ const availableLocales = JSON.parse(
 const defaultContentLocales = JSON.parse(
   await readFile(resolve(cldrRoot, 'defaultContent.json'), 'utf8'),
 ).defaultContent;
-const parentLocales = JSON.parse(
+const parentLocaleDocument = JSON.parse(
   await readFile(resolve(cldrRoot, 'supplemental/parentLocales.json'), 'utf8'),
-).supplemental.parentLocales.parentLocale;
+).supplemental.parentLocales;
+const parentLocales = parentLocaleDocument.parentLocale;
+// UTS #35 Part 1, Parent Locales (LDML 48.2): a component's parents stand alone rather than
+// merging with the main ones, and `localeRules` applies to the main component only. A key this
+// list does not name would be a component or a rule nothing here reads, so a release that adds one
+// stops the generator rather than being read as main data.
+assert.deepEqual(
+  Object.keys(parentLocaleDocument).sort(compareCodeUnit),
+  [
+    '_localeRules',
+    'collations',
+    'grammaticalFeatures',
+    'parentLocale',
+    'plurals',
+    'segmentations',
+  ],
+  'parentLocales.json has a component or a rule this generator does not read.',
+);
+assert.deepEqual(
+  parentLocaleDocument._localeRules,
+  { parentLocale: { nonlikelyScript: 'root' } },
+  'parentLocales.json changed its locale rules, which both packages apply to the main chain.',
+);
+const orderedComponentParents = (component) =>
+  Object.fromEntries(
+    Object.entries(parentLocaleDocument[component]).sort(([left], [right]) =>
+      compareCodeUnit(left, right),
+    ),
+  );
+const collationParentLocales = orderedComponentParents('collations');
+const pluralParentLocales = orderedComponentParents('plurals');
+const segmentationParentLocales = orderedComponentParents('segmentations');
 
 const orderedParentLocales = Object.fromEntries(
   Object.entries(parentLocales).sort(([left], [right]) =>
@@ -978,7 +1009,14 @@ function isPinnedCanonical(tag) {
 // `canonicalizeLocale` produces from a project's own configuration. A release that changed
 // that would silently stop matching, and the chain would quietly become truncation again.
 const nonCanonicalParentTags = [
-  ...new Set(Object.entries(parentLocales).flat()),
+  ...new Set(
+    [
+      parentLocales,
+      collationParentLocales,
+      pluralParentLocales,
+      segmentationParentLocales,
+    ].flatMap((table) => Object.entries(table).flat()),
+  ),
 ].filter((tag) => !isPinnedCanonical(tag));
 assert.deepEqual(
   nonCanonicalParentTags,
@@ -1021,6 +1059,23 @@ const parentLocaleOutput = [
   ' */',
   '// prettier-ignore',
   `export const PARENT_LOCALES: Readonly<Record<string, string>> = Object.freeze(${JSON.stringify(orderedParentLocales)});`,
+  '',
+  '/**',
+  ' * The parents CLDR declares for the collations, plurals and segmentations components, which the',
+  ' * runtime walks for an ordering, a plural category and a segmentation.',
+  ' *',
+  ' * UTS #35 Part 1, Parent Locales (LDML 48.2): a component lists its own parents, which stand',
+  ' * alone rather than merging with the table above, and the main rule that sends a locale in a',
+  ' * script its language does not usually take to root is not applied to them, because their data',
+  ' * is never mixed with text. So `sr-Latn` takes the plural rules of `sr`, and a locale absent from',
+  ' * its component takes the tag with its last subtag removed.',
+  ' */',
+  '// prettier-ignore',
+  `export const COLLATION_PARENT_LOCALES: Readonly<Record<string, string>> = Object.freeze(${JSON.stringify(collationParentLocales)});`,
+  '// prettier-ignore',
+  `export const PLURAL_PARENT_LOCALES: Readonly<Record<string, string>> = Object.freeze(${JSON.stringify(pluralParentLocales)});`,
+  '// prettier-ignore',
+  `export const SEGMENTATION_PARENT_LOCALES: Readonly<Record<string, string>> = Object.freeze(${JSON.stringify(segmentationParentLocales)});`,
   '',
 ].join('\n');
 

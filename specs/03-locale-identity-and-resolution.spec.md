@@ -67,6 +67,13 @@ its last subtag removed; and a locale it gives no parent below root inherits fro
 declared parent may change the language, and a release MUST follow that rather than narrow the
 pinned data.
 
+The parents are those of a component. UTS #35 Part 1, Parent Locales (LDML 48.2), gives the
+plurals, collations and segmentations components parent lists of their own, which stand alone
+rather than adding to the main list, and a locale its component's list does not name takes the tag
+with its last subtag removed. A catalog chain walks the main component. A formatting operation
+walks the component its data comes from, as `08-formatting-parsing-and-domain.spec.md` section 4
+states.
+
 A consumer that disagrees declares a parent for one locale. The declaration replaces one step of the
 chain and leaves the rest pinned, and naming root says the locale inherits from nothing. It is read
 at every step rather than only at the first, so a consumer may redirect a locale nobody serves that a

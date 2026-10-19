@@ -10,7 +10,8 @@
  *
  * Where the host does not have the locale, the pinned parent chain of
  * `specs/03-locale-identity-and-resolution.spec.md` section 4 is walked to the first locale it
- * has, and that locale formats and is reported. Root is the end: its data writes no language.
+ * has, and that locale formats and is reported. The chain is that of the CLDR component the
+ * constructor's data comes from. Root is the end: its data writes no language.
  *
  * The keywords of the tag the operation's constructor reads go with the locale that formats, and
  * one the host drops is refused, as an option the host drops is.
@@ -22,7 +23,12 @@
 import { canonicalizeLanguageTag } from '@neolorn/equator/core';
 
 import { LIKELY_SCRIPTS } from './likely-scripts.generated';
-import { PARENT_LOCALES } from './parent-locales.generated';
+import {
+  COLLATION_PARENT_LOCALES,
+  PARENT_LOCALES,
+  PLURAL_PARENT_LOCALES,
+  SEGMENTATION_PARENT_LOCALES,
+} from './parent-locales.generated';
 import { RUNTIME_LIMITS } from './runtime-safety';
 
 /** The `Intl` constructor an operation formats with. */
@@ -153,11 +159,32 @@ function hostAnswerFor(
   });
 }
 
-/** The parent of spec 03 section 4: the pinned one, else the tag less its last subtag. */
-function parentOf(locale: string): string | undefined {
-  const declared = Object.hasOwn(PARENT_LOCALES, locale)
-    ? PARENT_LOCALES[locale]
-    : undefined;
+/**
+ * The CLDR component whose parents a constructor's data inherits through. UTS #35 Part 1, Parent
+ * Locales: plural rules, collation and segmentation have parent lists of their own, which stand
+ * alone, and every other constructor reads main data.
+ */
+const PARENTS: Readonly<
+  Record<LocaleService, Readonly<Record<string, string>>>
+> = {
+  number: PARENT_LOCALES,
+  'date-time': PARENT_LOCALES,
+  plural: PLURAL_PARENT_LOCALES,
+  'relative-time': PARENT_LOCALES,
+  list: PARENT_LOCALES,
+  'display-names': PARENT_LOCALES,
+  collator: COLLATION_PARENT_LOCALES,
+  segmenter: SEGMENTATION_PARENT_LOCALES,
+  duration: PARENT_LOCALES,
+};
+
+/**
+ * The parent of spec 03 section 4 in the component the service reads: the pinned one, else the
+ * tag less its last subtag.
+ */
+function parentOf(service: LocaleService, locale: string): string | undefined {
+  const parents = PARENTS[service];
+  const declared = Object.hasOwn(parents, locale) ? parents[locale] : undefined;
   if (declared !== undefined) return declared === 'und' ? undefined : declared;
   const cut = locale.lastIndexOf('-');
   return cut <= 0 ? undefined : locale.slice(0, cut);
@@ -205,7 +232,7 @@ function walk(
   const base = canonicalizeLanguageTag(asked.baseName) ?? asked.baseName;
   let member: string | undefined = base;
   while (member !== undefined && hostAnswerFor(service, member) !== member) {
-    member = parentOf(member);
+    member = parentOf(service, member);
   }
   if (member === undefined) return REFUSED;
   let built: string;

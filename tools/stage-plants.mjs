@@ -702,6 +702,15 @@ export const stageSelfTests = Object.freeze({
         refusal: /The checked-in Equator parent-locale table is stale/u,
       },
       {
+        id: 'collation-parent-table-not-the-pinned-one',
+        plant: plantText(
+          'packages/runtime/src/parent-locales.generated.ts',
+          '"yue":"zh-Hant",',
+          '',
+        ),
+        refusal: /The checked-in Equator parent-locale table is stale/u,
+      },
+      {
         id: 'likely-script-table-not-the-pinned-one',
         plant: plantText(
           'packages/runtime/src/likely-scripts.generated.ts',

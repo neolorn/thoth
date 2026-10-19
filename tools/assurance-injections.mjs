@@ -3145,8 +3145,9 @@ export const injections = Object.freeze([
     invariant:
       'A formatting locale the host has no data for falls back through the pinned CLDR parent chain, so ht formats as fr-HT on every host.',
     source: 'packages/runtime/src/host-locale.ts',
-    find: '  const declared = Object.hasOwn(PARENT_LOCALES, locale)',
-    replace: '  const declared = Object.hasOwn({}, locale)',
+    find: '  const declared = Object.hasOwn(parents, locale) ? parents[locale] : undefined;',
+    replace:
+      '  const declared = Object.hasOwn({}, locale) ? parents[locale] : undefined;',
     caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
   },
   {
@@ -3221,6 +3222,33 @@ export const injections = Object.freeze([
     find: '      : { valueFallback: value.formattedFallback }),',
     replace: '      : {}),',
     caughtBy: 'packages/runtime/test/fallback-writing-rule.test.ts',
+  },
+  {
+    id: 'plural-chain-not-the-plurals-component',
+    invariant:
+      'Plural selection walks the parents of the plurals component, not the main ones.',
+    source: 'packages/runtime/src/host-locale.ts',
+    find: '  plural: PLURAL_PARENT_LOCALES,',
+    replace: '  plural: PARENT_LOCALES,',
+    caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
+  },
+  {
+    id: 'collation-chain-not-the-collations-component',
+    invariant:
+      'Ordering walks the parents of the collations component, not the main ones.',
+    source: 'packages/runtime/src/host-locale.ts',
+    find: '  collator: COLLATION_PARENT_LOCALES,',
+    replace: '  collator: PARENT_LOCALES,',
+    caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
+  },
+  {
+    id: 'segmentation-chain-not-the-segmentations-component',
+    invariant:
+      'Segmentation walks the parents of the segmentations component, not the main ones.',
+    source: 'packages/runtime/src/host-locale.ts',
+    find: '  segmenter: SEGMENTATION_PARENT_LOCALES,',
+    replace: '  segmenter: PARENT_LOCALES,',
+    caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
   },
   {
     id: 'formatting-locale-fallback-not-reported',

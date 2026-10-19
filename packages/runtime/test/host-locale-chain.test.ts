@@ -56,8 +56,10 @@ import { parse, render } from './message-harness.js';
  * The locales are chosen from what every supported Node line's ICU carries and lacks: `tlh` and
  * `la` are in no ICU locale list, `de-AQ` names a region no German locale has, `ht` is absent
  * while its pinned parent `fr-HT` is present, and `az-Arab` takes root as its pinned parent,
- * which the host would answer with the Latin-script `az`. Texts are compared with the text the
- * locale that answers writes, so no CLDR string is pinned.
+ * which the host would answer with the Latin-script `az`. Plural rules, collation and
+ * segmentation inherit through components of their own, where `az-Arab` takes `az`, so for them
+ * it is answered and reported as a fallback. Texts are compared with the text the locale that
+ * answers writes, so no CLDR string is pinned.
  */
 
 const NOON = instant('1710417600000000000');
@@ -172,7 +174,7 @@ describe('a formatting locale the host has no data for', () => {
 
   for (const [name, ask] of CAPABILITIES) {
     describe(name, () => {
-      it.each(['tlh', 'la', 'az-Arab'])(
+      it.each(['tlh', 'la'])(
         'is the typed unsupported result for %s',
         (locale) => {
           const result = ask(at(locale));
@@ -181,6 +183,19 @@ describe('a formatting locale the host has no data for', () => {
           );
         },
       );
+
+      it('answers az-Arab as az answers, through its own component, and reports a fallback', () => {
+        const result = ask(at('az-Arab'));
+        const own = ask(at('az'));
+        expect(result.ok && own.ok && result.value).toEqual(
+          own.ok && own.value,
+        );
+        expect(result).toMatchObject({
+          ok: true,
+          language: 'az',
+          fallback: true,
+        });
+      });
 
       it('answers de-AQ as de answers and reports de', () => {
         const result = ask(at('de-AQ'));
@@ -207,6 +222,46 @@ describe('a formatting locale the host has no data for', () => {
   it('does not report a locale the host has, for the plural rules', () => {
     const result = selectPlural(decimal('2'), at('en'));
     expect(result.ok && 'language' in result).toBe(false);
+  });
+});
+
+/**
+ * UTS #35 Part 1, Parent Locales: plural rules, collation and segmentation inherit through parent
+ * lists of their own, which stand alone and to which the main rule sending a locale in another
+ * script to root does not apply. Each case is one the main chain answers otherwise, and asserts
+ * what the host has before what the result reports.
+ */
+describe('the parent chain of a component', () => {
+  const lookup = { localeMatcher: 'lookup' } as const;
+
+  it('answers the plural rules of sr-Latn with sr, which the main chain sends to root', () => {
+    expect(
+      new Intl.PluralRules('sr-Latn', lookup).resolvedOptions().locale,
+    ).toBe('sr');
+    expect(selectPlural(decimal('2'), at('sr-Latn'))).toMatchObject({
+      ok: true,
+      language: 'sr',
+      fallback: true,
+    });
+  });
+
+  it('refuses the plural rules of ht, whose main parent fr-HT the plurals component does not name', () => {
+    expect(
+      new Intl.PluralRules('ht', lookup).resolvedOptions().locale,
+    ).not.toBe('ht');
+    const result = selectPlural(decimal('2'), at('ht'));
+    expect(result.ok ? 'answered' : result.diagnostic).toMatchObject(refused);
+  });
+
+  it('orders yue as zh-Hant orders, the parent the collations component names', () => {
+    expect(new Intl.Collator('yue', lookup).resolvedOptions().locale).not.toBe(
+      'yue',
+    );
+    expect(compareLocalized('a', 'b', at('yue'))).toMatchObject({
+      ok: true,
+      language: 'zh-Hant',
+      fallback: true,
+    });
   });
 });
 
