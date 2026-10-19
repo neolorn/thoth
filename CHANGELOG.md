@@ -78,8 +78,9 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
 - `requiredScopes` and `progressiveScopes` on `provideLocalizedRouter` name further scopes for a
   route. In `coordinated` mode, the default, a navigation and a locale change wait for both lists,
   and a first render waits for them on the server, in a prerender and in the browser.
-- A missing translation falls back through the locales the target inherits from, then to the
-  source locale. `parentLocales` replaces one step of that chain.
+- A missing translation falls back through the locales the target inherits from in the pinned CLDR
+  release, then to the source locale, so `zh-TW` falls back through `zh-Hant` and never through
+  `zh`. `parentLocales` replaces one step of that chain.
 - `withRecoveryMessage` and the `localization-recovery` component, for the case where no catalog
   loads.
 - A translation whose source wording changed since it was written is reported as stale, and one
@@ -173,11 +174,18 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
 - `withFormattingContext` sets the time zone, calendar, numbering system and hour cycle every
   formatter starts from. What a call names stands over the context.
 - A locale the host has no data for is formatted in the first locale of its pinned CLDR parent
-  chain that the host has, and the result's `language` names that locale: `de-AQ` is written in
-  `de`, and `ht` in `fr-HT`. Where no locale of the chain is available, or the host drops a keyword
-  of the locale tag that the operation reads, the operation returns
-  `unsupported-formatting-capability`. `selectPlural` and `compareLocalized` report `language` the
-  same way, so under `en-US` they report `en`, the locale the host keeps those rules for.
+  chain that the host has, so it is written the same way on every host: `de-AQ` is written in `de`,
+  and `ht` in `fr-HT`. Plural selection, ordering and segmentation walk the parent lists CLDR gives
+  their own data, so `sr-Latn` takes the plural rules of `sr`. Where no locale of the chain is
+  available, or the host drops a keyword of the locale tag that the operation reads, the operation
+  returns `unsupported-formatting-capability`, so `ht` is refused for plural selection, ordering and
+  segmentation, and `ru-Latn` for formatting.
+- A result names the locale that wrote it where that is not the context's own, as `language` on a
+  formatted value and on a capability's answer, and as `valueLanguage` on a message's formatted
+  part. `fallback` and `valueFallback` are set where that locale differs in language or in script
+  after likely subtags: `fr-HT` writing for `ht` is a fallback, and `en` answering for `en-US` is
+  not. The parent and likely-script tables this reads add 1,972 bytes, gzip, to the primary entry
+  point, as the [cost reference](docs/reference/cost.md) states.
 - `formatRelativeTime` with `withRelativeTimePolicy` for the units and the range, and
   `withLocalizationClock`, `systemClock` and `fixedClock` for what now is.
 - `formatPersonName` formats a structured name from the CLDR person-name patterns, for the
