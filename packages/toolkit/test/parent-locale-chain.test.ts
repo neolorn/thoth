@@ -27,10 +27,10 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
  * `specs/03-locale-identity-and-resolution.spec.md` section 4 takes each parent from the pinned
  * release rather than from a consumer's statement, and walks the chain to its end.
  *
- * Inheritance as UTS 35 section 4.1.3 describes it, which is not truncation, walked to its end
- * rather than stopped at one hop. `en-AU` gives `en-001` and then `en`; stopping after `en-001`
- * would serve the source language for a string `en` has, which is the outcome the feature exists
- * to remove and which is invisible in any project whose source locale is English.
+ * Inheritance as UTS #35 Part 1, Parent Locales, describes it, which is not truncation, walked to
+ * its end rather than stopped at one hop. `en-AU` gives `en-001` and then `en`; stopping after
+ * `en-001` would serve the source language for a string `en` has, which is the outcome the feature
+ * exists to remove and which is invisible in any project whose source locale is English.
  *
  * `und` in the pinned table is a value rather than an absence. `parentLocales.json` carries
  * `_localeRules` `{"parentLocale":{"nonlikelyScript":"root"}}`, and that rule is what produced its

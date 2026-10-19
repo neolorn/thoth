@@ -61,11 +61,11 @@ diagnostic.
 ## 4. Inheritance
 
 Which locale a locale inherits from is pinned data, not a consumer's statement. Equator takes each
-parent from the pinned CLDR release under the inheritance rules of UTS #35 section 4.1.3: a locale
-takes the parent that release declares for it; a locale it declares no parent for takes the tag with
-its last subtag removed; and a locale it gives no parent below root inherits from nothing. A
-declared parent may change the language, and a release MUST follow that rather than narrow the
-pinned data.
+parent from the pinned CLDR release under the inheritance rules of UTS #35 Part 1, Parent Locales
+(LDML 48.2): a locale takes the parent that release declares for it; a locale it declares no parent
+for takes the tag with its last subtag removed; and a locale it gives no parent below root inherits
+from nothing. A declared parent may change the language, and a release MUST follow that rather than
+narrow the pinned data.
 
 The parents are those of a component. UTS #35 Part 1, Parent Locales (LDML 48.2), gives the
 plurals, collations and segmentations components parent lists of their own, which stand alone

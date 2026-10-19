@@ -168,13 +168,15 @@ order of UTS #35 Part 1 section 4.3 (LDML 48.2) in the pinned CLDR data, and nev
 host. The pinned table holds the 324 languages CLDR has locale data or plural rules for, and where
 either side's language is not among them the language alone decides.
 The chain ends at root, which writes no language, and a release MUST return the typed unsupported
-result of section 3, with the reason `native-capability-rejected`, where no locale of the chain
-is one the host has. The chain is the pinned one, and an owner's own parent declarations shape
-its catalog chains and not this one. A keyword of the context's locale that the operation reads,
-`ca`, `hc` or `nu` for a date, `nu` for a number, a relative time or a duration, and `co`,
-`kf` or `kn` for an ordering, goes with the locale that formats, and a release MUST report one
-the host drops as it reports an option the host drops. An option the operation names takes the
-place of the keyword it names.
+result of section 3, with the reason `native-capability-rejected`, where no locale of the chain is
+one the host has. Root is not asked of the host, which answers `und` with its own default locale, so
+`ht` is refused for plural selection, ordering and segmentation: its main parent `fr-HT` is named by
+no other component, and `ht` truncates to nothing. The chain is the pinned one, and an owner's own
+parent declarations shape its catalog chains and not this one. A keyword of the context's locale
+that the operation reads, `ca`, `hc` or `nu` for a date, `nu` for a number, a relative time or a
+duration, and `co`, `kf` or `kn` for an ordering, goes with the locale that formats, and a release
+MUST report one the host drops as it reports an option the host drops. An option the operation names
+takes the place of the keyword it names.
 
 A calendar reaches a date formatter from the operation, from the value, or from the context, and
 is held to one rule whichever named it. A release MUST refuse a calendar that is not written as
