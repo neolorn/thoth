@@ -704,14 +704,14 @@ describe('native formatting and localized input contracts', () => {
     expect(() => duration({ seconds: decimal('-1') })).toThrow(
       /duration sign is separate/u,
     );
-    expect(selectPlural(decimal('1'), english)).toEqual({
-      ok: true,
-      value: 'one',
-    });
-    expect(compareLocalized('a', 'b', english)).toEqual({
-      ok: true,
-      value: -1,
-    });
+    // An engine that keeps plural rules or collation per language answers `en-US` with `en`, and
+    // the result names it; one that keeps them for `en-US` itself names nothing.
+    const plural = selectPlural(decimal('1'), english);
+    expect(plural).toMatchObject({ ok: true, value: 'one' });
+    expect([undefined, 'en']).toContain(plural.ok ? plural.language : null);
+    const order = compareLocalized('a', 'b', english);
+    expect(order).toMatchObject({ ok: true, value: -1 });
+    expect([undefined, 'en']).toContain(order.ok ? order.language : null);
     expect(
       segmentText('Equator works', english, { granularity: 'word' }),
     ).toMatchObject({
