@@ -13,12 +13,12 @@
  *
  * The estimate in worker seconds becomes minutes on a hosted job by dividing by its four workers
  * and multiplying by how much slower a runner's worker is than a local one, which is given on the
- * command line and recorded in the plan with the rest of the basis. Parts are filled in source
+ * command line and recorded in the division with the rest of the basis. Parts are filled in source
  * order up to the minutes given, and a part ends at the last statement start before the mutant
  * that would take it over.
  *
  * Usage:
- *   node tools/plan-mutation-shards.mjs --half <runtime|toolkit> --configuration <file>
+ *   node tools/divide-mutation-shards.mjs --half <runtime|toolkit> --configuration <file>
  *     --report <stryker report.json> --durations <vitest json report> --dry-run-net <seconds>
  *     --wall <seconds> --workers <count> --runner-factor <factor> --minutes <per part>
  *     [--basis <text>]
@@ -26,7 +26,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { PLAN_PATH, cutCandidates } from './mutation-shards.mjs';
+import { DIVISION_PATH, cutCandidates } from './mutation-shards.mjs';
 
 const option = (name) => {
   const index = process.argv.indexOf(`--${name}`);
@@ -35,7 +35,7 @@ const option = (name) => {
 const required = (name) => {
   const value = option(name);
   if (value === undefined) {
-    process.stderr.write(`plan-mutation-shards: --${name} is required.\n`);
+    process.stderr.write(`divide-mutation-shards: --${name} is required.\n`);
     process.exit(1);
   }
   return value;
@@ -155,8 +155,8 @@ for (const mutant of mutants) {
 }
 for (const shard of shards) shard.minutes = Math.round(shard.minutes);
 
-const plan = JSON.parse(readFileSync(PLAN_PATH, 'utf8'));
-plan.halves[half] = {
+const division = JSON.parse(readFileSync(DIVISION_PATH, 'utf8'));
+division.halves[half] = {
   configuration,
   basis: {
     reading: option('basis') ?? '',
@@ -170,7 +170,7 @@ plan.halves[half] = {
   },
   shards,
 };
-writeFileSync(PLAN_PATH, `${JSON.stringify(plan, null, 2)}\n`);
+writeFileSync(DIVISION_PATH, `${JSON.stringify(division, null, 2)}\n`);
 process.stdout.write(
   `${half}: ${shards.length} part(s), estimated minutes ${shards.map(({ minutes: m }) => m).join(', ')}; ${perFile.toFixed(3)} s per test file reached.\n`,
 );

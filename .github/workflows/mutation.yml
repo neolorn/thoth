@@ -39,9 +39,9 @@ permissions:
   contents: read
 
 jobs:
-  # The parts each half has, checked to cover every file once before any part starts, so a plan
+  # The parts each half has, checked to cover every file once before any part starts, so a division
   # that would read a mutant twice or not at all fails in seconds rather than after hours.
-  plan:
+  parts:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -74,14 +74,14 @@ jobs:
           echo "toolkit=$(node -p "JSON.stringify(${matrix}.toolkit)")" >> "$GITHUB_OUTPUT"
 
   runtime:
-    needs: plan
+    needs: parts
     if: inputs.scope != 'toolkit'
     runs-on: ubuntu-latest
     timeout-minutes: 330
     strategy:
       fail-fast: false
       matrix:
-        part: ${{ fromJSON(needs.plan.outputs.runtime) }}
+        part: ${{ fromJSON(needs.parts.outputs.runtime) }}
 
     steps:
       - uses: actions/checkout@v7
@@ -135,14 +135,14 @@ jobs:
           retention-days: 90
 
   toolkit:
-    needs: plan
+    needs: parts
     if: inputs.scope != 'runtime'
     runs-on: ubuntu-latest
     timeout-minutes: 330
     strategy:
       fail-fast: false
       matrix:
-        part: ${{ fromJSON(needs.plan.outputs.toolkit) }}
+        part: ${{ fromJSON(needs.parts.outputs.toolkit) }}
 
     steps:
       - uses: actions/checkout@v7

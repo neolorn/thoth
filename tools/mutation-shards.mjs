@@ -17,7 +17,7 @@
  * Where the cuts fall is an estimate and only decides how evenly the parts come out, never what
  * they read: `tools/mutation-shards.json` names them by line, and a cut moves to the first
  * statement that begins a line at or after its line, so an edit that moves code changes how long a
- * part takes and nothing else. `tools/plan-mutation-shards.mjs` computes them from a reading.
+ * part takes and nothing else. `tools/divide-mutation-shards.mjs` computes them from a reading.
  *
  * Usage:
  *   node tools/mutation-shards.mjs check
@@ -37,7 +37,10 @@ const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(resolve(workspaceRoot, 'package.json'));
 const ts = require('typescript');
 
-export const PLAN_PATH = resolve(workspaceRoot, 'tools/mutation-shards.json');
+export const DIVISION_PATH = resolve(
+  workspaceRoot,
+  'tools/mutation-shards.json',
+);
 const DISABLE = '/* Stryker disable all */ ';
 const RESTORE = '/* Stryker restore all */ ';
 
@@ -111,11 +114,15 @@ export function regionStarts(text, fromLines, fileName) {
   );
 }
 
-/** The plan, with each half's parts read into regions per file and checked to tile each file. */
-export function readPlan(plan = JSON.parse(readFileSync(PLAN_PATH, 'utf8'))) {
+/** The division, with each half's parts read into regions per file and checked to tile each file. */
+export function readDivision(
+  division = JSON.parse(readFileSync(DIVISION_PATH, 'utf8')),
+) {
   const problems = [];
   const halves = {};
-  for (const [half, { configuration, shards }] of Object.entries(plan.halves)) {
+  for (const [half, { configuration, shards }] of Object.entries(
+    division.halves,
+  )) {
     const regions = new Map();
     shards.forEach(({ parts }, shard) => {
       for (const { file, from, to } of parts) {
@@ -145,11 +152,11 @@ export function readPlan(plan = JSON.parse(readFileSync(PLAN_PATH, 'utf8'))) {
 
 /**
  * What one part reads: for every file it touches, the source with the directives that switch off
- * the regions of other parts. A file the plan does not name is read whole by the last part, so a
- * file added since the plan was made is read rather than lost.
+ * the regions of other parts. A file the division does not name is read whole by the last part, so a
+ * file added since the division was made is read rather than lost.
  */
-export async function partSources(half, shard, plan = readPlan()) {
-  const entry = plan.halves[half];
+export async function partSources(half, shard, division = readDivision()) {
+  const entry = division.halves[half];
   if (entry === undefined) fail(`no half named ${half}.`);
   if (!(shard >= 0 && shard < entry.count))
     fail(`${half} has parts 0 to ${entry.count - 1}.`);
@@ -198,30 +205,30 @@ export async function partSources(half, shard, plan = readPlan()) {
 
 async function main() {
   const [command, half, part] = process.argv.slice(2);
-  const plan = readPlan();
+  const division = readDivision();
   if (command === 'check') {
     for (const [name, { configuration, regions }] of Object.entries(
-      plan.halves,
+      division.halves,
     )) {
       const files = await mutatedFiles(configuration);
       for (const file of regions.keys()) {
         if (!files.includes(file)) {
           process.stdout.write(
-            `${name}: ${file} is in the plan and not in ${configuration}; no part reads it.\n`,
+            `${name}: ${file} is in the division and not in ${configuration}; no part reads it.\n`,
           );
         }
       }
       for (const file of files) {
         if (!regions.has(file)) {
           process.stdout.write(
-            `${name}: ${file} is not in the plan; the last part reads it whole.\n`,
+            `${name}: ${file} is not in the division; the last part reads it whole.\n`,
           );
         }
       }
     }
-    if (plan.problems.length > 0) fail(plan.problems.join('\n'));
+    if (division.problems.length > 0) fail(division.problems.join('\n'));
     process.stdout.write(
-      `Mutation parts verified: ${Object.entries(plan.halves)
+      `Mutation parts verified: ${Object.entries(division.halves)
         .map(
           ([name, { count, regions }]) =>
             `${name} ${count} part(s) over ${regions.size} file(s)`,
@@ -232,12 +239,12 @@ async function main() {
     );
     return;
   }
-  if (plan.problems.length > 0) fail(plan.problems.join('\n'));
+  if (division.problems.length > 0) fail(division.problems.join('\n'));
   if (command === 'matrix') {
     process.stdout.write(
       `${JSON.stringify(
         Object.fromEntries(
-          Object.entries(plan.halves).map(([name, { count }]) => [
+          Object.entries(division.halves).map(([name, { count }]) => [
             name,
             Array.from({ length: count }, (_, index) => index),
           ]),
@@ -252,7 +259,7 @@ async function main() {
         'apply writes into the sources it reads; run it in a checkout that is thrown away after, and say so with --disposable-checkout.',
       );
     }
-    const sources = await partSources(half, Number(part), plan);
+    const sources = await partSources(half, Number(part), division);
     for (const { file, text } of sources)
       writeFileSync(resolve(workspaceRoot, file), text);
     process.stdout.write(`${sources.map(({ file }) => file).join(',')}\n`);
