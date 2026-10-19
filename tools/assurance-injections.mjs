@@ -3124,10 +3124,11 @@ export const injections = Object.freeze([
   {
     id: 'message-time-zone-the-host-does-not-read-reported-as-input',
     invariant:
-      'A time zone from the formatting context or a message variable that the host does not read is reported by a message as an unsupported formatting capability, as the direct formatters report it.',
+      'A time zone from the formatting context or a message variable, or an hour cycle from the context, that the host does not read is reported by a message as an unsupported formatting capability, as the direct formatters report it.',
     source: 'packages/runtime/src/evaluator.ts',
-    find: '    if (!hostReadsTimeZone(formattingTag, options.timeZone, environment)) {',
-    replace: '    if (false) {',
+    find: '    unsupportedFormatting(\n      `:${functionName} was given a time zone or an hour cycle this runtime does not read.`,',
+    replace:
+      '    invalidInput(\n      `:${functionName} was given a time zone or an hour cycle this runtime does not read.`,',
     caughtBy: 'packages/runtime/test/time-zone-host-judged.test.ts',
   },
   {

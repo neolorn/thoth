@@ -179,7 +179,10 @@ clock offset such as `+05:00` as the zone they name and may answer under a name 
 answer is not compared with the name asked for. The pinned table of section 2 judges the zone of a
 value where the value is made, and a zone a message writes as a literal where the message is
 compiled. The message path carries no time-zone table, because every application that renders a
-message would carry it, so a zone from the context or a variable is the host's to judge.
+message would carry it, so a zone from the context or a variable is the host's to judge. An hour
+cycle the context names is judged by the host the same way, and a release MUST return the same
+typed unsupported result from every date formatter and every message function where the host does
+not read it.
 
 A release MUST let a locale declare only what is a fact about how it is written: its numbering
 system, its calendar, and its hour cycle. A time zone is not one of those, so a release MUST keep

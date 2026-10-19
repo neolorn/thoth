@@ -1883,8 +1883,7 @@
       "original": "`:${functionName} received unsupported formatting options.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The literal is the text of the refusal raised when the platform rejects the options of a number function or of a date function; the suite compares its code, outcome, reason and cause, and nothing reads the text.",
-      "count": 2
+      "reason": "The literal is the text of the refusal raised when the platform rejects the options of a number function; the suite compares its code, outcome, reason and cause, and nothing reads the text."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",
@@ -1961,18 +1960,10 @@
     {
       "file": "packages/runtime/src/evaluator.ts",
       "mutator": "StringLiteral",
-      "original": "`:${functionName} was asked for a time zone this runtime does not read.`",
+      "original": "`:${functionName} was given a time zone or an hour cycle this runtime does not read.`",
       "replacement": "``",
       "category": "message-wording",
-      "reason": "The literal is the text of the refusal raised when the host does not read the time zone a date function was given; the suite compares its code, reason and cause and nothing reads the text."
-    },
-    {
-      "file": "packages/runtime/src/evaluator.ts",
-      "mutator": "BlockStatement",
-      "original": "{\n    return false;\n  }",
-      "replacement": "{}",
-      "category": "equivalent",
-      "reason": "the caller (in dateResolved) only tests the result of hostReadsTimeZone for truthiness, and undefined is as false as false"
+      "reason": "The literal is the text of the refusal raised when the host does not read the time zone or the hour cycle a date function was given; the suite compares its code, reason and cause and nothing reads the text."
     },
     {
       "file": "packages/runtime/src/evaluator.ts",

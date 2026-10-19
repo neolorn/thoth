@@ -1160,25 +1160,6 @@ function numericSelection(
   });
 }
 
-/**
- * Whether the host reads a time zone's name as a zone.
- *
- * Asked only after a date formatter could not be built, through the same bounded cache, because a
- * name from a message variable is content and a set of the names seen would grow with it.
- */
-function hostReadsTimeZone(
-  formattingTag: string,
-  timeZone: string | undefined,
-  environment: EvaluationEnvironment,
-): boolean {
-  try {
-    environment.formatterCache.dateTime(formattingTag, { timeZone });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function dateResolved(
   raw: unknown,
   functionName: 'date' | 'datetime' | 'time',
@@ -1247,19 +1228,13 @@ function dateResolved(
   try {
     formatter = environment.formatterCache.dateTime(formattingTag, options);
   } catch (cause) {
-    // The message path carries no time-zone table, so the host is the judge of a zone from the
-    // context or a variable, and a name it does not read is what it lacks, not what the message
-    // got wrong. The zone is asked about alone, so that only a zone the host does not read is
-    // reported here and another option the host refuses keeps the refusal below.
-    if (!hostReadsTimeZone(formattingTag, options.timeZone, environment)) {
-      unsupportedFormatting(
-        `:${functionName} was asked for a time zone this runtime does not read.`,
-        'native-capability-rejected',
-        cause,
-      );
-    }
-    invalidInput(
-      `:${functionName} received unsupported formatting options.`,
+    // What reaches the host here has been judged already: the message's own options by their
+    // syntax where it was compiled and again above, the calendar and the numbering system by
+    // theirs. What the host can still refuse is what only it judges, a time zone from the
+    // context, a variable or a literal, and an hour cycle from the context, and that is what the
+    // host lacks, as the direct formatters report it.
+    unsupportedFormatting(
+      `:${functionName} was given a time zone or an hour cycle this runtime does not read.`,
       'native-capability-rejected',
       cause,
     );

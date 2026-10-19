@@ -3201,6 +3201,14 @@
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "4. The formatting context",
+      "statement": "An hour cycle the context names is judged by the host the same way, and a release MUST return the same typed unsupported result from every date formatter and every message function where the host does not read it.",
+      "checks": [
+        "assurance:message-time-zone-the-host-does-not-read-reported-as-input"
+      ]
+    },
+    {
+      "spec": "08-formatting-parsing-and-domain.spec.md",
+      "section": "4. The formatting context",
       "statement": "A release MUST let a locale declare only what is a fact about how it is written: its numbering system, its calendar, and its hour cycle.",
       "checks": ["assurance-runtime:locale-formatting-declaration-ignored"]
     },

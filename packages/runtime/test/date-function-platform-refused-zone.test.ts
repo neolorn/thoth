@@ -63,8 +63,8 @@ describe('a date function under a zone the platform refuses', () => {
     },
   );
 
-  it.each(['time', 'datetime'])(
-    'keeps the refusal of an hour cycle the platform refuses under :%s in a zone it reads apart',
+  it.each(['date', 'time', 'datetime'])(
+    'refuses an hour cycle of the context the platform refuses under :%s as it refuses a zone',
     (name) => {
       const failure = refusalOf(() =>
         renderArtifact(
@@ -84,7 +84,7 @@ describe('a date function under a zone the platform refuses', () => {
       );
 
       expect(failure.diagnostic).toMatchObject({
-        code: 'invalid-message-input',
+        code: 'unsupported-formatting-capability',
         outcome: 'operational-failure',
         reason: 'native-capability-rejected',
       });
