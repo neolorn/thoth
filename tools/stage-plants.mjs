@@ -723,8 +723,8 @@ export const stageSelfTests = Object.freeze({
         id: 'language-script-table-not-the-pinned-one',
         plant: plantText(
           'packages/toolkit/src/language-scripts.generated.ts',
-          '"Hant":"ltc lzh yue"',
-          '"Hant":"ltc lzh"',
+          'zh-TW zh-US',
+          'zh-US',
         ),
         refusal: /The checked-in Equator language-script table is stale/u,
       },

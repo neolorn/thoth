@@ -3292,9 +3292,36 @@ export const injections = Object.freeze([
     invariant:
       'A configured locale in a language the pinned data gives no likely script keeps truncation.',
     source: 'packages/toolkit/src/locales.ts',
-    find: '  const likely = scriptsByLanguage.get(language);\n  return likely !== undefined && likely !== script;',
+    find: '  const likely = likelyScript(language);\n  return likely !== undefined && likely !== script;',
     replace:
-      '  const likely = scriptsByLanguage.get(language);\n  return likely !== script;',
+      '  const likely = likelyScript(language);\n  return likely !== script;',
+    caughtBy: 'packages/toolkit/test/parent-locale-chain.test.ts',
+  },
+  {
+    id: 'formatting-chain-region-not-aliased',
+    invariant:
+      "A formatting language_region whose likely script is not its language's inherits through its language_script_region, so zh-AU is written as zh-Hant and not as zh.",
+    source: 'packages/runtime/src/host-locale.ts',
+    find: '  if (aliased !== undefined) return aliased;\n',
+    replace: '',
+    caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
+  },
+  {
+    id: 'catalog-chain-region-not-aliased',
+    invariant:
+      "A configured language_region whose likely script is not its language's inherits through its language_script_region, so zh-TW never falls back to zh.",
+    source: 'packages/toolkit/src/locales.ts',
+    find: '  if (aliased !== undefined) return aliased;\n',
+    replace: '',
+    caughtBy: 'packages/toolkit/test/parent-locale-chain.test.ts',
+  },
+  {
+    id: 'catalog-chain-region-alias-drops-the-region',
+    invariant:
+      'A language_region aliases to the language_script_region of the same region, so zh-TW passes through zh-Hant-TW.',
+    source: 'packages/toolkit/src/locales.ts',
+    find: '    : `${locale.slice(0, cut)}-${script}${locale.slice(cut)}`;',
+    replace: '    : `${locale.slice(0, cut)}-${script}`;',
     caughtBy: 'packages/toolkit/test/parent-locale-chain.test.ts',
   },
   {

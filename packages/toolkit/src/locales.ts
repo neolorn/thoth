@@ -133,10 +133,12 @@ const NO_PARENT_OVERRIDES: Readonly<Record<string, string>> = Object.freeze({});
  *
  * `undefined` means the locale inherits from root, which is where a chain ends.
  *
- * Four rules in the order UTS 35 section 4.1.3 gives them. A parent the project declared wins,
+ * Five rules, from UTS #35 Part 1, Lookup and Parent Locales. A parent the project declared wins,
  * because its configuration is where a consumer says CLDR's answer is wrong for this product.
  * Otherwise the pinned table answers, `und` included: `und` there means root, so it ends the chain
- * rather than naming a locale. Otherwise a language and a script its language does not usually
+ * rather than naming a locale. Otherwise a language_region whose likely script is not its
+ * language's takes the language_script_region it aliases to, so `zh-TW` reaches `zh-Hant` and not
+ * `zh`. Otherwise a language and a script its language does not usually
  * take inherit from root, the `nonlikelyScript` rule of UTS #35 Part 1, Parent Locales, which the
  * table lists only some locales of: `ru-Latn` has no entry and is not served Cyrillic Russian.
  * Otherwise the parent is the tag with its last subtag removed, and a tag with one subtag left has
@@ -158,6 +160,8 @@ export function localeParent(
   if (declared !== undefined) {
     return declared === ROOT_LOCALE ? undefined : declared;
   }
+  const aliased = scriptedRegion(locale);
+  if (aliased !== undefined) return aliased;
   if (hasNonlikelyScript(locale)) return undefined;
   const cut = locale.lastIndexOf('-');
   return cut <= 0 ? undefined : locale.slice(0, cut);
@@ -166,6 +170,34 @@ export function localeParent(
 let scriptsByLanguage: ReadonlyMap<string, string> | undefined;
 
 const SCRIPT_SUBTAG = /^[A-Z][a-z]{3}$/u;
+
+/** The pinned likely script of a language or a language_region, or `undefined` for one it lacks. */
+function likelyScript(tag: string): string | undefined {
+  scriptsByLanguage ??= new Map(
+    Object.entries(LANGUAGE_SCRIPTS).flatMap(([likely, tags]) =>
+      tags.split(' ').map((key) => [key, likely] as const),
+    ),
+  );
+  return scriptsByLanguage.get(tag);
+}
+
+/**
+ * The language_script_region a language_region aliases to, where its likely script is not its
+ * language's, else `undefined`.
+ *
+ * UTS #35 Part 1, Lookup: where a language is written in more than one script, a language_region
+ * aliases to language_script_region by likely subtags, so `zh-TW` is `zh-Hant-TW` and inherits
+ * through `zh-Hant`, never through `zh`, which is written in the other script. The pinned table
+ * holds a tag with more than one subtag only where it is such a language_region, so it alone decides.
+ */
+function scriptedRegion(locale: string): string | undefined {
+  const cut = locale.indexOf('-');
+  if (cut < 0) return undefined;
+  const script = likelyScript(locale);
+  return script === undefined
+    ? undefined
+    : `${locale.slice(0, cut)}-${script}${locale.slice(cut)}`;
+}
 
 /**
  * Whether a locale is a language and a script other than the likely script of that language.
@@ -177,12 +209,7 @@ function hasNonlikelyScript(locale: string): boolean {
   if (subtags.length !== 2) return false;
   const [language, script] = subtags as [string, string];
   if (!SCRIPT_SUBTAG.test(script)) return false;
-  scriptsByLanguage ??= new Map(
-    Object.entries(LANGUAGE_SCRIPTS).flatMap(([likely, languages]) =>
-      languages.split(' ').map((tag) => [tag, likely] as const),
-    ),
-  );
-  const likely = scriptsByLanguage.get(language);
+  const likely = likelyScript(language);
   return likely !== undefined && likely !== script;
 }
 

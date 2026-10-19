@@ -86,6 +86,17 @@ lists, 7,207, because a project configures locales in any language. The runtime 
 languages CLDR has locale data or plural rules for, because a host's data is drawn from them, so a
 formatting locale in any other language reaches no locale the host has whichever parent it takes.
 
+A language_region can stand for a locale with a script. UTS #35 Part 1, Lookup (LDML 48.2), gives a
+language written in more than one script the locales language, language_script and
+language_script_region, and makes language_region an alias of language_script_region by likely
+subtags. A release MUST give a language_region whose likely script differs from its language's,
+where the pinned list declares no parent for it, the parent language_script_region in every
+component: `zh-TW` inherits through `zh-Hant-TW` and `zh-Hant` and never through `zh`, which is
+written in the other script, and `sr-ME` through `sr-Latn-ME` and `sr-Latn`. A language_region
+whose likely script is its language's truncates as before, so `sr-RS` inherits from `sr`. The
+toolkit holds the 60 language_region tags of the pinned likely subtags whose script differs from
+their language's, and the runtime the 51 of them in the languages it holds.
+
 A consumer that disagrees declares a parent for one locale. The declaration replaces one step of the
 chain and leaves the rest pinned, and naming root says the locale inherits from nothing. It is read
 at every step rather than only at the first, so a consumer may redirect a locale nobody serves that a

@@ -179,14 +179,16 @@ const PARENTS: Readonly<
 };
 
 /**
- * The parent of spec 03 section 4 in the component the service reads: the pinned one, else root
- * for a main-component locale in a script its language does not usually take, else the tag less
- * its last subtag.
+ * The parent of spec 03 section 4 in the component the service reads: the pinned one, else the
+ * language_script_region a language_region aliases to, else root for a main-component locale in a
+ * script its language does not usually take, else the tag less its last subtag.
  */
 function parentOf(service: LocaleService, locale: string): string | undefined {
   const parents = PARENTS[service];
   const declared = Object.hasOwn(parents, locale) ? parents[locale] : undefined;
   if (declared !== undefined) return declared === 'und' ? undefined : declared;
+  const aliased = scriptedRegion(locale);
+  if (aliased !== undefined) return aliased;
   if (parents === PARENT_LOCALES && hasNonlikelyScript(locale))
     return undefined;
   const cut = locale.lastIndexOf('-');
@@ -291,6 +293,24 @@ function scriptOf(locale: Intl.Locale): string | undefined {
       ? undefined
       : likelyScript(`${locale.language}-${locale.region}`);
   return regional ?? likelyScript(locale.language);
+}
+
+/**
+ * The language_script_region a language_region aliases to, where its likely script is not its
+ * language's, else `undefined`.
+ *
+ * UTS #35 Part 1, Lookup: where a language is written in more than one script, a language_region
+ * aliases to language_script_region by likely subtags, so `zh-TW` is `zh-Hant-TW` and inherits
+ * through `zh-Hant`, never through `zh`, which is written in the other script. The pinned table
+ * holds a tag with more than one subtag only where it is such a language_region, so it alone decides.
+ */
+function scriptedRegion(locale: string): string | undefined {
+  const cut = locale.indexOf('-');
+  if (cut < 0) return undefined;
+  const script = likelyScript(locale);
+  return script === undefined
+    ? undefined
+    : `${locale.slice(0, cut)}-${script}${locale.slice(cut)}`;
 }
 
 const SCRIPT_SUBTAG = /^[A-Z][a-z]{3}$/u;

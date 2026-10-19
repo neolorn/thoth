@@ -1159,10 +1159,11 @@ const likelyScriptOutput = [
   ' * `zh-TW` is `Hant` where `zh` is `Hans`.',
   ' *',
   ' * The runtime reads it to tell whether the locale a formatter used is written in the script of',
-  ' * the locale asked for, and to give root as the main parent of a language and a script that',
-  ' * language does not usually take. The host is not asked, because its likely subtags are its own',
-  ' * data and change with it. A language this table does not hold has no data the host could',
-  ' * have used in its place, and its script is unknown.',
+  ' * the locale asked for, to give root as the main parent of a language and a script that',
+  ' * language does not usually take, and to read a language_region whose script differs as the',
+  ' * language_script_region UTS #35 Part 1, Lookup, aliases it to. The host is not asked, because',
+  ' * its likely subtags are its own data and change with it. A language this table does not hold',
+  ' * has no data the host could have used in its place, and its script is unknown.',
   ' */',
   '// prettier-ignore',
   `export const LIKELY_SCRIPTS: Readonly<Record<string, string>> = Object.freeze(${JSON.stringify(likelyScriptTable)});`,
@@ -1177,18 +1178,62 @@ for (const key of Object.keys(likelySubtags).sort(compareCodeUnit)) {
   if (key.includes('-') || key === 'und') continue;
   (languageScripts[likelyScriptOf(key)] ??= []).push(key);
 }
+const languageScriptCount = Object.values(languageScripts).flat().length;
+// UTS #35 Part 1, Lookup: a language_region aliases to language_script_region by likely subtags,
+// which changes where its chain goes only where that script is not the language's.
+let regionalScriptCount = 0;
+for (const key of Object.keys(likelySubtags).sort(compareCodeUnit)) {
+  const [language, region, ...rest] = key.split('-');
+  if (rest.length > 0 || region === undefined || !REGION_SUBTAG.test(region)) {
+    continue;
+  }
+  if (language === 'und' || likelyScriptOf(language) === undefined) continue;
+  if (likelyScriptOf(key) === likelyScriptOf(language)) continue;
+  (languageScripts[likelyScriptOf(key)] ??= []).push(key);
+  regionalScriptCount += 1;
+}
+for (const script of Object.keys(languageScripts)) {
+  languageScripts[script].sort(compareCodeUnit);
+}
+// A pinned parent keyed by a language_region that aliases to language_script_region is read before
+// the alias, so it must name the parent its alias has, or the two spellings of one locale would
+// inherit differently; `yue-CN` and `yue-Hans-CN` both take `zh-Hans` for collation.
+assert.deepEqual(
+  [
+    parentLocales,
+    collationParentLocales,
+    pluralParentLocales,
+    segmentationParentLocales,
+  ].flatMap((table) =>
+    Object.entries(table).filter(([key, parent]) => {
+      const [language, region, ...rest] = key.split('-');
+      if (
+        rest.length > 0 ||
+        region === undefined ||
+        !REGION_SUBTAG.test(region) ||
+        likelyScriptOf(language) === undefined ||
+        likelyScriptOf(key) === undefined ||
+        likelyScriptOf(key) === likelyScriptOf(language)
+      ) {
+        return false;
+      }
+      return table[`${language}-${likelyScriptOf(key)}-${region}`] !== parent;
+    }),
+  ),
+  [],
+  'A pinned parent of a language_region differs from the parent of the language_script_region it aliases to.',
+);
 const languageScriptTable = Object.fromEntries(
   Object.keys(languageScripts)
     .sort(compareCodeUnit)
     .map((script) => [script, languageScripts[script].join(' ')]),
 );
-const languageScriptCount = Object.values(languageScripts).flat().length;
 assert.deepEqual(
-  [...likelyScripts]
-    .filter(([key]) => !key.includes('-'))
-    .filter(([key, script]) => !languageScripts[script]?.includes(key)),
+  [...likelyScripts].filter(
+    ([key, script]) => !languageScripts[script]?.includes(key),
+  ),
   [],
-  'The runtime and toolkit likely-script tables disagree on a language both hold.',
+  'The runtime and toolkit likely-script tables disagree on a tag both hold.',
 );
 
 const languageScriptOutput = [
@@ -1196,13 +1241,17 @@ const languageScriptOutput = [
   '',
   '/**',
   ' * The likely script of each language, grouped by script: every language',
-  ` * \`supplemental/likelySubtags.json\` gives likely subtags for, ${languageScriptCount} of them.`,
+  ` * \`supplemental/likelySubtags.json\` gives likely subtags for, ${languageScriptCount} of them, and the`,
+  ` * ${regionalScriptCount} language_region tags whose likely script is not their language's.`,
   ' *',
   " * UTS #35 Part 1, Parent Locales: the main component's `nonlikelyScript` rule gives root as the",
   ' * parent of every locale of the form lang-Script whose script is not the likely script of lang,',
   ' * and `parentLocales.json` lists only some of them. The toolkit applies the rule to the catalog',
   ' * chain of a configured locale, which can be in any language, so this table holds every language',
   ' * the pinned data has a likely script for. A language it does not hold keeps truncation.',
+  ' *',
+  ' * UTS #35 Part 1, Lookup: a language_region aliases to language_script_region by likely subtags,',
+  ' * so the chain of `zh-TW` runs through `zh-Hant-TW` and `zh-Hant`, and never reaches `zh`.',
   ' */',
   '// prettier-ignore',
   `export const LANGUAGE_SCRIPTS: Readonly<Record<string, string>> = Object.freeze(${JSON.stringify(languageScriptTable)});`,

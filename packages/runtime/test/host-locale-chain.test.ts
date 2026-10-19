@@ -452,3 +452,51 @@ describe('the main chain of a language in a script it does not usually take', ()
     expect(result.ok && 'fallback' in result.value).toBe(false);
   });
 });
+
+/**
+ * UTS #35 Part 1, Lookup: where a language is written in more than one script, a language_region
+ * aliases to language_script_region by likely subtags. `zh-AU` is `zh-Hant-AU`, and a host
+ * without it writes `zh-Hant`, not `zh`, which is Simplified. Each case asserts what the host
+ * has before what the result reports.
+ */
+describe("a language_region whose likely script is not its language's", () => {
+  const lookup = { localeMatcher: 'lookup' } as const;
+
+  it('writes zh-AU as zh-Hant writes it, and is not a fallback', () => {
+    expect(
+      new Intl.NumberFormat('zh-AU', lookup).resolvedOptions().locale,
+    ).toBe('zh');
+    const result = formatInstant(NOON, at('zh-AU'), DATE);
+    expect(written(result)).toEqual({
+      text: written(formatInstant(NOON, at('zh-Hant'), DATE)).text,
+      language: 'zh-Hant',
+    });
+    expect(result.ok && 'fallback' in result.value).toBe(false);
+  });
+
+  it('writes sr-RO in the Latin script, as sr-Latn writes it', () => {
+    expect(
+      new Intl.NumberFormat('sr-RO', lookup).resolvedOptions().locale,
+    ).toBe('sr');
+    expect(written(formatInstant(NOON, at('sr-RO'), DATE))).toEqual({
+      text: written(formatInstant(NOON, at('sr-Latn'), DATE)).text,
+      language: 'sr-Latn',
+    });
+  });
+
+  it('refuses az-IQ, whose chain runs through az-Arab to root', () => {
+    expect(
+      new Intl.NumberFormat('az-IQ', lookup).resolvedOptions().locale,
+    ).toBe('az');
+    const result = formatNumber(N, at('az-IQ'));
+    expect(result.ok ? 'written' : result.diagnostic).toMatchObject(refused);
+  });
+
+  it("takes the plural rules of zh-AU through zh-Hant to zh, the plurals component's truncation", () => {
+    expect(selectPlural(decimal('2'), at('zh-AU'))).toMatchObject({
+      ok: true,
+      language: 'zh',
+      fallback: true,
+    });
+  });
+});

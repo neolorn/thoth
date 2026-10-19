@@ -80,6 +80,18 @@ describe('the chain CLDR declares', () => {
     expect(chainOf('sr-Cyrl')).toEqual(['sr']);
   });
 
+  it('takes a language_region of another script through the language_script_region it aliases to', () => {
+    // UTS #35 Part 1, Lookup: `zh-TW` is `zh-Hant-TW`, so its catalogs never fall to `zh`, which
+    // is Simplified, and `sr-ME` is `sr-Latn-ME`, never Cyrillic `sr`.
+    expect(chainOf('zh-TW')).toEqual(['zh-Hant-TW', 'zh-Hant']);
+    expect(chainOf('zh-MO')).toEqual(['zh-Hant-MO', 'zh-Hant-HK', 'zh-Hant']);
+    expect(chainOf('sr-ME')).toEqual(['sr-Latn-ME', 'sr-Latn']);
+    expect(chainOf('pa-PK')).toEqual(['pa-Arab-PK', 'pa-Arab']);
+    // A language_region whose likely script is its language's truncates as before.
+    expect(chainOf('sr-RS')).toEqual(['sr']);
+    expect(chainOf('zh-CN')).toEqual(['zh']);
+  });
+
   it('keeps truncation for a language the pinned data gives no likely script', () => {
     expect(
       Object.values(LANGUAGE_SCRIPTS).some((languages) =>
@@ -338,6 +350,31 @@ describe('what the build hands the runtime', () => {
         graphOf(analyze(['fr-FR', 'az', 'az-Arab'], [french, latin, arabic])),
       ),
     ).not.toContain('localeFallbacks');
+    claimCapability('capability:fallback-chain');
+  });
+});
+
+describe('a zh-TW catalog beside zh and zh-Hant', () => {
+  it('falls back to zh-Hant and never to zh', () => {
+    const simplified = catalog('target', 'zh', 'messages:\n  nav.home: 首页\n');
+    const traditional = catalog(
+      'target',
+      'zh-Hant',
+      'messages:\n  nav.home: 首頁\n  nav.help: 說明\n',
+    );
+    const taiwan = catalog('target', 'zh-TW', 'messages:\n  nav.home: 首頁\n');
+    expect(
+      indexModuleOf(
+        graphOf(
+          analyze(
+            ['fr-FR', 'zh', 'zh-Hant', 'zh-TW'],
+            [french, simplified, traditional, taiwan],
+          ),
+        ),
+      ),
+    ).toContain(
+      'localeFallbacks: Object.freeze({"zh-TW":["zh-Hant"]} as const)',
+    );
     claimCapability('capability:fallback-chain');
   });
 });

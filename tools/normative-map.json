@@ -672,6 +672,16 @@
     {
       "spec": "03-locale-identity-and-resolution.spec.md",
       "section": "4. Inheritance",
+      "statement": "A release MUST give a language_region whose likely script differs from its language's, where the pinned list declares no parent for it, the parent language_script_region in every component: `zh-TW` inherits through `zh-Hant-TW` and `zh-Hant` and never through `zh`, which is written in the other script, and `sr-ME` through `sr-Latn-ME` and `sr-Latn`.",
+      "checks": [
+        "assurance:formatting-chain-region-not-aliased",
+        "assurance:catalog-chain-region-not-aliased",
+        "assurance:catalog-chain-region-alias-drops-the-region"
+      ]
+    },
+    {
+      "spec": "03-locale-identity-and-resolution.spec.md",
+      "section": "4. Inheritance",
       "statement": "A declared parent may change the language, and a release MUST follow that rather than narrow the pinned data.",
       "checks": ["assurance:cross-language-parent-narrowed"]
     },
