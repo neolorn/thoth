@@ -1,7 +1,7 @@
 import base from './stryker.config.mjs';
 
 /**
- * The toolkit's compiler and parser, and nothing else.
+ * The toolkit's compiler, its parser and its number option rules, and nothing else.
  *
  * The toolkit is not excluded from mutation testing on principle, and it never was. It is excluded
  * by arithmetic: all 15,662 of its mutants do not finish, and the reason is not the count, which is
@@ -10,8 +10,8 @@ import base from './stryker.config.mjs';
  * suite it is timed against runs for nineteen seconds.
  *
  * So the slice is the part of the toolkit where a surviving mutant means the most and the covering
- * tests are cheapest: the semantic model and the compiler that drives it, and the message parser.
- * Three files, all pure. The I/O-bound modules stay out, which is where the project host, the
+ * tests are cheapest: the semantic model and the compiler that drives it, the message parser, and
+ * the rules a numeric function's options are judged by. Four files, all pure. The I/O-bound modules stay out, which is where the project host, the
  * output host, and the file watching live.
  *
  * Two files a mutation run must never touch are absent by being unnamed rather than by exclusion:
@@ -63,6 +63,7 @@ export default {
     'packages/toolkit/src/semantic-model.ts',
     'packages/toolkit/src/compiler.ts',
     'packages/toolkit/src/message-format.ts',
+    'packages/toolkit/src/number-format-rules.ts',
   ],
 
   htmlReporter: { fileName: 'tmp/mutation-toolkit/index.html' },
