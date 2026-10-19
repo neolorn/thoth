@@ -107,6 +107,17 @@ IANA Language Subtag Registry snapshot, the Unicode `DerivedBidiClass` file, the
 Database release, the measurement unit section of ECMA-402's 13th edition, the OASIS XLIFF
 schemas, the W3C XML namespace and XHTML schemas, and the sitemaps.org schemas.
 
+A supported engine that leaves out a step of a pinned edition narrows what a release accepts, as
+section 5 permits. Each narrowing is recorded here, and is removed once a release of every
+supported engine has the step:
+
+- ECMA-402 13th edition, section 16.1.2, SetNumberFormatDigitOptions, step 13: "If
+  roundingIncrement is not 1, set mxfdDefault to mnfdDefault." V8 14.6, the engine of Node
+  26.10.0, leaves the step out and throws a `RangeError` for an option set that the edition accepts
+  only because of it, such as a `roundingIncrement` with no fraction digits written. A release
+  refuses such an option set where the message is compiled, as
+  `04-message-authoring-and-catalogs.spec.md` section 6 states.
+
 Every vendored digest is recomputed before anything derives from the source it covers. An edited
 file, a partial download, and a line-ending change all leave a source that still parses.
 
