@@ -44,7 +44,8 @@
         "assurance:repeated-variant-accepted",
         "assurance:toolkit-language-tag-twin-drifts",
         "plant:verify:platform:toolkit-keeps-a-deprecated-language",
-        "plant:verify:platform:canonicalizer-stops-before-the-alias-settles"
+        "plant:verify:platform:canonicalizer-stops-before-the-alias-settles",
+        "assurance:pseudo-locale-subtags-read-by-the-host"
       ]
     },
     {

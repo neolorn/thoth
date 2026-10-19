@@ -36,6 +36,29 @@ import {
 import { RTL_SCRIPTS } from './rtl-scripts.generated.js';
 
 /**
+ * The language, script and region subtags of a tag already in canonical form.
+ *
+ * Read by position rather than through `Intl.Locale`, which canonicalizes the tag again with the
+ * host's own alias data. The tag is canonical by the pinned CLDR release already, and a second
+ * canonicalization by the host would let the machine that reads the configuration decide which
+ * language a pseudo-locale is in.
+ */
+function canonicalSubtags(tag: string): {
+  readonly language: string;
+  readonly script: string | undefined;
+  readonly region: string | undefined;
+} {
+  const [language = '', ...rest] = tag.split('-');
+  const script = /^[A-Za-z]{4}$/u.test(rest[0] ?? '')
+    ? rest.shift()
+    : undefined;
+  const region = /^(?:[A-Za-z]{2}|[0-9]{3})$/u.test(rest[0] ?? '')
+    ? rest[0]
+    : undefined;
+  return { language, script, region };
+}
+
+/**
  * What stops a well-formed tag from identifying a pseudo-locale, or nothing when it does.
  *
  * `specs/10-compiler-and-tooling.spec.md` section 16: the script subtag carries the direction, so
@@ -48,11 +71,11 @@ export function pseudoLocaleTagProblem(
   sourceLocale: string,
   transform: PseudoLocaleTransform,
 ): string | undefined {
-  const locale = new Intl.Locale(tag);
+  const locale = canonicalSubtags(tag);
   if (locale.script === undefined) {
     return `Pseudo-locale ${JSON.stringify(tag)} names no script. A pseudo-locale carries its text direction in its own script subtag, as ${PSEUDO_LOCALE_ACCENTED} and ${PSEUDO_LOCALE_BIDI} do.`;
   }
-  const source = new Intl.Locale(sourceLocale).language;
+  const source = canonicalSubtags(sourceLocale).language;
   if (locale.language !== source) {
     return `Pseudo-locale ${JSON.stringify(tag)} is in the language ${locale.language}, and the source locale is in ${source}. A pseudo-locale keeps the source language, so a developer reads their own screens transformed.`;
   }

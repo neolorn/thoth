@@ -2278,6 +2278,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/toolkit/test/number-options-without-the-host.test.ts',
   },
   {
+    id: 'pseudo-locale-subtags-read-by-the-host',
+    invariant:
+      "A pseudo-locale's language, script and region are read from its canonical tag and not through the host's Intl.Locale, so the host's alias data does not decide which language it is in.",
+    source: 'packages/toolkit/src/pseudo-localization.ts',
+    find: '  const locale = canonicalSubtags(tag);',
+    replace: '  const locale = new Intl.Locale(tag);',
+    caughtBy: 'packages/toolkit/test/pseudo-locale-without-the-host.test.ts',
+  },
+  {
     id: 'declared-keyword-type-stated-a-second-time',
     invariant:
       'The numbering system and the calendar an application declares for a locale are held by the configuration schema to the pattern a name is held to wherever else it is given, so a declaration is not a name to the schema and something else to the formatters.',
