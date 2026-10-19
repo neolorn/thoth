@@ -51,7 +51,7 @@ pnpm exec playwright install chromium firefox webkit
 
 ## Running the checks
 
-The quick checks run in under a minute and cover formatting, linting, types, the anchors of the verification suite's injections, and the unit suites of both packages:
+The quick checks take about a minute and a half on a machine with 32 logical processors, and cover formatting, linting, types, the anchors of the verification suite's injections, and the unit suites of both packages:
 
 ```sh
 pnpm run format:check
