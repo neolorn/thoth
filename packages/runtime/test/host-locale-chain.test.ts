@@ -417,3 +417,38 @@ describe('a message under a formatting locale the host has no data for', () => {
     expect(failure.diagnostic).toMatchObject(refused);
   });
 });
+
+/**
+ * UTS #35 Part 1, Parent Locales: the main component's `nonlikelyScript` rule gives root as the
+ * parent of every locale that is a language and a script its language does not usually take,
+ * and `parentLocales.json` lists only some of them. `ru-Latn` is not listed, and truncation would
+ * write it in Cyrillic Russian.
+ */
+describe('the main chain of a language in a script it does not usually take', () => {
+  const lookup = { localeMatcher: 'lookup' } as const;
+
+  it('gives root as the parent of ru-Latn, which no pinned entry names', () => {
+    expect(
+      new Intl.NumberFormat('ru-Latn', lookup).resolvedOptions().locale,
+    ).toBe('ru');
+    const result = formatNumber(N, at('ru-Latn'));
+    expect(result.ok ? 'written' : result.diagnostic).toMatchObject(refused);
+  });
+
+  it('leaves the plural rules of ru-Latn to the plurals component, which answers with ru', () => {
+    expect(selectPlural(decimal('2'), at('ru-Latn'))).toMatchObject({
+      ok: true,
+      language: 'ru',
+      fallback: true,
+    });
+  });
+
+  it('applies to the language and script alone, so sr-Latn-AQ is written as sr-Latn', () => {
+    expect(
+      new Intl.NumberFormat('sr-Latn-AQ', lookup).resolvedOptions().locale,
+    ).toBe('sr-Latn');
+    const result = formatNumber(N, at('sr-Latn-AQ'));
+    expect(result).toMatchObject({ ok: true, value: { language: 'sr-Latn' } });
+    expect(result.ok && 'fallback' in result.value).toBe(false);
+  });
+});

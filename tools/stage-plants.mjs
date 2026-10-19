@@ -720,6 +720,15 @@ export const stageSelfTests = Object.freeze({
         refusal: /The checked-in Equator likely-script table is stale/u,
       },
       {
+        id: 'language-script-table-not-the-pinned-one',
+        plant: plantText(
+          'packages/toolkit/src/language-scripts.generated.ts',
+          '"Hant":"ltc lzh yue"',
+          '"Hant":"ltc lzh"',
+        ),
+        refusal: /The checked-in Equator language-script table is stale/u,
+      },
+      {
         id: 'time-zone-table-of-the-toolkit-not-the-pinned-one',
         plant: plantText(
           'packages/toolkit/src/time-zone-identities.generated.ts',

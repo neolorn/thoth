@@ -8,6 +8,7 @@ import {
 import { generateContracts } from '../src/generated-contracts.js';
 import { analyzeCatalogSet } from '../src/semantic-model.js';
 import { localeFallbackChain } from '../src/locales.js';
+import { LANGUAGE_SCRIPTS } from '../src/language-scripts.generated.js';
 import { PARENT_LOCALES } from '../src/parent-locales.generated.js';
 import { testProjectConfiguration } from './fixtures.js';
 
@@ -35,7 +36,9 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
  * `_localeRules` `{"parentLocale":{"nonlikelyScript":"root"}}`, and that rule is what produced its
  * 49 `und` entries: a locale written in a script its language does not usually take inherits from
  * root. Those 49 have no parent, and fall back from their own catalog straight to the source
- * locale.
+ * locale. UTS #35 Part 1, Parent Locales, says the entries are a short list kept for migration and
+ * the rule applies to every language and script that is not the language's likely one, so
+ * `ru-Latn`, which no entry names, has no parent either.
  */
 
 const chainOf = (locale: string, overrides?: Record<string, string>) =>
@@ -66,6 +69,24 @@ describe('the chain CLDR declares', () => {
     // The same rule two hops in: `zh-Hant-MO` reaches `zh-Hant` and stops, rather than reaching
     // `zh`, which is written in the other script.
     expect(chainOf('zh-Hant-MO')).toEqual(['zh-Hant-HK', 'zh-Hant']);
+  });
+
+  it('gives root to a language in a script it does not usually take, where no entry names it', () => {
+    expect(PARENT_LOCALES).not.toHaveProperty('ru-Latn');
+    expect(chainOf('ru-Latn')).toEqual([]);
+    // The rule is for a language and a script alone: a region below it truncates to it first.
+    expect(chainOf('ru-Latn-RU')).toEqual(['ru-Latn']);
+    // The likely script of Serbian is Cyrillic, so `sr-Cyrl` truncates to `sr`.
+    expect(chainOf('sr-Cyrl')).toEqual(['sr']);
+  });
+
+  it('keeps truncation for a language the pinned data gives no likely script', () => {
+    expect(
+      Object.values(LANGUAGE_SCRIPTS).some((languages) =>
+        languages.split(' ').includes('qaa'),
+      ),
+    ).toBe(false);
+    expect(chainOf('qaa-Latn')).toEqual(['qaa']);
   });
 
   it('leaves every locale that inherits from root behaving as it always did', () => {
@@ -113,6 +134,10 @@ describe('a project that declares a parent of its own', () => {
     // `en-001` is not a locale anyone ships, and every regional English inherits through it.
     expect(chainOf('en-AU', { 'en-001': 'und' })).toEqual(['en-001']);
     expect(chainOf('en-DE', { 'en-150': 'en' })).toEqual(['en-150', 'en']);
+  });
+
+  it('outranks the rule that sends a language in an unusual script to root', () => {
+    expect(chainOf('ru-Latn', { 'ru-Latn': 'ru' })).toEqual(['ru']);
   });
 
   it('says a locale has no parent with the identity the standard uses', () => {

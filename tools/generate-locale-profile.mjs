@@ -1046,6 +1046,9 @@ const parentLocaleOutput = [
   ` * not usually take inherits from root, and ${undParents} entries say \`und\` for that reason. Dropping`,
   ' * them would put truncation back in force and send `az-Arab` to `az`, which is the Latin-script',
   ' * locale it was separated from, so they are kept and a reader stops when it reaches one.',
+  ' * UTS #35 Part 1, Parent Locales, calls them a short list kept for migration: the rule covers',
+  " * every language and script that is not the language's likely one, and both packages apply it",
+  ' * from the likely scripts to the locales this table does not name, `ru-Latn` among them.',
   ' *',
   ' * Four parents change the language: `hi-Latn` takes `en-IN`, `ht` takes `fr-HT`, and `nb` and',
   ' * `nn` take `no`. That is CLDR data rather than a choice Equator made, and a project that',
@@ -1136,12 +1139,53 @@ const likelyScriptOutput = [
   ' * up language_region before language, so `zh-TW` is `Hant` where `zh` is `Hans`.',
   ' *',
   ' * The runtime reads it to tell whether the locale a formatter used is written in the script of',
-  ' * the locale asked for. The host is not asked, because its likely subtags are its own data and',
-  ' * change with it. A language this table does not hold has no locale the host could have used',
-  ' * in its place, and its script is unknown.',
+  ' * the locale asked for, and to give root as the main parent of a language and a script that',
+  ' * language does not usually take. The host is not asked, because its likely subtags are its own',
+  ' * data and change with it. A language this table does not hold has no locale the host could',
+  ' * have used in its place, and its script is unknown.',
   ' */',
   '// prettier-ignore',
   `export const LIKELY_SCRIPTS: Readonly<Record<string, string>> = Object.freeze(${JSON.stringify(likelyScriptTable)});`,
+  '',
+].join('\n');
+
+// The toolkit applies the main component's `nonlikelyScript` rule to the catalog chain of every
+// configured locale, and a project configures locales in any language, not only one CLDR has locale
+// data for. So its table holds the likely script of every language `likelySubtags.json` lists.
+const languageScripts = {};
+for (const key of Object.keys(likelySubtags).sort(compareCodeUnit)) {
+  if (key.includes('-') || key === 'und') continue;
+  (languageScripts[likelyScriptOf(key)] ??= []).push(key);
+}
+const languageScriptTable = Object.fromEntries(
+  Object.keys(languageScripts)
+    .sort(compareCodeUnit)
+    .map((script) => [script, languageScripts[script].join(' ')]),
+);
+const languageScriptCount = Object.values(languageScripts).flat().length;
+assert.deepEqual(
+  [...likelyScripts]
+    .filter(([key]) => !key.includes('-'))
+    .filter(([key, script]) => !languageScripts[script]?.includes(key)),
+  [],
+  'The runtime and toolkit likely-script tables disagree on a language both hold.',
+);
+
+const languageScriptOutput = [
+  `/** Generated from cldr-core ${manifest.version} by tools/generate-locale-profile.mjs. */`,
+  '',
+  '/**',
+  ' * The likely script of each language, grouped by script: every language',
+  ` * \`supplemental/likelySubtags.json\` gives likely subtags for, ${languageScriptCount} of them.`,
+  ' *',
+  " * UTS #35 Part 1, Parent Locales: the main component's `nonlikelyScript` rule gives root as the",
+  ' * parent of every locale of the form lang-Script whose script is not the likely script of lang,',
+  ' * and `parentLocales.json` lists only some of them. The toolkit applies the rule to the catalog',
+  ' * chain of a configured locale, which can be in any language, so this table holds every language',
+  ' * the pinned data has a likely script for. A language it does not hold keeps truncation.',
+  ' */',
+  '// prettier-ignore',
+  `export const LANGUAGE_SCRIPTS: Readonly<Record<string, string>> = Object.freeze(${JSON.stringify(languageScriptTable)});`,
   '',
 ].join('\n');
 
@@ -1712,6 +1756,11 @@ const likelyScriptOutputPath = resolve(
   'packages/runtime/src/likely-scripts.generated.ts',
 );
 
+const languageScriptOutputPath = resolve(
+  workspaceRoot,
+  'packages/toolkit/src/language-scripts.generated.ts',
+);
+
 const outputPath = resolve(
   workspaceRoot,
   'packages/runtime/core/src/locale-profile.generated.ts',
@@ -1756,6 +1805,11 @@ if (process.argv.includes('--check')) {
     'The checked-in Equator likely-script table is stale; run pnpm run generate:locale-profile.',
   );
   assert.equal(
+    await readFile(languageScriptOutputPath, 'utf8'),
+    languageScriptOutput,
+    'The checked-in Equator language-script table is stale; run pnpm run generate:locale-profile.',
+  );
+  assert.equal(
     await readFile(toolkitRtlOutputPath, 'utf8'),
     toolkitRtlOutput,
     'The checked-in toolkit copy of the right-to-left scripts is stale; run pnpm run generate:locale-profile.',
@@ -1785,7 +1839,7 @@ if (process.argv.includes('--check')) {
     );
   }
   console.log(
-    `Verified ${rtlScripts.length} RTL scripts, ${rtlRanges.length} strong right-to-left code point ranges derived from Unicode 17.0.0 Bidi_Class, agreeing with the CLDR script data on every letter in Unicode and dropping ${droppedByBidiClass.length} context-resolved code points and no strong one, and cardinal plural categories for ${Object.keys(pluralCategories).length} languages and ordinal plural categories for ${Object.keys(ordinalCategories).length} languages from cldr-core 48.2.0, and ${encompassedPairs} encompassed-language pairs over ${Object.keys(encompassed).length} language subtags, every one ranked by CLDR at ${widestKept} or closer where two languages it does not relate stand at ${unrelatedDistance._distance} and its default matching threshold is ${DEFAULT_THRESHOLD}; likely-script resolution remains native Intl under the tested platform matrix; and ${Object.keys(endonyms).length} endonyms from cldr-localenames-full ${localeNamesManifest.version}, agreeing with this platform's ICU on ${endonymsComparedToIcu.length - endonymsDisagreeingWithIcu.length} of the ${endonymsComparedToIcu.length} locales it has display names for; and ${Object.keys(orderedParentLocales).length} declared parent locales from cldr-core ${manifest.version}, ${undParents} of which name root, and the likely script of ${likelyScriptLanguages} languages and ${likelyScriptRegions} language_region tags; and ${aliasRules.length} locale alias rules, ${discardedAliasRules} discarded as UTS #35 Annex C discards them, with ${Object.keys(likelyRegions).length} likely regions for the territory exception; and ${timeZoneEntries.length} time zone names from tzdata ${timeZoneRelease}, ${timeZoneLinkCount} of them resolved to another primary identifier; and ${sanctionedUnits.length} single units ECMA-402 ${unitEdition[1]} edition sanctions, and ${currencyDigits.length} currencies cldr-core ${manifest.version} writes with other than 2 fraction digits.`,
+    `Verified ${rtlScripts.length} RTL scripts, ${rtlRanges.length} strong right-to-left code point ranges derived from Unicode 17.0.0 Bidi_Class, agreeing with the CLDR script data on every letter in Unicode and dropping ${droppedByBidiClass.length} context-resolved code points and no strong one, and cardinal plural categories for ${Object.keys(pluralCategories).length} languages and ordinal plural categories for ${Object.keys(ordinalCategories).length} languages from cldr-core 48.2.0, and ${encompassedPairs} encompassed-language pairs over ${Object.keys(encompassed).length} language subtags, every one ranked by CLDR at ${widestKept} or closer where two languages it does not relate stand at ${unrelatedDistance._distance} and its default matching threshold is ${DEFAULT_THRESHOLD}; likely-script resolution remains native Intl under the tested platform matrix; and ${Object.keys(endonyms).length} endonyms from cldr-localenames-full ${localeNamesManifest.version}, agreeing with this platform's ICU on ${endonymsComparedToIcu.length - endonymsDisagreeingWithIcu.length} of the ${endonymsComparedToIcu.length} locales it has display names for; and ${Object.keys(orderedParentLocales).length} declared parent locales from cldr-core ${manifest.version}, ${undParents} of which name root, and the likely script of ${likelyScriptLanguages} languages and ${likelyScriptRegions} language_region tags for the runtime and of ${languageScriptCount} languages for the toolkit; and ${aliasRules.length} locale alias rules, ${discardedAliasRules} discarded as UTS #35 Annex C discards them, with ${Object.keys(likelyRegions).length} likely regions for the territory exception; and ${timeZoneEntries.length} time zone names from tzdata ${timeZoneRelease}, ${timeZoneLinkCount} of them resolved to another primary identifier; and ${sanctionedUnits.length} single units ECMA-402 ${unitEdition[1]} edition sanctions, and ${currencyDigits.length} currencies cldr-core ${manifest.version} writes with other than 2 fraction digits.`,
   );
 } else {
   let current;
@@ -1846,6 +1900,16 @@ if (process.argv.includes('--check')) {
   }
   if (currentLikelyScripts !== likelyScriptOutput) {
     await writeFile(likelyScriptOutputPath, likelyScriptOutput, 'utf8');
+  }
+
+  let currentLanguageScripts;
+  try {
+    currentLanguageScripts = await readFile(languageScriptOutputPath, 'utf8');
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
+  if (currentLanguageScripts !== languageScriptOutput) {
+    await writeFile(languageScriptOutputPath, languageScriptOutput, 'utf8');
   }
 
   let currentToolkitRtl;

@@ -179,13 +179,16 @@ const PARENTS: Readonly<
 };
 
 /**
- * The parent of spec 03 section 4 in the component the service reads: the pinned one, else the
- * tag less its last subtag.
+ * The parent of spec 03 section 4 in the component the service reads: the pinned one, else root
+ * for a main-component locale in a script its language does not usually take, else the tag less
+ * its last subtag.
  */
 function parentOf(service: LocaleService, locale: string): string | undefined {
   const parents = PARENTS[service];
   const declared = Object.hasOwn(parents, locale) ? parents[locale] : undefined;
   if (declared !== undefined) return declared === 'und' ? undefined : declared;
+  if (parents === PARENT_LOCALES && hasNonlikelyScript(locale))
+    return undefined;
   const cut = locale.lastIndexOf('-');
   return cut <= 0 ? undefined : locale.slice(0, cut);
 }
@@ -266,6 +269,16 @@ function walk(
 
 let scriptsByTag: ReadonlyMap<string, string> | undefined;
 
+/** The pinned likely script of a language or a language_region, or `undefined` for one it lacks. */
+function likelyScript(tag: string): string | undefined {
+  scriptsByTag ??= new Map(
+    Object.entries(LIKELY_SCRIPTS).flatMap(([script, tags]) =>
+      tags.split(' ').map((tag) => [tag, script] as const),
+    ),
+  );
+  return scriptsByTag.get(tag);
+}
+
 /**
  * The script a tag is written in: its own script subtag, else the likely script of its
  * language_region, else of its language, the order UTS #35 Part 1 section 4.3 looks them up in.
@@ -273,16 +286,30 @@ let scriptsByTag: ReadonlyMap<string, string> | undefined;
  */
 function scriptOf(locale: Intl.Locale): string | undefined {
   if (locale.script !== undefined) return locale.script;
-  scriptsByTag ??= new Map(
-    Object.entries(LIKELY_SCRIPTS).flatMap(([script, tags]) =>
-      tags.split(' ').map((tag) => [tag, script] as const),
-    ),
-  );
   const regional =
     locale.region === undefined
       ? undefined
-      : scriptsByTag.get(`${locale.language}-${locale.region}`);
-  return regional ?? scriptsByTag.get(locale.language);
+      : likelyScript(`${locale.language}-${locale.region}`);
+  return regional ?? likelyScript(locale.language);
+}
+
+const SCRIPT_SUBTAG = /^[A-Z][a-z]{3}$/u;
+
+/**
+ * Whether a locale is a language and a script its language does not usually take.
+ *
+ * UTS #35 Part 1, Parent Locales: the main component's `nonlikelyScript` rule gives root as the
+ * parent of every such locale, and `parentLocales.json` lists only some of them, so `ru-Latn`
+ * takes root although no entry names it. A language the pinned table does not hold has no likely
+ * script to compare with and keeps truncation.
+ */
+function hasNonlikelyScript(locale: string): boolean {
+  const subtags = locale.split('-');
+  if (subtags.length !== 2) return false;
+  const [language, script] = subtags as [string, string];
+  if (!SCRIPT_SUBTAG.test(script)) return false;
+  const likely = likelyScript(language);
+  return likely !== undefined && likely !== script;
 }
 
 /**

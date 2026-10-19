@@ -74,6 +74,18 @@ with its last subtag removed. A catalog chain walks the main component. A format
 walks the component its data comes from, as `08-formatting-parsing-and-domain.spec.md` section 4
 states.
 
+The main component has a rule as well as a list. A release MUST give root as the main parent of a
+locale that is a language and a script other than the likely script of that language, the
+`nonlikelyScript` rule of the same section, whether or not the pinned list names the locale: the
+list is a subset kept for migration, and `ru-Latn` inherits from nothing although no entry names it.
+A parent the pinned list declares for such a locale is still its parent, so `hi-Latn` inherits from
+`en-IN`, and a locale with a region below the script truncates to the script first. The likely
+script is that of the language in the pinned likely subtags, and a language they give no likely
+script keeps truncation. The toolkit holds the likely script of every language the pinned data
+lists, 7,207, because a project configures locales in any language. The runtime holds the 322
+languages CLDR has locale data for, because a host's locale data is drawn from them, so a
+formatting locale in any other language reaches no locale the host has whichever parent it takes.
+
 A consumer that disagrees declares a parent for one locale. The declaration replaces one step of the
 chain and leaves the rest pinned, and naming root says the locale inherits from nothing. It is read
 at every step rather than only at the first, so a consumer may redirect a locale nobody serves that a

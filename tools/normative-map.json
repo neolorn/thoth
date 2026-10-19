@@ -660,6 +660,18 @@
     {
       "spec": "03-locale-identity-and-resolution.spec.md",
       "section": "4. Inheritance",
+      "statement": "A release MUST give root as the main parent of a locale that is a language and a script other than the likely script of that language, the `nonlikelyScript` rule of the same section, whether or not the pinned list names the locale: the list is a subset kept for migration, and `ru-Latn` inherits from nothing although no entry names it.",
+      "checks": [
+        "assurance:formatting-chain-nonlikely-script-not-root",
+        "assurance:formatting-chain-nonlikely-script-applied-to-a-component",
+        "assurance:formatting-chain-nonlikely-script-below-the-script",
+        "assurance:catalog-chain-nonlikely-script-not-root",
+        "assurance:catalog-chain-unknown-language-sent-to-root"
+      ]
+    },
+    {
+      "spec": "03-locale-identity-and-resolution.spec.md",
+      "section": "4. Inheritance",
       "statement": "A declared parent may change the language, and a release MUST follow that rather than narrow the pinned data.",
       "checks": ["assurance:cross-language-parent-narrowed"]
     },

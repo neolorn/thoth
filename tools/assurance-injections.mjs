@@ -3191,9 +3191,9 @@ export const injections = Object.freeze([
     invariant:
       'The script of a tag without one is the likely script of its language_region before that of its language, so zh-TW is Traditional Chinese.',
     source: 'packages/runtime/src/host-locale.ts',
-    find: '  return regional ?? scriptsByTag.get(locale.language);',
+    find: '  return regional ?? likelyScript(locale.language);',
     replace:
-      '  return regional === undefined ? scriptsByTag.get(locale.language) : undefined;',
+      '  return regional === undefined ? likelyScript(locale.language) : undefined;',
     caughtBy: 'packages/runtime/test/fallback-writing-rule.test.ts',
   },
   {
@@ -3249,6 +3249,53 @@ export const injections = Object.freeze([
     find: '  segmenter: SEGMENTATION_PARENT_LOCALES,',
     replace: '  segmenter: PARENT_LOCALES,',
     caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
+  },
+  {
+    id: 'formatting-chain-nonlikely-script-not-root',
+    invariant:
+      'A formatting locale that is a language and a script its language does not usually take has root as its main parent, listed or not, so ru-Latn is not written as ru.',
+    source: 'packages/runtime/src/host-locale.ts',
+    find: '  if (parents === PARENT_LOCALES && hasNonlikelyScript(locale))\n    return undefined;\n',
+    replace: '',
+    caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
+  },
+  {
+    id: 'formatting-chain-nonlikely-script-applied-to-a-component',
+    invariant:
+      "The nonlikelyScript rule is the main component's alone, so the plural rules of ru-Latn are those of ru.",
+    source: 'packages/runtime/src/host-locale.ts',
+    find: '  if (parents === PARENT_LOCALES && hasNonlikelyScript(locale))',
+    replace: '  if (hasNonlikelyScript(locale))',
+    caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
+  },
+  {
+    id: 'formatting-chain-nonlikely-script-below-the-script',
+    invariant:
+      'The nonlikelyScript rule applies to a language and a script alone, so sr-Latn-AQ truncates to sr-Latn.',
+    source: 'packages/runtime/src/host-locale.ts',
+    find: '  if (subtags.length !== 2) return false;\n  const [language, script] = subtags as [string, string];\n  if (!SCRIPT_SUBTAG.test(script)) return false;\n  const likely = likelyScript(language);',
+    replace:
+      '  if (subtags.length < 2) return false;\n  const [language, script] = subtags as [string, string];\n  if (!SCRIPT_SUBTAG.test(script)) return false;\n  const likely = likelyScript(language);',
+    caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
+  },
+  {
+    id: 'catalog-chain-nonlikely-script-not-root',
+    invariant:
+      'A configured locale that is a language and a script its language does not usually take has no parent, listed or not, so ru-Latn is not served ru catalogs.',
+    source: 'packages/toolkit/src/locales.ts',
+    find: '  if (hasNonlikelyScript(locale)) return undefined;\n',
+    replace: '',
+    caughtBy: 'packages/toolkit/test/parent-locale-chain.test.ts',
+  },
+  {
+    id: 'catalog-chain-unknown-language-sent-to-root',
+    invariant:
+      'A configured locale in a language the pinned data gives no likely script keeps truncation.',
+    source: 'packages/toolkit/src/locales.ts',
+    find: '  const likely = scriptsByLanguage.get(language);\n  return likely !== undefined && likely !== script;',
+    replace:
+      '  const likely = scriptsByLanguage.get(language);\n  return likely !== script;',
+    caughtBy: 'packages/toolkit/test/parent-locale-chain.test.ts',
   },
   {
     id: 'formatting-locale-fallback-not-reported',

@@ -17,6 +17,9 @@ export const PARENT_LOCALE_PROFILE =
  * not usually take inherits from root, and 49 entries say `und` for that reason. Dropping
  * them would put truncation back in force and send `az-Arab` to `az`, which is the Latin-script
  * locale it was separated from, so they are kept and a reader stops when it reaches one.
+ * UTS #35 Part 1, Parent Locales, calls them a short list kept for migration: the rule covers
+ * every language and script that is not the language's likely one, and both packages apply it
+ * from the likely scripts to the locales this table does not name, `ru-Latn` among them.
  *
  * Four parents change the language: `hi-Latn` takes `en-IN`, `ht` takes `fr-HT`, and `nb` and
  * `nn` take `no`. That is CLDR data rather than a choice Equator made, and a project that

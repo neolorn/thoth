@@ -5,6 +5,7 @@ import {
   type ToolkitResult,
 } from './diagnostics.js';
 import { LOCALE_ENDONYMS } from './endonyms.generated.js';
+import { LANGUAGE_SCRIPTS } from './language-scripts.generated.js';
 import { canonicalizeLanguageTag } from './language-tag.js';
 import { PARENT_LOCALES } from './parent-locales.generated.js';
 import { untrustedText } from './untrusted-text.js';
@@ -132,11 +133,14 @@ const NO_PARENT_OVERRIDES: Readonly<Record<string, string>> = Object.freeze({});
  *
  * `undefined` means the locale inherits from root, which is where a chain ends.
  *
- * Three rules in the order UTS 35 section 4.1.3 gives them. A parent the project declared wins,
+ * Four rules in the order UTS 35 section 4.1.3 gives them. A parent the project declared wins,
  * because its configuration is where a consumer says CLDR's answer is wrong for this product.
  * Otherwise the pinned table answers, `und` included: `und` there means root, so it ends the chain
- * rather than naming a locale. Otherwise the parent is the tag with its last subtag removed, and a
- * tag with one subtag left has none.
+ * rather than naming a locale. Otherwise a language and a script its language does not usually
+ * take inherit from root, the `nonlikelyScript` rule of UTS #35 Part 1, Parent Locales, which the
+ * table lists only some locales of: `ru-Latn` has no entry and is not served Cyrillic Russian.
+ * Otherwise the parent is the tag with its last subtag removed, and a tag with one subtag left has
+ * none.
  *
  * Declarations are consulted at every hop rather than only at the first, which is what makes one
  * entry enough to move a family: a project that gives `en-001` a different parent has moved every
@@ -154,8 +158,32 @@ export function localeParent(
   if (declared !== undefined) {
     return declared === ROOT_LOCALE ? undefined : declared;
   }
+  if (hasNonlikelyScript(locale)) return undefined;
   const cut = locale.lastIndexOf('-');
   return cut <= 0 ? undefined : locale.slice(0, cut);
+}
+
+let scriptsByLanguage: ReadonlyMap<string, string> | undefined;
+
+const SCRIPT_SUBTAG = /^[A-Z][a-z]{3}$/u;
+
+/**
+ * Whether a locale is a language and a script other than the likely script of that language.
+ * A language the pinned table does not hold has no likely script to compare with, and keeps
+ * truncation.
+ */
+function hasNonlikelyScript(locale: string): boolean {
+  const subtags = locale.split('-');
+  if (subtags.length !== 2) return false;
+  const [language, script] = subtags as [string, string];
+  if (!SCRIPT_SUBTAG.test(script)) return false;
+  scriptsByLanguage ??= new Map(
+    Object.entries(LANGUAGE_SCRIPTS).flatMap(([likely, languages]) =>
+      languages.split(' ').map((tag) => [tag, likely] as const),
+    ),
+  );
+  const likely = scriptsByLanguage.get(language);
+  return likely !== undefined && likely !== script;
 }
 
 /**
