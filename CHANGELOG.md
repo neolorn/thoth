@@ -14,7 +14,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The 0.x line is the alpha stage,
 then the betas, then the release candidates and the milestones that followed them.
 
-## [1.0.0-rc.1] - 2026-10-15
+## [1.0.0-rc.1] - 2026-10-19
 
 The first release candidate of Equator, a localization framework for Angular applications.
 
@@ -25,10 +25,10 @@ the entry points that use them. The toolkit takes `@angular/compiler` at `>=22.0
 `typescript` at `>=6.0.2 <6.1.0`.
 
 The standards profile is `equator-1`: Unicode 17.0.0, CLDR and LDML 48.2, MessageFormat as LDML 48.2
-defines it, XLIFF 2.2 Committee Specification 01, the sitemaps.org 0.9 protocol, the IANA Language
-Subtag Registry dated 2026-09-17, and the IANA Time Zone Database 2026e. The runtime depends on `tslib`
-and nothing else. The toolkit depends on `yaml` 2.9.1, `ajv` 8.20.0, `jsonc-parser` 3.3.1,
-`messageformat` 4.0.0 and `tslib`.
+defines it, the ECMA-402 13th edition for the options of a numeric function, XLIFF 2.2 Committee
+Specification 01, the sitemaps.org 0.9 protocol, the IANA Language Subtag Registry dated 2026-09-17,
+and the IANA Time Zone Database 2026e. The runtime depends on `tslib` and nothing else. The toolkit
+depends on `yaml` 2.9.1, `ajv` 8.20.0, `jsonc-parser` 3.3.1, `messageformat` 4.0.0 and `tslib`.
 
 It is built and run on Angular 22.2.1, 22.0.4 and 22.0.0, TypeScript 6.0.3 and 6.0.2, RxJS 7.8.2
 and 7.4.0, Node 22.22.3, 24.15.0, 26.0.0 and 26.10.0, and Chromium, Firefox and WebKit through
@@ -59,7 +59,9 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
 - Catalogs are YAML, one file per scope and locale at `i18n/<scope>/<locale>.yaml`, with message
   bodies in MessageFormat 2.
 - The MessageFormat functions `:string`, `:number`, `:integer`, `:offset`, `:currency`, `:percent`,
-  `:unit`, `:datetime`, `:date` and `:time`, with plural, ordinal and select variants.
+  `:unit`, `:datetime`, `:date` and `:time`, with plural, ordinal and select variants. The toolkit
+  judges a numeric function's options and units by the rules of the ECMA-402 13th edition, so a
+  message compiles to the same diagnostics on every machine.
 - Each message is a typed handle. A missing, extra or mistyped input fails the build, in TypeScript
   and in a template.
 - `inputs` and `slots` on a source message narrow what the toolkit inferred, and `description` and
@@ -166,10 +168,16 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
 - The zone of a value is checked against the pinned time zone database, and a calendar and a
   numbering system by the name syntax UTS #35 gives them, so a value is valid on every host or on
   none. Where the host cannot write one, the function that formats the value returns
-  `unsupported-formatting-capability`. Node 22.22.3 has no `Intl.DurationFormat`, so
-  `formatDuration` and `localizedDuration` return it there.
+  `unsupported-formatting-capability`, and a message that writes it raises it. Node 22.22.3 has no
+  `Intl.DurationFormat`, so `formatDuration` and `localizedDuration` return it there.
 - `withFormattingContext` sets the time zone, calendar, numbering system and hour cycle every
   formatter starts from. What a call names stands over the context.
+- A locale the host has no data for is formatted in the first locale of its pinned CLDR parent
+  chain that the host has, and the result's `language` names that locale: `de-AQ` is written in
+  `de`, and `ht` in `fr-HT`. Where no locale of the chain is available, or the host drops a keyword
+  of the locale tag that the operation reads, the operation returns
+  `unsupported-formatting-capability`. `selectPlural` and `compareLocalized` report `language` the
+  same way, so under `en-US` they report `en`, the locale the host keeps those rules for.
 - `formatRelativeTime` with `withRelativeTimePolicy` for the units and the range, and
   `withLocalizationClock`, `systemClock` and `fixedClock` for what now is.
 - `formatPersonName` formats a structured name from the CLDR person-name patterns, for the
@@ -189,7 +197,9 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
 - `localizedAsset`, `neutralAsset`, `fixedLanguageAsset` and `resolveLocalizedAsset` select an
   asset per locale and direction.
 - `contentPresentation` and `languagePresentation` give content the application supplies its own
-  language and direction, including content whose language is unknown.
+  language and direction, including content whose language is unknown. They, `localeProfile` and
+  `resolveTypography` refuse a tag the platform does not parse with `invalid-configuration`, with
+  the platform's error as its cause.
 - Translated content is data. A catalog cannot introduce markup, a script, a URL or a handler, and
   an interpolated value is isolated from the direction of the text around it.
 - Authored catalogs refuse directional overrides and embeddings, unbalanced isolates, and the byte
