@@ -107,11 +107,19 @@ describe('a message value formatted by another locale of the chain', () => {
     { name: 'n', type: 'number', optional: false, nullable: false },
   ];
 
-  const valuePart = (locale: string): LocalizedValuePart => {
-    const semantics = parse('{$n :number}') as unknown as {
+  const D_INPUT: readonly CompiledInputContract[] = [
+    { name: 'd', type: 'date-time', optional: false, nullable: false },
+  ];
+
+  const valuePart = (
+    locale: string,
+    source = '{$n :number}',
+  ): LocalizedValuePart => {
+    const semantics = parse(source) as unknown as {
       declarations: unknown;
       pattern: unknown;
     };
+    const dated = source.includes('$d');
     const result = evaluateArtifact(
       {
         body: {
@@ -119,10 +127,10 @@ describe('a message value formatted by another locale of the chain', () => {
           declarations: semantics.declarations,
           pattern: semantics.pattern,
         },
-        inputs: N_INPUT,
+        inputs: dated ? D_INPUT : N_INPUT,
         resultKind: 'structured',
       },
-      { n: 1234.5 },
+      dated ? { d: new Date(Date.UTC(2024, 2, 14, 13, 5)) } : { n: 1234.5 },
       undefined,
       at(locale),
     );
@@ -144,6 +152,19 @@ describe('a message value formatted by another locale of the chain', () => {
 
   it('names de for de-AQ and is not a fallback', () => {
     const part = valuePart('de-AQ');
+    expect(part.valueLanguage).toBe('de');
+    expect('valueFallback' in part).toBe(false);
+  });
+
+  it('is a fallback for a :date value under ht, written as fr-HT', () => {
+    expect(valuePart('ht', '{$d :date}')).toMatchObject({
+      valueLanguage: 'fr-HT',
+      valueFallback: true,
+    });
+  });
+
+  it('names de for a :date value under de-AQ and is not a fallback', () => {
+    const part = valuePart('de-AQ', '{$d :date}');
     expect(part.valueLanguage).toBe('de');
     expect('valueFallback' in part).toBe(false);
   });
