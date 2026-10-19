@@ -82,8 +82,8 @@ A parent the pinned list declares for such a locale is still its parent, so `hi-
 `en-IN`, and a locale with a region below the script truncates to the script first. The likely
 script is that of the language in the pinned likely subtags, and a language they give no likely
 script keeps truncation. The toolkit holds the likely script of every language the pinned data
-lists, 7,207, because a project configures locales in any language. The runtime holds the 322
-languages CLDR has locale data for, because a host's locale data is drawn from them, so a
+lists, 7,207, because a project configures locales in any language. The runtime holds the 324
+languages CLDR has locale data or plural rules for, because a host's data is drawn from them, so a
 formatting locale in any other language reaches no locale the host has whichever parent it takes.
 
 A consumer that disagrees declares a parent for one locale. The declaration replaces one step of the

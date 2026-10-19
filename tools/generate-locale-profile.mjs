@@ -1085,20 +1085,39 @@ const parentLocaleOutput = [
 // The script a language is written in where a tag names none, by the lookup of UTS #35 Part 1
 // section 4.3, Add Likely Subtags: language_region first, then language. The runtime compares the
 // script of a formatting locale with the script of the locale its parent chain formatted in, and
-// the two share a language only where the host has a locale of that language, which is a locale
-// CLDR carries. So the table holds the language of every locale `availableLocales.json` lists,
-// and each language_region whose script differs from its language's, and nothing for the
-// thousands of languages CLDR has likely subtags for but no locale data.
+// the two share a language only where the host has data in that language, which is data CLDR
+// carries: a locale `availableLocales.json` lists, or the plural rules of a language that has no
+// locale, as `guw` and `ars` have. So the table holds those languages, and each language_region
+// whose script differs from its language's, and nothing for the thousands of languages CLDR has
+// likely subtags for but no data. A language of the plural rules that is an alias is left out,
+// because the runtime canonicalizes a tag before it walks the chain.
 const REGION_SUBTAG = /^(?:[A-Z]{2}|\d{3})$/u;
 const likelyScriptOf = (key) => likelySubtags[key]?.split('-')[1];
-const localeLanguages = [
+const availableLanguages = [
   ...new Set(availableLocales.map((tag) => tag.split('-')[0])),
 ].filter((language) => language !== 'root' && language !== 'und');
 assert.deepEqual(
-  localeLanguages.filter((language) => likelyScriptOf(language) === undefined),
+  availableLanguages.filter(
+    (language) => likelyScriptOf(language) === undefined,
+  ),
   [],
   'A language CLDR has locale data for has no likely subtags, so its script would be unknown.',
 );
+const pluralLanguages = [
+  ...new Set(
+    [...Object.keys(pluralCategories), ...Object.keys(ordinalCategories)].map(
+      (tag) => tag.split('-')[0],
+    ),
+  ),
+].filter(
+  (language) =>
+    language !== 'root' &&
+    language !== 'und' &&
+    !availableLanguages.includes(language) &&
+    isPinnedCanonical(language) &&
+    likelyScriptOf(language) !== undefined,
+);
+const localeLanguages = [...availableLanguages, ...pluralLanguages];
 const likelyScripts = new Map(
   localeLanguages.map((language) => [language, likelyScriptOf(language)]),
 );
@@ -1134,14 +1153,15 @@ const likelyScriptOutput = [
   ' * languages and the language_region tags of `supplemental/likelySubtags.json` whose likely',
   ' * subtags give that script.',
   ' *',
-  ` * ${likelyScriptLanguages} languages, the language of every locale CLDR carries, and the ${likelyScriptRegions}`,
-  " * language_region tags whose script is not their language's. UTS #35 Part 1 section 4.3 looks",
-  ' * up language_region before language, so `zh-TW` is `Hant` where `zh` is `Hans`.',
+  ` * ${likelyScriptLanguages} languages, the language of every locale CLDR carries and of every set of plural rules it`,
+  ` * has for a language without a locale, and the ${likelyScriptRegions} language_region tags whose script is not`,
+  " * their language's. UTS #35 Part 1 section 4.3 looks up language_region before language, so",
+  ' * `zh-TW` is `Hant` where `zh` is `Hans`.',
   ' *',
   ' * The runtime reads it to tell whether the locale a formatter used is written in the script of',
   ' * the locale asked for, and to give root as the main parent of a language and a script that',
   ' * language does not usually take. The host is not asked, because its likely subtags are its own',
-  ' * data and change with it. A language this table does not hold has no locale the host could',
+  ' * data and change with it. A language this table does not hold has no data the host could',
   ' * have used in its place, and its script is unknown.',
   ' */',
   '// prettier-ignore',
