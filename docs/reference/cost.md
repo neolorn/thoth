@@ -81,8 +81,8 @@ Each entry point as published, unminified, and each package as installed, source
 
 | Entry point                |   Bytes |   gzip | Brotli |
 | -------------------------- | ------: | -----: | -----: |
-| `@neolorn/equator`         | 413,990 | 86,665 | 70,081 |
-| `@neolorn/equator/core`    | 118,282 | 30,797 | 24,927 |
+| `@neolorn/equator`         | 425,652 | 89,160 | 71,947 |
+| `@neolorn/equator/core`    | 118,781 | 30,879 | 24,969 |
 | `@neolorn/equator/forms`   |   7,177 |  2,251 |  1,958 |
 | `@neolorn/equator/http`    |  13,826 |  4,159 |  3,624 |
 | `@neolorn/equator/router`  |  56,922 | 13,446 | 11,576 |
@@ -91,5 +91,5 @@ Each entry point as published, unminified, and each package as installed, source
 
 | Package                    | Files |     Bytes |
 | -------------------------- | ----: | --------: |
-| `@neolorn/equator`         |    38 | 3,140,035 |
-| `@neolorn/equator-toolkit` |   222 | 3,877,157 |
+| `@neolorn/equator`         |    38 | 3,185,187 |
+| `@neolorn/equator-toolkit` |   234 | 3,924,616 |
