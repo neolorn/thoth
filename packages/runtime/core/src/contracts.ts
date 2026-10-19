@@ -253,9 +253,10 @@ export interface GeneratedConfiguration {
    * Absent, or a locale absent from it, means that locale inherits from nothing and falls to the
    * source locale directly.
    *
-   * The runtime carries no parent table of its own and must not: the toolkit's is 199 entries
-   * about every locale CLDR knows, and an application shipping three locales needs three short
-   * lists. Chains also depend on which locales this owner ships, which only the build knows.
+   * Catalog chains are resolved here rather than in the runtime because they depend on which
+   * locales this owner ships and on the owner's own declarations, which only the build knows. The
+   * runtime's copy of the pinned parent table serves formatting alone, where a context's locale is
+   * one the host has no data for, and it reads none of this owner's declarations.
    */
   readonly localeFallbacks?: Readonly<Record<string, readonly string[]>>;
   /**
@@ -1573,6 +1574,12 @@ export interface LocalizedValuePart {
   readonly isolate: boolean;
   /** MessageFormat 2's `u:id`, when the author wrote one. Absent from the string projection. */
   readonly id?: string;
+  /**
+   * The locale of the formatting context's parent chain a function formatted the value in, where
+   * the host has no data for the context's own locale. Absent where the context's locale formatted
+   * it, and for a value no function formatted.
+   */
+  readonly valueLanguage?: string;
   /** The locale that supplied the message this sits in. */
   readonly supplyingLocale: string;
 }
@@ -2080,7 +2087,15 @@ export interface LocaleMetadata {
  * on the web rather than a defect, so it is reported rather than thrown. Check `ok` first.
  */
 export type LocaleCapabilityResult<Value> =
-  | { readonly ok: true; readonly value: Value }
+  | {
+      readonly ok: true;
+      readonly value: Value;
+      /**
+       * The locale of the context's parent chain that answered, where the host has no data for the
+       * context's own locale. Absent where the context's locale answered.
+       */
+      readonly language?: string;
+    }
   | { readonly ok: false; readonly diagnostic: LocalizationDiagnostic };
 
 /**

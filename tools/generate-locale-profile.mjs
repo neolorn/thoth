@@ -1013,10 +1013,11 @@ const parentLocaleOutput = [
   ' * `nn` take `no`. That is CLDR data rather than a choice Equator made, and a project that',
   ' * disagrees says so under `parentLocales` in its own configuration.',
   ' *',
-  ' * This lives in the toolkit and not in the runtime for the reason the endonyms do: it is a build',
-  ' * input. The generated configuration carries the resolved chain for each configured locale, so',
-  ' * an application shipping three locales sends three short lists to the browser rather than a',
-  ' * table of every parent CLDR declares.',
+  ' * Both packages carry the same table. The toolkit resolves from it the chain each configured',
+  ' * locale takes through the catalogs an owner ships, and writes that chain into the generated',
+  ' * configuration. The runtime walks it where a formatting context names a locale the host has no',
+  ' * data for, which can be any locale and not only a configured one, so it cannot be resolved',
+  ' * ahead of time. Only the formatting operations read it.',
   ' */',
   '// prettier-ignore',
   `export const PARENT_LOCALES: Readonly<Record<string, string>> = Object.freeze(${JSON.stringify(orderedParentLocales)});`,
@@ -1577,10 +1578,13 @@ const endonymOutputPath = resolve(
   'packages/toolkit/src/endonyms.generated.ts',
 );
 
-const parentLocaleOutputPath = resolve(
-  workspaceRoot,
+// The toolkit resolves a configuration's catalog chains from the table and the runtime walks it
+// where the host has no data for a formatting locale, and neither package can import the other, so
+// both carry the same table.
+const parentLocaleOutputPaths = [
+  'packages/runtime/src/parent-locales.generated.ts',
   'packages/toolkit/src/parent-locales.generated.ts',
-);
+].map((path) => resolve(workspaceRoot, path));
 
 const outputPath = resolve(
   workspaceRoot,
@@ -1613,11 +1617,13 @@ if (process.argv.includes('--check')) {
     endonymOutput,
     'The checked-in Equator endonym table is stale; run pnpm run generate:locale-profile.',
   );
-  assert.equal(
-    await readFile(parentLocaleOutputPath, 'utf8'),
-    parentLocaleOutput,
-    'The checked-in Equator parent-locale table is stale; run pnpm run generate:locale-profile.',
-  );
+  for (const path of parentLocaleOutputPaths) {
+    assert.equal(
+      await readFile(path, 'utf8'),
+      parentLocaleOutput,
+      'The checked-in Equator parent-locale table is stale; run pnpm run generate:locale-profile.',
+    );
+  }
   assert.equal(
     await readFile(toolkitRtlOutputPath, 'utf8'),
     toolkitRtlOutput,
@@ -1689,14 +1695,16 @@ if (process.argv.includes('--check')) {
     await writeFile(endonymOutputPath, endonymOutput, 'utf8');
   }
 
-  let currentParentLocales;
-  try {
-    currentParentLocales = await readFile(parentLocaleOutputPath, 'utf8');
-  } catch (error) {
-    if (error?.code !== 'ENOENT') throw error;
-  }
-  if (currentParentLocales !== parentLocaleOutput) {
-    await writeFile(parentLocaleOutputPath, parentLocaleOutput, 'utf8');
+  for (const path of parentLocaleOutputPaths) {
+    let currentParentLocales;
+    try {
+      currentParentLocales = await readFile(path, 'utf8');
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+    }
+    if (currentParentLocales !== parentLocaleOutput) {
+      await writeFile(path, parentLocaleOutput, 'utf8');
+    }
   }
 
   let currentToolkitRtl;

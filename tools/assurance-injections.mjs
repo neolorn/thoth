@@ -323,7 +323,7 @@ export const injections = Object.freeze([
     // nine call sites in this file actually uses what the helper returns. This drops the tag at one
     // site while leaving the validation above it intact, which is exactly the defect found in
     // `evaluator.ts`: a site that validates the numbering system and then formats without it.
-    find: `    const formatter = cache.number(formattingTag, {
+    find: `    const formatter = cache.number(host.tag, {
       ...options,
     });
     return success(
@@ -3060,8 +3060,8 @@ export const injections = Object.freeze([
     invariant:
       "An ISO plain date is written in the calendar the formatting context names, under the call's own.",
     source: 'packages/runtime/src/formatting.ts',
-    find: '        ...displayCalendar(context.calendar),\n        ...displayCalendar(value.calendar),',
-    replace: '        ...displayCalendar(value.calendar),',
+    find: '      ...displayCalendar(context.calendar),\n      ...displayCalendar(value.calendar),',
+    replace: '      ...displayCalendar(value.calendar),',
     caughtBy: 'packages/runtime/test/plain-date-context-calendar.test.ts',
   },
   {
@@ -3078,8 +3078,8 @@ export const injections = Object.freeze([
     invariant:
       "A plain date counted in gregory is written in the Gregorian calendar over the formatting context's.",
     source: 'packages/runtime/src/formatting.ts',
-    find: '        ...displayCalendar(context.calendar),\n        ...displayCalendar(value.calendar),',
-    replace: '        ...displayCalendar(context.calendar),',
+    find: '      ...displayCalendar(context.calendar),\n      ...displayCalendar(value.calendar),',
+    replace: '      ...displayCalendar(context.calendar),',
     caughtBy: 'packages/runtime/test/plain-date-calendar.test.ts',
   },
   {
@@ -3087,8 +3087,8 @@ export const injections = Object.freeze([
     invariant:
       "An ISO plain date-time is written in the calendar the formatting context names, under the call's own.",
     source: 'packages/runtime/src/formatting.ts',
-    find: '        ...displayCalendar(context.calendar),\n        ...displayCalendar(value.date.calendar),',
-    replace: '        ...displayCalendar(value.date.calendar),',
+    find: '      ...displayCalendar(context.calendar),\n      ...displayCalendar(value.date.calendar),',
+    replace: '      ...displayCalendar(value.date.calendar),',
     caughtBy: 'packages/runtime/test/plain-date-context-calendar.test.ts',
   },
   {
@@ -3096,9 +3096,9 @@ export const injections = Object.freeze([
     invariant:
       "A plain time is written in the hour cycle the call names over the formatting context's.",
     source: 'packages/runtime/src/formatting.ts',
-    find: '      {\n        ...(context.hourCycle === undefined\n          ? {}\n          : { hourCycle: context.hourCycle }),\n        ...options,',
+    find: '    const dateOptions: Intl.DateTimeFormatOptions = {\n      ...(context.hourCycle === undefined\n        ? {}\n        : { hourCycle: context.hourCycle }),\n      ...options,',
     replace:
-      '      {\n        ...options,\n        ...(context.hourCycle === undefined\n          ? {}\n          : { hourCycle: context.hourCycle }),',
+      '    const dateOptions: Intl.DateTimeFormatOptions = {\n      ...options,\n      ...(context.hourCycle === undefined\n        ? {}\n        : { hourCycle: context.hourCycle }),',
     caughtBy: 'packages/runtime/test/call-named-hour-cycle.test.ts',
   },
   {
@@ -3106,9 +3106,9 @@ export const injections = Object.freeze([
     invariant:
       "A plain date-time is written in the hour cycle the call names over the formatting context's.",
     source: 'packages/runtime/src/formatting.ts',
-    find: '        ...displayCalendar(value.date.calendar),\n        ...(context.hourCycle === undefined\n          ? {}\n          : { hourCycle: context.hourCycle }),\n        ...options,',
+    find: '      ...displayCalendar(value.date.calendar),\n      ...(context.hourCycle === undefined\n        ? {}\n        : { hourCycle: context.hourCycle }),\n      ...options,',
     replace:
-      '        ...displayCalendar(value.date.calendar),\n        ...options,\n        ...(context.hourCycle === undefined\n          ? {}\n          : { hourCycle: context.hourCycle }),',
+      '      ...displayCalendar(value.date.calendar),\n      ...options,\n      ...(context.hourCycle === undefined\n        ? {}\n        : { hourCycle: context.hourCycle }),',
     caughtBy: 'packages/runtime/test/call-named-hour-cycle.test.ts',
   },
   {
@@ -3139,6 +3139,69 @@ export const injections = Object.freeze([
     find: "  return answered === 'UTC'\n    ? undefined",
     replace: "  return timeZone === 'UTC'\n    ? undefined",
     caughtBy: 'packages/runtime/test/plain-value-zone-read-as-utc.test.ts',
+  },
+  {
+    id: 'formatting-locale-parent-chain-not-the-pinned-one',
+    invariant:
+      'A formatting locale the host has no data for falls back through the pinned CLDR parent chain, so ht formats as fr-HT on every host.',
+    source: 'packages/runtime/src/host-locale.ts',
+    find: '  const declared = Object.hasOwn(PARENT_LOCALES, locale)',
+    replace: '  const declared = Object.hasOwn({}, locale)',
+    caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
+  },
+  {
+    id: 'formatting-locale-chain-end-written-in-the-host-default',
+    invariant:
+      'Where no locale of the parent chain is one the host has, a formatter returns the typed unsupported result rather than writing in the host default locale.',
+    source: 'packages/runtime/src/host-locale.ts',
+    find: '  if (member === undefined) return REFUSED;',
+    replace: '  if (member === undefined) member = base;',
+    caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
+  },
+  {
+    id: 'formatting-locale-keyword-the-host-drops-written',
+    invariant:
+      'A keyword of the context locale that the operation reads and the host drops is reported as an option the host drops is.',
+    source: 'packages/runtime/src/host-locale.ts',
+    find: '    if (carried.some((name) => kept[name] !== keywords[name])) return REFUSED;',
+    replace: '    void kept;',
+    caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
+  },
+  {
+    id: 'formatting-locale-fallback-not-reported',
+    invariant:
+      'A formatted value reports the locale of the parent chain that wrote it as its language.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: '    language: host.fallback ?? context.locale,',
+    replace: '    language: context.locale,',
+    caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
+  },
+  {
+    id: 'capability-locale-fallback-not-reported',
+    invariant:
+      'A capability answer reports the locale of the parent chain that answered as its language.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: '    ...(host.fallback === undefined ? {} : { language: host.fallback }),',
+    replace: '    ...{},',
+    caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
+  },
+  {
+    id: 'message-value-language-not-reported',
+    invariant:
+      'A message value part reports the locale of the parent chain a function formatted it in as its valueLanguage.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '      : { valueLanguage: value.formattedIn }),',
+    replace: '      : {}),',
+    caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
+  },
+  {
+    id: 'message-formatting-locale-the-host-lacks-written',
+    invariant:
+      'A message function under a formatting locale whose parent chain the host has none of raises the typed unsupported result.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '  if (!host.ok) {\n    unsupportedFormatting(',
+    replace: '  if (host.ok === undefined) {\n    unsupportedFormatting(',
+    caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
   },
   {
     id: 'context-time-zone-feature-not-marked',
@@ -4607,9 +4670,9 @@ export const injections = Object.freeze([
     invariant:
       "A value in a message a fallback catalog supplied is written in the target locale's formatting context, not the supplying catalog's.",
     source: 'packages/runtime/src/evaluator.ts',
-    find: '    formatter = environment.formatterCache.number(\n      formattingTag,\n      options as Intl.NumberFormatOptions,',
+    find: "  const host = hostFormattingTag(\n    functionName,\n    'number',\n    formattingTag,",
     replace:
-      '    formatter = environment.formatterCache.number(\n      environment.supplyingLocale,\n      options as Intl.NumberFormatOptions,',
+      "  const host = hostFormattingTag(\n    functionName,\n    'number',\n    environment.supplyingLocale,",
     caughtBy: 'packages/runtime/test/supplying-and-formatting-locale.test.ts',
   },
   {
@@ -5119,8 +5182,8 @@ export const injections = Object.freeze([
     invariant:
       "A variant of a message supplied by a fallback catalog is chosen by the supplying catalog's plural rules, not the formatting locale's.",
     source: 'packages/runtime/src/evaluator.ts',
-    find: '.plural(environment.supplyingLocale, { type: pluralType })',
-    replace: '.plural(environment.formatting.locale, { type: pluralType })',
+    find: "        'plural',\n        environment.supplyingLocale,",
+    replace: "        'plural',\n        environment.formatting.locale,",
     caughtBy: 'packages/runtime/test/fallback-plural-selection.test.ts',
   },
   {

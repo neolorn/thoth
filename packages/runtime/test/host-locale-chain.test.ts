@@ -1,0 +1,364 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  LocalizationError,
+  type FormattingContext,
+  type FormattingResult,
+  type LocaleCapabilityResult,
+  type LocalizedParts,
+} from '@neolorn/equator/core';
+
+import type { CompiledInputContract } from '../src/catalog-runtime.js';
+import {
+  compareLocalized,
+  decimal,
+  duration,
+  formatDisplayName,
+  formatDuration,
+  formatInstant,
+  formatInstantRange,
+  formatList,
+  formatMeasurement,
+  formatMoney,
+  formatNumber,
+  formatNumberRange,
+  formatPercent,
+  formatPercentagePoints,
+  formatPlainDate,
+  formatPlainDateTime,
+  formatPlainTime,
+  formatRelativeTime,
+  formatZonedDateTime,
+  instant,
+  measurement,
+  money,
+  percent,
+  percentagePoints,
+  plainDate,
+  plainDateTime,
+  plainTime,
+  segmentText,
+  selectPlural,
+  zonedDateTime,
+} from '../src/formatting.js';
+import { evaluateArtifact, refusalOf } from './compiled-artifact-harness.js';
+import { parse, render } from './message-harness.js';
+
+/**
+ * A formatting locale the host has no data for, and a keyword of its tag the host drops.
+ *
+ * `specs/08-formatting-parsing-and-domain.spec.md` section 4. A host asked for a locale it does
+ * not have raises nothing and writes in a prefix it has, or in its own default locale, so the
+ * same tag would be written in another language on another machine. The pinned parent chain is
+ * walked instead, to the first locale the host has, and that locale is reported; where none is,
+ * the result is the typed unsupported one.
+ *
+ * The locales are chosen from what every supported Node line's ICU carries and lacks: `tlh` and
+ * `la` are in no ICU locale list, `de-AQ` names a region no German locale has, `ht` is absent
+ * while its pinned parent `fr-HT` is present, and `az-Arab` takes root as its pinned parent,
+ * which the host would answer with the Latin-script `az`. Texts are compared with the text the
+ * locale that answers writes, so no CLDR string is pinned.
+ */
+
+const NOON = instant('1710417600000000000');
+const LATER = instant('1710504000000000000');
+const N = decimal('1234.5');
+const DATE = { dateStyle: 'full' } as const;
+
+const at = (locale: string): FormattingContext =>
+  Object.freeze({ locale, timeZone: 'UTC' });
+
+type Operation = (context: FormattingContext) => FormattingResult;
+
+/** Every formatter that takes a context, each writing one fixed value. */
+const FORMATTERS: readonly (readonly [string, Operation])[] = [
+  ['formatNumber', (c) => formatNumber(N, c)],
+  ['formatMoney', (c) => formatMoney(money(N, 'EUR'), c)],
+  [
+    'formatMeasurement',
+    (c) => formatMeasurement(measurement(N, 'kilometer'), c),
+  ],
+  ['formatPercent', (c) => formatPercent(percent(decimal('0.25')), c)],
+  [
+    'formatPercentagePoints',
+    (c) => formatPercentagePoints(percentagePoints(decimal('2.5')), c),
+  ],
+  [
+    'formatNumberRange',
+    (c) => formatNumberRange(decimal('3'), decimal('5'), c),
+  ],
+  ['formatInstant', (c) => formatInstant(NOON, c, DATE)],
+  ['formatInstantRange', (c) => formatInstantRange(NOON, LATER, c, DATE)],
+  ['formatPlainDate', (c) => formatPlainDate(plainDate(2024, 3, 14), c, DATE)],
+  ['formatPlainTime', (c) => formatPlainTime(plainTime(13, 5), c)],
+  [
+    'formatPlainDateTime',
+    (c) =>
+      formatPlainDateTime(
+        plainDateTime(plainDate(2024, 3, 14), plainTime(13, 5)),
+        c,
+      ),
+  ],
+  [
+    'formatZonedDateTime',
+    (c) => formatZonedDateTime(zonedDateTime(NOON, 'Europe/Paris'), c, DATE),
+  ],
+  [
+    'formatDuration',
+    (c) => formatDuration(duration({ hours: 2, minutes: 5 }), c),
+  ],
+  ['formatRelativeTime', (c) => formatRelativeTime(decimal('-2'), 'day', c)],
+  ['formatList', (c) => formatList(['a', 'b', 'c'], c)],
+  ['formatDisplayName', (c) => formatDisplayName('DE', c, { type: 'region' })],
+];
+
+const CAPABILITIES: readonly (readonly [
+  string,
+  (context: FormattingContext) => LocaleCapabilityResult<unknown>,
+])[] = [
+  ['selectPlural', (c) => selectPlural(decimal('2'), c)],
+  [
+    'selectPlural ordinal',
+    (c) => selectPlural(decimal('2'), c, { type: 'ordinal' }),
+  ],
+  ['compareLocalized', (c) => compareLocalized('a', 'b', c)],
+  ['segmentText', (c) => segmentText('a b', c, { granularity: 'word' })],
+];
+
+const refused = {
+  code: 'unsupported-formatting-capability',
+  reason: 'native-capability-rejected',
+};
+
+function written(result: FormattingResult): { text: string; language: string } {
+  if (!result.ok) throw new LocalizationError(result.diagnostic);
+  return { text: result.value.text, language: result.value.language };
+}
+
+describe('a formatting locale the host has no data for', () => {
+  for (const [name, format] of FORMATTERS) {
+    describe(name, () => {
+      it.each(['tlh', 'la', 'az-Arab'])(
+        'is the typed unsupported result for %s, where no locale of the chain is one the host has',
+        (locale) => {
+          const result = format(at(locale));
+          expect(result.ok ? 'written' : result.diagnostic).toMatchObject(
+            refused,
+          );
+        },
+      );
+
+      it('writes de-AQ as de writes it and reports de', () => {
+        const fallback = format(at('de-AQ'));
+        expect(fallback.ok && fallback.value.locale).toBe('de-AQ');
+        expect(written(fallback)).toEqual({
+          text: written(format(at('de'))).text,
+          language: 'de',
+        });
+      });
+
+      it('writes ht as its pinned parent fr-HT writes it and reports fr-HT', () => {
+        expect(written(format(at('ht')))).toEqual({
+          text: written(format(at('fr-HT'))).text,
+          language: 'fr-HT',
+        });
+      });
+
+      it('reports the locale itself where the host has it', () => {
+        expect(written(format(at('en-AU'))).language).toBe('en-AU');
+      });
+    });
+  }
+
+  for (const [name, ask] of CAPABILITIES) {
+    describe(name, () => {
+      it.each(['tlh', 'la', 'az-Arab'])(
+        'is the typed unsupported result for %s',
+        (locale) => {
+          const result = ask(at(locale));
+          expect(result.ok ? 'answered' : result.diagnostic).toMatchObject(
+            refused,
+          );
+        },
+      );
+
+      it('answers de-AQ as de answers and reports de', () => {
+        const result = ask(at('de-AQ'));
+        const own = ask(at('de'));
+        expect(result.ok && own.ok && result.value).toEqual(
+          own.ok && own.value,
+        );
+        expect(result.ok && result.language).toBe('de');
+        expect(own.ok && 'language' in own).toBe(false);
+      });
+    });
+  }
+
+  it('reports en for the plural rules and the collation of en-AU, the locale the host used', () => {
+    for (const ask of [
+      (c: FormattingContext) => selectPlural(decimal('2'), c),
+      (c: FormattingContext) => compareLocalized('a', 'b', c),
+    ]) {
+      const result = ask(at('en-AU'));
+      expect(result.ok && result.language).toBe('en');
+    }
+  });
+
+  it('does not report a locale the host has, for the plural rules', () => {
+    const result = selectPlural(decimal('2'), at('en'));
+    expect(result.ok && 'language' in result).toBe(false);
+  });
+});
+
+describe('a keyword of the context tag the host drops', () => {
+  it.each([
+    [
+      'formatNumber',
+      (c: FormattingContext) => formatNumber(N, c),
+      'en-u-nu-zzzz',
+    ],
+    [
+      'formatInstant',
+      (c: FormattingContext) => formatInstant(NOON, c, DATE),
+      'en-u-nu-zzzz',
+    ],
+    [
+      'formatInstant',
+      (c: FormattingContext) => formatInstant(NOON, c, DATE),
+      'en-u-ca-zzzzzz',
+    ],
+    [
+      'formatPlainDate',
+      (c: FormattingContext) =>
+        formatPlainDate(plainDate(2024, 3, 14), c, DATE),
+      'en-u-ca-zzzzzz',
+    ],
+    [
+      'formatRelativeTime',
+      (c: FormattingContext) => formatRelativeTime(decimal('-2'), 'day', c),
+      'en-u-nu-zzzz',
+    ],
+    [
+      'formatDuration',
+      (c: FormattingContext) => formatDuration(duration({ hours: 2 }), c),
+      'en-u-nu-zzzz',
+    ],
+  ])(
+    'is the typed unsupported result from %s under %s',
+    (_, format, locale) => {
+      const result = format(at(locale));
+      expect(result.ok ? 'written' : result.diagnostic).toMatchObject(refused);
+    },
+  );
+
+  it('is the typed unsupported result from compareLocalized under de-u-co-zzzzzz', () => {
+    const result = compareLocalized('a', 'b', at('de-u-co-zzzzzz'));
+    expect(result.ok ? 'answered' : result.diagnostic).toMatchObject(refused);
+  });
+
+  it('is honoured where the host keeps it', () => {
+    expect(compareLocalized('a', 'b', at('de-u-co-phonebk')).ok).toBe(true);
+    expect(written(formatNumber(N, at('ar-EG-u-nu-latn'))).text).toBe(
+      written(formatNumber(N, at('ar-EG'), { numberingSystem: 'latn' })).text,
+    );
+  });
+
+  it('is not judged where the operation names the option itself', () => {
+    expect(
+      formatInstant(NOON, at('en-u-ca-zzzzzz'), {
+        ...DATE,
+        calendar: 'gregory',
+      }).ok,
+    ).toBe(true);
+  });
+
+  it('is never a refusal for a keyword no constructor reads, or one the operation does not read', () => {
+    expect(formatNumber(N, at('en-u-fw-mon')).ok).toBe(true);
+    expect(formatNumber(N, at('en-u-ca-zzzzzz')).ok).toBe(true);
+    expect(formatList(['a', 'b'], at('en-u-nu-zzzz')).ok).toBe(true);
+  });
+});
+
+describe('a message under a formatting locale the host has no data for', () => {
+  const N_INPUT: readonly CompiledInputContract[] = [
+    { name: 'n', type: 'number', optional: false, nullable: false },
+  ];
+  const D_INPUT: readonly CompiledInputContract[] = [
+    { name: 'd', type: 'date-time', optional: false, nullable: false },
+  ];
+  const D = new Date(Date.UTC(2024, 2, 14, 12));
+
+  it.each([
+    ['{$n :number}', N_INPUT, { n: 1234.5 }],
+    ['{$n :integer}', N_INPUT, { n: 1234.5 }],
+    ['{$n :currency currency=EUR}', N_INPUT, { n: 1234.5 }],
+    ['{$n :percent}', N_INPUT, { n: 0.25 }],
+    ['{$n :unit unit=kilometer}', N_INPUT, { n: 12 }],
+    ['{$d :date}', D_INPUT, { d: D }],
+    ['{$d :time}', D_INPUT, { d: D }],
+    ['{$d :datetime}', D_INPUT, { d: D }],
+  ] as const)('refuses %s under tlh', (source, inputs, values) => {
+    const failure = refusalOf(() => render(source, inputs, values, at('tlh')));
+    expect(failure.diagnostic).toMatchObject(refused);
+  });
+
+  it('refuses a keyword of the context tag a number function drops', () => {
+    const failure = refusalOf(() =>
+      render('{$n :number}', N_INPUT, { n: 1 }, at('en-u-nu-zzzz')),
+    );
+    expect(failure.diagnostic).toMatchObject(refused);
+  });
+
+  it('writes de-AQ as de and reports de on the value part', () => {
+    const structured = (locale: string): LocalizedParts => {
+      const semantics = parse('{$n :number}');
+      const result = evaluateArtifact(
+        {
+          body: {
+            kind: 'pattern',
+            declarations: semantics.declarations,
+            pattern: (semantics as { pattern: unknown }).pattern,
+          },
+          inputs: N_INPUT,
+          resultKind: 'structured',
+        },
+        { n: 1234.5 },
+        undefined,
+        at(locale),
+      );
+      if (result.kind !== 'parts') throw new Error('Expected parts.');
+      return result;
+    };
+    const fallback = structured('de-AQ');
+    const own = structured('de');
+    const value = fallback.value.find((part) => part.kind === 'value');
+    const ownValue = own.value.find((part) => part.kind === 'value');
+    expect(value?.value).toBe(ownValue?.value);
+    expect(value && 'valueLanguage' in value && value.valueLanguage).toBe('de');
+    expect(ownValue && 'valueLanguage' in ownValue).toBe(false);
+  });
+
+  it('selects a plural category under a catalog locale the host has no data for as refused', () => {
+    const semantics = parse(
+      '.input {$n :number}\n.match $n\none {{one}}\n* {{other}}',
+    );
+    const failure = refusalOf(() =>
+      evaluateArtifact(
+        {
+          body: {
+            kind: 'select',
+            declarations: semantics.declarations,
+            selectors: (semantics as { selectors: unknown }).selectors,
+            variants: (semantics as { variants: unknown }).variants,
+          },
+          inputs: N_INPUT,
+          locale: 'tlh',
+        },
+        { n: 1 },
+        undefined,
+        at('en-US'),
+      ),
+    );
+    expect(failure.diagnostic).toMatchObject(refused);
+  });
+});

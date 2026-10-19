@@ -1,0 +1,220 @@
+/**
+ * Which locale the host formats a context's locale with, and the refusal where it has none.
+ *
+ * `specs/08-formatting-parsing-and-domain.spec.md` section 4. A host asked for a locale it has no
+ * data for raises nothing: ECMA-402 resolves it to the longest prefix it has, and to its own
+ * default locale where it has none, so `tlh` is written in whatever language the machine runs in
+ * and `az-Arab` in the Latin script. What the host has is read from the locale a constructor built
+ * from the tag answers with, compared with the tag: equal means the host has it, and anything
+ * else, its default included, means it does not, so no answer depends on the default.
+ *
+ * Where the host does not have the locale, the pinned parent chain of
+ * `specs/03-locale-identity-and-resolution.spec.md` section 4 is walked to the first locale it
+ * has, and that locale formats and is reported. Root is the end: its data writes no language.
+ *
+ * The keywords of the tag the operation's constructor reads go with the locale that formats, and
+ * one the host drops is refused, as an option the host drops is.
+ */
+import { canonicalizeLanguageTag } from '@neolorn/equator/core';
+
+import { PARENT_LOCALES } from './parent-locales.generated';
+import { RUNTIME_LIMITS } from './runtime-safety';
+
+/** The `Intl` constructor an operation formats with. */
+export type LocaleService =
+  | 'number'
+  | 'date-time'
+  | 'plural'
+  | 'relative-time'
+  | 'list'
+  | 'display-names'
+  | 'collator'
+  | 'segmenter'
+  | 'duration';
+
+type Keyword =
+  | 'calendar'
+  | 'hourCycle'
+  | 'numberingSystem'
+  | 'collation'
+  | 'caseFirst'
+  | 'numeric';
+
+/**
+ * The keywords of a tag each constructor reads, its relevant extension keys in ECMA-402: `ca`,
+ * `hc` and `nu` for dates, `nu` for numbers, relative time and durations, `co`, `kf` and `kn` for
+ * collation, and none for the others. A keyword no constructor reads is never a refusal.
+ */
+const RELEVANT: Readonly<Record<LocaleService, readonly Keyword[]>> = {
+  number: ['numberingSystem'],
+  'date-time': ['calendar', 'hourCycle', 'numberingSystem'],
+  plural: [],
+  'relative-time': ['numberingSystem'],
+  list: [],
+  'display-names': [],
+  collator: ['collation', 'caseFirst', 'numeric'],
+  segmenter: [],
+  duration: ['numberingSystem'],
+};
+
+/**
+ * The option that takes the place of a keyword. ECMA-402's ResolveLocale drops a keyword whose
+ * option differs, and the option is judged by its own rule, so the keyword is not carried.
+ */
+const OVERRIDDEN_BY: Readonly<Record<Keyword, readonly string[]>> = {
+  calendar: ['calendar'],
+  hourCycle: ['hourCycle', 'hour12'],
+  numberingSystem: ['numberingSystem'],
+  collation: ['collation'],
+  caseFirst: ['caseFirst'],
+  numeric: ['numeric'],
+};
+
+export type HostLocale =
+  | { readonly ok: true; readonly tag: string; readonly fallback?: string }
+  | { readonly ok: false };
+
+const probe: Readonly<
+  Record<
+    LocaleService,
+    (tag: string) => { resolvedOptions(): { locale: string } }
+  >
+> = {
+  number: (tag) => new Intl.NumberFormat(tag, { localeMatcher: 'lookup' }),
+  'date-time': (tag) =>
+    new Intl.DateTimeFormat(tag, { localeMatcher: 'lookup' }),
+  plural: (tag) => new Intl.PluralRules(tag, { localeMatcher: 'lookup' }),
+  'relative-time': (tag) =>
+    new Intl.RelativeTimeFormat(tag, { localeMatcher: 'lookup' }),
+  list: (tag) => new Intl.ListFormat(tag, { localeMatcher: 'lookup' }),
+  'display-names': (tag) =>
+    new Intl.DisplayNames(tag, { type: 'language', localeMatcher: 'lookup' }),
+  collator: (tag) => new Intl.Collator(tag, { localeMatcher: 'lookup' }),
+  segmenter: (tag) => new Intl.Segmenter(tag, { localeMatcher: 'lookup' }),
+  duration: (tag) =>
+    new (
+      Intl as unknown as {
+        DurationFormat: new (
+          tag: string,
+          options: object,
+        ) => { resolvedOptions(): { locale: string } };
+      }
+    ).DurationFormat(tag, { localeMatcher: 'lookup' }),
+};
+
+/**
+ * A bounded store of answers, oldest dropped first.
+ *
+ * The locales asked about are the contexts' and a context can be made from anything, so a store
+ * that kept every one would grow with what reached it.
+ */
+class Answers<Value> {
+  private readonly values = new Map<string, Value>();
+
+  get(key: string, compute: () => Value): Value {
+    if (this.values.has(key)) return this.values.get(key) as Value;
+    const value = compute();
+    if (this.values.size >= RUNTIME_LIMITS.formatterCacheEntries) {
+      const oldest = this.values.keys().next();
+      if (!oldest.done) this.values.delete(oldest.value);
+    }
+    this.values.set(key, value);
+    return value;
+  }
+}
+
+const answered = new Answers<string | undefined>();
+const resolved = new Answers<HostLocale>();
+
+/** The locale the host answers a tag with, or `undefined` where it builds nothing for it. */
+function hostAnswerFor(
+  service: LocaleService,
+  tag: string,
+): string | undefined {
+  return answered.get(`${service}\u0000${tag}`, () => {
+    try {
+      return probe[service](tag).resolvedOptions().locale;
+    } catch {
+      return undefined;
+    }
+  });
+}
+
+/** The parent of spec 03 section 4: the pinned one, else the tag less its last subtag. */
+function parentOf(locale: string): string | undefined {
+  const declared = Object.hasOwn(PARENT_LOCALES, locale)
+    ? PARENT_LOCALES[locale]
+    : undefined;
+  if (declared !== undefined) return declared === 'und' ? undefined : declared;
+  const cut = locale.lastIndexOf('-');
+  return cut <= 0 ? undefined : locale.slice(0, cut);
+}
+
+/**
+ * The tag to build an operation's formatter from, and the locale of the chain that formats where
+ * it is not the context's own.
+ *
+ * `tag` is the context's locale as `formattingLocale` gives it; `options` are the constructor
+ * options the operation passes, read only for which keywords they take the place of.
+ */
+export function hostLocale(
+  service: LocaleService,
+  tag: string,
+  options: object = {},
+): HostLocale {
+  const overridden = RELEVANT[service].filter((keyword) =>
+    OVERRIDDEN_BY[keyword].some((name) => Object.hasOwn(options, name)),
+  );
+  return resolved.get(
+    `${service}\u0000${tag}\u0000${overridden.join(',')}`,
+    () => walk(service, tag, overridden),
+  );
+}
+
+function walk(
+  service: LocaleService,
+  tag: string,
+  overridden: readonly Keyword[],
+): HostLocale {
+  let asked: Intl.Locale;
+  try {
+    asked = new Intl.Locale(tag);
+  } catch {
+    return REFUSED;
+  }
+  const keywords: Record<string, string | boolean> = {};
+  for (const keyword of RELEVANT[service]) {
+    const value = asked[keyword];
+    if (value !== undefined && !overridden.includes(keyword)) {
+      keywords[keyword] = value;
+    }
+  }
+  const base = canonicalizeLanguageTag(asked.baseName) ?? asked.baseName;
+  let member: string | undefined = base;
+  while (member !== undefined && hostAnswerFor(service, member) !== member) {
+    member = parentOf(member);
+  }
+  if (member === undefined) return REFUSED;
+  let built: string;
+  try {
+    built = new Intl.Locale(member, keywords).toString();
+  } catch {
+    return REFUSED;
+  }
+  const carried = Object.keys(keywords) as Keyword[];
+  if (carried.length > 0) {
+    // A keyword the host has no data for is dropped from the locale it answers with, and the
+    // locale's default is written in its place without an error, as for an option it drops.
+    const answer = hostAnswerFor(service, built);
+    if (answer === undefined) return REFUSED;
+    const kept = new Intl.Locale(answer);
+    if (carried.some((name) => kept[name] !== keywords[name])) return REFUSED;
+  }
+  return Object.freeze({
+    ok: true as const,
+    tag: built,
+    ...(member === base ? {} : { fallback: member }),
+  });
+}
+
+const REFUSED: HostLocale = Object.freeze({ ok: false as const });

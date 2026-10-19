@@ -52,6 +52,7 @@ import {
   isCalendarName,
   numberingSystemReason,
 } from './evaluator';
+import { hostLocale, type LocaleService } from './host-locale';
 import { isUnicodeKeywordType } from './message-function-options';
 import {
   PERSON_NAME_FORMALITIES,
@@ -679,6 +680,40 @@ function unsupportedNumberingSystem(
   );
 }
 
+/** The tag a formatter is built from, and the locale reported as the one that wrote the text. */
+interface HostFormatting {
+  readonly tag: string;
+  readonly language: string;
+}
+
+const NO_HOST_LOCALE =
+  'The host has no data for this locale or for any locale of its parent chain, or drops a keyword of it.';
+
+/**
+ * The locale of the context's parent chain the host formats with, or the refusal where it has
+ * none.
+ *
+ * A host asked for a locale it has no data for raises nothing and writes in another, which differs
+ * from host to host, so the pinned chain is walked to the first locale the host has and that
+ * locale is reported. `tag` is the one the operation would build from, keywords included, and
+ * `options` are read only for the keywords they take the place of.
+ */
+function hostFormatting(
+  service: LocaleService,
+  tag: string,
+  context: FormattingContext,
+  options: object = {},
+): HostFormatting | Extract<FormattingResult, { readonly ok: false }> {
+  const host = hostLocale(service, tag, options);
+  if (!host.ok) {
+    return unsupported(NO_HOST_LOCALE, context, 'native-capability-rejected');
+  }
+  return Object.freeze({
+    tag: host.tag,
+    language: host.fallback ?? context.locale,
+  });
+}
+
 function nativeNumber(
   value: DecimalValue,
   context: FormattingContext,
@@ -758,7 +793,9 @@ function numberResult(
     if (formattingTag === undefined) {
       return unsupportedNumberingSystem(context, options.numberingSystem);
     }
-    const formatter = cache.number(formattingTag, {
+    const host = hostFormatting('number', formattingTag, context, options);
+    if ('ok' in host) return host;
+    const formatter = cache.number(host.tag, {
       ...options,
     });
     return success(
@@ -772,6 +809,7 @@ function numberResult(
       ],
       source,
       context,
+      host.language,
     );
   } catch {
     return unsupported(
@@ -981,11 +1019,15 @@ export function formatInstant(
     if (formattingTag === undefined) {
       return unsupportedNumberingSystem(context, options.numberingSystem);
     }
-    const formatter = dateFormatter(
+    const dateOptions = instantOptions(context, options);
+    const host = hostFormatting(
+      'date-time',
       formattingTag,
-      instantOptions(context, options),
       context,
+      dateOptions,
     );
+    if ('ok' in host) return host;
+    const formatter = dateFormatter(host.tag, dateOptions, context);
     if ('ok' in formatter) return formatter;
     return success(
       'instant',
@@ -997,6 +1039,7 @@ export function formatInstant(
         ),
       value,
       context,
+      host.language,
     );
   } catch {
     return unsupported(
@@ -1172,16 +1215,20 @@ export function formatPlainDate(
     if (formattingTag === undefined) {
       return unsupportedNumberingSystem(context, options.numberingSystem);
     }
-    const formatter = dateFormatter(
+    const dateOptions: Intl.DateTimeFormatOptions = {
+      ...displayCalendar(context.calendar),
+      ...displayCalendar(value.calendar),
+      ...options,
+      timeZone: 'UTC',
+    };
+    const host = hostFormatting(
+      'date-time',
       formattingTag,
-      {
-        ...displayCalendar(context.calendar),
-        ...displayCalendar(value.calendar),
-        ...options,
-        timeZone: 'UTC',
-      },
       context,
+      dateOptions,
     );
+    if ('ok' in host) return host;
+    const formatter = dateFormatter(host.tag, dateOptions, context);
     if ('ok' in formatter) return formatter;
     return success(
       'plain-date',
@@ -1193,6 +1240,7 @@ export function formatPlainDate(
         ),
       value,
       context,
+      host.language,
     );
   } catch {
     return unsupported(
@@ -1242,17 +1290,21 @@ export function formatPlainTime(
     if (formattingTag === undefined) {
       return unsupportedNumberingSystem(context, options.numberingSystem);
     }
-    const formatter = dateFormatter(
+    const dateOptions: Intl.DateTimeFormatOptions = {
+      ...(context.hourCycle === undefined
+        ? {}
+        : { hourCycle: context.hourCycle }),
+      ...options,
+      timeZone: 'UTC',
+    };
+    const host = hostFormatting(
+      'date-time',
       formattingTag,
-      {
-        ...(context.hourCycle === undefined
-          ? {}
-          : { hourCycle: context.hourCycle }),
-        ...options,
-        timeZone: 'UTC',
-      },
       context,
+      dateOptions,
     );
+    if ('ok' in host) return host;
+    const formatter = dateFormatter(host.tag, dateOptions, context);
     if ('ok' in formatter) return formatter;
     const milliseconds = plainTimeMilliseconds(value);
     return success(
@@ -1265,6 +1317,7 @@ export function formatPlainTime(
         ),
       value,
       context,
+      host.language,
     );
   } catch {
     return unsupported(
@@ -1323,19 +1376,23 @@ export function formatPlainDateTime(
     if (formattingTag === undefined) {
       return unsupportedNumberingSystem(context, options.numberingSystem);
     }
-    const formatter = dateFormatter(
+    const dateOptions: Intl.DateTimeFormatOptions = {
+      ...displayCalendar(context.calendar),
+      ...displayCalendar(value.date.calendar),
+      ...(context.hourCycle === undefined
+        ? {}
+        : { hourCycle: context.hourCycle }),
+      ...options,
+      timeZone: 'UTC',
+    };
+    const host = hostFormatting(
+      'date-time',
       formattingTag,
-      {
-        ...displayCalendar(context.calendar),
-        ...displayCalendar(value.date.calendar),
-        ...(context.hourCycle === undefined
-          ? {}
-          : { hourCycle: context.hourCycle }),
-        ...options,
-        timeZone: 'UTC',
-      },
       context,
+      dateOptions,
     );
+    if ('ok' in host) return host;
+    const formatter = dateFormatter(host.tag, dateOptions, context);
     if ('ok' in formatter) return formatter;
     const milliseconds = date.getTime();
     return success(
@@ -1348,6 +1405,7 @@ export function formatPlainDateTime(
         ),
       value,
       context,
+      host.language,
     );
   } catch {
     return unsupported(
@@ -1391,6 +1449,7 @@ export function formatZonedDateTime(
     formatted.value.parts,
     value,
     context,
+    formatted.value.language,
   );
 }
 
@@ -1426,7 +1485,9 @@ export function formatNumberRange(
     if (formattingTag === undefined) {
       return unsupportedNumberingSystem(context, options.numberingSystem);
     }
-    const formatter = sharedFormatters.number(formattingTag, {
+    const host = hostFormatting('number', formattingTag, context, options);
+    if ('ok' in host) return host;
+    const formatter = sharedFormatters.number(host.tag, {
       ...options,
     }) as Intl.NumberFormat & Partial<NativeNumberRangeFormatter>;
     if (
@@ -1451,6 +1512,7 @@ export function formatNumberRange(
         ),
       Object.freeze({ start, end }),
       context,
+      host.language,
     );
   } catch {
     return unsupported(
@@ -1493,11 +1555,15 @@ export function formatInstantRange(
     if (formattingTag === undefined) {
       return unsupportedNumberingSystem(context, options.numberingSystem);
     }
-    const built = dateFormatter(
+    const dateOptions = instantOptions(context, options);
+    const host = hostFormatting(
+      'date-time',
       formattingTag,
-      instantOptions(context, options),
       context,
+      dateOptions,
     );
+    if ('ok' in host) return host;
+    const built = dateFormatter(host.tag, dateOptions, context);
     if ('ok' in built) return built;
     const formatter: Intl.DateTimeFormat & Partial<NativeDateRangeFormatter> =
       built;
@@ -1523,6 +1589,7 @@ export function formatInstantRange(
         ),
       Object.freeze({ start, end }),
       context,
+      host.language,
     );
   } catch {
     return unsupported(
@@ -1588,7 +1655,9 @@ export function formatDuration(
     if (formattingTag === undefined) {
       return unsupportedNumberingSystem(context, options['numberingSystem']);
     }
-    const formatter = new constructor(formattingTag, {
+    const host = hostFormatting('duration', formattingTag, context, options);
+    if ('ok' in host) return host;
+    const formatter = new constructor(host.tag, {
       ...options,
     });
     return success(
@@ -1602,6 +1671,7 @@ export function formatDuration(
       ),
       value,
       context,
+      host.language,
     );
   } catch {
     return unsupported(
@@ -1640,7 +1710,9 @@ export function formatList(
     );
   }
   try {
-    const formatter = sharedFormatters.list(context.locale, options);
+    const host = hostFormatting('list', context.locale, context, options);
+    if ('ok' in host) return host;
+    const formatter = sharedFormatters.list(host.tag, options);
     return success(
       'list',
       formatter.format(values),
@@ -1649,6 +1721,7 @@ export function formatList(
         .map(({ type, value }) => Object.freeze({ kind: type, value })),
       Object.freeze([...values]),
       context,
+      host.language,
     );
   } catch {
     return unsupported(
@@ -1684,7 +1757,14 @@ export function formatRelativeTime(
     if (formattingTag === undefined) {
       return unsupportedNumberingSystem(context, named);
     }
-    const formatter = sharedFormatters.relativeTime(formattingTag, {
+    const host = hostFormatting(
+      'relative-time',
+      formattingTag,
+      context,
+      options,
+    );
+    if ('ok' in host) return host;
+    const formatter = sharedFormatters.relativeTime(host.tag, {
       ...options,
     });
     return success(
@@ -1698,6 +1778,7 @@ export function formatRelativeTime(
       ),
       Object.freeze({ value, unit }),
       context,
+      host.language,
     );
   } catch {
     return unsupported(
@@ -1730,9 +1811,14 @@ export function formatDisplayName(
     );
   }
   try {
-    const display = sharedFormatters
-      .displayNames(context.locale, options)
-      .of(value);
+    const host = hostFormatting(
+      'display-names',
+      context.locale,
+      context,
+      options,
+    );
+    if ('ok' in host) return host;
+    const display = sharedFormatters.displayNames(host.tag, options).of(value);
     if (display === undefined) {
       return unsupported(
         'The native display-name capability has no representation for this value.',
@@ -1745,6 +1831,7 @@ export function formatDisplayName(
       [Object.freeze({ kind: 'display-name', value: display })],
       value,
       context,
+      host.language,
     );
   } catch {
     return unsupported(
@@ -2305,6 +2392,31 @@ export function formatPersonName(
   );
 }
 
+/**
+ * The locale of the context's parent chain the host answers a capability with, or `undefined`
+ * where it has none. As `hostFormatting`, for the operations that return a capability result.
+ */
+function hostCapability(
+  service: LocaleService,
+  context: FormattingContext,
+  options: object,
+): { readonly tag: string; readonly fallback?: string } | undefined {
+  const host = hostLocale(service, context.locale, options);
+  return host.ok ? host : undefined;
+}
+
+/** A capability's answer, with the locale that gave it where that is not the context's own. */
+function answered<Value>(
+  value: Value,
+  host: { readonly fallback?: string },
+): LocaleCapabilityResult<Value> {
+  return Object.freeze({
+    ok: true,
+    value,
+    ...(host.fallback === undefined ? {} : { language: host.fallback }),
+  });
+}
+
 function capabilityFailure<Value>(
   message: string,
   context: FormattingContext,
@@ -2339,10 +2451,18 @@ export function selectPlural(
     return Object.freeze({ ok: false, diagnostic: number.diagnostic });
   }
   try {
-    return Object.freeze({
-      ok: true,
-      value: sharedFormatters.plural(context.locale, options).select(number),
-    });
+    const host = hostCapability('plural', context, options);
+    if (host === undefined) {
+      return capabilityFailure(
+        NO_HOST_LOCALE,
+        context,
+        'native-capability-rejected',
+      );
+    }
+    return answered(
+      sharedFormatters.plural(host.tag, options).select(number),
+      host,
+    );
   } catch {
     return capabilityFailure(
       'The native plural capability rejected this profile.',
@@ -2391,7 +2511,15 @@ export function compareLocalized(
     );
   }
   try {
-    const collator = sharedFormatters.collator(context.locale, options);
+    const host = hostCapability('collator', context, options);
+    if (host === undefined) {
+      return capabilityFailure(
+        NO_HOST_LOCALE,
+        context,
+        'native-capability-rejected',
+      );
+    }
+    const collator = sharedFormatters.collator(host.tag, options);
     // A host asked for a collation it does not have, or one the locale does not have, raises
     // nothing and orders by the default of the locale, so the collation it answers with is
     // compared with the one asked for.
@@ -2406,10 +2534,7 @@ export function compareLocalized(
       );
     }
     const result = collator.compare(left, right);
-    return Object.freeze({
-      ok: true,
-      value: result < 0 ? -1 : result > 0 ? 1 : 0,
-    });
+    return answered(result < 0 ? -1 : result > 0 ? 1 : 0, host);
   } catch {
     return capabilityFailure(
       'The native collation capability rejected this profile.',
@@ -2442,8 +2567,16 @@ export function segmentText(
     );
   }
   try {
+    const host = hostCapability('segmenter', context, options);
+    if (host === undefined) {
+      return capabilityFailure(
+        NO_HOST_LOCALE,
+        context,
+        'native-capability-rejected',
+      );
+    }
     const segments = [
-      ...sharedFormatters.segmenter(context.locale, options).segment(input),
+      ...sharedFormatters.segmenter(host.tag, options).segment(input),
     ].map((part) =>
       Object.freeze({
         segment: part.segment,
@@ -2453,7 +2586,7 @@ export function segmentText(
         ...(part.isWordLike === undefined ? {} : { wordLike: part.isWordLike }),
       }),
     );
-    return Object.freeze({ ok: true, value: Object.freeze(segments) });
+    return answered(Object.freeze(segments), host);
   } catch {
     return capabilityFailure(
       'The native segmentation capability rejected this profile.',

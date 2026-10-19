@@ -39,6 +39,7 @@ import type {
   CompiledSlotContract,
 } from './catalog-runtime';
 import { RuntimeExtensions } from './extensions';
+import { hostLocale, type LocaleService } from './host-locale';
 import {
   MESSAGE_FUNCTION_OPTIONS,
   resolvedDateOptions,
@@ -91,6 +92,8 @@ interface ResolvedValue {
   readonly isolate: boolean;
   /** MF2's `u:id`. */
   readonly id?: string;
+  /** The locale of the context's parent chain that formatted this, where it is not the context's. */
+  readonly formattedIn?: string;
   /**
    * The options this value was resolved with, for a later expression that annotates it again.
    *
@@ -279,6 +282,26 @@ export function numberingSystemReason(
  */
 export function isCalendarName(value: unknown): value is string {
   return isUnicodeKeywordType(value);
+}
+
+/**
+ * The locale of the parent chain a message function formats in, as the direct formatters find it,
+ * or the refusal where the host has none.
+ */
+function hostFormattingTag(
+  functionName: string,
+  service: LocaleService,
+  tag: string,
+  options: object,
+): { readonly tag: string; readonly fallback?: string } {
+  const host = hostLocale(service, tag, options);
+  if (!host.ok) {
+    unsupportedFormatting(
+      `:${functionName} was asked for a locale the host has no data for, in any locale of its parent chain, or with a keyword the host drops.`,
+      'native-capability-rejected',
+    );
+  }
+  return host;
 }
 
 function unsupportedFormatting(
@@ -1091,10 +1114,16 @@ function numericResolved(
       numberingSystemReason(environment.formatting.numberingSystem),
     );
   }
+  const host = hostFormattingTag(
+    functionName,
+    'number',
+    formattingTag,
+    options,
+  );
   let formatter: Intl.NumberFormat;
   try {
     formatter = environment.formatterCache.number(
-      formattingTag,
+      host.tag,
       options as Intl.NumberFormatOptions,
     );
   } catch (cause) {
@@ -1110,6 +1139,7 @@ function numericResolved(
     functionName,
     options: resolvedNumberOptions(functionName, declared),
     locale: environment.formatting.locale,
+    ...(host.fallback === undefined ? {} : { formattedIn: host.fallback }),
     direction: directionForLocale(environment.formatting.locale),
     // Equator formatted this text, in this locale, so it runs the way the locale runs. No sniff.
     contentDirection: directionForLocale(environment.formatting.locale),
@@ -1120,6 +1150,7 @@ function numericResolved(
             functionName === 'percent' ? value * 100 : value,
             sourceOptions['select'],
             environment,
+            functionName,
           ),
         }
       : {}),
@@ -1130,6 +1161,7 @@ function numericSelection(
   selectionValue: number,
   select: unknown,
   environment: EvaluationEnvironment,
+  functionName: string,
 ): ValueSelection {
   return Object.freeze({
     match: (key: string) => {
@@ -1146,10 +1178,16 @@ function numericSelection(
       const pluralType = select === 'ordinal' ? 'ordinal' : 'cardinal';
       // The variants are written in the supplying catalog's language, so its plural rules choose
       // among them, under fallback too; the value itself is still formatted for the reader.
+      const host = hostFormattingTag(
+        functionName,
+        'plural',
+        environment.supplyingLocale,
+        { type: pluralType },
+      );
       return (
         key ===
         environment.formatterCache
-          .plural(environment.supplyingLocale, { type: pluralType })
+          .plural(host.tag, { type: pluralType })
           .select(selectionValue)
       );
     },
@@ -1224,9 +1262,15 @@ function dateResolved(
       numberingSystemReason(environment.formatting.numberingSystem),
     );
   }
+  const host = hostFormattingTag(
+    functionName,
+    'date-time',
+    formattingTag,
+    options,
+  );
   let formatter: Intl.DateTimeFormat;
   try {
-    formatter = environment.formatterCache.dateTime(formattingTag, options);
+    formatter = environment.formatterCache.dateTime(host.tag, options);
   } catch (cause) {
     // What reaches the host here has been judged already: the message's own options by their
     // syntax where it was compiled and again above, the calendar and the numbering system by
@@ -1255,6 +1299,7 @@ function dateResolved(
     text: formatter.format(date),
     functionName,
     locale: environment.formatting.locale,
+    ...(host.fallback === undefined ? {} : { formattedIn: host.fallback }),
     direction: directionForLocale(environment.formatting.locale),
     // Equator formatted this text, in this locale, so it runs the way the locale runs. No sniff.
     contentDirection: directionForLocale(environment.formatting.locale),
@@ -1760,6 +1805,9 @@ function valuePart(
     contentDirection: value.contentDirection,
     isolate: value.isolate,
     ...(value.id === undefined ? {} : { id: value.id }),
+    ...(value.formattedIn === undefined
+      ? {}
+      : { valueLanguage: value.formattedIn }),
     supplyingLocale: value.locale,
   });
 }

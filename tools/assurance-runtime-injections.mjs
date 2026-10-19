@@ -23,10 +23,14 @@ export const injections = Object.freeze([
     // pipeline. A workspace test can build a `FormattingContext` and call a formatter; it cannot
     // ask whether the application's own declaration arrives.
     source: 'packages/runtime/src/evaluator.ts',
-    find: `    formatter = environment.formatterCache.number(
-      formattingTag,`,
-    replace: `    formatter = environment.formatterCache.number(
-      environment.formatting.locale,`,
+    find: `  const host = hostFormattingTag(
+    functionName,
+    'number',
+    formattingTag,`,
+    replace: `  const host = hostFormattingTag(
+    functionName,
+    'number',
+    environment.formatting.locale,`,
   },
   {
     id: 'route-scopes-not-derived',

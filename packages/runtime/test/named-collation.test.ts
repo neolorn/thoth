@@ -47,12 +47,14 @@ describe('the host this suite runs on', () => {
 describe('ordering two strings by a collation the call names', () => {
   it('orders by a collation the host has for the locale', () => {
     // The phonebook order reads the umlaut as the vowel followed by e, so it sorts after "ad".
+    // The host orders German of Germany by the data of German, and the answer says so.
     expect(
       compareLocalized('ä', 'ad', GERMAN, { collation: 'phonebk' }),
-    ).toStrictEqual({ ok: true, value: 1 });
+    ).toStrictEqual({ ok: true, value: 1, language: 'de' });
     expect(compareLocalized('ä', 'ad', GERMAN)).toStrictEqual({
       ok: true,
       value: -1,
+      language: 'de',
     });
   });
 

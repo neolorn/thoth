@@ -650,6 +650,7 @@ export const stageSelfTests = Object.freeze({
       'packages/toolkit/src/plural-categories.generated.ts',
       'packages/toolkit/src/endonyms.generated.ts',
       'packages/toolkit/src/parent-locales.generated.ts',
+      'packages/runtime/src/parent-locales.generated.ts',
       'packages/toolkit/src/rtl-scripts.generated.ts',
       'packages/runtime/core/src/locale-aliases.generated.ts',
       'packages/toolkit/src/locale-aliases.generated.ts',
@@ -689,6 +690,15 @@ export const stageSelfTests = Object.freeze({
           '"JPY":2',
         ),
         refusal: /The checked-in table of currency fraction digits is stale/u,
+      },
+      {
+        id: 'parent-locale-table-of-the-runtime-not-the-pinned-one',
+        plant: plantText(
+          'packages/runtime/src/parent-locales.generated.ts',
+          '"ht":"fr-HT"',
+          '"ht":"fr"',
+        ),
+        refusal: /The checked-in Equator parent-locale table is stale/u,
       },
       {
         id: 'time-zone-table-of-the-toolkit-not-the-pinned-one',

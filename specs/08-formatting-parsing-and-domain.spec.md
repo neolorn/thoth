@@ -147,6 +147,24 @@ over the context's. The context's calendar is the one a date that names none of 
 in: an instant, and a plain date or date-time counted in `iso8601`, whose fields say which day it
 is and not how the day is written.
 
+A host does not have data for every locale, and one asked for a locale it lacks raises nothing:
+under ECMA-402 13th edition sections 9.2.3 and 9.2.7 it writes in the longest prefix of the tag it
+has, and in its own default locale where it has none, so the same context would be written in
+another language on another host. A release MUST fall back the same way on every host, through
+the pinned parent chain of `03-locale-identity-and-resolution.spec.md` section 4 to the first
+locale the host has for the operation, and MUST report that locale where it is not the context's
+own: as the language of a formatted value, as the `language` of a capability's answer, and as
+the `valueLanguage` of a message's formatted part. A host has a locale for an operation where
+the operation's constructor, asked for that locale alone with lookup matching, answers with it.
+The chain ends at root, which writes no language, and a release MUST return the typed unsupported
+result of section 3, with the reason `native-capability-rejected`, where no locale of the chain
+is one the host has. The chain is the pinned one, and an owner's own parent declarations shape
+its catalog chains and not this one. A keyword of the context's locale that the operation reads,
+`ca`, `hc` or `nu` for a date, `nu` for a number, a relative time or a duration, and `co`,
+`kf` or `kn` for an ordering, goes with the locale that formats, and a release MUST report one
+the host drops as it reports an option the host drops. An option the operation names takes the
+place of the keyword it names.
+
 A calendar reaches a date formatter from the operation, from the value, or from the context, and
 is held to one rule whichever named it. A release MUST refuse a calendar that is not written as
 section 2 writes a calendar's name without asking the host, and MUST return the typed unsupported

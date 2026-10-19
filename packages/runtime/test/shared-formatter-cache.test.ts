@@ -36,6 +36,17 @@ import { claimCapability } from '../../../tools/capability-claims-in-tests.mjs';
  * `Symbol.hasInstance` and `prototype` to the real constructor, so the narrowing still holds. A
  * hand-written subclass or wrapper would break it and the failure would look like a cache miss.
  */
+/**
+ * Whether a construction asks the host only which locale it has, which the runtime does once per
+ * locale to find the one of the parent chain that formats. Those are held in a store of their own
+ * and are not the formatters this file counts.
+ */
+const isLocaleProbe = (options: unknown): boolean =>
+  typeof options === 'object' &&
+  options !== null &&
+  Object.keys(options).length === 1 &&
+  (options as { localeMatcher?: unknown }).localeMatcher === 'lookup';
+
 const countingNumberFormat = (): {
   built: () => number;
   restore: () => void;
@@ -52,7 +63,7 @@ const countingNumberFormat = (): {
   install(
     new Proxy(real, {
       construct(target, args, newTarget) {
-        built += 1;
+        if (!isLocaleProbe(args[1])) built += 1;
         return Reflect.construct(target, args, newTarget);
       },
     }),

@@ -3215,6 +3215,32 @@
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",
       "section": "4. The formatting context",
+      "statement": "A release MUST fall back the same way on every host, through the pinned parent chain of `03-locale-identity-and-resolution.spec.md` section 4 to the first locale the host has for the operation, and MUST report that locale where it is not the context's own: as the language of a formatted value, as the `language` of a capability's answer, and as the `valueLanguage` of a message's formatted part.",
+      "checks": [
+        "assurance:formatting-locale-parent-chain-not-the-pinned-one",
+        "assurance:formatting-locale-fallback-not-reported",
+        "assurance:capability-locale-fallback-not-reported",
+        "assurance:message-value-language-not-reported"
+      ]
+    },
+    {
+      "spec": "08-formatting-parsing-and-domain.spec.md",
+      "section": "4. The formatting context",
+      "statement": "The chain ends at root, which writes no language, and a release MUST return the typed unsupported result of section 3, with the reason `native-capability-rejected`, where no locale of the chain is one the host has.",
+      "checks": [
+        "assurance:formatting-locale-chain-end-written-in-the-host-default",
+        "assurance:message-formatting-locale-the-host-lacks-written"
+      ]
+    },
+    {
+      "spec": "08-formatting-parsing-and-domain.spec.md",
+      "section": "4. The formatting context",
+      "statement": "A keyword of the context's locale that the operation reads, `ca`, `hc` or `nu` for a date, `nu` for a number, a relative time or a duration, and `co`, `kf` or `kn` for an ordering, goes with the locale that formats, and a release MUST report one the host drops as it reports an option the host drops.",
+      "checks": ["assurance:formatting-locale-keyword-the-host-drops-written"]
+    },
+    {
+      "spec": "08-formatting-parsing-and-domain.spec.md",
+      "section": "4. The formatting context",
       "statement": "A release MUST let a locale declare only what is a fact about how it is written: its numbering system, its calendar, and its hour cycle.",
       "checks": ["assurance-runtime:locale-formatting-declaration-ignored"]
     },

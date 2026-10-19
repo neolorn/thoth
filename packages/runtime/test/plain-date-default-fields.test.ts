@@ -29,7 +29,13 @@ function recordConstructions(): Intl.DateTimeFormatOptions[] {
     // what the formatter cache stores.
     new Proxy(realDateTimeFormat, {
       construct(target, args, newTarget) {
-        constructions.push({ ...(args[1] as Intl.DateTimeFormatOptions) });
+        // A construction that asks only which locale the host has is the runtime finding the
+        // locale of the parent chain that formats, not the formatter whose fields are read here.
+        const options = args[1] as Intl.DateTimeFormatOptions;
+        const probe =
+          Object.keys(options).length === 1 &&
+          options.localeMatcher === 'lookup';
+        if (!probe) constructions.push({ ...options });
         return Reflect.construct(target, args, newTarget) as object;
       },
     }),

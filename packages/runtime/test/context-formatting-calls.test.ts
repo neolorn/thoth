@@ -288,14 +288,17 @@ describe('a call on a localization context', () => {
   });
 
   it('selects a plural category by the committed locale’s rules', () => {
-    // Arabic has a category for two, which English does not.
+    // Arabic has a category for two, which English does not. The host answers Arabic of Egypt
+    // and English of the United States by the rules of the language, and the answers say so.
     expect(localization.selectPlural(decimal('2'))).toStrictEqual({
       ok: true,
       value: 'two',
+      language: 'ar',
     });
     expect(selectPlural(decimal('2'), { locale: 'en-US' })).toStrictEqual({
       ok: true,
       value: 'other',
+      language: 'en',
     });
     expect(
       localization.selectPlural(decimal('2'), { type: 'ordinal' }),
@@ -308,13 +311,16 @@ describe('a call on a localization context', () => {
   it('compares two strings, with no options and with the ones it is handed', () => {
     const options = { sensitivity: 'base' } as const;
 
+    // The host orders Arabic of Egypt by the data of Arabic, and the answer says so.
     expect(localization.compare('a', 'b')).toStrictEqual({
       ok: true,
       value: -1,
+      language: 'ar',
     });
     expect(localization.compare('b', 'a')).toStrictEqual({
       ok: true,
       value: 1,
+      language: 'ar',
     });
     expect(localization.compare('a', 'A')).toStrictEqual(
       compareLocalized('a', 'A', COMMITTED),
@@ -327,6 +333,7 @@ describe('a call on a localization context', () => {
     expect(localization.compare('a', 'A', options)).toStrictEqual({
       ok: true,
       value: 0,
+      language: 'ar',
     });
   });
 
