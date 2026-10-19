@@ -665,6 +665,7 @@ describe('native formatting and localized input contracts', () => {
       expectExplicitCapability(result);
     }
     expect(formattedDate.ok && formattedDate.value.language).toBe('en-US');
+    expect(formattedDate.ok && 'fallback' in formattedDate.value).toBe(false);
     expect(relative.ok && relative.value.text.toLowerCase()).toContain(
       'yesterday',
     );
@@ -705,13 +706,16 @@ describe('native formatting and localized input contracts', () => {
       /duration sign is separate/u,
     );
     // An engine that keeps plural rules or collation per language answers `en-US` with `en`, and
-    // the result names it; one that keeps them for `en-US` itself names nothing.
+    // the result names it; one that keeps them for `en-US` itself names nothing. Either way it is
+    // the same language in the same script, so neither is a fallback.
     const plural = selectPlural(decimal('1'), english);
     expect(plural).toMatchObject({ ok: true, value: 'one' });
     expect([undefined, 'en']).toContain(plural.ok ? plural.language : null);
+    expect(plural.ok && 'fallback' in plural).toBe(false);
     const order = compareLocalized('a', 'b', english);
     expect(order).toMatchObject({ ok: true, value: -1 });
     expect([undefined, 'en']).toContain(order.ok ? order.language : null);
+    expect(order.ok && 'fallback' in order).toBe(false);
     expect(
       segmentText('Equator works', english, { granularity: 'word' }),
     ).toMatchObject({

@@ -152,10 +152,18 @@ under ECMA-402 13th edition sections 9.2.3 and 9.2.7 it writes in the longest pr
 has, and in its own default locale where it has none, so the same context would be written in
 another language on another host. A release MUST fall back the same way on every host, through
 the pinned parent chain of `03-locale-identity-and-resolution.spec.md` section 4 to the first
-locale the host has for the operation, and MUST report that locale where it is not the context's
-own: as the language of a formatted value, as the `language` of a capability's answer, and as
-the `valueLanguage` of a message's formatted part. A host has a locale for an operation where
-the operation's constructor, asked for that locale alone with lookup matching, answers with it.
+locale the host has for the operation. A host has a locale for an operation where the operation's
+constructor, asked for that locale alone with lookup matching, answers with it. A result names the
+locale of the chain that wrote it where that is not the context's own: as the language of a
+formatted value, as the `language` of a capability's answer, and as the `valueLanguage` of a
+message's formatted part. A release MUST report a fallback, as `fallback` on the first two and
+`valueFallback` on the third, where that locale differs from the context's in language or in
+script, and MUST NOT report one where it differs in neither: `en` answering for `en-US` is not
+a fallback, and `fr-HT` writing for `ht` and `zh` answering for `zh-TW` are. Each script is
+the one the tag names, else the likely script of its language and region, else of its language,
+looked up in the order of UTS #35 Part 1 section 4.3 (LDML 48.2) in the pinned CLDR data, and
+never asked of the host. The pinned table holds the 322 languages CLDR has locale data for, and
+where either side's language is not among them the language alone decides.
 The chain ends at root, which writes no language, and a release MUST return the typed unsupported
 result of section 3, with the reason `native-capability-rejected`, where no locale of the chain
 is one the host has. The chain is the pinned one, and an owner's own parent declarations shape

@@ -651,6 +651,7 @@ export const stageSelfTests = Object.freeze({
       'packages/toolkit/src/endonyms.generated.ts',
       'packages/toolkit/src/parent-locales.generated.ts',
       'packages/runtime/src/parent-locales.generated.ts',
+      'packages/runtime/src/likely-scripts.generated.ts',
       'packages/toolkit/src/rtl-scripts.generated.ts',
       'packages/runtime/core/src/locale-aliases.generated.ts',
       'packages/toolkit/src/locale-aliases.generated.ts',
@@ -699,6 +700,15 @@ export const stageSelfTests = Object.freeze({
           '"ht":"fr"',
         ),
         refusal: /The checked-in Equator parent-locale table is stale/u,
+      },
+      {
+        id: 'likely-script-table-not-the-pinned-one',
+        plant: plantText(
+          'packages/runtime/src/likely-scripts.generated.ts',
+          'zh-SR zh-TH zh-TW',
+          'zh-SR zh-TH',
+        ),
+        refusal: /The checked-in Equator likely-script table is stale/u,
       },
       {
         id: 'time-zone-table-of-the-toolkit-not-the-pinned-one',

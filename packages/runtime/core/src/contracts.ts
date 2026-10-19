@@ -1580,6 +1580,11 @@ export interface LocalizedValuePart {
    * it, and for a value no function formatted.
    */
   readonly valueLanguage?: string;
+  /**
+   * Present where `valueLanguage` is written otherwise than the context's locale: another language,
+   * or the same language in another script.
+   */
+  readonly valueFallback?: true;
   /** The locale that supplied the message this sits in. */
   readonly supplyingLocale: string;
 }
@@ -2010,6 +2015,12 @@ export interface LocalizedFormattedValue {
   readonly locale: string;
   /** The language tag to mark the text with, which follows the locale that answered. */
   readonly language: string;
+  /**
+   * Present where the locale that answered is written otherwise than the locale asked for: another
+   * language, or the same language in another script, each script taken from the pinned likely
+   * subtags. `en` answering for `en-US` names itself in `language` and is not a fallback.
+   */
+  readonly fallback?: true;
   /** Which way that language runs. */
   readonly direction: LocaleDirection;
   /**
@@ -2095,6 +2106,11 @@ export type LocaleCapabilityResult<Value> =
        * context's own locale. Absent where the context's locale answered.
        */
       readonly language?: string;
+      /**
+       * Present where `language` is written otherwise than the context's locale: another
+       * language, or the same language in another script.
+       */
+      readonly fallback?: true;
     }
   | { readonly ok: false; readonly diagnostic: LocalizationDiagnostic };
 

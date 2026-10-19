@@ -1024,6 +1024,72 @@ const parentLocaleOutput = [
   '',
 ].join('\n');
 
+// The script a language is written in where a tag names none, by the lookup of UTS #35 Part 1
+// section 4.3, Add Likely Subtags: language_region first, then language. The runtime compares the
+// script of a formatting locale with the script of the locale its parent chain formatted in, and
+// the two share a language only where the host has a locale of that language, which is a locale
+// CLDR carries. So the table holds the language of every locale `availableLocales.json` lists,
+// and each language_region whose script differs from its language's, and nothing for the
+// thousands of languages CLDR has likely subtags for but no locale data.
+const REGION_SUBTAG = /^(?:[A-Z]{2}|\d{3})$/u;
+const likelyScriptOf = (key) => likelySubtags[key]?.split('-')[1];
+const localeLanguages = [
+  ...new Set(availableLocales.map((tag) => tag.split('-')[0])),
+].filter((language) => language !== 'root' && language !== 'und');
+assert.deepEqual(
+  localeLanguages.filter((language) => likelyScriptOf(language) === undefined),
+  [],
+  'A language CLDR has locale data for has no likely subtags, so its script would be unknown.',
+);
+const likelyScripts = new Map(
+  localeLanguages.map((language) => [language, likelyScriptOf(language)]),
+);
+for (const key of Object.keys(likelySubtags)) {
+  const [language, region, ...rest] = key.split('-');
+  if (rest.length > 0 || region === undefined || !REGION_SUBTAG.test(region)) {
+    continue;
+  }
+  if (!likelyScripts.has(language)) continue;
+  if (likelyScriptOf(key) !== likelyScriptOf(language)) {
+    likelyScripts.set(key, likelyScriptOf(key));
+  }
+}
+const languagesByScript = {};
+for (const [key, script] of [...likelyScripts].sort(([left], [right]) =>
+  compareCodeUnit(left, right),
+)) {
+  (languagesByScript[script] ??= []).push(key);
+}
+const likelyScriptTable = Object.fromEntries(
+  Object.keys(languagesByScript)
+    .sort(compareCodeUnit)
+    .map((script) => [script, languagesByScript[script].join(' ')]),
+);
+const likelyScriptLanguages = localeLanguages.length;
+const likelyScriptRegions = likelyScripts.size - likelyScriptLanguages;
+
+const likelyScriptOutput = [
+  `/** Generated from cldr-core ${manifest.version} by tools/generate-locale-profile.mjs. */`,
+  '',
+  '/**',
+  ' * The script each language is written in where a tag names none, grouped by script: the',
+  ' * languages and the language_region tags of `supplemental/likelySubtags.json` whose likely',
+  ' * subtags give that script.',
+  ' *',
+  ` * ${likelyScriptLanguages} languages, the language of every locale CLDR carries, and the ${likelyScriptRegions}`,
+  " * language_region tags whose script is not their language's. UTS #35 Part 1 section 4.3 looks",
+  ' * up language_region before language, so `zh-TW` is `Hant` where `zh` is `Hans`.',
+  ' *',
+  ' * The runtime reads it to tell whether the locale a formatter used is written in the script of',
+  ' * the locale asked for. The host is not asked, because its likely subtags are its own data and',
+  ' * change with it. A language this table does not hold has no locale the host could have used',
+  ' * in its place, and its script is unknown.',
+  ' */',
+  '// prettier-ignore',
+  `export const LIKELY_SCRIPTS: Readonly<Record<string, string>> = Object.freeze(${JSON.stringify(likelyScriptTable)});`,
+  '',
+].join('\n');
+
 const toolkitRtlOutput = [
   '/** Generated from cldr-core 48.2.0 by tools/generate-locale-profile.mjs. */',
   '',
@@ -1586,6 +1652,11 @@ const parentLocaleOutputPaths = [
   'packages/toolkit/src/parent-locales.generated.ts',
 ].map((path) => resolve(workspaceRoot, path));
 
+const likelyScriptOutputPath = resolve(
+  workspaceRoot,
+  'packages/runtime/src/likely-scripts.generated.ts',
+);
+
 const outputPath = resolve(
   workspaceRoot,
   'packages/runtime/core/src/locale-profile.generated.ts',
@@ -1625,6 +1696,11 @@ if (process.argv.includes('--check')) {
     );
   }
   assert.equal(
+    await readFile(likelyScriptOutputPath, 'utf8'),
+    likelyScriptOutput,
+    'The checked-in Equator likely-script table is stale; run pnpm run generate:locale-profile.',
+  );
+  assert.equal(
     await readFile(toolkitRtlOutputPath, 'utf8'),
     toolkitRtlOutput,
     'The checked-in toolkit copy of the right-to-left scripts is stale; run pnpm run generate:locale-profile.',
@@ -1654,7 +1730,7 @@ if (process.argv.includes('--check')) {
     );
   }
   console.log(
-    `Verified ${rtlScripts.length} RTL scripts, ${rtlRanges.length} strong right-to-left code point ranges derived from Unicode 17.0.0 Bidi_Class, agreeing with the CLDR script data on every letter in Unicode and dropping ${droppedByBidiClass.length} context-resolved code points and no strong one, and cardinal plural categories for ${Object.keys(pluralCategories).length} languages and ordinal plural categories for ${Object.keys(ordinalCategories).length} languages from cldr-core 48.2.0, and ${encompassedPairs} encompassed-language pairs over ${Object.keys(encompassed).length} language subtags, every one ranked by CLDR at ${widestKept} or closer where two languages it does not relate stand at ${unrelatedDistance._distance} and its default matching threshold is ${DEFAULT_THRESHOLD}; likely-script resolution remains native Intl under the tested platform matrix; and ${Object.keys(endonyms).length} endonyms from cldr-localenames-full ${localeNamesManifest.version}, agreeing with this platform's ICU on ${endonymsComparedToIcu.length - endonymsDisagreeingWithIcu.length} of the ${endonymsComparedToIcu.length} locales it has display names for; and ${Object.keys(orderedParentLocales).length} declared parent locales from cldr-core ${manifest.version}, ${undParents} of which name root; and ${aliasRules.length} locale alias rules, ${discardedAliasRules} discarded as UTS #35 Annex C discards them, with ${Object.keys(likelyRegions).length} likely regions for the territory exception; and ${timeZoneEntries.length} time zone names from tzdata ${timeZoneRelease}, ${timeZoneLinkCount} of them resolved to another primary identifier; and ${sanctionedUnits.length} single units ECMA-402 ${unitEdition[1]} edition sanctions, and ${currencyDigits.length} currencies cldr-core ${manifest.version} writes with other than 2 fraction digits.`,
+    `Verified ${rtlScripts.length} RTL scripts, ${rtlRanges.length} strong right-to-left code point ranges derived from Unicode 17.0.0 Bidi_Class, agreeing with the CLDR script data on every letter in Unicode and dropping ${droppedByBidiClass.length} context-resolved code points and no strong one, and cardinal plural categories for ${Object.keys(pluralCategories).length} languages and ordinal plural categories for ${Object.keys(ordinalCategories).length} languages from cldr-core 48.2.0, and ${encompassedPairs} encompassed-language pairs over ${Object.keys(encompassed).length} language subtags, every one ranked by CLDR at ${widestKept} or closer where two languages it does not relate stand at ${unrelatedDistance._distance} and its default matching threshold is ${DEFAULT_THRESHOLD}; likely-script resolution remains native Intl under the tested platform matrix; and ${Object.keys(endonyms).length} endonyms from cldr-localenames-full ${localeNamesManifest.version}, agreeing with this platform's ICU on ${endonymsComparedToIcu.length - endonymsDisagreeingWithIcu.length} of the ${endonymsComparedToIcu.length} locales it has display names for; and ${Object.keys(orderedParentLocales).length} declared parent locales from cldr-core ${manifest.version}, ${undParents} of which name root, and the likely script of ${likelyScriptLanguages} languages and ${likelyScriptRegions} language_region tags; and ${aliasRules.length} locale alias rules, ${discardedAliasRules} discarded as UTS #35 Annex C discards them, with ${Object.keys(likelyRegions).length} likely regions for the territory exception; and ${timeZoneEntries.length} time zone names from tzdata ${timeZoneRelease}, ${timeZoneLinkCount} of them resolved to another primary identifier; and ${sanctionedUnits.length} single units ECMA-402 ${unitEdition[1]} edition sanctions, and ${currencyDigits.length} currencies cldr-core ${manifest.version} writes with other than 2 fraction digits.`,
   );
 } else {
   let current;
@@ -1705,6 +1781,16 @@ if (process.argv.includes('--check')) {
     if (currentParentLocales !== parentLocaleOutput) {
       await writeFile(path, parentLocaleOutput, 'utf8');
     }
+  }
+
+  let currentLikelyScripts;
+  try {
+    currentLikelyScripts = await readFile(likelyScriptOutputPath, 'utf8');
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
+  if (currentLikelyScripts !== likelyScriptOutput) {
+    await writeFile(likelyScriptOutputPath, likelyScriptOutput, 'utf8');
   }
 
   let currentToolkitRtl;

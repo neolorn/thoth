@@ -3168,11 +3168,66 @@ export const injections = Object.freeze([
     caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
   },
   {
+    id: 'fallback-reported-for-the-same-writing',
+    invariant:
+      'A locale of the chain written in the language and script of the locale asked for is named and is not reported as a fallback.',
+    source: 'packages/runtime/src/host-locale.ts',
+    find: '          ...(differsInWriting(base, member)\n            ? { fallback: true as const }\n            : {}),',
+    replace: '          ...{ fallback: true as const },',
+    caughtBy: 'packages/runtime/test/fallback-writing-rule.test.ts',
+  },
+  {
+    id: 'fallback-script-not-compared',
+    invariant:
+      'A locale of the chain in the language asked for but another script is reported as a fallback.',
+    source: 'packages/runtime/src/host-locale.ts',
+    find: '  return (\n    askedScript !== undefined &&\n    usedScript !== undefined &&\n    askedScript !== usedScript\n  );',
+    replace: '  return askedScript === undefined && usedScript === undefined;',
+    caughtBy: 'packages/runtime/test/fallback-writing-rule.test.ts',
+  },
+  {
+    id: 'likely-script-of-the-language-alone',
+    invariant:
+      'The script of a tag without one is the likely script of its language_region before that of its language, so zh-TW is Traditional Chinese.',
+    source: 'packages/runtime/src/host-locale.ts',
+    find: '  return regional ?? scriptsByTag.get(locale.language);',
+    replace:
+      '  return regional === undefined ? scriptsByTag.get(locale.language) : undefined;',
+    caughtBy: 'packages/runtime/test/fallback-writing-rule.test.ts',
+  },
+  {
+    id: 'formatted-value-fallback-not-reported',
+    invariant:
+      'A formatted value written in another language or script than the locale asked for reports a fallback.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: '      ...(used.fallback === undefined ? {} : { fallback: used.fallback }),',
+    replace: '      ...{},',
+    caughtBy: 'packages/runtime/test/fallback-writing-rule.test.ts',
+  },
+  {
+    id: 'capability-fallback-not-reported',
+    invariant:
+      'A capability answer given in another language or script than the locale asked for reports a fallback.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: '    ...(host.used === undefined ? {} : { language: host.used }),\n    ...(host.fallback === undefined ? {} : { fallback: host.fallback }),',
+    replace: '    ...(host.used === undefined ? {} : { language: host.used }),',
+    caughtBy: 'packages/runtime/test/fallback-writing-rule.test.ts',
+  },
+  {
+    id: 'message-value-fallback-not-reported',
+    invariant:
+      'A message value part formatted in another language or script than the context locale reports valueFallback.',
+    source: 'packages/runtime/src/evaluator.ts',
+    find: '      : { valueFallback: value.formattedFallback }),',
+    replace: '      : {}),',
+    caughtBy: 'packages/runtime/test/fallback-writing-rule.test.ts',
+  },
+  {
     id: 'formatting-locale-fallback-not-reported',
     invariant:
       'A formatted value reports the locale of the parent chain that wrote it as its language.',
     source: 'packages/runtime/src/formatting.ts',
-    find: '    language: host.fallback ?? context.locale,',
+    find: '    language: host.used ?? context.locale,',
     replace: '    language: context.locale,',
     caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
   },
@@ -3181,7 +3236,7 @@ export const injections = Object.freeze([
     invariant:
       'A capability answer reports the locale of the parent chain that answered as its language.',
     source: 'packages/runtime/src/formatting.ts',
-    find: '    ...(host.fallback === undefined ? {} : { language: host.fallback }),',
+    find: '    ...(host.used === undefined ? {} : { language: host.used }),',
     replace: '    ...{},',
     caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
   },

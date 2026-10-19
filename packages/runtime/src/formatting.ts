@@ -681,9 +681,17 @@ function unsupportedNumberingSystem(
 }
 
 /** The tag a formatter is built from, and the locale reported as the one that wrote the text. */
-interface HostFormatting {
-  readonly tag: string;
+/**
+ * The locale a result names as the one that wrote it, and whether that is a fallback: another
+ * language, or the same language in another script.
+ */
+interface Written {
   readonly language: string;
+  readonly fallback?: true;
+}
+
+interface HostFormatting extends Written {
+  readonly tag: string;
 }
 
 const NO_HOST_LOCALE =
@@ -710,7 +718,8 @@ function hostFormatting(
   }
   return Object.freeze({
     tag: host.tag,
-    language: host.fallback ?? context.locale,
+    language: host.used ?? context.locale,
+    ...(host.fallback === undefined ? {} : { fallback: host.fallback }),
   });
 }
 
@@ -750,8 +759,9 @@ function success(
   parts: readonly LocalizedFormatPart[],
   source: unknown,
   context: FormattingContext,
-  language = context.locale,
+  used: Written = { language: context.locale },
 ): FormattingResult {
+  const { language } = used;
   if (
     codePointLengthAtMost(text, RUNTIME_LIMITS.outputCodePoints) ===
       undefined ||
@@ -771,6 +781,7 @@ function success(
       parts: Object.freeze(parts),
       locale: context.locale,
       language,
+      ...(used.fallback === undefined ? {} : { fallback: used.fallback }),
       direction: directionForLocale(language),
       source,
     }),
@@ -809,7 +820,7 @@ function numberResult(
       ],
       source,
       context,
-      host.language,
+      host,
     );
   } catch {
     return unsupported(
@@ -1039,7 +1050,7 @@ export function formatInstant(
         ),
       value,
       context,
-      host.language,
+      host,
     );
   } catch {
     return unsupported(
@@ -1240,7 +1251,7 @@ export function formatPlainDate(
         ),
       value,
       context,
-      host.language,
+      host,
     );
   } catch {
     return unsupported(
@@ -1317,7 +1328,7 @@ export function formatPlainTime(
         ),
       value,
       context,
-      host.language,
+      host,
     );
   } catch {
     return unsupported(
@@ -1405,7 +1416,7 @@ export function formatPlainDateTime(
         ),
       value,
       context,
-      host.language,
+      host,
     );
   } catch {
     return unsupported(
@@ -1449,7 +1460,7 @@ export function formatZonedDateTime(
     formatted.value.parts,
     value,
     context,
-    formatted.value.language,
+    formatted.value,
   );
 }
 
@@ -1512,7 +1523,7 @@ export function formatNumberRange(
         ),
       Object.freeze({ start, end }),
       context,
-      host.language,
+      host,
     );
   } catch {
     return unsupported(
@@ -1589,7 +1600,7 @@ export function formatInstantRange(
         ),
       Object.freeze({ start, end }),
       context,
-      host.language,
+      host,
     );
   } catch {
     return unsupported(
@@ -1671,7 +1682,7 @@ export function formatDuration(
       ),
       value,
       context,
-      host.language,
+      host,
     );
   } catch {
     return unsupported(
@@ -1721,7 +1732,7 @@ export function formatList(
         .map(({ type, value }) => Object.freeze({ kind: type, value })),
       Object.freeze([...values]),
       context,
-      host.language,
+      host,
     );
   } catch {
     return unsupported(
@@ -1778,7 +1789,7 @@ export function formatRelativeTime(
       ),
       Object.freeze({ value, unit }),
       context,
-      host.language,
+      host,
     );
   } catch {
     return unsupported(
@@ -1831,7 +1842,7 @@ export function formatDisplayName(
       [Object.freeze({ kind: 'display-name', value: display })],
       value,
       context,
-      host.language,
+      host,
     );
   } catch {
     return unsupported(
@@ -2388,7 +2399,7 @@ export function formatPersonName(
     parts,
     value,
     context,
-    value.language,
+    { language: value.language },
   );
 }
 
@@ -2400,7 +2411,9 @@ function hostCapability(
   service: LocaleService,
   context: FormattingContext,
   options: object,
-): { readonly tag: string; readonly fallback?: string } | undefined {
+):
+  | { readonly tag: string; readonly used?: string; readonly fallback?: true }
+  | undefined {
   const host = hostLocale(service, context.locale, options);
   return host.ok ? host : undefined;
 }
@@ -2408,12 +2421,13 @@ function hostCapability(
 /** A capability's answer, with the locale that gave it where that is not the context's own. */
 function answered<Value>(
   value: Value,
-  host: { readonly fallback?: string },
+  host: { readonly used?: string; readonly fallback?: true },
 ): LocaleCapabilityResult<Value> {
   return Object.freeze({
     ok: true,
     value,
-    ...(host.fallback === undefined ? {} : { language: host.fallback }),
+    ...(host.used === undefined ? {} : { language: host.used }),
+    ...(host.fallback === undefined ? {} : { fallback: host.fallback }),
   });
 }
 

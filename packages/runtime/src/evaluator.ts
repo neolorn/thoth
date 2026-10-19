@@ -94,6 +94,8 @@ interface ResolvedValue {
   readonly id?: string;
   /** The locale of the context's parent chain that formatted this, where it is not the context's. */
   readonly formattedIn?: string;
+  /** Present where `formattedIn` is written in another language or script than the context's. */
+  readonly formattedFallback?: true;
   /**
    * The options this value was resolved with, for a later expression that annotates it again.
    *
@@ -293,7 +295,7 @@ function hostFormattingTag(
   service: LocaleService,
   tag: string,
   options: object,
-): { readonly tag: string; readonly fallback?: string } {
+): { readonly tag: string; readonly used?: string; readonly fallback?: true } {
   const host = hostLocale(service, tag, options);
   if (!host.ok) {
     unsupportedFormatting(
@@ -1139,7 +1141,10 @@ function numericResolved(
     functionName,
     options: resolvedNumberOptions(functionName, declared),
     locale: environment.formatting.locale,
-    ...(host.fallback === undefined ? {} : { formattedIn: host.fallback }),
+    ...(host.used === undefined ? {} : { formattedIn: host.used }),
+    ...(host.fallback === undefined
+      ? {}
+      : { formattedFallback: host.fallback }),
     direction: directionForLocale(environment.formatting.locale),
     // Equator formatted this text, in this locale, so it runs the way the locale runs. No sniff.
     contentDirection: directionForLocale(environment.formatting.locale),
@@ -1299,7 +1304,10 @@ function dateResolved(
     text: formatter.format(date),
     functionName,
     locale: environment.formatting.locale,
-    ...(host.fallback === undefined ? {} : { formattedIn: host.fallback }),
+    ...(host.used === undefined ? {} : { formattedIn: host.used }),
+    ...(host.fallback === undefined
+      ? {}
+      : { formattedFallback: host.fallback }),
     direction: directionForLocale(environment.formatting.locale),
     // Equator formatted this text, in this locale, so it runs the way the locale runs. No sniff.
     contentDirection: directionForLocale(environment.formatting.locale),
@@ -1808,6 +1816,9 @@ function valuePart(
     ...(value.formattedIn === undefined
       ? {}
       : { valueLanguage: value.formattedIn }),
+    ...(value.formattedFallback === undefined
+      ? {}
+      : { valueFallback: value.formattedFallback }),
     supplyingLocale: value.locale,
   });
 }

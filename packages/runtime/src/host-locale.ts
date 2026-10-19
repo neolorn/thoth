@@ -14,9 +14,14 @@
  *
  * The keywords of the tag the operation's constructor reads go with the locale that formats, and
  * one the host drops is refused, as an option the host drops is.
+ *
+ * The locale used is named wherever it is not the one asked for, and is a fallback only where it
+ * differs in language or in script, each side's script taken from the pinned likely subtags: `en`
+ * answering for `en-US` is the same writing, and `zh` answering for `zh-TW` is not.
  */
 import { canonicalizeLanguageTag } from '@neolorn/equator/core';
 
+import { LIKELY_SCRIPTS } from './likely-scripts.generated';
 import { PARENT_LOCALES } from './parent-locales.generated';
 import { RUNTIME_LIMITS } from './runtime-safety';
 
@@ -71,7 +76,15 @@ const OVERRIDDEN_BY: Readonly<Record<Keyword, readonly string[]>> = {
 };
 
 export type HostLocale =
-  | { readonly ok: true; readonly tag: string; readonly fallback?: string }
+  | {
+      readonly ok: true;
+      /** The tag the formatter is built from. */
+      readonly tag: string;
+      /** The locale of the chain that formats, where it is not the one asked for. */
+      readonly used?: string;
+      /** Present where `used` differs from the locale asked for in language or script. */
+      readonly fallback?: true;
+    }
   | { readonly ok: false };
 
 const probe: Readonly<
@@ -213,8 +226,53 @@ function walk(
   return Object.freeze({
     ok: true as const,
     tag: built,
-    ...(member === base ? {} : { fallback: member }),
+    ...(member === base
+      ? {}
+      : {
+          used: member,
+          ...(differsInWriting(base, member)
+            ? { fallback: true as const }
+            : {}),
+        }),
   });
+}
+
+let scriptsByTag: ReadonlyMap<string, string> | undefined;
+
+/**
+ * The script a tag is written in: its own script subtag, else the likely script of its
+ * language_region, else of its language, the order UTS #35 Part 1 section 4.3 looks them up in.
+ * `undefined` for a language the pinned table does not hold.
+ */
+function scriptOf(locale: Intl.Locale): string | undefined {
+  if (locale.script !== undefined) return locale.script;
+  scriptsByTag ??= new Map(
+    Object.entries(LIKELY_SCRIPTS).flatMap(([script, tags]) =>
+      tags.split(' ').map((tag) => [tag, script] as const),
+    ),
+  );
+  const regional =
+    locale.region === undefined
+      ? undefined
+      : scriptsByTag.get(`${locale.language}-${locale.region}`);
+  return regional ?? scriptsByTag.get(locale.language);
+}
+
+/**
+ * Whether the locale used is written otherwise than the locale asked for: another language, or
+ * the same language in another script. Where either script is unknown the language alone decides.
+ */
+function differsInWriting(asked: string, used: string): boolean {
+  const askedLocale = new Intl.Locale(asked);
+  const usedLocale = new Intl.Locale(used);
+  if (askedLocale.language !== usedLocale.language) return true;
+  const askedScript = scriptOf(askedLocale);
+  const usedScript = scriptOf(usedLocale);
+  return (
+    askedScript !== undefined &&
+    usedScript !== undefined &&
+    askedScript !== usedScript
+  );
 }
 
 const REFUSED: HostLocale = Object.freeze({ ok: false as const });
