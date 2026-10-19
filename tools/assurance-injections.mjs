@@ -360,11 +360,13 @@ export const injections = Object.freeze([
     // Neither the option form nor the extension form reports an unsupported
     // but well-formed value, both fall back and render, so without this check the caller asks
     // for digits that do not exist, is told nothing, and is shown different ones. Removing the
-    // check restores exactly that silence.
+    // check restores exactly that silence. A formatter also meets the host chain, which refuses a
+    // context whose numbering system the host drops, so a field read under one is where this check
+    // is the only refusal.
     source: 'packages/runtime/src/evaluator.ts',
     find: `  if (!supportedNumberingSystems().has(numberingSystem)) return undefined;`,
     replace: `  if (false) return undefined;`,
-    caughtBy: 'packages/runtime/test/numeric-formatting.test.ts',
+    caughtBy: 'packages/runtime/test/localized-input-numbering-system.test.ts',
   },
   {
     id: 'sign-marks-not-learned-from-the-locale',
