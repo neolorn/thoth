@@ -384,8 +384,11 @@ Pseudo-locales are not part of this surface. A test that wants one loads a gener
 catalog like any other catalog, because the transform runs at build time under
 `10-compiler-and-tooling.spec.md`. The runtime renders a pseudo-locale as it renders a translation.
 The one fact it holds about a pseudo-locale is that the build generated it, which the generated
-configuration states so a render table can apply section 9 of
-`07-routing-rendering-and-seo.spec.md`.
+configuration states. A render table reads it to apply section 9 of
+`07-routing-rendering-and-seo.spec.md`, and a release MUST mark with it the formatting context it
+builds for that locale, so the locale formats in its language with what its formatting declares, as
+section 4 of `08-formatting-parsing-and-domain.spec.md` states. A release MUST NOT carry the mark in
+the state a server render transfers: the browser's own generated configuration says it again.
 
 ## 13. Primary references
 

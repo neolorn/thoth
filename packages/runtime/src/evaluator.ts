@@ -295,12 +295,15 @@ function hostFormattingTag(
   service: LocaleService,
   tag: string,
   options: object,
+  pseudoLocale: boolean,
 ): { readonly tag: string; readonly used?: string; readonly fallback?: true } {
-  const host = hostLocale(service, tag, options);
+  const host = hostLocale(service, tag, options, pseudoLocale);
   if (!host.ok) {
     unsupportedFormatting(
-      `:${functionName} was asked for a locale the host has no data for, in any locale of its parent chain, or with a keyword the host drops.`,
-      'native-capability-rejected',
+      host.reason === 'malformed-input'
+        ? `:${functionName} was given a context that marks its locale as a pseudo-locale, and the locale's region is not one a pseudo-locale takes.`
+        : `:${functionName} was asked for a locale the host has no data for, in any locale of its parent chain, or with a keyword the host drops.`,
+      host.reason,
     );
   }
   return host;
@@ -1121,6 +1124,7 @@ function numericResolved(
     'number',
     formattingTag,
     options,
+    environment.formatting.pseudoLocale === true,
   );
   let formatter: Intl.NumberFormat;
   try {
@@ -1183,11 +1187,14 @@ function numericSelection(
       const pluralType = select === 'ordinal' ? 'ordinal' : 'cardinal';
       // The variants are written in the supplying catalog's language, so its plural rules choose
       // among them, under fallback too; the value itself is still formatted for the reader.
+      // The mark of a pseudo-locale describes the context's locale, and the plural rules are
+      // those of the catalog that supplied the variants, so it is not carried here.
       const host = hostFormattingTag(
         functionName,
         'plural',
         environment.supplyingLocale,
         { type: pluralType },
+        false,
       );
       return (
         key ===
@@ -1272,6 +1279,7 @@ function dateResolved(
     'date-time',
     formattingTag,
     options,
+    environment.formatting.pseudoLocale === true,
   );
   let formatter: Intl.DateTimeFormat;
   try {

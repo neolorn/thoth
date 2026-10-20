@@ -5,6 +5,7 @@ import {
   parseConfiguration,
   type SemanticGraph,
 } from '../src/index.js';
+import { configurationWithPseudoLocales } from '../src/configuration.js';
 import { generateContracts } from '../src/generated-contracts.js';
 import { analyzeCatalogSet } from '../src/semantic-model.js';
 import { localeFallbackChain } from '../src/locales.js';
@@ -350,6 +351,48 @@ describe('what the build hands the runtime', () => {
         graphOf(analyze(['fr-FR', 'az', 'az-Arab'], [french, latin, arabic])),
       ),
     ).not.toContain('localeFallbacks');
+    claimCapability('capability:fallback-chain');
+  });
+});
+
+describe('a pseudo-locale, whose script says only which way its text runs', () => {
+  // `en-Arab-XB` is English forced right to left. The rule that sends a language in a script it
+  // does not usually take to root keeps text in one script from inheriting another's, and a
+  // pseudo-locale's text is its language's, so its chain is truncation.
+  it('inherits through its language', () => {
+    expect(localeFallbackChain('en-Arab-XB', undefined, true)).toEqual([
+      'en-Arab',
+      'en',
+    ]);
+    expect(chainOf('en-Arab-XB')).toEqual(['en-Arab']);
+  });
+
+  it('hands the runtime the chain to its language when the build generated it', () => {
+    const configuration = configurationWithPseudoLocales(
+      testProjectConfiguration(['en'], {
+        pseudoLocales: { 'en-Arab-XB': { markers: true } },
+      }),
+    );
+    const source = catalog(
+      'source',
+      'en',
+      'messages:\n  nav.home: Home\n  nav.help: Help\n',
+    );
+    const pseudo = catalog(
+      'target',
+      'en-Arab-XB',
+      'messages:\n  nav.home: Home\n  nav.help: Help\n',
+    );
+    const graph = graphOf(
+      analyzeCatalogSet({
+        configuration,
+        catalogs: [source, pseudo],
+        requireCompleteTargets: true,
+      }),
+    );
+    expect(indexModuleOf(graph)).toContain(
+      'localeFallbacks: Object.freeze({"en-Arab-XB":["en"]}',
+    );
     claimCapability('capability:fallback-chain');
   });
 });

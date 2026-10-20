@@ -45,7 +45,8 @@ export interface CompiledSet {
  * Compiles the fixture, with `edit` applied to one scope's source text first.
  *
  * `further` adds scopes to the two the fixture has, for a case that needs more than one scope
- * loading at a time.
+ * loading at a time, and replaces one of the two where it names it. `locales` are the locales
+ * the configuration serves, for a case whose scopes carry a catalog in another locale.
  */
 export function compileSet(
   edit: (scopeId: string, locale: string, text: string) => string = (
@@ -54,13 +55,14 @@ export function compileSet(
     text,
   ) => text,
   further: Readonly<Record<string, Readonly<Record<string, string>>>> = {},
+  locales: readonly string[] = LOCALES,
 ): CompiledSet {
   const parsedConfiguration = parseConfiguration(
     JSON.stringify({
       schemaVersion: 1,
       sourceLocale: 'en-US',
       defaultLocale: 'en-US',
-      locales: LOCALES,
+      locales,
     }),
   );
   if (!parsedConfiguration.ok) throw new Error('Configuration fixture failed');
@@ -107,7 +109,7 @@ export function compileSet(
     generatedAbi: descriptor.generatedAbi,
     sourceLocale: 'en-US',
     defaultLocale: 'en-US',
-    locales: LOCALES,
+    locales,
     aliases: {},
     applicationContractFingerprint: descriptor.applicationContractFingerprint,
     semanticRegistryFingerprint: descriptor.semanticRegistryFingerprint,

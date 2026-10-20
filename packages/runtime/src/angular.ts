@@ -205,7 +205,7 @@ export interface LocalizationFeature<
 interface DocumentLocaleFeature extends LocalizationFeature<'document-locale'> {}
 
 interface FormattingContextFeature extends LocalizationFeature<'formatting-context'> {
-  readonly context: Omit<FormattingContext, 'locale'>;
+  readonly context: Omit<FormattingContext, 'locale' | 'pseudoLocale'>;
 }
 
 interface RecoveryMessageFeature extends LocalizationFeature<'recovery-message'> {
@@ -405,7 +405,7 @@ export interface DocumentLocalizationProjection {
 interface TransferSnapshot {
   readonly profile: 'equator-transfer-state/1';
   readonly primaryLocale: string;
-  readonly formatting: FormattingContext;
+  readonly formatting: Omit<FormattingContext, 'pseudoLocale'>;
   readonly route?: LocalizationRouteSnapshot;
   readonly catalogs: readonly unknown[];
   readonly participants: readonly ParticipantTransferRecord[];
@@ -502,7 +502,7 @@ export function withRecoveryMessage(
  * rehydrates its output read the same instant off two different clocks.
  */
 export function withFormattingContext(
-  context: Omit<FormattingContext, 'locale'>,
+  context: Omit<FormattingContext, 'locale' | 'pseudoLocale'>,
 ): LocalizationFeature<'formatting-context'> {
   return freezeFeature<FormattingContextFeature>({
     ɵkind: 'formatting-context',
@@ -1862,7 +1862,10 @@ function sanitizeTransferSnapshot(
     return Object.freeze({
       profile: 'equator-transfer-state/1',
       primaryLocale,
-      formatting: formatting as unknown as FormattingContext,
+      formatting: formatting as unknown as Omit<
+        FormattingContext,
+        'pseudoLocale'
+      >,
       ...(route === undefined
         ? {}
         : { route: route as unknown as LocalizationRouteSnapshot }),
@@ -2120,7 +2123,7 @@ export function provideLocalizationSetup(
                       ([name]) => name !== 'locale',
                     ),
                   ),
-                ) as Omit<FormattingContext, 'locale'>,
+                ) as Omit<FormattingContext, 'locale' | 'pseudoLocale'>,
               }),
           ...(transferred?.route === undefined
             ? {}

@@ -3175,7 +3175,7 @@ export const injections = Object.freeze([
     invariant:
       'A locale of the chain written in the language and script of the locale asked for is named and is not reported as a fallback.',
     source: 'packages/runtime/src/host-locale.ts',
-    find: '          ...(differsInWriting(base, member)\n            ? { fallback: true as const }\n            : {}),',
+    find: '          ...(differsInWriting(base, member, pseudoLocale)\n            ? { fallback: true as const }\n            : {}),',
     replace: '          ...{ fallback: true as const },',
     caughtBy: 'packages/runtime/test/fallback-writing-rule.test.ts',
   },
@@ -3257,7 +3257,7 @@ export const injections = Object.freeze([
     invariant:
       'A formatting locale that is a language and a script its language does not usually take has root as its main parent, listed or not, so ru-Latn is not written as ru.',
     source: 'packages/runtime/src/host-locale.ts',
-    find: '  if (parents === PARENT_LOCALES && hasNonlikelyScript(locale))\n    return undefined;\n',
+    find: '  if (parents === PARENT_LOCALES && !pseudoLocale && hasNonlikelyScript(locale))\n    return undefined;\n',
     replace: '',
     caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
   },
@@ -3266,8 +3266,8 @@ export const injections = Object.freeze([
     invariant:
       "The nonlikelyScript rule is the main component's alone, so the plural rules of ru-Latn are those of ru.",
     source: 'packages/runtime/src/host-locale.ts',
-    find: '  if (parents === PARENT_LOCALES && hasNonlikelyScript(locale))',
-    replace: '  if (hasNonlikelyScript(locale))',
+    find: '  if (parents === PARENT_LOCALES && !pseudoLocale && hasNonlikelyScript(locale))',
+    replace: '  if (!pseudoLocale && hasNonlikelyScript(locale))',
     caughtBy: 'packages/runtime/test/host-locale-chain.test.ts',
   },
   {
@@ -3285,7 +3285,104 @@ export const injections = Object.freeze([
     invariant:
       'A configured locale that is a language and a script its language does not usually take has no parent, listed or not, so ru-Latn is not served ru catalogs.',
     source: 'packages/toolkit/src/locales.ts',
-    find: '  if (hasNonlikelyScript(locale)) return undefined;\n',
+    find: '  if (!pseudoLocale && hasNonlikelyScript(locale)) return undefined;\n',
+    replace: '',
+    caughtBy: 'packages/toolkit/test/parent-locale-chain.test.ts',
+  },
+  {
+    id: 'formatting-chain-pseudo-locale-sent-to-root',
+    invariant:
+      'A pseudo-locale is written in its language, because its script subtag says only which way its text runs, so en-Arab-XB formats as en.',
+    source: 'packages/runtime/src/host-locale.ts',
+    find: '  if (parents === PARENT_LOCALES && !pseudoLocale && hasNonlikelyScript(locale))',
+    replace: '  if (parents === PARENT_LOCALES && hasNonlikelyScript(locale))',
+    caughtBy: 'packages/runtime/test/pseudo-locale-formatting.test.ts',
+  },
+  {
+    id: 'pseudo-locale-script-read-from-its-tag',
+    invariant:
+      'A pseudo-locale written in its language is not a fallback, because the script its tag names is its direction and not its writing.',
+    source: 'packages/runtime/src/host-locale.ts',
+    find: '  const askedScript = pseudoLocale\n    ? likelyScript(askedLocale.language)\n    : scriptOf(askedLocale);',
+    replace: '  const askedScript = scriptOf(askedLocale);',
+    caughtBy: 'packages/runtime/test/pseudo-locale-formatting.test.ts',
+  },
+  {
+    id: 'pseudo-locale-mark-taken-on-a-real-locale',
+    invariant:
+      'A context that marks as a pseudo-locale a locale whose region no pseudo-locale takes is refused as malformed rather than formatted.',
+    source: 'packages/runtime/src/host-locale.ts',
+    find: '  if (pseudoLocale && !ɵisGeneratedPseudoLocales([base], [base])) {\n    return MISMARKED;\n  }\n',
+    replace: '',
+    caughtBy: 'packages/runtime/test/pseudo-locale-formatting.test.ts',
+  },
+  {
+    id: 'pseudo-locale-mark-dropped-by-a-formatter',
+    invariant: 'A formatter reads the pseudo-locale mark of its context.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: '  const host = hostLocale(service, tag, options, context.pseudoLocale === true);',
+    replace: '  const host = hostLocale(service, tag, options);',
+    caughtBy: 'packages/runtime/test/pseudo-locale-formatting.test.ts',
+  },
+  {
+    id: 'pseudo-locale-mark-dropped-by-a-capability',
+    invariant:
+      'Plural selection, ordering and segmentation read the pseudo-locale mark of their context.',
+    source: 'packages/runtime/src/formatting.ts',
+    find: '    context.locale,\n    options,\n    context.pseudoLocale === true,\n  );',
+    replace: '    context.locale,\n    options,\n  );',
+    caughtBy: 'packages/runtime/test/pseudo-locale-formatting.test.ts',
+  },
+  {
+    id: 'pseudo-locale-mark-dropped-by-a-message-number',
+    invariant:
+      "A message's number reads the pseudo-locale mark of its context.",
+    source: 'packages/runtime/src/evaluator.ts',
+    find: "    'number',\n    formattingTag,\n    options,\n    environment.formatting.pseudoLocale === true,\n",
+    replace: "    'number',\n    formattingTag,\n    options,\n    false,\n",
+    caughtBy: 'packages/runtime/test/pseudo-locale-formatting.test.ts',
+  },
+  {
+    id: 'pseudo-locale-mark-dropped-by-a-message-date',
+    invariant: "A message's date reads the pseudo-locale mark of its context.",
+    source: 'packages/runtime/src/evaluator.ts',
+    find: "    'date-time',\n    formattingTag,\n    options,\n    environment.formatting.pseudoLocale === true,\n",
+    replace: "    'date-time',\n    formattingTag,\n    options,\n    false,\n",
+    caughtBy: 'packages/runtime/test/pseudo-locale-formatting.test.ts',
+  },
+  {
+    id: 'pseudo-locale-not-marked-by-the-runtime',
+    invariant:
+      'The runtime marks the formatting context of a locale its generated configuration lists as a pseudo-locale.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '      ...(this.pseudoLocales.has(locale)\n        ? { pseudoLocale: true as const }\n        : {}),\n',
+    replace: '',
+    caughtBy: 'packages/runtime/test/pseudo-locale-formatting.test.ts',
+  },
+  {
+    id: 'pseudo-locale-mark-transferred',
+    invariant:
+      'The state a server render transfers carries no pseudo-locale mark, so it keeps the shape its profile names.',
+    source: 'packages/runtime/src/localization.ts',
+    find: 'formatting: transferredFormatting(this.active.publicSnapshot.formatting),',
+    replace: 'formatting: this.active.publicSnapshot.formatting,',
+    caughtBy: 'packages/runtime/test/pseudo-locale-formatting.test.ts',
+  },
+  {
+    id: 'catalog-chain-pseudo-locale-sent-to-root',
+    invariant:
+      'A pseudo-locale inherits through its language, so en-Arab-XB reaches en and is not sent to root.',
+    source: 'packages/toolkit/src/locales.ts',
+    find: '  if (!pseudoLocale && hasNonlikelyScript(locale)) return undefined;',
+    replace: '  if (hasNonlikelyScript(locale)) return undefined;',
+    caughtBy: 'packages/toolkit/test/parent-locale-chain.test.ts',
+  },
+  {
+    id: 'catalog-chain-pseudo-locale-not-handed-on',
+    invariant:
+      'The chain a build hands the runtime for a pseudo-locale it generated is the one through its language.',
+    source: 'packages/toolkit/src/generated-contracts.ts',
+    find: '        graph.pseudoLocales.includes(locale),\n',
     replace: '',
     caughtBy: 'packages/toolkit/test/parent-locale-chain.test.ts',
   },

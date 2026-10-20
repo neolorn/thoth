@@ -687,6 +687,16 @@
     },
     {
       "spec": "03-locale-identity-and-resolution.spec.md",
+      "section": "4. Inheritance",
+      "statement": "The rule keeps text in one script from inheriting text in another, so a release MUST NOT apply it along the chain of a pseudo-locale: `en-Arab-XB`, which UTS #35 Part 1 describes by its region as a \"derived testing locale with forced RTL English\", inherits through `en-Arab` to `en`.",
+      "checks": [
+        "assurance:formatting-chain-pseudo-locale-sent-to-root",
+        "assurance:catalog-chain-pseudo-locale-sent-to-root",
+        "assurance:catalog-chain-pseudo-locale-not-handed-on"
+      ]
+    },
+    {
+      "spec": "03-locale-identity-and-resolution.spec.md",
       "section": "5. Aliases",
       "statement": "An alias that collides with a supported locale, shadows one, forms a cycle, or names a locale the consumer does not support is an error, and a release MUST refuse the configuration rather than pick a reading of it.",
       "checks": [
@@ -1855,6 +1865,18 @@
       "section": "12. The testing surface",
       "statement": "A release MUST export that reset and MUST use it in its own documented testing recipe.",
       "checks": ["assurance-runtime:test-environment-reset-keeps-the-address"]
+    },
+    {
+      "spec": "06-runtime-and-angular.spec.md",
+      "section": "12. The testing surface",
+      "statement": "A render table reads it to apply section 9 of `07-routing-rendering-and-seo.spec.md`, and a release MUST mark with it the formatting context it builds for that locale, so the locale formats in its language with what its formatting declares, as section 4 of `08-formatting-parsing-and-domain.spec.md` states.",
+      "checks": ["assurance:pseudo-locale-not-marked-by-the-runtime"]
+    },
+    {
+      "spec": "06-runtime-and-angular.spec.md",
+      "section": "12. The testing surface",
+      "statement": "A release MUST NOT carry the mark in the state a server render transfers: the browser's own generated configuration says it again.",
+      "checks": ["assurance:pseudo-locale-mark-transferred"]
     },
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
@@ -3300,6 +3322,25 @@
       "section": "4. The formatting context",
       "statement": "A release MUST NOT let it become the default for another locale.",
       "checks": ["assurance-runtime:transferred-context-follows-every-locale"]
+    },
+    {
+      "spec": "08-formatting-parsing-and-domain.spec.md",
+      "section": "4. The formatting context",
+      "statement": "A release MUST walk the chain of a context so marked without the likely-script rule, as `03-locale-identity-and-resolution.spec.md` section 4 states, and MUST take the context's script to be the likely script of its language, so `en-Arab-XB` is written as `en` writes, in the digits its declaration names, and is not a fallback.",
+      "checks": [
+        "assurance:formatting-chain-pseudo-locale-sent-to-root",
+        "assurance:pseudo-locale-script-read-from-its-tag",
+        "assurance:pseudo-locale-mark-dropped-by-a-formatter",
+        "assurance:pseudo-locale-mark-dropped-by-a-capability",
+        "assurance:pseudo-locale-mark-dropped-by-a-message-number",
+        "assurance:pseudo-locale-mark-dropped-by-a-message-date"
+      ]
+    },
+    {
+      "spec": "08-formatting-parsing-and-domain.spec.md",
+      "section": "4. The formatting context",
+      "statement": "A release MUST return the typed unsupported result of section 3, with the reason `malformed-input`, from every operation that walks the chain where the member marks a locale whose region is not one a pseudo-locale takes.",
+      "checks": ["assurance:pseudo-locale-mark-taken-on-a-real-locale"]
     },
     {
       "spec": "08-formatting-parsing-and-domain.spec.md",

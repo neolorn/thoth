@@ -180,6 +180,10 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
   available, or the host drops a keyword of the locale tag that the operation reads, the operation
   returns `unsupported-formatting-capability`, so `ht` is refused for plural selection, ordering and
   segmentation, and `ru-Latn` for formatting.
+- A pseudo-locale is formatted in its language, because its script subtag says only which way its
+  text runs: `en-Arab-XB` is written as `en` writes, in the digits its declaration names, and is
+  not a fallback. `pseudoLocale` on the formatting context marks a locale the build generated as a
+  pseudo-locale, and is not carried in the state a server render transfers.
 - A result names the locale that wrote it where that is not the context's own, as `language` on a
   formatted value and on a capability's answer, and as `valueLanguage` on a message's formatted
   part. `fallback` and `valueFallback` are set where that locale differs in language or in script

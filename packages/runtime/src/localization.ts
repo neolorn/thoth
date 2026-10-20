@@ -261,7 +261,10 @@ export interface LocalizationRuntimeOptions {
   readonly participantRequestContext?: unknown;
   readonly recoveryMessageIdentity?: string;
   readonly recoveryRetryLabelIdentity?: string;
-  readonly formattingContext?: Omit<FormattingContext, 'locale'>;
+  readonly formattingContext?: Omit<
+    FormattingContext,
+    'locale' | 'pseudoLocale'
+  >;
   /**
    * The formatting context the server actually rendered `initialLocale` with.
    *
@@ -271,7 +274,10 @@ export interface LocalizationRuntimeOptions {
    * digits transfers that fact about `ar-EG`, and a later switch to `fa-IR` is still written the
    * way `fa-IR` is written.
    */
-  readonly initialFormattingContext?: Omit<FormattingContext, 'locale'>;
+  readonly initialFormattingContext?: Omit<
+    FormattingContext,
+    'locale' | 'pseudoLocale'
+  >;
   readonly initialRoute?: LocalizationRouteSnapshot;
   readonly commitHooks?: readonly LocalizationCommitHook[];
   /**
@@ -865,10 +871,22 @@ interface PendingTransition {
 interface TransferSnapshot {
   readonly profile: 'equator-transfer-state/1';
   readonly primaryLocale: string;
-  readonly formatting: FormattingContext;
+  readonly formatting: Omit<FormattingContext, 'pseudoLocale'>;
   readonly route?: LocalizationRouteSnapshot;
   readonly catalogs: readonly CompiledCatalog[];
   readonly participants: readonly ParticipantTransferRecord[];
+}
+
+/**
+ * The context as the transfer state carries it. Whether a locale is a pseudo-locale is a fact of
+ * the build the browser loads, which sets it again from its own configuration, so the server's
+ * answer is not carried and the transfer state keeps the shape its profile names.
+ */
+function transferredFormatting(
+  context: FormattingContext,
+): Omit<FormattingContext, 'pseudoLocale'> {
+  const { pseudoLocale: _pseudoLocale, ...carried } = context;
+  return Object.freeze(carried);
 }
 
 const internals = new WeakMap<Localization, LocalizationInternal>();
@@ -1110,6 +1128,7 @@ class LocalizationInternal {
     Record<string, LocaleFormattingOverride>
   >;
   private readonly localeFallbacks: Readonly<Record<string, readonly string[]>>;
+  private readonly pseudoLocales: ReadonlySet<string>;
   private readonly bootstrapScopes: readonly LocalizationScope[];
   private readonly supportedLocales: ReadonlySet<string>;
   private readonly knownScopes: ReadonlyMap<string, LocalizationScope>;
@@ -1215,6 +1234,7 @@ class LocalizationInternal {
     this.aliases = configuration.aliases;
     this.localeFormatting = configuration.formatting ?? {};
     this.localeFallbacks = configuration.localeFallbacks ?? {};
+    this.pseudoLocales = new Set(configuration.pseudoLocales ?? []);
     this.supportedLocales = new Set(this.localeList);
     const knownScopes = new Map(
       configuration.scopes.map((scope) => [
@@ -1799,6 +1819,10 @@ class LocalizationInternal {
    * that locale only. It is a committed snapshot rather than a default, and the difference is the
    * whole reason it is a separate option: adopting it as the default made every later locale
    * inherit the one the first response happened to be written in.
+   *
+   * A pseudo-locale is marked from the generated configuration, which is the only place that says
+   * the build made it: its tag cannot, since the free regions a pseudo-locale may take are open to
+   * an application's real locales too.
    */
   private formatting(locale: string): FormattingContext {
     return Object.freeze({
@@ -1807,6 +1831,9 @@ class LocalizationInternal {
       ...(this.localeFormatting[locale] ?? {}),
       ...(locale === this.options.initialLocale
         ? (this.options.initialFormattingContext ?? {})
+        : {}),
+      ...(this.pseudoLocales.has(locale)
+        ? { pseudoLocale: true as const }
         : {}),
     });
   }
@@ -3259,7 +3286,7 @@ class LocalizationInternal {
     return Object.freeze({
       profile: 'equator-transfer-state/1',
       primaryLocale: this.active.publicSnapshot.primaryLocale,
-      formatting: this.active.publicSnapshot.formatting,
+      formatting: transferredFormatting(this.active.publicSnapshot.formatting),
       ...(this.active.publicSnapshot.route === undefined
         ? {}
         : { route: this.active.publicSnapshot.route }),

@@ -86,6 +86,15 @@ lists, 7,207, because a project configures locales in any language. The runtime 
 languages CLDR has locale data or plural rules for, because a host's data is drawn from them, so a
 formatting locale in any other language reaches no locale the host has whichever parent it takes.
 
+A pseudo-locale's script subtag carries its direction and nothing else, as
+`10-compiler-and-tooling.spec.md` section 16 states, and its text is in its source language. The
+rule keeps text in one script from inheriting text in another, so a release MUST NOT apply it along
+the chain of a pseudo-locale: `en-Arab-XB`, which UTS #35 Part 1 describes by its region as a
+"derived testing locale with forced RTL English", inherits through `en-Arab` to `en`. A locale is a
+pseudo-locale where the configuration declares it under `pseudoLocales`. Its tag does not say so,
+because the regions UTS #35 leaves free for pseudo-locales are free for an application's other
+locales too.
+
 A language_region can stand for a locale with a script. UTS #35 Part 1, Lookup (LDML 48.2), gives a
 language written in more than one script the locales language, language_script and
 language_script_region, and makes language_region an alias of language_script_region by likely

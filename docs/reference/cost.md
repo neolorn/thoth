@@ -90,7 +90,7 @@ Each entry point as published, unminified, and each package as installed, source
 
 | Entry point                |   Bytes |   gzip | Brotli |
 | -------------------------- | ------: | -----: | -----: |
-| `@neolorn/equator`         | 430,231 | 91,145 | 73,370 |
+| `@neolorn/equator`         | 431,465 | 91,482 | 73,616 |
 | `@neolorn/equator/core`    | 118,781 | 30,879 | 24,969 |
 | `@neolorn/equator/forms`   |   7,177 |  2,251 |  1,958 |
 | `@neolorn/equator/http`    |  13,826 |  4,159 |  3,624 |
@@ -100,5 +100,5 @@ Each entry point as published, unminified, and each package as installed, source
 
 | Package                    | Files |     Bytes |
 | -------------------------- | ----: | --------: |
-| `@neolorn/equator`         |    38 | 3,204,523 |
-| `@neolorn/equator-toolkit` |   238 | 4,003,071 |
+| `@neolorn/equator`         |    38 | 3,210,993 |
+| `@neolorn/equator-toolkit` |   238 | 4,004,657 |

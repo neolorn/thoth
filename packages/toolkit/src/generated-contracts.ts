@@ -578,9 +578,9 @@ function indexModule(
       return endonym === undefined ? [] : [[locale, endonym] as const];
     }),
   );
-  // Each locale's own chain, resolved here because the runtime has no parent table and must not
-  // carry one, and filtered to the locales this owner ships: a member with no catalog would cost a
-  // lookup and answer nothing. A locale whose chain is empty after the filter is left out, so an
+  // Each locale's own chain, resolved here because it turns on the owner's own parent declarations
+  // and on which locales are pseudo-locales, which only the build knows, and filtered to the
+  // locales this owner ships: a member with no catalog would cost a lookup and answer nothing. A locale whose chain is empty after the filter is left out, so an
   // application whose locales are unrelated to each other carries no table at all.
   const localeFallbacks = Object.fromEntries(
     graph.locales.flatMap((locale) => {
@@ -588,6 +588,7 @@ function indexModule(
         locale,
         graph.locales,
         graph.parentLocales,
+        graph.pseudoLocales.includes(locale),
       );
       return chain.length === 0 ? [] : [[locale, chain] as const];
     }),

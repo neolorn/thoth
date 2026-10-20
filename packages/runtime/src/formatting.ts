@@ -52,7 +52,7 @@ import {
   isCalendarName,
   numberingSystemReason,
 } from './evaluator';
-import { hostLocale, type LocaleService } from './host-locale';
+import { hostLocale, type HostLocale, type LocaleService } from './host-locale';
 import { isUnicodeKeywordType } from './message-function-options';
 import {
   PERSON_NAME_FORMALITIES,
@@ -697,6 +697,18 @@ interface HostFormatting extends Written {
 const NO_HOST_LOCALE =
   'The host has no data for this locale or for any locale of its parent chain, or drops a keyword of it.';
 
+const MISMARKED_PSEUDO_LOCALE =
+  "The context marks its locale as a pseudo-locale, and the locale's region is not one a pseudo-locale takes.";
+
+/** Why the host chain refused a context, in the words a failure carries. */
+function hostRefusal(
+  reason: 'native-capability-rejected' | 'malformed-input',
+): string {
+  return reason === 'malformed-input'
+    ? MISMARKED_PSEUDO_LOCALE
+    : NO_HOST_LOCALE;
+}
+
 /**
  * The locale of the context's parent chain the host formats with, or the refusal where it has
  * none.
@@ -712,9 +724,9 @@ function hostFormatting(
   context: FormattingContext,
   options: object = {},
 ): HostFormatting | Extract<FormattingResult, { readonly ok: false }> {
-  const host = hostLocale(service, tag, options);
+  const host = hostLocale(service, tag, options, context.pseudoLocale === true);
   if (!host.ok) {
-    return unsupported(NO_HOST_LOCALE, context, 'native-capability-rejected');
+    return unsupported(hostRefusal(host.reason), context, host.reason);
   }
   return Object.freeze({
     tag: host.tag,
@@ -2411,11 +2423,13 @@ function hostCapability(
   service: LocaleService,
   context: FormattingContext,
   options: object,
-):
-  | { readonly tag: string; readonly used?: string; readonly fallback?: true }
-  | undefined {
-  const host = hostLocale(service, context.locale, options);
-  return host.ok ? host : undefined;
+): HostLocale {
+  return hostLocale(
+    service,
+    context.locale,
+    options,
+    context.pseudoLocale === true,
+  );
 }
 
 /** A capability's answer, with the locale that gave it where that is not the context's own. */
@@ -2466,12 +2480,8 @@ export function selectPlural(
   }
   try {
     const host = hostCapability('plural', context, options);
-    if (host === undefined) {
-      return capabilityFailure(
-        NO_HOST_LOCALE,
-        context,
-        'native-capability-rejected',
-      );
+    if (!host.ok) {
+      return capabilityFailure(hostRefusal(host.reason), context, host.reason);
     }
     return answered(
       sharedFormatters.plural(host.tag, options).select(number),
@@ -2526,12 +2536,8 @@ export function compareLocalized(
   }
   try {
     const host = hostCapability('collator', context, options);
-    if (host === undefined) {
-      return capabilityFailure(
-        NO_HOST_LOCALE,
-        context,
-        'native-capability-rejected',
-      );
+    if (!host.ok) {
+      return capabilityFailure(hostRefusal(host.reason), context, host.reason);
     }
     const collator = sharedFormatters.collator(host.tag, options);
     // A host asked for a collation it does not have, or one the locale does not have, raises
@@ -2582,12 +2588,8 @@ export function segmentText(
   }
   try {
     const host = hostCapability('segmenter', context, options);
-    if (host === undefined) {
-      return capabilityFailure(
-        NO_HOST_LOCALE,
-        context,
-        'native-capability-rejected',
-      );
+    if (!host.ok) {
+      return capabilityFailure(hostRefusal(host.reason), context, host.reason);
     }
     const segments = [
       ...sharedFormatters.segmenter(host.tag, options).segment(input),

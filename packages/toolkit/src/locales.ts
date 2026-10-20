@@ -147,10 +147,15 @@ const NO_PARENT_OVERRIDES: Readonly<Record<string, string>> = Object.freeze({});
  * Declarations are consulted at every hop rather than only at the first, which is what makes one
  * entry enough to move a family: a project that gives `en-001` a different parent has moved every
  * locale that inherits through it.
+ *
+ * A pseudo-locale's script subtag carries its direction and nothing else, and its text is its
+ * language's, so the `nonlikelyScript` rule is not applied along its chain: `en-Arab-XB` inherits
+ * through `en-Arab` to `en`. `pseudoLocale` says the chain being walked is one.
  */
 export function localeParent(
   locale: string,
   overrides: Readonly<Record<string, string>> = NO_PARENT_OVERRIDES,
+  pseudoLocale = false,
 ): string | undefined {
   const declared = Object.hasOwn(overrides, locale)
     ? overrides[locale]
@@ -162,7 +167,7 @@ export function localeParent(
   }
   const aliased = scriptedRegion(locale);
   if (aliased !== undefined) return aliased;
-  if (hasNonlikelyScript(locale)) return undefined;
+  if (!pseudoLocale && hasNonlikelyScript(locale)) return undefined;
   const cut = locale.lastIndexOf('-');
   return cut <= 0 ? undefined : locale.slice(0, cut);
 }
@@ -231,13 +236,14 @@ function hasNonlikelyScript(locale: string): boolean {
 export function localeFallbackChain(
   locale: string,
   overrides: Readonly<Record<string, string>> = NO_PARENT_OVERRIDES,
+  pseudoLocale = false,
 ): readonly string[] {
   const chain: string[] = [];
   const seen = new Set<string>([locale]);
   for (
-    let parent = localeParent(locale, overrides);
+    let parent = localeParent(locale, overrides, pseudoLocale);
     parent !== undefined && !seen.has(parent);
-    parent = localeParent(parent, overrides)
+    parent = localeParent(parent, overrides, pseudoLocale)
   ) {
     seen.add(parent);
     chain.push(parent);
@@ -260,10 +266,11 @@ export function shippedFallbackChain(
   locale: string,
   shipped: readonly string[],
   overrides: Readonly<Record<string, string>> = NO_PARENT_OVERRIDES,
+  pseudoLocale = false,
 ): readonly string[] {
   const available = new Set(shipped);
   return Object.freeze(
-    localeFallbackChain(locale, overrides).filter((parent) =>
+    localeFallbackChain(locale, overrides, pseudoLocale).filter((parent) =>
       available.has(parent),
     ),
   );

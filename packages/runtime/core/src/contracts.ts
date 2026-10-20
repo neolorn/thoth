@@ -1694,6 +1694,16 @@ export interface FormattingContext {
   readonly numberingSystem?: string;
   /** Which clock times are written on. */
   readonly hourCycle?: 'h11' | 'h12' | 'h23' | 'h24';
+  /**
+   * Present where the locale is a pseudo-locale the build generated.
+   *
+   * Its script subtag says which way its text runs and nothing else, so it formats in its language
+   * with what its formatting declares: `en-Arab-XB` writes numbers as `en` does, in the digits its
+   * declaration names. The runtime sets it from the generated configuration on the context it
+   * builds for the committed locale. An operation refuses it on a locale whose region is not a
+   * pseudo-locale's.
+   */
+  readonly pseudoLocale?: true;
 }
 
 /**
@@ -2595,7 +2605,10 @@ export interface ChildLocalizationOptions {
   /** The scopes to load at start-up. Defaults to what the parent required. */
   readonly bootstrapScopes?: readonly LocalizationScope[];
   /** The formatting defaults inside it. The locale is not among them: it is the child's own. */
-  readonly formattingContext?: Omit<FormattingContext, 'locale'>;
+  readonly formattingContext?: Omit<
+    FormattingContext,
+    'locale' | 'pseudoLocale'
+  >;
 }
 
 /**
@@ -2633,7 +2646,10 @@ export interface LocalizationContextOptions {
     readonly resultKind: 'plain';
   };
   /** The formatting defaults every call inherits. The locale is not among them: it is committed. */
-  readonly formattingContext?: Omit<FormattingContext, 'locale'>;
+  readonly formattingContext?: Omit<
+    FormattingContext,
+    'locale' | 'pseudoLocale'
+  >;
   /** Where the reader already is, for a context built to render one page. */
   readonly initialRoute?: LocalizationRouteSnapshot;
 }

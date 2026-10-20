@@ -19,8 +19,15 @@
  * The locale used is named wherever it is not the one asked for, and is a fallback only where it
  * differs in language or in script, each side's script taken from the pinned likely subtags: `en`
  * answering for `en-US` is the same writing, and `zh` answering for `zh-TW` is not.
+ *
+ * A pseudo-locale's script subtag carries its direction and nothing else. Its text is its
+ * language's, so the likely-script rule, which keeps text in one script from inheriting another's,
+ * is not applied along its chain, and its script is its language's when a fallback is judged.
  */
-import { canonicalizeLanguageTag } from '@neolorn/equator/core';
+import {
+  canonicalizeLanguageTag,
+  ɵisGeneratedPseudoLocales,
+} from '@neolorn/equator/core';
 
 import { LIKELY_SCRIPTS } from './likely-scripts.generated';
 import {
@@ -91,7 +98,14 @@ export type HostLocale =
       /** Present where `used` differs from the locale asked for in language or script. */
       readonly fallback?: true;
     }
-  | { readonly ok: false };
+  | {
+      readonly ok: false;
+      /**
+       * `malformed-input` where the context marks as a pseudo-locale a locale whose region is not
+       * one a pseudo-locale takes, else `native-capability-rejected`.
+       */
+      readonly reason: 'native-capability-rejected' | 'malformed-input';
+    };
 
 const probe: Readonly<
   Record<
@@ -183,13 +197,17 @@ const PARENTS: Readonly<
  * language_script_region a language_region aliases to, else root for a main-component locale in a
  * script its language does not usually take, else the tag less its last subtag.
  */
-function parentOf(service: LocaleService, locale: string): string | undefined {
+function parentOf(
+  service: LocaleService,
+  locale: string,
+  pseudoLocale: boolean,
+): string | undefined {
   const parents = PARENTS[service];
   const declared = Object.hasOwn(parents, locale) ? parents[locale] : undefined;
   if (declared !== undefined) return declared === 'und' ? undefined : declared;
   const aliased = scriptedRegion(locale);
   if (aliased !== undefined) return aliased;
-  if (parents === PARENT_LOCALES && hasNonlikelyScript(locale))
+  if (parents === PARENT_LOCALES && !pseudoLocale && hasNonlikelyScript(locale))
     return undefined;
   const cut = locale.lastIndexOf('-');
   return cut <= 0 ? undefined : locale.slice(0, cut);
@@ -200,19 +218,21 @@ function parentOf(service: LocaleService, locale: string): string | undefined {
  * it is not the context's own.
  *
  * `tag` is the context's locale as `formattingLocale` gives it; `options` are the constructor
- * options the operation passes, read only for which keywords they take the place of.
+ * options the operation passes, read only for which keywords they take the place of;
+ * `pseudoLocale` is the context's member of that name.
  */
 export function hostLocale(
   service: LocaleService,
   tag: string,
   options: object = {},
+  pseudoLocale = false,
 ): HostLocale {
   const overridden = RELEVANT[service].filter((keyword) =>
     OVERRIDDEN_BY[keyword].some((name) => Object.hasOwn(options, name)),
   );
   return resolved.get(
-    `${service}\u0000${tag}\u0000${overridden.join(',')}`,
-    () => walk(service, tag, overridden),
+    `${service}\u0000${tag}\u0000${overridden.join(',')}\u0000${String(pseudoLocale)}`,
+    () => walk(service, tag, overridden, pseudoLocale),
   );
 }
 
@@ -220,6 +240,7 @@ function walk(
   service: LocaleService,
   tag: string,
   overridden: readonly Keyword[],
+  pseudoLocale: boolean,
 ): HostLocale {
   let asked: Intl.Locale;
   try {
@@ -235,9 +256,12 @@ function walk(
     }
   }
   const base = canonicalizeLanguageTag(asked.baseName) ?? asked.baseName;
+  if (pseudoLocale && !ɵisGeneratedPseudoLocales([base], [base])) {
+    return MISMARKED;
+  }
   let member: string | undefined = base;
   while (member !== undefined && hostAnswerFor(service, member) !== member) {
-    member = parentOf(service, member);
+    member = parentOf(service, member, pseudoLocale);
   }
   if (member === undefined) return REFUSED;
   let built: string;
@@ -262,7 +286,7 @@ function walk(
       ? {}
       : {
           used: member,
-          ...(differsInWriting(base, member)
+          ...(differsInWriting(base, member, pseudoLocale)
             ? { fallback: true as const }
             : {}),
         }),
@@ -335,12 +359,19 @@ function hasNonlikelyScript(locale: string): boolean {
 /**
  * Whether the locale used is written otherwise than the locale asked for: another language, or
  * the same language in another script. Where either script is unknown the language alone decides.
+ * A pseudo-locale asked for is written in its language's script, whatever its tag names.
  */
-function differsInWriting(asked: string, used: string): boolean {
+function differsInWriting(
+  asked: string,
+  used: string,
+  pseudoLocale: boolean,
+): boolean {
   const askedLocale = new Intl.Locale(asked);
   const usedLocale = new Intl.Locale(used);
   if (askedLocale.language !== usedLocale.language) return true;
-  const askedScript = scriptOf(askedLocale);
+  const askedScript = pseudoLocale
+    ? likelyScript(askedLocale.language)
+    : scriptOf(askedLocale);
   const usedScript = scriptOf(usedLocale);
   return (
     askedScript !== undefined &&
@@ -349,4 +380,12 @@ function differsInWriting(asked: string, used: string): boolean {
   );
 }
 
-const REFUSED: HostLocale = Object.freeze({ ok: false as const });
+const REFUSED: HostLocale = Object.freeze({
+  ok: false as const,
+  reason: 'native-capability-rejected' as const,
+});
+
+const MISMARKED: HostLocale = Object.freeze({
+  ok: false as const,
+  reason: 'malformed-input' as const,
+});

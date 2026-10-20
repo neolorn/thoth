@@ -167,6 +167,16 @@ names, else the likely script of its language and region, else of its language, 
 order of UTS #35 Part 1 section 4.3 (LDML 48.2) in the pinned CLDR data, and never asked of the
 host. The pinned table holds the 324 languages CLDR has locale data or plural rules for, and where
 either side's language is not among them the language alone decides.
+A pseudo-locale formats in its language with what its formatting declares. A context marks one with
+`pseudoLocale`, which the runtime sets on the context it builds for a locale the generated
+configuration lists as a pseudo-locale, and which the application-wide context and a context
+transferred from a server render never carry. A release MUST walk the chain of a context so marked
+without the likely-script rule, as `03-locale-identity-and-resolution.spec.md` section 4 states,
+and MUST take the context's script to be the likely script of its language, so `en-Arab-XB` is
+written as `en` writes, in the digits its declaration names, and is not a fallback. A release MUST
+return the typed unsupported result of section 3, with the reason `malformed-input`, from every
+operation that walks the chain where the member marks a locale whose region is not one a
+pseudo-locale takes.
 The chain ends at root, which writes no language, and a release MUST return the typed unsupported
 result of section 3, with the reason `native-capability-rejected`, where no locale of the chain is
 one the host has. Root is not asked of the host, which answers `und` with its own default locale, so
