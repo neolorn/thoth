@@ -771,7 +771,7 @@ function success(
   parts: readonly LocalizedFormatPart[],
   source: unknown,
   context: FormattingContext,
-  used: Written = { language: context.locale },
+  used: Written,
 ): FormattingResult {
   const { language } = used;
   if (
