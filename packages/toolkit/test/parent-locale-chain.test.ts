@@ -8,7 +8,7 @@ import {
 import { configurationWithPseudoLocales } from '../src/configuration.js';
 import { generateContracts } from '../src/generated-contracts.js';
 import { analyzeCatalogSet } from '../src/semantic-model.js';
-import { localeFallbackChain } from '../src/locales.js';
+import { localeFallbackChain, shippedFallbackChain } from '../src/locales.js';
 import { LANGUAGE_SCRIPTS } from '../src/language-scripts.generated.js';
 import { PARENT_LOCALES } from '../src/parent-locales.generated.js';
 import { testProjectConfiguration } from './fixtures.js';
@@ -79,6 +79,15 @@ describe('the chain CLDR declares', () => {
     expect(chainOf('ru-Latn-RU')).toEqual(['ru-Latn']);
     // The likely script of Serbian is Cyrillic, so `sr-Cyrl` truncates to `sr`.
     expect(chainOf('sr-Cyrl')).toEqual(['sr']);
+  });
+
+  it('applies that rule to the shipped chain of a locale not marked as a pseudo-locale', () => {
+    // A locale is a pseudo-locale only where the caller says so; a pseudo-locale's chain is
+    // truncation, so `ru-Latn` would reach `ru`.
+    expect(shippedFallbackChain('ru-Latn', ['ru'])).toEqual([]);
+    expect(shippedFallbackChain('ru-Latn', ['ru'], undefined, true)).toEqual([
+      'ru',
+    ]);
   });
 
   it('takes a language_region of another script through the language_script_region it aliases to', () => {
