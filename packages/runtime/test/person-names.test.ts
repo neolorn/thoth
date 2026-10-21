@@ -711,6 +711,24 @@ describe('data the runtime cannot read', () => {
   });
 });
 
+describe('the language of a formatted name', () => {
+  it("is the name's own, apart from the locale it is formatted in", () => {
+    const max = personName('de', { given: 'Max', surname: 'Meyer' });
+    const result = formatPersonName(
+      max,
+      { locale: 'en' },
+      {},
+      profileSet([marked('en')]),
+    );
+    expect(result.ok && result.value).toMatchObject({
+      locale: 'en',
+      language: 'de',
+      direction: 'ltr',
+    });
+    claimCapability('format:formatPersonName');
+  });
+});
+
 describe('the parts a formatted name is made of', () => {
   it('names each field and marks the literals with the formatting locale', () => {
     const set = profileSet([

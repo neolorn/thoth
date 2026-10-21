@@ -2880,8 +2880,8 @@
       "original": "[]",
       "replacement": "[\"Stryker was here\"]",
       "category": "equivalent",
-      "reason": "Each default stands in for an absent list and its one placeholder string is never read as a member. NO_INHERITED_LOCALES: catalogConsultationOrder keeps only chain members the store has an artifact for, and it has none for the placeholder. transferredParticipants: ParticipantCoordinator keys the record by its participantId, which a string has not, and reads records only by a registered string id. transferredCatalogs inside Array.isArray: any array answers the same. transferredCatalogs handed to seed, in the constructor and in createChild: LocalCatalogStore.seed returns without effect for a value that is not a data record. commitHooks in publish and in dispose: the placeholder has no committed and no dispose, and both are reached through an optional call. The applied list in commit: the placeholder has no rollback, reached through an optional call inside a try block. The slots, requiredExtensions, inputNames and slotNames of the recovery message, catalog and handle in recoveryText: the message is plain, so evaluatePattern refuses markup before a slot contract is read, and evaluateCandidate and findEvaluationCandidate read no requiredExtensions, inputNames or slotNames.",
-      "count": 12
+      "reason": "Each default stands in for an absent list and its one placeholder string is never read as a member. NO_INHERITED_LOCALES: catalogConsultationOrder keeps only chain members the store has an artifact for, and it has none for the placeholder. transferredParticipants: ParticipantCoordinator keys the record by its participantId, which a string has not, and reads records only by a registered string id. transferredCatalogs inside Array.isArray: any array answers the same. transferredCatalogs handed to seed, in the constructor and in createChild: LocalCatalogStore.seed returns without effect for a value that is not a data record. commitHooks in publish and in dispose: the placeholder has no committed and no dispose, and both are reached through an optional call. The applied list in commit: the placeholder has no rollback, reached through an optional call inside a try block. The slots, requiredExtensions, inputNames and slotNames of the recovery message, catalog and handle in recoveryText: the message is plain, so evaluatePattern refuses markup before a slot contract is read, and evaluateCandidate and findEvaluationCandidate read no requiredExtensions, inputNames or slotNames. pseudoLocales in the constructor: formatting asks the set only about a locale locale resolution answered, which refuses any locale outside the supported ones (locale-resolution.ts line 153), and the placeholder, which has spaces, is none.",
+      "count": 13
     },
     {
       "file": "packages/runtime/src/localization.ts",
@@ -7488,14 +7488,6 @@
     {
       "file": "packages/runtime/src/formatting.ts",
       "mutator": "StringLiteral",
-      "original": "\"The calendar asked for is not written as a calendar's name.\"",
-      "replacement": "\"\"",
-      "category": "message-wording",
-      "reason": "The sentence of the unsupported result a date formatter returns for a calendar that is not written as a calendar's name. Its code, outcome, target locale and reason are the same with any text, and date-formatter-calendar-capability.test.ts asserts those."
-    },
-    {
-      "file": "packages/runtime/src/formatting.ts",
-      "mutator": "StringLiteral",
       "original": "'A plain value was given a time zone this runtime does not read.'",
       "replacement": "\"\"",
       "category": "message-wording",
@@ -7975,6 +7967,304 @@
       "replacement": "true",
       "category": "unreachable",
       "reason": "Every value the options type admits is a string, a number, a boolean or undefined, which String and Number convert without throwing (lines 59 and 62), so the only error raised inside the try is the Refused that refuse throws on line 53."
+    },
+    {
+      "file": "packages/runtime/src/evaluator.ts",
+      "mutator": "ConditionalExpression",
+      "original": "host.reason === 'malformed-input'",
+      "replacement": "true",
+      "category": "message-wording",
+      "reason": "The test chooses which sentence the unsupported-formatting failure carries; host.reason is passed beside it on line 306 unchanged, and unsupportedFormatting (line 312) writes the code, outcome and reason the same with any sentence."
+    },
+    {
+      "file": "packages/runtime/src/evaluator.ts",
+      "mutator": "ConditionalExpression",
+      "original": "host.reason === 'malformed-input'",
+      "replacement": "false",
+      "category": "message-wording",
+      "reason": "The test chooses which sentence the unsupported-formatting failure carries; host.reason is passed beside it on line 306 unchanged, and unsupportedFormatting (line 312) writes the code, outcome and reason the same with any sentence."
+    },
+    {
+      "file": "packages/runtime/src/evaluator.ts",
+      "mutator": "EqualityOperator",
+      "original": "host.reason === 'malformed-input'",
+      "replacement": "host.reason !== 'malformed-input'",
+      "category": "message-wording",
+      "reason": "The test chooses which sentence the unsupported-formatting failure carries; host.reason is passed beside it on line 306 unchanged, and unsupportedFormatting (line 312) writes the code, outcome and reason the same with any sentence."
+    },
+    {
+      "file": "packages/runtime/src/evaluator.ts",
+      "mutator": "StringLiteral",
+      "original": "'malformed-input'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The test chooses which sentence the unsupported-formatting failure carries; host.reason is passed beside it on line 306 unchanged, and unsupportedFormatting (line 312) writes the code, outcome and reason the same with any sentence."
+    },
+    {
+      "file": "packages/runtime/src/evaluator.ts",
+      "mutator": "StringLiteral",
+      "original": "`:${functionName} was asked for a locale the host has no data for, in any locale of its parent chain, or with a keyword the host drops.`",
+      "replacement": "``",
+      "category": "message-wording",
+      "reason": "The sentence of the unsupported-formatting failure a message function raises where the host has no locale of the chain; unsupportedFormatting (line 312) writes the code, outcome and reason the same with any sentence."
+    },
+    {
+      "file": "packages/runtime/src/evaluator.ts",
+      "mutator": "ConditionalExpression",
+      "original": "host.used === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the test false, formattedIn is written as undefined on a resolved value of :number or of a date function (lines 1148 and 1315). Only valuePart reads it, and its test on line 1824 drops a formattedIn that is undefined the same way; applyUnicodeOptions (line 833) copies the value as it is.",
+      "count": 2
+    },
+    {
+      "file": "packages/runtime/src/evaluator.ts",
+      "mutator": "ConditionalExpression",
+      "original": "host.fallback === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the test false, formattedFallback is written as undefined on a resolved value of :number or of a date function (lines 1149 and 1316). Only valuePart reads it, and its test on line 1827 drops a formattedFallback that is undefined the same way; applyUnicodeOptions (line 833) copies the value as it is.",
+      "count": 2
+    },
+    {
+      "file": "packages/runtime/src/evaluator.ts",
+      "mutator": "ObjectLiteral",
+      "original": "{ type: pluralType }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "hostLocale reads its options only for the keywords they take the place of (line 230), and the plural constructor reads no keyword: RELEVANT.plural on line 69 is empty. So { type } and {} give the same answer."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "StringLiteral",
+      "original": "\"The context marks its locale as a pseudo-locale, and the locale's region is not one a pseudo-locale takes.\"",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The sentence of the unsupported result for a context marked as a pseudo-locale whose region is not one a pseudo-locale takes; the result carries reason malformed-input, its code, outcome and target locale with any sentence."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "ConditionalExpression",
+      "original": "reason === 'malformed-input'",
+      "replacement": "true",
+      "category": "message-wording",
+      "reason": "hostRefusal (line 704) only chooses the sentence of the unsupported result; hostFormatting passes host.reason beside it on line 729, so the code, outcome, reason and target locale are the same with any sentence."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "ConditionalExpression",
+      "original": "reason === 'malformed-input'",
+      "replacement": "false",
+      "category": "message-wording",
+      "reason": "hostRefusal (line 704) only chooses the sentence of the unsupported result; hostFormatting passes host.reason beside it on line 729, so the code, outcome, reason and target locale are the same with any sentence."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "EqualityOperator",
+      "original": "reason === 'malformed-input'",
+      "replacement": "reason !== 'malformed-input'",
+      "category": "message-wording",
+      "reason": "hostRefusal (line 704) only chooses the sentence of the unsupported result; hostFormatting passes host.reason beside it on line 729, so the code, outcome, reason and target locale are the same with any sentence."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "StringLiteral",
+      "original": "'malformed-input'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "hostRefusal (line 704) only chooses the sentence of the unsupported result; hostFormatting passes host.reason beside it on line 729, so the code, outcome, reason and target locale are the same with any sentence."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "ConditionalExpression",
+      "original": "host.fallback === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the test false, fallback is written as undefined. Every hostFormatting result reaches the value only through success, whose test on line 796 drops a fallback that is undefined the same way; nothing else reads it."
+    },
+    {
+      "file": "packages/runtime/src/formatting.ts",
+      "mutator": "StringLiteral",
+      "original": "'The native number-formatting capability rejected this profile.'",
+      "replacement": "\"\"",
+      "category": "message-wording",
+      "reason": "The sentence of the unsupported result for a number formatter the host refuses to build; the result carries reason native-capability-rejected, its code, outcome and target locale with any sentence."
+    },
+    {
+      "file": "packages/runtime/src/host-locale.ts",
+      "mutator": "ConditionalExpression",
+      "original": "!oldest.done",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "The store is full when line 151 runs, and the ceiling is at least one, so keys().next() is never done there and the test is always true already."
+    },
+    {
+      "file": "packages/runtime/src/host-locale.ts",
+      "mutator": "ConditionalExpression",
+      "original": "declared === 'und'",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "Where a pinned parent is und the walk then asks the host about und, and every constructor answers und with the host default locale, never und, so the walk asks the parent of und: und has no pinned parent and no hyphen, so parentOf returns undefined, as the original does at once."
+    },
+    {
+      "file": "packages/runtime/src/host-locale.ts",
+      "mutator": "StringLiteral",
+      "original": "'und'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "No pinned parent is the empty string, so the test is never true, as with the test false: a parent of und is then asked of the host, which answers und with the host default locale, never und, and und has no parent of its own, so the walk ends where the original ends."
+    },
+    {
+      "file": "packages/runtime/src/host-locale.ts",
+      "mutator": "EqualityOperator",
+      "original": "cut <= 0",
+      "replacement": "cut < 0",
+      "category": "equivalent",
+      "reason": "The locales a walk visits are canonical tags, which never begin with a hyphen, so lastIndexOf never returns 0 and cut <= 0 and cut < 0 are true for the same locales."
+    },
+    {
+      "file": "packages/runtime/src/host-locale.ts",
+      "mutator": "StringLiteral",
+      "original": "','",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "The overridden keywords are a subset of one service's list, in that list's order, and no keyword name is a concatenation of others, so two different subsets join to different keys with no separator too."
+    },
+    {
+      "file": "packages/runtime/src/host-locale.ts",
+      "mutator": "ConditionalExpression",
+      "original": "value !== undefined",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "A keyword whose value is undefined is then carried as undefined. new Intl.Locale ignores an undefined option (line 269), the host answers the member it already has, and the check on line 280 compares undefined with the kept locale's undefined, so the answer is the same."
+    },
+    {
+      "file": "packages/runtime/src/host-locale.ts",
+      "mutator": "LogicalOperator",
+      "original": "canonicalizeLanguageTag(asked.baseName) ?? asked.baseName",
+      "replacement": "canonicalizeLanguageTag(asked.baseName) && asked.baseName",
+      "category": "equivalent",
+      "reason": "Intl.Locale applies the same CLDR alias data, so canonicalizeLanguageTag returns its baseName unchanged: measured for the type of every rule of the pinned alias table and every language the host has, 2,453 tags, with no difference. The operands are then the same string under ?? and &&."
+    },
+    {
+      "file": "packages/runtime/src/host-locale.ts",
+      "mutator": "ConditionalExpression",
+      "original": "member === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With member undefined, new Intl.Locale(undefined) on line 269 throws a TypeError, which the catch on line 270 turns into the same refusal."
+    },
+    {
+      "file": "packages/runtime/src/host-locale.ts",
+      "mutator": "ConditionalExpression",
+      "original": "carried.length > 0",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "With no keyword carried, built is the member the host already answered with itself, so the answer on line 277 is defined and some() over no keyword is false; the result is the same."
+    },
+    {
+      "file": "packages/runtime/src/host-locale.ts",
+      "mutator": "EqualityOperator",
+      "original": "carried.length > 0",
+      "replacement": "carried.length >= 0",
+      "category": "equivalent",
+      "reason": "With no keyword carried, built is the member the host already answered with itself, so the answer on line 277 is defined and some() over no keyword is false; the result is the same."
+    },
+    {
+      "file": "packages/runtime/src/host-locale.ts",
+      "mutator": "ConditionalExpression",
+      "original": "answer === undefined",
+      "replacement": "false",
+      "category": "unreachable",
+      "reason": "built is a tag Intl.Locale accepted (line 269) for a member the host built a formatter for (line 264), and a constructor that accepts a tag accepts it with keywords, so the host answers built and answer is never undefined."
+    },
+    {
+      "file": "packages/runtime/src/host-locale.ts",
+      "mutator": "ConditionalExpression",
+      "original": "locale.region === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "The key is then the language followed by \"-undefined\", which no tag of the pinned table is, so likelyScript returns undefined as for the original and the language decides."
+    },
+    {
+      "file": "packages/runtime/src/host-locale.ts",
+      "mutator": "EqualityOperator",
+      "original": "cut < 0",
+      "replacement": "cut <= 0",
+      "category": "equivalent",
+      "reason": "The locales a walk visits are canonical tags, which never begin with a hyphen, so indexOf never returns 0 and cut < 0 and cut <= 0 are true for the same locales."
+    },
+    {
+      "file": "packages/runtime/src/host-locale.ts",
+      "mutator": "Regex",
+      "original": "/^[A-Z][a-z]{3}$/u",
+      "replacement": "/[A-Z][a-z]{3}$/u",
+      "category": "equivalent",
+      "reason": "The subtag tested is the second of a canonical tag of two: a script, a region in capitals or digits, or a variant in lowercase. Only a script ends in a capital followed by three lowercase letters, so dropping the start anchor matches the same subtags."
+    },
+    {
+      "file": "packages/runtime/src/host-locale.ts",
+      "mutator": "Regex",
+      "original": "/^[A-Z][a-z]{3}$/u",
+      "replacement": "/^[A-Z][a-z]{3}/u",
+      "category": "equivalent",
+      "reason": "The subtag tested is the second of a canonical tag of two: a script, a region in capitals or digits, or a variant in lowercase. Only a script begins with a capital followed by three lowercase letters, so dropping the end anchor matches the same subtags."
+    },
+    {
+      "file": "packages/runtime/src/host-locale.ts",
+      "mutator": "ConditionalExpression",
+      "original": "likely !== undefined",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "A language outside the pinned table then has a script it does not usually take, so its locale goes to root rather than to its language. Measured: every language the host has data for in the main component is in the table, so the language would have been refused there too."
+    },
+    {
+      "file": "packages/runtime/src/host-locale.ts",
+      "mutator": "ConditionalExpression",
+      "original": "askedScript !== undefined",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "differsInWriting returns on line 371 where the languages differ, so the scripts are compared only for one language. The script of the locale asked for is unknown only for a language the pinned table does not hold, written without a script and without a region the table holds. The walk adds a script or a region only through a pinned parent or scriptedRegion, and measured over the pinned parents, 147 that keep the language, none makes a script known that was not; scriptedRegion needs a language_region the table holds. So the used script is unknown too, and the test decides nothing."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "ConditionalExpression",
+      "original": "currency.length !== 3",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "asciiUppercase replaces each letter by one letter, so it keeps the length, and the anchored pattern on line 99 accepts three characters only; a currency of another length is refused there."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "Regex",
+      "original": "/^[A-Z]{3}$/u",
+      "replacement": "/[A-Z]{3}$/u",
+      "category": "equivalent",
+      "reason": "Line 98 has already refused every length but three, and three characters that end in three capitals are three capitals, so the start anchor matches nothing more."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "Regex",
+      "original": "/^[A-Z]{3}$/u",
+      "replacement": "/^[A-Z]{3}/u",
+      "category": "equivalent",
+      "reason": "Line 98 has already refused every length but three, and three characters that begin with three capitals are three capitals, so the end anchor matches nothing more."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "ConditionalExpression",
+      "original": "i === -1",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the first test false, a unit without \"-per-\" reaches the second, which searches from index 0 and finds none, and then the two slices with i at -1, and no unsanctioned unit makes both slice(0, -1) and slice(4) sanctioned identifiers of sanctioned-units.generated.ts, which hold no \"-per-\" and no identifier of one character. The answer is false, as before."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "ConditionalExpression",
+      "original": "unit.indexOf('-per-', i + 1) !== -1",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the second test false, a unit with \"-per-\" twice reaches the two slices, and the second slice keeps the other \"-per-\", which no sanctioned identifier contains, so the answer is false, as before."
     }
   ]
 }
