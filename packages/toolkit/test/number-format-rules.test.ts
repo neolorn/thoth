@@ -209,6 +209,103 @@ describe('the options the constructor reads', () => {
     expect(differing).toEqual([]);
   });
 
+  it('name the step that throws, for every step that can', () => {
+    // The host's error carries no step, so the cases above hold only the exception. A refusal is
+    // cited by its step, and a step of GetOption or DefaultNumberOption by the step that called it.
+    const steps: readonly [Options, string, 'RangeError' | 'TypeError'][] = [
+      [{ localeMatcher: 'best' }, '9.2.8 step 4, 9.2.11 step 5', 'RangeError'],
+      [{ numberingSystem: 'ab' }, '9.2.8 step 6.d.ii', 'RangeError'],
+      [{ style: 'Decimal' }, '16.1.3 step 1, 9.2.11 step 5', 'RangeError'],
+      [{ style: 'currency' }, '16.1.3 step 4.a', 'TypeError'],
+      [{ currency: 'EU' }, '16.1.3 step 5.a', 'RangeError'],
+      [
+        { currencyDisplay: 'never' },
+        '16.1.3 step 6, 9.2.11 step 5',
+        'RangeError',
+      ],
+      [{ currencySign: 'none' }, '16.1.3 step 7, 9.2.11 step 5', 'RangeError'],
+      [{ style: 'unit' }, '16.1.3 step 9.a', 'TypeError'],
+      [{ unit: 'furlong' }, '16.1.3 step 10.a', 'RangeError'],
+      [{ unitDisplay: 'wide' }, '16.1.3 step 11, 9.2.11 step 5', 'RangeError'],
+      [{ notation: 'none' }, '16.1.1 step 11, 9.2.11 step 5', 'RangeError'],
+      [
+        { minimumIntegerDigits: 0 },
+        '16.1.2 step 1, 9.2.13 step 3',
+        'RangeError',
+      ],
+      [{ roundingIncrement: 0 }, '16.1.2 step 7, 9.2.13 step 3', 'RangeError'],
+      [{ roundingIncrement: 3 }, '16.1.2 step 8', 'RangeError'],
+      [
+        { roundingMode: 'nearest' },
+        '16.1.2 step 9, 9.2.11 step 5',
+        'RangeError',
+      ],
+      [
+        { roundingPriority: 'more' },
+        '16.1.2 step 10, 9.2.11 step 5',
+        'RangeError',
+      ],
+      [
+        { trailingZeroDisplay: 'strip' },
+        '16.1.2 step 11, 9.2.11 step 5',
+        'RangeError',
+      ],
+      [
+        { minimumSignificantDigits: 22 },
+        '16.1.2 step 22.a.i, 9.2.13 step 3',
+        'RangeError',
+      ],
+      [
+        { maximumSignificantDigits: 22 },
+        '16.1.2 step 22.a.ii, 9.2.13 step 3',
+        'RangeError',
+      ],
+      [
+        { minimumFractionDigits: 101 },
+        '16.1.2 step 23.a.i, 9.2.13 step 3',
+        'RangeError',
+      ],
+      [
+        { maximumFractionDigits: 101 },
+        '16.1.2 step 23.a.ii, 9.2.13 step 3',
+        'RangeError',
+      ],
+      [
+        { minimumFractionDigits: 3, maximumFractionDigits: 1 },
+        '16.1.2 step 23.a.v',
+        'RangeError',
+      ],
+      [
+        { roundingIncrement: 5, maximumSignificantDigits: 2 },
+        '16.1.2 step 29.a',
+        'TypeError',
+      ],
+      [
+        {
+          roundingIncrement: 5,
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 2,
+        },
+        '16.1.2 step 29.b',
+        'RangeError',
+      ],
+      [
+        { compactDisplay: 'medium' },
+        '16.1.1 step 16, 9.2.11 step 5',
+        'RangeError',
+      ],
+      [{ useGrouping: 'never' }, '16.1.1 step 20, 9.2.12 step 6', 'RangeError'],
+      [{ signDisplay: 'x' }, '16.1.1 step 24, 9.2.11 step 5', 'RangeError'],
+    ];
+    for (const [options, step, exception] of steps) {
+      expect(numberFormatRefusal(options), JSON.stringify(options)).toEqual({
+        step,
+        exception,
+      });
+      expect(hostRefusal(options), JSON.stringify(options)).toBe(exception);
+    }
+  });
+
   it('read the currency fraction digits the pinned CLDR release gives', () => {
     // The yen is written with none and the Bahraini dinar with three, so the fraction digits a
     // rounding increment needs differ between them for the same written minimum.

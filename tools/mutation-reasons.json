@@ -7757,6 +7757,224 @@
       "replacement": "true",
       "category": "equivalent",
       "reason": "With no earlier time the subtraction is not a number, and its comparison with the window is false, so the event is reported as it is with the guard."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "ConditionalExpression",
+      "original": "useGrouping !== true",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "With the test true, useGrouping true reaches the string comparison; true is then compared as the string \"true\", which line 409 accepts, and undefined is stopped by Boolean(useGrouping) on line 406, so no value changes outcome."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "BooleanLiteral",
+      "original": "true",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With useGrouping !== false, true reaches the string comparison and is accepted as \"true\" (line 409), and false is still stopped by Boolean(useGrouping) on line 406; no other value changes path."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "BlockStatement",
+      "original": "{\n    minimumFractionDigits = 0;\n    maximumFractionDigits = 0;\n  }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "The zeros are read only by step 29.b on line 325, which runs only for a roundingIncrement other than 1. Where neither significant nor fraction digits are needed, fractionDigitsRounding on line 321 is false, so step 29.a on line 324 refuses first and the zeros are never read."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "LogicalOperator",
+      "original": "i === -1 || unit.indexOf('-per-', i + 1) !== -1",
+      "replacement": "i === -1 && unit.indexOf('-per-', i + 1) !== -1",
+      "category": "equivalent",
+      "reason": "With the early return taken only when both tests hold, a unit without \"-per-\" reaches the two slices with i at -1, and no unsanctioned unit makes both slice(0, -1) and slice(4) sanctioned identifiers of sanctioned-units.generated.ts, which hold no \"-per-\" and no identifier of one character; a unit with \"-per-\" twice keeps one in the second slice. Both answer false, as before."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "ConditionalExpression",
+      "original": "i === -1 || unit.indexOf('-per-', i + 1) !== -1",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "Without the early return, a unit without \"-per-\" reaches the two slices with i at -1, and no unsanctioned unit makes both slice(0, -1) and slice(4) sanctioned identifiers of sanctioned-units.generated.ts, which hold no \"-per-\" and no identifier of one character; a unit with \"-per-\" twice keeps one in the second slice. Both answer false, as before."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "UnaryOperator",
+      "original": "-1",
+      "replacement": "+1",
+      "category": "equivalent",
+      "reason": "With i === +1, a unit without \"-per-\" reaches the two slices with i at -1, and no unsanctioned unit makes both slice(0, -1) and slice(4) sanctioned identifiers of sanctioned-units.generated.ts, which hold no \"-per-\" and no identifier of one character; a unit with \"-per-\" at index 1 returns false early where the original tests a numerator of one character, which is never sanctioned."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "StringLiteral",
+      "original": "'best fit'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "The default is what GetOption returns when localeMatcher is absent, and the call on line 132 discards it; a written value is compared with the list of values, never with the default."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "StringLiteral",
+      "original": "'9.2.8 step 6.c'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "getOption is given no list of values for numberingSystem (line 142), so it never reaches its refusal on line 76 and the step it is handed is never written; the check on line 148 refuses under a step of its own."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "StringLiteral",
+      "original": "'16.1.3 step 3'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "getOption is given no list of values for currency (line 168), so it never reaches its refusal on line 76 and the step it is handed is never written; the check on line 174 refuses under a step of its own."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "StringLiteral",
+      "original": "'symbol'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "The default is what GetOption returns when currencyDisplay is absent, and the call on line 177 discards it; a written value is compared with the list of values, never with the default."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "StringLiteral",
+      "original": "'standard'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "The default is what GetOption returns when currencySign is absent, and the call on line 184 discards it; a written value is compared with the list of values, never with the default."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "StringLiteral",
+      "original": "'16.1.3 step 8'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "getOption is given no list of values for unit (line 194), so it never reaches its refusal on line 76 and the step it is handed is never written; the check on line 200 refuses under a step of its own."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "StringLiteral",
+      "original": "'short'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "The defaults of unitDisplay (line 203) and of compactDisplay (line 393) are returned only when the option is absent, and both calls discard them; a written value is compared with the list of values, never with the default.",
+      "count": 2
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "LogicalOperator",
+      "original": "style === 'currency' && currency !== undefined",
+      "replacement": "style === 'currency' || currency !== undefined",
+      "category": "equivalent",
+      "reason": "The currency returned is read only on line 383, under style currency on line 382, and with style currency an absent currency was refused at step 4.a on line 173. So currency is defined wherever the value is read, and a currency returned for another style is read by nothing."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "ConditionalExpression",
+      "original": "style === 'currency'",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "The currency returned is read only on line 383, under style currency on line 382, and with style currency an absent currency was refused at step 4.a on line 173. So currency is defined wherever the value is read, and a currency returned for another style is read by nothing."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "ConditionalExpression",
+      "original": "currency !== undefined",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "The currency returned is read only on line 383, under style currency on line 382, and with style currency an absent currency was refused at step 4.a on line 173. So currency is defined wherever the value is read, and a currency returned for another style is read by nothing."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "StringLiteral",
+      "original": "'halfExpand'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "The default is what GetOption returns when roundingMode is absent, and the call on line 252 discards it; a written value is compared with the list of values, never with the default."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "StringLiteral",
+      "original": "'auto'",
+      "replacement": "\"\"",
+      "category": "equivalent",
+      "reason": "The defaults of trailingZeroDisplay (line 276) and of signDisplay (line 416) are returned only when the option is absent, and both calls discard them; a written value is compared with the list of values, never with the default.",
+      "count": 2
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "ConditionalExpression",
+      "original": "roundingIncrement !== 1",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "With the test true, the default maximum is lowered for every roundingIncrement. The defaults reach the answer only through step 29.b on line 325, which runs only for a roundingIncrement other than 1, where the original lowers it too; step 23.a.v on line 311 compares written values only."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "ConditionalExpression",
+      "original": "needSd && hasSd",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "Where the original skips the two reads, either neither option is written or needSd is false, which under roundingPriority auto (line 291) also means neither is written. The reads then take their defaults, 1 and 21, and refuse nothing."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "LogicalOperator",
+      "original": "needSd && hasSd",
+      "replacement": "needSd || hasSd",
+      "category": "equivalent",
+      "reason": "Where the original skips the two reads, either neither option is written or needSd is false, which under roundingPriority auto (line 291) also means neither is written. The reads then take their defaults, 1 and 21, and refuse nothing."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "ConditionalExpression",
+      "original": "!needSd && !needFd",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "The zeros are read only by step 29.b on line 325, which runs only for a roundingIncrement other than 1. Where neither significant nor fraction digits are needed, fractionDigitsRounding on line 321 is false, so step 29.a on line 324 refuses first and the zeros are never read."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "BooleanLiteral",
+      "original": "!needSd",
+      "replacement": "needSd",
+      "category": "equivalent",
+      "reason": "The test becomes needSd && !needFd, which holds only under roundingPriority auto with significant digits written (line 292). fractionDigitsRounding on line 321 is then false, because hasSd is true, so a roundingIncrement other than 1 is refused at step 29.a on line 324 and the zeros are never read."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "ConditionalExpression",
+      "original": "useGrouping !== undefined &&\n      useGrouping !== true",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "With the first two tests true, true is then compared as the string \"true\", which line 409 accepts, and undefined is stopped by Boolean(useGrouping) on line 406, so no value changes outcome."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "LogicalOperator",
+      "original": "useGrouping !== undefined &&\n      useGrouping !== true",
+      "replacement": "useGrouping !== undefined || useGrouping !== true",
+      "category": "equivalent",
+      "reason": "One of the two tests always holds, so the disjunction is true; true is then compared as the string \"true\", which line 409 accepts, and undefined is stopped by Boolean(useGrouping) on line 406, so no value changes outcome."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "ConditionalExpression",
+      "original": "useGrouping !== undefined",
+      "replacement": "true",
+      "category": "equivalent",
+      "reason": "undefined is stopped by Boolean(useGrouping) on line 406, so the first test never decides an outcome the last does not."
+    },
+    {
+      "file": "packages/toolkit/src/number-format-rules.ts",
+      "mutator": "ConditionalExpression",
+      "original": "error instanceof Refused",
+      "replacement": "true",
+      "category": "unreachable",
+      "reason": "Every value the options type admits is a string, a number, a boolean or undefined, which String and Number convert without throwing (lines 59 and 62), so the only error raised inside the try is the Refused that refuse throws on line 53."
     }
   ]
 }
