@@ -1,8 +1,8 @@
 # The gate, on Linux.
 #
-# `node tools/verify.mjs` is the whole of it. The stage graph, the ordering, the concurrency and the
+# `node tools/verify.ts` is the whole of it. The stage graph, the ordering, the concurrency and the
 # verdict are the ones in the repository; nothing about the run is described twice, and a stage
-# added to `tools/verify.mjs` is in this job the moment it lands, with no edit here.
+# added to `tools/verify.ts` is in this job the moment it lands, with no edit here.
 #
 # What this job does that the local gate does not is run on a different operating system. Equator
 # has only ever been verified on Windows, and the tooling carries twenty-eight `process.platform`
@@ -94,7 +94,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .runtimes/node
-          key: node-runtimes-${{ runner.os }}-${{ hashFiles('tools/stage-node-runtimes.mjs') }}
+          key: node-runtimes-${{ runner.os }}-${{ hashFiles('tools/stage-node-runtimes.ts') }}
 
       - run: pnpm run stage:node-runtimes
 
@@ -120,7 +120,7 @@ jobs:
       - run: pnpm run stage:npm-cache
 
       - name: Gate
-        run: node tools/verify.mjs
+        run: node tools/verify.ts
 
       # The archives a green gate kept, by hash. The build is reproducible across operating systems,
       # so these are the hashes of the archives a release publishes, and RELEASING publishes only

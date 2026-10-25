@@ -42,7 +42,7 @@ Everything each build emits, including Angular and the application itself.
 
 | Application      | Part    | Files |     Bytes |    gzip |  Brotli |
 | ---------------- | ------- | ----: | --------: | ------: | ------: |
-| Minimal consumer | initial |     1 |   342,716 | 104,224 |  89,348 |
+| Minimal consumer | initial |     1 |   342,716 | 104,224 |  89,354 |
 | Minimal consumer | lazy    |     4 |     8,758 |   4,299 |   3,521 |
 | Minimal consumer | server  |     0 |         0 |       0 |       0 |
 | Full consumer    | initial |     1 |   739,049 | 214,466 | 179,441 |
@@ -100,5 +100,5 @@ Each entry point as published, unminified, and each package as installed, source
 
 | Package                    | Files |     Bytes |
 | -------------------------- | ----: | --------: |
-| `@neolorn/equator`         |    38 | 3,212,737 |
-| `@neolorn/equator-toolkit` |   238 | 4,004,657 |
+| `@neolorn/equator`         |    38 | 3,212,728 |
+| `@neolorn/equator-toolkit` |   238 | 4,004,618 |
