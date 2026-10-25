@@ -288,8 +288,9 @@ function entryPointRows(): Omit<EntryPointRow, 'composables'>[] {
   const rows: Omit<EntryPointRow, 'composables'>[] = [];
   for (const [subpath, target] of Object.entries(runtimeManifest.exports)) {
     if (subpath.endsWith('.json')) continue;
+    // A `null` target closes a subpath, so there is no entry point behind it to describe.
     const types =
-      typeof target === 'object'
+      typeof target === 'object' && target !== null
         ? (target as { readonly types?: string }).types
         : undefined;
     if (types === undefined) continue;

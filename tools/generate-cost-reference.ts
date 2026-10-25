@@ -80,11 +80,13 @@ const runtimeManifest = readJson(
 ) as Manifest;
 
 // Every published JavaScript entry point, read from the exports map so an entry added later is
-// measured on the day it lands.
+// measured on the day it lands. A `null` target is a subpath the package closes, not an entry
+// point.
 const ENTRY_POINTS = Object.entries(runtimeManifest.exports)
   .filter(
     ([, target]) =>
       typeof target === 'object' &&
+      target !== null &&
       /\.m?js$/u.test((target as { readonly default?: string }).default ?? ''),
   )
   .map(([subpath, target]) => ({
