@@ -67,9 +67,23 @@ export function floorOf(range: string): string {
   return floor;
 }
 
-/** Two versions ordered by number rather than by text, so 22.9.0 sorts below 22.10.0. */
+/**
+ * Two versions ordered by number rather than by text, so 22.9.0 sorts below 22.10.0.
+ *
+ * Only a version of exactly three numbers is compared. `.node-version` is read as written, and a
+ * version manager accepts `24` there; a shorter version or one with a pre-release suffix has no
+ * place in this order, and a sort handed a comparison that answers `NaN` for it returns the rows
+ * in no particular order rather than failing.
+ */
 export function compareVersions(left: string, right: string): number {
-  const [a, b] = [left.split('.').map(Number), right.split('.').map(Number)];
+  const [a, b] = [left, right].map((version) => {
+    assert.match(
+      version,
+      /^\d+\.\d+\.\d+$/u,
+      `${JSON.stringify(version)} is not a version of three numbers, so it cannot be ordered against the supported versions.`,
+    );
+    return version.split('.').map(Number);
+  }) as [number[], number[]];
   const differs = a.findIndex((part, index) => part !== b[index]);
   return differs === -1 ? 0 : (a[differs] as number) - (b[differs] as number);
 }
