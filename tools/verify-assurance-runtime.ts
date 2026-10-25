@@ -43,7 +43,7 @@ import {
   type RuntimeInjection,
 } from './assurance-runtime-injections.ts';
 import { steps } from './verify-stages.ts';
-import type { SpawnedText } from './spawned-text.ts';
+import { type SpawnedText, spawnedOutput } from './spawned-text.ts';
 
 /** The part of an injection read here. */
 
@@ -246,7 +246,7 @@ function suiteVerdict(suite: string | undefined, caughtWhen?: RegExp): Verdict {
     return gateVerdict({
       gate: suite,
       status: staged.status,
-      output: `${staged.stdout}${staged.stderr}`,
+      output: spawnedOutput(staged),
       caughtWhen,
     });
   }
@@ -281,7 +281,7 @@ function suiteVerdict(suite: string | undefined, caughtWhen?: RegExp): Verdict {
   if (prepared.status !== 0) {
     return {
       verdict: 'unmeasured',
-      why: `The consumer could not be prepared for the browser (exit ${prepared.status ?? 'null'}):\n${`${prepared.stdout}${prepared.stderr}`.trim().split('\n').slice(-6).join('\n')}`,
+      why: `The consumer could not be prepared for the browser (exit ${prepared.status ?? 'null'}):\n${spawnedOutput(prepared).trim().split('\n').slice(-6).join('\n')}`,
     };
   }
   const browsed = run(
@@ -292,7 +292,7 @@ function suiteVerdict(suite: string | undefined, caughtWhen?: RegExp): Verdict {
   return gateVerdict({
     gate: 'verify:browser-assurance',
     status: browsed.status,
-    output: `${browsed.stdout}${browsed.stderr}`,
+    output: spawnedOutput(browsed),
     caughtWhen,
   });
 }

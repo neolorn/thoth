@@ -35,7 +35,7 @@ import { dirname, resolve } from 'node:path';
 
 import { listenForBrowsers } from './browser-reachable-port.ts';
 import { inputsRoot, repositoryRoot } from './stage-self-test.ts';
-import type { SpawnedText } from './spawned-text.ts';
+import { type SpawnedText, spawnedOutput } from './spawned-text.ts';
 
 const require_ = createRequire(resolve(repositoryRoot, 'package.json'));
 
@@ -1023,7 +1023,7 @@ function generated(cwd: string): number {
   };
   if (result.status !== 'success') {
     throw new Error(
-      `equator generate did not succeed in ${cwd}: ${finished.stdout}${finished.stderr}`,
+      `equator generate did not succeed in ${cwd}: ${spawnedOutput(finished)}`,
     );
   }
   return result.result.written.length;

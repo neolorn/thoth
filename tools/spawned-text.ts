@@ -15,3 +15,10 @@ export type SpawnedText = Omit<
   readonly stderr: string | null | undefined;
   readonly stdout: string | null | undefined;
 };
+
+/** Everything a child printed, and why it never started when it did not. */
+export function spawnedOutput(result: SpawnedText): string {
+  const reason =
+    result.error === undefined ? '' : `\n${String(result.error)}\n`;
+  return `${result.stdout ?? ''}${result.stderr ?? ''}${reason}`;
+}
