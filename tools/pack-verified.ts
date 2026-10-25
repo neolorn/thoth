@@ -25,8 +25,10 @@ import { fileURLToPath } from 'node:url';
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const packageDirectory = process.argv[2];
 
+// An empty argument resolves to the workspace itself, whose manifest has a version too, so it is
+// refused here rather than packed under a directory with no name.
 assert.ok(
-  packageDirectory !== undefined,
+  packageDirectory !== undefined && packageDirectory.trim() !== '',
   'Usage: node ./tools/pack-verified.ts <built-package-directory>',
 );
 
