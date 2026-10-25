@@ -42,11 +42,13 @@
  */
 
 import assert from 'node:assert/strict';
-import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+
+import type { SpawnedText } from './spawned-text.ts';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const installedToolkit = resolve(
@@ -89,15 +91,6 @@ interface CliResult {
     readonly summary: string;
   }[];
 }
-
-/**
- * What `spawnSync` hands back as text. A child that never starts leaves both streams unset, which
- * the declared result does not allow for.
- */
-type SpawnedText = Omit<SpawnSyncReturns<string>, 'stderr' | 'stdout'> & {
-  readonly stderr: string | null | undefined;
-  readonly stdout: string | null | undefined;
-};
 
 const steps: string[] = [];
 

@@ -18,7 +18,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -43,6 +43,7 @@ import {
   type RuntimeInjection,
 } from './assurance-runtime-injections.ts';
 import { steps } from './verify-stages.ts';
+import type { SpawnedText } from './spawned-text.ts';
 
 /** The part of an injection read here. */
 
@@ -54,15 +55,6 @@ interface ConsumerReport {
     readonly message?: string;
   }[];
 }
-
-/**
- * What `spawnSync` hands back as text. A child that never starts leaves both streams unset, which
- * the declared result does not allow for.
- */
-type SpawnedText = Omit<SpawnSyncReturns<string>, 'stderr' | 'stdout'> & {
-  readonly stderr: string | null | undefined;
-  readonly stdout: string | null | undefined;
-};
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const consumerRoot = resolve(

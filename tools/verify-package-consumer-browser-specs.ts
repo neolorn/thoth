@@ -19,12 +19,14 @@
  * output again afterwards, whatever the run did.
  */
 import assert from 'node:assert/strict';
-import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { readFile, readdir, rm } from 'node:fs/promises';
 import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import * as playwright from 'playwright';
+
+import type { SpawnedText } from './spawned-text.ts';
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const consumerRoot = resolve(
@@ -77,15 +79,6 @@ for (const required of [
     `The scan for specs that claim a testing helper or call the locale matcher found ${specFiles.join(', ') || 'none'}, and not ${required}, which must be among them.`,
   );
 }
-
-/**
- * What `spawnSync` hands back as text. A child that never starts leaves both streams unset, which
- * the declared result does not allow for.
- */
-type SpawnedText = Omit<SpawnSyncReturns<string>, 'stderr' | 'stdout'> & {
-  readonly stderr: string | null | undefined;
-  readonly stdout: string | null | undefined;
-};
 
 const run = (
   entry: string,

@@ -35,6 +35,7 @@ import { dirname, resolve } from 'node:path';
 
 import { listenForBrowsers } from './browser-reachable-port.ts';
 import { inputsRoot, repositoryRoot } from './stage-self-test.ts';
+import type { SpawnedText } from './spawned-text.ts';
 
 const require_ = createRequire(resolve(repositoryRoot, 'package.json'));
 
@@ -1009,16 +1010,13 @@ record(
 const generationRoot = resolve(repositoryRoot, 'tmp/cost-budget-generation');
 const equatorCli = resolve(dirname(consumerToolkit), 'cli.js');
 function generated(cwd: string): number {
-  const finished = spawnSync(
+  const finished: SpawnedText = spawnSync(
     process.execPath,
     [equatorCli, 'generate', '--json'],
     { cwd, encoding: 'utf8' },
   );
   const result = JSON.parse(
-    ((finished.stdout as string | null | undefined) ?? '')
-      .trim()
-      .split('\n')
-      .at(-1) ?? '{}',
+    (finished.stdout ?? '').trim().split('\n').at(-1) ?? '{}',
   ) as {
     readonly status?: unknown;
     readonly result: { readonly written: readonly unknown[] };

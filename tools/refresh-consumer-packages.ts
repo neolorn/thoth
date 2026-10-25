@@ -20,23 +20,15 @@
  * a cold metadata cache this costs 3.5 seconds, and the rebuilt file arrives.
  */
 
-import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync, rmSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { OFFLINE_INSTALL } from './offline-store.ts';
+import type { SpawnedText } from './spawned-text.ts';
 
 const ARGUMENTS = OFFLINE_INSTALL;
-
-/**
- * What `spawnSync` hands back as text. A child that never starts leaves both streams unset, which
- * the declared result does not allow for.
- */
-type SpawnedText = Omit<SpawnSyncReturns<string>, 'stderr' | 'stdout'> & {
-  readonly stderr: string | null | undefined;
-  readonly stdout: string | null | undefined;
-};
 
 /**
  * What the child process ran, for a failure that has to say what it ran.
@@ -50,7 +42,7 @@ export const refreshCommand = `pnpm ${ARGUMENTS.join(' ')}`;
  * Runs the refresh and hands back what happened. The caller decides how a failure is reported,
  * because the two callers report differently and both are right about their own gate.
  */
-export function refreshConsumerPackages(consumerRoot: string) {
+export function refreshConsumerPackages(consumerRoot: string): SpawnedText {
   const windows = process.platform === 'win32';
   rmSync(resolve(consumerRoot, 'node_modules'), {
     force: true,
@@ -95,7 +87,7 @@ if (
     );
     process.exit(1);
   }
-  const result: SpawnedText = refreshConsumerPackages(consumerRoot);
+  const result = refreshConsumerPackages(consumerRoot);
   if (result.status !== 0) {
     process.stderr.write(
       `${refreshCommand} failed in ${consumerRoot}: exit ${result.status ?? 'null'}\n` +

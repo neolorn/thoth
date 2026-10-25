@@ -4,6 +4,8 @@ import { existsSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import type { SpawnedText } from './spawned-text.ts';
+
 /**
  * Prove the lint stage can fail, and fail for the two reasons it exists for.
  *
@@ -102,7 +104,7 @@ const removeSeeds = () => {
   for (const seed of seeds) rmSync(seedPath(seed), { force: true });
 };
 
-const runLint = () => {
+const runLint = (): SpawnedText => {
   const windows = process.platform === 'win32';
   return spawnSync(
     windows ? (process.env['ComSpec'] ?? 'cmd.exe') : 'pnpm',
@@ -136,7 +138,7 @@ try {
   removeSeeds();
 }
 
-const output = `${(result.stdout as string | null | undefined) ?? ''}${(result.stderr as string | null | undefined) ?? ''}`;
+const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;
 const tail = output.trimEnd().split('\n').slice(-40).join('\n');
 
 assert.notEqual(

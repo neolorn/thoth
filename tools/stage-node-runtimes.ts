@@ -9,6 +9,7 @@ import {
   developmentNode,
   nodeFloors,
 } from './supported-versions.ts';
+import type { SpawnedText } from './spawned-text.ts';
 
 // The same derivation the compatibility rows use, from the same manifests, so what is downloaded
 // and what is run cannot describe different sets of Node.
@@ -69,16 +70,14 @@ const tarCommand =
     : 'tar';
 
 const extract = (fileName: string, destination: string): void => {
-  const result = spawnSync(tarCommand, ['-xf', fileName], {
+  const result: SpawnedText = spawnSync(tarCommand, ['-xf', fileName], {
     cwd: destination,
     encoding: 'utf8',
   });
   if (result.status !== 0) {
     throw new Error(
       `Extraction failed for ${fileName}. tar is required.\n${
-        result.error?.message ??
-        (result.stderr as string | null | undefined) ??
-        ''
+        result.error?.message ?? result.stderr ?? ''
       }`,
     );
   }

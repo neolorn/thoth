@@ -5,6 +5,8 @@ import { readdir, readFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import type { SpawnedText } from './spawned-text.ts';
+
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const configPath = resolve(workspaceRoot, 'tsconfig.typecheck.json');
 const toolsRoot = resolve(workspaceRoot, 'tools');
@@ -187,7 +189,7 @@ assert.ok(
 
 /** One program's run: what it printed, the files it loaded, and its exit status. */
 function compile(project: string) {
-  const run = spawnSync(
+  const run: SpawnedText = spawnSync(
     process.execPath,
     [
       resolve(workspaceRoot, 'node_modules/typescript/bin/tsc'),
@@ -200,7 +202,7 @@ function compile(project: string) {
     ],
     { cwd: workspaceRoot, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
   );
-  const printed = `${(run.stdout as string | null | undefined) ?? ''}${(run.stderr as string | null | undefined) ?? ''}`;
+  const printed = `${run.stdout ?? ''}${run.stderr ?? ''}`;
   return {
     printed,
     status: run.status,
