@@ -413,10 +413,12 @@ function shapeOf(
     };
   }
   if (flags & F.BooleanLiteral) {
+    // Compared by the regular form of each side, because the checker keeps a fresh and a regular
+    // type for each boolean literal and either can arrive here.
     return {
       literal:
-        (type as ts.Type & { readonly intrinsicName?: string })
-          .intrinsicName === 'true',
+        (type as ts.FreshableType).regularType ===
+        (checker.getTrueType() as ts.FreshableType).regularType,
     };
   }
   if (flags & F.TemplateLiteral) {
