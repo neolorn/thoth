@@ -41,6 +41,7 @@
     "verify:browser-script-gate:self-test": "node ./tools/verify-browser-script-gate-self-test.ts",
     "verify:browser-teardown:self-test": "node ./tools/verify-browser-teardown-self-test.ts",
     "verify:normative-map:self-test": "node ./tools/verify-normative-map-self-test.ts",
+    "verify:exports-map:self-test": "node ./tools/verify-exports-map-self-test.ts",
     "verify:normative-map": "node ./tools/verify-normative-map.ts",
     "test:toolkit": "vitest run --config vitest.toolkit.config.ts packages/toolkit/test",
     "test:runtime": "vitest run --config vitest.runtime.config.ts packages/runtime/test",

@@ -23,6 +23,7 @@ import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
 import { format, resolveConfig } from 'prettier';
 
 import { readBuildStats, type BuildStatsOutput } from './build-stats.ts';
+import { openSubpaths } from './exports-map.ts';
 import { inputsRoot } from './stage-self-test.ts';
 import { developmentNode } from './supported-versions.ts';
 
@@ -80,17 +81,15 @@ const runtimeManifest = readJson(
 ) as Manifest;
 
 // Every published JavaScript entry point, read from the exports map so an entry added later is
-// measured on the day it lands. A `null` target is a subpath the package closes, not an entry
-// point.
-const ENTRY_POINTS = Object.entries(runtimeManifest.exports)
+// measured on the day it lands.
+const ENTRY_POINTS = openSubpaths(runtimeManifest)
   .filter(
-    ([, target]) =>
+    ({ target }) =>
       typeof target === 'object' &&
-      target !== null &&
       /\.m?js$/u.test((target as { readonly default?: string }).default ?? ''),
   )
-  .map(([subpath, target]) => ({
-    specifier: `${runtimeManifest.name}${subpath.slice(1)}`,
+  .map(({ specifier, target }) => ({
+    specifier,
     target: (target as { readonly default: string }).default.slice(2),
     file: resolve(
       runtimeRoot,

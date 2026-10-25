@@ -76,6 +76,7 @@ import {
   hostCapabilityGaps,
   reportedCapabilities,
 } from './host-capability-gaps.ts';
+import { openSubpaths } from './exports-map.ts';
 import { inputsRoot } from './stage-self-test.ts';
 
 const workspaceRoot = inputsRoot();
@@ -269,7 +270,7 @@ const PURPOSE = Object.freeze({
 
 const runtimeManifest = JSON.parse(
   readFileSync(resolve(workspaceRoot, 'dist/runtime/package.json'), 'utf8'),
-) as { readonly exports: Readonly<Record<string, unknown>> };
+) as { readonly name: string; readonly exports: unknown };
 
 // Which entry point actually reaches an optional peer. The manifest says which peers are optional;
 // the declaration file says which entry point imports it. Neither half is written here, so an entry
@@ -286,11 +287,10 @@ interface EntryPointRow {
 /** One row per published entry point, in the order a reader meets them. */
 function entryPointRows(): Omit<EntryPointRow, 'composables'>[] {
   const rows: Omit<EntryPointRow, 'composables'>[] = [];
-  for (const [subpath, target] of Object.entries(runtimeManifest.exports)) {
-    if (subpath.endsWith('.json')) continue;
-    // A `null` target closes a subpath, so there is no entry point behind it to describe.
+  for (const { specifier, target, json } of openSubpaths(runtimeManifest)) {
+    if (json) continue;
     const types =
-      typeof target === 'object' && target !== null
+      typeof target === 'object'
         ? (target as { readonly types?: string }).types
         : undefined;
     if (types === undefined) continue;
@@ -303,7 +303,7 @@ function entryPointRows(): Omit<EntryPointRow, 'composables'>[] {
       [...text.matchAll(/from ['"]([^'"]+)['"]/gu)].map(([, source]) => source),
     );
     rows.push({
-      specifier: `@neolorn/equator${subpath === '.' ? '' : subpath.slice(1)}`,
+      specifier,
       names: publishedNames(text),
       text,
       needs: optionalPeers.filter((peer) => imported.has(peer)),

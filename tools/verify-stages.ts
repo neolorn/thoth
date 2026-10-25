@@ -230,6 +230,9 @@ const declared: readonly StageDeclaration[] = Object.freeze([
   // held for the caller during a gated navigation and handed on at any other time, and the page's
   // route is never removed, because a script asked for while a route is going away is left paused.
   { id: 'verify:browser-script-gate:self-test', reads: ['source:tools'] },
+  // Drives the exports-map reader every entry-point list is taken from with manifests of its own,
+  // because the built packages close no subpath and the stages that read them never meet one.
+  { id: 'verify:exports-map:self-test', reads: ['source:tools'] },
   // Plants a document and a map beside it and requires the reader to find each planted statement
   // and the map to refuse each planted defect, so the stage below cannot pass by reading nothing.
   { id: 'verify:normative-map:self-test', reads: ['source:tools'] },

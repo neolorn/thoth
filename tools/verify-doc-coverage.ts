@@ -51,6 +51,8 @@ import { fileURLToPath } from 'node:url';
 
 import ts from 'typescript';
 
+import { openSubpaths } from './exports-map.ts';
+
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
@@ -92,10 +94,10 @@ assert.ok(
  */
 const runtimeManifest = JSON.parse(
   readFileSync(resolve(workspaceRoot, 'dist/runtime/package.json'), 'utf8'),
-) as { readonly exports: Readonly<Record<string, unknown>> };
-const publishedSubpaths = Object.keys(runtimeManifest.exports)
-  .filter((subpath) => subpath !== './package.json')
-  .map((subpath) =>
+) as { readonly name: string; readonly exports: unknown };
+const publishedSubpaths = openSubpaths(runtimeManifest)
+  .filter(({ json }) => !json)
+  .map(({ subpath }) =>
     subpath === '.'
       ? 'neolorn-equator'
       : `neolorn-equator-${subpath.replace(/^\.\//u, '')}`,

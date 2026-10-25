@@ -22,6 +22,7 @@ import {
 } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { openSubpaths } from './exports-map.ts';
 import { nodeRange } from './supported-versions.ts';
 
 const cliTimeout = 30_000;
@@ -691,10 +692,10 @@ async function main() {
 
   // Every module entry point the manifest publishes, read from it rather than listed here, so an
   // entry point the manifest gains is loaded on every Node row without a second list to update.
-  // `./package.json` is the manifest, not a module.
+  // A JSON subpath, such as the manifest, is not a module.
   const runtimeEntries = new Map<string, ModuleNamespace>();
-  for (const subpath of Object.keys(runtimeManifest.exports ?? {})) {
-    if (subpath === './package.json') continue;
+  for (const { subpath, json } of openSubpaths(runtimeManifest)) {
+    if (json) continue;
     runtimeEntries.set(
       subpath,
       await importPublicEntry(runtimeRoot, runtimeManifest, subpath),

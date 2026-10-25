@@ -24,6 +24,7 @@ import type { BrowserType } from 'playwright';
 import ts from 'typescript';
 
 import type { Evidence, EvidenceClaim } from './capability-evidence.ts';
+import { openSubpaths } from './exports-map.ts';
 import { consumerProfiles } from './package-consumer-profiles.ts';
 import {
   composableExports,
@@ -864,10 +865,8 @@ export function rowsFrom({
     [runtimeManifest, (key: string) => key !== './package.json'],
     [toolkitManifest, (key: string) => key === '.'],
   ] as const) {
-    for (const key of Object.keys(manifest.exports).filter(keep)) {
-      const specifier =
-        key === '.' ? manifest.name : `${manifest.name}/${key.slice(2)}`;
-      add('entry', specifier, [[{ specifier }]]);
+    for (const { subpath, specifier } of openSubpaths(manifest)) {
+      if (keep(subpath)) add('entry', specifier, [[{ specifier }]]);
     }
   }
 

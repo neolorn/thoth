@@ -18,10 +18,11 @@
  */
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
+import { openSubpaths } from './exports-map.ts';
 import { inputsRoot, repositoryRoot } from './stage-self-test.ts';
 
 const root = inputsRoot();
@@ -136,20 +137,27 @@ assert.deepEqual(
   `Installing the tarballs changed what the committed lock pins: ${moved.join(', ')}. A tarball asks for something the lock does not hold; run "pnpm run refresh:consumer-locks" if the change is intended.`,
 );
 
-// Every export of both installed packages, imported by the specifier a consumer writes. The
-// compiler first, as an application's own build loads it before the toolkit's analysis does.
+// Every subpath both installed packages open, imported by the specifier a consumer writes. The
+// installed manifests are read here, by the reader every tool shares, so the probe only imports.
+// The compiler first, as an application's own build loads it before the toolkit's analysis does.
+const opened = ['@neolorn/equator', '@neolorn/equator-toolkit'].flatMap(
+  (name) =>
+    openSubpaths(
+      JSON.parse(
+        readFileSync(
+          resolve(consumerRoot, 'node_modules', name, 'package.json'),
+          'utf8',
+        ),
+      ) as { readonly name: string; readonly exports: unknown },
+    ).map(({ specifier, json }) => ({ specifier, json })),
+);
 const probe = `
-import { readFileSync } from 'node:fs';
 await import('@angular/compiler');
 const imported = [];
-for (const name of ['@neolorn/equator', '@neolorn/equator-toolkit']) {
-  const manifest = JSON.parse(readFileSync(new URL(\`./node_modules/\${name}/package.json\`, import.meta.url), 'utf8'));
-  for (const key of Object.keys(manifest.exports)) {
-    const specifier = key === '.' ? name : \`\${name}/\${key.slice(2)}\`;
-    if (key.endsWith('.json')) await import(specifier, { with: { type: 'json' } });
-    else await import(specifier);
-    imported.push(specifier);
-  }
+for (const { specifier, json } of ${JSON.stringify(opened)}) {
+  if (json) await import(specifier, { with: { type: 'json' } });
+  else await import(specifier);
+  imported.push(specifier);
 }
 process.stdout.write(JSON.stringify(imported));
 `;
