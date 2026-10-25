@@ -143,6 +143,16 @@ assert.ok(
   !bounded.stdout.includes('verified.'),
   `The gate reported its verification complete after a stage overrun:\n${bounded.stdout}`,
 );
+// And that what it says the row was waiting on is the stage that overran. The per-call bound prints
+// the same description, and a description that still reads as it did at startup says nothing
+// about where a run stopped.
+const overran = /Stage ("[^"\n]+") did not finish within 1ms/u.exec(
+  bounded.stderr,
+)?.[1];
+assert.ok(
+  overran !== undefined && bounded.stderr.includes(`"awaiting": ${overran}`),
+  `The overrun report does not say the row was waiting on the stage that overran, so a bound that trips reports where the run started rather than where it stopped:\n${bounded.stderr}`,
+);
 
 // The fourth silence: the block that reports a caught failure. Both escapes above die before the
 // try that assembles it and the stage bound exits from its own timer, so without this case nothing

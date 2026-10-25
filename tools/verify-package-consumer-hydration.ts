@@ -587,7 +587,7 @@ function noteActivity(what: string) {
 // happened yet, and it has to survive everything that happens while it waits. Recording the await
 // through `noteActivity` was tried first and a deliberately shortened bound reported a URL, which is
 // the reading this exists to replace.
-export function noteAwaiting(what: string) {
+function noteAwaiting(what: string) {
   rowActivity.awaiting = what;
   rowActivity.awaitingSince = Date.now();
 }
@@ -629,6 +629,8 @@ const enterStage = (name: string) => {
   leaveStage();
   verificationStage = name;
   stageEnteredAt = Date.now();
+  // Both bounds report what the row is waiting on, and the stage it has just entered is that.
+  noteAwaiting(name);
   // stderr, because `verify.ts` streams both but reprints stdout as a step's evidence.
   process.stderr.write(`[assurance] ${name}\n`);
   clearTimeout(stageWatchdog);
