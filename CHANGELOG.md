@@ -188,7 +188,7 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
   formatted value and on a capability's answer, and as `valueLanguage` on a message's formatted
   part. `fallback` and `valueFallback` are set where that locale differs in language or in script
   after likely subtags: `fr-HT` writing for `ht` is a fallback, and `en` answering for `en-US` is
-  not. The chains and the parent and likely-script tables they read add 4,653 bytes, gzip, to the
+  not. The chains and the parent and likely-script tables they read add 4,851 bytes, gzip, to the
   primary entry point, 1,972 of them the tables, which the [cost reference](docs/reference/cost.md)
   measures.
 - `formatRelativeTime` with `withRelativeTimePolicy` for the units and the range, and
