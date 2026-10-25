@@ -845,6 +845,9 @@ let wake = () => {};
  * Which stage starts when, within the processor budget and the memory floor, is decided in
  * `gate-resources.ts`, so the scheduler this runs on is the one its self-test drives.
  */
+const describeError = (error: unknown): string =>
+  error instanceof Error ? (error.stack ?? error.message) : String(error);
+
 const scheduler = createScheduler({
   steps,
   dependencies,
@@ -860,25 +863,42 @@ const scheduler = createScheduler({
   launch: (step, processors) => {
     startedAt.set(step.id, Date.now());
     process.stdout.write(`=== RUN  ${step.id} (${processors} of ${budget})\n`);
+    // A stage that cannot be started, or whose log cannot be written, is a failed stage. Left to
+    // reject, either one ends the run where it stands, with no summary and no ledger line, while
+    // the stages beside it go on running.
+    const finish = (code: number, output: string) => {
+      const seconds = Math.round((Date.now() - startedAt.get(step.id)!) / 1000);
+      let status = code === 0 ? ('pass' as const) : ('fail' as const);
+      let recorded = output;
+      try {
+        writeFileSync(
+          resolve(runDirectory, `${safeName(step.id)}.log`),
+          output,
+        );
+      } catch (error) {
+        status = 'fail';
+        recorded += `\nThe stage's log could not be written: ${describeError(error)}\n`;
+      }
+      results.set(step.id, { status, seconds, output: recorded });
+      process.stdout.write(
+        `=== ${status === 'pass' ? 'PASS' : 'FAIL'} ${step.id} (${seconds}s)\n`,
+      );
+      scheduler.finished(step.id);
+      wake();
+    };
     void runStep(
       step.id,
       step.timeoutSeconds ?? DEFAULT_STEP_TIMEOUT_SECONDS,
       treesInUse.get(treeOf(step))!,
       processors,
-    ).then(({ code, output }) => {
-      const seconds = Math.round((Date.now() - startedAt.get(step.id)!) / 1000);
-      writeFileSync(resolve(runDirectory, `${safeName(step.id)}.log`), output);
-      results.set(step.id, {
-        status: code === 0 ? 'pass' : 'fail',
-        seconds,
-        output,
-      });
-      process.stdout.write(
-        `=== ${code === 0 ? 'PASS' : 'FAIL'} ${step.id} (${seconds}s)\n`,
-      );
-      scheduler.finished(step.id);
-      wake();
-    });
+    ).then(
+      ({ code, output }) => {
+        finish(code, output);
+      },
+      (error: unknown) => {
+        finish(1, `The stage could not be started: ${describeError(error)}\n`);
+      },
+    );
   },
 });
 
