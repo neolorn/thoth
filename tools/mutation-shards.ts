@@ -1,11 +1,11 @@
 /**
  * A mutation reading in parts, each small enough for one hosted job.
  *
- * A hosted job ends at 330 minutes, and one reading of either half takes many times that at the
- * four workers a runner has. Whole files do not divide it: a single function can cost more than a
- * job. So a file is divided between parts at the start of a statement, and each part runs the
- * whole file with every mutant outside its own regions switched off by Stryker's own directives,
- * `Stryker disable all` and `Stryker restore all`.
+ * A job on a hosted runner ends at six hours, and one reading of either half takes many times that
+ * at the four workers a runner has. Whole files do not divide it: a single function can cost more
+ * than a job. So a file is divided between parts at the start of a statement, and each part runs
+ * the whole file with every mutant outside its own regions switched off by Stryker's own
+ * directives, `Stryker disable all` and `Stryker restore all`.
  *
  * That division is exact whatever the code looks like. Stryker reads a node's directives as it
  * enters the node and collects that node's mutants in the same step, so a mutant belongs to the

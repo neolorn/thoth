@@ -10,11 +10,12 @@
 # `node tools/verify-mutation-reasons.ts --report <every part's report.json>` reads the parts
 # together.
 #
-# A reading is taken in parts, because a hosted job ends at 330 minutes and a whole half takes many
-# times that on a runner's four workers. `tools/mutation-shards.json` divides each half between
-# parts, and `tools/mutation-shards.ts` says how a part reads its share and why every mutant is
-# read by exactly one part. The division was estimated from local readings to take 240 minutes or
-# less per part, which leaves room inside the 330 for the install and the initial test run.
+# A reading is taken in parts, because a job on a hosted runner ends at six hours and a whole half
+# takes many times that on a runner's four workers. `tools/mutation-shards.json` divides each half
+# between parts, and `tools/mutation-shards.ts` says how a part reads its share and why every
+# mutant is read by exactly one part. The division is estimated from local readings, not measured
+# on a runner, to take 240 minutes or less per part, which leaves room inside the six hours for the
+# install, the initial test run and an estimate that proves short.
 #
 # Dispatch rather than a schedule: a reading produces survivors somebody has to read, and a
 # schedule would take one on the weeks nothing changed.
@@ -77,7 +78,7 @@ jobs:
     needs: parts
     if: inputs.scope != 'toolkit'
     runs-on: ubuntu-latest
-    timeout-minutes: 330
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
@@ -138,7 +139,7 @@ jobs:
     needs: parts
     if: inputs.scope != 'runtime'
     runs-on: ubuntu-latest
-    timeout-minutes: 330
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
