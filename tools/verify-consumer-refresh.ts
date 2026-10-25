@@ -37,11 +37,7 @@ const assertContained = (path: string, owner: string) => {
   }
 };
 
-const replaceFile = async (
-  path: string,
-  contents: string | Uint8Array,
-  _encoding?: BufferEncoding,
-) => {
+const replaceFile = async (path: string, contents: string | Uint8Array) => {
   assertContained(path, workspaceRoot);
   const temporaryPath = `${path}.package-refresh`;
   assertContained(temporaryPath, workspaceRoot);
@@ -168,12 +164,10 @@ try {
   await replaceFile(
     runtimeManifestPath,
     `${JSON.stringify(runtimeManifest, null, 2)}\n`,
-    'utf8',
   );
   await replaceFile(
     toolkitManifestPath,
     `${JSON.stringify(toolkitManifest, null, 2)}\n`,
-    'utf8',
   );
 
   directPropagation = await installedHasEveryProbe();

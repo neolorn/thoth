@@ -542,15 +542,6 @@ async function resetTo(root: string, tree: string) {
   await cp(tree, root, { recursive: true });
 }
 
-/**
- * The pages that start from the installed scaffold rather than from the base.
- *
- * One page is on this list and it is the tutorial, whose first command is `equator init`.
- * Everything else starts from what the READMEs built, which is what a reader of a guide already
- * has.
- */
-export const STARTS_FROM_THE_SCAFFOLD = new Set(['docs/tutorial.md']);
-
 /** Every page under `docs/`, in a stable order. */
 async function documentPages(): Promise<[string, string][]> {
   const found = await readdir(docsRoot, {

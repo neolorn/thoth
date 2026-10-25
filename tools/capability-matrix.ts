@@ -585,24 +585,6 @@ function angularColumns(
 // Rows
 // ---------------------------------------------------------------------------------------------
 
-export const CATEGORIES = Object.freeze({
-  entry: 'Entry point',
-  feature: 'Provider or feature',
-  policy: 'URL policy',
-  source: 'Locale source',
-  store: 'Persistence store',
-  pipe: 'Pipe',
-  directive: 'Directive or component',
-  control: 'Form control',
-  format: 'Formatting kind',
-  outcome: 'Page outcome',
-  extension: 'Extension contract',
-  declaration: 'Declaration',
-  testing: 'Testing helper',
-  cli: 'CLI command',
-  capability: 'Capability',
-});
-
 // A binding is what the claiming check's own body must name for the claim to count: a list of
 // requirements, all of which must hold, each met by any one of its tokens.
 const named = (...names: string[]): BindingToken[] =>

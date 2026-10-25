@@ -270,9 +270,6 @@ const PURPOSE = Object.freeze({
 const runtimeManifest = JSON.parse(
   readFileSync(resolve(workspaceRoot, 'dist/runtime/package.json'), 'utf8'),
 ) as { readonly exports: Readonly<Record<string, unknown>> };
-export const toolkitManifest: unknown = JSON.parse(
-  readFileSync(resolve(workspaceRoot, 'dist/toolkit/package.json'), 'utf8'),
-);
 
 // Which entry point actually reaches an optional peer. The manifest says which peers are optional;
 // the declaration file says which entry point imports it. Neither half is written here, so an entry
