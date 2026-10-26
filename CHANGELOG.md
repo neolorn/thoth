@@ -14,7 +14,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The 0.x line is the alpha stage,
 then the betas, then the release candidates and the milestones that followed them.
 
-## [1.0.0-rc.1] - 2026-10-22
+## [1.0.0-rc.1] - 2026-10-26
 
 The first release candidate of Equator, a localization framework for Angular applications.
 
