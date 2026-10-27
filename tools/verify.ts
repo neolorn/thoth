@@ -11,7 +11,6 @@ import {
 } from 'node:fs';
 import { freemem, getPriority, setPriority, totalmem } from 'node:os';
 import { basename, dirname, resolve, sep } from 'node:path';
-import type { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 
 import { CLAIMS_FILE_VARIABLE } from './capability-claims.ts';
@@ -51,6 +50,7 @@ import {
   ledgerOccurrences,
   verdictOccurrences,
 } from './gate-occurrences.ts';
+import { startCaptured } from './stage-output.ts';
 import { readTrace, traceDrift } from './trace-drift.ts';
 import { holdHeavyJobLock } from './heavy-job-lock.ts';
 import { claimsFile, safeName, steps as everyStep } from './verify-stages.ts';
@@ -595,79 +595,83 @@ const runStep = (
       .filter((part) => part !== undefined && part !== '')
       .join(' ');
     const level = stagePriority(stepById.get(id)!, priorityLifted());
-    const child = startAtPriority(level, () =>
-      spawn(pnpmCommand, commandArguments, {
-        cwd: root,
-        stdio: ['ignore', 'pipe', 'pipe'],
-        env: {
-          ...process.env,
-          NODE_OPTIONS: nodeOptions,
-          // Read and removed by the tracer in the first node process it reaches. When that is a
-          // script entry of `pnpm`, its workspace scan is the runner's work, not the stage's, and
-          // attributing it to the stage gave three stages an undeclared read of `source:packages` on
-          // the runs where pnpm happened not to skip that scan.
-          EQUATOR_TRACE_LAUNCHER: '1',
-          // The stage's share of the processor budget, in the settings its runners size themselves by,
-          // as the scheduler handed and recorded them.
-          ...settings,
-          // What a stage starts runs under this run's lock and is not refused by it.
-          ...heavyJob.environment,
-          // The trace goes to the repository, because the tree it describes is about to be removed.
-          EQUATOR_TRACE_FILE: resolve(runDirectory, `${safeName(id)}.jsonl`),
-          // Traced against the tree the stage actually ran in, so a path resolves to the same
-          // artefact name wherever it was touched. That is what makes the drift check mean the same
-          // thing in a private tree as in the shared one.
-          EQUATOR_TRACE_ROOT: root,
-          EQUATOR_NODE_COMPATIBILITY_ROOT: nodeRuntimesRoot,
-          EQUATOR_NPM_CACHE: npmCacheRoot,
-          // Set to undefined rather than left out, so one set in the caller's shell reaches no stage.
-          [CLAIMS_FILE_VARIABLE]: claims ? claimsFile(root, id) : undefined,
-          // In the repository beside the trace, for the same reason.
-          [OCCURRENCES_FILE_VARIABLE]: occurrencesFile(id),
-          // Temporary, and a deliberate trade against an instrument's own cost rather than a lapse.
-          //
-          // The five page-side wrappers behind this switch cover the hot paths (element scrolling,
-          // focus, and the two selection methods) and they were turned off because their cost moved
-          // the failure *rate*, which made them useless for measuring one. This hunt is not measuring
-          // a rate. It is trying to catch one occurrence with the wrappers on, and for that a higher
-          // rate is welcome. So they run on unattended gate runs, where the occurrences happen, and
-          // this line comes out the moment one is caught with them installed.
-          EQUATOR_ASSURANCE_TRACE_CALLS: '1',
-        },
-      }),
+    // Captured rather than streamed. Thirty stages interleaving on one console is not a log, and
+    // the summary below reads the same as it did when they ran one at a time.
+    const stage = startCaptured(
+      (stdio) =>
+        startAtPriority(level, () =>
+          spawn(pnpmCommand, commandArguments, {
+            cwd: root,
+            stdio,
+            env: {
+              ...process.env,
+              NODE_OPTIONS: nodeOptions,
+              // Read and removed by the tracer in the first node process it reaches. When that is a
+              // script entry of `pnpm`, its workspace scan is the runner's work, not the stage's, and
+              // attributing it to the stage gave three stages an undeclared read of `source:packages` on
+              // the runs where pnpm happened not to skip that scan.
+              EQUATOR_TRACE_LAUNCHER: '1',
+              // The stage's share of the processor budget, in the settings its runners size themselves by,
+              // as the scheduler handed and recorded them.
+              ...settings,
+              // What a stage starts runs under this run's lock and is not refused by it.
+              ...heavyJob.environment,
+              // The trace goes to the repository, because the tree it describes is about to be removed.
+              EQUATOR_TRACE_FILE: resolve(
+                runDirectory,
+                `${safeName(id)}.jsonl`,
+              ),
+              // Traced against the tree the stage actually ran in, so a path resolves to the same
+              // artefact name wherever it was touched. That is what makes the drift check mean the same
+              // thing in a private tree as in the shared one.
+              EQUATOR_TRACE_ROOT: root,
+              EQUATOR_NODE_COMPATIBILITY_ROOT: nodeRuntimesRoot,
+              EQUATOR_NPM_CACHE: npmCacheRoot,
+              // Set to undefined rather than left out, so one set in the caller's shell reaches no stage.
+              [CLAIMS_FILE_VARIABLE]: claims ? claimsFile(root, id) : undefined,
+              // In the repository beside the trace, for the same reason.
+              [OCCURRENCES_FILE_VARIABLE]: occurrencesFile(id),
+              // Temporary, and a deliberate trade against an instrument's own cost rather than a lapse.
+              //
+              // The five page-side wrappers behind this switch cover the hot paths (element scrolling,
+              // focus, and the two selection methods) and they were turned off because their cost moved
+              // the failure *rate*, which made them useless for measuring one. This hunt is not measuring
+              // a rate. It is trying to catch one occurrence with the wrappers on, and for that a higher
+              // rate is welcome. So they run on unattended gate runs, where the occurrences happen, and
+              // this line comes out the moment one is caught with them installed.
+              EQUATOR_ASSURANCE_TRACE_CALLS: '1',
+            },
+          }),
+        ),
+      resolve(runDirectory, `${safeName(id)}.output`),
     );
+    const { child } = stage;
 
     checkStarted(id, child.pid, level);
     if (child.pid !== undefined) stageRoots.set(child.pid, id);
 
-    let output = '';
+    let notice = '';
     let timedOut = false;
     const timer = setTimeout(() => {
       timedOut = true;
-      const notice = `\n=== TIMEOUT ${id} after ${timeoutSeconds}s. Killing it; a stage that does not end is a failure that reports nothing.\n`;
-      output += notice;
+      notice = `\n=== TIMEOUT ${id} after ${timeoutSeconds}s. Killing it; a stage that does not end is a failure that reports nothing.\n`;
       process.stderr.write(notice);
       killTree(child);
+      // A process that inherited the stage's output can outlive the first one, and off Windows it
+      // is then no longer under it, so it is ended by what it holds.
+      for (const pid of stage.holders()) {
+        try {
+          process.kill(pid, 'SIGKILL');
+        } catch {
+          // Ended on its own.
+        }
+      }
     }, timeoutSeconds * 1000);
-    // Captured to a file rather than streamed. Thirty stages interleaving on one console is not a
-    // log, and the summary below reads the same as it did when they ran one at a time.
-    const capture = (source: Readable): void => {
-      source.on('data', (chunk: Buffer) => {
-        output += chunk.toString();
-      });
-    };
-    capture(child.stdout);
-    capture(child.stderr);
 
-    child.once('error', (error) => {
-      clearTimeout(timer);
-      output += `${error.message}\n`;
-      settle({ code: 1, output });
-    });
-    child.once('close', (code) => {
+    void stage.ended.then(({ code, output }) => {
       clearTimeout(timer);
       if (child.pid !== undefined) stageRoots.delete(child.pid);
-      settle({ code: timedOut ? 1 : (code ?? 1), output });
+      settle({ code: timedOut ? 1 : (code ?? 1), output: output + notice });
     });
   });
 

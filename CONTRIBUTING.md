@@ -68,7 +68,7 @@ The full verification suite builds both packages, installs them into consumer ap
 pnpm run verify
 ```
 
-It takes about two and a half hours on a machine with 32 logical processors, most of it in `verify:assurance:runtime`, which rebuilds the runtime once for each behavior it removes. Run it on the finished change before opening a pull request. If a stage cannot run in your environment, say so in the pull request.
+It runs on Windows and Linux, and takes about two and a half hours on a machine with 32 logical processors, most of it in `verify:assurance:runtime`, which rebuilds the runtime once for each behavior it removes. Run it on the finished change before opening a pull request. If a stage cannot run in your environment, say so in the pull request.
 
 To run some of its stages the way the suite runs them, name them:
 

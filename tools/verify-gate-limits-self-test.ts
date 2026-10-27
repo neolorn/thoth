@@ -22,14 +22,16 @@
  * (`scheduleFindings`): the planted run's record keeps the budget, a scheduler that believes it has
  * one processor more starts a stage too many and its record says so, and the pattern of the windows a
  * hosted run measured over its budget, two stages of one processor whose Node processes used 2.9,
- * keeps it.
+ * keeps it. How a stage's output is read (`stage-output.ts`) is driven over real processes: a stage
+ * that ends by throwing a long message, and one whose first process leaves a child holding its
+ * output or a child with output of its own.
  *
  * The lock every heavy job takes is driven here as well (`heavy-job-lock.ts`): a second job is
  * refused by the first one's name, a job the holder started runs under the holder's lock, and a
  * lock whose holder has exited, or whose process id belongs to a later process, is taken over.
  */
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, rmSync, writeFileSync } from 'node:fs';
 import { setPriority } from 'node:os';
 import { resolve } from 'node:path';
@@ -57,6 +59,7 @@ import {
 } from './process-tree.ts';
 import type { PriorityLevel } from './process-tree.ts';
 import { takeHeavyJobLock } from './heavy-job-lock.ts';
+import { startCaptured } from './stage-output.ts';
 import { steps as declaredSteps } from './verify-stages.ts';
 import { workingRoot } from './working-state.ts';
 
@@ -674,6 +677,59 @@ assert.match(
 );
 afterReuse.release();
 assert.ok(!existsSync(lockPath), 'The last planted job left its lock behind.');
+
+// A stage's output, read as the gate reads it (`stage-output.ts`). A stage that ends by throwing a
+// long message is read to the end of it, where its name for what failed is. A stage whose first
+// process leaves a child holding its output has not ended until that child has, and its output is
+// read with the child's; a child started with output of its own is not waited for.
+const outputPath = resolve(workingRoot, 'stage-output-self-test.out');
+const runCaptured = async (
+  code: string,
+  environment: Record<string, string> = {},
+) => {
+  const startedAt = Date.now();
+  const { ended } = startCaptured(
+    (stdio) =>
+      spawn(process.execPath, ['-e', code], {
+        stdio,
+        env: { ...process.env, ...environment },
+      }),
+    outputPath,
+  );
+  const { code: exitCode, output } = await ended;
+  return { exitCode, output, milliseconds: Date.now() - startedAt };
+};
+const marker = 'the planted stage named what failed';
+const thrown = await runCaptured(
+  "process.stderr.write('Building\\n'); throw new Error('x'.repeat(99).concat('\\n').repeat(3000) + process.env.EQUATOR_SELF_TEST_MARKER);",
+  { EQUATOR_SELF_TEST_MARKER: marker },
+);
+assert.equal(thrown.exitCode, 1, 'A stage that threw did not exit 1.');
+assert.ok(
+  thrown.output.includes(marker),
+  `A stage that ended by throwing was read without the end of its message (${thrown.output.length} characters read).`,
+);
+// Detached, because on Windows a child that is not ends with its parent (`child_process`,
+// `options.detached`), and only a child that outlives the first process can hold its output.
+const grandchild = (stdio: string) =>
+  runCaptured(
+    "const child = require('node:child_process').spawn(process.execPath, ['-e', \"setTimeout(() => console.log('the child ended'), 1500)\"], { stdio: process.env.EQUATOR_SELF_TEST_STDIO, detached: true }); child.unref(); console.log('the first process ended');",
+    { EQUATOR_SELF_TEST_STDIO: stdio },
+  );
+const inherited = await grandchild('inherit');
+assert.ok(
+  inherited.milliseconds >= 1400 &&
+    inherited.output.includes('the first process ended') &&
+    inherited.output.includes('the child ended'),
+  `A stage whose child held its output was read as ended after ${inherited.milliseconds} ms, with: ${JSON.stringify(inherited.output)}.`,
+);
+const separate = await grandchild('ignore');
+assert.ok(
+  separate.milliseconds < 1400 &&
+    separate.output.includes('the first process ended'),
+  `A stage whose child had output of its own was waited on for ${separate.milliseconds} ms, with: ${JSON.stringify(separate.output)}.`,
+);
+assert.ok(!existsSync(outputPath), 'A stage left its output file behind.');
 
 process.stdout.write(
   `verify:gate-limits:self-test GREEN: ${planted.length} planted stages ran within ${BUDGET} processors, alone where exclusive, held ${heldForMemory} times for memory, peak ${scheduler.peakProcessors}.\n`,
