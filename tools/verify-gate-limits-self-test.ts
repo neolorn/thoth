@@ -44,6 +44,7 @@ import {
   runnerEnvironment,
   scheduleFindings,
   stageProcessors,
+  largestMinimum,
 } from './gate-resources.ts';
 import {
   aboveLevel,
@@ -96,6 +97,59 @@ for (let share = 1; share <= 8; share += 1) {
     ),
     [],
     `A stage on a share of ${share} was handed worker counts outside it.`,
+  );
+}
+// The Angular build keeps a transform pool for each of a server-rendered application's three bundles
+// and a compilation worker beside them, so each pool is handed a third of the share left after it.
+assert.deepEqual(
+  [1, 2, 3, 4, 7, 10].map(
+    (share) => runnerEnvironment(share)['NG_BUILD_MAX_WORKERS'],
+  ),
+  ['1', '1', '1', '1', '2', '3'],
+  "The Angular build's transform pools were not handed a third of the share left after its compilation worker.",
+);
+
+// A stage that cannot be held below a share raises the default budget to it, on a machine with room
+// for it, and a budget set below it, or a machine without room, is refused by the stage's name.
+const needsThree = { id: 'verify:planted-build', processors: 3 };
+assert.deepEqual(
+  [
+    processorBudget({}, 4, needsThree),
+    processorBudget({}, 32, needsThree),
+    processorBudget({ [PROCESSORS_VARIABLE]: '3' }, 4, needsThree),
+  ],
+  [3, 21, 3],
+  'The budget was not raised to the share a stage cannot be held below, or was raised past two thirds where two thirds is more.',
+);
+assert.throws(
+  () => processorBudget({ [PROCESSORS_VARIABLE]: '2' }, 32, needsThree),
+  /verify:planted-build cannot be held within fewer than 3 processors/u,
+  'A budget set below the share a stage cannot be held below was accepted.',
+);
+assert.throws(
+  () => processorBudget({}, 2, needsThree),
+  /This machine has 2 logical processors, and verify:planted-build cannot be held within fewer than 3/u,
+  'A machine smaller than the share a stage cannot be held below was given a budget.',
+);
+assert.deepEqual(
+  [
+    stageProcessors({ id: 'a', minimumProcessors: 3 }, 8),
+    stageProcessors({ id: 'b', processors: 2, minimumProcessors: 3 }, 8),
+    stageProcessors({ id: 'c', processors: 6, minimumProcessors: 3 }, 4),
+  ],
+  [3, 3, 4],
+  'A stage was handed less than the share it cannot be held below, or more than the budget.',
+);
+const declaredNeed = largestMinimum(declaredSteps);
+assert.ok(
+  declaredNeed.processors >= 3,
+  `No declared stage builds with Angular 22.0, which cannot be held within fewer than three processors (largest: ${declaredNeed.id}, ${declaredNeed.processors}).`,
+);
+for (const step of declaredSteps) {
+  assert.ok(
+    stageProcessors(step, declaredNeed.processors) >=
+      (step.minimumProcessors ?? 1),
+    `${step.id} was handed less than the share it cannot be held below at the smallest budget a run accepts.`,
   );
 }
 for (const step of declaredSteps) {

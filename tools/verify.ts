@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { CLAIMS_FILE_VARIABLE } from './capability-claims.ts';
 import {
   createScheduler,
+  largestMinimum,
   MEMORY_FLOOR,
   processorBudget,
   priorityLifted,
@@ -676,8 +677,9 @@ const runStep = (
 
 // Sized from what the machine reports rather than from a constant, so a smaller machine narrows the
 // run instead of thrashing it, and to two thirds of it by default (`gate-resources.ts`), because the
-// machine is usually someone's working machine while the gate runs.
-const budget = processorBudget();
+// machine is usually someone's working machine while the gate runs. Never below the share a stage of
+// this run cannot be held within, which it would exceed.
+const budget = processorBudget(process.env, undefined, largestMinimum(steps));
 
 /**
  * One gate run at a time on a machine.

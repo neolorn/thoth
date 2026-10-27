@@ -39,6 +39,7 @@ export const MEMORY_FLOOR = 0.25;
 export interface ScheduledStage {
   readonly id: string;
   readonly processors?: number | undefined;
+  readonly minimumProcessors?: number | undefined;
   readonly exclusive?: boolean | undefined;
 }
 
@@ -57,14 +58,30 @@ export interface MemoryReading {
 
 type Environment = Readonly<Record<string, string | undefined>>;
 
-/** How many logical processors the gate's stages and their workers may occupy together. */
+/**
+ * How many logical processors the gate's stages and their workers may occupy together.
+ *
+ * `needed` is the largest share a stage of the run cannot be held below (`minimumProcessors`). By
+ * default the budget is two thirds of the machine, raised to that share where two thirds is less, and
+ * never more than the machine. A budget that is set, or a machine, smaller than that share is
+ * refused, because the stage would run beyond it.
+ */
 export function processorBudget(
   environment: Environment = process.env,
   parallelism: number = availableParallelism(),
+  needed: { readonly id: string; readonly processors: number } = {
+    id: '',
+    processors: 1,
+  },
 ): number {
   const set = environment[PROCESSORS_VARIABLE];
   if (set === undefined || set === '') {
-    return Math.max(1, Math.floor((parallelism * 2) / 3));
+    if (parallelism < needed.processors) {
+      throw new Error(
+        `This machine has ${parallelism} logical processors, and ${needed.id} cannot be held within fewer than ${needed.processors}.`,
+      );
+    }
+    return Math.max(1, needed.processors, Math.floor((parallelism * 2) / 3));
   }
   const value = Number(set);
   if (!Number.isInteger(value) || value < 1) {
@@ -72,7 +89,26 @@ export function processorBudget(
       `${PROCESSORS_VARIABLE} is ${JSON.stringify(set)}; it must be a whole number of logical processors, at least 1.`,
     );
   }
+  if (value < needed.processors) {
+    throw new Error(
+      `${PROCESSORS_VARIABLE} is ${value}, and ${needed.id} cannot be held within fewer than ${needed.processors} processors. Set it to ${needed.processors} or more.`,
+    );
+  }
   return value;
+}
+
+/** The stage of `steps` with the largest share it cannot be held below, and that share. */
+export function largestMinimum(steps: readonly ScheduledStage[]): {
+  readonly id: string;
+  readonly processors: number;
+} {
+  let largest = { id: '', processors: 1 };
+  for (const step of steps) {
+    const minimum = step.minimumProcessors ?? 1;
+    if (minimum > largest.processors)
+      largest = { id: step.id, processors: minimum };
+  }
+  return largest;
 }
 
 export const PRIORITY_FILE_VARIABLE = 'EQUATOR_VERIFY_PRIORITY_FILE';
@@ -112,26 +148,36 @@ export const stagePriority = (
   lifted || step.exclusive === true ? 'normal' : 'below-normal';
 
 /**
- * A stage's share: what it declares, and never more than the whole budget. A stage that runs alone
- * has nothing to share the budget with, so it is handed all of it.
+ * A stage's share: what it declares, never less than the share it cannot be held below, and never
+ * more than the whole budget, which `processorBudget` keeps at least that large. A stage that runs
+ * alone has nothing to share the budget with, so it is handed all of it.
  */
 export const stageProcessors = (
   step: ScheduledStage,
   budget: number,
 ): number =>
-  step.exclusive === true ? budget : Math.min(step.processors ?? 1, budget);
+  step.exclusive === true
+    ? budget
+    : Math.min(
+        Math.max(step.processors ?? 1, step.minimumProcessors ?? 1),
+        budget,
+      );
 
 /**
- * The settings a stage's runners read to size their own parallelism, each set to its share.
+ * The settings a stage's runners read to size their own parallelism, each drawn from its share.
  *
  * `VITEST_MAX_WORKERS` is read by Vitest when it resolves its configuration, `NG_BUILD_MAX_WORKERS`
  * by `@angular/build`, and `GOMAXPROCS` by the Go runtime inside esbuild. A tool of this
  * repository that runs work in parallel reads `EQUATOR_STAGE_PROCESSORS`.
+ *
+ * `NG_BUILD_MAX_WORKERS` sizes the transform pool the Angular build keeps for each bundle it builds,
+ * three for a server-rendered application, and the build keeps a compilation worker beside them
+ * (`ParallelCompilation`), so the pools are handed a third of the share left after that worker.
  */
 export const runnerEnvironment = (processors: number) => ({
   EQUATOR_STAGE_PROCESSORS: String(processors),
   VITEST_MAX_WORKERS: String(processors),
-  NG_BUILD_MAX_WORKERS: String(processors),
+  NG_BUILD_MAX_WORKERS: String(Math.max(1, Math.floor((processors - 1) / 3))),
   GOMAXPROCS: String(processors),
 });
 
