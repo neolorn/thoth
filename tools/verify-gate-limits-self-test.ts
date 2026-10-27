@@ -18,6 +18,12 @@
  * checked against the real declarations too, so a share nobody can be handed fails here rather
  * than in a run. So is the file that lifts a run to normal priority while it goes.
  *
+ * The record the scheduler keeps is read the way the gate reads it for its verdict on the budget
+ * (`scheduleFindings`): the planted run's record keeps the budget, a scheduler that believes it has
+ * one processor more starts a stage too many and its record says so, and the pattern of the windows a
+ * hosted run measured over its budget, two stages of one processor whose Node processes used 2.9,
+ * keeps it.
+ *
  * The lock every heavy job takes is driven here as well (`heavy-job-lock.ts`): a second job is
  * refused by the first one's name, a job the holder started runs under the holder's lock, and a
  * lock whose holder has exited, or whose process id belongs to a later process, is taken over.
@@ -36,6 +42,7 @@ import {
   PROCESSORS_VARIABLE,
   stagePriority,
   runnerEnvironment,
+  scheduleFindings,
   stageProcessors,
 } from './gate-resources.ts';
 import {
@@ -80,11 +87,17 @@ for (const wrong of ['0', '-2', '1.5', 'half']) {
     `A budget of ${wrong} was accepted.`,
   );
 }
-assert.deepEqual(
-  Object.values(runnerEnvironment(3)),
-  ['3', '3', '3', '3'],
-  'A runner setting was handed something other than the stage share.',
-);
+for (let share = 1; share <= 8; share += 1) {
+  const settings = runnerEnvironment(share);
+  assert.deepEqual(
+    scheduleFindings(
+      [{ event: 'start', id: 'stage', processors: share, settings }],
+      share,
+    ),
+    [],
+    `A stage on a share of ${share} was handed worker counts outside it.`,
+  );
+}
 for (const step of declaredSteps) {
   if (step.processors === undefined) continue;
   assert.ok(
@@ -201,6 +214,103 @@ assert.equal(
 assert.ok(
   scheduler.peakProcessors === BUDGET,
   `The planted run never filled the budget (peak ${scheduler.peakProcessors} of ${BUDGET}), so it proved nothing about the edge.`,
+);
+
+// The verdict on the budget is read from the scheduler's own record. The run above kept it, so its
+// record has nothing to say; the same graph under a scheduler that believes it may take one more
+// processor than the budget starts a stage too many, and its record says so.
+assert.deepEqual(
+  scheduleFindings(scheduler.record, BUDGET),
+  [],
+  'The record of a run that kept the budget reads as one that did not.',
+);
+const overScheduled = new Map<string, { readonly status: string }>();
+const overRunning = new Set<string>();
+const overScheduler = createScheduler({
+  steps: planted.map((step) => ({ ...step, exclusive: false })),
+  dependencies: new Map(planted.map(({ id }) => [id, []])),
+  results: overScheduled,
+  budget: BUDGET + 1,
+  readMemory: () => ({ free: 90, total: 100 }),
+  launch: (step) => overRunning.add(step.id),
+});
+overScheduler.advance();
+while (overRunning.size > 0) {
+  const [id] = overRunning;
+  overRunning.delete(id!);
+  overScheduled.set(id!, { status: 'pass' });
+  overScheduler.finished(id!);
+}
+assert.match(
+  scheduleFindings(overScheduler.record, BUDGET).join('\n'),
+  new RegExp(`processors were scheduled against a budget of ${BUDGET}\\.`, 'u'),
+  'A scheduler that started a stage too many left a record that reads as within the budget.',
+);
+assert.match(
+  scheduleFindings(
+    [
+      {
+        event: 'start',
+        id: 'verify:angular-22.0.4',
+        processors: 2,
+        settings: { ...runnerEnvironment(2), NG_BUILD_MAX_WORKERS: '3' },
+      },
+    ],
+    2,
+  ).join('\n'),
+  /verify:angular-22\.0\.4 was handed NG_BUILD_MAX_WORKERS=3 on a share of 2\./u,
+  "A stage's runners handed more workers than its share went unreported.",
+);
+
+// The pattern of the windows a hosted run reported over its budget of two: two stages of one
+// processor each running together, read as 2.9 processors over 15 s, most of it the helper threads of
+// their two Node processes. The scheduler kept the budget, so the run is not red for it.
+const hostedResults = new Map<string, { readonly status: string }>();
+const hosted = createScheduler({
+  steps: [
+    { id: 'format:check', processors: undefined },
+    { id: 'lint:self-test', processors: undefined },
+    { id: 'verify:angular-22.0.4', processors: 4 },
+  ],
+  dependencies: new Map([
+    ['format:check', []],
+    ['lint:self-test', []],
+    ['verify:angular-22.0.4', ['format:check', 'lint:self-test']],
+  ]),
+  results: hostedResults,
+  budget: 2,
+  readMemory: () => ({ free: 90, total: 100 }),
+  launch: () => {},
+});
+hosted.advance();
+for (const id of ['format:check', 'lint:self-test']) {
+  hostedResults.set(id, { status: 'pass' });
+  hosted.finished(id);
+}
+assert.deepEqual(
+  [...hosted.running],
+  [['verify:angular-22.0.4', 2]],
+  'The planted hosted run did not go on to the Angular stage on its share.',
+);
+const hostedWindow = processorsBetween(
+  [
+    { pid: 21, ppid: 20, priority: 6, cpuSeconds: 100 },
+    { pid: 22, ppid: 20, priority: 6, cpuSeconds: 200 },
+  ],
+  [
+    { pid: 21, ppid: 20, priority: 6, cpuSeconds: 121.75 },
+    { pid: 22, ppid: 20, priority: 6, cpuSeconds: 221.75 },
+  ],
+  15,
+);
+assert.ok(
+  hostedWindow > 2,
+  'The planted hosted window is not over the budget.',
+);
+assert.deepEqual(
+  scheduleFindings(hosted.record, 2),
+  [],
+  `A run whose scheduler kept the budget was judged over it for a window of ${hostedWindow.toFixed(1)} processors.`,
 );
 
 // The readings the gate takes of its own tree while it runs, planted: the gate is 10 at base

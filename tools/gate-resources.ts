@@ -10,7 +10,9 @@
  *   that run at once and the workers each stage's runners start, together: a stage declares how many
  *   processors it occupies (`processors` in `verify-stages.ts`, one when it says nothing), the
  *   scheduler starts a stage only while the stages running and the one starting fit the budget,
- *   and each stage's runners are handed its share through the settings they read themselves.
+ *   and each stage's runners are handed its share through the settings they read themselves. It
+ *   does not count the helper threads each Node process runs beside its JavaScript, which no such
+ *   setting holds (`scheduleFindings`).
  * - **Memory.** No stage starts while free memory is under a quarter of the total. A stage already
  *   running is left to finish, because stopping it would waste what it has done and free nothing a
  *   finished stage would not.
@@ -133,6 +135,75 @@ export const runnerEnvironment = (processors: number) => ({
   GOMAXPROCS: String(processors),
 });
 
+/** What a stage's runners are handed, as `runnerEnvironment` answers it. */
+export type RunnerSettings = Readonly<Record<string, string>>;
+
+/** The settings among them that are worker counts, each drawn from the stage's share. */
+export const WORKER_COUNT_SETTINGS = [
+  'EQUATOR_STAGE_PROCESSORS',
+  'VITEST_MAX_WORKERS',
+  'NG_BUILD_MAX_WORKERS',
+  'GOMAXPROCS',
+] as const;
+
+/** One entry in the scheduler's record of a run. */
+export type ScheduleEvent =
+  | {
+      readonly event: 'start';
+      readonly id: string;
+      readonly processors: number;
+      readonly settings: RunnerSettings;
+    }
+  | { readonly event: 'finish'; readonly id: string };
+
+/**
+ * What the scheduler's record of a run shows it kept from its promise, as findings.
+ *
+ * The budget bounds what the gate decides: the shares of the stages running at once, and the
+ * worker counts each stage's runners are handed from its share. Both are read from the record the
+ * scheduler keeps as it starts and finishes stages, which reads the same on every machine. The
+ * processor time a run measures is not judged here. Every Node process spends some on helper threads
+ * beside its JavaScript (compilation, garbage collection, the libuv pool), which no setting a runner
+ * reads can switch off, so a reading over budget is reported and not held against the run.
+ */
+export function scheduleFindings(
+  record: readonly ScheduleEvent[],
+  budget: number,
+): string[] {
+  const findings: string[] = [];
+  const running = new Map<string, number>();
+  for (const entry of record) {
+    if (entry.event === 'finish') {
+      if (!running.delete(entry.id))
+        findings.push(`${entry.id} finished without having started.`);
+      continue;
+    }
+    const { id, processors, settings } = entry;
+    if (!Number.isInteger(processors) || processors < 1) {
+      findings.push(`${id} was started on a share of ${processors}.`);
+    }
+    running.set(id, processors);
+    const inUse = [...running.values()].reduce((sum, n) => sum + n, 0);
+    if (inUse > budget) {
+      const beside = [...running.keys()].filter((other) => other !== id);
+      const besideText =
+        beside.length > 0 ? ` beside ${beside.join(', ')}` : '';
+      findings.push(
+        `${id} started on a share of ${processors}${besideText}, so ${inUse} processors were scheduled against a budget of ${budget}.`,
+      );
+    }
+    for (const name of WORKER_COUNT_SETTINGS) {
+      const value = Number(settings[name]);
+      if (!Number.isInteger(value) || value < 1 || value > processors) {
+        findings.push(
+          `${id} was handed ${name}=${settings[name] ?? '(nothing)'} on a share of ${processors}.`,
+        );
+      }
+    }
+  }
+  return findings;
+}
+
 /** The share a tool of this repository may use, read from what the gate handed it. */
 export function stageProcessorShare(
   fallback: number,
@@ -148,8 +219,8 @@ export const memoryAllows = ({ free, total }: MemoryReading): boolean =>
 /**
  * The scheduler: which stages start, and when.
  *
- * `results` is the map the caller fills as stages finish; `launch(step, processors)` starts one and
- * must call `finished(id)` when it ends. `maxStages` is one for a serial run. `readMemory` answers
+ * `results` is the map the caller fills as stages finish; `launch(step, processors, settings)` starts
+ * one with `settings` in its runners' environment and must call `finished(id)` when it ends. `maxStages` is one for a serial run. `readMemory` answers
  * `{ free, total }` in bytes at the moment a start is considered.
  */
 export function createScheduler<Step extends ScheduledStage>({
@@ -168,10 +239,15 @@ export function createScheduler<Step extends ScheduledStage>({
   readonly budget: number;
   readonly maxStages?: number;
   readonly readMemory: () => MemoryReading;
-  readonly launch: (step: Step, processors: number) => void;
+  readonly launch: (
+    step: Step,
+    processors: number,
+    settings: RunnerSettings,
+  ) => void;
   readonly onSkip?: (step: Step, blockedBy: string[]) => void;
 }) {
   const running = new Map<string, number>();
+  const record: ScheduleEvent[] = [];
   const stepById = new Map(steps.map((step) => [step.id, step]));
   let peakProcessors = 0;
   let peakStages = 0;
@@ -220,7 +296,9 @@ export function createScheduler<Step extends ScheduledStage>({
         running.set(step.id, processors);
         peakProcessors = Math.max(peakProcessors, inUse());
         peakStages = Math.max(peakStages, running.size);
-        launch(step, processors);
+        const settings = runnerEnvironment(processors);
+        record.push({ event: 'start', id: step.id, processors, settings });
+        launch(step, processors, settings);
         changed = true;
       }
     }
@@ -229,6 +307,7 @@ export function createScheduler<Step extends ScheduledStage>({
   return {
     advance,
     finished(id: string) {
+      record.push({ event: 'finish', id });
       running.delete(id);
       advance();
     },
@@ -243,6 +322,9 @@ export function createScheduler<Step extends ScheduledStage>({
     },
     get peakStages() {
       return peakStages;
+    },
+    get record(): readonly ScheduleEvent[] {
+      return record;
     },
   };
 }
