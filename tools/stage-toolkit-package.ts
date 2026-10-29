@@ -6,8 +6,9 @@
  * `thoth` executable, and the Angular builders `ng build`, `ng serve` and `ng test` run. The
  * builders are reached through the manifest's `builders` field, which is how the Angular CLI finds
  * them, and not through `exports`: the CLI loads a builder by the path `builders.json` names. The
- * schemas are exports because a consumer validating a file against the schema Thoth used has to
- * resolve it by name; reaching a path inside the installed directory would make the package's
+ * `ng add` schematic is reached the same way, through the manifest's `schematics` field and the
+ * `collection.json` it names. The schemas are exports because a consumer validating a file against
+ * the schema Thoth used has to resolve it by name; reaching a path inside the installed directory would make the package's
  * internal layout a consumer's dependency.
  *
  * The manifest is derived from the source one so the two cannot disagree about a version, a peer
@@ -72,6 +73,10 @@ const outputPackage = {
     thoth: './cli.js',
   },
   builders: './builders.json',
+  schematics: './collection.json',
+  // `ng add` records the package it installs in `dependencies` unless the package says otherwise,
+  // and the toolkit runs at build time only.
+  'ng-add': { save: 'devDependencies' },
 };
 
 await mkdir(outputRoot, { recursive: true });
@@ -141,6 +146,37 @@ for (const command of ['build', 'serve', 'test']) {
 await writeFile(
   resolve(outputRoot, 'builders.json'),
   `${JSON.stringify({ builders }, null, 2)}\n`,
+  'utf8',
+);
+const ngAddSchemas = await import(
+  pathToFileURL(resolve(outputRoot, 'ng-add-schema.js')).href
+);
+const ngAddSchema = ngAddSchemas.ngAddSchema();
+if (ngAddSchema?.$id !== 'ThothNgAdd') {
+  throw new TypeError('Refusing to stage an invalid ng-add schema.');
+}
+const schematicRoot = resolve(outputRoot, 'schematics');
+await mkdir(schematicRoot, { recursive: true });
+await writeFile(
+  resolve(schematicRoot, 'ng-add.schema.json'),
+  `${JSON.stringify(ngAddSchema, null, 2)}\n`,
+  'utf8',
+);
+await writeFile(
+  resolve(outputRoot, 'collection.json'),
+  `${JSON.stringify(
+    {
+      schematics: {
+        'ng-add': {
+          description: ngAddSchema.description,
+          factory: './ng-add.js',
+          schema: './schematics/ng-add.schema.json',
+        },
+      },
+    },
+    null,
+    2,
+  )}\n`,
   'utf8',
 );
 await writeFile(

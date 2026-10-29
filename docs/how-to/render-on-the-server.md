@@ -9,8 +9,13 @@ hydration claims that HTML rather than rewriting it.
 browser-only application installs neither the peer nor this code.
 
 This page starts from an application localized as the [tutorial](../tutorial.md) localizes one, with
-server rendering added by `ng add @angular/ssr` or chosen at `ng new`. The CLI's providers in
-`app.config.ts` stay beside the localization ones, `provideClientHydration()` among them.
+server rendering chosen at `ng new` or added by `ng add @angular/ssr` before
+`ng add @neolorn/thoth-toolkit`. The CLI's providers in `app.config.ts` stay beside the localization
+ones, `provideClientHydration()` among them.
+
+On such an application, `ng add @neolorn/thoth-toolkit` writes the server providers below with no
+declared routes, every route rendered on the server, and needs the origin the application is
+published at, as in `--origin https://example.com`. This page is what to change from there.
 
 ## Compose the server providers
 

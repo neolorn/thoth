@@ -13,14 +13,15 @@ and their stability are `11-diagnostics-and-observability.spec.md`. Dependency s
 
 `@neolorn/thoth-toolkit` is a Node package, and it owns the compiler, static analysis, extraction,
 validation, generation, migration, the programmatic API, the command line, the Angular CLI
-builders, and the default standalone host. A release MUST NOT import, call, extend, or model itself
-around a consumer application's compiler, repository tool, build system, workspace layout, or
-project service, with one exception: the Angular CLI builders are written against the builder API
-the Angular CLI documents, and run an Angular target the consumer's workspace names, as section 14
-states.
+builders, the `ng add` schematic, and the default standalone host. A release MUST NOT import, call,
+extend, or model itself around a consumer application's compiler, repository tool, build system,
+workspace layout, or project service, with two exceptions: the Angular CLI builders are written
+against the builder API the Angular CLI documents, and run an Angular target the consumer's
+workspace names, as section 14 states; and the `ng add` schematic is written against the schematic
+API the Angular CLI documents, and edits the workspace files `ng new` writes, as section 11 states.
 
-A consumer application invokes the built toolkit through its public API, its command line, or its
-Angular CLI builders. A project-owned orchestrator MAY call the first two, and a release MUST NOT
+A consumer application invokes the built toolkit through its public API, its command line, its
+Angular CLI builders, or `ng add`. A project-owned orchestrator MAY call the first two, and a release MUST NOT
 let one redefine compilation semantics or make the toolkit depend on the project.
 
 A release MUST make importing the toolkit start no compilation, no process mutation, no
@@ -318,7 +319,10 @@ plain text without inputs or slots, because the recovery region renders it when 
 and has nothing to fill an input from. For an
 owner that selects an application runtime, a release MUST report a missing recovery message as a
 protected correctness error in both generation and a bare check, so build wiring runs one
-deterministic command and never infers a production mode from environment state.
+deterministic command and never infers a production mode from environment state. Both refusals
+start with the first message: while the source catalogs hold none, which is the first run section
+14 describes, a release MUST bind no recovery copy and refuse nothing, because the keys are named
+at setup, before anyone has written the messages they name.
 
 ## 11. The command line
 
@@ -332,6 +336,28 @@ the exact plan. A noninteractive invocation supplies one option for every field 
 accepts; a release MUST exit with the invocation failure code and print the exact complete
 invocation where a required one is missing, and MUST NOT perform a network lookup or guess a
 regional locale.
+
+`ng add @neolorn/thoth-toolkit` is initialization for an Angular CLI workspace, in one command. It
+writes what initialization writes, adds `@neolorn/thoth` at the toolkit's own version as a
+dependency, and names `shell/recovery-message` and `shell/recovery-retry` as the recovery messages.
+It makes the builders of section 14 the builders of `build`, `serve` and `test`, each running the
+Angular target it replaced, renamed `angular-build`, `angular-serve` or `angular-test`, with every
+configuration carried over. In the application configuration it replaces `provideRouter(routes)`
+with `provideLocalizedRouter(routes)` and adds `provideLocalization(withRouting())`, and where the
+application renders on the server it replaces `provideServerRendering(withRoutes(serverRoutes))` and
+the server routes `ng new` writes with `provideLocalizedServerRendering`. A release MUST:
+
+- ask, on a terminal, only for the source locale, the default locale, the supported locales, and
+  the URL policy, and accept each as an option;
+- write no catalog and no message text, because those are the application's;
+- check the whole setup before writing any of it, and refuse with a message, writing nothing, a
+  workspace with other than one application, a conflict with an existing configuration or package
+  entry, a target already under a name it would give, an application configuration it cannot find
+  or that provides the router more than once, a server configuration other than the one `ng new`
+  writes, and an application that renders on the server when no origin is given;
+- write nothing when run again on a workspace it has set up;
+- use only the schematic API the Angular CLI documents and the rules `@schematics/angular/utility`
+  publishes.
 
 Generation writes only owned plans. A bare check is read-only and offline-deterministic. In a check
 that applies fixes, a release MUST apply only previewable semantics-preserving changes, and
@@ -453,8 +479,8 @@ MUST NOT compile a release's repository source or deep-import a private or gener
 
 Generation runs inside the Angular commands that consume generated contracts. The toolkit
 publishes three Angular CLI builders, `@neolorn/thoth-toolkit:build`, `@neolorn/thoth-toolkit:serve`
-and `@neolorn/thoth-toolkit:test`, which a workspace names as the builders of the targets
-`ng build`, `ng serve` and `ng test` run. Each names the Angular target it runs, in `buildTarget`,
+and `@neolorn/thoth-toolkit:test`, which a workspace names, or `ng add` names for it, as the builders of
+the targets `ng build`, `ng serve` and `ng test` run. Each names the Angular target it runs, in `buildTarget`,
 `serveTarget` or `testTarget`, and that target keeps its own builder and options. A release MUST:
 
 - generate before the Angular target starts, and start it only when generation succeeds;
@@ -476,9 +502,11 @@ compiler dependency.
 
 A release MUST make generation succeed at every point in an ordinary first run, including
 before a single catalog is authored, because a project with no messages is a valid project and it is
-the state every project is in the moment after initialization. Initialization creates the catalog
-directory and writes nothing into it, and generation on that project emits the generated modules and
-reports, at the lowest severity, that there are no messages yet and where the first one goes.
+the state every project is in the moment after initialization. `thoth init` creates the catalog
+directory and writes nothing into it, and `ng add` writes no catalog directory, because the Angular
+CLI writes files and never an empty directory. Generation on either project, its catalog directory
+empty or absent, emits the generated modules and reports, at the lowest severity, that there are no
+messages yet and where the first one goes.
 
 A release MUST NOT make an install hook, a daemon, a preliminary generation pass, a commented
 import, a checked-in generated file, a manual registry, an edit to a generated file, or a parallel

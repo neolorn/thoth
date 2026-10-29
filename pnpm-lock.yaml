@@ -293,6 +293,12 @@ importers:
       '@angular-devkit/architect':
         specifier: 0.2202.1
         version: 0.2202.1(chokidar@5.0.0)
+      '@angular-devkit/schematics':
+        specifier: 22.2.1
+        version: 22.2.1(chokidar@5.0.0)
+      '@schematics/angular':
+        specifier: 22.2.1
+        version: 22.2.1(chokidar@5.0.0)
       ajv:
         specifier: 8.20.0
         version: 8.20.0

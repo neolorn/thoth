@@ -85,16 +85,21 @@ core knows nothing of the primary, and that direction is what yields one copy ra
 ## 4. Toolkit entry points
 
 `@neolorn/thoth-toolkit` publishes a side-effect-free programmatic API, the JSON Schemas of its
-public file formats, its own `package.json`, the `thoth` executable, and the Angular CLI builders
-`build`, `serve` and `test`, which its manifest's `builders` field names.
+public file formats, its own `package.json`, the `thoth` executable, the Angular CLI builders
+`build`, `serve` and `test`, which its manifest's `builders` field names, and the `ng-add`
+schematic, which its manifest's `schematics` field names.
 
 Importing the toolkit API MUST NOT execute a command, mutate the process, install a hook, scan a
 project, write a file, start a watcher, or perform network access. Command execution begins only
-through the declared executable or a builder the Angular CLI runs.
+through the declared executable, or a builder or schematic the Angular CLI runs.
 
 The builders are found through `builders` rather than through the export map, because that field
 and the `builders.json` it names are how the Angular CLI locates a builder and its option schema.
 Loading a builder MUST do nothing until the Angular CLI runs it.
+
+The schematic is found the same way, through `schematics` and the `collection.json` it names. The
+manifest's `ng-add` field saves the toolkit as a development dependency, because it runs at build
+time only. Loading the schematic MUST do nothing until the Angular CLI runs it.
 
 The schemas are exports rather than files inside the package, so that a consumer validating a file
 against the schema the toolkit actually used can resolve it by name rather than by a path into the
@@ -151,6 +156,12 @@ the API recognizes a builder by a symbol shared across installations, so the con
 not have to be the one the toolkit loads. Angular's own builder package, `@angular/build`, depends
 on it the same way. The toolkit depends on the version the `@angular/build` release of its
 development row depends on.
+
+The Angular CLI schematic API, `@angular-devkit/schematics`, and the rules of
+`@schematics/angular/utility` are implementation dependencies for the same reason: the Angular CLI
+runs a schematic through its own installation and hands it the tree. The toolkit depends on the
+versions the `@angular/cli` release of its development row depends on, so a workspace that
+`ng new` made already has them installed.
 
 A consumer installs the toolkit as one development package. It MUST NOT have to assemble the
 toolkit's compiler machinery from parts.
@@ -214,6 +225,11 @@ The Angular CLI builders use the builder API the Angular CLI documents and the p
 programmatic entry point that Angular marks experimental, import a private module of
 `@angular/build`, replace a member of the context they are given, or copy an Angular builder's
 option schema.
+
+The `ng add` schematic uses the schematic API the Angular CLI documents and the rules
+`@schematics/angular/utility` publishes. It MUST NOT import a private module of
+`@schematics/angular` or of the Angular CLI. The edits that utility has no rule for are made on
+the TypeScript syntax tree of the file through the tree's update recorder.
 
 Use of an undocumented or private compiler API requires an explicit decision that names the exact
 compatible host pin, the adapter that isolates it, the regression evidence for it, its effect on the

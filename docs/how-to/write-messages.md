@@ -5,7 +5,7 @@ that does not exist is a compile error at the line that uses it.
 
 ## Before you begin
 
-You need a project that `thoth init` has set up.
+You need a project that `ng add @neolorn/thoth-toolkit` has set up.
 
 ## Write the catalog
 

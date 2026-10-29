@@ -630,6 +630,8 @@ assert.deepEqual(toolkitPackage.engines, { node: nodeRange });
 assert.deepEqual(toolkitPackage.bin, { thoth: './cli.js' });
 assert.deepEqual(toolkitPackage.dependencies, {
   '@angular-devkit/architect': '0.2202.1',
+  '@angular-devkit/schematics': '22.2.1',
+  '@schematics/angular': '22.2.1',
   ajv: '8.20.0',
   'jsonc-parser': '3.3.1',
   messageformat: '4.0.0',
@@ -873,6 +875,11 @@ for (const [specifier, sourceRoot] of [
     '@angular-devkit/architect',
     'packages/toolkit/node_modules/@angular-devkit/architect',
   ],
+  [
+    '@angular-devkit/schematics',
+    'packages/toolkit/node_modules/@angular-devkit/schematics',
+  ],
+  ['@schematics/angular', 'packages/toolkit/node_modules/@schematics/angular'],
   ['ajv', 'packages/toolkit/node_modules/ajv'],
   ['jsonc-parser', 'packages/toolkit/node_modules/jsonc-parser'],
   ['messageformat', 'packages/toolkit/node_modules/messageformat'],
@@ -946,6 +953,58 @@ for (const command of ['build', 'serve', 'test']) {
     `The ${command} builder does not load as an Angular builder.`,
   );
 }
+// The `ng-add` schematic, found and loaded by the engine host `ng add` uses, from the installed
+// package, so the manifest's `schematics` field, `collection.json`, the schema and the factory are
+// read the way the Angular CLI reads them. The host loads the factory with `require`, which is
+// where a factory module that does not load under it would fail.
+assert.equal(toolkitPackage.schematics, './collection.json');
+assert.deepEqual(toolkitPackage['ng-add'], { save: 'devDependencies' });
+assert.deepEqual(
+  Object.keys(
+    (await readJson(resolve(toolkitRoot, 'collection.json'))).schematics,
+  ),
+  ['ng-add'],
+);
+const { SchematicEngine } = await import(
+  pathToFileURL(
+    resolve(
+      toolkitHarnessNodeModules,
+      '@angular-devkit/schematics/src/index.js',
+    ),
+  ).href
+);
+const { NodeModulesEngineHost } = await import(
+  pathToFileURL(
+    resolve(
+      toolkitHarnessNodeModules,
+      '@angular-devkit/schematics/tools/index.js',
+    ),
+  ).href
+);
+const schematicEngine = new SchematicEngine(
+  new NodeModulesEngineHost([toolkitHarnessRoot]),
+);
+const ngAddSchematic = schematicEngine
+  .createCollection('@neolorn/thoth-toolkit')
+  .createSchematic('ng-add');
+const builtNgAddSchema = await import(
+  pathToFileURL(resolve(toolkitHarnessPackageRoot, 'ng-add-schema.js')).href
+);
+assert.deepEqual(
+  ngAddSchematic.description.schemaJson,
+  builtNgAddSchema.ngAddSchema(),
+  "The staged ng-add schema does not match the toolkit's ng-add schema.",
+);
+assert.equal(
+  typeof ngAddSchematic.description.factoryFn,
+  'function',
+  'The ng-add schematic does not load as a schematic factory.',
+);
+assert.equal(
+  typeof ngAddSchematic.description.factoryFn({}),
+  'function',
+  'The ng-add schematic factory does not return a rule.',
+);
 // Host admission is internal: a consumer does not ask Thoth whether its own compiler is admitted,
 // Thoth answers that when it compiles. The leaf module, for the reason the schema assertions
 // above already give.

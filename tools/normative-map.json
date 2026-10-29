@@ -454,6 +454,12 @@
     },
     {
       "spec": "02-packages-and-platform.spec.md",
+      "section": "4. Toolkit entry points",
+      "statement": "Loading the schematic MUST do nothing until the Angular CLI runs it.",
+      "reason": "The schematic module declares its factory and loads the Angular schematics packages and the project host only inside the rule the factory returns, which the Angular CLI runs. Nothing a run can observe tells a module that did nothing at load from one whose work had no visible effect; verify:packages loads the schematic the way the Angular CLI does, and refuses one that does not load under `require`."
+    },
+    {
+      "spec": "02-packages-and-platform.spec.md",
       "section": "5. Distribution format",
       "statement": "`@neolorn/thoth` MUST be distributed in Angular Package Format with partial Angular compilation.",
       "checks": ["plant:verify:packages:runtime-compiled-in-full"]
@@ -597,6 +603,12 @@
         "plant:verify:packages:toolkit-exports-an-internal-module",
         "plant:verify:packages:toolkit-exports-every-module"
       ]
+    },
+    {
+      "spec": "02-packages-and-platform.spec.md",
+      "section": "10. Compiler-host boundary",
+      "statement": "It MUST NOT import a private module of `@schematics/angular` or of the Angular CLI.",
+      "reason": "An absence in the schematic source, which no run observes. The schematic reaches the Angular schematics packages only through the toolkit-owned adapter, which loads `@angular-devkit/schematics` and `@schematics/angular/utility`, the two entry points the Angular CLI documents for schematics. The toolkit dependency set, held exactly by verify:packages, does not contain `@angular/cli`."
     },
     {
       "spec": "02-packages-and-platform.spec.md",
@@ -4144,7 +4156,7 @@
     {
       "spec": "10-compiler-and-tooling.spec.md",
       "section": "1. Ownership",
-      "statement": "A release MUST NOT import, call, extend, or model itself around a consumer application's compiler, repository tool, build system, workspace layout, or project service, with one exception: the Angular CLI builders are written against the builder API the Angular CLI documents, and run an Angular target the consumer's workspace names, as section 14 states.",
+      "statement": "A release MUST NOT import, call, extend, or model itself around a consumer application's compiler, repository tool, build system, workspace layout, or project service, with two exceptions: the Angular CLI builders are written against the builder API the Angular CLI documents, and run an Angular target the consumer's workspace names, as section 14 states; and the `ng add` schematic is written against the schematic API the Angular CLI documents, and edits the workspace files `ng new` writes, as section 11 states.",
       "checks": ["plant:verify:packages:toolkit-depends-on-a-workspace-tool"]
     },
     {
@@ -4580,6 +4592,12 @@
     },
     {
       "spec": "10-compiler-and-tooling.spec.md",
+      "section": "10. Project configuration",
+      "statement": "Both refusals start with the first message: while the source catalogs hold none, which is the first run section 14 describes, a release MUST bind no recovery copy and refuse nothing, because the keys are named at setup, before anyone has written the messages they name.",
+      "checks": ["assurance:recovery-keys-refused-before-the-first-message"]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
       "section": "11. The command line",
       "statement": "A release MUST allow an interactive initialization only on a terminal, and MUST prompt only for the source locale, the default locale, the complete supported-locale list, and any aliases before previewing the exact plan.",
       "checks": [
@@ -4592,6 +4610,24 @@
       "section": "11. The command line",
       "statement": "A noninteractive invocation supplies one option for every field the configuration accepts; a release MUST exit with the invocation failure code and print the exact complete invocation where a required one is missing, and MUST NOT perform a network lookup or guess a regional locale.",
       "checks": ["assurance:missing-init-field-not-named"]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
+      "section": "11. The command line",
+      "statement": "A release MUST: - ask, on a terminal, only for the source locale, the default locale, the supported locales, and the URL policy, and accept each as an option; - write no catalog and no message text, because those are the application's; - check the whole setup before writing any of it, and refuse with a message, writing nothing, a workspace with other than one application, a conflict with an existing configuration or package entry, a target already under a name it would give, an application configuration it cannot find or that provides the router more than once, a server configuration other than the one `ng new` writes, and an application that renders on the server when no origin is given; - write nothing when run again on a workspace it has set up; - use only the schematic API the Angular CLI documents and the rules `@schematics/angular/utility` publishes.",
+      "checks": [
+        "assurance:ng-add-asks-for-aliases",
+        "assurance:ng-add-writes-a-catalog",
+        "assurance:ng-add-overwrites-an-angular-target-name",
+        "assurance:ng-add-server-router-without-origin",
+        "assurance:ng-add-wraps-thoth-targets-again",
+        "assurance:ng-add-leaves-localization-unprovided",
+        "assurance:ng-add-leaves-the-angular-router",
+        "assurance:ng-add-leaves-the-angular-targets",
+        "assurance:ng-add-drops-build-configurations",
+        "assurance:ng-add-keeps-angular-server-rendering",
+        "assurance:ng-add-rerun-without-options-refused"
+      ]
     },
     {
       "spec": "10-compiler-and-tooling.spec.md",
@@ -4808,7 +4844,10 @@
       "spec": "10-compiler-and-tooling.spec.md",
       "section": "14. Build integration and the first run",
       "statement": "A release MUST make generation succeed at every point in an ordinary first run, including before a single catalog is authored, because a project with no messages is a valid project and it is the state every project is in the moment after initialization.",
-      "checks": ["assurance:empty-first-run-reported-as-error"]
+      "checks": [
+        "assurance:empty-first-run-reported-as-error",
+        "assurance:missing-catalog-directory-refused"
+      ]
     },
     {
       "spec": "10-compiler-and-tooling.spec.md",

@@ -28,8 +28,9 @@ The standards profile is `thoth-1`: Unicode 17.0.0, CLDR and LDML 48.2, MessageF
 defines it, the ECMA-402 13th edition for the options of a numeric function, XLIFF 2.2 Committee
 Specification 01, the sitemaps.org 0.9 protocol, the IANA Language Subtag Registry dated 2026-09-17,
 and the IANA Time Zone Database 2026e. The runtime depends on `tslib` and nothing else. The toolkit
-depends on `@angular-devkit/architect` 0.2202.1, `yaml` 2.9.1, `ajv` 8.20.0, `jsonc-parser` 3.3.1,
-`messageformat` 4.0.0 and `tslib`.
+depends on `@angular-devkit/architect` 0.2202.1, `@angular-devkit/schematics` 22.2.1,
+`@schematics/angular` 22.2.1, `yaml` 2.9.1, `ajv` 8.20.0, `jsonc-parser` 3.3.1, `messageformat`
+4.0.0 and `tslib`.
 
 It is built and run on Angular 22.2.1, 22.0.4 and 22.0.0, TypeScript 6.0.3 and 6.0.2, RxJS 7.8.2
 and 7.4.0, Node 22.22.3, 24.15.0, 26.0.0 and 26.10.0, and Chromium, Firefox and WebKit through
@@ -85,7 +86,7 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
   `zh`. `parentLocales` replaces one step of that chain.
 - The `localization-recovery` component, for the case where no catalog loads. `recoveryMessage` and
   `recoveryRetry` in `thoth.config.json` name the messages it shows, and `thoth generate` binds
-  them.
+  them once the project has its first message.
 - A translation whose source wording changed since it was written is reported as stale, and one
   that omits a plural category its locale needs is reported with `TH1308`.
 - Locale identifiers are canonical BCP 47 tags, checked against the pinned CLDR release and
@@ -256,6 +257,10 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
   the key order and every entry a unit does not translate.
 - The toolkit's `build`, `serve` and `test` Angular CLI builders run `thoth generate` inside
   `ng build`, `ng serve` and `ng test`, and keep regenerating while the Angular command watches.
+- `ng add @neolorn/thoth-toolkit` sets an Angular application up in one command: both packages,
+  `thoth.config.json` from four questions, the builders in `angular.json`, and the providers in
+  `app.config.ts` and, where the application renders on the server, `app.config.server.ts`. It
+  writes no catalog, and run again it changes nothing.
 - `pseudoLocales` in `thoth.config.json`, generated only by `--pseudo`, with length change and
   boundary markers set independently. `PSEUDO_LOCALE_ACCENTED` and `PSEUDO_LOCALE_BIDI`
   name the two tags UTS #35 defines.

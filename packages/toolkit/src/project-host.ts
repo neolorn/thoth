@@ -869,7 +869,16 @@ async function readPackageManifest(
     },
   );
   if (!read.ok) return read;
-  const source = read.value;
+  return parsedPackageManifest(read.value);
+}
+
+/** An owner's `package.json` text, read as the manifest whose name is the provider identity. */
+function parsedPackageManifest(source: string): ToolkitResult<{
+  readonly source: string;
+  readonly value: Readonly<Record<string, unknown>>;
+  readonly providerId: string;
+  readonly created: boolean;
+}> {
   let value: unknown;
   try {
     value = JSON.parse(jsonText(source));
@@ -1097,10 +1106,12 @@ async function discoverCatalogs(
 ): Promise<ToolkitResult<readonly LoadedCatalog[]>> {
   const catalogRoot = resolve(location.ownerRoot, 'i18n');
   const rootMetadata = await pathMetadata(catalogRoot);
+  // A project `ng add` set up has no catalog directory until its first catalog is written: the
+  // Angular CLI's tree writes files and never an empty directory. Absent is a project with no
+  // catalogs yet, which is a valid project; something else standing at the name is not.
   if (
-    rootMetadata === undefined ||
-    !rootMetadata.isDirectory() ||
-    rootMetadata.isSymbolicLink()
+    rootMetadata !== undefined &&
+    (!rootMetadata.isDirectory() || rootMetadata.isSymbolicLink())
   ) {
     return toolkitFailure([
       projectDiagnostic(
@@ -1112,7 +1123,10 @@ async function discoverCatalogs(
   const catalogs: LoadedCatalog[] = [];
   // Conventional catalog files that were found and read off disk but never became a catalog.
   const unreadable: string[] = [];
-  const scopeEntries = await readdir(catalogRoot, { withFileTypes: true });
+  const scopeEntries =
+    rootMetadata === undefined
+      ? []
+      : await readdir(catalogRoot, { withFileTypes: true });
   scopeEntries.sort((left, right) => compareCodeUnit(left.name, right.name));
   for (const scopeEntry of scopeEntries) {
     if (scopeEntry.isSymbolicLink() || !scopeEntry.isDirectory()) {
@@ -1259,6 +1273,38 @@ interface AngularApplication {
   readonly outputPath?: string;
 }
 
+/**
+ * The target that builds the application: `build`, or, where `build` runs Thoth's builder, the
+ * Angular target that builder names. Its options hold the application's `tsConfig` and output, and
+ * the Thoth target's hold only the reference.
+ */
+function angularBuildTarget(
+  projectName: string,
+  architect: Readonly<Record<string, unknown>>,
+): unknown {
+  const build = architect['build'];
+  if (typeof build !== 'object' || build === null || Array.isArray(build)) {
+    return build;
+  }
+  const target = build as Readonly<Record<string, unknown>>;
+  const options = target['options'];
+  if (
+    target['builder'] !== '@neolorn/thoth-toolkit:build' ||
+    typeof options !== 'object' ||
+    options === null
+  ) {
+    return build;
+  }
+  const reference = (options as Readonly<Record<string, unknown>>)[
+    'buildTarget'
+  ];
+  if (typeof reference !== 'string') return build;
+  const [project, name] = reference.split(':');
+  return project === projectName && name !== undefined && name !== 'build'
+    ? architect[name]
+    : build;
+}
+
 function angularApplication(
   ownerRoot: string,
   angular: Readonly<Record<string, unknown>>,
@@ -1296,7 +1342,10 @@ function angularApplication(
     ) {
       continue;
     }
-    const build = (architect as Readonly<Record<string, unknown>>)['build'];
+    const build = angularBuildTarget(
+      projectName,
+      architect as Readonly<Record<string, unknown>>,
+    );
     if (typeof build !== 'object' || build === null || Array.isArray(build))
       continue;
     const options = (build as Readonly<Record<string, unknown>>)['options'];
@@ -1402,12 +1451,20 @@ async function selectAngularApplication(
  * create a source directory belonging to no Angular project and sitting outside the tsconfig of
  * the application just analyzed.
  */
+export function applicationGeneratedRoot(applicationRoot: string): string {
+  return applicationRoot === ''
+    ? GENERATED_ROOT
+    : `${applicationRoot}/${GENERATED_ROOT}`;
+}
+
+/** The same, for the application found on disk, refused where something else rewrites it. */
 async function generatedRootPath(
   ownerRoot: string,
 ): Promise<ToolkitResult<string>> {
   const application = await selectAngularApplication(ownerRoot);
-  const root = application.ok ? (application.value?.root ?? '') : '';
-  const path = root === '' ? GENERATED_ROOT : `${root}/${GENERATED_ROOT}`;
+  const path = applicationGeneratedRoot(
+    application.ok ? (application.value?.root ?? '') : '',
+  );
   // Not inside a tree something else rewrites. A package manager replaces a dependency's directory
   // on install and a build empties its output, so generated source placed in either is lost the
   // next time one runs, and whatever was there is Thoth's to overwrite no more than it is ours.
@@ -3311,6 +3368,75 @@ function updatedPackageSource(
   return toolkitSuccess(manifestSource(mutable, source));
 }
 
+/** What initialization writes into the two files it owns a part of. */
+export interface InitializationPlan {
+  readonly configuration: ProjectConfiguration;
+  readonly configurationSource: string;
+  readonly packageSource: string;
+}
+
+/**
+ * The configuration and the package manifest initialization leaves, worked out from the text of
+ * the files as they stand.
+ *
+ * Text in and text out, so `thoth init`, which reads and writes the disk, and `ng add`, which
+ * reads and writes the Angular CLI's tree, merge and refuse the same way. An existing configuration
+ * is kept when nothing is asked of it and refused when what is asked differs from it.
+ */
+export function planInitialization(request: {
+  readonly configuration?: InitConfiguration;
+  readonly configurationSource?: string;
+  readonly packageSource: string;
+  readonly generatedRootPath: string;
+}): ToolkitResult<InitializationPlan> {
+  const manifest = parsedPackageManifest(request.packageSource);
+  if (!manifest.ok) return manifest;
+  const existing =
+    request.configurationSource === undefined
+      ? undefined
+      : parseConfiguration(jsonText(request.configurationSource), {
+          sourcePath: CONFIGURATION_NAME,
+        });
+  if (existing !== undefined && !existing.ok) return existing;
+  const suppliedAny =
+    request.configuration !== undefined &&
+    Object.keys(request.configuration).length > 0;
+  const requested =
+    existing === undefined || suppliedAny
+      ? requestedConfiguration(
+          request.configuration === undefined
+            ? {}
+            : { configuration: request.configuration },
+        )
+      : toolkitSuccess(existing.value);
+  if (!requested.ok) return requested;
+  if (
+    existing !== undefined &&
+    formatConfiguration(existing.value) !== formatConfiguration(requested.value)
+  ) {
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'TH1705',
+        'Thoth init arguments conflict with the existing thoth.config.json.',
+      ),
+    ]);
+  }
+  const packageSource = updatedPackageSource(
+    manifest.value.source,
+    manifest.value.value,
+    request.generatedRootPath,
+  );
+  if (!packageSource.ok) return packageSource;
+  return toolkitSuccess(
+    Object.freeze({
+      configuration: requested.value,
+      configurationSource: formatConfiguration(requested.value),
+      packageSource: packageSource.value,
+    }),
+    requested.diagnostics,
+  );
+}
+
 /**
  * Sets a project up: writes the configuration, the package scripts, and the generated-output root.
  *
@@ -3343,39 +3469,23 @@ export async function initializeProject(
   if (existingConfiguration !== undefined && !existingConfiguration.ok) {
     return existingConfiguration;
   }
-  const suppliedAny =
-    options.configuration !== undefined &&
-    Object.keys(options.configuration).length > 0;
-  const requested =
-    existingConfiguration === undefined || suppliedAny
-      ? requestedConfiguration(options)
-      : toolkitSuccess(existingConfiguration.value.value);
-  if (!requested.ok) return requested;
-  if (
-    existingConfiguration !== undefined &&
-    formatConfiguration(existingConfiguration.value.value) !==
-      formatConfiguration(requested.value)
-  ) {
-    return toolkitFailure([
-      toolkitDiagnostic(
-        'TH1705',
-        'Thoth init arguments conflict with the existing thoth.config.json.',
-      ),
-    ]);
-  }
-  const packageSource = updatedPackageSource(
-    packageManifest.value.source,
-    packageManifest.value.value,
-    location.value.generatedRootPath,
-  );
-  if (!packageSource.ok) return packageSource;
-  const configurationSource = formatConfiguration(requested.value);
+  const plan = planInitialization({
+    ...(options.configuration === undefined
+      ? {}
+      : { configuration: options.configuration }),
+    ...(existingConfiguration === undefined
+      ? {}
+      : { configurationSource: existingConfiguration.value.source }),
+    packageSource: packageManifest.value.source,
+    generatedRootPath: location.value.generatedRootPath,
+  });
+  if (!plan.ok) return plan;
   const changes: TextFileChange[] = [
     {
       absolutePath: location.value.configurationPath,
       portablePath: CONFIGURATION_NAME,
       previous: existingConfiguration?.value.source,
-      contents: configurationSource,
+      contents: plan.value.configurationSource,
     },
     {
       absolutePath: location.value.packagePath,
@@ -3385,7 +3495,7 @@ export async function initializeProject(
       previous: packageManifest.value.created
         ? undefined
         : packageManifest.value.source,
-      contents: packageSource.value,
+      contents: plan.value.packageSource,
     },
   ];
   const applied = await applyTextChanges(
@@ -3424,10 +3534,10 @@ export async function initializeProject(
     Object.freeze({
       changed: applied.value.changed || catalogRootMissing,
       files,
-      configuration: requested.value,
+      configuration: plan.value.configuration,
     }),
     [
-      ...requested.diagnostics,
+      ...plan.diagnostics,
       ...applied.diagnostics,
       // The two things `init` cannot do for this project, said here rather than met one at a time.
       //
@@ -3444,7 +3554,7 @@ export async function initializeProject(
       // composing rather than after it.
       toolkitDiagnostic(
         'TH1706',
-        `Thoth init is done. Two things are yours to write: the first catalog at i18n/<scope>/${requested.value.sourceLocale}.yaml, for example i18n/shell/${requested.value.sourceLocale}.yaml, and a recovery message: one plain message in that catalog, named in recoveryMessage in thoth.config.json as <scope>/<message>, which is what a visitor reads if the translations cannot be loaded.`,
+        `Thoth init is done. Two things are yours to write: the first catalog at i18n/<scope>/${plan.value.configuration.sourceLocale}.yaml, for example i18n/shell/${plan.value.configuration.sourceLocale}.yaml, and a recovery message: one plain message in that catalog, named in recoveryMessage in thoth.config.json as <scope>/<message>, which is what a visitor reads if the translations cannot be loaded.`,
         { severity: 'info' },
       ),
     ],

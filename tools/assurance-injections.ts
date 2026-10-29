@@ -1634,8 +1634,8 @@ export const injections = Object.freeze([
     invariant:
       'An owner at a workspace root generates into the nested Angular application it analysed, not into a source directory of its own.',
     source: 'packages/toolkit/src/project-host.ts',
-    find: "  const path = root === '' ? GENERATED_ROOT : `${root}/${GENERATED_ROOT}`;",
-    replace: '  const path = GENERATED_ROOT;',
+    find: "  return applicationRoot === ''\n    ? GENERATED_ROOT\n    : `${applicationRoot}/${GENERATED_ROOT}`;",
+    replace: '  return GENERATED_ROOT;',
     caughtBy: 'packages/toolkit/test/multi-owner-workspace.test.ts',
   },
   {
@@ -4458,7 +4458,7 @@ export const injections = Object.freeze([
     invariant:
       'Catalogs are discovered only in the owner catalog directory; catalog-shaped files in build output, dependencies or a nested project are never read.',
     source: 'packages/toolkit/src/project-host.ts',
-    find: '  const scopeEntries = await readdir(catalogRoot, { withFileTypes: true });\n  scopeEntries.sort((left, right) => compareCodeUnit(left.name, right.name));\n  for (const scopeEntry of scopeEntries) {\n    if (scopeEntry.isSymbolicLink() || !scopeEntry.isDirectory()) {\n      diagnostics.push(\n        projectDiagnostic(\n          `Thoth catalog root contains unsupported entry ${JSON.stringify(scopeEntry.name)}.`,\n        ),\n      );\n      continue;\n    }\n    const scopeRoot = resolve(catalogRoot, scopeEntry.name);',
+    find: '  const scopeEntries =\n    rootMetadata === undefined\n      ? []\n      : await readdir(catalogRoot, { withFileTypes: true });\n  scopeEntries.sort((left, right) => compareCodeUnit(left.name, right.name));\n  for (const scopeEntry of scopeEntries) {\n    if (scopeEntry.isSymbolicLink() || !scopeEntry.isDirectory()) {\n      diagnostics.push(\n        projectDiagnostic(\n          `Thoth catalog root contains unsupported entry ${JSON.stringify(scopeEntry.name)}.`,\n        ),\n      );\n      continue;\n    }\n    const scopeRoot = resolve(catalogRoot, scopeEntry.name);',
     replace:
       "  const scopeEntries = (\n    await Promise.all(\n      ['i18n', 'dist/i18n', 'dist/browser/i18n'].map((root) =>\n        readdir(resolve(location.ownerRoot, ...root.split('/')), {\n          withFileTypes: true,\n        }).catch(() => []),\n      ),\n    )\n  ).flat();\n  scopeEntries.sort((left, right) => compareCodeUnit(left.name, right.name));\n  for (const scopeEntry of scopeEntries) {\n    if (scopeEntry.isSymbolicLink() || !scopeEntry.isDirectory()) {\n      diagnostics.push(\n        projectDiagnostic(\n          `Thoth catalog root contains unsupported entry ${JSON.stringify(scopeEntry.name)}.`,\n        ),\n      );\n      continue;\n    }\n    const scopeRoot = resolve(scopeEntry.parentPath, scopeEntry.name);",
     caughtBy: 'packages/toolkit/test/catalog-discovery-exclusions.test.ts',
@@ -6068,5 +6068,124 @@ export const injections = Object.freeze([
     replace:
       "  const merged = formatCatalogSource(\n    tokens.map((token) => CST.stringify(token)).join(''),\n    options,\n  ).value as string;",
     caughtBy: 'packages/toolkit/test/target-catalog-merge.test.ts',
+  },
+  {
+    id: 'ng-add-leaves-localization-unprovided',
+    invariant:
+      'ng add adds provideLocalization(withRouting()) to the providers of the application configuration.',
+    source: 'packages/toolkit/src/ng-add.ts',
+    find: '      browser.addLocalization\n        ? utility.addRootProvider(',
+    replace: '      false\n        ? utility.addRootProvider(',
+    caughtBy: 'packages/toolkit/test/ng-add.test.ts',
+  },
+  {
+    id: 'ng-add-leaves-the-angular-router',
+    invariant:
+      'ng add replaces provideRouter(routes) with provideLocalizedRouter(routes) in the application configuration.',
+    source: 'packages/toolkit/src/ng-add.ts',
+    find: '      browser.replaceRouter\n        ? replaceRouter(origin, browser.path)',
+    replace: '      false\n        ? replaceRouter(origin, browser.path)',
+    caughtBy: 'packages/toolkit/test/ng-add.test.ts',
+  },
+  {
+    id: 'ng-add-leaves-the-angular-targets',
+    invariant:
+      'ng add runs build, serve and test through the Thoth builders, each naming the Angular target it replaced.',
+    source: 'packages/toolkit/src/ng-add.ts',
+    find: '      rewriteTargets(name, states),\n    ]);',
+    replace: '    ]);',
+    caughtBy: 'packages/toolkit/test/ng-add.test.ts',
+  },
+  {
+    id: 'ng-add-drops-build-configurations',
+    invariant:
+      'Each Thoth target ng add writes carries every configuration of the Angular target it replaced.',
+    source: 'packages/toolkit/src/ng-add.ts',
+    find: '        ...(Object.keys(configurations).length === 0 ? {} : { configurations }),\n',
+    replace: '',
+    caughtBy: 'packages/toolkit/test/ng-add.test.ts',
+  },
+  {
+    id: 'ng-add-wraps-thoth-targets-again',
+    invariant: 'ng add run on a project it has already set up writes nothing.',
+    source: 'packages/toolkit/src/ng-add.ts',
+    find: "      if (states[command] !== 'angular') continue;\n      renamed.set(",
+    replace:
+      "      if (states[command] === 'absent') continue;\n      renamed.set(",
+    caughtBy: 'packages/toolkit/test/ng-add.test.ts',
+  },
+  {
+    id: 'ng-add-overwrites-an-angular-target-name',
+    invariant:
+      'ng add refuses, and writes nothing, when angular.json already has a target under a name it would give an Angular target.',
+    source: 'packages/toolkit/src/ng-add.ts',
+    find: "      states[command] === 'angular' &&\n      project.targets.has(ANGULAR_TARGET(command))",
+    replace: '      false',
+    caughtBy: 'packages/toolkit/test/ng-add.test.ts',
+  },
+  {
+    id: 'ng-add-keeps-angular-server-rendering',
+    invariant:
+      'ng add installs provideLocalizedServerRendering in place of the provideServerRendering an application created with server rendering has.',
+    source: 'packages/toolkit/src/ng-add.ts',
+    find: '      server === undefined\n        ? () => undefined\n        : replaceServerRendering(server, origin, urlPolicy),',
+    replace: '      () => undefined,',
+    caughtBy: 'packages/toolkit/test/ng-add.test.ts',
+  },
+  {
+    id: 'ng-add-server-router-without-origin',
+    invariant:
+      'ng add refuses an application that renders on the server when no origin is given, rather than writing a router that fails there.',
+    source: 'packages/toolkit/src/ng-add.ts',
+    find: '    if (rendersOnServer && browser.replaceRouter && origin === undefined) {',
+    replace: '    if (false) {',
+    caughtBy: 'packages/toolkit/test/ng-add.test.ts',
+  },
+  {
+    id: 'ng-add-writes-a-catalog',
+    invariant: 'ng add writes no catalog and no message text.',
+    source: 'packages/toolkit/src/ng-add.ts',
+    find: "    const configurationPath = 'thoth.config.json';\n",
+    replace:
+      "    const configurationPath = 'thoth.config.json';\n    if (!tree.exists('i18n/shell/en-US.yaml')) tree.create('i18n/shell/en-US.yaml', 'messages: {}\\n');\n",
+    caughtBy: 'packages/toolkit/test/ng-add.test.ts',
+  },
+  {
+    id: 'ng-add-asks-for-aliases',
+    invariant:
+      'ng add asks on a terminal for the source locale, the default locale, the supported locales and the URL policy, and for nothing else.',
+    source: 'packages/toolkit/src/ng-add-schema.ts',
+    find: 'const PROMPTS: Readonly<Record<string, unknown>> = Object.freeze({\n  sourceLocale:',
+    replace:
+      "const PROMPTS: Readonly<Record<string, unknown>> = Object.freeze({\n  alias: 'Which locale aliases does the application accept?',\n  sourceLocale:",
+    caughtBy: 'packages/toolkit/test/ng-add.test.ts',
+  },
+  {
+    id: 'ng-add-rerun-without-options-refused',
+    invariant:
+      'ng add run again with nothing typed, which hands it the schema defaults only, writes nothing.',
+    source: 'packages/toolkit/src/ng-add.ts',
+    find: '    const requested = { ...written, ...given } as InitConfiguration;',
+    replace: '    const requested = given;',
+    caughtBy: 'packages/toolkit/test/ng-add.test.ts',
+  },
+  {
+    id: 'missing-catalog-directory-refused',
+    invariant:
+      'Generation succeeds on a project whose catalog directory does not exist yet, as one with no catalogs.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '    rootMetadata !== undefined &&\n    (!rootMetadata.isDirectory() || rootMetadata.isSymbolicLink())',
+    replace:
+      '    rootMetadata === undefined ||\n    !rootMetadata.isDirectory() ||\n    rootMetadata.isSymbolicLink()',
+    caughtBy: 'packages/toolkit/test/first-run-sequence.test.ts',
+  },
+  {
+    id: 'recovery-keys-refused-before-the-first-message',
+    invariant:
+      'Generation binds no recovery copy and refuses nothing while the source catalogs hold no message, so the keys setup names do not fail the first build.',
+    source: 'packages/toolkit/src/compiler.ts',
+    find: '  if (graph.scopes.every((scope) => scope.messages.length === 0)) {\n',
+    replace: '  if (graph.scopes.length < 0) {\n',
+    caughtBy: 'packages/toolkit/test/first-run-sequence.test.ts',
   },
 ]);

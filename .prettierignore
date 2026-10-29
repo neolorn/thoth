@@ -9,10 +9,10 @@ pnpm-lock.yaml
 # `verify:standards-sources` would then fail on a tree nobody meant to change.
 standards/data/
 
-# The README consumer's scaffold is what `ng new` wrote, with the application it scaffolds removed
-# so that everything the application is comes from the READMEs. Formatting it would make it
-# Thoth's file, and the whole of its value is that it is not: a reader's project starts as the
-# Angular CLI leaves it, and this stage has to start there too.
+# The document consumer's scaffold is what `ng new` wrote, and `ng add` runs on it as it runs on a
+# reader's new project. Formatting it would make it Thoth's file, and the whole of its value is that
+# it is not: a reader's project starts as the Angular CLI leaves it, and this stage has to start
+# there too.
 fixtures/document-consumer-scaffold/
 # The Contributor Covenant is adopted, not authored. It is reproduced as its stewards publish it,
 # with the reporting means filled in as the document instructs, and formatting it here would rewrap

@@ -698,6 +698,12 @@ function configuredRecovery(
     return message.identity;
   };
   if (configuration.recoveryMessage === undefined) return undefined;
+  // A project with no messages is the state right after setup, which names the recovery keys
+  // before anyone has written a catalog. There is nothing to recover then, and refusing would
+  // fail the first build on content nobody has had the chance to write.
+  if (graph.scopes.every((scope) => scope.messages.length === 0)) {
+    return undefined;
+  }
   const identity = resolve(configuration.recoveryMessage, 'recoveryMessage');
   const retryLabelIdentity =
     configuration.recoveryRetry === undefined

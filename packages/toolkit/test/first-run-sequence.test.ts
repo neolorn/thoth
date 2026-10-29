@@ -112,4 +112,64 @@ describe('the first run', () => {
 
     expect(await listing(root)).toEqual([...written].sort());
   });
+
+  // `ng add` leaves no catalog directory, because the Angular CLI's tree writes files and never an
+  // empty directory, and the first catalog the application writes creates it. It also names the
+  // recovery messages, which nobody has written yet.
+  it('generates before the catalog directory exists, and after the first catalog creates it', async () => {
+    const root = await mkdtemp(resolve(tmpdir(), 'first-run-'));
+    roots.push(root);
+    const write = async (path: string, text: string): Promise<void> => {
+      const absolute = resolve(root, ...path.split('/'));
+      await mkdir(resolve(absolute, '..'), { recursive: true });
+      await writeFile(absolute, text, 'utf8');
+    };
+    await write(
+      'package.json',
+      `${JSON.stringify({ name: '@example/first-run', private: true, type: 'module' }, null, 2)}\n`,
+    );
+    await write(
+      'tsconfig.app.json',
+      `${JSON.stringify({ compilerOptions: { strict: true, target: 'ES2022', module: 'preserve', moduleResolution: 'bundler', resolvePackageJsonImports: true }, include: ['src/**/*.ts'] }, null, 2)}\n`,
+    );
+    await write('src/app.ts', 'export const ready = true;\n');
+    const initialized = await initializeProject({
+      project: root,
+      configuration: {
+        sourceLocale: 'en-US',
+        defaultLocale: 'en-US',
+        locales: ['en-US'],
+        recoveryMessage: 'shell/recovery-message',
+        recoveryRetry: 'shell/recovery-retry',
+      },
+    });
+    expect(initialized.ok).toBe(true);
+    await rm(resolve(root, 'i18n'), { recursive: true });
+
+    const empty = await generateProject({ project: root });
+    expect(empty.ok, JSON.stringify(empty.diagnostics)).toBe(true);
+    expect(empty.diagnostics.every(({ severity }) => severity === 'info')).toBe(
+      true,
+    );
+    expect(
+      empty.diagnostics.map(({ summary }) => summary).join('\n'),
+    ).toContain('i18n/shell/en-US.yaml');
+
+    // A first catalog without the recovery messages is refused, naming the key to satisfy.
+    await write('i18n/shell/en-US.yaml', 'messages:\n  app-title: First run\n');
+    const unwritten = await generateProject({ project: root });
+    expect(unwritten.ok).toBe(false);
+    expect(
+      unwritten.diagnostics
+        .filter(({ code }) => code === 'TH1501')
+        .map(({ path }) => path),
+    ).toEqual([['recoveryMessage'], ['recoveryRetry']]);
+
+    await write(
+      'i18n/shell/en-US.yaml',
+      'messages:\n  app-title: First run\n  recovery-message: The page could not load.\n  recovery-retry: Try again\n',
+    );
+    const first = await generateProject({ project: root });
+    expect(first.ok, JSON.stringify(first.diagnostics)).toBe(true);
+  });
 });

@@ -83,6 +83,7 @@
     "verify:consumer": "pnpm run materialize:consumer && node ./tools/verify-package-consumer.ts",
     "verify:focused-consumers": "node ./tools/verify-focused-package-consumers.ts",
     "verify:builder-consumer": "node ./tools/verify-builder-consumer.ts",
+    "verify:ngadd-consumer": "node ./tools/verify-ngadd-consumer.ts",
     "materialize:angular-22.0.4": "node ./tools/materialize-package-consumer.ts angular-22.0.4-consumer",
     "verify:angular-22.0.4": "pnpm run materialize:angular-22.0.4 && node ./tools/verify-package-consumer.ts angular-22.0.4-consumer",
     "materialize:strict-consumer": "node ./tools/materialize-package-consumer.ts strict-consumer",

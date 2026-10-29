@@ -7,7 +7,7 @@
  *   compile there.
  * - `” ```yaml excerpt i18n/shell/en-US.yaml ”`: the block is part of that file, checked after the
  *   run rather than written. This is how a section quotes part of a file another section owns, and
- *   how a document shows a file `thoth init` writes. "Part of" is a contiguous run of lines,
+ *   how a document shows a file `ng add` writes. "Part of" is a contiguous run of lines,
  *   except for JSON, where it is a structural subset: Prettier owns the document's formatting and
  *   reflows a JSON block, so comparing text there compares Prettier's line breaks against the
  *   writing command's rather than what the block actually claims.
@@ -36,11 +36,11 @@
  * guide would have, rather than one configuration carrying every capability that neither reader
  * selected. Two guides may therefore write one path differently. Two blocks on one guide may not.
  *
- * **The tutorial authors the base.** The scaffold is what `ng new` produced with `src/app/` and
- * `i18n/` removed, and every package it installs held to the development row's version, which is
- * the row the rest of the gate proves; what `ng new` resolves on a given day is not a row. The tutorial
- * runs on it from `thoth init` onward, so everything the application is comes from the one
- * document that claims to build it: the catalogs in both locales, the providers, the route table,
+ * **The tutorial authors the base.** The scaffold is what `ng new` produced, with every package it
+ * installs held to the development row's version, which is the row the rest of the gate proves;
+ * what `ng new` resolves on a given day is not a row. The tutorial runs on it from `ng add` onward,
+ * so everything the application is comes from the one document that claims to build it and from
+ * the command it runs: the setup `ng add` writes, the catalogs in both locales, the route table,
  * the switcher, the rich content, and the spec. It ends at that spec, so what this proves is a
  * working application rather than only a build.
  *

@@ -579,6 +579,15 @@ const declared: readonly StageDeclaration[] = Object.freeze([
     reads: ['dist:runtime', 'dist:toolkit'],
     writes: ['consumer:builder'],
   },
+  // `ng add` on an application `ng new` has just made, then `ng build`. Its own tree, because it
+  // starts from `ng new` rather than from a fixture.
+  {
+    id: 'verify:ngadd-consumer',
+    processors: 4,
+    minimumProcessors: 2,
+    reads: ['dist:runtime', 'dist:toolkit'],
+    writes: ['consumer:ngadd'],
+  },
   {
     id: 'verify:angular-22.0.4',
     processors: 4,

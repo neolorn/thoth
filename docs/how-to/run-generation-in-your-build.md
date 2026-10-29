@@ -5,9 +5,11 @@ your workspace runs them through the toolkit's builders. Nothing runs beside the
 
 ## Before you begin
 
-You need a project that `thoth init` has set up.
+You need a project that `ng add @neolorn/thoth-toolkit` or `thoth init` has set up.
 
 ## Point the targets at the builders
+
+`ng add` does this for you. In a project `thoth init` set up, do it by hand.
 
 Each of the three builders generates, then runs an Angular target you name. Rename the `build`,
 `serve` and `test` targets in `angular.json` to `angular-build`, `angular-serve` and
@@ -47,14 +49,17 @@ Each of the three builders generates, then runs an Angular target you name. Rena
 }
 ```
 
-`my-app` is your project's name. The Angular targets keep their builders and every option they
-had. `angular-serve` and `angular-test` name `angular-build` as their `buildTarget`, because
+`my-app` is your project's name, and this is what `ng add` writes. The Angular targets keep their
+builders and every option they had. `angular-serve` and `angular-test` name `angular-build` as their `buildTarget`, because
 Angular's dev server and unit-test builder read the options of an `@angular/build:application`
 target.
 
 `-c production` selects a configuration of the Thoth target, and that configuration names the
 Angular configuration it runs. Add a configuration to the Thoth target when you add one to the
 Angular target.
+
+A schematic that edits the `build` target expects Angular's builder there, so run one, such as
+`ng add @angular/ssr`, before `ng add @neolorn/thoth-toolkit`.
 
 ## What each command does
 

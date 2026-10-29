@@ -80,6 +80,33 @@ export const plants = Object.freeze([
     refusal: /The staged test builder schema does not match/u,
   },
   {
+    id: 'toolkit-schematic-waits-at-load',
+    plant: (root: string) =>
+      editText(
+        root,
+        'dist/toolkit/ng-add.js',
+        (text: string) => `${text}\nawait Promise.resolve();\n`,
+      ),
+    refusal: /ERR_REQUIRE_ASYNC_MODULE/u,
+  },
+  {
+    id: 'toolkit-schematic-schema-drifts',
+    plant: editJson(
+      'dist/toolkit/schematics/ng-add.schema.json',
+      (schema: { additionalProperties: boolean }) => {
+        schema.additionalProperties = true;
+      },
+    ),
+    refusal: /The staged ng-add schema does not match/u,
+  },
+  {
+    id: 'toolkit-schematic-saved-as-a-dependency',
+    plant: editJson(toolkitManifest, (manifest: PackageManifest) => {
+      delete (manifest as { 'ng-add'?: unknown })['ng-add'];
+    }),
+    refusal: /devDependencies/u,
+  },
+  {
     id: 'toolkit-exports-an-internal-module',
     plant: editJson(toolkitManifest, (manifest: PackageManifest) => {
       manifest.exports['./static-analysis'] = './static-analysis.js';

@@ -23,11 +23,13 @@ export interface AngularBuilderOptions {
   readonly watch?: boolean;
 }
 
-const TARGET_OPTION: Readonly<Record<AngularCommand, string>> = Object.freeze({
-  build: 'buildTarget',
-  serve: 'serveTarget',
-  test: 'testTarget',
-});
+/** The option each builder names its Angular target in. */
+export const ANGULAR_TARGET_OPTION: Readonly<Record<AngularCommand, string>> =
+  Object.freeze({
+    build: 'buildTarget',
+    serve: 'serveTarget',
+    test: 'testTarget',
+  });
 
 const TARGET_DESCRIPTION: Readonly<Record<AngularCommand, string>> =
   Object.freeze({
@@ -48,7 +50,7 @@ const TARGET_DESCRIPTION: Readonly<Record<AngularCommand, string>> =
 export function angularBuilderSchema(
   command: AngularCommand,
 ): Readonly<Record<string, unknown>> {
-  const targetOption = TARGET_OPTION[command];
+  const targetOption = ANGULAR_TARGET_OPTION[command];
   const properties: Record<string, unknown> = {
     [targetOption]: {
       type: 'string',
@@ -81,7 +83,7 @@ export function angularBuilderOptions(
   command: AngularCommand,
   options: Readonly<Record<string, unknown>>,
 ): AngularBuilderOptions {
-  const target = options[TARGET_OPTION[command]];
+  const target = options[ANGULAR_TARGET_OPTION[command]];
   const watch = options['watch'];
   return Object.freeze({
     target: typeof target === 'string' ? target : '',

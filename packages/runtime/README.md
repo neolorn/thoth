@@ -41,16 +41,15 @@ The Angular, RxJS, and Node.js ranges an install accepts are on [Compatibility](
 
 ## Install
 
-```sh install
-npm install @neolorn/thoth
-npm install --save-dev @neolorn/thoth-toolkit
+```sh run
+npx ng add @neolorn/thoth-toolkit
 ```
 
-The toolkit runs at build time and ships in nothing, which is why it is a development dependency. This package is what the application ships.
+`ng add` installs this package, which is what the application ships, and `@neolorn/thoth-toolkit` as a development dependency, because it runs at build time and ships in nothing.
 
 ## Quick start
 
-Run `thoth init` and `thoth generate` first, which the [tutorial](https://github.com/neolorn/thoth/blob/main/docs/tutorial.md) covers. `generate` writes a `provideLocalization` for the project, with the locale set already bound, and runs again whenever catalogs, routes or providers change; `thoth watch` does that while you work.
+`ng add` sets the project up, which the [tutorial](https://github.com/neolorn/thoth/blob/main/docs/tutorial.md) covers. From then on `ng build`, `ng serve` and `ng test` generate a `provideLocalization` for the project, with the locale set already bound, before Angular runs, and `ng serve` generates it again whenever catalogs, routes or providers change.
 
 Declare where the locale sits in a URL, and which messages the recovery screen shows, in `thoth.config.json`. `path-prefix` puts the locale in the first path segment, spelled as the tag in lowercase:
 

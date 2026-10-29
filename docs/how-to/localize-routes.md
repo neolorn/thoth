@@ -5,7 +5,8 @@ route. Your Angular routes are unchanged.
 
 ## Before you begin
 
-You need a project that `thoth init` has set up, which the [tutorial](../tutorial.md) does.
+You need a project that `ng add @neolorn/thoth-toolkit` has set up, which the [tutorial](../tutorial.md)
+does.
 
 ## Declare a policy
 
@@ -17,8 +18,8 @@ You need a project that `thoth init` has set up, which the [tutorial](../tutoria
 }
 ```
 
-`thoth init --url-policy path-prefix` writes it. `path-prefix` puts the locale in the first path
-segment, spelled as the locale tag in lowercase, so the home page is at `/en-us` and `/ar-eg`. A
+`ng add` writes it when you answer `path-prefix`, as `thoth init --url-policy path-prefix` does.
+`path-prefix` puts the locale in the first path segment, spelled as the locale tag in lowercase, so the home page is at `/en-us` and `/ar-eg`. A
 locale added to `locales` later gets its prefix the same way.
 
 `thoth generate` builds the policy from this key and the locale set, and writes it into the setup

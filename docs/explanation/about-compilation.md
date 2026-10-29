@@ -9,7 +9,9 @@ system.
 `thoth init` writes `thoth.config.json`, maps `#i18n` in `package.json`, creates `i18n/`, and
 adds the `thoth:generate`, `thoth:check`, `thoth:format`, `thoth:clean` and `thoth:watch`
 scripts. It stops on anything that would conflict rather than overwriting it, so running it in a
-project that already has an `i18n/` directory reports what it found.
+project that already has an `i18n/` directory reports what it found. `ng add` writes the same in an
+Angular CLI workspace, and with it the builders that run `thoth generate` inside `ng build`,
+`ng serve` and `ng test`, and the providers in `app.config.ts`.
 
 `thoth generate` compiles the catalogs and writes the `#i18n` modules. Those modules are output:
 they are not checked in, they carry an ownership marker, and `thoth clean` removes them and

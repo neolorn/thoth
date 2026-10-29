@@ -6,7 +6,7 @@ inherits from.
 
 ## Before you begin
 
-You need a project that `thoth init` has set up.
+You need a project that `ng add @neolorn/thoth-toolkit` has set up.
 
 ## Declare the locale
 

@@ -68,19 +68,13 @@ For a detailed description of the architecture and the contracts between the two
 
 ## Getting started
 
-Install the runtime and the toolkit:
+Add Thoth to an Angular application:
 
-```sh install
-npm install @neolorn/thoth
-npm install --save-dev @neolorn/thoth-toolkit
+```sh run
+npx ng add @neolorn/thoth-toolkit
 ```
 
-Initialize the project and compile the catalogs:
-
-```text
-npx thoth init --source-locale en-US --default-locale en-US --locale en-US --locale ar-EG
-npx thoth generate
-```
+`ng add` asks for the locales the application serves and where a URL carries the locale. It installs the runtime and the toolkit, writes `thoth.config.json`, makes `ng build`, `ng serve` and `ng test` compile the catalogs before Angular runs, and adds the providers to `app.config.ts`.
 
 Add a message to `i18n/shell/en-US.yaml`:
 

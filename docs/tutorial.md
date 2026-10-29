@@ -30,36 +30,35 @@ server](how-to/render-on-the-server.md) starts from one.
 Run `npm start` and open the address the CLI prints. The Angular welcome page appears. Stop the
 server before continuing.
 
-## Install Thoth
-
-```sh install
-npm install @neolorn/thoth
-npm install --save-dev @neolorn/thoth-toolkit
-```
-
-`@neolorn/thoth` ships with the application. `@neolorn/thoth-toolkit` compiles the catalogs at
-build time and is a development dependency.
-
-## Set up the project
+## Add Thoth
 
 Declare the locales the application serves:
 
 ```sh run
-npx thoth init --source-locale en-US --default-locale en-US --locale en-US --locale ar-EG --url-policy path-prefix --recovery-message shell/recovery-message --recovery-retry shell/recovery-retry
+npx ng add @neolorn/thoth-toolkit --source-locale en-US --default-locale en-US --locale en-US --locale ar-EG --url-policy path-prefix
 ```
 
-`init` writes `thoth.config.json`, maps `#i18n` in `package.json`, creates the `i18n/` directory,
-and adds the `thoth:generate`, `thoth:check`, `thoth:format`, `thoth:clean`, and
-`thoth:watch` scripts. `thoth.config.json` holds the locale set, where a URL carries the locale, and
-which two messages the recovery screen shows.
+Run with no options, `ng add` asks for each of these. It installs `@neolorn/thoth-toolkit` as a
+development dependency, because it compiles the catalogs at build time, and `@neolorn/thoth`,
+which ships with the application. Then it sets the project up:
+
+- `thoth.config.json` holds the locale set, where a URL carries the locale, and which two messages
+  the recovery screen shows, `shell/recovery-message` and `shell/recovery-retry`.
+- `package.json` maps `#i18n` and gains the `thoth:generate`, `thoth:check`, `thoth:format`,
+  `thoth:clean`, and `thoth:watch` scripts.
+- In `angular.json`, `ng build`, `ng serve` and `ng test` run Thoth's builders, which compile the
+  catalogs and the routes before Angular starts. Angular's own targets keep their options under the
+  names `angular-build`, `angular-serve` and `angular-test`.
+- In `src/app/app.config.ts`, `provideLocalizedRouter(routes)` takes the place of
+  `provideRouter(routes)`, and `provideLocalization(withRouting())` joins the providers.
 
 `path-prefix` puts the locale in the first path segment, spelled as the locale tag in lowercase, so
 the home page is at `/en-us` and `/ar-eg`. Adding a locale later is one more `locales` entry, and its
 addresses follow. [How to localize your routes](how-to/localize-routes.md) covers the other policies
 and the spellings you can change.
 
-`init` writes no catalog. The recovery keys name messages you write in the next step, because their
-text is content, and content belongs to the project.
+`ng add` writes no catalog. The recovery keys name messages you write in the next step, because
+their text is content, and content belongs to the project.
 
 ## Write the messages
 
@@ -114,23 +113,14 @@ though no catalog could be loaded.
 slots: `{#strong}...{/strong}` marks a span that the application renders. A `description` travels
 with the message to whoever translates it.
 
-## Compile the catalogs
-
-```sh run
-npx thoth generate
-```
-
-`generate` compiles both catalogs and writes the modules the application imports:
+Every `ng build`, `ng serve` and `ng test` compiles both catalogs into the modules the application
+imports:
 
 - `#i18n` exports `provideLocalization`, bound to this project's locale set, its URL policy, and its
   recovery messages.
 - `#i18n/shell` exports `messages`, one typed handle for each key in the `shell` scope.
 
 Keys are kebab-case in the file and camelCase in code, so `app-title` is `messages.appTitle`.
-
-`generate` also reports that every message in the scope is unreached. Nothing has used one yet, so
-that is what it should say here, and it goes away at the second compile further down, once the
-components below read them.
 
 ## Render a message with structure
 
@@ -226,7 +216,8 @@ whichever locale is committed.
 
 ## Compose the providers
 
-Replace `src/app/app.config.ts`:
+`ng add` put the router and the localization provider in `src/app/app.config.ts`. Replace the file
+to keep the visitor's choice and to share the features with the test:
 
 ```ts src/app/app.config.ts
 import {
@@ -252,9 +243,9 @@ export const appConfig: ApplicationConfig = {
 };
 ```
 
-`provideLocalizedRouter` replaces `provideRouter`, and the CLI's
-`provideBrowserGlobalErrorListeners()` stays. `withRouting()` reads the URL policy and the route
-table `generate` wrote, so it takes no arguments here. Each `with*` selects a feature, and leaving one out
+`provideLocalizedRouter` and `provideLocalization(withRouting())` are the two calls `ng add` wrote,
+and the CLI's `provideBrowserGlobalErrorListeners()` stays. `withRouting()` reads the URL policy and
+the route table the build compiles, so it takes no arguments here. Each `with*` selects a feature, and leaving one out
 selects its default; [Features](reference/features.md) lists them. `localizationFeatures` is
 exported so the test below composes the same features rather than a copy of them.
 `withPersistence(cookieStore())` stores the visitor's choice, so the next visit opens in the
@@ -297,21 +288,11 @@ in that locale.
 The template is inline now, so delete `src/app/app.html` and `src/app/app.css`, which the CLI wrote
 for the old one.
 
-## Compile the routes
-
-The route table exists now, so compile again:
-
-```sh run
-npx thoth generate
-```
-
-`generate` writes `#i18n/routes` from what this pass found, and checks the composed providers
-against it. The first `generate` ran before the route table existed, so it wrote that module with no
-routes in it. `thoth watch` runs both steps while you work.
-
 ## Run the application
 
-Start the server and open `/en-us`. The English title, the English heading, and two switcher options
+Run `npm start` and open `/en-us`. `ng serve` compiles the catalogs and `#i18n/routes` before
+Angular starts, checks the composed providers against them, and compiles again whenever a catalog, a
+route or a provider changes. The English title, the English heading, and two switcher options
 appear. Select the Arabic option: the text changes to Arabic, the direction flips to right to left,
 and the address becomes `/ar-eg`. Open the second page and the address becomes `/ar-eg/second`.
 

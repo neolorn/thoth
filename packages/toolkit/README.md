@@ -30,16 +30,21 @@ The Angular, TypeScript, and Node.js ranges an install accepts are on [Compatibi
 
 ## Install
 
-```sh install
-npm install @neolorn/thoth
-npm install --save-dev @neolorn/thoth-toolkit
+```sh run
+npx ng add @neolorn/thoth-toolkit
 ```
 
-This package runs at build time and ships in nothing, which is why it is a development dependency. [`@neolorn/thoth`](https://www.npmjs.com/package/@neolorn/thoth) is what the application ships.
+`ng add` installs this package as a development dependency, because it runs at build time and ships in nothing, and [`@neolorn/thoth`](https://www.npmjs.com/package/@neolorn/thoth), which the application ships. It asks for the source locale, the default locale, the locales the application serves, and where a URL carries the locale, and each has an option, such as `--url-policy path-prefix`. Then it sets the project up:
+
+- `thoth.config.json`, and the `#i18n` import and the `thoth:*` scripts in `package.json`, which are what `thoth init` writes.
+- In `angular.json`, the builders `@neolorn/thoth-toolkit:build`, `:serve` and `:test` for `ng build`, `ng serve` and `ng test`. Each generates before the Angular target it runs, which keeps its options as `angular-build`, `angular-serve` or `angular-test`.
+- In `app.config.ts`, `provideLocalizedRouter(routes)` in place of `provideRouter(routes)`, and `provideLocalization(withRouting())`. Where the application renders on the server, `provideLocalizedServerRendering` in `app.config.server.ts`, which needs `--origin`.
+
+It writes no catalog, refuses a setup it would have to overwrite, and run again changes nothing.
 
 ## Quick start
 
-Declare the locales the project serves, where a URL carries the locale, and which messages the recovery screen shows:
+In a workspace `ng add` does not set up, such as one with several applications, `thoth init` writes the configuration and the package entries. It takes the locales the project serves, where a URL carries the locale, and which messages the recovery screen shows:
 
 ```text
 npx thoth init --source-locale en-US --default-locale en-US --locale en-US --locale ar-EG --url-policy path-prefix --recovery-message shell/recovery-message --recovery-retry shell/recovery-retry
@@ -74,13 +79,7 @@ messages:
 
 Keys are kebab-case in the file and camelCase in code, so `app-title` is `messages.appTitle`. A message may also be a record carrying `description` and `context` for whoever translates it, and both travel into the interchange document with the message.
 
-Compile the catalogs:
-
-```text
-npx thoth generate
-```
-
-`generate` writes the `#i18n` modules the application imports. Wiring them into an application is the [tutorial](https://github.com/neolorn/thoth/blob/main/docs/tutorial.md).
+`ng build` compiles the catalogs into the `#i18n` modules the application imports, and `thoth generate` does the same for a step the builders do not run. Wiring them into an application is the [tutorial](https://github.com/neolorn/thoth/blob/main/docs/tutorial.md).
 
 ## Documentation
 

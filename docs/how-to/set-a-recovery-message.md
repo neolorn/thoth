@@ -34,9 +34,9 @@ it:
 }
 ```
 
-`thoth init` writes both keys when you pass `--recovery-message` and `--recovery-retry`. It writes no
-message, and names the recovery message as one of the two things it leaves for you to write.
-Generation binds both keys into the setup `provideLocalization()` closes over, so no application
+`ng add` writes both keys, and `thoth init` writes them when you pass `--recovery-message` and
+`--recovery-retry`. Neither writes a message, and each names the recovery messages as what it leaves
+for you to write. Generation binds both keys into the setup `provideLocalization()` closes over, so no application
 code names them, and a changed key takes effect at the next `thoth generate`.
 
 `recoveryRetry` is optional and is what makes the retry control appear. It needs
@@ -46,7 +46,8 @@ no catalog could be loaded.
 
 `generate` reports `TH1310` for an application runtime whose configuration names no recovery
 message, and `TH1501` for a key that names no message in the source catalogs, or names one that
-takes an input or carries a slot.
+takes an input or carries a slot. Until the project has its first message, neither key is checked,
+so the first build after setup succeeds before the catalogs exist.
 
 ## Render it
 
