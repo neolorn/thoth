@@ -54,6 +54,9 @@ one bounded table from a locked source and generates it into a package:
 | The root person-name patterns a runtime falls back to          | `cldr-person-names-full`                |
 | The name each locale has for itself                            | `cldr-localenames-full`                 |
 | Parent locales                                                 | `cldr-core`                             |
+| The alias rules that canonicalize a locale identifier          | `cldr-core`                             |
+| The script a language is written in where a tag names none     | `cldr-core`                             |
+| Time zone identifiers, and the primary each alias stands for   | The IANA Time Zone Database             |
 | Person-name patterns for the locales an application configures | `cldr-person-names-full`                |
 | Plural categories                                              | `cldr-core`                             |
 | The single units ECMAScript sanctions                          | ECMA-402 13th edition, section 6.6.2    |
