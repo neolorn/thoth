@@ -155,6 +155,8 @@ export const PACKAGE_SCRIPTS = Object.freeze({
   'thoth:format': 'thoth format',
   'thoth:clean': 'thoth clean',
   'thoth:watch': 'thoth watch',
+  'thoth:export': 'thoth exchange export',
+  'thoth:import': 'thoth exchange import',
 });
 
 /**
@@ -328,6 +330,7 @@ export interface ExchangeProjectOptions extends ProjectSelection {
 
 /** One document an exchange wrote or read. */
 export interface ExchangeDocument {
+  /** The target locale the document carries. */
   readonly locale: string;
   /** The document, relative to the owner. */
   readonly path: string;
@@ -339,7 +342,9 @@ export interface ExchangeDocument {
 
 /** What an exchange changed, or would have changed under a dry run. */
 export interface ExchangeProjectResult {
+  /** Which way the exchange ran. */
   readonly direction: 'export' | 'import';
+  /** Whether any file was written, or under a dry run would have been. */
   readonly changed: boolean;
   /** The files written, relative to the owner, sorted. */
   readonly files: readonly string[];

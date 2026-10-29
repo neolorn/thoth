@@ -2189,7 +2189,7 @@ export function analyzeCatalogSet(
           semanticDiagnostic(
             sourceCatalog,
             'TH1306',
-            `Scope ${sourceCatalog.scopeId} has no ${locale} catalog; source-locale fallback remains available.${policy.suffix}`,
+            `Scope ${sourceCatalog.scopeId} has no ${locale} catalog; source-locale fallback remains available. Write the catalog, or run thoth exchange export and import the translation.${policy.suffix}`,
             [],
             policy.severity,
           ),

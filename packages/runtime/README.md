@@ -51,7 +51,7 @@ npx ng add @neolorn/thoth-toolkit
 
 `ng add` sets the project up, which the [tutorial](https://github.com/neolorn/thoth/blob/main/docs/tutorial.md) covers. From then on `ng build`, `ng serve` and `ng test` generate a `provideLocalization` for the project, with the locale set already bound, before Angular runs, and `ng serve` generates it again whenever catalogs, routes or providers change.
 
-Declare where the locale sits in a URL, and which messages the recovery screen shows, in `thoth.config.json`. `path-prefix` puts the locale in the first path segment, spelled as the tag in lowercase:
+`ng add` declares where the locale sits in a URL, and which messages the recovery screen shows, in `thoth.config.json`. `path-prefix` puts the locale in the first path segment, spelled as the tag in lowercase:
 
 ```json excerpt thoth.config.json
 {
@@ -61,7 +61,7 @@ Declare where the locale sits in a URL, and which messages the recovery screen s
 }
 ```
 
-Compose the providers in `src/app/app.config.ts`. `provideLocalizedRouter`, from `@neolorn/thoth/router`, replaces `provideRouter`, and each `with*` selects a feature. `withRouting()` reads the policy and the generated route table from the setup, so it takes no arguments:
+It composes the providers in `src/app/app.config.ts`. `provideLocalizedRouter`, from `@neolorn/thoth/router`, replaces `provideRouter`, and each `with*` selects a feature. `withRouting()` reads the policy and the generated route table from the setup, so it takes no arguments. `withPersistence` below is one you add, to keep a visitor's choice in a cookie:
 
 ```ts excerpt src/app/app.config.ts
 import { provideLocalization } from '#i18n';

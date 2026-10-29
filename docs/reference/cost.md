@@ -19,12 +19,12 @@ The bytes of each entry point's own module in each build, before compression, as
 
 | Entry point              | Minimal consumer, initial | Minimal consumer, lazy | Minimal consumer, server | Full consumer, initial | Full consumer, lazy | Full consumer, server |
 | ------------------------ | ------------------------: | ---------------------: | -----------------------: | ---------------------: | ------------------: | --------------------: |
-| `@neolorn/thoth`         |                   222,364 |                      0 |                        0 |                294,916 |                   0 |               252,766 |
-| `@neolorn/thoth/core`    |                    30,312 |                      0 |                        0 |                 69,759 |                   0 |               121,160 |
-| `@neolorn/thoth/forms`   |                         0 |                      0 |                        0 |                  4,383 |                   0 |                 3,547 |
+| `@neolorn/thoth`         |                   221,982 |                      0 |                        0 |                294,925 |                   0 |               252,674 |
+| `@neolorn/thoth/core`    |                    30,311 |                      0 |                        0 |                 69,772 |                   0 |               121,160 |
+| `@neolorn/thoth/forms`   |                         0 |                      0 |                        0 |                  4,384 |                   0 |                 3,547 |
 | `@neolorn/thoth/http`    |                         0 |                      0 |                        0 |                      0 |                   0 |                 6,874 |
-| `@neolorn/thoth/router`  |                         0 |                      0 |                        0 |                 41,282 |                   0 |                34,316 |
-| `@neolorn/thoth/ssr`     |                         0 |                      0 |                        0 |                      0 |                   0 |                   153 |
+| `@neolorn/thoth/router`  |                         0 |                      0 |                        0 |                 41,268 |                   0 |                34,316 |
+| `@neolorn/thoth/ssr`     |                         0 |                      0 |                        0 |                      0 |                   0 |                 1,074 |
 | `@neolorn/thoth/testing` |                         0 |                      0 |                        0 |                      0 |                   0 |                     0 |
 
 ## Locale data in the runtime
@@ -42,12 +42,12 @@ Everything each build emits, including Angular and the application itself.
 
 | Application      | Part    | Files |     Bytes |    gzip |  Brotli |
 | ---------------- | ------- | ----: | --------: | ------: | ------: |
-| Minimal consumer | initial |     1 |   342,586 | 104,230 |  89,271 |
+| Minimal consumer | initial |     1 |   342,315 | 104,141 |  89,109 |
 | Minimal consumer | lazy    |     4 |     8,718 |   4,294 |   3,506 |
 | Minimal consumer | server  |     0 |         0 |       0 |       0 |
-| Full consumer    | initial |     1 |   738,897 | 214,449 | 179,493 |
-| Full consumer    | lazy    |     6 |    63,097 |  17,545 |  15,376 |
-| Full consumer    | server  |    20 | 1,637,345 | 479,817 | 413,344 |
+| Full consumer    | initial |     1 |   739,107 | 214,484 | 179,426 |
+| Full consumer    | lazy    |     6 |    63,092 |  17,543 |  15,360 |
+| Full consumer    | server  |    20 | 1,639,061 | 480,286 | 413,763 |
 
 ## Generated contracts
 
@@ -55,7 +55,7 @@ The generated code in the initial files, and each lazily loaded catalog: one sco
 
 ### Minimal consumer
 
-Generated code in the initial files: 13,763 bytes.
+Generated code in the initial files: 13,874 bytes.
 
 | Scope | Locale | Bytes |  gzip | Brotli |
 | ----- | ------ | ----: | ----: | -----: |
@@ -66,7 +66,7 @@ Generated code in the initial files: 13,763 bytes.
 
 ### Full consumer
 
-Generated code in the initial files: 50,986 bytes.
+Generated code in the initial files: 51,219 bytes.
 
 | Scope | Locale |  Bytes |  gzip | Brotli |
 | ----- | ------ | -----: | ----: | -----: |
@@ -81,8 +81,8 @@ What `thoth generate` writes for each application. A second run over unchanged i
 
 | Application      | Files |   Bytes |
 | ---------------- | ----: | ------: |
-| Minimal consumer |    15 |  42,124 |
-| Full consumer    |    16 | 179,288 |
+| Minimal consumer |    15 |  42,220 |
+| Full consumer    |    16 | 179,477 |
 
 ## Packages
 
@@ -90,15 +90,15 @@ Each entry point as published, unminified, and each package as installed, source
 
 | Entry point              |   Bytes |   gzip | Brotli |
 | ------------------------ | ------: | -----: | -----: |
-| `@neolorn/thoth`         | 431,849 | 91,659 | 73,781 |
+| `@neolorn/thoth`         | 431,577 | 91,703 | 73,782 |
 | `@neolorn/thoth/core`    | 118,741 | 30,877 | 25,009 |
 | `@neolorn/thoth/forms`   |   7,171 |  2,250 |  1,957 |
 | `@neolorn/thoth/http`    |  13,810 |  4,157 |  3,618 |
 | `@neolorn/thoth/router`  |  56,872 | 13,444 | 11,575 |
-| `@neolorn/thoth/ssr`     |     654 |    310 |    286 |
+| `@neolorn/thoth/ssr`     |   1,769 |    679 |    564 |
 | `@neolorn/thoth/testing` |   9,646 |  3,216 |  2,760 |
 
 | Package                  | Files |     Bytes |
 | ------------------------ | ----: | --------: |
-| `@neolorn/thoth`         |    38 | 3,210,973 |
-| `@neolorn/thoth-toolkit` |   238 | 4,001,342 |
+| `@neolorn/thoth`         |    38 | 3,213,176 |
+| `@neolorn/thoth-toolkit` |   280 | 4,428,829 |

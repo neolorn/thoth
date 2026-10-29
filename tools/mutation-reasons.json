@@ -6420,7 +6420,7 @@
     {
       "file": "packages/toolkit/src/semantic-model.ts",
       "mutator": "StringLiteral",
-      "original": "`Scope ${sourceCatalog.scopeId} has no ${locale} catalog; source-locale fallback remains available.${policy.suffix}`",
+      "original": "`Scope ${sourceCatalog.scopeId} has no ${locale} catalog; source-locale fallback remains available. Write the catalog, or run thoth exchange export and import the translation.${policy.suffix}`",
       "replacement": "``",
       "category": "message-wording",
       "reason": "The TH1306 summary for a locale with no catalog in a scope; the suites assert the code, the pointer and the severity."

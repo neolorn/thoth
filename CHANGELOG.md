@@ -254,7 +254,8 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
 - `thoth exchange export` writes one XLIFF 2.2 document per target locale, holding every scope, and
   refuses with `TH1807` to replace one holding a translation the catalogs do not, and
   `thoth exchange import` writes the returned translations into the catalogs, keeping the comments,
-  the key order and every entry a unit does not translate.
+  the key order and every entry a unit does not translate. `thoth init` and `ng add` add the
+  `thoth:export` and `thoth:import` scripts that run the two.
 - The toolkit's `build`, `serve` and `test` Angular CLI builders run `thoth generate` inside
   `ng build`, `ng serve` and `ng test`, and keep regenerating while the Angular command watches.
 - `ng add @neolorn/thoth-toolkit` sets an Angular application up in one command: both packages,

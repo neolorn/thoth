@@ -7,8 +7,8 @@ system.
 ## What the two commands own
 
 `thoth init` writes `thoth.config.json`, maps `#i18n` in `package.json`, creates `i18n/`, and
-adds the `thoth:generate`, `thoth:check`, `thoth:format`, `thoth:clean` and `thoth:watch`
-scripts. It stops on anything that would conflict rather than overwriting it, so running it in a
+adds the `thoth:generate`, `thoth:check`, `thoth:format`, `thoth:clean`, `thoth:watch`,
+`thoth:export` and `thoth:import` scripts. It stops on anything that would conflict rather than overwriting it, so running it in a
 project that already has an `i18n/` directory reports what it found. `ng add` writes the same in an
 Angular CLI workspace, and with it the builders that run `thoth generate` inside `ng build`,
 `ng serve` and `ng test`, and the providers in `app.config.ts`.

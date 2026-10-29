@@ -273,8 +273,7 @@ helpLines.push(
   '',
   '  A repeatable flag may appear more than once. Where a value contains "=", the left side is a',
   '  path beneath the field: "eg=ar-EG" sets one entry, "en-Latn-XA.markers=true" sets one',
-  '  option of one entry. Every field thoth.config.json accepts is above; there is no other way',
-  '  to set one.',
+  '  option of one entry. Every field thoth.config.json accepts has a flag above.',
 );
 
 for (const line of helpLines) {

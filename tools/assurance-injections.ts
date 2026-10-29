@@ -4593,9 +4593,9 @@ export const injections = Object.freeze([
     invariant:
       'init adds only thoth:* commands to package.json scripts and no install, publish, pre or post hook.',
     source: 'packages/toolkit/src/project-host.ts',
-    find: "  'thoth:watch': 'thoth watch',\n});",
+    find: "  'thoth:import': 'thoth exchange import',\n});",
     replace:
-      "  'thoth:watch': 'thoth watch',\n  prebuild: 'thoth generate',\n});",
+      "  'thoth:import': 'thoth exchange import',\n  prebuild: 'thoth generate',\n});",
     caughtBy: 'packages/toolkit/test/init-leaves-the-build-alone.test.ts',
   },
   {

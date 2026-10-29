@@ -45,7 +45,7 @@ which ships with the application. Then it sets the project up:
 - `thoth.config.json` holds the locale set, where a URL carries the locale, and which two messages
   the recovery screen shows, `shell/recovery-message` and `shell/recovery-retry`.
 - `package.json` maps `#i18n` and gains the `thoth:generate`, `thoth:check`, `thoth:format`,
-  `thoth:clean`, and `thoth:watch` scripts.
+  `thoth:clean`, `thoth:watch`, `thoth:export`, and `thoth:import` scripts.
 - In `angular.json`, `ng build`, `ng serve` and `ng test` run Thoth's builders, which compile the
   catalogs and the routes before Angular starts. Angular's own targets keep their options under the
   names `angular-build`, `angular-serve` and `angular-test`.
@@ -63,7 +63,8 @@ their text is content, and content belongs to the project.
 ## Write the messages
 
 A catalog is one YAML file per locale per scope, at `i18n/<scope>/<locale>.yaml`. A scope is a
-directory whose name you choose; `shell` holds the messages that surround every page.
+directory whose name you choose; `shell` holds the messages that surround every page. Another scope
+is another directory with its catalogs in it, and the next build compiles it.
 
 Create `i18n/shell/en-US.yaml`:
 
@@ -462,6 +463,9 @@ it has no scrolling to do rather than anything about the application.
 
 ## What to read next
 
+- [How to add a locale](how-to/add-a-locale.md) and
+  [How to translate catalogs](how-to/translate-catalogs.md): a third locale, and a round trip
+  through a translator as XLIFF.
 - [How to write a message](how-to/write-messages.md): scopes, placeholders, and what happens when a
   locale omits a message.
 - [How to localize your routes](how-to/localize-routes.md): the other locale policies, and what a

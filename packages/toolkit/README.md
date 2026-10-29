@@ -50,7 +50,7 @@ In a workspace `ng add` does not set up, such as one with several applications, 
 npx thoth init --source-locale en-US --default-locale en-US --locale en-US --locale ar-EG --url-policy path-prefix --recovery-message shell/recovery-message --recovery-retry shell/recovery-retry
 ```
 
-`init` writes `thoth.config.json`, maps `#i18n` in `package.json`, creates the `i18n/` directory, and adds the `thoth:generate`, `thoth:check`, `thoth:format`, `thoth:clean`, and `thoth:watch` scripts. It stops on anything that would conflict rather than overwriting it. Run it on a TTY with no arguments and it asks the same questions. `thoth init --help` lists a flag for every field the configuration accepts.
+`init` writes `thoth.config.json`, maps `#i18n` in `package.json`, creates the `i18n/` directory, and adds the `thoth:generate`, `thoth:check`, `thoth:format`, `thoth:clean`, `thoth:watch`, `thoth:export`, and `thoth:import` scripts. It stops on anything that would conflict rather than overwriting it. Run it on a TTY with no arguments and it asks the same questions. `thoth init --help` lists a flag for every field the configuration accepts.
 
 The file it writes holds what the flags said:
 

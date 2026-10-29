@@ -34,7 +34,9 @@ differently from your configuration is not a miss.
 
 Each scope needs a file for the new locale, at `i18n/<scope>/<locale>.yaml`, with the same keys as
 the source catalog. Writing one is
-[How to write a message](write-messages.md).
+[How to write a message](write-messages.md). To have them translated instead, `npm run thoth:export`
+writes an XLIFF document for the new locale, and `npm run thoth:import` writes its catalogs from the
+translation, which is [How to translate catalogs](translate-catalogs.md).
 
 ## Compile and check
 
