@@ -324,6 +324,10 @@ const CHANGELOG_RELEASE_HEADING =
  * inside a longer word. A line written `\<word\>`, the way grep writes a word's boundaries, is
  * refused only where it stands as a whole word, as `listedWordsPattern` reads one.
  *
+ * A line that begins `files: ` holds the word after it against every file and against no commit
+ * message. That is the form for a name the project no longer uses: no file may carry it, while the
+ * messages written under it, and the one that retires it, have to name it to say what they did.
+ *
  * The words are kept outside the repository because refusing a word here would mean writing it
  * here. Without the variable nothing more is refused, and the report says so, so that a run that
  * held no list cannot be read as one that did. For the same reason a variable naming a file that
@@ -336,7 +340,10 @@ const LISTED_WORDS_VARIABLE = 'THOTH_RESIDUE_FILE';
 interface ListedWord {
   readonly word: string;
   readonly whole: boolean;
+  readonly filesOnly: boolean;
 }
+
+const FILES_ONLY = 'files: ';
 
 function readListedWords(): ListedWord[] {
   const path = process.env[LISTED_WORDS_VARIABLE];
@@ -359,8 +366,15 @@ function readListedWords(): ListedWord[] {
     .split(/\r?\n/u)
     .map((line) => line.trim());
   const words: ListedWord[] = [];
-  for (const [index, line] of lines.entries()) {
-    if (line === '') continue;
+  for (const [index, written] of lines.entries()) {
+    if (written === '') continue;
+    const filesOnly = written.startsWith(FILES_ONLY);
+    const line = filesOnly ? written.slice(FILES_ONLY.length).trim() : written;
+    if (line === '') {
+      throw new Error(
+        `${LISTED_WORDS_VARIABLE} names ${path}, whose line ${index + 1} holds a word against files and names no word.`,
+      );
+    }
     const opens = line.startsWith('\\<');
     const closes = line.endsWith('\\>');
     if (opens !== closes || (opens && line.length <= 4)) {
@@ -370,8 +384,8 @@ function readListedWords(): ListedWord[] {
     }
     words.push(
       opens
-        ? { word: line.slice(2, -2), whole: true }
-        : { word: line, whole: false },
+        ? { word: line.slice(2, -2), whole: true, filesOnly }
+        : { word: line, whole: false, filesOnly },
     );
   }
   if (words.length === 0) {
@@ -466,6 +480,9 @@ try {
 }
 const LISTED_WORDS =
   listedWords.length > 0 ? listedWordsPattern(listedWords) : undefined;
+const wordsInMessages = listedWords.filter((entry) => !entry.filesOnly);
+const LISTED_WORDS_IN_MESSAGES =
+  wordsInMessages.length > 0 ? listedWordsPattern(wordsInMessages) : undefined;
 
 type Category = 'dash' | 'tool' | 'plan' | 'path' | 'listed';
 
@@ -723,11 +740,11 @@ function scanCommentPaths(
 }
 
 /** Every listed word on a line, read after its escapes are decoded. */
-function scanListed(text: string, where: string): void {
+function scanListed(text: string, where: string, pattern: RegExp): void {
   for (const [index, line] of text.split('\n').entries()) {
     const decoded = decodeEscapes(line);
-    (LISTED_WORDS as RegExp).lastIndex = 0;
-    for (const match of decoded.matchAll(LISTED_WORDS as RegExp)) {
+    pattern.lastIndex = 0;
+    for (const match of decoded.matchAll(pattern)) {
       record('listed', where, index + 1, match[0], decoded);
     }
   }
@@ -740,17 +757,20 @@ function scanText(
     generated = false,
     criteria = true,
     listed = true,
+    message = false,
   }: {
     readonly generated?: boolean;
     readonly criteria?: boolean;
     readonly listed?: boolean;
+    readonly message?: boolean;
   } = {},
 ): void {
   if (criteria) {
     scan('plan', text, CRITERIA_VOCABULARY, where);
   }
-  if (listed && LISTED_WORDS !== undefined) {
-    scanListed(text, where);
+  const listedPattern = message ? LISTED_WORDS_IN_MESSAGES : LISTED_WORDS;
+  if (listed && listedPattern !== undefined) {
+    scanListed(text, where, listedPattern);
   }
   if (!generated) {
     scan('dash', text, DASHES, where);
@@ -824,7 +844,7 @@ for (const path of files) {
 
 const messages = commitMessages();
 for (const { hash, body, criteria, listed } of messages) {
-  scanText(body, `commit ${hash}`, { criteria, listed });
+  scanText(body, `commit ${hash}`, { criteria, listed, message: true });
 }
 
 const unusedExemptions = EXEMPTIONS.filter(
