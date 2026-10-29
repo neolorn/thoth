@@ -175,6 +175,32 @@ describe('the recovery roots the overlay declares', () => {
   });
 });
 
+describe('the URL policy the overlay declares', () => {
+  // An application that reads the policy, as an error document does to build its links, imports
+  // it from `#i18n` while the build is analysing it.
+  const readsThePolicy = [
+    "import { urlPolicy } from '#i18n';",
+    'export const read: unknown = urlPolicy;',
+  ];
+
+  it('is the one the configuration declares', () => {
+    expect(
+      findingsInTheApplication(readsThePolicy, {
+        configuration: {
+          ...testProjectConfiguration(['en-US']),
+          urlPolicy: 'path-prefix',
+        },
+      }),
+    ).toEqual([]);
+  });
+
+  it('is absent when the configuration declares none', () => {
+    expect(
+      findingsInTheApplication(readsThePolicy).map(({ code }) => code),
+    ).toEqual(['TH1401']);
+  });
+});
+
 describe('a recovery selection the overlay cannot be built from', () => {
   it('is returned as the refusal, with the analysis never started', () => {
     const compiled = compileWith(['export const name = 1;'], {

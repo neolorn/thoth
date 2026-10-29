@@ -63,6 +63,7 @@ describe('a context with no event sink', () => {
     const { localization } = runtime({
       fail: { [catalogKey('shell', 'en-US')]: 1 },
       setup: {
+        recovery: { identity: TITLE.identity },
         recoveryPayload: [
           {
             identity: TITLE.identity,
@@ -72,7 +73,6 @@ describe('a context with no event sink', () => {
           },
         ],
       },
-      options: { recoveryMessageIdentity: TITLE.identity },
     });
 
     await expect(

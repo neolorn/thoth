@@ -1649,6 +1649,7 @@ export function toolkitDiagnosticCode(value: ToolkitDiagnosticCode): void {
     case 'TH1006':
     case 'TH1007':
     case 'TH1008':
+    case 'TH1009':
     case 'TH1101':
     case 'TH1102':
     case 'TH1103':

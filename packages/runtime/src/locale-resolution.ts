@@ -16,11 +16,7 @@
  * source costs one field here instead of a dependency on everything the runtime happens to carry.
  */
 
-import {
-  type LocaleUrlPolicy,
-  type LocalizationSnapshot,
-  type RouteRuntimeProjection,
-} from '@neolorn/thoth/core';
+import { type LocalizationSnapshot } from '@neolorn/thoth/core';
 import { negotiateLocale } from '@neolorn/thoth/core';
 import {
   type LocalizationEventEmitter,
@@ -42,35 +38,6 @@ import { asDiagnostic, waitForSignal } from './runtime-safety';
  * a preference to be weighed against the others.
  */
 export type LocalizationLocaleSource = 'url' | 'stored' | 'browser' | 'default';
-
-/**
- * What reading a locale out of an address needs, which is the rule and the table together.
- *
- * Both or neither. A policy without a table has nothing to match a translated path against, and a
- * table without a policy has no statement of where in the address the locale sits.
- *
- * `withRouting()` takes these two as the required part of its options.
- */
-export interface LocaleUrlResolutionSetup {
-  /**
-   * Where the locale lives in an address: a leading path segment, a host, or nowhere.
-   *
-   * The one routing decision that shows in every URL the application emits, so it belongs to the
-   * deployment rather than to the generated table.
-   */
-  readonly policy: LocaleUrlPolicy;
-  /**
-   * The route projection the address is matched against, passed rather than restated.
-   *
-   * Carries the translated spellings of each route, the codecs for their parameters and the
-   * outcomes of addresses that no longer exist, which is what lets an address written in one locale
-   * resolve to the route it names rather than to nothing.
-   *
-   * One object, referenced wherever it is needed: `localizedServerRoutes()` takes this same value,
-   * so the server route table and the runtime are never handed two copies that could differ.
-   */
-  readonly projection: RouteRuntimeProjection;
-}
 
 /**
  * The order used when a consumer declares none.

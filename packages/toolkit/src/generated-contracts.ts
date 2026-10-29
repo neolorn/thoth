@@ -27,6 +27,7 @@ import {
   type SemanticScope,
 } from './semantic-model.js';
 import { compareCodeUnit } from './sorted-records.js';
+import type { ProjectConfiguration } from './configuration.js';
 
 export interface GeneratedContractFile {
   readonly path: string;
@@ -67,9 +68,30 @@ export interface GeneratedRouteProjection {
   readonly sourcePath?: string;
 }
 
+/** The URL policy as the configuration declares it, which generation completes from the locales. */
+export type DeclaredUrlPolicy = Pick<
+  ProjectConfiguration,
+  | 'localePrefixes'
+  | 'prefixAliases'
+  | 'omitDefaultPrefix'
+  | 'localeOrigins'
+  | 'localeNeutralRoots'
+  | 'xDefault'
+> & { readonly urlPolicy: NonNullable<ProjectConfiguration['urlPolicy']> };
+
+/** The recovery copy the configuration names, resolved to message identities. */
+export interface GeneratedRecoveryBinding {
+  readonly identity: string;
+  readonly retryLabelIdentity?: string;
+}
+
 export interface GenerateContractsOptions {
   readonly routes?: readonly GeneratedRouteProjection[];
   readonly recoveryMessageIdentities?: readonly string[];
+  /** Present when the configuration declares one; the generated setup then carries the policy. */
+  readonly urlPolicy?: DeclaredUrlPolicy;
+  /** Present when the configuration names a recovery message that resolved. */
+  readonly recovery?: GeneratedRecoveryBinding;
   /**
    * Scopes whose messages the first render does not use.
    *
@@ -438,9 +460,18 @@ function scopeModule(
  */
 function providerLines(
   form: 'implementation' | 'declaration',
+  graph: SemanticGraph,
+  wiring: SetupWiring,
 ): readonly string[] {
   if (form === 'declaration') {
     return [
+      ...(wiring.urlPolicy === undefined
+        ? []
+        : [
+            '/** Provisional, like the setup below: the policy is built once this owner is generated. */',
+            'export declare const urlPolicy: any;',
+            '',
+          ]),
       '/**',
       ' * Provisional. The real one is generated once this owner has been analysed.',
       ' *',
@@ -470,18 +501,28 @@ function providerLines(
       '',
     ];
   }
-  return providerImplementationLines();
+  return providerImplementationLines(graph, wiring);
 }
 
-function providerImplementationLines(): readonly string[] {
+function providerImplementationLines(
+  graph: SemanticGraph,
+  wiring: SetupWiring,
+): readonly string[] {
+  const policy =
+    wiring.urlPolicy === undefined
+      ? undefined
+      : urlPolicyCall(graph, wiring.urlPolicy);
   return [
     // Decision section 3: one import and one call. Everything closed over here is something Thoth
     // generated for itself, which every application was importing by hand to pass straight back.
-    // What an application actually decides (locale sources, persistence, recovery message,
-    // extension bindings) stays an argument, because Thoth cannot know it.
+    // What an application decides in code (locale sources, persistence, extension bindings) stays
+    // an argument, because Thoth cannot read it from a file.
     "import type { EnvironmentProviders } from '@angular/core';",
     "import { provideLocalizationSetup } from '@neolorn/thoth';",
     "import type { LocalizationFeature } from '@neolorn/thoth';",
+    ...(policy === undefined
+      ? []
+      : [`import { ${policy.factory} } from '@neolorn/thoth';`]),
     // Package-import specifiers rather than relative paths: the provisional overlay Thoth
     // compiles during analysis resolves `#i18n/*` and knows nothing about relative paths inside it,
     // and a consumer's own tsconfig resolves the same specifiers through package imports. One form
@@ -492,6 +533,14 @@ function providerImplementationLines(): readonly string[] {
     "import { personNames } from '#i18n/person-names';",
     "import { routeProjection } from '#i18n/routes';",
     '',
+    // Built from the configuration's declaration and this build's locales, so adding a locale
+    // gives it an address without a line of code. Exported because a server reads it too.
+    ...(policy === undefined
+      ? []
+      : [
+          `export const urlPolicy = ${policy.factory}(${JSON.stringify(policy.options)});`,
+          '',
+        ]),
     // Named, and exported, because the provider is not the only thing that composes it. A test
     // reaches the runtime through `provideLocalizationTesting()` from `@neolorn/thoth/testing`,
     // which takes the setup rather than building it, so a test does not hand-assemble these six
@@ -510,8 +559,14 @@ function providerImplementationLines(): readonly string[] {
     // application carries what its own locales reach.
     '  personNames: personNames,',
     // The half of a route projection Thoth knows. `withRouting()` carries the half it cannot
-    // (the URL policy, localized spellings, parameter codecs) so the table is declared once.
+    // (localized spellings, parameter codecs) so the table is declared once.
     '  routeProjection: routeProjection,',
+    ...(policy === undefined ? [] : ['  urlPolicy: urlPolicy,']),
+    // The identities the configuration names, which is all the runtime needs: the compiled text is
+    // in the recovery payload already, so a failed start renders it without a catalog.
+    ...(wiring.recovery === undefined
+      ? []
+      : [`  recovery: Object.freeze(${JSON.stringify(wiring.recovery)}),`]),
     '});',
     '',
     'export function provideLocalization(',
@@ -548,6 +603,7 @@ function indexModule(
   graph: SemanticGraph,
   deferredScopeIds: readonly string[] | undefined,
   provider: 'implementation' | 'declaration',
+  wiring: SetupWiring,
 ): string {
   const deferred =
     deferredScopeIds === undefined ? undefined : new Set(deferredScopeIds);
@@ -653,8 +709,85 @@ function indexModule(
     '  ]),',
     '} as const);',
     '',
-    ...providerLines(provider),
+    ...providerLines(provider, graph, wiring),
   ].join('\n');
+}
+
+/** What the generated setup closes over beyond the catalogs, each present only where declared. */
+interface SetupWiring {
+  readonly urlPolicy?: DeclaredUrlPolicy;
+  readonly recovery?: GeneratedRecoveryBinding;
+}
+
+/** The factory each declared policy kind is built by, and the options it is called with. */
+function urlPolicyCall(
+  graph: SemanticGraph,
+  declared: DeclaredUrlPolicy,
+): { readonly factory: string; readonly options: Record<string, unknown> } {
+  const roots =
+    declared.localeNeutralRoots === undefined
+      ? {}
+      : { localeNeutralRoots: declared.localeNeutralRoots };
+  if (declared.urlPolicy === 'locale-host') {
+    // A pseudo-locale has no origin to be served at, so a host policy addresses the declared
+    // locales only, and the build narrows the policy to the locales it generated.
+    const origins = Object.fromEntries(
+      graph.locales.flatMap((locale) => {
+        const origin = declared.localeOrigins?.[locale];
+        return origin === undefined ? [] : [[locale, origin] as const];
+      }),
+    );
+    return {
+      factory: 'createHostLocalePolicy',
+      options: {
+        defaultLocale: graph.defaultLocale,
+        origins,
+        ...roots,
+        ...(declared.xDefault === undefined
+          ? {}
+          : { xDefaultUrl: declared.xDefault }),
+      },
+    };
+  }
+  const xDefaultPath =
+    declared.xDefault === undefined ? {} : { xDefaultPath: declared.xDefault };
+  if (declared.urlPolicy === 'locale-neutral') {
+    return {
+      factory: 'createLocaleNeutralPolicy',
+      options: {
+        defaultLocale: graph.defaultLocale,
+        locales: [...graph.locales],
+        ...roots,
+        ...xDefaultPath,
+      },
+    };
+  }
+  // Every locale gets its tag in lowercase unless the configuration spells it otherwise, which is
+  // the prefix `specs/07-routing-rendering-and-seo.spec.md` section 3 derives.
+  const prefixes = Object.fromEntries(
+    graph.locales.map(
+      (locale) =>
+        [
+          locale,
+          declared.localePrefixes?.[locale] ?? locale.toLowerCase(),
+        ] as const,
+    ),
+  );
+  return {
+    factory: 'createPathPrefixLocalePolicy',
+    options: {
+      defaultLocale: graph.defaultLocale,
+      locales: prefixes,
+      ...(declared.prefixAliases === undefined
+        ? {}
+        : { aliases: declared.prefixAliases }),
+      ...roots,
+      ...(declared.omitDefaultPrefix === undefined
+        ? {}
+        : { omitDefaultPrefix: declared.omitDefaultPrefix }),
+      ...xDefaultPath,
+    },
+  };
 }
 
 /**
@@ -786,6 +919,14 @@ export function generateContracts(
         graph,
         options.deferredScopeIds,
         options.provider ?? 'implementation',
+        {
+          ...(options.urlPolicy === undefined
+            ? {}
+            : { urlPolicy: options.urlPolicy }),
+          ...(options.recovery === undefined
+            ? {}
+            : { recovery: options.recovery }),
+        },
       ),
     }),
     Object.freeze({

@@ -39,33 +39,37 @@ This package runs at build time and ships in nothing, which is why it is a devel
 
 ## Quick start
 
-Declare the locales the project serves:
+Declare the locales the project serves, where a URL carries the locale, and which messages the recovery screen shows:
 
 ```text
-npx thoth init --source-locale en-US --default-locale en-US --locale en-US --locale ar-EG
+npx thoth init --source-locale en-US --default-locale en-US --locale en-US --locale ar-EG --url-policy path-prefix --recovery-message shell/recovery-message --recovery-retry shell/recovery-retry
 ```
 
 `init` writes `thoth.config.json`, maps `#i18n` in `package.json`, creates the `i18n/` directory, and adds the `thoth:generate`, `thoth:check`, `thoth:format`, `thoth:clean`, and `thoth:watch` scripts. It stops on anything that would conflict rather than overwriting it. Run it on a TTY with no arguments and it asks the same questions. `thoth init --help` lists a flag for every field the configuration accepts.
 
-The file it writes holds the locale set and nothing else:
+The file it writes holds what the flags said:
 
 ```json excerpt thoth.config.json
 {
   "schemaVersion": 1,
   "sourceLocale": "en-US",
   "defaultLocale": "en-US",
-  "locales": ["en-US", "ar-EG"]
+  "locales": ["en-US", "ar-EG"],
+  "urlPolicy": "path-prefix",
+  "recoveryMessage": "shell/recovery-message",
+  "recoveryRetry": "shell/recovery-retry"
 }
 ```
 
-Every other field, including the entries for a locale spelled differently from CLDR and for a locale that is not finished yet, is on [Configuration](https://github.com/neolorn/thoth/blob/main/docs/reference/configuration.md).
+`path-prefix` puts the locale in the first path segment, spelled as the tag in lowercase, so the addresses are `/en-us` and `/ar-eg`. Every other field, including the other URL policies, the entries for a locale spelled differently from CLDR, and a locale that is not finished yet, is on [Configuration](https://github.com/neolorn/thoth/blob/main/docs/reference/configuration.md).
 
-`init` writes no catalog. Write one at `i18n/<scope>/<locale>.yaml`, one file per locale per scope:
+`init` writes no catalog. Write one at `i18n/<scope>/<locale>.yaml`, one file per locale per scope, with the two messages the recovery keys name:
 
 ```yaml excerpt i18n/shell/en-US.yaml
 messages:
   app-title: Hello, world
   recovery-message: The page could not be shown. Please reload.
+  recovery-retry: Try again
 ```
 
 Keys are kebab-case in the file and camelCase in code, so `app-title` is `messages.appTitle`. A message may also be a record carrying `description` and `context` for whoever translates it, and both travel into the interchange document with the message.

@@ -716,6 +716,18 @@ const REGISTRY: readonly RegistryEntry[] = Object.freeze([
     binding: [named('xDefaultPath', 'xDefaultUrl')],
   },
   {
+    id: 'declaration:recovery-message',
+    resolves: { export: 'LocalizationRecoveryBinding' },
+    binding: [
+      named(
+        'recoveryMessage',
+        'recoveryRetry',
+        'retryLabelIdentity',
+        'LocalizationRecoveryBinding',
+      ),
+    ],
+  },
+  {
     id: 'declaration:locale-formatting',
     resolves: { member: ['GeneratedConfiguration', 'formatting'] },
     binding: [named('formatting', 'numberingSystem')],
@@ -779,6 +791,9 @@ const MEMBER_PLACEMENTS: Readonly<
   },
   'RoutingOptions.indexing': { row: 'declaration:route-indexing-class' },
   'RoutingOptions.caching': { row: 'declaration:route-caching-class' },
+  // The policy the configuration declares is the default; one passed here is the same capability.
+  'RoutingOptions.policy': { row: 'feature:withRouting' },
+  'RoutingOptions.projection': { row: 'declaration:localized-paths' },
   'GeneratedRouteProjectionEntry.sourcePath': {
     none: 'Where the build found the route, which its diagnostics cite; nothing reads it at run time.',
   },

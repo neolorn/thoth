@@ -1,7 +1,7 @@
 // Type-only, and therefore erased: `routing.ts` imports values from this module, so a value import
 // back would be a cycle. The route projection's shape belongs beside the routing code that reads
 // it, and `LocalizationSetup` only needs to name it.
-import type { GeneratedRouteProjection } from './routing';
+import type { GeneratedRouteProjection, LocaleUrlPolicy } from './routing';
 
 /**
  * The version stamp on the interface between generated code and the runtime.
@@ -828,6 +828,14 @@ export interface LocalizationScope {
   readonly scopeId: string;
 }
 
+/** Which compiled recovery messages the recovery region renders, by message identity. */
+export interface LocalizationRecoveryBinding {
+  /** What a visitor reads when the translations could not be loaded. */
+  readonly identity: string;
+  /** The retry control's wording. Absent means the region shows no control. */
+  readonly retryLabelIdentity?: string;
+}
+
 /**
  * Everything the build hands the runtime: the configuration, the index, and the loaders.
  *
@@ -858,12 +866,25 @@ export interface LocalizationSetup {
    * The route table Thoth derived from this owner's sources.
    *
    * Supplied by the generated `provideLocalization()`, never by the application: it is the half of
-   * a route projection Thoth already knows. `withRouting()` carries the other half (the URL
-   * policy, and the localized paths, parameter codecs, and historical outcomes an application
-   * owns) so no application declares the same route table twice, which is how two copies of it
-   * drift apart.
+   * a route projection Thoth already knows. `withRouting()` carries the other half (the localized
+   * paths, parameter codecs, and historical outcomes an application owns) so no application
+   * declares the same route table twice, which is how two copies of it drift apart.
    */
   readonly routeProjection?: GeneratedRouteProjection;
+  /**
+   * The URL policy `thoth.config.json` declares, built for the locales of this build.
+   *
+   * Supplied by the generated `provideLocalization()`, and what `withRouting()` uses when it is
+   * given no policy. Absent when the configuration declares none.
+   */
+  readonly urlPolicy?: LocaleUrlPolicy;
+  /**
+   * The messages a visitor reads when the runtime could not reach a usable state, as the
+   * configuration names them in `recoveryMessage` and `recoveryRetry`.
+   *
+   * Absent when none is named, and the recovery region then renders nothing.
+   */
+  readonly recovery?: LocalizationRecoveryBinding;
   /**
    * Defaults to the finite generated artifact count. A lower value enables
    * deterministic LRU eviction while active snapshots remain pinned.
@@ -2632,19 +2653,6 @@ export interface LocalizationContextOptions {
    * it, is handed this value as its context's `requestContext`.
    */
   readonly requestContext?: unknown;
-  /** What to say when localization could not start. Must be plain and take no inputs. */
-  readonly recoveryMessage?: MessageHandle & { readonly resultKind: 'plain' };
-  /**
-   * The retry control's wording, carried in the recovery payload beside the message.
-   *
-   * A literal string here is an English button on an Arabic page, inside a region that already
-   * carries `lang="ar"`, so a screen reader reads English words under Arabic rules. The payload is
-   * keyed by identity and locale and has always been able to hold more than one message, so this
-   * is the same lookup rather than a second mechanism.
-   */
-  readonly recoveryRetryLabel?: MessageHandle & {
-    readonly resultKind: 'plain';
-  };
   /** The formatting defaults every call inherits. The locale is not among them: it is committed. */
   readonly formattingContext?: Omit<
     FormattingContext,

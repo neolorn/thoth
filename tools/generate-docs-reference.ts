@@ -415,12 +415,10 @@ const SELECTS = Object.freeze({
     'Renders one locale on top of the committed one without changing it, for reviewing a translation in place.',
   withPersistence:
     "Stores a visitor's chosen locale in a cookie, in browser storage, or in your own profile record.",
-  withRecoveryMessage:
-    'The sentence a visitor reads when no catalog loads at all. The one feature with no default.',
   withRelativeTimePolicy:
     'Sets the thresholds that decide which unit a relative time is said in.',
   withRouting:
-    'Gives every page an address in every locale, from a URL policy and a route projection.',
+    'Gives every page an address in every locale, from the URL policy the configuration declares and the generated route table.',
   withoutDocumentLocale:
     "Leaves the document's `lang` and `dir` alone, for a widget rendered inside a host page that owns them.",
 });
@@ -453,9 +451,8 @@ assert.deepEqual(
 const featureDocument = `${[
   '# Features',
   '',
-  'Every export that can be passed to `provideLocalization`. Leaving one out selects its default;',
-  '`withRecoveryMessage` is the one with no default. The list is read out of the built',
-  'declarations.',
+  'Every export that can be passed to `provideLocalization`. Leaving one out selects its default.',
+  'The list is read out of the built declarations.',
   '',
   GENERATED_NOTE,
   '',

@@ -6,9 +6,7 @@ import {
   withFormattingContext,
   withLocaleSources,
   withPersistence,
-  withRecoveryMessage,
   withRouting,
-  type RecoveryMessageOptions,
   type RoutingOptions,
 } from '@neolorn/thoth';
 import { configuration } from '#i18n';
@@ -16,7 +14,6 @@ import { catalogLoaders } from '#i18n/catalog-loaders';
 import { catalogSet } from '#i18n/catalog-set';
 import { recoveryPayload } from '#i18n/recovery-payload';
 import { routeProjection } from '#i18n/routes';
-import { messages } from '#i18n/shell';
 
 import { appRouteProjection, routePolicy } from './localization.routes';
 import { runtimeExtensions } from './runtime-extensions';
@@ -60,34 +57,6 @@ const remembering = () =>
     write: () => undefined,
   });
 
-describe('withRecoveryMessage', () => {
-  it('refuses a message that takes inputs, and a retry label that does', () => {
-    // A recovery message is rendered when nothing can supply an input.
-    const withInputs = messages.fmt
-      .number as unknown as RecoveryMessageOptions['message'];
-
-    expect(
-      refusal(() => withRecoveryMessage({ message: withInputs })),
-    ).toMatchObject(refused);
-    expect(
-      refusal(() =>
-        withRecoveryMessage({
-          message: messages.recovery.unavailable,
-          retryLabel: withInputs,
-        }),
-      ),
-    ).toMatchObject(refused);
-    expect(
-      refusal(() =>
-        withRecoveryMessage({
-          message: messages.recovery.unavailable,
-          retryLabel: messages.control.retry,
-        }),
-      ),
-    ).toBeUndefined();
-  });
-});
-
 describe('withPersistence', () => {
   it('refuses an empty list of stores', () => {
     expect(refusal(() => withPersistence())).toMatchObject(refused);
@@ -111,13 +80,17 @@ describe('withLocaleSources', () => {
 });
 
 describe('withRouting', () => {
-  it('refuses options that carry no policy', () => {
-    // What a caller who is not type-checked can write.
-    const withoutPolicy = {
-      projection: appRouteProjection,
-    } as unknown as RoutingOptions;
+  it('refuses options that carry no policy where the setup carries none', () => {
+    const withoutPolicy: RoutingOptions = { projection: appRouteProjection };
 
-    expect(refusal(() => withRouting(withoutPolicy))).toMatchObject(refused);
+    expect(
+      refusal(() =>
+        provideLocalizationSetup(
+          { ...unrouted, routeProjection },
+          withRouting(withoutPolicy),
+        ),
+      ),
+    ).toMatchObject(refused);
   });
 
   it('is refused by a setup that carries no generated route projection', () => {

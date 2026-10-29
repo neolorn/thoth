@@ -254,12 +254,18 @@ describe('an initialization that cannot build a snapshot', () => {
     runtime({
       fail: { [catalogKey('shell', initialLocale)]: 1 },
       hold,
-      setup: payload === null ? {} : { recoveryPayload: payload },
-      options: {
-        initialLocale,
-        ...(message === null ? {} : { recoveryMessageIdentity: message }),
-        recoveryRetryLabelIdentity: HEADING.identity,
+      setup: {
+        ...(payload === null ? {} : { recoveryPayload: payload }),
+        ...(message === null
+          ? {}
+          : {
+              recovery: {
+                identity: message,
+                retryLabelIdentity: HEADING.identity,
+              },
+            }),
       },
+      options: { initialLocale },
     });
 
   it('fails with the reason, and holds no snapshot', async () => {

@@ -2941,12 +2941,12 @@ export async function initializeProject(
       // The recovery message is here because it is the one nobody expects. `TH1702` already names
       // the first catalog at the next `generate`; nothing named the recovery message until
       // `TH1310` refused a build that was otherwise finished, by which time the reader has already
-      // composed `provideLocalization` believing every feature optional. It is not optional for an
+      // composed `provideLocalization` believing nothing else was asked of them. It is not optional for an
       // owner that composes the application runtime, and the honest time to say so is before the
       // composing rather than after it.
       toolkitDiagnostic(
         'TH1706',
-        `Thoth init is done. Two things are yours to write: the first catalog at i18n/<scope>/${requested.value.sourceLocale}.yaml, for example i18n/shell/${requested.value.sourceLocale}.yaml, and a recovery message. One plain message passed to provideLocalization through withRecoveryMessage, which is what a visitor reads if the translations cannot be loaded.`,
+        `Thoth init is done. Two things are yours to write: the first catalog at i18n/<scope>/${requested.value.sourceLocale}.yaml, for example i18n/shell/${requested.value.sourceLocale}.yaml, and a recovery message: one plain message in that catalog, named in recoveryMessage in thoth.config.json as <scope>/<message>, which is what a visitor reads if the translations cannot be loaded.`,
         { severity: 'info' },
       ),
     ],

@@ -5,39 +5,35 @@ route. Your Angular routes are unchanged.
 
 ## Before you begin
 
-Run `thoth generate` at least once, so `#i18n/routes` exists.
+You need a project that `thoth init` has set up, which the [tutorial](../tutorial.md) does.
 
-## Declare a policy and a projection
+## Declare a policy
 
-Create `src/app/localization.routes.ts` with two exports:
+`urlPolicy` in `thoth.config.json` states where the locale appears in a URL:
 
-```ts excerpt src/app/localization.routes.ts
-export const routePolicy = createPathPrefixLocalePolicy({
-  defaultLocale: 'en-US',
-  locales: { 'en-US': 'en-us', 'ar-EG': 'ar-eg' },
-});
-
-export const appRouteProjection = defineRouteProjection({
-  generated: routeProjection,
-});
+```json excerpt thoth.config.json
+{
+  "urlPolicy": "path-prefix"
+}
 ```
 
-The policy states how a locale appears in a URL. The projection states which routes have localized
-addresses, and it starts from the generated one, so a route you add later is covered without a second
-list.
+`thoth init --url-policy path-prefix` writes it. `path-prefix` puts the locale in the first path
+segment, spelled as the locale tag in lowercase, so the home page is at `/en-us` and `/ar-eg`. A
+locale added to `locales` later gets its prefix the same way.
 
-Write the creator's options as literals, as above. `generate` compares the policy with
-`thoth.config.json` and with your route paths only where it reads an option from the call itself,
-and reports `TH1417` naming each option it did not read.
+`thoth generate` builds the policy from this key and the locale set, and writes it into the setup
+the generated `provideLocalization()` closes over. Run it again after changing any key on this page.
 
-## Compose them
+## Compose routing
 
-Pass both to `withRouting` among the features `provideLocalization` receives:
+Select `withRouting` among the features `provideLocalization` receives:
 
 ```ts excerpt src/app/app.config.ts
-export const localizationFeatures = [
-  withRouting({ policy: routePolicy, projection: appRouteProjection }),
+export const localizationFeatures = [withRouting()] as const;
 ```
+
+It reads the policy and the route table `generate` wrote from the setup, so it takes no arguments
+here. Without a `urlPolicy` it throws `invalid-configuration` and names the key.
 
 Replace `provideRouter` with `provideLocalizedRouter`:
 
@@ -59,31 +55,134 @@ renders in whichever locale is committed rather than the one the link named.
 
 ## Choose a policy
 
-Four creators, all exported from `@neolorn/thoth`:
+`urlPolicy` takes one of three values:
 
-| Creator                           | Puts the locale                   | Fits a deployment where                     |
-| --------------------------------- | --------------------------------- | ------------------------------------------- |
-| `createPathPrefixLocalePolicy`    | In the first path segment         | one origin serves every locale              |
-| `createDefaultLocalePrefixPolicy` | In the first path segment, always | every locale is prefixed, the default too   |
-| `createHostLocalePolicy`          | In the origin                     | one host per language, one build per origin |
-| `createLocaleNeutralPolicy`       | Only in a path spelled per locale | pages sit behind a sign-in, never indexed   |
+| `urlPolicy`      | Puts the locale                   | Fits a deployment where                     |
+| ---------------- | --------------------------------- | ------------------------------------------- |
+| `path-prefix`    | In the first path segment         | one origin serves every locale              |
+| `locale-host`    | In the origin                     | one host per language, one build per origin |
+| `locale-neutral` | Only in a path spelled per locale | pages sit behind a sign-in, never indexed   |
 
-`createPathPrefixLocalePolicy` is the default choice. It takes `omitDefaultPrefix` to serve the
-default locale without its prefix. `createDefaultLocalePrefixPolicy` takes the same options without
-that one, because it always writes the prefix.
+`path-prefix` is the default choice. Each policy costs something different, and a host policy
+changes what a locale switch is, which is
+[About how routing derives addresses](../explanation/about-addresses.md).
+
+## Change how a prefix is spelled
+
+Under `path-prefix`, three keys change the prefixes, and each is refused under the other policies:
+
+```text
+{
+  "urlPolicy": "path-prefix",
+  "localePrefixes": { "ar-EG": "ar" },
+  "prefixAliases": { "arabic": "ar-EG" },
+  "omitDefaultPrefix": true
+}
+```
+
+- `localePrefixes` gives a locale a segment other than its tag in lowercase. Name only the locales
+  that differ.
+- `prefixAliases` adds a segment that reaches a locale and is corrected to that locale's own prefix.
+- `omitDefaultPrefix` serves the default locale at the root, without a prefix.
+
+The `init` flags are `--locale-prefix ar-EG=ar`, `--prefix-alias arabic=ar-EG` and
+`--omit-default-prefix true`. A prefix or an alias is one to 63 lowercase ASCII letters, digits and
+hyphens, beginning and ending with a letter or a digit.
+
+## Give each locale an origin
+
+Under `locale-host`, `localeOrigins` names the origin of every locale, scheme included:
+
+```text
+{
+  "urlPolicy": "locale-host",
+  "localeOrigins": {
+    "en-US": "https://example.com",
+    "ar-EG": "https://example.eg"
+  }
+}
+```
+
+Every locale in `locales` needs one, each origin is written normalized, and no two locales share
+one. The `init` flag is `--locale-origin en-US=https://example.com`, repeated per locale. A build
+answers at one of these origins, which is
+[How to render on the server](render-on-the-server.md#serve-a-domain-per-locale).
+
+## Keep a section out of the locale prefix
+
+`localeNeutralRoots` lists first path segments that keep one address in every locale. Use it for a
+sign-in callback, a webhook receiver, or anything a third party has already recorded the address of:
+
+```text
+"localeNeutralRoots": ["api", "auth"]
+```
+
+Every policy takes it. The `init` flag is `--locale-neutral-root`, repeated per segment.
+
+## Point `x-default` somewhere
+
+`xDefault` is where the `x-default` alternate points, for a visitor whose language you do not serve.
+It is a path beginning with one slash, such as `"/choose-language"`, and under `locale-host` an
+origin, such as `"https://example.com"`. The `init` flag is `--x-default`. Without it, no
+`x-default` is published.
+
+`generate` reports `TH1009` for a declaration that does not fit the locales: a key naming a locale
+`locales` does not list, a locale with no origin under `locale-host`, two locales at one origin, one
+segment claimed twice across the prefixes, the aliases and the roots, or an `xDefault` of the wrong
+form.
+
+## Pass what the configuration cannot hold
+
+Localized paths, parameter codecs and retired addresses are content rather than policy. Pass them as
+`projection`:
+
+```text
+withRouting({
+  projection: {
+    localizedPaths: { 'route:second': { 'ar-EG': 'الثانية' } },
+  },
+}),
+```
+
+`localizedPaths` is keyed by route identity and then locale, and a route it does not name is spelled
+the same in every locale. `parameters` holds the codec for each parameter of a route, and
+`historical` states what became of an address that no longer exists. The generated route table is
+not part of it, because the setup carries it. Under server rendering, pass the same `projection` to
+`provideLocalizedServerRendering`.
+
+## Build a policy in code
+
+A policy built in code replaces the declared one, for an application whose policy the configuration
+cannot express. Build it with a creator from `@neolorn/thoth` and pass it as `policy`:
+
+```text
+withRouting({
+  policy: createPathPrefixLocalePolicy({
+    defaultLocale: 'en-US',
+    locales: { 'en-US': 'en-us', 'ar-EG': 'ar-eg' },
+  }),
+}),
+```
+
+| Creator                           | Builds                                                   |
+| --------------------------------- | -------------------------------------------------------- |
+| `createPathPrefixLocalePolicy`    | A `path-prefix` policy                                   |
+| `createDefaultLocalePrefixPolicy` | A `path-prefix` policy with `omitDefaultPrefix` set true |
+| `createHostLocalePolicy`          | A `locale-host` policy                                   |
+| `createLocaleNeutralPolicy`       | A `locale-neutral` policy                                |
+
+Pass the same policy to `provideLocalizedServerRendering` under server rendering. Where
+`thoth.config.json` also declares one, the two have to agree: `generate` compares them and reports
+`TH1408` for a difference in kind, in whether the default locale is prefixed, or in the segments
+either claims.
+
+Write the creator's options as literals, as above. `generate` compares the policy with
+`thoth.config.json` and with your route paths only where it reads an option from the call itself,
+and reports `TH1417` naming each option it did not read.
 
 Build the policy with a creator. A policy object written out by hand is accepted only where it holds
 what a creator writes for its kind, and is refused with `invalid-configuration` wherever it is read
 otherwise.
-
-Each policy costs something different, and a host policy changes what a locale switch is, which is
-[About how routing derives addresses](../explanation/about-addresses.md).
-
-## Keep a section out of the locale prefix
-
-Every policy takes `localeNeutralRoots`, a list of path roots that keep one address in every locale.
-Use it for a sign-in callback, a webhook receiver, or anything a third party has already recorded the
-address of.
 
 ## Name further scopes for a route
 
@@ -139,3 +238,4 @@ the server](render-on-the-server.md) covers that path.
 - [About how a locale is resolved](../explanation/about-locale-resolution.md)
 - [How to tell crawlers your pages are translations](control-indexing.md)
 - [How to render on the server](render-on-the-server.md)
+- [Configuration](../reference/configuration.md)

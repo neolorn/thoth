@@ -76,7 +76,6 @@ import {
   decimal,
   Localization,
   money,
-  withRecoveryMessage,
   type LocalizedMoneyInputProfile,
   type MoneyValue,
 } from '@neolorn/thoth';
@@ -86,7 +85,6 @@ import {
   resetLocalizationTestEnvironment,
 } from '@neolorn/thoth/testing';
 import { localizationSetup } from '#i18n';
-import { messages } from '#i18n/shell';
 
 afterEach(resetLocalizationTestEnvironment);
 
@@ -117,10 +115,7 @@ async function setup() {
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
-      provideLocalizationTesting(
-        localizationSetup,
-        withRecoveryMessage({ message: messages.recoveryMessage }),
-      ),
+      provideLocalizationTesting(localizationSetup),
     ],
   });
 

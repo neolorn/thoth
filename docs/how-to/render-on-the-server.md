@@ -18,22 +18,19 @@ server rendering added by `ng add @angular/ssr` or chosen at `ng new`. The CLI's
 import { mergeApplicationConfig, type ApplicationConfig } from '@angular/core';
 import { RenderMode } from '@angular/ssr';
 import { provideLocalizedServerRendering } from '@neolorn/thoth/ssr';
-import { configuration } from '#i18n';
+import { localizationSetup } from '#i18n';
 
 import { appConfig } from './app.config';
-import { appRouteProjection, routePolicy } from './localization.routes';
 
 const serverConfig: ApplicationConfig = {
   providers: [
     provideLocalizedServerRendering(
-      routePolicy,
-      appRouteProjection,
-      configuration,
+      localizationSetup,
       [
         { routeId: 'route:_index', renderMode: RenderMode.Server },
         { routeId: 'route:second', renderMode: RenderMode.Prerender },
       ],
-      { fallback: RenderMode.Server },
+      { canonicalRenderMode: RenderMode.Server, fallback: RenderMode.Server },
     ),
   ],
 };
@@ -42,9 +39,22 @@ export const config = mergeApplicationConfig(appConfig, serverConfig);
 ```
 
 This is `app.config.server.ts`. The call takes the place of `provideServerRendering(withRoutes(...))`,
-and its declarations take the place of `app.routes.server.ts`, which you delete. Pass the policy and
-projection `withRouting()` receives. It adds the per-request work: negotiating the locale for the
-request, preparing the scopes that request needs, and making the result available to the render.
+and its declarations take the place of `app.routes.server.ts`, which you delete. It adds the
+per-request work: negotiating the locale for the request, preparing the scopes that request needs,
+and making the result available to the render.
+
+The first argument is the setup `generate` wrote, the same one `provideLocalization()` closes over,
+so the server reads the URL policy and the route table the client reads. If you pass anything to
+`withRouting()` beyond the classification tables, pass the same values here: `projection` for
+localized paths, parameter codecs and retired addresses, and `policy` for a policy built in code.
+
+A `routeId` is the identity `generate` gave the route, which
+[About how routing derives addresses](../explanation/about-addresses.md#how-a-route-is-named)
+describes. `fallback` is the render mode of every route the declarations do not name.
+`canonicalRenderMode` is the mode for each route's unprefixed path, the one the Router matches and no
+visitor arrives at. Every route has one under a policy that prefixes every locale, and so does a
+route whose path is spelled per locale under any policy. Where one exists, the call throws without
+it.
 
 On the server, `provideLocalizedRouter` needs the origin your pages are published at, because the
 canonical link and the `hreflang` alternates are composed from it. It refuses to start without one:
@@ -52,10 +62,6 @@ canonical link and the `hreflang` alternates are composed from it. It refuses to
 ```text
 provideLocalizedRouter(routes, { origin: 'https://example.com' }),
 ```
-
-A `routeId` is the identity `generate` gave the route, which
-[About how routing derives addresses](../explanation/about-addresses.md#how-a-route-is-named)
-describes. `fallback` is the render mode of every route the declarations do not name.
 
 The localization a request renders under is scoped to that request, so two concurrent renders never
 share a committed locale. Catalogs are admitted once per process rather than once per request:
@@ -107,23 +113,24 @@ known to the build, so only what the routes declare is checked.
 
 ## Serve a domain per locale
 
-Under a policy that puts the locale in the origin, the build has to be told which origin it is. Pass
-the same value to `provideLocalizedRouter(routes, { origin })` and as `origin` in the options of
-`provideLocalizedServerRendering`. It must be one of the policy's own, and the build prerenders that
-origin's locale only, at the addresses that origin serves. The head still advertises the others.
-Serving several domains means a build per domain.
+Under `locale-host`, where `localeOrigins` in `thoth.config.json` gives each locale an origin, the
+build has to be told which origin it is. Pass the same value to
+`provideLocalizedRouter(routes, { origin })` and as `origin` in the options of
+`provideLocalizedServerRendering`. It must be one of the policy's origins, and the build prerenders
+that origin's locale only, at the addresses that origin serves. The head still advertises the
+others. Serving several domains means a build per domain.
 
 That policy also needs the server told the same list of domains. `@angular/ssr` answers a `Host`
 header it does not recognize with `400`, before your application runs. A built server recognizes the
 hosts its `allowedHosts` option lists and the ones the `security.allowedHosts` build option lists,
-and no others, loopback included. `allowedLocaleHosts(routePolicy)` derives the policy's list, so
-`allowedHosts` is the policy rather than a second copy of it. It returns an empty list for the
-policies that serve one origin, so the line is the same whichever policy you end up with. List the
-host you run the built server at beside it:
+and no others, loopback included. `allowedLocaleHosts(urlPolicy)` derives the policy's list from the
+`urlPolicy` that `#i18n` exports, so `allowedHosts` is the policy rather than a second copy of it. It
+returns an empty list for the policies that serve one origin, so the line is the same whichever
+policy you end up with. List the host you run the built server at beside it:
 
 ```text
 const angularApp = new AngularNodeAppEngine({
-  allowedHosts: ['localhost', ...allowedLocaleHosts(routePolicy)],
+  allowedHosts: ['localhost', ...allowedLocaleHosts(urlPolicy)],
 });
 ```
 

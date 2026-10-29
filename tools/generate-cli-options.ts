@@ -128,6 +128,19 @@ const SPELLINGS = Object.freeze({
   // Depth 1, like `--alias`, because a locale has one parent and not a set of options. `und` as
   // the value says the locale has no parent at all.
   parentLocales: { flag: '--parent-locale', value: '<locale>=<locale>' },
+  urlPolicy: {
+    flag: '--url-policy',
+    value: 'path-prefix|locale-host|locale-neutral',
+  },
+  localePrefixes: { flag: '--locale-prefix', value: '<locale>=<segment>' },
+  // The alias first, as in `--alias`: the entry key is what an address carries.
+  prefixAliases: { flag: '--prefix-alias', value: '<segment>=<locale>' },
+  omitDefaultPrefix: { flag: '--omit-default-prefix', value: 'true|false' },
+  localeOrigins: { flag: '--locale-origin', value: '<locale>=<origin>' },
+  localeNeutralRoots: { flag: '--locale-neutral-root', value: '<segment>' },
+  xDefault: { flag: '--x-default', value: '<path-or-origin>' },
+  recoveryMessage: { flag: '--recovery-message', value: '<scope>/<message>' },
+  recoveryRetry: { flag: '--recovery-retry', value: '<scope>/<message>' },
 });
 
 /** `--help` stays readable at a terminal width people actually have. */
@@ -279,7 +292,7 @@ const invocation = [
   'thoth init',
   ...ordered.map((descriptor) => {
     const one = `${descriptor.flag} ${descriptor.value}`;
-    if (!descriptor.repeatable) return one;
+    if (!descriptor.repeatable) return descriptor.required ? one : `[${one}]`;
     return descriptor.required ? `${one} [${one} ...]` : `[${one} ...]`;
   }),
 ].join(' ');

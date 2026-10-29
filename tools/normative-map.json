@@ -2087,6 +2087,43 @@
     },
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "3. Locale URL policies",
+      "statement": "A release MUST write the policy into the generated setup beside the route projection, with every locale of the build a path-prefix declaration gives no prefix addressed under its tag in lowercase, and its routing feature and server rendering provider MUST read the policy from there where none is passed, so adding a locale to the configuration is the whole of giving it addresses.",
+      "checks": [
+        "assurance:declared-url-policy-left-out-of-the-setup",
+        "assurance:declared-prefix-not-derived-from-the-tag",
+        "assurance-runtime:routing-policy-not-read-from-the-setup",
+        "assurance-runtime:server-rendering-policy-not-read-from-the-setup"
+      ]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "3. Locale URL policies",
+      "statement": "A release MUST refuse a declaration when the configuration is read where it names a locale the configuration does not serve, leaves a served locale without an origin under a locale-specific origin policy, gives two locales one origin, or claims one segment twice across the prefixes, the aliases and the locale-neutral roots, because no constructor builds such a policy.",
+      "checks": [
+        "assurance:declared-policy-addresses-an-unserved-locale",
+        "assurance:declared-host-policy-leaves-a-locale-without-an-origin",
+        "assurance:declared-origin-shared-between-locales",
+        "assurance:declared-prefixes-claim-nothing-in-the-configuration"
+      ]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "3. Locale URL policies",
+      "statement": "A release MUST refuse to compose routing from a setup that carries no policy where none is passed, and MUST name the configuration key that declares one.",
+      "checks": [
+        "assurance-runtime:routing-composed-without-a-policy",
+        "assurance-runtime:server-rendering-composed-without-a-policy"
+      ]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "3. Locale URL policies",
+      "statement": "Where both exist, a build MUST compare them and MUST report a difference in kind, in whether the default locale is prefixed, or in the segments either claims, because the client would then route differently from what the configuration says.",
+      "checks": ["assurance:code-policy-kind-not-held-to-the-declared-one"]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
       "section": "4. Dispatch and path safety",
       "statement": "A consumer application's host MUST reject a structurally unsafe target, meaning invalid encoding, an encoded separator, a control character, a duplicate separator, a backslash, a dot segment, or another ambiguous form, at its earliest boundary, before Angular routing, server rendering, locale resolution, catalog loading, or a domain lookup.",
       "reason": "This binds the host an application deploys in front of its own code, which the release does not ship. Where the release is that boundary, in its request handler and adapter, statement 22 carries the check."
@@ -2675,6 +2712,14 @@
       "section": "9. Rendering modes and prerendering",
       "statement": "Under a locale-neutral policy an address more than one locale spells has no locale until a request states a preference, so it is per visitor whatever its route declares, and a release MUST refuse to prerender it the same way.",
       "checks": ["assurance-runtime:locale-neutral-shared-address-prerendered"]
+    },
+    {
+      "spec": "07-routing-rendering-and-seo.spec.md",
+      "section": "9. Rendering modes and prerendering",
+      "statement": "A release MUST refuse a generated route table passed beside the setup that is not the one the setup carries, because the server table would then disagree with the client's.",
+      "checks": [
+        "assurance-runtime:server-rendering-accepts-another-route-table"
+      ]
     },
     {
       "spec": "07-routing-rendering-and-seo.spec.md",
@@ -4499,13 +4544,23 @@
     {
       "spec": "10-compiler-and-tooling.spec.md",
       "section": "10. Project configuration",
-      "statement": "A consumer application selects its recovery copy through a typed provider feature using ordinary generated handles, and a release MUST treat those handles as reachability roots and generate the minimal independent recovery payload from their existing catalogs, so no project maintains a marker, a raw-key list, a duplicate emergency catalog, or a parallel recovery registry.",
-      "checks": ["assurance:recovery-payload-not-minimal"]
+      "statement": "A release MUST treat those messages as reachability roots and generate the minimal independent recovery payload from their existing catalogs, so no project maintains a marker, a raw-key list, a duplicate emergency catalog, or a parallel recovery registry.",
+      "checks": [
+        "assurance:recovery-payload-not-minimal",
+        "assurance:declared-recovery-message-not-bound",
+        "assurance:setup-recovery-binding-ignored"
+      ]
     },
     {
       "spec": "10-compiler-and-tooling.spec.md",
       "section": "10. Project configuration",
-      "statement": "For an owner that selects an application runtime, a release MUST report a missing or invalid recovery root as a protected correctness error in both generation and a bare check, so build wiring runs one deterministic command and never infers a production mode from environment state.",
+      "statement": "A release MUST refuse, in generation and in a bare check, a key that names no source message or names one that is not plain text without inputs or slots, because the recovery region renders it when no catalog loaded and has nothing to fill an input from.",
+      "checks": ["assurance:declared-recovery-message-not-bound"]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
+      "section": "10. Project configuration",
+      "statement": "For an owner that selects an application runtime, a release MUST report a missing recovery message as a protected correctness error in both generation and a bare check, so build wiring runs one deterministic command and never infers a production mode from environment state.",
       "checks": ["assurance:missing-recovery-root-unreported"]
     },
     {

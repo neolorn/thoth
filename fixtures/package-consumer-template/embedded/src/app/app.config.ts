@@ -14,11 +14,9 @@ import {
   withLocaleSources,
   withObservability,
   withPersistence,
-  withRecoveryMessage,
   withoutDocumentLocale,
 } from '@neolorn/thoth';
 import { provideLocalization } from '#i18n';
-import { messages } from '#i18n/shell';
 
 import { accountProfile } from './account-profile';
 import { routes } from './app.routes';
@@ -50,7 +48,6 @@ export const appConfig: ApplicationConfig = {
         accountProfile,
         memoryStore(),
       ),
-      withRecoveryMessage({ message: messages.recovery.unavailable }),
       withObservability(eventLog),
     ),
   ],

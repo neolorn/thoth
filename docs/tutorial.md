@@ -45,15 +45,21 @@ build time and is a development dependency.
 Declare the locales the application serves:
 
 ```sh run
-npx thoth init --source-locale en-US --default-locale en-US --locale en-US --locale ar-EG
+npx thoth init --source-locale en-US --default-locale en-US --locale en-US --locale ar-EG --url-policy path-prefix --recovery-message shell/recovery-message --recovery-retry shell/recovery-retry
 ```
 
 `init` writes `thoth.config.json`, maps `#i18n` in `package.json`, creates the `i18n/` directory,
 and adds the `thoth:generate`, `thoth:check`, `thoth:format`, `thoth:clean`, and
-`thoth:watch` scripts. `thoth.config.json` holds the locale set and nothing else.
+`thoth:watch` scripts. `thoth.config.json` holds the locale set, where a URL carries the locale, and
+which two messages the recovery screen shows.
 
-`init` writes no catalog and no recovery message. Both are content, and content belongs to the
-project.
+`path-prefix` puts the locale in the first path segment, spelled as the locale tag in lowercase, so
+the home page is at `/en-us` and `/ar-eg`. Adding a locale later is one more `locales` entry, and its
+addresses follow. [How to localize your routes](how-to/localize-routes.md) covers the other policies
+and the spellings you can change.
+
+`init` writes no catalog. The recovery keys name messages you write in the next step, because their
+text is content, and content belongs to the project.
 
 ## Write the messages
 
@@ -100,8 +106,8 @@ messages:
 ```
 
 `recovery-message` is the sentence a visitor reads when no catalog can be loaded, and
-`recovery-retry` names the button beside it. Thoth has no default for either, so every application
-writes them, and both travel in the recovery payload so they arrive in the reader's language even
+`recovery-retry` names the button beside it. `thoth.config.json` names both, Thoth has no default
+for either, and both travel in the recovery payload so they arrive in the reader's language even
 though no catalog could be loaded.
 
 `learn-more` and `help-link` carry [MessageFormat 2](https://www.unicode.org/reports/tr35/tr35-78/tr35-messageFormat.html)
@@ -116,7 +122,8 @@ npx thoth generate
 
 `generate` compiles both catalogs and writes the modules the application imports:
 
-- `#i18n` exports `provideLocalization`, bound to this project's locale set.
+- `#i18n` exports `provideLocalization`, bound to this project's locale set, its URL policy, and its
+  recovery messages.
 - `#i18n/shell` exports `messages`, one typed handle for each key in the `shell` scope.
 
 Keys are kebab-case in the file and camelCase in code, so `app-title` is `messages.appTitle`.
@@ -124,35 +131,6 @@ Keys are kebab-case in the file and camelCase in code, so `app-title` is `messag
 `generate` also reports that every message in the scope is unreached. Nothing has used one yet, so
 that is what it should say here, and it goes away at the second compile further down, once the
 components below read them.
-
-## Declare the locale policy
-
-Create `src/app/localization.routes.ts`:
-
-```ts src/app/localization.routes.ts
-import {
-  createPathPrefixLocalePolicy,
-  defineRouteProjection,
-} from '@neolorn/thoth';
-import { routeProjection } from '#i18n/routes';
-
-export const routePolicy = createPathPrefixLocalePolicy({
-  defaultLocale: 'en-US',
-  locales: { 'en-US': 'en-us', 'ar-EG': 'ar-eg' },
-});
-
-export const appRouteProjection = defineRouteProjection({
-  generated: routeProjection,
-});
-```
-
-The policy states where the locale appears in a URL. This one puts it in the first path segment, so
-the home page is at `/en-us` and `/ar-eg`. [How to localize your routes](how-to/localize-routes.md)
-covers the other three.
-
-The projection states which routes have localized addresses. It starts from `routeProjection`, a
-third generated module written from the application's route table. That table does not exist yet, so
-the first `generate` wrote this module with no routes in it, and the second compile fills it in.
 
 ## Render a message with structure
 
@@ -256,24 +234,11 @@ import {
   type ApplicationConfig,
 } from '@angular/core';
 import { provideLocalization } from '#i18n';
-import { messages } from '#i18n/shell';
-import {
-  cookieStore,
-  withPersistence,
-  withRecoveryMessage,
-  withRouting,
-} from '@neolorn/thoth';
+import { cookieStore, withPersistence, withRouting } from '@neolorn/thoth';
 import { provideLocalizedRouter } from '@neolorn/thoth/router';
 import { routes } from './app.routes';
-import { appRouteProjection, routePolicy } from './localization.routes';
 
-export const localizationFeatures = [
-  withRouting({ policy: routePolicy, projection: appRouteProjection }),
-  withRecoveryMessage({
-    message: messages.recoveryMessage,
-    retryLabel: messages.recoveryRetry,
-  }),
-] as const;
+export const localizationFeatures = [withRouting()] as const;
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -288,7 +253,8 @@ export const appConfig: ApplicationConfig = {
 ```
 
 `provideLocalizedRouter` replaces `provideRouter`, and the CLI's
-`provideBrowserGlobalErrorListeners()` stays. Each `with*` selects a feature, and leaving one out
+`provideBrowserGlobalErrorListeners()` stays. `withRouting()` reads the URL policy and the route
+table `generate` wrote, so it takes no arguments here. Each `with*` selects a feature, and leaving one out
 selects its default; [Features](reference/features.md) lists them. `localizationFeatures` is
 exported so the test below composes the same features rather than a copy of them.
 `withPersistence(cookieStore())` stores the visitor's choice, so the next visit opens in the
@@ -340,7 +306,8 @@ npx thoth generate
 ```
 
 `generate` writes `#i18n/routes` from what this pass found, and checks the composed providers
-against it. `thoth watch` runs both steps while you work.
+against it. The first `generate` ran before the route table existed, so it wrote that module with no
+routes in it. `thoth watch` runs both steps while you work.
 
 ## Run the application
 

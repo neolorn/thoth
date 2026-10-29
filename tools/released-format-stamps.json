@@ -1,26 +1,3 @@
 {
-  "released": [
-    "configuration schemaVersion 1",
-    "thoth-authored-change-plan/1",
-    "thoth-catalog-set/1",
-    "thoth-cli-result/1",
-    "thoth-cli-watch-event/1",
-    "thoth-compiled-catalog/1",
-    "thoth-compiled-ir/1",
-    "thoth-compiler-cache/1",
-    "thoth-compiler-state/1",
-    "thoth-completion-manifest/1",
-    "thoth-extension-descriptor/1",
-    "thoth-extension-registry/1",
-    "thoth-generated/1",
-    "thoth-output-transaction/1",
-    "thoth-resource-summary/1",
-    "thoth-route-projection/1",
-    "thoth-runtime-observability-event/1",
-    "thoth-semantic-catalog-diff/1",
-    "thoth-toolkit-observability-event/1",
-    "thoth-translation-state/1",
-    "thoth-work-owner/1",
-    "thoth-xliff-2.2/1"
-  ]
+  "released": []
 }

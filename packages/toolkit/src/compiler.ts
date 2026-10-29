@@ -41,15 +41,21 @@ import {
   type OwnerIdentity,
   type CompiledLocalArtifacts,
 } from './compiled-artifacts.js';
-import { generateContracts } from './generated-contracts.js';
+import {
+  generateContracts,
+  type DeclaredUrlPolicy,
+  type GeneratedRecoveryBinding,
+} from './generated-contracts.js';
 import {
   analyzeApplication,
   type AnalysisSource,
   type ApplicationAnalysis,
+  type ClaimedRouteSegment,
 } from './static-analysis.js';
 import {
   analyzeCatalogSet,
   type SemanticGraph,
+  type SemanticMessage,
   type SemanticScope,
 } from './semantic-model.js';
 import type { ExtensionRegistry } from './extensions.js';
@@ -297,10 +303,11 @@ function routeScopes(
 function unusedSourceMessages(
   graph: SemanticGraph,
   analysis: ApplicationAnalysis,
+  recoveryMessageIdentities: readonly string[],
 ): readonly ToolkitDiagnostic[] {
   const reached = new Set([
     ...analysis.messageUsages.map(({ identity }) => identity),
-    ...analysis.recoveryMessageIdentities,
+    ...recoveryMessageIdentities,
   ]);
   const diagnostics: ToolkitDiagnostic[] = [];
   for (const scope of graph.scopes) {
@@ -588,6 +595,127 @@ function virtualModules(
  * Nothing is written from here. The result carries one output plan and publication is a separate
  * call, so a compilation that stops halfway leaves no half-written generated root behind it.
  */
+/** The URL policy the configuration declares, in the form generation takes, or nothing. */
+function configuredUrlPolicy(
+  configuration: ProjectConfiguration,
+): DeclaredUrlPolicy | undefined {
+  if (configuration.urlPolicy === undefined) return undefined;
+  const {
+    urlPolicy,
+    localePrefixes,
+    prefixAliases,
+    omitDefaultPrefix,
+    localeOrigins,
+    localeNeutralRoots,
+    xDefault,
+  } = configuration;
+  return {
+    urlPolicy,
+    ...(localePrefixes === undefined ? {} : { localePrefixes }),
+    ...(prefixAliases === undefined ? {} : { prefixAliases }),
+    ...(omitDefaultPrefix === undefined ? {} : { omitDefaultPrefix }),
+    ...(localeOrigins === undefined ? {} : { localeOrigins }),
+    ...(localeNeutralRoots === undefined ? {} : { localeNeutralRoots }),
+    ...(xDefault === undefined ? {} : { xDefault }),
+  };
+}
+
+/**
+ * The segments a declared path policy claims, in the form the source analysis reports them.
+ *
+ * So the checks that a route or a `routerLink` does not begin with a locale's segment hold for a
+ * policy declared in the configuration exactly as for one built in code.
+ */
+function configuredClaims(
+  declared: DeclaredUrlPolicy,
+  locales: readonly string[],
+): readonly ClaimedRouteSegment[] {
+  const roots = (declared.localeNeutralRoots ?? []).map(
+    (segment): ClaimedRouteSegment => ({
+      segment,
+      kind: 'locale-neutral root',
+    }),
+  );
+  if (declared.urlPolicy !== 'path-prefix') return roots;
+  return [
+    ...locales.map((locale): ClaimedRouteSegment => ({
+      segment: declared.localePrefixes?.[locale] ?? locale.toLowerCase(),
+      kind: 'locale prefix',
+    })),
+    ...Object.keys(declared.prefixAliases ?? {}).map(
+      (segment): ClaimedRouteSegment => ({ segment, kind: 'locale alias' }),
+    ),
+    ...roots,
+  ];
+}
+
+/**
+ * The recovery copy the configuration names, resolved against the source catalogs.
+ *
+ * Each key is `<scope>/<message>`. One that names no message, or a message with inputs, slots or a
+ * structured result, is refused here, because the recovery region renders it when no catalog
+ * could be loaded and has nothing to fill an input with.
+ */
+function configuredRecovery(
+  configuration: ProjectConfiguration,
+  graph: SemanticGraph,
+  diagnostics: ToolkitDiagnostic[],
+): GeneratedRecoveryBinding | undefined {
+  const resolve = (
+    key: string,
+    field: 'recoveryMessage' | 'recoveryRetry',
+  ): string | undefined => {
+    const slash = key.indexOf('/');
+    const scopeId = key.slice(0, slash);
+    const messageId = key.slice(slash + 1);
+    const message: SemanticMessage | undefined = graph.scopes
+      .find((scope) => scope.scopeId === scopeId)
+      ?.messages.find((candidate) => candidate.messageId === messageId);
+    if (message === undefined) {
+      diagnostics.push(
+        toolkitDiagnostic(
+          'TH1501',
+          `${field} names ${JSON.stringify(key)}, and the source catalogs have no message ${JSON.stringify(messageId)} in scope ${JSON.stringify(scopeId)}.`,
+          { path: [field] },
+        ),
+      );
+      return undefined;
+    }
+    if (
+      message.resultKind !== 'plain' ||
+      message.inputs.length > 0 ||
+      message.slots.length > 0
+    ) {
+      diagnostics.push(
+        toolkitDiagnostic(
+          'TH1501',
+          `${field} names ${JSON.stringify(key)}, which is not a plain message without inputs or slots. The recovery region renders it when no catalog could be loaded, with nothing to fill an input from.`,
+          { path: [field] },
+        ),
+      );
+      return undefined;
+    }
+    return message.identity;
+  };
+  if (configuration.recoveryMessage === undefined) return undefined;
+  const identity = resolve(configuration.recoveryMessage, 'recoveryMessage');
+  const retryLabelIdentity =
+    configuration.recoveryRetry === undefined
+      ? undefined
+      : resolve(configuration.recoveryRetry, 'recoveryRetry');
+  if (
+    identity === undefined ||
+    (configuration.recoveryRetry !== undefined &&
+      retryLabelIdentity === undefined)
+  ) {
+    return undefined;
+  }
+  return Object.freeze({
+    identity,
+    ...(retryLabelIdentity === undefined ? {} : { retryLabelIdentity }),
+  });
+}
+
 function compileProjectCore(
   request: CompileProjectRequest,
 ): ToolkitResult<CompileProjectResult> {
@@ -605,6 +733,19 @@ function compileProjectCore(
   if (!graph.ok) return graph;
   diagnostics.push(...graph.diagnostics);
 
+  const urlPolicy = configuredUrlPolicy(request.configuration);
+  const recoveryRefusals: ToolkitDiagnostic[] = [];
+  const recovery = configuredRecovery(
+    request.configuration,
+    graph.value,
+    recoveryRefusals,
+  );
+  // Refused before anything is analysed or compiled: generation would otherwise write a setup
+  // that names no recovery message for an application that declared one.
+  if (recoveryRefusals.length > 0) {
+    return toolkitFailure([...diagnostics, ...recoveryRefusals]);
+  }
+
   // The provider is in the provisional overlay too, as a declaration. It is the only thing an
   // application imports from `#i18n` to compose the runtime, so an overlay without it makes every
   // real consumer look like one that composes nothing, and reports the import it does have as
@@ -615,6 +756,7 @@ function compileProjectCore(
   // authority for what a clean generation produces.
   const provisionalContracts = generateContracts(graph.value, {
     provider: 'declaration',
+    ...(urlPolicy === undefined ? {} : { urlPolicy }),
     ...(request.recoveryMessageIdentities === undefined
       ? {}
       : { recoveryMessageIdentities: request.recoveryMessageIdentities }),
@@ -652,7 +794,14 @@ function compileProjectCore(
   const recoveryMessageIdentities = Object.freeze(
     [
       ...(request.recoveryMessageIdentities ?? []),
-      ...(analysis?.recoveryMessageIdentities ?? []),
+      ...(recovery === undefined
+        ? []
+        : [
+            recovery.identity,
+            ...(recovery.retryLabelIdentity === undefined
+              ? []
+              : [recovery.retryLabelIdentity]),
+          ]),
     ]
       .filter((identity, index, values) => values.indexOf(identity) === index)
       .sort(compareCodeUnit),
@@ -660,7 +809,7 @@ function compileProjectCore(
 
   if (
     analysis?.selectsApplicationRuntime === true &&
-    recoveryMessageIdentities.length === 0
+    request.configuration.recoveryMessage === undefined
   ) {
     // `specs/10-compiler-and-tooling.spec.md` section 10: for an owner that selects an
     // application runtime, a missing recovery root is a protected correctness error in both
@@ -670,7 +819,7 @@ function compileProjectCore(
     diagnostics.push(
       toolkitDiagnostic(
         'TH1310',
-        'This owner composes the Thoth application runtime but selects no recovery message. Pass one to provideLocalization through withRecoveryMessage so a failed bootstrap can still say something.',
+        'This owner composes the Thoth application runtime and its configuration names no recovery message. Set recoveryMessage in thoth.config.json to a plain source message, written <scope>/<message>, so a failed start can still say something.',
       ),
     );
   }
@@ -763,6 +912,67 @@ function compileProjectCore(
     }
   }
 
+  // A policy built in code beside one declared in the configuration.
+  //
+  // The generated setup carries the configuration's, and a policy passed to `withRouting()` takes
+  // its place at run time, so the two must say the same thing or the addresses the build checked
+  // are not the ones the application serves. Compared on what the build read of the code; options
+  // it could not read are named by TH1417 below.
+  if (policyLocales !== undefined && urlPolicy !== undefined) {
+    const span = { path: ['routes', policyLocales.sourcePath] };
+    const departures: string[] = [];
+    if (policyLocales.kind !== urlPolicy.urlPolicy) {
+      departures.push(
+        `it is a ${policyLocales.kind} policy and the configuration declares ${urlPolicy.urlPolicy}`,
+      );
+    } else {
+      if (
+        urlPolicy.urlPolicy === 'path-prefix' &&
+        policyLocales.omitDefaultPrefix !==
+          (urlPolicy.omitDefaultPrefix ?? false)
+      ) {
+        departures.push(
+          policyLocales.omitDefaultPrefix
+            ? 'it serves the default locale without a prefix and the configuration does not'
+            : 'the configuration serves the default locale without a prefix and it does not',
+        );
+      }
+      if (policyLocales.unreadOptions.length === 0) {
+        const key = ({ segment, kind }: ClaimedRouteSegment): string =>
+          `${kind} ${JSON.stringify(segment)}`;
+        const inCode = new Set(policyLocales.claimedSegments.map(key));
+        const configured = new Set(
+          configuredClaims(urlPolicy, graph.value.locales).map(key),
+        );
+        const onlyInCode = [...inCode]
+          .filter((claim) => !configured.has(claim))
+          .sort(compareCodeUnit);
+        const onlyConfigured = [...configured]
+          .filter((claim) => !inCode.has(claim))
+          .sort(compareCodeUnit);
+        if (onlyInCode.length > 0) {
+          departures.push(
+            `it claims ${onlyInCode.join(', ')}, which the configuration does not`,
+          );
+        }
+        if (onlyConfigured.length > 0) {
+          departures.push(
+            `the configuration claims ${onlyConfigured.join(', ')}, which it does not`,
+          );
+        }
+      }
+    }
+    if (departures.length > 0) {
+      diagnostics.push(
+        toolkitDiagnostic(
+          'TH1408',
+          `The locale URL policy built in ${JSON.stringify(policyLocales.sourcePath)} differs from the one thoth.config.json declares: ${departures.join('; ')}. The policy in code replaces the declared one at run time, so the build checked addresses the application does not serve. Remove the policy from the code to use the declared one, or make the two agree.`,
+          span,
+        ),
+      );
+    }
+  }
+
   // A policy the comparison above and the one below could not read whole.
   //
   // Both stay silent about an option they did not read, because reporting what a constant or a
@@ -806,15 +1016,23 @@ function compileProjectCore(
   // A leading segment that is a route parameter is not checked here and cannot be: whether a slug
   // serializes to something the policy owns is decided per value, at runtime, which is where the
   // matching refusal lives.
+  //
+  // The policy the configuration declares is checked the same way, and the one in code, where the
+  // application builds one, is held to it.
+  const policyDeclaration =
+    analysis?.routePolicy ??
+    (urlPolicy === undefined
+      ? undefined
+      : {
+          claimedSegments: configuredClaims(urlPolicy, graph.value.locales),
+          sourcePath: 'thoth.config.json',
+        });
   if (
-    analysis?.routePolicy !== undefined &&
-    analysis.routePolicy.claimedSegments.length > 0
+    analysis !== undefined &&
+    policyDeclaration !== undefined &&
+    policyDeclaration.claimedSegments.length > 0
   ) {
-    const {
-      routePolicy: policyDeclaration,
-      routes,
-      templateAddresses,
-    } = analysis;
+    const { routes, templateAddresses } = analysis;
     const exact = new Map(
       policyDeclaration.claimedSegments
         .filter((claim) => claim.kind === 'locale-neutral root')
@@ -944,13 +1162,17 @@ function compileProjectCore(
   }
 
   if (analysis !== undefined) {
-    diagnostics.push(...unusedSourceMessages(graph.value, analysis));
+    diagnostics.push(
+      ...unusedSourceMessages(graph.value, analysis, recoveryMessageIdentities),
+    );
   }
 
   const deferredScopes =
     analysis === undefined ? [] : deferredScopeIds(graph.value, analysis);
 
   const contracts = generateContracts(graph.value, {
+    ...(urlPolicy === undefined ? {} : { urlPolicy }),
+    ...(recovery === undefined ? {} : { recovery }),
     // Passed whenever the pass ran, empty included. An analysis that found nothing behind a lazy
     // boundary knows that every scope is needed at startup, and a generation with no analysis
     // knows nothing about either; omitting the option for both would collapse the two answers the

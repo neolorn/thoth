@@ -105,7 +105,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { MOCK_PLATFORM_LOCATION_CONFIG } from '@angular/common/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Localization, withRecoveryMessage, withRouting } from '@neolorn/thoth';
+import { Localization, withRouting } from '@neolorn/thoth';
 import { provideLocalizedRouter } from '@neolorn/thoth/router';
 import {
   LocalizationTestingController,
@@ -113,10 +113,9 @@ import {
   resetLocalizationTestEnvironment,
 } from '@neolorn/thoth/testing';
 import { localizationSetup } from '#i18n';
-import { messages, providerId, scopeId } from '#i18n/shell';
+import { providerId, scopeId } from '#i18n/shell';
 
 import { routes } from './app.routes';
-import { appRouteProjection, routePolicy } from './localization.routes';
 
 const shell = { providerId, scopeId } as const;
 
@@ -134,11 +133,7 @@ async function setup() {
       },
       provideZonelessChangeDetection(),
       provideLocalizedRouter(routes),
-      provideLocalizationTesting(
-        localizationSetup,
-        withRouting({ policy: routePolicy, projection: appRouteProjection }),
-        withRecoveryMessage({ message: messages.recoveryMessage }),
-      ),
+      provideLocalizationTesting(localizationSetup, withRouting()),
     ],
   });
 

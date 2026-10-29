@@ -83,7 +83,7 @@ import { FeatureLabReadiness } from './readiness';
       <!--
         Everything localized waits on a snapshot. With no catalog loaded a message has nothing to
         be read from and throws, and a template that reads one takes the recovery above down with
-        it. The recovery reads the payload withRecoveryMessage selects, which is loaded apart from
+        it. The recovery reads the payload the configuration selects, which is loaded apart from
         the catalogs, so it is the one thing that can render then. The lifecycle is not the test: a
         retry leaves failed as it starts, before anything has loaded.
       -->

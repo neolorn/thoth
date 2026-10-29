@@ -2,5 +2,6 @@
   "schemaVersion": 1,
   "sourceLocale": "en-US",
   "defaultLocale": "en-US",
-  "locales": ["en-US", "ar", "ar-EG", "th"]
+  "locales": ["en-US", "ar", "ar-EG", "th"],
+  "recoveryMessage": "shell/recovery.unavailable"
 }

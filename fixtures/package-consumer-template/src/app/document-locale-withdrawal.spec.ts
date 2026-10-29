@@ -14,7 +14,6 @@ import { TestBed } from '@angular/core/testing';
 import {
   Localization,
   provideLocalizationSetup,
-  withRecoveryMessage,
   withRouting,
   withoutDocumentLocale,
   withFormattingContext,
@@ -133,9 +132,9 @@ function setupWithAFailingFirstCommit() {
           catalogSet,
           catalogLoaders,
           recoveryPayload,
+          recovery: { identity: messages.recovery.unavailable.identity },
           extensions: runtimeExtensions,
         },
-        withRecoveryMessage({ message: messages.recovery.unavailable }),
         withFormattingContext({ timeZone: 'UTC' }),
       ),
     ],

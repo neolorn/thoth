@@ -86,8 +86,9 @@ export class LocalizationRecovery {
   /**
    * The retry control's wording, for a caller with no handle to give.
    *
-   * An override rather than the source. Pass a handle to `withRecoveryMessage` and the wording
-   * arrives from the payload in the locale this region is already marked as.
+   * An override rather than the source. Name the retry message in `recoveryRetry` in the
+   * configuration and the wording arrives from the payload in the locale this region is already
+   * marked as.
    */
   readonly retryLabel = input<string>();
   /**

@@ -59,6 +59,24 @@ Init options:
       Which locale a locale inherits from, where CLDR is wrong for this project. `und` means none.
   --alias <alias>=<locale>   (repeatable)
       Extra identifiers that resolve to a supported locale.
+  --url-policy path-prefix|locale-host|locale-neutral
+      Where the locale appears in an address: path-prefix, locale-host or locale-neutral.
+  --locale-prefix <locale>=<segment>   (repeatable)
+      A locale's path prefix, where it is not the locale's tag in lowercase. path-prefix only.
+  --prefix-alias <segment>=<locale>   (repeatable)
+      A further path prefix that reaches a locale and is corrected to its own. path-prefix only.
+  --omit-default-prefix true|false
+      Serve the default locale without a prefix, at the root. path-prefix only.
+  --locale-origin <locale>=<origin>   (repeatable)
+      The origin each locale is served at, scheme included. Required by locale-host, and only there.
+  --locale-neutral-root <segment>   (repeatable)
+      A first path segment that no locale owns, such as an API root. Repeat for each one.
+  --x-default <path-or-origin>
+      The x-default alternate: a path, or under locale-host an origin. Absent means none.
+  --recovery-message <scope>/<message>
+      The message a visitor reads when no catalog can be loaded, as <scope>/<message>.
+  --recovery-retry <scope>/<message>
+      The wording of the retry control beside it, as <scope>/<message>. Absent means no control.
 
   A repeatable flag may appear more than once. Where a value contains "=", the left side is a
   path beneath the field: "eg=ar-EG" sets one entry, "en-Latn-XA.markers=true" sets one

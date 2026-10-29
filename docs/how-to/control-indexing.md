@@ -13,8 +13,8 @@ Compose `withRouting`, which is [How to localize your routes](localize-routes.md
 Every localized page carries a canonical link for itself and an `hreflang` link for each locale it
 exists in. You write nothing per page.
 
-An `x-default` is published alongside them when the projection carries one, which tells a crawler
-where a visitor whose language you do not serve should land.
+An `x-default` is published alongside them when `thoth.config.json` declares `xDefault`, which tells
+a crawler where a visitor whose language you do not serve should land.
 
 ## Localize the title
 
@@ -52,8 +52,6 @@ Then name the field and state what each of its values means:
 
 ```text
 withRouting({
-  policy: routePolicy,
-  projection: appRouteProjection,
   indexing: {
     field: DEFAULT_ROUTE_INDEXING_FIELD,
     values: { internal: 'non-indexable', account: 'private' },

@@ -1,6 +1,6 @@
 import { RenderMode } from '@angular/ssr';
 import { provideLocalizedServerRendering } from '@neolorn/thoth/ssr';
-import { configuration } from '#i18n';
+import { localizationSetup } from '#i18n';
 
 import {
   routePolicy,
@@ -12,18 +12,19 @@ import { publishedRoutes } from './published-routes';
 /**
  * The render table, derived from the published routes.
  *
- * The generated `configuration` is the third argument and it is what decides which locales get
- * addresses. The policy names three; a production build generates two, so two are emitted. The
+ * The generated setup is the first argument, and its configuration is what decides which locales
+ * get addresses. The policy names three; a production build generates two, so two are emitted. The
  * same table under `thoth generate --pseudo` emits six. Nothing here changes between the two
  * builds, which is the point: a development locale must not cost a source edit in either
  * direction.
  */
 export const serverRendering = provideLocalizedServerRendering(
-  routePolicy,
-  appRouteProjection,
-  configuration,
+  localizationSetup,
   publishedRoutes,
   {
+    // This application builds its policy in code and passes the same one to withRouting().
+    policy: routePolicy,
+    projection: appRouteProjection,
     // The addresses the two-layer table produces and nobody visits: `/second`, `/articles/:slug`,
     // `/items/:id`. Rendered on demand, so the build writes a file only where a visitor can
     // actually arrive. Thoth refuses to emit the table without this under a prefixing policy:

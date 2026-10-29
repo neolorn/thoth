@@ -14,7 +14,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The 0.x line is the alpha stage,
 then the betas, then the release candidates and the milestones that followed them.
 
-## [1.0.0-rc.1] - 2026-10-26
+## [1.0.0-rc.1]
 
 The first release candidate of Thoth, a localization framework for Angular applications.
 
@@ -45,7 +45,8 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
   as a library and the JSON Schemas of its file formats as exports.
 - `thoth init` writes `thoth.config.json` from the source locale, the default locale and the
   locales the project supports. `aliases`, `parentLocales`, `formatting`, `inProgress`,
-  `personNameLocales` and `pseudoLocales` are the optional fields.
+  `personNameLocales`, `pseudoLocales`, the URL policy fields and the recovery messages are the
+  optional fields.
 - `thoth generate` compiles the catalogs into typed modules under `#i18n`, with a
   `provideLocalization` that has the project's setup already bound.
 - `createLocalizationContext` builds a localization context where there is no application to
@@ -54,8 +55,8 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
 - A failure is a `LocalizationError` whose diagnostic carries a code, an outcome and a reason.
 - `provideLocalizationSetup` and the features it composes: `withRouting`, `withPersistence`,
   `withLocaleSources`, `withFormattingContext`, `withRelativeTimePolicy`, `withLocalizationClock`,
-  `withLocaleAnnouncement`, `withOverlayLocale`, `withExtensions`, `withObservability`,
-  `withRecoveryMessage` and `withoutDocumentLocale`.
+  `withLocaleAnnouncement`, `withOverlayLocale`, `withExtensions`, `withObservability` and
+  `withoutDocumentLocale`.
 - Catalogs are YAML, one file per scope and locale at `i18n/<scope>/<locale>.yaml`, with message
   bodies in MessageFormat 2.
 - The MessageFormat functions `:string`, `:number`, `:integer`, `:offset`, `:currency`, `:percent`,
@@ -81,8 +82,9 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
 - A missing translation falls back through the locales the target inherits from in the pinned CLDR
   release, then to the source locale, so `zh-TW` falls back through `zh-Hant` and never through
   `zh`. `parentLocales` replaces one step of that chain.
-- `withRecoveryMessage` and the `localization-recovery` component, for the case where no catalog
-  loads.
+- The `localization-recovery` component, for the case where no catalog loads. `recoveryMessage` and
+  `recoveryRetry` in `thoth.config.json` name the messages it shows, and `thoth generate` binds
+  them.
 - A translation whose source wording changed since it was written is reported as stale, and one
   that omits a plural category its locale needs is reported with `TH1308`.
 - Locale identifiers are canonical BCP 47 tags, checked against the pinned CLDR release and
@@ -115,7 +117,11 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
   place.
 - `provideLocalizedRouter` and `withRouting` give every route an address in every locale, from a
   URL policy and the generated route projection.
-- URL policies that carry the locale in a path prefix, in the origin, or outside the address:
+- `urlPolicy` in `thoth.config.json` declares where an address carries the locale, with
+  `localePrefixes`, `prefixAliases`, `omitDefaultPrefix`, `localeOrigins`, `localeNeutralRoots` and
+  `xDefault` for what the locale list does not give. `thoth generate` writes the policy into the
+  setup, so `withRouting()` and `provideLocalizedServerRendering` take it from there.
+- URL policies built in code, for what a declaration cannot express:
   `createPathPrefixLocalePolicy`, `createDefaultLocalePrefixPolicy`, `createHostLocalePolicy` and
   `createLocaleNeutralPolicy`. Every policy takes `localeNeutralRoots`, the path roots that keep
   one address in every locale.

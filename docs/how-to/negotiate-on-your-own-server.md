@@ -11,9 +11,10 @@ handling the request is a plain Node server, a worker, or an edge function.
 
 ## Call the handler
 
-`createLocaleRequestHandler` takes the same policy and projection the application composed, the
-locale set from your generated configuration, and the freshness numbers this deployment chose. It
-returns a function from a `Request` to a `Response`.
+`createLocaleRequestHandler` takes the URL policy and the route table the generated setup carries,
+the locale set from your generated configuration, and the freshness numbers this deployment chose.
+It returns a function from a `Request` to a `Response`. If you pass localized paths, parameter
+codecs or retired addresses to `withRouting()`, add them to `projection` beside `generated`.
 
 ```ts src/app/negotiation.spec.ts
 import { describe, expect, it } from 'vitest';
@@ -21,11 +22,9 @@ import { describe, expect, it } from 'vitest';
 import { createLocaleRequestHandler } from '@neolorn/thoth/http';
 import { localizationSetup } from '#i18n';
 
-import { appRouteProjection, routePolicy } from './localization.routes';
-
 const handler = createLocaleRequestHandler({
-  policy: routePolicy,
-  projection: appRouteProjection,
+  policy: localizationSetup.urlPolicy,
+  projection: { generated: localizationSetup.routeProjection },
   // The build's own locale set, so a policy naming a locale this build did not generate
   // publishes no address for it.
   configuration: localizationSetup.configuration,
@@ -121,11 +120,9 @@ import {
 } from '@neolorn/thoth/http';
 import { localizationSetup } from '#i18n';
 
-import { appRouteProjection, routePolicy } from './localization.routes';
-
 const handler = createLocaleRequestHandler({
-  policy: routePolicy,
-  projection: appRouteProjection,
+  policy: localizationSetup.urlPolicy,
+  projection: { generated: localizationSetup.routeProjection },
   configuration: localizationSetup.configuration,
   cache: { successMaxAge: 300, permanentRedirectMaxAge: 86_400 },
   cookie: false,
@@ -190,14 +187,12 @@ import {
 import { pageAbsent, pageGone } from '@neolorn/thoth/core';
 import { localizationSetup } from '#i18n';
 
-import { appRouteProjection, routePolicy } from './localization.routes';
-
 type RecordState = 'published' | 'missing' | 'retired';
 
 const handlerFor = (state: RecordState) =>
   createLocaleRequestHandler({
-    policy: routePolicy,
-    projection: appRouteProjection,
+    policy: localizationSetup.urlPolicy,
+    projection: { generated: localizationSetup.routeProjection },
     configuration: localizationSetup.configuration,
     cache: { successMaxAge: 300, permanentRedirectMaxAge: 86_400 },
     cookie: false,

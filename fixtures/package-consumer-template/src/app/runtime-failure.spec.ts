@@ -38,10 +38,10 @@ describe('Thoth runtime failure and recovery contracts', () => {
           },
         },
         recoveryPayload,
+        recovery: { identity: messages.recovery.unavailable.identity },
         extensions: runtimeExtensions,
       },
       bootstrapScopes: [scope],
-      recoveryMessage: messages.recovery.unavailable,
       formattingContext: { timeZone: 'UTC' },
     });
     await expect(localization.initialize()).rejects.toBeDefined();
@@ -95,11 +95,11 @@ describe('Thoth runtime failure and recovery contracts', () => {
         catalogSet,
         catalogLoaders,
         recoveryPayload,
+        recovery: { identity: messages.recovery.unavailable.identity },
         extensions: runtimeExtensions,
         fallbackPolicy: 'strict',
       },
       bootstrapScopes: [scope],
-      recoveryMessage: messages.recovery.unavailable,
       formattingContext: { timeZone: 'UTC' },
     });
     await localization.initialize();

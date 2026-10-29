@@ -13,13 +13,14 @@ is `07-routing-rendering-and-seo.spec.md`, formatting and localized input are
 
 An application composes the runtime once, at its own root, by calling the generated
 `provideLocalization` from its generated namespace. That function already closes over the
-configuration, the local catalog set, the catalog loaders, the recovery message, and the route
-projection, so a consumer application assembles none of them by hand. `provideLocalizationSetup`
+configuration, the local catalog set, the catalog loaders, the recovery message, the route
+projection, and the declared locale URL policy, so a consumer application assembles none of them by
+hand. `provideLocalizationSetup`
 takes the same setup explicitly, for an application with a reason to compose it itself. A release
 MUST accept feature providers as the only other argument to either.
 
 A feature provider exists for a decision the runtime cannot determine. The features are the locale
-sources and their order, persistence stores, routing, the recovery message, the formatting context,
+sources and their order, persistence stores, routing, the formatting context,
 extension bindings, withdrawal of the document effects, the locale announcement, the clock, the
 relative-time policy, the overlay adapter, and the observability sink.
 

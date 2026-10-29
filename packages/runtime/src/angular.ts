@@ -32,12 +32,12 @@ import {
   withoutBasePath,
   type FormattingContext,
   type GeneratedConfiguration,
+  type GeneratedRouteProjection,
   type LocaleUrlPolicy,
   type LocalizationClock,
   type LocalizationRouteSnapshot,
   type LocalizationSetup,
   type LocalizationSnapshot,
-  type MessageHandle,
   type RouteCachingPolicy,
   type RouteIndexingPolicy,
   type RouteSitemapPolicy,
@@ -56,7 +56,6 @@ import {
   initializedForBootstrap,
   localizationTransferSnapshot,
   type LocaleFromAddress,
-  type LocaleUrlResolutionSetup,
   type LocalizationCommitHook,
   type LocalizationLocaleSource,
   type LocalizationRuntimeOptions,
@@ -168,7 +167,7 @@ export const LOCALE_URL_POLICY = new InjectionToken<{
 }>('LOCALE_URL_POLICY');
 
 /**
- * The twelve things a feature can configure, one name each.
+ * The eleven things a feature can configure, one name each.
  *
  * Present in the type rather than left open so that a feature is installed at most once and the
  * duplicate is refused by name. Not something an application writes: each `with` function states
@@ -177,7 +176,6 @@ export const LOCALE_URL_POLICY = new InjectionToken<{
 export type LocalizationFeatureKind =
   | 'document-locale'
   | 'formatting-context'
-  | 'recovery-message'
   | 'locale-announcement'
   | 'overlay-locale'
   | 'observability'
@@ -208,11 +206,6 @@ interface FormattingContextFeature extends LocalizationFeature<'formatting-conte
   readonly context: Omit<FormattingContext, 'locale' | 'pseudoLocale'>;
 }
 
-interface RecoveryMessageFeature extends LocalizationFeature<'recovery-message'> {
-  readonly identity: string;
-  readonly retryLabelIdentity?: string;
-}
-
 interface LocaleAnnouncementFeature extends LocalizationFeature<'locale-announcement'> {
   readonly format: (snapshot: LocalizationSnapshot) => string | undefined;
 }
@@ -234,17 +227,39 @@ interface LocaleSourcesFeature extends LocalizationFeature<'locale-sources'> {
 }
 
 /**
+ * The part of a route projection an application writes: what the generated route table cannot say.
+ *
+ * Every field is content. A route spelled the same in every locale, with no parameter codec and no
+ * retired address, needs none of them.
+ */
+export interface RoutingProjectionOptions extends Omit<
+  RouteRuntimeProjection,
+  'generated'
+> {
+  /**
+   * The generated route table. The generated setup carries it, so it is left out; one passed here is
+   * refused unless it is the same table.
+   */
+  readonly generated?: GeneratedRouteProjection;
+}
+
+/**
  * Everything about routing that Thoth cannot derive from the application's sources.
  *
  * The route table is not here: Thoth generated it, and the generated `provideLocalization()`
- * passes it. What an application owns is the URL policy, the localized path spellings, the
- * parameter codecs, the outcomes of addresses that no longer exist, and the name of its own
- * route-data field, which Thoth reads at build time rather than inventing.
- *
- * The policy and the projection are the base type's two fields, because they are what reading a
- * locale out of an address needs and the `url` locale source reads them from here.
+ * passes it. Nor is the URL policy, which `thoth.config.json` declares and the generated setup
+ * carries. What is left for an application is content: the localized path spellings, the parameter
+ * codecs, the outcomes of addresses that no longer exist, and the route classes Thoth reads at
+ * build time.
  */
-export interface RoutingOptions extends LocaleUrlResolutionSetup {
+export interface RoutingOptions {
+  /**
+   * The URL policy, for an application that builds one in code. Defaults to the one
+   * `thoth.config.json` declares. The build compares the two where both exist.
+   */
+  readonly policy?: LocaleUrlPolicy;
+  /** The localized spellings, parameter codecs and retired addresses of the routes. */
+  readonly projection?: RoutingProjectionOptions;
   /**
    * Read from this file's source text when Thoth compiles the owner, and inert at runtime: by the
    * time this object exists, every route already carries the class it was classified into.
@@ -420,7 +435,6 @@ const FEATURE_KINDS = Object.freeze(
   Object.keys({
     'document-locale': true,
     'formatting-context': true,
-    'recovery-message': true,
     'locale-announcement': true,
     'overlay-locale': true,
     observability: true,
@@ -440,55 +454,6 @@ function freezeFeature<Feature extends LocalizationFeature>(
   feature: Feature,
 ): Feature {
   return Object.freeze(feature);
-}
-
-/** What recovery renders when the runtime could not reach a usable state. */
-export interface RecoveryMessageOptions {
-  /** What a visitor reads when the translations could not be loaded. */
-  readonly message: MessageHandle & { readonly resultKind: 'plain' };
-  /**
-   * The retry control's wording.
-   *
-   * Optional, because a deployment may have nowhere for a retry to lead. Supplying it is what makes
-   * the control appear, and supplying it as a handle rather than a string is what puts it in the
-   * recovery payload: the wording then arrives in the locale the recovery region is already
-   * marked as, instead of in whichever language the call site was typed in.
-   */
-  readonly retryLabel?: MessageHandle & { readonly resultKind: 'plain' };
-}
-
-/**
- * Gives the recovery region something to say when localization could not reach a usable state.
- *
- * Takes the message and, optionally, the wording of a retry control. Both must be plain messages
- * with no inputs, and a handle that declares any is refused when the feature is built rather than
- * when the failure happens, because a failure path that fails is no path at all.
- *
- * Without this feature the region renders nothing and a start-up failure is a hard failure.
- */
-export function withRecoveryMessage(
-  options: RecoveryMessageOptions,
-): LocalizationFeature<'recovery-message'> {
-  ɵrecordOption(options, 'The options of withRecoveryMessage()');
-  const plain = (handle: MessageHandle): void => {
-    ɵrecordOption(handle, 'A recovery message');
-    if (ɵlistOption(handle.inputNames, 'inputNames').length > 0) {
-      throw new LocalizationError({
-        code: 'invalid-configuration',
-        outcome: 'operational-failure',
-        message: 'A recovery message must be plain and have no inputs.',
-      });
-    }
-  };
-  plain(options.message);
-  if (options.retryLabel !== undefined) plain(options.retryLabel);
-  return freezeFeature<RecoveryMessageFeature>({
-    ɵkind: 'recovery-message',
-    identity: options.message.identity,
-    ...(options.retryLabel === undefined
-      ? {}
-      : { retryLabelIdentity: options.retryLabel.identity }),
-  });
 }
 
 /**
@@ -673,26 +638,27 @@ export function withExtensions(
  * call's source text when it compiles the owner, and classifies each route then.
  */
 export function withRouting(
-  options: RoutingOptions,
+  options: RoutingOptions = {},
 ): LocalizationFeature<'routing'> {
-  // A caller who is not type-checked reaches this the same way a type-checked one does, so the
-  // policy is read as whatever was passed rather than as the field the options declare.
+  // A caller who is not type-checked reaches this the same way a type-checked one does, so each
+  // field is read as whatever was passed rather than as the field the options declare.
   ɵrecordOption(options, 'The options of withRouting()');
-  const policy: unknown = options.policy;
-  if (policy === undefined) {
-    throw new LocalizationError({
-      code: 'invalid-configuration',
-      outcome: 'operational-failure',
-      message: 'withRouting() requires a locale URL policy.',
-    });
+  if (options.policy !== undefined) {
+    ɵrecordOption(options.policy, 'The policy of withRouting()');
   }
-  ɵrecordOption(policy, 'The policy of withRouting()');
-  // Its generated half is read for its identity before the projection is checked as a whole.
-  ɵrecordOption(
-    ɵrecordOption(options.projection, 'The projection of withRouting()')
-      .generated,
-    'The generated half of the projection of withRouting()',
-  );
+  if (options.projection !== undefined) {
+    const projection = ɵrecordOption(
+      options.projection,
+      'The projection of withRouting()',
+    );
+    // Its generated half is read for its identity before the projection is checked as a whole.
+    if (projection.generated !== undefined) {
+      ɵrecordOption(
+        projection.generated,
+        'The generated half of the projection of withRouting()',
+      );
+    }
+  }
   for (const name of ['indexing', 'sitemap', 'caching'] as const) {
     if (options[name] !== undefined) {
       ɵrecordOption(options[name], `The ${name} policy of withRouting()`);
@@ -729,20 +695,31 @@ function routingProviders(
         'withRouting() requires a generated route projection. Regenerate this owner so that provideLocalization() carries one.',
     });
   }
+  const policy = options.policy ?? setup.urlPolicy;
+  if (policy === undefined) {
+    throw new LocalizationError({
+      code: 'invalid-configuration',
+      outcome: 'operational-failure',
+      message:
+        'withRouting() has no locale URL policy. Declare urlPolicy in thoth.config.json and regenerate, so that provideLocalization() carries one.',
+    });
+  }
+  const given = options.projection?.generated;
   // The two halves have to be the same generated projection, and this says so when they are not.
   //
-  // `setup.routeProjection` is what the generator emitted for this owner; `options.projection
-  // .generated` is what the consumer built their codecs and historical outcomes around. It is
-  // worth asking: a projection imported from a stale generated file, or from another owner in the
-  // same workspace, produces route ids that resolve against nothing, and the symptom is routes
-  // silently failing to localize rather than an error.
+  // `setup.routeProjection` is what the generator emitted for this owner; a generated half passed
+  // here is what the consumer built their codecs and historical outcomes around. It is worth
+  // asking: a projection imported from a stale generated file, or from another owner in the same
+  // workspace, produces route ids that resolve against nothing, and the symptom is routes silently
+  // failing to localize rather than an error.
   if (
-    options.projection.generated.identity !== setup.routeProjection.identity
+    given !== undefined &&
+    given.identity !== setup.routeProjection.identity
   ) {
     throw new LocalizationError({
       code: 'invalid-configuration',
       outcome: 'operational-failure',
-      message: `withRouting() was given a route projection generated for something else. This owner generated ${JSON.stringify(setup.routeProjection.identity)} and the projection passed carries ${JSON.stringify(options.projection.generated.identity)}. Regenerate, or pass the projection built from this owner's generated routes.`,
+      message: `withRouting() was given a route projection generated for something else. This owner generated ${JSON.stringify(setup.routeProjection.identity)} and the projection passed carries ${JSON.stringify(given.identity)}. Regenerate, or leave the generated table out of the projection.`,
     });
   }
   return [
@@ -754,8 +731,11 @@ function routingProviders(
         // configuration does not list removed from every table. So the resolver, the client route
         // table and anything a consumer writes against this token address only locales that
         // exist, without any of them having to remember to ask.
-        policy: builtLocalePolicy(options.policy, setup.configuration),
-        projection: validateRouteProjection(options.projection),
+        policy: builtLocalePolicy(policy, setup.configuration),
+        projection: validateRouteProjection({
+          ...options.projection,
+          generated: given ?? setup.routeProjection,
+        }),
         configuration: setup.configuration,
       }),
     },
@@ -1906,8 +1886,6 @@ export function provideLocalizationSetup(
       'The kind of a localization feature',
     );
   }
-  const recovery = oneFeature(features, 'recovery-message') as
-    RecoveryMessageFeature | undefined;
   const formatting = oneFeature(features, 'formatting-context') as
     FormattingContextFeature | undefined;
   const documentLocale = oneFeature(features, 'document-locale') as
@@ -2100,12 +2078,6 @@ export function provideLocalizationSetup(
           // how it silently resolved nothing: the URL said `/ar-eg` and the runtime was handed no
           // request to read it from.
           ...(requestContext === undefined ? {} : { requestContext }),
-          ...(recovery === undefined
-            ? {}
-            : { recoveryMessageIdentity: recovery.identity }),
-          ...(recovery?.retryLabelIdentity === undefined
-            ? {}
-            : { recoveryRetryLabelIdentity: recovery.retryLabelIdentity }),
           // Two contexts, kept apart. The feature's is the application-wide default every locale
           // inherits; the transferred one is what the server rendered *this* locale with. They
           // were one field until the configuration gained a per-locale layer, and merging them

@@ -168,7 +168,7 @@ export function composableExports(
   }
   // Two names that have to be here. Without them the return type scan has stopped matching, and a
   // coverage question answered from an empty set passes for the wrong reason.
-  for (const anchor of ['provideLocalizationSetup', 'withRecoveryMessage']) {
+  for (const anchor of ['provideLocalizationSetup', 'withRouting']) {
     assert.ok(
       composables.has(anchor),
       `${anchor} is not in the composable set, so the scan that finds features has stopped matching and every reader of it is passing on nothing.`,

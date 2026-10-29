@@ -31,7 +31,7 @@ import {
  * `createLocalizationContext` takes the generated setup and little else. With no scopes named it
  * loads every scope the configuration declares, and with scopes named it loads those and no
  * others. The route it is told the reader is on is the route of the snapshot it commits, and the
- * retry label it is handed is what it offers beside the recovery message when it cannot start.
+ * retry label its setup names is what it offers beside the recovery message when it cannot start.
  */
 
 interface Fixture {
@@ -40,9 +40,18 @@ interface Fixture {
   /** A catalog key whose loader fails every time it is asked. */
   readonly failing?: string;
   readonly recoveryPayload?: readonly unknown[];
+  readonly recovery?: {
+    readonly identity: string;
+    readonly retryLabelIdentity?: string;
+  };
 }
 
-function context({ options = {}, failing, recoveryPayload }: Fixture = {}) {
+function context({
+  options = {},
+  failing,
+  recoveryPayload,
+  recovery,
+}: Fixture = {}) {
   const loads: string[] = [];
   const loaders = Object.fromEntries(
     Object.entries(loadersFor(compiled())).map(([key, load]) => [
@@ -60,6 +69,7 @@ function context({ options = {}, failing, recoveryPayload }: Fixture = {}) {
       catalogSet: compiled().descriptor,
       catalogLoaders: loaders,
       ...(recoveryPayload === undefined ? {} : { recoveryPayload }),
+      ...(recovery === undefined ? {} : { recovery }),
     } as unknown as LocalizationSetup,
     ...options,
   });
@@ -192,11 +202,11 @@ describe('a context built outside an injector', () => {
         representation(TITLE, 'en-US'),
         representation(HEADING, 'en-US'),
       ],
-      options: {
-        bootstrapScopes: [SHELL],
-        recoveryMessage: TITLE,
-        recoveryRetryLabel: HEADING,
+      recovery: {
+        identity: TITLE.identity,
+        retryLabelIdentity: HEADING.identity,
       },
+      options: { bootstrapScopes: [SHELL] },
     });
 
     await expect(
@@ -212,6 +222,29 @@ describe('a context built outside an injector', () => {
     localization.dispose();
   });
 
+  it.each([
+    [{ identity: 42 }, "The recovery binding's identity must be a string."],
+    [
+      { identity: 'shell:title', retryLabelIdentity: 7 },
+      "The recovery binding's retryLabelIdentity must be a string.",
+    ],
+  ])(
+    'refuses a recovery binding that names a message by anything but a string: %j',
+    (recovery, sentence) => {
+      let thrown: unknown;
+      try {
+        context({
+          recovery: recovery as unknown as NonNullable<Fixture['recovery']>,
+        });
+      } catch (error: unknown) {
+        thrown = error;
+      }
+      expect(thrown).toMatchObject({
+        diagnostic: { code: 'invalid-configuration', message: sentence },
+      });
+    },
+  );
+
   it('offers no retry label when it was handed none', async () => {
     const { localization } = context({
       failing: catalogKey('shell', 'en-US'),
@@ -219,7 +252,8 @@ describe('a context built outside an injector', () => {
         representation(TITLE, 'en-US'),
         representation(HEADING, 'en-US'),
       ],
-      options: { bootstrapScopes: [SHELL], recoveryMessage: TITLE },
+      recovery: { identity: TITLE.identity },
+      options: { bootstrapScopes: [SHELL] },
     });
 
     await rejectionOf(() => localization.initialize());

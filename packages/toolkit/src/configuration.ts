@@ -39,6 +39,7 @@ import {
   type PseudoLocaleTransform,
 } from './pseudo-localization.js';
 import { RESOURCE_LIMITS } from './resource-limits.js';
+import { compareCodeUnit } from './sorted-records.js';
 import {
   constructJsonValue,
   duplicateJsonKeys,
@@ -181,7 +182,39 @@ export interface ProjectConfiguration {
    * to the source locale.
    */
   readonly parentLocales: Readonly<Record<string, CanonicalLocale>>;
+  /**
+   * Where the locale appears in an address. Absent when the application selects no localized
+   * routing.
+   *
+   * This and the six fields after it are the policy as the file declares it: the kind and its
+   * departures. The full policy, every locale's prefix or origin and the default locale, is derived
+   * from them and the locales when it is generated, so the file holds only what the locales
+   * cannot give. Locale keys and values are canonical.
+   */
+  readonly urlPolicy?: UrlPolicyKind;
+  /** Prefixes that are not the locale's tag in lowercase. Path-prefix only. */
+  readonly localePrefixes?: Readonly<Record<string, string>>;
+  /** Further prefixes, each reaching a locale and corrected to its own. Path-prefix only. */
+  readonly prefixAliases?: Readonly<Record<string, CanonicalLocale>>;
+  /** Whether the default locale is served at the root without a prefix. Path-prefix only. */
+  readonly omitDefaultPrefix?: boolean;
+  /** The origin of every locale. Locale-host only, where it names every locale. */
+  readonly localeOrigins?: Readonly<Record<string, string>>;
+  /** First path segments no locale owns. */
+  readonly localeNeutralRoots?: readonly string[];
+  /** The x-default alternate: a path, or under locale-host an origin. */
+  readonly xDefault?: string;
+  /**
+   * The recovery copy's message, as `<scope>/<message>` in the source catalogs. Absent when none
+   * is declared, which generation reports for an application runtime.
+   */
+  readonly recoveryMessage?: string;
+  /** The retry control's wording, as `<scope>/<message>`. Absent means no control. */
+  readonly recoveryRetry?: string;
 }
+
+/** The three policy kinds `specs/07-routing-rendering-and-seo.spec.md` section 3 publishes. */
+export type UrlPolicyKind = 'path-prefix' | 'locale-host' | 'locale-neutral';
 
 /**
  * The fields an invocation may set, which is the parser's own shape minus the version marker.
@@ -208,6 +241,15 @@ interface RawConfiguration {
   readonly formatting?: Readonly<Record<string, LocaleFormatting>>;
   readonly inProgress?: Readonly<Record<string, LocaleInProgress>>;
   readonly parentLocales?: Readonly<Record<string, string>>;
+  readonly urlPolicy?: UrlPolicyKind;
+  readonly localePrefixes?: Readonly<Record<string, string>>;
+  readonly prefixAliases?: Readonly<Record<string, string>>;
+  readonly omitDefaultPrefix?: boolean;
+  readonly localeOrigins?: Readonly<Record<string, string>>;
+  readonly localeNeutralRoots?: readonly string[];
+  readonly xDefault?: string;
+  readonly recoveryMessage?: string;
+  readonly recoveryRetry?: string;
 }
 
 const validateConfiguration = compileSchema(CONFIGURATION_SCHEMA);
@@ -778,6 +820,23 @@ export function parseConfiguration(
     }
   }
 
+  const policy = declaredUrlPolicy(
+    raw,
+    localeSet,
+    pseudoLocales.map(([locale]) => locale),
+    (summary, path) =>
+      diagnostics.push(
+        configurationDiagnostic(
+          source,
+          root,
+          options.sourcePath,
+          'TH1009',
+          summary,
+          path,
+        ),
+      ),
+  );
+
   if (diagnostics.length > 0 || !sourceLocale.ok || !defaultLocale.ok) {
     return toolkitFailure(diagnostics);
   }
@@ -793,9 +852,199 @@ export function parseConfiguration(
     formatting: Object.freeze(Object.fromEntries(formatting)),
     inProgress: Object.freeze(Object.fromEntries(inProgress)),
     parentLocales: freezeLocaleRecord(parentLocales),
+    ...policy,
+    ...(raw.recoveryMessage === undefined
+      ? {}
+      : { recoveryMessage: raw.recoveryMessage }),
+    ...(raw.recoveryRetry === undefined
+      ? {}
+      : { recoveryRetry: raw.recoveryRetry }),
   });
   parsedConfigurations.add(configuration);
   return toolkitSuccess(configuration);
+}
+
+/**
+ * The policy fields of a configuration, locales canonicalized, or nothing where none is declared.
+ *
+ * Checks what the schema cannot: that every locale named is one this project serves, that a host
+ * policy gives every locale an origin and each origin is normalized, and that no two prefixes,
+ * aliases and roots spell the same segment, counting the prefixes derived from the locales. The
+ * runtime refuses each of these when the generated policy is built; refusing them here puts the
+ * failure in the build rather than in the first page load.
+ */
+function declaredUrlPolicy(
+  raw: RawConfiguration,
+  localeSet: ReadonlySet<string>,
+  pseudoLocales: readonly string[],
+  report: (summary: string, path: readonly (string | number)[]) => void,
+): Partial<ProjectConfiguration> {
+  if (raw.urlPolicy === undefined) return {};
+  const served = (
+    tag: string,
+    path: readonly (string | number)[],
+    what: string,
+  ): CanonicalLocale | undefined => {
+    const canonical = canonicalizeLocale(tag);
+    if (!canonical.ok) {
+      report(`${what} ${JSON.stringify(tag)} is not a locale tag.`, path);
+      return undefined;
+    }
+    if (!localeSet.has(canonical.value)) {
+      report(
+        `${what} ${JSON.stringify(tag)} is not a locale this project serves. The URL policy addresses the locales in locales and no others.`,
+        path,
+      );
+      return undefined;
+    }
+    return canonical.value;
+  };
+
+  const localePrefixes: [string, string][] = [];
+  for (const [tag, prefix] of Object.entries(raw.localePrefixes ?? {})) {
+    const locale = served(tag, ['localePrefixes', tag], 'The prefix key');
+    if (locale !== undefined) localePrefixes.push([locale, prefix]);
+  }
+  const prefixAliases: [string, CanonicalLocale][] = [];
+  for (const [alias, tag] of Object.entries(raw.prefixAliases ?? {})) {
+    const locale = served(
+      tag,
+      ['prefixAliases', alias],
+      'The prefix alias target',
+    );
+    if (locale !== undefined) prefixAliases.push([alias, locale]);
+  }
+  const localeOrigins: [string, string][] = [];
+  // Every served locale an origin is written for, normalized or not, so a locale whose origin is
+  // refused is not reported a second time as having none.
+  const named = new Set<string>();
+  const originOwners = new Map<string, string>();
+  for (const [tag, origin] of Object.entries(raw.localeOrigins ?? {})) {
+    const locale = served(tag, ['localeOrigins', tag], 'The origin key');
+    if (locale === undefined) continue;
+    named.add(locale);
+    let normalized: string | undefined;
+    try {
+      normalized = new URL(origin).origin;
+    } catch {
+      normalized = undefined;
+    }
+    if (normalized !== origin) {
+      report(
+        `The origin of ${locale}, ${JSON.stringify(origin)}, is not a normalized origin${normalized === undefined ? '' : `; it is written ${JSON.stringify(normalized)}`}.`,
+        ['localeOrigins', tag],
+      );
+      continue;
+    }
+    const owner = originOwners.get(origin);
+    if (owner !== undefined) {
+      report(
+        `The origin ${JSON.stringify(origin)} is written for ${owner} and for ${locale}. An origin answers for one locale, so a request to it says which locale it is in.`,
+        ['localeOrigins', tag],
+      );
+      continue;
+    }
+    originOwners.set(origin, locale);
+    localeOrigins.push([locale, origin]);
+  }
+  if (raw.urlPolicy === 'locale-host') {
+    for (const locale of [...localeSet].sort(compareCodeUnit)) {
+      if (!named.has(locale)) {
+        report(
+          `The locale-host policy has no origin for ${locale}. Each locale this project serves is served at an origin of its own, so localeOrigins names every one.`,
+          ['localeOrigins'],
+        );
+      }
+    }
+  }
+
+  // Every segment a path-prefix policy claims, so a repeat is named once with what it collides with.
+  const claimed = new Map<string, string>();
+  const claim = (
+    segment: string,
+    owner: string,
+    path: readonly (string | number)[],
+  ): void => {
+    const previous = claimed.get(segment);
+    if (previous !== undefined) {
+      report(
+        `The path segment ${JSON.stringify(segment)} is claimed by ${previous} and by ${owner}. Each prefix, alias and locale-neutral root is a segment of its own.`,
+        path,
+      );
+      return;
+    }
+    claimed.set(segment, owner);
+  };
+  if (raw.urlPolicy === 'path-prefix') {
+    const overrides = new Map(localePrefixes);
+    for (const locale of [...localeSet].sort(compareCodeUnit)) {
+      const prefix = overrides.get(locale) ?? locale.toLowerCase();
+      claim(
+        prefix,
+        `the prefix of ${locale}`,
+        overrides.has(locale) ? ['localePrefixes', locale] : ['locales'],
+      );
+    }
+    // A pseudo-locale is addressed in a build that asks for one, at the prefix its tag gives it, so
+    // that prefix is claimed in every build: a route or alias spelled the same would work until then.
+    for (const locale of pseudoLocales) {
+      claim(locale.toLowerCase(), `the prefix of ${locale}`, [
+        'pseudoLocales',
+        locale,
+      ]);
+    }
+    for (const [alias, locale] of prefixAliases) {
+      claim(alias, `an alias of ${locale}`, ['prefixAliases', alias]);
+    }
+  }
+  for (const [index, segment] of (raw.localeNeutralRoots ?? []).entries()) {
+    claim(segment, 'a locale-neutral root', ['localeNeutralRoots', index]);
+  }
+
+  if (raw.xDefault !== undefined) {
+    const absolute = raw.urlPolicy === 'locale-host';
+    let valid: boolean;
+    if (absolute) {
+      // The runtime builds the x-default address from an origin alone, so a path or a query here
+      // would pass generation and be refused at startup.
+      try {
+        const url = new URL(raw.xDefault);
+        valid = /^https?:$/u.test(url.protocol) && url.origin === raw.xDefault;
+      } catch {
+        valid = false;
+      }
+    } else {
+      valid = raw.xDefault.startsWith('/') && !raw.xDefault.startsWith('//');
+    }
+    if (!valid) {
+      report(
+        absolute
+          ? `xDefault ${JSON.stringify(raw.xDefault)} is not a normalized http or https origin, which a locale-host policy's x-default is.`
+          : `xDefault ${JSON.stringify(raw.xDefault)} is not a path beginning with one slash.`,
+        ['xDefault'],
+      );
+    }
+  }
+
+  return {
+    urlPolicy: raw.urlPolicy,
+    ...(localePrefixes.length === 0
+      ? {}
+      : { localePrefixes: Object.freeze(Object.fromEntries(localePrefixes)) }),
+    ...(prefixAliases.length === 0
+      ? {}
+      : { prefixAliases: Object.freeze(Object.fromEntries(prefixAliases)) }),
+    ...(raw.omitDefaultPrefix === undefined
+      ? {}
+      : { omitDefaultPrefix: raw.omitDefaultPrefix }),
+    ...(localeOrigins.length === 0
+      ? {}
+      : { localeOrigins: Object.freeze(Object.fromEntries(localeOrigins)) }),
+    ...(raw.localeNeutralRoots === undefined
+      ? {}
+      : { localeNeutralRoots: Object.freeze([...raw.localeNeutralRoots]) }),
+    ...(raw.xDefault === undefined ? {} : { xDefault: raw.xDefault }),
+  };
 }
 
 /** What `parseConfiguration` returned, which `admitConfiguration` answers without reading again. */
@@ -976,6 +1225,35 @@ export const COMPLETENESS_CODES: ReadonlySet<ToolkitDiagnosticCode> =
     new Set<ToolkitDiagnosticCode>(['TH1306', 'TH1307', 'TH1308', 'TH1309']),
   ) as ReadonlySet<ToolkitDiagnosticCode>;
 
+/**
+ * The members a configuration carries only where its file declares them, in the order written.
+ *
+ * Typed against `ProjectConfiguration`, so a member added to it with no default and left out here
+ * is the one thing this list can get wrong, and the formatting tests write every one of them.
+ */
+const DECLARED_ONLY = [
+  'urlPolicy',
+  'localePrefixes',
+  'prefixAliases',
+  'omitDefaultPrefix',
+  'localeOrigins',
+  'localeNeutralRoots',
+  'xDefault',
+  'recoveryMessage',
+  'recoveryRetry',
+] as const satisfies readonly (keyof ProjectConfiguration)[];
+
+function declaredOnly(
+  configuration: ProjectConfiguration,
+  keys: typeof DECLARED_ONLY,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    keys.flatMap((key) =>
+      configuration[key] === undefined ? [] : [[key, configuration[key]]],
+    ),
+  );
+}
+
 export function formatConfiguration(
   configuration: ProjectConfiguration,
 ): string {
@@ -1007,6 +1285,7 @@ export function formatConfiguration(
     ...(Object.keys(configuration.parentLocales).length === 0
       ? {}
       : { parentLocales: configuration.parentLocales }),
+    ...declaredOnly(configuration, DECLARED_ONLY),
   };
   return `${JSON.stringify(output, null, 2)}\n`;
 }

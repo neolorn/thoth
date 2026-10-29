@@ -9,15 +9,15 @@ This page is generated from the packages and is not edited by hand.
 
 Everything an application component and its bootstrap need.
 
-Publishes 216 name(s).
+Publishes 214 name(s).
 
-Composable from here: `provideLocalizationSetup`, `withExtensions`, `withFormattingContext`, `withLocaleAnnouncement`, `withLocaleSources`, `withLocalizationClock`, `withObservability`, `withOverlayLocale`, `withPersistence`, `withRecoveryMessage`, `withRelativeTimePolicy`, `withRouting`, `withoutDocumentLocale`.
+Composable from here: `provideLocalizationSetup`, `withExtensions`, `withFormattingContext`, `withLocaleAnnouncement`, `withLocaleSources`, `withLocalizationClock`, `withObservability`, `withOverlayLocale`, `withPersistence`, `withRelativeTimePolicy`, `withRouting`, `withoutDocumentLocale`.
 
 ## `@neolorn/thoth/core`
 
 The contracts, the locale profiles and negotiation, and the route and address helpers, with no Angular in the graph. This is what a library or a test helper imports.
 
-Publishes 237 name(s).
+Publishes 238 name(s).
 
 ## `@neolorn/thoth/forms`
 

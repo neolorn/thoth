@@ -33,6 +33,21 @@ const unicodeKeywordTypeSchema = {
   pattern: UNICODE_KEYWORD_TYPE.source,
 } as const;
 
+// What `specs/07-routing-rendering-and-seo.spec.md` section 3 allows as a prefix, an alias or a
+// locale-neutral root: one to 63 lowercase ASCII letters, digits and hyphens, beginning and ending
+// with a letter or a digit. The runtime holds a policy to the same rule.
+const pathSegmentSchema = {
+  type: 'string',
+  pattern: '^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$',
+} as const;
+
+// A scope and a message id, as a catalog spells them, joined by a slash.
+const messageKeySchema = {
+  type: 'string',
+  pattern:
+    '^[a-z][a-z0-9]*(?:-[a-z0-9]+)*/[a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*(?:\\.[a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*)*$',
+} as const;
+
 const portableTypeIdSchema = {
   type: 'string',
   minLength: 1,
@@ -369,7 +384,149 @@ export const CONFIGURATION_SCHEMA = Object.freeze({
       additionalProperties: localeTextSchema,
       description: 'Extra identifiers that resolve to a supported locale.',
     },
+    // Where the locale appears in an address. Absent means the application selects no localized
+    // routing, which costs it nothing.
+    //
+    // Only the kind is stated, because everything else a policy holds follows from the locales
+    // above: each locale's prefix is its tag in lowercase and the default locale is the one above.
+    // The keys after this one state the departures, and only the departures a locale list cannot
+    // give: a prefix other than the lowercase tag, an alias, a root no locale owns, and the origin
+    // of each locale under a host policy, which nothing else in this file could supply.
+    urlPolicy: {
+      type: 'string',
+      enum: ['path-prefix', 'locale-host', 'locale-neutral'],
+      description:
+        'Where the locale appears in an address: path-prefix, locale-host or locale-neutral.',
+    },
+    localePrefixes: {
+      type: 'object',
+      minProperties: 1,
+      maxProperties: RESOURCE_LIMITS.localesPerProject,
+      propertyNames: localeTextSchema,
+      additionalProperties: pathSegmentSchema,
+      description:
+        "A locale's path prefix, where it is not the locale's tag in lowercase. path-prefix only.",
+    },
+    prefixAliases: {
+      type: 'object',
+      minProperties: 1,
+      maxProperties: RESOURCE_LIMITS.localesPerProject,
+      propertyNames: pathSegmentSchema,
+      additionalProperties: localeTextSchema,
+      description:
+        'A further path prefix that reaches a locale and is corrected to its own. path-prefix only.',
+    },
+    omitDefaultPrefix: {
+      type: 'boolean',
+      description:
+        'Serve the default locale without a prefix, at the root. path-prefix only.',
+    },
+    localeOrigins: {
+      type: 'object',
+      minProperties: 1,
+      maxProperties: RESOURCE_LIMITS.localesPerProject,
+      propertyNames: localeTextSchema,
+      additionalProperties: {
+        type: 'string',
+        minLength: 1,
+        maxLength: 255,
+        pattern: '^https?://[^/?#\\s]+$',
+      },
+      description:
+        'The origin each locale is served at, scheme included. Required by locale-host, and only there.',
+    },
+    localeNeutralRoots: {
+      type: 'array',
+      minItems: 1,
+      maxItems: RESOURCE_LIMITS.localesPerProject,
+      uniqueItems: true,
+      items: pathSegmentSchema,
+      description:
+        'A first path segment that no locale owns, such as an API root. Repeat for each one.',
+    },
+    xDefault: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 2048,
+      description:
+        'The x-default alternate: a path, or under locale-host an origin. Absent means none.',
+    },
+    // The recovery copy, named by the message that already holds it in every locale.
+    //
+    // A key rather than a handle passed in code, because the binding is the same line in every
+    // application and generation can write it. Generation resolves each key against the source
+    // catalogs, so a key that names nothing fails the build as a handle that names nothing would
+    // fail the compile.
+    recoveryMessage: {
+      ...messageKeySchema,
+      description:
+        'The message a visitor reads when no catalog can be loaded, as <scope>/<message>.',
+    },
+    recoveryRetry: {
+      ...messageKeySchema,
+      description:
+        'The wording of the retry control beside it, as <scope>/<message>. Absent means no control.',
+    },
   },
+  // A member of another kind of policy decides nothing where the application that wrote it
+  // expects it to, so it is refused rather than ignored, as a written-out policy is at runtime.
+  // A property set to `false` in a branch is one that branch refuses, which states the rule
+  // without a `required` that names a property its own subschema does not declare.
+  allOf: [
+    {
+      if: {
+        required: ['urlPolicy'],
+        properties: { urlPolicy: { const: 'locale-host' } },
+      },
+      then: {
+        required: ['localeOrigins'],
+        properties: {
+          localeOrigins: true,
+          localePrefixes: false,
+          prefixAliases: false,
+          omitDefaultPrefix: false,
+        },
+      },
+    },
+    {
+      if: {
+        required: ['urlPolicy'],
+        properties: { urlPolicy: { const: 'locale-neutral' } },
+      },
+      then: {
+        properties: {
+          localePrefixes: false,
+          prefixAliases: false,
+          omitDefaultPrefix: false,
+          localeOrigins: false,
+        },
+      },
+    },
+    {
+      if: {
+        required: ['urlPolicy'],
+        properties: { urlPolicy: { const: 'path-prefix' } },
+      },
+      then: { properties: { localeOrigins: false } },
+    },
+    {
+      if: { properties: { urlPolicy: false } },
+      then: {
+        properties: {
+          localePrefixes: false,
+          prefixAliases: false,
+          omitDefaultPrefix: false,
+          localeOrigins: false,
+          localeNeutralRoots: false,
+          xDefault: false,
+        },
+      },
+    },
+    {
+      if: { properties: { recoveryMessage: false } },
+      then: { properties: { recoveryRetry: false } },
+    },
+  ],
 } as const);
 
 /**

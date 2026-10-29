@@ -4019,6 +4019,7 @@
                   "TH1006",
                   "TH1007",
                   "TH1008",
+                  "TH1009",
                   "TH1101",
                   "TH1102",
                   "TH1103",
@@ -4533,7 +4534,7 @@
     "thoth-cli-result/1": {
       "readers": "closed",
       "schemas": {
-        "dist/toolkit/schemas/cli-result.v1.schema.json": "sha256-LYes_jVtZ8tFz4pNy3GeoraDVsEhAEGvHG-2w1FsFM8"
+        "dist/toolkit/schemas/cli-result.v1.schema.json": "sha256-pStsZIf0_DCzxqVTO2LFrxWfqxNQaxBOp8s9T9EO_44"
       }
     },
     "thoth-cli-watch-event/1": {
@@ -4545,7 +4546,7 @@
     "configuration schemaVersion 1": {
       "readers": "closed",
       "schemas": {
-        "dist/toolkit/schemas/configuration.v1.schema.json": "sha256-Pl9JcF6_pi2w1Zu2vSMKR2KgDA4zjY9Ee4tfXNqyh7Q"
+        "dist/toolkit/schemas/configuration.v1.schema.json": "sha256-2WPru1LalP3lSegbA_jPnlbdty-_JiNAMNu982H_zZ0"
       }
     }
   }

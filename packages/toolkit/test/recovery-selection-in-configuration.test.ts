@@ -7,13 +7,11 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { generateProject } from '../src/index.js';
 
 /**
- * A recovery message the application's own source selects.
+ * A recovery message the configuration names.
  *
- * `specs/10-compiler-and-tooling.spec.md` section 10: for an owner that selects an application
- * runtime, an invalid recovery root is a protected correctness error. A recovery message renders
- * when nothing else can, so it is a plain message that takes no inputs. A selection written in
- * source is found by the analysis and not handed to the compiler, so it is judged after the
- * analysis has run, by the same rule and under the same code as one the caller passes.
+ * `specs/10-compiler-and-tooling.spec.md` section 10: an invalid recovery root is a protected
+ * correctness error. A recovery message renders when nothing else can, so it is a plain message
+ * that takes no inputs, and a key that names no message is refused the same way.
  */
 
 const temporaryRoots: string[] = [];
@@ -31,8 +29,8 @@ async function write(
 const json = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`;
 
 /**
- * A project whose source selects `recovery.unavailable`, authored as the given message, with the
- * given members added to its configuration.
+ * A project whose configuration names `shell/recovery.unavailable`, authored as the given message,
+ * with the given members added to its configuration.
  */
 async function project(
   recoveryMessage: string,
@@ -62,6 +60,7 @@ async function project(
       sourceLocale: 'en-US',
       defaultLocale: 'en-US',
       locales: ['en-US'],
+      recoveryMessage: 'shell/recovery.unavailable',
       ...configuration,
     }),
   );
@@ -92,31 +91,13 @@ async function project(
   );
   await write(
     root,
-    'node_modules/@neolorn/thoth/index.d.ts',
-    [
-      'export declare function withRecoveryMessage(',
-      '  options: { readonly message: unknown; readonly retryLabel?: unknown },',
-      '): { readonly ɵkind: "recovery-message" };',
-      '',
-    ].join('\n'),
-  );
-  await write(
-    root,
-    'node_modules/@neolorn/thoth/package.json',
-    json({ name: '@neolorn/thoth', version: '0.0.0', types: './index.d.ts' }),
-  );
-  await write(
-    root,
     'src/app.ts',
     [
       "import { provideLocalization } from '#i18n';",
       "import { messages } from '#i18n/shell';",
-      "import { withRecoveryMessage } from '@neolorn/thoth';",
       '',
       'export const title = messages.appTitle.messageId;',
-      'export const providers = provideLocalization(',
-      '  withRecoveryMessage({ message: messages.recovery.unavailable }),',
-      ');',
+      'export const providers = provideLocalization();',
       '',
     ].join('\n'),
   );
@@ -132,7 +113,7 @@ afterEach(async () => {
   );
 });
 
-describe('a recovery message selected in source', () => {
+describe('a recovery message named in the configuration', () => {
   it('is refused as an invalid recovery root when it takes an input', async () => {
     const root = await project('Unavailable for {$name}.');
 
@@ -144,7 +125,7 @@ describe('a recovery message selected in source', () => {
     ).toEqual([
       {
         code: 'TH1501',
-        path: ['recovery', 'recovery-selection:shell:recovery.unavailable'],
+        path: ['recoveryMessage'],
       },
     ]);
   });
@@ -165,7 +146,7 @@ describe('a recovery message selected in source', () => {
       ).toEqual([
         {
           code: 'TH1501',
-          path: ['recovery', 'recovery-selection:shell:recovery.unavailable'],
+          path: ['recoveryMessage'],
         },
       ]);
     });
@@ -183,6 +164,19 @@ describe('a recovery message selected in source', () => {
         generated.diagnostics.map(({ code, severity }) => ({ code, severity })),
       ).toEqual([{ code: 'TH1004', severity: 'warning' }]);
     });
+  });
+
+  it('is refused when it names no message', async () => {
+    const root = await project('Localization is temporarily unavailable.', {
+      recoveryMessage: 'shell/recovery.missing',
+    });
+
+    const generated = await generateProject({ project: root });
+
+    expect(generated.ok).toBe(false);
+    expect(
+      generated.diagnostics.map(({ code, path }) => ({ code, path })),
+    ).toEqual([{ code: 'TH1501', path: ['recoveryMessage'] }]);
   });
 
   it('is accepted when it is plain and takes no inputs', async () => {

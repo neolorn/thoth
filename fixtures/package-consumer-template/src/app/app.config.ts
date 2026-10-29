@@ -20,7 +20,6 @@ import {
   withObservability,
   withOverlayLocale,
   withPersistence,
-  withRecoveryMessage,
   withRelativeTimePolicy,
   withRouting,
   type RelativeTimePolicy,
@@ -297,10 +296,6 @@ export const appConfig: ApplicationConfig = {
       // `locale-cookie.ts` and not a literal: `server.ts` writes the same cookie, and when the
       // two were declared separately they disagreed about `Secure` and only WebKit said so.
       withPersistence(cookieStore(localeCookie)),
-      withRecoveryMessage({
-        message: messages.recovery.unavailable,
-        retryLabel: messages.control.retry,
-      }),
       withFormattingContext(appFormattingContext),
       // One moment for every render, the server's, the build's and the browser's, so a relative
       // time is worded the same in each and the checks can hold the words to the inputs. A

@@ -111,12 +111,10 @@ describe('a localization context built without Angular', () => {
           ),
         ),
         recoveryPayload,
+        recovery: { identity: messages.recovery.unavailable.identity },
         extensions: runtimeExtensions,
       },
       bootstrapScopes: [shellScope],
-      // The framework-neutral equivalent of `withRecoveryMessage`. Selecting it here is the whole
-      // point: a 500 handler has no provider array to declare it in.
-      recoveryMessage: messages.recovery.unavailable,
       formattingContext: { timeZone: 'UTC' },
     });
 

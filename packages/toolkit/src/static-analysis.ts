@@ -239,12 +239,6 @@ export interface ApplicationAnalysis {
   /** Every place a message is used, in code and in templates. */
   readonly messageUsages: readonly MessageUsage[];
   /**
-   * The messages selected for the failure path, found by resolving the symbol rather than by name.
-   *
-   * These are compiled separately, so they can be read when no catalog could be loaded.
-   */
-  readonly recoveryMessageIdentities: readonly string[];
-  /**
    * Whether this owner composes the Angular application runtime.
    *
    * `specs/10-compiler-and-tooling.spec.md` section 10 makes a missing recovery root a
@@ -380,28 +374,6 @@ function resolvedMessageIdentity(
   node: ts.Node,
 ): string | undefined {
   return typeMessageIdentity(checker, checker.getTypeAtLocation(node), node);
-}
-
-/**
- * A handle held in a named property of whatever an argument evaluates to.
- *
- * Read off the type rather than off an object literal's syntax, so an options object assembled in
- * a constant, spread together, or returned by a helper is seen the same way a literal at the call
- * site is. A recovery message the analysis cannot see is a message the payload does not carry, and
- * the failure is a blank region at the one moment the application has nothing else to show.
- */
-function propertyMessageIdentity(
-  checker: ts.TypeChecker,
-  node: ts.Node,
-  propertyName: string,
-): string | undefined {
-  const property = checker.getTypeAtLocation(node).getProperty(propertyName);
-  if (property === undefined) return undefined;
-  return typeMessageIdentity(
-    checker,
-    checker.getTypeOfSymbolAtLocation(property, node),
-    node,
-  );
 }
 
 function typeMessageIdentity(
@@ -3410,7 +3382,6 @@ export function analyzeApplication(
   const checker = program.getTypeChecker();
   const knownIdentities = new Set(request.knownMessageIdentities ?? []);
   const usages: MessageUsage[] = [];
-  const recoveryMessageIdentities = new Set<string>();
   let selectsApplicationRuntime = false;
   let declaredRouteIndexing: RouteIndexingPolicy | undefined;
   let declaredRouteSitemap: RouteSitemapPolicy | undefined;
@@ -3463,26 +3434,6 @@ export function analyzeApplication(
     }
     const portableSourcePath = portablePath(projectRoot, sourceFile.fileName);
     const visit = (node: ts.Node): void => {
-      if (
-        ts.isCallExpression(node) &&
-        propertyStringLiteral(
-          checker,
-          checker.getTypeAtLocation(node),
-          'ɵkind',
-          node,
-        ) === 'recovery-message'
-      ) {
-        const argument = node.arguments[0];
-        // Both, because both are compiled into the payload and a retry label the analysis missed
-        // would leave the control unnamed in every locale but the source one.
-        for (const property of ['message', 'retryLabel']) {
-          const identity =
-            argument === undefined
-              ? undefined
-              : propertyMessageIdentity(checker, argument, property);
-          if (identity !== undefined) recoveryMessageIdentities.add(identity);
-        }
-      }
       if (ts.isCallExpression(node)) {
         if (
           isLocalizationProviderCall(checker, node, normalizePath(virtualRoot))
@@ -4041,9 +3992,6 @@ export function analyzeApplication(
       messageUsages: Object.freeze(usages),
       deferredSourcePaths: Object.freeze(deferredSourcePaths),
       selectsApplicationRuntime,
-      recoveryMessageIdentities: Object.freeze(
-        [...recoveryMessageIdentities].sort(compareCodeUnit),
-      ),
       ...(declaredRoutePolicy === undefined
         ? {}
         : { routePolicy: declaredRoutePolicy }),

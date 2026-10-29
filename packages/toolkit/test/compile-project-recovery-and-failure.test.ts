@@ -102,6 +102,22 @@ describe('a recovery message passed to compileProject', () => {
       },
     ]);
   });
+
+  it('is refused when the message it names takes an input', () => {
+    const compiled = compileProject(
+      request({
+        catalogs: [
+          catalog('messages:\n  recovery.unavailable: Sorry, {$name}\n'),
+        ],
+        recoveryMessageIdentities: [RECOVERY],
+      }),
+    );
+
+    expect(compiled.ok).toBe(false);
+    expect(
+      compiled.diagnostics.map(({ code, path }) => ({ code, path })),
+    ).toEqual([{ code: 'TH1501', path: ['recovery', RECOVERY] }]);
+  });
 });
 
 describe('a compilation that fails while a sink is listening', () => {

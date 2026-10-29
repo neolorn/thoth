@@ -17,8 +17,11 @@ nothing else.
 
 Three of them are worth knowing by name.
 
-`#i18n` exports `provideLocalization`, your project's own provider, with the locale set and the
-catalogs already bound.
+`#i18n` exports `provideLocalization`, your project's own provider, with the locale set, the
+catalogs, the URL policy and the recovery message already bound. The last two come from
+`thoth.config.json`, so routing and recovery need no argument in code. It also exports
+`localizationSetup`, the setup that provider closes over, for a test or a server render to compose
+the same one.
 
 `#i18n/shell` exports `messages`, the handles for the `shell` scope. There is one module per scope,
 named for the scope.
@@ -31,13 +34,7 @@ route.
 An application configuration names the features it selected and nothing else:
 
 ```ts excerpt src/app/app.config.ts
-export const localizationFeatures = [
-  withRouting({ policy: routePolicy, projection: appRouteProjection }),
-  withRecoveryMessage({
-    message: messages.recoveryMessage,
-    retryLabel: messages.recoveryRetry,
-  }),
-] as const;
+export const localizationFeatures = [withRouting()] as const;
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -53,7 +50,8 @@ export const appConfig: ApplicationConfig = {
 
 Leaving a feature out selects its default rather than switching anything off. An application that
 composes `provideLocalization()` with nothing still negotiates a locale, loads its catalogs and
-renders. It has no recovery message, which is the one feature with no default:
+renders, and when no catalog loads it shows the recovery message its configuration names. That
+message is the one thing with no default:
 [About why the recovery message has no default](about-the-recovery-message.md).
 
 The generated `provideLocalization` calls `provideLocalizationSetup(localizationSetup, ...features)`.

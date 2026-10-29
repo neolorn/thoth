@@ -360,6 +360,10 @@ const initArguments = [
   '--default-locale',
   INIT_REQUEST.defaultLocale,
   ...INIT_REQUEST.locales.flatMap((locale) => ['--locale', locale]),
+  '--recovery-message',
+  INIT_REQUEST.recoveryMessage,
+  '--recovery-retry',
+  INIT_REQUEST.recoveryRetry,
 ];
 const initialized = run(initArguments);
 // The template ships none of the Thoth-owned scripts, so the first init has real work to do. That
@@ -387,6 +391,8 @@ assert.deepEqual(await readJson(resolve(consumerRoot, 'thoth.config.json')), {
   sourceLocale: INIT_REQUEST.sourceLocale,
   defaultLocale: INIT_REQUEST.defaultLocale,
   locales: [...INIT_REQUEST.locales],
+  recoveryMessage: INIT_REQUEST.recoveryMessage,
+  recoveryRetry: INIT_REQUEST.recoveryRetry,
 });
 
 // Two consumer edits to the configuration, and the only ones this gate makes: the pseudo-locales
@@ -399,6 +405,8 @@ await writeFile(
       sourceLocale: INIT_REQUEST.sourceLocale,
       defaultLocale: INIT_REQUEST.defaultLocale,
       locales: [...INIT_REQUEST.locales],
+      recoveryMessage: INIT_REQUEST.recoveryMessage,
+      recoveryRetry: INIT_REQUEST.recoveryRetry,
       pseudoLocales: PSEUDO_LOCALES,
       formatting: LOCALE_FORMATTING,
     },
@@ -947,6 +955,8 @@ assert.deepEqual(configuration, {
   locales: [...INIT_REQUEST.locales],
   pseudoLocales: PSEUDO_LOCALES,
   formatting: LOCALE_FORMATTING,
+  recoveryMessage: INIT_REQUEST.recoveryMessage,
+  recoveryRetry: INIT_REQUEST.recoveryRetry,
 });
 
 // The production build ran a plain `thoth generate`, so neither pseudo-locale is in what it

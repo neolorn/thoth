@@ -41,12 +41,8 @@ async function failed(
   const watched = observed();
   const { localization } = runtime({
     fail: { [catalogKey('shell', initialLocale)]: 1 },
-    setup: { recoveryPayload: payload },
-    options: {
-      initialLocale,
-      recoveryMessageIdentity: identity,
-      observability: watched.emitter,
-    },
+    setup: { recoveryPayload: payload, recovery: { identity } },
+    options: { initialLocale, observability: watched.emitter },
   });
   const diagnostic = await rejectionOf(() => localization.initialize());
   return {

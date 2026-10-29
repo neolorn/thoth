@@ -48,6 +48,10 @@ A declared parent locale cannot be inherited from: it is the locale itself, or t
 
 A pseudo-locale tag is well formed and cannot identify a pseudo-locale: it names no script, its language is not the source locale's, or its region claims what the locale is not. XA is English lengthened left to right, as `PSEUDO_LOCALE_ACCENTED` is, XB is English right to left, as `PSEUDO_LOCALE_BIDI` is, and any other pseudo-locale takes one of XC to XJ or XL to XZ, which UTS #35 leaves free.
 
+### TH1009
+
+The URL policy in the configuration does not fit the locales: a prefix, alias or origin names a locale the project does not serve, a locale-host policy leaves a locale without an origin, an origin is not normalized, two prefixes, aliases or locale-neutral roots spell one segment, or the x-default is not a path, or under locale-host an origin.
+
 ## The catalog file
 
 ### TH1101
@@ -136,7 +140,7 @@ A translation was written against an older source message and may no longer matc
 
 ### TH1310
 
-This owner composes the Thoth application runtime and selects no recovery message, so a failed bootstrap has nothing to say.
+This owner composes the Thoth application runtime and its configuration names no recovery message in recoveryMessage, so a failed start has nothing to say.
 
 ### TH1311
 
@@ -174,11 +178,11 @@ A route loads a file through a lazy boundary that something in the initial bundl
 
 ### TH1408
 
-The configuration and the locale URL policy disagree: a configured locale with no address, an address with no catalogs, two different default locales, or more than one policy for Thoth to read. The policy is read from the options written as literals in the call that builds it. The locale table is compared only when every entry in it is written out, so a table taken from a constant or a function, or one with an entry that is spread in or has a computed key, is not compared, and neither is a default locale that is not a literal. An option with a spread written after it in that call is not read, because the spread can replace it. The running application then drops a policy locale that has no catalogs and refuses a policy whose default locale the configuration lacks; a configured locale with no address and a different default locale go unreported. TH1417 names the options that were not read.
+The configuration and the locale URL policy disagree: a configured locale with no address, an address with no catalogs, two different default locales, more than one policy for Thoth to read, or a policy built in code that differs from the one the configuration declares in its kind, its default-locale prefix or the segments it claims. The policy is read from the options written as literals in the call that builds it. The locale table is compared only when every entry in it is written out, so a table taken from a constant or a function, or one with an entry that is spread in or has a computed key, is not compared, and neither is a default locale that is not a literal. An option with a spread written after it in that call is not read, because the spread can replace it. The running application then drops a policy locale that has no catalogs and refuses a policy whose default locale the configuration lacks; a configured locale with no address and a different default locale go unreported. TH1417 names the options that were not read.
 
 ### TH1409
 
-A route's leading segment is one this owner has already claimed for a locale, so the route and the locale compete for the same address. The claimed segments are the prefixes, aliases and locale-neutral roots written as literals in the call that builds the policy; one taken from a constant, a spread or a function is not read, no prefix is read from a locale table that is not written out whole, and nothing is read from an option with a spread written after it in that call. The running application refuses such an address when it builds one that carries no locale prefix. TH1417 names the options that were not read.
+A route's leading segment is one this owner has already claimed for a locale, so the route and the locale compete for the same address. The claimed segments are those of the policy the configuration declares, or the prefixes, aliases and locale-neutral roots written as literals in the call that builds the policy in code; one taken from a constant, a spread or a function is not read, no prefix is read from a locale table that is not written out whole, and nothing is read from an option with a spread written after it in that call. The running application refuses such an address when it builds one that carries no locale prefix. TH1417 names the options that were not read.
 
 ### TH1410
 
@@ -216,7 +220,7 @@ The locale URL policy is not written out whole, so TH1408 and TH1409 were not ch
 
 ### TH1501
 
-A compiled artifact cannot be produced from the accepted graph: a recovery identity that does not resolve to one existing plain message without inputs or slots, or a catalog absent from the graph.
+A compiled artifact cannot be produced from the accepted graph: a recovery message that does not resolve to one existing plain message without inputs or slots, or a catalog absent from the graph.
 
 ### TH1502
 

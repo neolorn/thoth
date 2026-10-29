@@ -1,7 +1,7 @@
 # About why the recovery message has no default
 
-Every other feature in Thoth has a default. The recovery message does not, and `thoth generate`
-reports `TH1310` for an application runtime that composes none.
+Every feature in Thoth has a default. The recovery message does not, and `thoth generate` reports
+`TH1310` for an application runtime whose `thoth.config.json` names none.
 
 ## Two failures
 
@@ -20,9 +20,9 @@ to walk. The application has one sentence to show, and it has to have been writt
 The wording is the application's. A default would put Thoth's wording, in Thoth's register, in a
 language Thoth chose, into every application that did not write one.
 
-So it is authored like any other message, one plain key with no placeholders, and passed by handle.
-The failure path is the one place there is nothing to interpolate from, which is why a message with
-inputs is not accepted here.
+So it is authored like any other message, one plain key with no placeholders, and named in
+`thoth.config.json` as `recoveryMessage`. The failure path is the one place there is nothing to
+interpolate from, which is why a message with inputs is not accepted here.
 
 ## Where the cost lands
 

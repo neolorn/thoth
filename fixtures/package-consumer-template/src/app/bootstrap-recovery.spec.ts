@@ -27,7 +27,6 @@ import {
   provideLocalizationSetup,
   withLocaleSources,
   withPersistence,
-  withRecoveryMessage,
   withRouting,
   withFormattingContext,
 } from '@neolorn/thoth';
@@ -142,12 +141,12 @@ describe('bootstrap when a catalog cannot load', () => {
             catalogSet,
             catalogLoaders: failingLoaders(),
             recoveryPayload,
+            recovery: {
+              identity: messages.recovery.unavailable.identity,
+              retryLabelIdentity: messages.control.retry.identity,
+            },
             extensions: runtimeExtensions,
           },
-          withRecoveryMessage({
-            message: messages.recovery.unavailable,
-            retryLabel: messages.control.retry,
-          }),
           withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
@@ -172,7 +171,7 @@ describe('bootstrap when a catalog cannot load', () => {
     const platform = application.injector.get(PLATFORM_ID) as string;
     application.destroy();
     claimCapability('feature:provideLocalizationSetup', { platform });
-    claimCapability('feature:withRecoveryMessage', { platform });
+    claimCapability('declaration:recovery-message', { platform });
     claimCapability('entry:@neolorn/thoth', { platform });
   });
 
@@ -187,12 +186,12 @@ describe('bootstrap when a catalog cannot load', () => {
             catalogSet,
             catalogLoaders: failingLoaders(),
             recoveryPayload,
+            recovery: {
+              identity: messages.recovery.unavailable.identity,
+              retryLabelIdentity: messages.control.retry.identity,
+            },
             extensions: runtimeExtensions,
           },
-          withRecoveryMessage({
-            message: messages.recovery.unavailable,
-            retryLabel: messages.control.retry,
-          }),
           withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
@@ -221,12 +220,12 @@ describe('bootstrap when a catalog cannot load', () => {
             catalogSet,
             catalogLoaders: failingLoaders(),
             recoveryPayload,
+            recovery: {
+              identity: messages.recovery.unavailable.identity,
+              retryLabelIdentity: messages.control.retry.identity,
+            },
             extensions: runtimeExtensions,
           },
-          withRecoveryMessage({
-            message: messages.recovery.unavailable,
-            retryLabel: messages.control.retry,
-          }),
           withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
@@ -238,7 +237,7 @@ describe('bootstrap when a catalog cannot load', () => {
     expect(button?.textContent ?? '').not.toContain('String override');
 
     application.destroy();
-    claimCapability('feature:withRecoveryMessage');
+    claimCapability('declaration:recovery-message');
     claimCapability('entry:@neolorn/thoth');
   });
 
@@ -253,14 +252,14 @@ describe('bootstrap when a catalog cannot load', () => {
             catalogSet,
             catalogLoaders: failingLoaders(),
             recoveryPayload,
+            recovery: {
+              identity: messages.recovery.unavailable.identity,
+              retryLabelIdentity: messages.control.retry.identity,
+            },
             extensions: runtimeExtensions,
           },
           withPersistence(remembering('ar-EG')),
           withLocaleSources('stored', 'default'),
-          withRecoveryMessage({
-            message: messages.recovery.unavailable,
-            retryLabel: messages.control.retry,
-          }),
           withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
@@ -284,7 +283,7 @@ describe('bootstrap when a catalog cannot load', () => {
 
     const platform = application.injector.get(PLATFORM_ID) as string;
     application.destroy();
-    claimCapability('feature:withRecoveryMessage', { platform });
+    claimCapability('declaration:recovery-message', { platform });
     claimCapability('feature:withPersistence', { platform });
     claimCapability('feature:withLocaleSources', { platform });
     claimCapability('extension:persistence-store', { platform });
@@ -344,12 +343,12 @@ describe('a server render when a catalog cannot load', () => {
             catalogSet,
             catalogLoaders: failingLoaders(),
             recoveryPayload,
+            recovery: {
+              identity: messages.recovery.unavailable.identity,
+              retryLabelIdentity: messages.control.retry.identity,
+            },
             extensions: runtimeExtensions,
           },
-          withRecoveryMessage({
-            message: messages.recovery.unavailable,
-            retryLabel: messages.control.retry,
-          }),
           withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
@@ -357,7 +356,7 @@ describe('a server render when a catalog cannot load', () => {
 
     await expect(
       TestBed.inject(ApplicationInitStatus).donePromise,
-      'a server bootstrap went on to draw the LocalizationRecovery withRecoveryMessage configures',
+      'a server bootstrap went on to draw the LocalizationRecovery the configuration selects',
     ).rejects.toThrow('A generated local catalog module could not be loaded.');
     expect(TestBed.inject(Localization).lifecycle()).toBe('failed');
   });
@@ -400,14 +399,14 @@ describe('a server render when a catalog cannot load', () => {
             catalogSet,
             catalogLoaders: { ...catalogLoaders, ...shellLoaders },
             recoveryPayload,
+            recovery: {
+              identity: messages.recovery.unavailable.identity,
+              retryLabelIdentity: messages.control.retry.identity,
+            },
             extensions: runtimeExtensions,
             routeProjection,
           },
           withRouting({ policy: routePolicy, projection: appRouteProjection }),
-          withRecoveryMessage({
-            message: messages.recovery.unavailable,
-            retryLabel: messages.control.retry,
-          }),
           withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
@@ -476,6 +475,10 @@ describe('the first navigation when a catalog cannot load', () => {
             catalogSet,
             catalogLoaders: { ...catalogLoaders, ...shellLoaders },
             recoveryPayload,
+            recovery: {
+              identity: messages.recovery.unavailable.identity,
+              retryLabelIdentity: messages.control.retry.identity,
+            },
             extensions: runtimeExtensions,
             routeProjection,
           },
@@ -484,10 +487,6 @@ describe('the first navigation when a catalog cannot load', () => {
           // is given, so the locale that address states is what the store remembers.
           withPersistence(remembering('ar-EG')),
           withLocaleSources('stored', 'default'),
-          withRecoveryMessage({
-            message: messages.recovery.unavailable,
-            retryLabel: messages.control.retry,
-          }),
           withFormattingContext({ timeZone: 'UTC' }),
         ),
       ],
@@ -537,7 +536,7 @@ describe('the first navigation when a catalog cannot load', () => {
     const platformId = TestBed.inject(PLATFORM_ID) as string;
     fixture.destroy();
     TestBed.resetTestingModule();
-    claimCapability('feature:withRecoveryMessage', { platform: platformId });
+    claimCapability('declaration:recovery-message', { platform: platformId });
     claimCapability('feature:withRouting', { platform: platformId });
     claimCapability('entry:@neolorn/thoth', { platform: platformId });
   });

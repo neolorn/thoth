@@ -17,18 +17,16 @@ parameter values enumerated, and those values are already written there.
 import { describe, expect, it } from 'vitest';
 
 import { projectSitemap } from '@neolorn/thoth/core';
-import { configuration } from '#i18n';
-
-import { appRouteProjection, routePolicy } from './localization.routes';
+import { localizationSetup } from '#i18n';
 
 const SITE_ORIGIN = 'https://example.com';
 
 // The set your server answers from. It does not vary by request, so it is built once.
 const sitemapFiles = new Map(
   projectSitemap({
-    policy: routePolicy,
-    projection: appRouteProjection,
-    configuration,
+    policy: localizationSetup.urlPolicy,
+    projection: { generated: localizationSetup.routeProjection },
+    configuration: localizationSetup.configuration,
     origin: SITE_ORIGIN,
     routes: [{ routeId: 'route:_index' }],
   }).map((file) => [`/${file.name}`, file.contents]),
@@ -87,8 +85,6 @@ content, so a route makes them through its own data:
 
 ```text
 withRouting({
-  policy: routePolicy,
-  projection: appRouteProjection,
   sitemap: {
     field: 'section',
     values: {

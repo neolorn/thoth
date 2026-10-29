@@ -5,7 +5,7 @@ import {
   type Localization,
 } from '@neolorn/thoth';
 import { provideLocalizedServerRendering } from '@neolorn/thoth/ssr';
-import { configuration } from '#i18n';
+import { localizationSetup } from '#i18n';
 import { routeProjection } from '#i18n/routes';
 
 import { skuFormatAdapter, skuParseAdapter } from './app/runtime-extensions';
@@ -74,9 +74,6 @@ if (parsed.status === 'valid') {
 // error that names the identity rather than the line that wrote it.
 // EXPECT: Type '"itemm"' is not assignable to type
 // EXPECT: Did you mean '"item"'?
-provideLocalizedServerRendering(
-  routePolicy,
-  appRouteProjection,
-  configuration,
-  [{ routeId: 'itemm', renderMode: RenderMode.Client }],
-);
+provideLocalizedServerRendering(localizationSetup, [
+  { routeId: 'itemm', renderMode: RenderMode.Client },
+]);

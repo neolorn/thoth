@@ -290,7 +290,8 @@ selects no capability needs no configuration, no provider, no scope, and no empt
 The configuration is closed. It declares the schema version, the source locale, the default locale,
 and the supported locales, and optionally the locales a person name may be written in, the
 pseudo-locales, the per-locale formatting facts, the locales still being translated, the parent
-locales where the project disagrees with the pinned data, and the aliases. A release MUST
+locales where the project disagrees with the pinned data, the aliases, the locale URL policy of
+`07-routing-rendering-and-seo.spec.md` section 3, and the recovery and retry messages. A release MUST
 reject a property outside that set, MUST NOT accept a message or scope registry in it, and MUST NOT
 accept a secret, a credential, a runtime user or tenant value, or environment-mutable state.
 
@@ -303,12 +304,17 @@ A release MUST NOT support executable configuration or a second parallel configu
 source, and MUST fail with the candidates where upward discovery is ambiguous. A release MUST
 NOT let an application inherit or merge a neighboring configuration by directory accident.
 
-A consumer application selects its recovery copy through a typed provider feature using ordinary
-generated handles, and a release MUST treat those handles as reachability roots and generate
-the minimal independent recovery payload from their existing catalogs, so no project maintains a
-marker, a raw-key list, a duplicate emergency catalog, or a parallel recovery registry. For an owner
-that selects an application runtime, a release MUST report a missing or invalid recovery root
-as a protected correctness error in both generation and a bare check, so build wiring runs one
+A consumer application selects its recovery copy in the configuration, by naming an ordinary
+source message as `<scope>/<message>` in `recoveryMessage`, and the message a retry control reads
+in `recoveryRetry`. Generation binds both into the generated setup, so no application code names
+them. A release MUST treat those messages as reachability roots and generate the minimal
+independent recovery payload from their existing catalogs, so no project maintains a marker, a
+raw-key list, a duplicate emergency catalog, or a parallel recovery registry. A release MUST refuse,
+in generation and in a bare check, a key that names no source message or names one that is not
+plain text without inputs or slots, because the recovery region renders it when no catalog loaded
+and has nothing to fill an input from. For an
+owner that selects an application runtime, a release MUST report a missing recovery message as a
+protected correctness error in both generation and a bare check, so build wiring runs one
 deterministic command and never infers a production mode from environment state.
 
 ## 11. The command line

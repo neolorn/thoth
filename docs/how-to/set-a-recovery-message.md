@@ -1,7 +1,7 @@
 # How to set a recovery message
 
 The recovery message is the sentence a visitor reads when the catalogs cannot be loaded at all. It
-is the one feature with no default, and every application composes it.
+has no default, and every application names one in `thoth.config.json`.
 
 ## Before you begin
 
@@ -21,25 +21,32 @@ messages:
 ```
 
 The second names the retry control. Write it in every locale you ship, the way you write the first.
-`generate` reports `TH1501` for either one that takes an input or carries a slot.
 
-## Compose it
+## Name it in the configuration
 
-Pass handles, not text:
+Name each message in `thoth.config.json` as `<scope>/<message>`, with the key as the catalog writes
+it:
 
-```ts excerpt src/app/app.config.ts
-  withRecoveryMessage({
-    message: messages.recoveryMessage,
-    retryLabel: messages.recoveryRetry,
-  }),
+```json excerpt thoth.config.json
+{
+  "recoveryMessage": "shell/recovery-message",
+  "recoveryRetry": "shell/recovery-retry"
+}
 ```
 
-`thoth generate` reports `TH1310` for an application runtime that composes none, and
-`thoth init` names it as one of the two things it leaves for you to write.
+`thoth init` writes both keys when you pass `--recovery-message` and `--recovery-retry`. It writes no
+message, and names the recovery message as one of the two things it leaves for you to write.
+Generation binds both keys into the setup `provideLocalization()` closes over, so no application
+code names them, and a changed key takes effect at the next `thoth generate`.
 
-`retryLabel` is optional and is what makes the retry control appear. Both handles are compiled into
-the recovery payload, which is loaded independently of the catalogs, so the wording arrives in the
-locale the reader asked for even though no catalog could be loaded.
+`recoveryRetry` is optional and is what makes the retry control appear. It needs
+`recoveryMessage` beside it. Both messages are compiled into the recovery payload, which is loaded
+independently of the catalogs, so the wording arrives in the locale the reader asked for even though
+no catalog could be loaded.
+
+`generate` reports `TH1310` for an application runtime whose configuration names no recovery
+message, and `TH1501` for a key that names no message in the source catalogs, or names one that
+takes an input or carries a slot.
 
 ## Render it
 
@@ -54,9 +61,9 @@ completes the navigation to it.
 
 `<localization-recovery />` does all of that: it renders the message in a live region with the
 message's own language and direction, and the button with the retry label's. Its `retryLabel` input
-takes a plain string, for an application with no handle to give, and a handle passed to
-`withRecoveryMessage` wins over it. A string is in whichever language the call site was typed in,
-inside a region already marked as the reader's, so prefer the handle.
+takes a plain string, for an application that names no `recoveryRetry`, and the message
+`recoveryRetry` names wins over it. A string is in whichever language the call site was typed in,
+inside a region already marked as the reader's, so prefer the configured message.
 
 Where a failed attempt leads is yours to decide. The HTML standard has a browser forget a module it
 failed to fetch, so the next attempt fetches it again. A browser that still remembers the failure

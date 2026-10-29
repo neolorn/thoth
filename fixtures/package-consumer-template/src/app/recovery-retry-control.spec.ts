@@ -79,10 +79,10 @@ async function failed(): Promise<Failed> {
           ),
       },
       recoveryPayload,
+      recovery: { identity: messages.recovery.unavailable.identity },
       extensions: runtimeExtensions,
     },
     bootstrapScopes: [Object.freeze({ providerId, scopeId })],
-    recoveryMessage: messages.recovery.unavailable,
     formattingContext: { timeZone: 'UTC' },
   });
   const first = localization.initialize();

@@ -50,7 +50,7 @@ interface ProjectOptions {
   /** Compose the Thoth application runtime, the way an Angular application does. */
   readonly application: boolean;
   readonly spelling?: CompositionSpelling;
-  /** Select a recovery message through the provider feature. */
+  /** Name a recovery message in the configuration. */
   readonly selectsRecovery: boolean;
   /** Author messages nothing reads. */
   readonly unusedMessages: number;
@@ -86,6 +86,9 @@ async function project(options: ProjectOptions): Promise<string> {
         sourceLocale: 'en-US',
         defaultLocale: 'en-US',
         locales: ['en-US'],
+        ...(options.selectsRecovery
+          ? { recoveryMessage: 'shell/recovery.unavailable' }
+          : {}),
       },
       null,
       2,
@@ -143,9 +146,6 @@ async function project(options: ProjectOptions): Promise<string> {
       '  setup: unknown,',
       '  ...features: readonly unknown[]',
       '): unknown;',
-      'export declare function withRecoveryMessage(',
-      '  options: { readonly message: unknown; readonly retryLabel?: unknown },',
-      '): { readonly ɵkind: "recovery-message" };',
       '',
     ].join('\n'),
   );
@@ -166,13 +166,8 @@ async function project(options: ProjectOptions): Promise<string> {
       "import { messages } from '#i18n/shell';",
       ...(options.application
         ? options.spelling === 'package'
-          ? [
-              "import { provideLocalizationSetup, withRecoveryMessage } from '@neolorn/thoth';",
-            ]
-          : [
-              "import { provideLocalization } from '#i18n';",
-              "import { withRecoveryMessage } from '@neolorn/thoth';",
-            ]
+          ? ["import { provideLocalizationSetup } from '@neolorn/thoth';"]
+          : ["import { provideLocalization } from '#i18n';"]
         : []),
       '',
       'export const title = messages.appTitle.messageId;',
@@ -181,11 +176,6 @@ async function project(options: ProjectOptions): Promise<string> {
             ...(options.spelling === 'package'
               ? ['export const providers = provideLocalizationSetup(', '  {},']
               : ['export const providers = provideLocalization(']),
-            ...(options.selectsRecovery
-              ? [
-                  '  withRecoveryMessage({ message: messages.recovery.unavailable }),',
-                ]
-              : []),
             ');',
           ]
         : []),

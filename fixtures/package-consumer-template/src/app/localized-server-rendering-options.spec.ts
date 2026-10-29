@@ -13,7 +13,7 @@ import {
   provideLocalizedServerRendering,
   type LocalizedServerRenderingOptions,
 } from '@neolorn/thoth/ssr';
-import { configuration } from '#i18n';
+import { configuration, localizationSetup } from '#i18n';
 import { firstValueFrom } from 'rxjs';
 
 import { appRouteProjection } from './localization.routes';
@@ -89,19 +89,15 @@ describe('provideLocalizedServerRendering', () => {
   ): EnvironmentInjector {
     const rendering =
       options === undefined
-        ? provideLocalizedServerRendering(
+        ? provideLocalizedServerRendering(localizationSetup, [], {
             policy,
-            appRouteProjection,
-            configuration,
-            [],
-          )
-        : provideLocalizedServerRendering(
+            projection: appRouteProjection,
+          })
+        : provideLocalizedServerRendering(localizationSetup, [], {
             policy,
-            appRouteProjection,
-            configuration,
-            [],
-            options,
-          );
+            projection: appRouteProjection,
+            ...options,
+          });
     injector = createEnvironmentInjector(
       [rendering, provideHttpClient(withFetch())],
       TestBed.inject(EnvironmentInjector),

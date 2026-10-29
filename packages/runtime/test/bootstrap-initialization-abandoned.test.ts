@@ -56,6 +56,7 @@ function recovering() {
   return transactionRuntime({
     fail: { [catalogKey('shell', 'en-US')]: 1 },
     setup: {
+      recovery: { identity: TITLE.identity },
       recoveryPayload: [
         {
           identity: TITLE.identity,
@@ -65,7 +66,6 @@ function recovering() {
         },
       ],
     },
-    options: { recoveryMessageIdentity: TITLE.identity },
   }).localization;
 }
 

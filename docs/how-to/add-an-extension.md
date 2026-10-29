@@ -142,13 +142,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Localization, withRecoveryMessage } from '@neolorn/thoth';
+import { Localization } from '@neolorn/thoth';
 import {
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
 } from '@neolorn/thoth/testing';
 import { localizationSetup } from '#i18n';
-import { messages } from '#i18n/shell';
 
 import { ArticleStore, provideArticles } from './articles';
 
@@ -159,10 +158,7 @@ async function setup() {
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
-      provideLocalizationTesting(
-        localizationSetup,
-        withRecoveryMessage({ message: messages.recoveryMessage }),
-      ),
+      provideLocalizationTesting(localizationSetup),
       provideArticles(),
     ],
   });

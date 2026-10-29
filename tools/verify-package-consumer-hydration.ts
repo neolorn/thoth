@@ -5460,7 +5460,7 @@ async function catalogModulesOf(browserRoot: string) {
 /**
  * What a visitor reads when no catalog loads at all, and where its retry leads. Every catalog
  * module answers 503, which is how a bad deploy or an outage reaches a browser, and the page shows
- * the sentence withRecoveryMessage selects, in the page's locale, until the retry brings the
+ * the sentence the configuration names in recoveryMessage, in the page's locale, until the retry brings the
  * catalogs back.
  *
  * The retry is Thoth's either way, and how it reaches the catalog is the engine's. The HTML
@@ -5529,7 +5529,7 @@ async function verifyRecovery(row: BrowserRow, context: BrowserContext) {
   assert.equal(
     (await recovery.locator('p').textContent())!.trim(),
     await readCatalogMessage(consumerRoot, locale, 'recovery.unavailable'),
-    `LocalizationRecovery did not show the ${locale} sentence withRecoveryMessage selects`,
+    `LocalizationRecovery did not show the ${locale} sentence the configuration names in recoveryMessage`,
   );
   // Marked with the language subtag, as Thoth marks every message it renders.
   assert.equal(
@@ -5542,7 +5542,7 @@ async function verifyRecovery(row: BrowserRow, context: BrowserContext) {
   assert.equal(
     (await retry.textContent())!.trim(),
     await readCatalogMessage(consumerRoot, locale, 'control.retry'),
-    `LocalizationRecovery did not label its retry with the ${locale} label withRecoveryMessage selects`,
+    `LocalizationRecovery did not label its retry with the ${locale} label the configuration names in recoveryRetry`,
   );
 
   outage = false;
@@ -5603,7 +5603,7 @@ async function verifyRecovery(row: BrowserRow, context: BrowserContext) {
 
   const check = sectionCheck(row, 'recovery');
   const observed = await measuredContext(page);
-  recordCapabilityClaim(check, 'feature:withRecoveryMessage', observed);
+  recordCapabilityClaim(check, 'declaration:recovery-message', observed);
   recordCapabilityClaim(check, 'directive:LocalizationRecovery', observed);
   await page.close();
 }
@@ -5710,7 +5710,7 @@ async function verifyRecoveryOverRefusedTransfer(
   const recovery = page.locator('localization-recovery [role="alert"]');
   await recovery.waitFor().catch(() => {
     assert.fail(
-      'No LocalizationRecovery showed over the refused transfer, so the page had no withRecoveryMessage to fall back on',
+      'No LocalizationRecovery showed over the refused transfer, so the page had no recovery message to fall back on',
     );
   });
   assert.ok(
@@ -5720,7 +5720,7 @@ async function verifyRecoveryOverRefusedTransfer(
   assert.equal(
     (await recovery.locator('p').textContent())!.trim(),
     await readCatalogMessage(consumerRoot, locale, 'recovery.unavailable'),
-    `LocalizationRecovery did not show the ${locale} sentence withRecoveryMessage selects over the server's page`,
+    `LocalizationRecovery did not show the ${locale} sentence the configuration names in recoveryMessage over the server's page`,
   );
   const observed = await measuredContext(page);
   assert.ok(
@@ -5729,7 +5729,7 @@ async function verifyRecoveryOverRefusedTransfer(
   );
   assert.deepEqual(pageErrors, [], 'The refused transfer threw in the page');
   const check = sectionCheck(row, 'recovery on a page the server drew');
-  recordCapabilityClaim(check, 'feature:withRecoveryMessage', observed);
+  recordCapabilityClaim(check, 'declaration:recovery-message', observed);
   recordCapabilityClaim(check, 'directive:LocalizationRecovery', observed);
   await page.close();
 }
@@ -6664,7 +6664,7 @@ async function verifyEmbeddedRecovery(row: BrowserRow) {
     const recovery = page.locator('localization-recovery [role="alert"]');
     await recovery.waitFor().catch(() => {
       assert.fail(
-        `${check}: no LocalizationRecovery showed when every catalog was refused, so the panel had no withRecoveryMessage to fall back on`,
+        `${check}: no LocalizationRecovery showed when every catalog was refused, so the panel had no recovery message to fall back on`,
       );
     });
     const expected = /recovery\.unavailable: (.+)\n/u.exec(
@@ -6689,9 +6689,9 @@ async function verifyEmbeddedRecovery(row: BrowserRow) {
         refused: refused.size > 0,
       },
       { shown: expected, lang: 'ar', at: '/about', refused: true },
-      `${check}: the ar-EG sentence withRecoveryMessage selects did not stay in place after the router moved`,
+      `${check}: the ar-EG sentence the configuration names in recoveryMessage did not stay in place after the router moved`,
     );
-    recordCapabilityClaim(check, 'feature:withRecoveryMessage', observed);
+    recordCapabilityClaim(check, 'declaration:recovery-message', observed);
     recordCapabilityClaim(check, 'directive:LocalizationRecovery', observed);
   } finally {
     await context.close();

@@ -8,7 +8,6 @@ import {
   provideLocalizationSetup,
   withFormattingContext,
   withOverlayLocale,
-  withRecoveryMessage,
   type LocalizationDiagnostic,
   type LocalizationSnapshot,
 } from '@neolorn/thoth';
@@ -66,9 +65,9 @@ describe('a retry stopped by an overlay adapter that throws its own error', () =
             catalogSet,
             catalogLoaders,
             recoveryPayload,
+            recovery: { identity: messages.recovery.unavailable.identity },
             extensions: runtimeExtensions,
           },
-          withRecoveryMessage({ message: messages.recovery.unavailable }),
           withOverlayLocale(() => ({
             apply: () => {
               if (overlay.refuse) throw thrown;

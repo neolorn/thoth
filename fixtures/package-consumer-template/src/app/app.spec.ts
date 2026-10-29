@@ -21,7 +21,6 @@ import {
   withLocaleAnnouncement,
   withRouting,
   withOverlayLocale,
-  withRecoveryMessage,
   withFormattingContext,
 } from '@neolorn/thoth';
 import {
@@ -85,14 +84,14 @@ describe('Thoth feature-lab package consumer', () => {
             catalogSet,
             catalogLoaders,
             recoveryPayload,
+            recovery: {
+              identity: messages.recovery.unavailable.identity,
+              retryLabelIdentity: messages.control.retry.identity,
+            },
             extensions: runtimeExtensions,
             maximumCachedCatalogs: 1,
             routeProjection,
           },
-          withRecoveryMessage({
-            message: messages.recovery.unavailable,
-            retryLabel: messages.control.retry,
-          }),
           withLocaleAnnouncement(
             (snapshot) => `locale:${snapshot.primaryLocale}`,
           ),

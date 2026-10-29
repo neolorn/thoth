@@ -22,6 +22,7 @@ export type ToolkitDiagnosticCode =
   | 'TH1006'
   | 'TH1007'
   | 'TH1008'
+  | 'TH1009'
   | 'TH1101'
   | 'TH1102'
   | 'TH1103'

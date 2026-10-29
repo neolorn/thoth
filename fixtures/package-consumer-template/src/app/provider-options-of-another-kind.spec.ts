@@ -12,7 +12,6 @@ import {
   withObservability,
   withOverlayLocale,
   withPersistence,
-  withRecoveryMessage,
   withRelativeTimePolicy,
   withRouting,
   type LocalizationSetup,
@@ -169,8 +168,6 @@ const OBJECTS: readonly (readonly [string, (value: never) => unknown])[] = [
   ],
   ['withFormattingContext(context)', (v) => withFormattingContext(v)],
   ['withRelativeTimePolicy(policy)', (v) => withRelativeTimePolicy(v)],
-  ['withRecoveryMessage(options)', (v) => withRecoveryMessage(v)],
-  ['withRecoveryMessage message', (v) => withRecoveryMessage({ message: v })],
   ['provideLocalizationSetup(setup)', (v) => provideLocalizationSetup(v)],
   ['provideLocalizedRouter(options)', (v) => provideLocalizedRouter(routes, v)],
   [

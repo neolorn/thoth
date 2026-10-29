@@ -5624,10 +5624,10 @@
     {
       "file": "packages/toolkit/src/compiler.ts",
       "mutator": "StringLiteral",
-      "original": "'This owner composes the Thoth application runtime but selects no recovery message. Pass one to provideLocalization through withRecoveryMessage so a failed bootstrap can still say something.'",
+      "original": "'This owner composes the Thoth application runtime and its configuration names no recovery message. Set recoveryMessage in thoth.config.json to a plain source message, written <scope>/<message>, so a failed start can still say something.'",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The summary of TH1310, the sentence telling an owner that composes the runtime to select a recovery message."
+      "reason": "The summary of TH1310, the sentence telling an owner that composes the runtime to name a recovery message in its configuration."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5635,8 +5635,8 @@
       "original": "', '",
       "replacement": "\"\"",
       "category": "message-wording",
-      "reason": "The separator between the quoted names listed inside a summary: the unreached message ids of TH1311, the locales of the two TH1408 sentences and the unread options of TH1417.",
-      "count": 4
+      "reason": "The separator between the quoted names listed inside a summary: the unreached message ids of TH1311 and the locales of the two TH1408 sentences.",
+      "count": 3
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -5834,7 +5834,7 @@
     {
       "file": "packages/toolkit/src/compiler.ts",
       "mutator": "StringLiteral",
-      "original": "`The template of ${JSON.stringify(mention.componentName)} ${what}. Thoth already knows every configured locale, its language subtag, its direction and its name in its own language: read them from \"localization.localeChoices()\" and put \"[localeChoice]\" on the control, which writes lang, dir, aria-current and aria-busy and performs the switch. A switcher built that way gains a locale when the conf",
+      "original": "`The template of ${JSON.stringify(mention.componentName)} ${what}. Thoth already knows every configured locale, its language subtag, its direction and its name in its own language: read them from \"localization.localeChoices()\" and put \"[localeChoice]\" on the control, which writes lang, dir, aria-current and aria-busy and performs the switch. A switcher built that way gains a locale when the config",
       "replacement": "``",
       "category": "message-wording",
       "reason": "The literal is the whole summary of TH1410, a sentence a person reads; the cases for that finding assert its code and where it is reported."
@@ -6026,14 +6026,6 @@
       "replacement": "arg.type",
       "category": "equivalent",
       "reason": "The line runs for a declaration with no function. The MessageFormat grammar gives an expression an operand or a function, so a declaration without a function has an operand and the optional read is never the one taken."
-    },
-    {
-      "file": "packages/toolkit/src/message-format.ts",
-      "mutator": "ConditionalExpression",
-      "original": "name === undefined",
-      "replacement": "false",
-      "category": "unreachable",
-      "reason": "annotatingFunction answers undefined only for a selector whose chain reaches no function. validate refuses that selector as missing-selector-annotation and lines 767 to 769 return the failure before line 1141, so the name on line 1144 is always a function name."
     },
     {
       "file": "packages/toolkit/src/semantic-model.ts",
@@ -6940,14 +6932,6 @@
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "ConditionalExpression",
-      "original": "analysis.routePolicy.claimedSegments.length > 0",
-      "replacement": "true",
-      "category": "equivalent",
-      "reason": "With no claimed segment both lookup maps built inside the block are empty, so every route and every routerLink address finds no claim and is skipped; nothing is reported with or without the guard."
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
       "mutator": "StringLiteral",
       "original": "`writes lang=${JSON.stringify(mention.text)} by hand`",
       "replacement": "``",
@@ -7092,27 +7076,11 @@
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "ConditionalExpression",
-      "original": "scopeId === undefined",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "With the skip gone, deferredScopeIds can only gain the value undefined in its list for a usage whose message no scope defines. The list is read in two places, routeScopes line 273 and indexModule (generated-contracts.ts line 552), each through new Set and has(scope.scopeId) with a scope of the graph, whose scopeId is a string; a catalog written by hand with no scopeId throws in canonical-json.ts before this line is reached."
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
       "mutator": "MethodExpression",
       "original": "[...seen].filter((scopeId) => !eager.has(scopeId)).sort(compareCodeUnit)",
       "replacement": "[...seen].filter(scopeId => !eager.has(scopeId))",
       "category": "equivalent",
       "reason": "The list deferredScopeIds returns is read in two places, routeScopes line 273 and indexModule (generated-contracts.ts line 552), and both turn it into a Set and only ask has(scopeId), so its order reaches no output."
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "MethodExpression",
-      "original": "scope.messages\n      .filter(({ identity }) => !reached.has(identity))\n      .map(({ messageId }) => messageId)\n      .sort(compareCodeUnit)",
-      "replacement": "scope.messages.filter(({\n  identity\n}) => !reached.has(identity)).map(({\n  messageId\n}) => messageId)",
-      "category": "equivalent",
-      "reason": "The graph unusedSourceMessages reads is the one analyzeCatalogSet built in the same call, and semantic-model.ts line 2139 has already sorted each scope's messages by messageId with compareCodeUnit; filtering and mapping keep that order, so the sort moves nothing."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7188,14 +7156,6 @@
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "EqualityOperator",
-      "original": "analysis.routePolicy.claimedSegments.length > 0",
-      "replacement": "analysis.routePolicy.claimedSegments.length >= 0",
-      "category": "equivalent",
-      "reason": "With no claimed segments the block builds two empty maps, so `exact.get` and `folded.get` answer undefined for every route and every template address and neither loop pushes a diagnostic; nothing else in the block has an effect."
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
       "mutator": "MethodExpression",
       "original": "policyDeclaration.claimedSegments\n        .filter((claim) => claim.kind === 'locale-neutral root')",
       "replacement": "policyDeclaration.claimedSegments",
@@ -7233,22 +7193,6 @@
       "replacement": "false",
       "category": "equivalent",
       "reason": "With the guard gone an absent sources reaches analyzeApplication as a key holding undefined, and its only read of the field is request.sources ?? [], which answers the same for a missing key and an undefined one."
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "MethodExpression",
-      "original": "[\n      ...(request.recoveryMessageIdentities ?? []),\n      ...(analysis?.recoveryMessageIdentities ?? []),\n    ]\n      .filter((identity, index, values) => values.indexOf(identity) === index)",
-      "replacement": "[...(request.recoveryMessageIdentities ?? []), ...(analysis?.recoveryMessageIdentities ?? [])]",
-      "category": "equivalent",
-      "reason": "The list is read three ways after this line: for being empty, which a repeated identity cannot change, and by recoveryModule and recoveryRepresentations, each of which puts it through a Set before reading it."
-    },
-    {
-      "file": "packages/toolkit/src/compiler.ts",
-      "mutator": "MethodExpression",
-      "original": "[\n      ...(request.recoveryMessageIdentities ?? []),\n      ...(analysis?.recoveryMessageIdentities ?? []),\n    ]\n      .filter((identity, index, values) => values.indexOf(identity) === index)\n      .sort(compareCodeUnit)",
-      "replacement": "[...(request.recoveryMessageIdentities ?? []), ...(analysis?.recoveryMessageIdentities ?? [])].filter((identity, index, values) => values.indexOf(identity) === index)",
-      "category": "equivalent",
-      "reason": "Nothing reads the order of the list. Line 667 tests it for being empty. generateContracts hands it to recoveryModule, which sorts the identities itself (generated-contracts.ts line 756). compileLocalArtifacts is reached only when that generation refused none of them (line 999), so recoveryRepresentations, which reads the list through a Set, finds nothing to refuse in the loop on compiled-artifacts.ts line 908 and sorts the representations it returns (line 925)."
     },
     {
       "file": "packages/toolkit/src/compiler.ts",
@@ -7339,30 +7283,6 @@
       "replacement": "``",
       "category": "message-wording",
       "reason": "The literal is the phrase naming the function in the sentences checkUnicodeOptions writes; the code stays TH1204, which message-format.test.ts asserts for u: options written on a function."
-    },
-    {
-      "file": "packages/toolkit/src/message-format.ts",
-      "mutator": "OptionalChaining",
-      "original": "resolved?.complete",
-      "replacement": "resolved.complete",
-      "category": "equivalent",
-      "reason": "resolveCarried answers undefined only for an expression with no function or a function with no profile, and this call passes a function whose built-in profile line 968 has just required, so resolved is always an object here."
-    },
-    {
-      "file": "packages/toolkit/src/message-format.ts",
-      "mutator": "ConditionalExpression",
-      "original": "profile.operand === 'string'",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "The only string function is :string, which accepts no option and inherits none, and a variable-valued option returns at line 1028; so its resolved options are empty here and the number formatter the code goes on to build from them is the default one, which does not throw."
-    },
-    {
-      "file": "packages/toolkit/src/message-format.ts",
-      "mutator": "StringLiteral",
-      "original": "'string'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "No profile has an empty operand kind, so the comparison is false for every function, and for :string, the one function it was true for, the resolved options are empty here and the number formatter built from them is the default one, which does not throw."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -7524,6 +7444,183 @@
       "replacement": "true",
       "category": "equivalent",
       "reason": "With no locale mentions the block only builds the two sets of configured locales and languages from the locales of a graph analyzeCatalogSet already accepted, which are strings and cannot throw there, and its loop over the mentions runs zero times, so no diagnostic is pushed."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "localePrefixes === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 790), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "prefixAliases === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 790), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "omitDefaultPrefix === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 790), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "localeOrigins === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 790), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "localeNeutralRoots === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 790), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "xDefault === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the condition false the declared policy carries this key holding undefined. Only urlPolicyCall (generated-contracts.ts lines 723 to 790), configuredClaims and the comparison with a policy built in code read the object, each through === undefined or ??, which take a key holding undefined for an absent one; nothing serializes or enumerates it."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "message.resultKind !== 'plain'",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "A message is structured only when its pattern holds markup (message-format.ts line 968), and every markup name in a pattern is one of the message's slots (semantic-model.ts lines 1026 to 1029), so a structured message is refused by the slots condition two lines below."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ArrowFunction",
+      "original": "(scope) => scope.messages.length === 0",
+      "replacement": "() => undefined",
+      "category": "equivalent",
+      "reason": "A scope enters the graph only from a catalog, and a catalog's messages has at least one property (the minProperties under messages in schemas.ts), so every scope has messages, and every() over the scopes is true exactly when there are none, whatever its callback returns."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "scope.messages.length === 0",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "A scope enters the graph only from a catalog, and a catalog's messages has at least one property (the minProperties under messages in schemas.ts), so every scope has messages, and every() over the scopes is true exactly when there are none, whatever its callback returns."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "identity === undefined ||\n    (configuration.recoveryRetry !== undefined &&\n      retryLabelIdentity === undefined)",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "resolve pushes a TH1501 refusal every time it returns undefined, and compileProjectCore returns the refusals as a failure whenever there is one (line 751) before it reads the binding, so what this function returns once a key is refused is never used."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "identity === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "resolve pushes a TH1501 refusal every time it returns undefined, and compileProjectCore returns the refusals as a failure whenever there is one (line 751) before it reads the binding, so what this function returns once a key is refused is never used."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "LogicalOperator",
+      "original": "identity === undefined ||\n    (configuration.recoveryRetry !== undefined &&\n      retryLabelIdentity === undefined)",
+      "replacement": "identity === undefined && configuration.recoveryRetry !== undefined && retryLabelIdentity === undefined",
+      "category": "equivalent",
+      "reason": "resolve pushes a TH1501 refusal every time it returns undefined, and compileProjectCore returns the refusals as a failure whenever there is one (line 751) before it reads the binding, so what this function returns once a key is refused is never used."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "configuration.recoveryRetry !== undefined &&\n      retryLabelIdentity === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "resolve pushes a TH1501 refusal every time it returns undefined, and compileProjectCore returns the refusals as a failure whenever there is one (line 751) before it reads the binding, so what this function returns once a key is refused is never used."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "BlockStatement",
+      "original": "{\n    return undefined;\n  }",
+      "replacement": "{}",
+      "category": "equivalent",
+      "reason": "resolve pushes a TH1501 refusal every time it returns undefined, and compileProjectCore returns the refusals as a failure whenever there is one (line 751) before it reads the binding, so what this function returns once a key is refused is never used."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "retryLabelIdentity === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the condition false a binding with no retry label carries retryLabelIdentity holding undefined. indexModule writes the binding through JSON.stringify (generated-contracts.ts line 569), which leaves such a key out, and the merged recovery list reads it through === undefined (line 807)."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "urlPolicy === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "With the condition false the overlay (line 765) and the generation (line 1180) are asked for a policy holding undefined. generateContracts reads the option through === undefined (generated-contracts.ts line 923), and indexModule reads the wiring the same way (lines 468 and 512), as it reads an absent one.",
+      "count": 2
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "MethodExpression",
+      "original": "[\n      ...(request.recoveryMessageIdentities ?? []),\n      ...(recovery === undefined\n        ? []\n        : [\n            recovery.identity,\n            ...(recovery.retryLabelIdentity === undefined\n              ? []\n              : [recovery.retryLabelIdentity]),\n          ]),\n    ]\n      .filter((identity, index, values) => values.indexOf(identity) === index)\n      .sort(compareCodeUnit)",
+      "replacement": "[...(request.recoveryMessageIdentities ?? []), ...(recovery === undefined ? [] : [recovery.identity, ...(recovery.retryLabelIdentity === undefined ? [] : [recovery.retryLabelIdentity])])].filter((identity, index, values) => values.indexOf(identity) === index)",
+      "category": "equivalent",
+      "reason": "The merged recovery list is read in three ways after this line: whether it is empty, by recoveryModule (generated-contracts.ts line 890) through new Set and then sorted, and by recoveryRepresentations (compiled-artifacts.ts line 900) through new Set with its result sorted. Neither a repeated identity nor the order changes any of the three; the input digest reads the request's own list (line 445), not this one."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "MethodExpression",
+      "original": "[\n      ...(request.recoveryMessageIdentities ?? []),\n      ...(recovery === undefined\n        ? []\n        : [\n            recovery.identity,\n            ...(recovery.retryLabelIdentity === undefined\n              ? []\n              : [recovery.retryLabelIdentity]),\n          ]),\n    ]\n      .filter((identity, index, values) => values.indexOf(identity) === index)",
+      "replacement": "[...(request.recoveryMessageIdentities ?? []), ...(recovery === undefined ? [] : [recovery.identity, ...(recovery.retryLabelIdentity === undefined ? [] : [recovery.retryLabelIdentity])])]",
+      "category": "equivalent",
+      "reason": "The merged recovery list is read in three ways after this line: whether it is empty, by recoveryModule (generated-contracts.ts line 890) through new Set and then sorted, and by recoveryRepresentations (compiled-artifacts.ts line 900) through new Set with its result sorted. Neither a repeated identity nor the order changes any of the three; the input digest reads the request's own list (line 445), not this one."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "policyDeclaration.claimedSegments.length > 0",
+      "replacement": "true",
+      "category": "performance-only",
+      "reason": "With no claimed segment both maps are empty, so every route reaches claim === undefined and continues; the loop runs and reports nothing, as skipping it does."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "EqualityOperator",
+      "original": "policyDeclaration.claimedSegments.length > 0",
+      "replacement": "policyDeclaration.claimedSegments.length >= 0",
+      "category": "performance-only",
+      "reason": "With no claimed segment both maps are empty, so every route reaches claim === undefined and continues; the loop runs and reports nothing, as skipping it does."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "recovery === undefined",
+      "replacement": "false",
+      "category": "equivalent",
+      "reason": "generateContracts reads the option through === undefined (generated-contracts.ts line 926), and indexModule reads the wiring the same way (line 567), so an option holding undefined is an absent one."
+    },
+    {
+      "file": "packages/toolkit/src/compiler.ts",
+      "mutator": "ConditionalExpression",
+      "original": "!contracts.ok",
+      "replacement": "false",
+      "category": "unreachable",
+      "reason": "scopeModule and recoveryModule are the only sources of an error in generateContracts. The provisional generation at line 763 has already run both on the same graph and on every identity the request names, and configuredRecovery refuses (line 751) any configured identity recoveryRootRefusal would, so a generation that reaches this line cannot fail."
     },
     {
       "file": "packages/toolkit/src/message-format.ts",
@@ -7776,35 +7873,11 @@
     },
     {
       "file": "packages/toolkit/src/number-format-rules.ts",
-      "mutator": "LogicalOperator",
-      "original": "i === -1 || unit.indexOf('-per-', i + 1) !== -1",
-      "replacement": "i === -1 && unit.indexOf('-per-', i + 1) !== -1",
-      "category": "equivalent",
-      "reason": "With the early return taken only when both tests hold, a unit without \"-per-\" reaches the two slices with i at -1, and no unsanctioned unit makes both slice(0, -1) and slice(4) sanctioned identifiers of sanctioned-units.generated.ts, which hold no \"-per-\" and no identifier of one character; a unit with \"-per-\" twice keeps one in the second slice. Both answer false, as before."
-    },
-    {
-      "file": "packages/toolkit/src/number-format-rules.ts",
       "mutator": "ConditionalExpression",
       "original": "i === -1 || unit.indexOf('-per-', i + 1) !== -1",
       "replacement": "false",
       "category": "equivalent",
       "reason": "Without the early return, a unit without \"-per-\" reaches the two slices with i at -1, and no unsanctioned unit makes both slice(0, -1) and slice(4) sanctioned identifiers of sanctioned-units.generated.ts, which hold no \"-per-\" and no identifier of one character; a unit with \"-per-\" twice keeps one in the second slice. Both answer false, as before."
-    },
-    {
-      "file": "packages/toolkit/src/number-format-rules.ts",
-      "mutator": "UnaryOperator",
-      "original": "-1",
-      "replacement": "+1",
-      "category": "equivalent",
-      "reason": "With i === +1, a unit without \"-per-\" reaches the two slices with i at -1, and no unsanctioned unit makes both slice(0, -1) and slice(4) sanctioned identifiers of sanctioned-units.generated.ts, which hold no \"-per-\" and no identifier of one character; a unit with \"-per-\" at index 1 returns false early where the original tests a numerator of one character, which is never sanctioned."
-    },
-    {
-      "file": "packages/toolkit/src/number-format-rules.ts",
-      "mutator": "StringLiteral",
-      "original": "'best fit'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "The default is what GetOption returns when localeMatcher is absent, and the call on line 132 discards it; a written value is compared with the list of values, never with the default."
     },
     {
       "file": "packages/toolkit/src/number-format-rules.ts",
@@ -7821,14 +7894,6 @@
       "replacement": "\"\"",
       "category": "equivalent",
       "reason": "getOption is given no list of values for currency (line 168), so it never reaches its refusal on line 76 and the step it is handed is never written; the check on line 174 refuses under a step of its own."
-    },
-    {
-      "file": "packages/toolkit/src/number-format-rules.ts",
-      "mutator": "StringLiteral",
-      "original": "'symbol'",
-      "replacement": "\"\"",
-      "category": "equivalent",
-      "reason": "The default is what GetOption returns when currencyDisplay is absent, and the call on line 177 discards it; a written value is compared with the list of values, never with the default."
     },
     {
       "file": "packages/toolkit/src/number-format-rules.ts",
@@ -7893,8 +7958,7 @@
       "original": "'auto'",
       "replacement": "\"\"",
       "category": "equivalent",
-      "reason": "The defaults of trailingZeroDisplay (line 276) and of signDisplay (line 416) are returned only when the option is absent, and both calls discard them; a written value is compared with the list of values, never with the default.",
-      "count": 2
+      "reason": "The defaults of trailingZeroDisplay (line 276) and of signDisplay (line 416) are returned only when the option is absent, and both calls discard them; a written value is compared with the list of values, never with the default."
     },
     {
       "file": "packages/toolkit/src/number-format-rules.ts",
@@ -8244,27 +8308,11 @@
     },
     {
       "file": "packages/toolkit/src/number-format-rules.ts",
-      "mutator": "ConditionalExpression",
-      "original": "currency.length !== 3",
-      "replacement": "false",
-      "category": "equivalent",
-      "reason": "asciiUppercase replaces each letter by one letter, so it keeps the length, and the anchored pattern on line 99 accepts three characters only; a currency of another length is refused there."
-    },
-    {
-      "file": "packages/toolkit/src/number-format-rules.ts",
       "mutator": "Regex",
       "original": "/^[A-Z]{3}$/u",
       "replacement": "/[A-Z]{3}$/u",
       "category": "equivalent",
       "reason": "Line 98 has already refused every length but three, and three characters that end in three capitals are three capitals, so the start anchor matches nothing more."
-    },
-    {
-      "file": "packages/toolkit/src/number-format-rules.ts",
-      "mutator": "Regex",
-      "original": "/^[A-Z]{3}$/u",
-      "replacement": "/^[A-Z]{3}/u",
-      "category": "equivalent",
-      "reason": "Line 98 has already refused every length but three, and three characters that begin with three capitals are three capitals, so the end anchor matches nothing more."
     },
     {
       "file": "packages/toolkit/src/number-format-rules.ts",

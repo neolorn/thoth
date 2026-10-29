@@ -169,8 +169,9 @@ export const injections = Object.freeze([
     invariant:
       'Source messages nothing reaches are reported as a grouped advisory.',
     source: 'packages/toolkit/src/compiler.ts',
-    find: '    diagnostics.push(...unusedSourceMessages(graph.value, analysis));',
-    replace: '    void unusedSourceMessages(graph.value, analysis);',
+    find: '    diagnostics.push(\n      ...unusedSourceMessages(graph.value, analysis, recoveryMessageIdentities),\n    );',
+    replace:
+      '    void unusedSourceMessages(graph.value, analysis, recoveryMessageIdentities);',
     caughtBy: 'packages/toolkit/test/reachability-and-recovery.test.ts',
   },
   {
@@ -5822,5 +5823,117 @@ export const injections = Object.freeze([
     replace: '    throw new RangeError(language);',
     caughtBy:
       'packages/runtime/test/person-name-casing-unreadable-language.test.ts',
+  },
+  {
+    id: 'declared-url-policy-left-out-of-the-setup',
+    invariant:
+      'The URL policy the configuration declares is written into the generated setup.',
+    source: 'packages/toolkit/src/generated-contracts.ts',
+    find: "    ...(policy === undefined ? [] : ['  urlPolicy: urlPolicy,']),",
+    replace: '    ...([] as string[]),',
+    caughtBy: 'packages/toolkit/test/url-policy-in-configuration.test.ts',
+  },
+  {
+    id: 'declared-prefix-not-derived-from-the-tag',
+    invariant:
+      'A locale the configuration gives no prefix is addressed under its tag in lowercase.',
+    source: 'packages/toolkit/src/generated-contracts.ts',
+    find: '          declared.localePrefixes?.[locale] ?? locale.toLowerCase(),',
+    replace: '          declared.localePrefixes?.[locale] ?? locale,',
+    caughtBy: 'packages/toolkit/test/url-policy-in-configuration.test.ts',
+  },
+  {
+    id: 'declared-prefixes-claim-nothing-in-the-configuration',
+    invariant:
+      'The configuration refuses an alias or root that spells a segment a derived prefix already claims.',
+    source: 'packages/toolkit/src/configuration.ts',
+    find: '      const prefix = overrides.get(locale) ?? locale.toLowerCase();\n',
+    replace:
+      '      const prefix = overrides.get(locale) ?? locale.toLowerCase();\n      if (prefix.length > 0) continue;\n',
+    caughtBy: 'packages/toolkit/test/url-policy-in-configuration.test.ts',
+  },
+  {
+    id: 'declared-policy-dropped-from-the-written-configuration',
+    invariant:
+      'The configuration init writes keeps the URL policy and the recovery messages it was given.',
+    source: 'packages/toolkit/src/configuration.ts',
+    find: '    ...declaredOnly(configuration, DECLARED_ONLY),\n',
+    replace: '',
+    caughtBy: 'packages/toolkit/test/url-policy-in-configuration.test.ts',
+  },
+  {
+    id: 'declared-host-x-default-not-held-to-an-origin',
+    invariant:
+      'The configuration refuses a locale-host x-default that is not a bare origin, which the runtime would refuse at startup.',
+    source: 'packages/toolkit/src/configuration.ts',
+    find: '        valid = /^https?:$/u.test(url.protocol) && url.origin === raw.xDefault;',
+    replace: '        valid = /^https?:$/u.test(url.protocol);',
+    caughtBy: 'packages/toolkit/test/url-policy-in-configuration.test.ts',
+  },
+  {
+    id: 'declared-policy-addresses-an-unserved-locale',
+    invariant:
+      'The configuration refuses a URL policy that writes an address for a locale the project does not serve.',
+    source: 'packages/toolkit/src/configuration.ts',
+    find: '    if (!localeSet.has(canonical.value)) {\n      report(\n        `${what} ${JSON.stringify(tag)} is not a locale this project serves.',
+    replace:
+      '    if (localeSet.size < 0) {\n      report(\n        `${what} ${JSON.stringify(tag)} is not a locale this project serves.',
+    caughtBy: 'packages/toolkit/test/url-policy-in-configuration.test.ts',
+  },
+  {
+    id: 'declared-host-policy-leaves-a-locale-without-an-origin',
+    invariant:
+      'The configuration refuses a locale-host policy that gives a served locale no origin.',
+    source: 'packages/toolkit/src/configuration.ts',
+    find: '      if (!named.has(locale)) {',
+    replace: '      if (named.size < 0) {',
+    caughtBy: 'packages/toolkit/test/url-policy-in-configuration.test.ts',
+  },
+  {
+    id: 'declared-origin-shared-between-locales',
+    invariant:
+      'The configuration refuses a locale-host policy that writes one origin for two locales.',
+    source: 'packages/toolkit/src/configuration.ts',
+    find: '    const owner = originOwners.get(origin);',
+    replace: '    const owner = undefined as string | undefined;',
+    caughtBy: 'packages/toolkit/test/url-policy-in-configuration.test.ts',
+  },
+  {
+    id: 'code-policy-kind-not-held-to-the-declared-one',
+    invariant:
+      'A policy built in code of another kind than the one the configuration declares is refused with TH1408.',
+    source: 'packages/toolkit/src/compiler.ts',
+    find: '    if (policyLocales.kind !== urlPolicy.urlPolicy) {',
+    replace: '    if (policyLocales.kind.length < 0) {',
+    caughtBy: 'packages/toolkit/test/declared-policy-build-checks.test.ts',
+  },
+  {
+    id: 'declared-policy-claims-no-route-segment',
+    invariant:
+      'A route whose leading segment the declared policy claims is refused with TH1409.',
+    source: 'packages/toolkit/src/compiler.ts',
+    find: '          claimedSegments: configuredClaims(urlPolicy, graph.value.locales),',
+    replace: '          claimedSegments: [],',
+    caughtBy: 'packages/toolkit/test/declared-policy-build-checks.test.ts',
+  },
+  {
+    id: 'declared-recovery-message-not-bound',
+    invariant:
+      'The recovery message the configuration names is resolved, refused when it is not plain, and bound in the generated setup.',
+    source: 'packages/toolkit/src/compiler.ts',
+    find: '  if (configuration.recoveryMessage === undefined) return undefined;',
+    replace:
+      '  if (configuration.recoveryMessage !== undefined) return undefined;',
+    caughtBy:
+      'packages/toolkit/test/recovery-selection-in-configuration.test.ts',
+  },
+  {
+    id: 'setup-recovery-binding-ignored',
+    invariant:
+      'The recovery region renders the messages the setup binds, with no option beside the setup.',
+    source: 'packages/runtime/src/localization.ts',
+    find: '    this.recovery = admittedRecovery(options.setup.recovery);',
+    replace: '    this.recovery = admittedRecovery(undefined);',
+    caughtBy: 'packages/runtime/test/standalone-context-options.test.ts',
   },
 ]);

@@ -172,7 +172,7 @@ describe('Thoth standalone project host', () => {
     const guidance = first.diagnostics.find(({ code }) => code === 'TH1706');
     expect(guidance?.severity).toBe('info');
     expect(guidance?.summary).toContain('i18n/shell/en-US.yaml');
-    expect(guidance?.summary).toContain('withRecoveryMessage');
+    expect(guidance?.summary).toContain('recoveryMessage');
 
     const second = await initializeProject({
       project: root,

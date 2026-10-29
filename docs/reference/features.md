@@ -1,8 +1,7 @@
 # Features
 
-Every export that can be passed to `provideLocalization`. Leaving one out selects its default;
-`withRecoveryMessage` is the one with no default. The list is read out of the built
-declarations.
+Every export that can be passed to `provideLocalization`. Leaving one out selects its default.
+The list is read out of the built declarations.
 
 This page is generated from the packages and is not edited by hand.
 
@@ -20,7 +19,6 @@ This page is generated from the packages and is not edited by hand.
 | `withObservability`               | `@neolorn/thoth`         | Sends runtime outcomes to a sink you supply.                                                                                                                    |
 | `withOverlayLocale`               | `@neolorn/thoth`         | Renders one locale on top of the committed one without changing it, for reviewing a translation in place.                                                       |
 | `withPersistence`                 | `@neolorn/thoth`         | Stores a visitor's chosen locale in a cookie, in browser storage, or in your own profile record.                                                                |
-| `withRecoveryMessage`             | `@neolorn/thoth`         | The sentence a visitor reads when no catalog loads at all. The one feature with no default.                                                                     |
 | `withRelativeTimePolicy`          | `@neolorn/thoth`         | Sets the thresholds that decide which unit a relative time is said in.                                                                                          |
-| `withRouting`                     | `@neolorn/thoth`         | Gives every page an address in every locale, from a URL policy and a route projection.                                                                          |
+| `withRouting`                     | `@neolorn/thoth`         | Gives every page an address in every locale, from the URL policy the configuration declares and the generated route table.                                      |
 | `withoutDocumentLocale`           | `@neolorn/thoth`         | Leaves the document's `lang` and `dir` alone, for a widget rendered inside a host page that owns them.                                                          |

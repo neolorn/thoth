@@ -17,13 +17,12 @@ export {
   withLocaleSources,
   withRouting,
   type RoutingOptions,
+  type RoutingProjectionOptions,
   LOCALE_URL_POLICY,
   withRelativeTimePolicy,
   withLocaleAnnouncement,
   withObservability,
   withOverlayLocale,
-  withRecoveryMessage,
-  type RecoveryMessageOptions,
   DocumentLocalization,
   LocalizationInteractionRestore,
   type DocumentLocalizationProjection,
@@ -36,7 +35,6 @@ export {
 export {
   Localization,
   createLocalizationContext,
-  type LocaleUrlResolutionSetup,
   type LocalizationLocaleSource,
 } from './localization';
 export { LocalizedMessage, LocalizePipe } from './message-template';

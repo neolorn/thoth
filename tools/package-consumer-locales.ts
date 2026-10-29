@@ -11,6 +11,8 @@ export const INIT_REQUEST = Object.freeze({
   sourceLocale: 'en-US',
   defaultLocale: 'en-US',
   locales: ['en-US', 'ar-EG'],
+  recoveryMessage: 'shell/recovery.unavailable',
+  recoveryRetry: 'shell/control.retry',
 });
 
 // The two pseudo-locales the toolkit generates. Declaring them changes no build, because

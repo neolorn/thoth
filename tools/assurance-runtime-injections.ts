@@ -265,11 +265,7 @@ export const injections: readonly RuntimeInjection[] = Object.freeze([
     // recovery surface that came up with nothing to read, which is what the invariant's name says
     // happens, rather than a surface that is missing altogether.
     find: `        this.recoveryValue.set(
-          this.recoveryOrNothing(
-            this.options.recoveryMessageIdentity,
-            locale,
-            transitionId,
-          ),
+          this.recoveryOrNothing(this.recovery?.identity, locale, transitionId),
         );`,
     replace: `        this.recoveryValue.set(undefined);`,
   },
@@ -1709,9 +1705,9 @@ export const injections: readonly RuntimeInjection[] = Object.freeze([
     invariant:
       'The minimal consumer selects only what it uses, so an entry point it does not select stays out of its graph.',
     source: 'fixtures/minimal-package-consumer-template/src/app.config.ts',
-    find: "import { withRecoveryMessage } from '@neolorn/thoth';",
+    find: "import { provideLocalization } from '#i18n';",
     replace:
-      "import { withRecoveryMessage } from '@neolorn/thoth';\nimport { resetLocalizationTestEnvironment } from '@neolorn/thoth/testing';\n\nresetLocalizationTestEnvironment();",
+      "import { provideLocalization } from '#i18n';\nimport { resetLocalizationTestEnvironment } from '@neolorn/thoth/testing';\n\nresetLocalizationTestEnvironment();",
     suite: 'verify:focused-consumers',
     caughtWhen:
       /Minimal consumer retained the unused Thoth \.\/testing entrypoint/u,
@@ -1820,9 +1816,9 @@ export const injections: readonly RuntimeInjection[] = Object.freeze([
     invariant:
       'The primary entry point reaches nothing of Angular Forms, so an application without forms bundles none of it.',
     source: 'packages/runtime/src/angular.ts',
-    find: "  const recovery = oneFeature(features, 'recovery-message') as\n",
+    find: "  const formatting = oneFeature(features, 'formatting-context') as\n",
     replace:
-      "  void import('@angular/forms');\n  const recovery = oneFeature(features, 'recovery-message') as\n",
+      "  void import('@angular/forms');\n  const formatting = oneFeature(features, 'formatting-context') as\n",
     suite: 'verify:focused-consumers',
     caughtWhen: /Minimal browser output contains unused @angular\/forms input/u,
   },
@@ -2029,6 +2025,131 @@ export const injections: readonly RuntimeInjection[] = Object.freeze([
     find: "      const inline =\n        snapshot.direction === 'rtl' ? -logicalInline : logicalInline;",
     replace:
       "      const range = Math.max(\n        0,\n        this.document.documentElement.scrollWidth - view.innerWidth,\n      );\n      const inline =\n        snapshot.direction === 'rtl'\n          ? -Math.min(logicalInline, range)\n          : Math.min(logicalInline, range);",
+  },
+  {
+    id: 'routing-policy-not-read-from-the-setup',
+    invariant:
+      'withRouting() with no policy serves the one the generated setup carries.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '  const policy = options.policy ?? setup.urlPolicy;',
+    replace: '  const policy = options.policy;',
+  },
+  {
+    id: 'server-rendering-policy-not-read-from-the-setup',
+    invariant:
+      'The server rendering provider builds its table from the policy the generated setup carries.',
+    source: 'packages/runtime/ssr/src/public-api.ts',
+    find: '  const policy = options.policy ?? setup.urlPolicy;',
+    replace: '  const policy = options.policy;',
+  },
+  {
+    id: 'routing-composed-without-a-policy',
+    invariant:
+      'withRouting() on a setup with no policy, and none passed, is refused with the configuration key named.',
+    // The cast keeps the build typing the rest of the function as before, so what the suite sees
+    // is the refusal gone, not a compile error.
+    source: 'packages/runtime/src/angular.ts',
+    find: '  const policy = options.policy ?? setup.urlPolicy;\n  if (policy === undefined) {',
+    replace:
+      '  const policy = (options.policy ?? setup.urlPolicy) as LocaleUrlPolicy;\n  if (policy === null) {',
+  },
+  {
+    id: 'server-rendering-composed-without-a-policy',
+    invariant:
+      'The server rendering provider on a setup with no policy, and none passed, is refused with the configuration key named.',
+    source: 'packages/runtime/ssr/src/public-api.ts',
+    find: '  const policy = options.policy ?? setup.urlPolicy;\n  if (generated === undefined || policy === undefined) {',
+    replace:
+      '  const policy = (options.policy ?? setup.urlPolicy) as LocaleUrlPolicy;\n  if (generated === undefined || policy === null) {',
+  },
+  {
+    id: 'server-rendering-accepts-another-route-table',
+    invariant:
+      'A generated route table passed to the server rendering provider beside the setup must be the one the setup carries.',
+    source: 'packages/runtime/ssr/src/public-api.ts',
+    find: '  if (given !== undefined && given.identity !== generated.identity) {',
+    replace:
+      '  if (given !== undefined && given.identity !== given.identity) {',
+  },
+  {
+    id: 'routing-accepts-another-route-table',
+    invariant:
+      'A generated route table passed to withRouting() beside the setup must be the one the setup carries.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '    given !== undefined &&\n    given.identity !== setup.routeProjection.identity',
+    replace:
+      '    given !== undefined &&\n    given.identity !== given.identity',
+  },
+  {
+    id: 'routing-route-table-not-read-from-the-setup',
+    invariant:
+      'withRouting() with no generated table passed serves the one the generated setup carries.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '          generated: given ?? setup.routeProjection,',
+    replace: '          generated: given as GeneratedRouteProjection,',
+  },
+  {
+    id: 'server-rendering-route-table-not-read-from-the-setup',
+    invariant:
+      'The server rendering provider with no generated table passed builds from the one the setup carries.',
+    source: 'packages/runtime/ssr/src/public-api.ts',
+    find: '{ ...options.projection, generated: given ?? generated },',
+    replace:
+      '{ ...options.projection, generated: given as GeneratedRouteProjection },',
+  },
+  // Each option of withRouting() is optional and read as whatever was passed: held to an object
+  // where it is given, and not asked for where it is not.
+  {
+    id: 'routing-policy-required',
+    invariant:
+      'withRouting() takes no policy where the generated setup carries one.',
+    source: 'packages/runtime/src/angular.ts',
+    find: "  if (options.policy !== undefined) {\n    ɵrecordOption(options.policy, 'The policy of withRouting()');",
+    replace:
+      "  if (true) {\n    ɵrecordOption(options.policy, 'The policy of withRouting()');",
+  },
+  {
+    id: 'routing-policy-read-unchecked',
+    invariant:
+      'A policy passed to withRouting() that is not an object is refused where it is passed.',
+    source: 'packages/runtime/src/angular.ts',
+    find: "  if (options.policy !== undefined) {\n    ɵrecordOption(options.policy, 'The policy of withRouting()');",
+    replace:
+      "  if (false) {\n    ɵrecordOption(options.policy, 'The policy of withRouting()');",
+  },
+  {
+    id: 'routing-projection-required',
+    invariant:
+      'withRouting() takes no projection where the routes need no spellings, codecs or retired addresses.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '  if (options.projection !== undefined) {\n    const projection = ɵrecordOption(\n      options.projection,',
+    replace:
+      '  if (true) {\n    const projection = ɵrecordOption(\n      options.projection as RoutingProjectionOptions,',
+  },
+  {
+    id: 'routing-projection-read-unchecked',
+    invariant:
+      'A projection passed to withRouting() that is not an object is refused where it is passed.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '  if (options.projection !== undefined) {\n    const projection = ɵrecordOption(\n      options.projection,',
+    replace:
+      '  if (false) {\n    const projection = ɵrecordOption(\n      options.projection as RoutingProjectionOptions,',
+  },
+  {
+    id: 'routing-generated-table-required',
+    invariant:
+      'A projection passed to withRouting() may leave the generated table out, which the setup carries.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '    if (projection.generated !== undefined) {\n      ɵrecordOption(',
+    replace: '    if (true) {\n      ɵrecordOption(',
+  },
+  {
+    id: 'routing-generated-table-read-unchecked',
+    invariant:
+      'A generated table passed in the projection of withRouting() that is not an object is refused where it is passed.',
+    source: 'packages/runtime/src/angular.ts',
+    find: '    if (projection.generated !== undefined) {\n      ɵrecordOption(',
+    replace: '    if (false) {\n      ɵrecordOption(',
   },
   // One per engine the browser specs run in, each answering differently in that engine alone, so
   // an engine the stage stopped running would leave its injection uncaught.

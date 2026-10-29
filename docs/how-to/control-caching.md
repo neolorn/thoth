@@ -55,8 +55,6 @@ A project that already classifies its routes names the field it has and maps its
 
 ```text
 withRouting({
-  policy: routePolicy,
-  projection: appRouteProjection,
   caching: {
     field: 'area',
     values: { themed: 'per-visitor', account: 'not-stored' },
@@ -98,12 +96,10 @@ import { describe, expect, it } from 'vitest';
 import { createLocaleRequestHandler } from '@neolorn/thoth/http';
 import { localizationSetup } from '#i18n';
 
-import { appRouteProjection, routePolicy } from './localization.routes';
-
 const rendering = (headers: Record<string, string>) =>
   createLocaleRequestHandler({
-    policy: routePolicy,
-    projection: appRouteProjection,
+    policy: localizationSetup.urlPolicy,
+    projection: { generated: localizationSetup.routeProjection },
     configuration: localizationSetup.configuration,
     cache: { successMaxAge: 300, permanentRedirectMaxAge: 86_400 },
     cookie: false,

@@ -35,19 +35,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type { FormattingResult } from '@neolorn/thoth/core';
-import {
-  decimal,
-  Localization,
-  money,
-  plainDate,
-  withRecoveryMessage,
-} from '@neolorn/thoth';
+import { decimal, Localization, money, plainDate } from '@neolorn/thoth';
 import {
   provideLocalizationTesting,
   resetLocalizationTestEnvironment,
 } from '@neolorn/thoth/testing';
 import { localizationSetup } from '#i18n';
-import { messages } from '#i18n/shell';
 
 afterEach(resetLocalizationTestEnvironment);
 
@@ -62,10 +55,7 @@ async function setup() {
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
-      provideLocalizationTesting(
-        localizationSetup,
-        withRecoveryMessage({ message: messages.recoveryMessage }),
-      ),
+      provideLocalizationTesting(localizationSetup),
     ],
   });
   const localization = TestBed.inject(Localization);
@@ -158,7 +148,6 @@ import {
   LocalizedMoneyPipe,
   money,
   withObservability,
-  withRecoveryMessage,
   type LocalizationObservabilityEvent,
   type LocalizationObservabilitySink,
 } from '@neolorn/thoth';
@@ -167,7 +156,6 @@ import {
   resetLocalizationTestEnvironment,
 } from '@neolorn/thoth/testing';
 import { localizationSetup } from '#i18n';
-import { messages } from '#i18n/shell';
 
 afterEach(resetLocalizationTestEnvironment);
 
@@ -204,11 +192,7 @@ async function setup(): Promise<Localization> {
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
-      provideLocalizationTesting(
-        localizationSetup,
-        withRecoveryMessage({ message: messages.recoveryMessage }),
-        withObservability(sink),
-      ),
+      provideLocalizationTesting(localizationSetup, withObservability(sink)),
     ],
   });
   const localization = TestBed.inject(Localization);

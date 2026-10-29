@@ -103,6 +103,28 @@ and no trailing slash except at the origin root. A consumer application declares
 deviations, such as a shorter public segment, an alias, an omitted default prefix, a
 locale-specific path, or a locale-neutral namespace.
 
+The policy is declared in the configuration, as its kind and only what the declared locales cannot
+give: the deviations above, the origin of each locale under a locale-specific origin policy, the
+locale-neutral roots, and the address that stands for no locale. A release MUST write the policy
+into the generated setup beside the route projection, with every locale of the build a path-prefix
+declaration gives no prefix addressed under its tag in lowercase, and its routing feature and
+server rendering provider MUST read the policy from there where none is passed, so adding a locale
+to the configuration is the whole of giving it addresses. A generated nonproduction locale receives
+a prefix the same way, so its addresses exist in every build that generates it. A release MUST refuse a declaration when the configuration is
+read where it names a locale the configuration does not serve, leaves a served locale without an
+origin under a locale-specific origin policy, gives two locales one origin, or claims one segment
+twice across the prefixes, the aliases and the locale-neutral roots, because no constructor builds
+such a policy. A release MUST refuse to compose routing from a setup that carries no policy where
+none is passed, and MUST name the configuration key that declares one.
+
+A policy built in code stays possible, for an application that composes one a declaration cannot
+express, and the one passed to the routing feature replaces the declared one. Where both exist, a
+build MUST compare them and MUST report a difference in kind, in whether the default locale is
+prefixed, or in the segments either claims, because the client would then route differently from
+what the configuration says. Localized paths, parameter codecs and retired addresses are not part
+of a declaration; an application that has them passes them to the routing feature, and to the
+server rendering provider, beside the setup.
+
 A release MUST refuse a policy kind it does not serve at configuration time, naming the
 kinds it does serve, and MUST NOT warn and continue, because a diagnostic that starts anyway is
 silent in production and leaves the application in a state no rule describes.
@@ -144,7 +166,9 @@ because its existence is decided by the build while the policy is a source file 
 every build.
 
 A build compares the two from the policy as its source declares it, and only where the whole locale
-table is written there with nothing after it that can replace it. A release MUST NOT compare a
+table is written there with nothing after it that can replace it. A policy declared in the
+configuration is read whole, so where no source builds a policy the build compares the declared
+one. A release MUST NOT compare a
 locale table it read in part, because the locales it could not read would be reported as configured
 and unaddressed in an application that addresses them. A release MUST name, in an advisory that blocks no build, each option of the policy it did not read, and MUST say there that neither comparison was made for what those options hold, because a build that stays silent about a policy it could not read is read as a build that found the policy right.
 
@@ -547,9 +571,12 @@ is a separate address that has to exist in the build. A release MUST derive that
 from the route projection and the narrowed policy, so a consumer application states a route's
 render mode once rather than once per locale.
 
-Server rendering is installed with one call taking the locale URL policy, the route projection, the
-generated configuration the client was configured with, and the per-route render mode declarations.
-A release MUST check the route identities in those declarations against the projection
+Server rendering is installed with one call taking the generated setup the client was configured
+with, which carries the declared policy, the route projection, and the configuration, and the
+per-route render mode declarations. An application that passes a policy, localized paths or codecs
+to the routing feature passes the same ones to this call. A release MUST refuse a generated route
+table passed beside the setup that is not the one the setup carries, because the server table would
+then disagree with the client's. A release MUST check the route identities in those declarations against the projection
 rather than accept free strings, and MUST NOT reach for a non-public framework token to read the
 policy and the projection from injection, because the server table is built at module scope before
 any injector exists and the framework's installer takes a concrete table at call time.

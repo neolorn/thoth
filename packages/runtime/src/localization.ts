@@ -43,6 +43,7 @@ import {
   type LocalizationParticipant,
   type LocalizationParticipantOptions,
   type LocalizationParticipantState,
+  type LocalizationRecoveryBinding,
   type LocalizationRouteSnapshot,
   type LocalizationScope,
   type LocalizationSetup,
@@ -106,7 +107,6 @@ import {
 import {
   LocaleResolution,
   type LocaleFromAddress,
-  type LocaleUrlResolutionSetup,
   type LocalizationLocaleSource,
 } from './locale-resolution';
 import {
@@ -259,8 +259,6 @@ export interface LocalizationRuntimeOptions {
    * that never named a value to carry is handed none.
    */
   readonly participantRequestContext?: unknown;
-  readonly recoveryMessageIdentity?: string;
-  readonly recoveryRetryLabelIdentity?: string;
   readonly formattingContext?: Omit<
     FormattingContext,
     'locale' | 'pseudoLocale'
@@ -304,11 +302,7 @@ export interface LocalizationRuntimeOptions {
   readonly preferredLanguages?: readonly string[];
 }
 
-export type {
-  LocaleFromAddress,
-  LocaleUrlResolutionSetup,
-  LocalizationLocaleSource,
-};
+export type { LocaleFromAddress, LocalizationLocaleSource };
 
 /**
  * The argument list that follows a handle where the inputs may also be a signal of them.
@@ -1130,6 +1124,7 @@ class LocalizationInternal {
   private readonly localeFallbacks: Readonly<Record<string, readonly string[]>>;
   private readonly pseudoLocales: ReadonlySet<string>;
   private readonly bootstrapScopes: readonly LocalizationScope[];
+  private readonly recovery: LocalizationRecoveryBinding | undefined;
   private readonly supportedLocales: ReadonlySet<string>;
   private readonly knownScopes: ReadonlyMap<string, LocalizationScope>;
   private readonly lifetimeController = new AbortController();
@@ -1161,6 +1156,7 @@ class LocalizationInternal {
     ɵrecordOption(options, 'The options of a localization context');
     ɵrecordOption(options.setup, 'The setup of a localization context');
     ɵlistOption(options.bootstrapScopes, 'bootstrapScopes');
+    this.recovery = admittedRecovery(options.setup.recovery);
     this.observability = options.observability;
     const configuration = snapshotGeneratedJson(
       options.setup.configuration,
@@ -2227,15 +2223,11 @@ class LocalizationInternal {
         this.lifecycleValue.set('failed');
         this.targetLocaleValue.set(undefined);
         this.recoveryValue.set(
-          this.recoveryOrNothing(
-            this.options.recoveryMessageIdentity,
-            locale,
-            transitionId,
-          ),
+          this.recoveryOrNothing(this.recovery?.identity, locale, transitionId),
         );
         this.recoveryRetryLabelValue.set(
           this.recoveryOrNothing(
-            this.options.recoveryRetryLabelIdentity,
+            this.recovery?.retryLabelIdentity,
             locale,
             transitionId,
           ),
@@ -3721,6 +3713,46 @@ class RuntimeLocalization implements Localization {
 }
 
 /**
+ * The recovery binding of a setup, read once and frozen, or nothing where the setup names none.
+ *
+ * Read from the setup rather than trusted as typed, because a setup can be assembled by hand and a
+ * malformed binding would otherwise surface as a blank region at the moment of a failure.
+ */
+function admittedRecovery(
+  value: unknown,
+): LocalizationRecoveryBinding | undefined {
+  if (value === undefined) return undefined;
+  const binding = ɵrecordOption(value, 'The recovery binding of a setup') as {
+    readonly identity?: unknown;
+    readonly retryLabelIdentity?: unknown;
+  };
+  const identity = (field: string, given: unknown): string => {
+    // A string that is no message identity is not refused here: it names nothing in the payload,
+    // so the region shows nothing and the failure is still reported, as for any missing message.
+    if (typeof given !== 'string') {
+      throw new LocalizationError(
+        operationalDiagnostic(
+          'invalid-configuration',
+          `The recovery binding's ${field} must be a string.`,
+        ),
+      );
+    }
+    return given;
+  };
+  return Object.freeze({
+    identity: identity('identity', binding.identity),
+    ...(binding.retryLabelIdentity === undefined
+      ? {}
+      : {
+          retryLabelIdentity: identity(
+            'retryLabelIdentity',
+            binding.retryLabelIdentity,
+          ),
+        }),
+  });
+}
+
+/**
  * Builds a localization context outside Angular's injector.
  *
  * For a server handler, a script, or a test: anywhere there is work to localize and no application
@@ -3728,7 +3760,7 @@ class RuntimeLocalization implements Localization {
  * `Localization` is how it is reached.
  *
  * Takes the generated setup, optionally the locale to start in, the scopes to load at start-up, the
- * formatting defaults, the recovery messages, the initial route, an opaque request context, and a
+ * formatting defaults, the initial route, an opaque request context, and a
  * sink to report to. With no scopes named it loads every scope the configuration declares.
  *
  * Returns a context that owns its own caches and participants, so one per request keeps concurrent
@@ -3755,12 +3787,6 @@ export function createLocalizationContext(
     ...(options.requestContext === undefined
       ? {}
       : { participantRequestContext: options.requestContext }),
-    ...(options.recoveryMessage === undefined
-      ? {}
-      : { recoveryMessageIdentity: options.recoveryMessage.identity }),
-    ...(options.recoveryRetryLabel === undefined
-      ? {}
-      : { recoveryRetryLabelIdentity: options.recoveryRetryLabel.identity }),
     ...(options.formattingContext === undefined
       ? {}
       : { formattingContext: options.formattingContext }),

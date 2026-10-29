@@ -52,49 +52,27 @@ The toolkit runs at build time and ships in nothing, which is why it is a develo
 
 Run `thoth init` and `thoth generate` first, which the [tutorial](https://github.com/neolorn/thoth/blob/main/docs/tutorial.md) covers. `generate` writes a `provideLocalization` for the project, with the locale set already bound, and runs again whenever catalogs, routes or providers change; `thoth watch` does that while you work.
 
-Declare where the locale sits in a URL, in `src/app/localization.routes.ts`. `#i18n/routes` is generated from the application's route table:
+Declare where the locale sits in a URL, and which messages the recovery screen shows, in `thoth.config.json`. `path-prefix` puts the locale in the first path segment, spelled as the tag in lowercase:
 
-```ts excerpt src/app/localization.routes.ts
-import {
-  createPathPrefixLocalePolicy,
-  defineRouteProjection,
-} from '@neolorn/thoth';
-import { routeProjection } from '#i18n/routes';
-
-export const routePolicy = createPathPrefixLocalePolicy({
-  defaultLocale: 'en-US',
-  locales: { 'en-US': 'en-us', 'ar-EG': 'ar-eg' },
-});
-
-export const appRouteProjection = defineRouteProjection({
-  generated: routeProjection,
-});
+```json excerpt thoth.config.json
+{
+  "urlPolicy": "path-prefix",
+  "recoveryMessage": "shell/recovery-message",
+  "recoveryRetry": "shell/recovery-retry"
+}
 ```
 
-Compose the providers in `src/app/app.config.ts`. `provideLocalizedRouter`, from `@neolorn/thoth/router`, replaces `provideRouter`, and each `with*` selects a feature:
+Compose the providers in `src/app/app.config.ts`. `provideLocalizedRouter`, from `@neolorn/thoth/router`, replaces `provideRouter`, and each `with*` selects a feature. `withRouting()` reads the policy and the generated route table from the setup, so it takes no arguments:
 
 ```ts excerpt src/app/app.config.ts
 import { provideLocalization } from '#i18n';
-import { messages } from '#i18n/shell';
-import {
-  cookieStore,
-  withPersistence,
-  withRecoveryMessage,
-  withRouting,
-} from '@neolorn/thoth';
+import { cookieStore, withPersistence, withRouting } from '@neolorn/thoth';
 import { provideLocalizedRouter } from '@neolorn/thoth/router';
 import { routes } from './app.routes';
-import { appRouteProjection, routePolicy } from './localization.routes';
 ```
 
 ```ts excerpt src/app/app.config.ts
-export const localizationFeatures = [
-  withRouting({ policy: routePolicy, projection: appRouteProjection }),
-  withRecoveryMessage({
-    message: messages.recoveryMessage,
-    retryLabel: messages.recoveryRetry,
-  }),
-] as const;
+export const localizationFeatures = [withRouting()] as const;
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -108,7 +86,7 @@ export const appConfig: ApplicationConfig = {
 };
 ```
 
-The recovery message is what a visitor reads if the catalogs cannot load, and `generate` refuses an application without one. Write `recovery-message` and `recovery-retry` beside `app-title` in each locale's catalog.
+The recovery message is what a visitor reads if the catalogs cannot load, and `generate` refuses an application without one. Write `recovery-message` and `recovery-retry` beside `app-title` in each locale's catalog, under the names `thoth.config.json` gives them.
 
 Render a message with `LocalizePipe`, and a switcher option with the `LocaleChoice` directive, both imported by the component:
 
