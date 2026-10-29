@@ -1241,6 +1241,7 @@ try {
     generate: ['generate', '--project', coldRoot, '--dry-run'],
     check: ['check', '--project', coldRoot],
     format: ['format', '--project', coldRoot, '--dry-run'],
+    exchange: ['exchange', 'export', '--project', coldRoot, '--dry-run'],
     clean: ['clean', '--project', coldRoot, '--dry-run'],
     uninstall: ['uninstall', '--project', coldRoot, '--dry-run'],
     migrate: [

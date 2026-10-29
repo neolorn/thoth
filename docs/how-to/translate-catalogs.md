@@ -1,6 +1,6 @@
 # How to translate catalogs
 
-Export the source catalogs to
+Export the catalogs to
 [XLIFF 2.2](https://docs.oasis-open.org/xliff/xliff-core/v2.2/xliff-core-v2.2.html), hand the
 documents to translators, and import what comes back. What travels is the message and the notes you
 wrote beside it.
@@ -9,31 +9,58 @@ wrote beside it.
 
 You need catalogs, which is [How to write a message](write-messages.md).
 
-## Export and import
+## Export
 
-`exportXliff22` and `importXliff22` are exported from `@neolorn/thoth-toolkit` and work on one
-scope in one target locale at a time, so a project with two scopes and one translated locale
-exchanges two documents. Both take catalogs read with `parseCatalog`, whose `providerId` is the
-`name` in the owner's `package.json`.
+Name each locale you want translated:
 
-`exportXliff22({ source, target })` carries each message with the `description` and `context` you
-authored, so a translator has the notes rather than a bare string. Pass the existing translation as
-`target` and the work already done comes back in the document.
-`importXliff22({ document, source })` reads the returned document against the catalog it was
-exported from and returns the translated catalog. A segment still in the `initial` state is not
-imported, because it holds a placeholder rather than translated work.
+```text
+npx thoth exchange export --locale ar-EG --locale fr-FR
+```
+
+Without `--locale`, it exports every locale in `thoth.config.json` except the source locale. This
+writes one document per locale, `xliff/ar-EG.xlf` and `xliff/fr-FR.xlf`, and each holds every
+scope of the project as a `<file>` of its own. Every message carries the `description` and
+`context` you authored, so a translator has the notes rather than a bare string, and a message the
+target catalog already translates arrives with its translation.
 
 A message without variants reaches the translator as text, with its placeholders and markup as
 XLIFF inline codes a translation tool protects. A message with variants, one written with `.match`,
 travels as its MessageFormat 2 text, and the translator edits the variants in that syntax.
 
-The toolkit has no command for the exchange. `formatCatalog` returns the imported catalog as the
-text of a new file in canonical form, so comments and block scalars in the translated file are not
-kept.
+`--dir <path>` writes the documents to another folder in the project. `i18n/`, the generated root
+and `.thoth/` are refused, because Thoth reads or owns them. `--dry-run` lists the files that would
+change and writes none of them.
 
-Each of the four functions returns a result rather than throwing for content it cannot take. Check
-`ok`, then read the document, the catalog or the text from `value`; a result that is not `ok`
-carries `diagnostics` alone.
+## Import
+
+Put the returned documents where the export wrote them, and import the same locales:
+
+```text
+npx thoth exchange import --locale ar-EG --locale fr-FR
+```
+
+Each translated unit is written into `i18n/<scope>/<locale>.yaml`. In a catalog that exists, only
+the entries a unit translates change: comments, key order, block scalars and every other entry stay
+as you wrote them, and an entry the catalog did not have is added at the end. A scope with no
+catalog for the locale gets one.
+
+A unit that is not imported leaves its entry as it was, and the units around it are imported:
+
+- A segment still in the `initial` state holds a placeholder rather than translated work, and is
+  reported as a warning.
+- A unit exported before its source message changed is stale, and is reported as a warning. Export
+  again to send the current wording.
+- A translation that drops or adds a placeholder, or is not a valid message, is an error, and the
+  run exits with `1`.
+
+An export does not replace a document holding a translation the catalogs do not. It writes
+nothing and names each unit with what the document holds and what the catalog holds: import the
+document when it holds returned translations, or delete it when the catalogs hold the newer text.
+
+`exportXliff22` and `importXliff22`, exported from `@neolorn/thoth-toolkit`, do the same for one
+scope in one locale from code, on catalogs read with `parseCatalog`. Each returns a result rather
+than throwing for content it cannot take: check `ok`, then read the document or the catalog from
+`value`.
 
 Nothing about your build, your routes or your project goes into the document, and nothing in the
 document can introduce markup or a destination into your page, which is
@@ -85,7 +112,9 @@ is not valid JSON, such as one a merge left conflict markers in, stops `generate
 ## What is checked in
 
 The catalogs, `thoth.config.json` and `.thoth-translation-state.json` are yours and are checked
-in. Without the translation state, a fresh checkout reports no translation stale.
+in. Without the translation state, a fresh checkout reports no translation stale. The documents in
+`xliff/` are rewritten by every export, and are checked in only where translators work from the
+repository.
 
 Everything under the generated root, `src/generated/i18n/` unless configured otherwise, is output:
 it carries an ownership marker, it regenerates, and `thoth clean` removes it. A hand-edited

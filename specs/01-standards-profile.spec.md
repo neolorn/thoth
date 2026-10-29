@@ -255,9 +255,11 @@ external resource.
 ## 11. XLIFF module profile
 
 Every document the toolkit writes uses Core, in the version-stamped namespace of the pinned edition
-rather than an earlier one. Beyond Core, a release interprets the Metadata module and its own
-extension namespace, and nothing else. A document a release writes MUST validate against the schemas
-of the pinned Committee Specification.
+rather than an earlier one. Beyond Core, a release interprets the Metadata module and nothing else,
+and declares no namespace of its own: what it adds is written in the values Core and that module
+leave to an authority prefix, as `thoth:` note categories, metadata categories and types, and
+segment `subState` values. A document a release writes MUST validate against the schemas of the
+pinned Committee Specification.
 
 A release emits a module's data only where that data exists. An empty container conveys that
 a field was considered and left blank, which is not what an absent field means.

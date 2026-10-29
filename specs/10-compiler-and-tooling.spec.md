@@ -319,8 +319,8 @@ deterministic command and never infers a production mode from environment state.
 
 ## 11. The command line
 
-The executable offers initialization, generation, checking, formatting, cleaning, uninstalling,
-migration, and watch.
+The executable offers initialization, generation, checking, formatting, translation exchange,
+cleaning, uninstalling, migration, and watch.
 
 Initialization adds compatible missing toolkit-owned setup and refuses a conflict. A release
 MUST allow an interactive initialization only on a terminal, and MUST prompt only for the source
@@ -466,6 +466,30 @@ catalog manifest part of that run.
 
 Authored YAML stays authoritative, and XLIFF is a deterministic interchange view under the profile
 of `01-standards-profile.spec.md` sections 10 to 12.
+
+The exchange is a command with two directions. Export writes one document per target locale, and
+import reads those documents back into the target catalogs. A document carries one target language,
+because XLIFF 2.2 Core states the target language once, on the document's root. A release MUST
+take the target locales on the invocation, every supported locale but the source where it names
+none, and MUST write each document with every scope of the
+owner as a `<file>` of its own, carrying the translation the target catalog already holds. A
+release MUST write and read the documents in one conventional folder inside the owner, which an
+invocation MAY name instead, and MUST NOT place them where catalog discovery, generation, or
+cleaning reaches.
+
+Before an export replaces a document, a release MUST read it, and MUST refuse with `TH1807` and
+write nothing where a unit of it holds a target that differs from the translation the target
+catalog holds for that message and locale, a missing translation included, or where the document
+cannot be read. The refusal MUST name the document and, for each such unit, what the document
+holds and what the catalog holds, and no option MAY override it.
+
+The command's import maps each `<file>` back to its scope by the identity the export gave it, and
+reads each target with the extension registry the authored catalogs are parsed with. A release
+MUST write the units it accepts into the target catalog of their scope and locale even where other
+units of the same document are refused, and MUST leave the entry a refused, stale, or initial unit
+names as it was. Where that catalog exists, a release MUST change only the entries an accepted
+unit names, and MUST keep its comments, its key order, its block scalars, and the text and quoting
+of every other entry. Where it does not, the import creates it in canonical form.
 
 A release MUST preserve, in an export, the complete identity, the locales, the source
 fingerprint, the context, the MessageFormat structure, the typed inputs and functions, the rich

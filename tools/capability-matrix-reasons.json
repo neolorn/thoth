@@ -13,10 +13,11 @@
         "cli:format",
         "cli:clean",
         "cli:uninstall",
-        "cli:migrate"
+        "cli:migrate",
+        "cli:exchange"
       ],
       "columns": ["policy:*"],
-      "reason": "These commands write the configuration, catalogs, generated files and package metadata; they never reach the compiler, which is the only place a URL policy is read, and the configuration has no field for one."
+      "reason": "These commands write the configuration, catalogs, XLIFF documents, generated files and package metadata. A URL policy in the configuration is carried as written and applied only by the compiler and the runtime, so no policy changes what these commands do."
     },
     {
       "id": "xliff-outside-pages",

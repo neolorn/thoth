@@ -151,7 +151,7 @@ const REFERENCE = {
   TH1702:
     'The project could not be selected or read: no Thoth configuration inside the package boundary, a selection that is a symbolic link or not a directory, an owner `package.json` that is missing, unreadable or not an object, an owner `angular.json` that is unreadable, a TypeScript source behind a link, or a translation-state record that is present and cannot be read.',
   TH1703:
-    'An environment operation failed, or a disposable one was skipped: a corrupt, incompatible, oversized or linked incremental cache, a cache that could not be persisted, a formatting refused because semantic equality was not proven, or a watcher that could not start or reconcile.',
+    'An environment operation failed, or a disposable one was skipped: a corrupt, incompatible, oversized or linked incremental cache, a cache that could not be persisted, a formatting or an exchange import refused because semantic equality was not proven, or a watcher that could not start or reconcile.',
   TH1704:
     'Generated output is stale against the compilation that would produce it. Advisory unless the run requires fresh output.',
   TH1705:
@@ -161,7 +161,7 @@ const REFERENCE = {
   TH1801:
     'An XLIFF document is not readable XML, or exceeds the Thoth byte ceiling.',
   TH1802:
-    'An XLIFF export or import cannot be performed at all: catalogs that are not the source and target of one scope, a file or unit id that is not an `xs:NMTOKEN`, a document that is not the Thoth 2.2 profile, or a source message whose markup has no XLIFF inline representation.',
+    'An XLIFF export or import, or one document or file of `thoth exchange`, cannot be performed at all: catalogs that are not the source and target of one scope, a file or unit id that is not an `xs:NMTOKEN`, a document that is not the Thoth 2.2 profile, a document `thoth exchange import` expected and did not find, a file that belongs to no scope of the project, or a source message whose markup has no XLIFF inline representation.',
   TH1803:
     'An XLIFF unit cannot be imported as a translation: placeholders the source does not have or that the translation never renders, a segment state Thoth does not accept, notes it does not store, a unit outside the authoritative source catalog or stale against it, or an attempt to change what the authoring catalog owns.',
   TH1804:
@@ -170,6 +170,8 @@ const REFERENCE = {
     'An authored change plan, an application-local extension registry, or a semantic refactor was refused: invalid or oversized input, an invalid or duplicate operation, an undeclared or nonportable option, or a refactor whose source is unavailable and whose destination already exists.',
   TH1806:
     "The host is outside Thoth's supported range: Node.js, TypeScript, or the Angular compiler.",
+  TH1807:
+    '`thoth exchange export` would replace a document holding translations the catalogs do not: a unit whose target differs from the translation its target catalog holds, a missing translation included, or a document it cannot read. Nothing is written.',
 } satisfies Record<ToolkitDiagnosticCode, string>;
 
 export const DIAGNOSTIC_REFERENCE: Readonly<

@@ -22,7 +22,23 @@ import {
 
 import ts from 'typescript';
 
-import { formatCatalogSource, parseCatalog, type Catalog } from './catalog.js';
+import {
+  builtCatalog,
+  catalogText,
+  formatCatalogSource,
+  mergeTargetCatalogSource,
+  parseCatalog,
+  type Catalog,
+  type CatalogMessage,
+} from './catalog.js';
+import {
+  exportXliff22Document,
+  importXliff22Document,
+  translationsAnExportReplaces,
+  type XliffDocumentFile,
+  type XliffHeldTranslation,
+  type XliffReplacedTranslation,
+} from './xliff.js';
 import {
   compileProject,
   fingerprintCompilerInputs,
@@ -75,7 +91,7 @@ import {
 } from './canonical-json.js';
 import { admitHostCompatibility } from './host-compatibility.js';
 import { parseProviderId } from './identities.js';
-import { canonicalizeLocale } from './locales.js';
+import { canonicalizeLocale, type CanonicalLocale } from './locales.js';
 import {
   TOOLKIT_EVENT_CODES,
   emitToolkitEvent,
@@ -293,6 +309,42 @@ export interface FormatProjectResult {
   readonly changed: boolean;
   /** The files rewritten, as repository-relative paths, sorted. */
   readonly files: readonly string[];
+}
+
+/** Which way a translation exchange runs, for which locales, and where its documents are. */
+export interface ExchangeProjectOptions extends ProjectSelection {
+  /** `export` writes a document per locale from the catalogs; `import` reads them back into the catalogs. */
+  readonly direction: 'export' | 'import';
+  /**
+   * The target locales, each one the project supports and none of them the source locale. Every
+   * supported locale but the source when absent or empty.
+   */
+  readonly locales?: readonly string[];
+  /** Where the documents are, relative to `cwd`. Defaults to `xliff` in the owner. */
+  readonly directory?: string;
+  /** Work out the writes and make none of them. */
+  readonly dryRun?: boolean;
+}
+
+/** One document an exchange wrote or read. */
+export interface ExchangeDocument {
+  readonly locale: string;
+  /** The document, relative to the owner. */
+  readonly path: string;
+  /** How many scopes it carries (export) or how many of its scopes gave a translation (import). */
+  readonly scopes: number;
+  /** How many units it carries (export) or how many of its units were accepted (import). */
+  readonly units: number;
+}
+
+/** What an exchange changed, or would have changed under a dry run. */
+export interface ExchangeProjectResult {
+  readonly direction: 'export' | 'import';
+  readonly changed: boolean;
+  /** The files written, relative to the owner, sorted. */
+  readonly files: readonly string[];
+  /** The documents, in locale order. */
+  readonly documents: readonly ExchangeDocument[];
 }
 
 /**
@@ -2634,6 +2686,452 @@ export async function formatProject(
     changes,
     options.dryRun === true,
   );
+}
+
+/** Where exchange documents go when nobody says: beside `i18n`, where discovery never looks. */
+const EXCHANGE_DIRECTORY = 'xliff';
+const EXCHANGE_EXTENSION = '.xlf';
+
+/**
+ * The locales an exchange was asked for, canonically spelled, or the reason one cannot be.
+ *
+ * A locale the project does not build has no catalogs to translate into, and the source locale is
+ * what every document translates from.
+ */
+function exchangeLocales(
+  requested: readonly string[] | undefined,
+  configuration: ProjectConfiguration,
+): ToolkitResult<readonly CanonicalLocale[]> {
+  // A translation round is usually every language the project is translated into, so naming them
+  // again on each invocation would repeat the configuration.
+  if (requested === undefined || requested.length === 0) {
+    return toolkitSuccess(
+      Object.freeze(
+        configuration.locales
+          .filter((locale) => locale !== configuration.sourceLocale)
+          .sort(compareCodeUnit),
+      ),
+    );
+  }
+  const locales: CanonicalLocale[] = [];
+  for (const value of requested) {
+    const canonical = canonicalizeLocale(value);
+    if (!canonical.ok) {
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'TH1701',
+          `${JSON.stringify(value)} is not a locale identifier.`,
+        ),
+      ]);
+    }
+    const locale = canonical.value;
+    const refusal =
+      locale === configuration.sourceLocale
+        ? `${JSON.stringify(locale)} is the source locale, which every document translates from.`
+        : !configuration.locales.includes(locale)
+          ? `${JSON.stringify(locale)} is not one of the locales thoth.config.json supports.`
+          : locales.includes(locale)
+            ? `--locale names ${JSON.stringify(locale)} more than once.`
+            : undefined;
+    if (refusal !== undefined) {
+      return toolkitFailure([toolkitDiagnostic('TH1701', refusal)]);
+    }
+    locales.push(locale);
+  }
+  return toolkitSuccess(Object.freeze(locales.sort(compareCodeUnit)));
+}
+
+/**
+ * The folder the documents are in, inside the owner and outside every root Thoth reads or owns.
+ *
+ * Inside `i18n` a document would be read as a catalog that is not one, and inside the generated or
+ * work root it would be removed by the next clean.
+ */
+function exchangeDirectory(
+  project: LoadedProject,
+  options: ExchangeProjectOptions,
+): ToolkitResult<string> {
+  const directory =
+    options.directory === undefined
+      ? resolve(project.ownerRoot, EXCHANGE_DIRECTORY)
+      : resolve(options.cwd ?? process.cwd(), options.directory);
+  const claimed = [
+    resolve(project.ownerRoot, 'i18n'),
+    project.generatedRoot,
+    project.workRoot,
+  ];
+  if (
+    !containedPath(directory, project.ownerRoot) ||
+    claimed.some((root) => containedPath(directory, root))
+  ) {
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'TH1701',
+        `--dir must name a folder inside the owner and apart from i18n, the generated root and the work root, which ${JSON.stringify(options.directory ?? EXCHANGE_DIRECTORY)} is not.`,
+      ),
+    ]);
+  }
+  return toolkitSuccess(directory);
+}
+
+/** A diagnostic about a document, located at the document so a reader knows which one it means. */
+function documentDiagnostic(
+  diagnostic: ToolkitDiagnostic,
+  documentPath: string,
+): ToolkitDiagnostic {
+  return toolkitDiagnostic(diagnostic.code, diagnostic.summary, {
+    severity: diagnostic.severity,
+    path: diagnostic.path,
+    span: diagnostic.span ?? spanAt('', 0, 0, documentPath),
+  });
+}
+
+function heldText(held: XliffHeldTranslation | undefined): string {
+  if (held === undefined) return 'no translation';
+  if (held.kind === 'empty') return 'an empty translation';
+  return JSON.stringify(held.kind === 'message' ? held.text : held.xml);
+}
+
+/**
+ * The refusal of an export that would replace a document holding translations the catalogs do
+ * not, or `undefined` where it holds none. No option overrides it: what the document holds is
+ * either imported or given up by deleting the document, and either is a decision the export does
+ * not make.
+ */
+function replacedTranslationsRefusal(
+  compared: ToolkitResult<readonly XliffReplacedTranslation[]>,
+  locale: CanonicalLocale,
+  path: string,
+): ToolkitDiagnostic | undefined {
+  const guidance = `Run thoth exchange import --locale ${locale} when the document holds returned translations, or delete it when the catalogs hold the newer text.`;
+  if (!compared.ok) {
+    return documentDiagnostic(
+      toolkitDiagnostic(
+        'TH1807',
+        `Thoth exchange export would replace ${JSON.stringify(path)}, which it cannot read as a document for ${locale}, so it cannot tell whether the document holds returned translations: ${compared.diagnostics.map(({ summary }) => summary).join(' ')} Delete it when nothing in it is to be kept.`,
+      ),
+      path,
+    );
+  }
+  if (compared.value.length === 0) return undefined;
+  return documentDiagnostic(
+    toolkitDiagnostic(
+      'TH1807',
+      `Thoth exchange export would replace ${JSON.stringify(path)}, which holds translations the catalogs do not. ${compared.value
+        .map(
+          ({ scope, messageId, document, catalog }) =>
+            `${scope} ${messageId}: the document holds ${heldText(document)} and the catalog holds ${heldText(catalog)}.`,
+        )
+        .join(' ')} ${guidance}`,
+    ),
+    path,
+  );
+}
+
+/**
+ * Writes one XLIFF 2.2 document per target locale holding every scope, or reads those documents
+ * back into the target catalogs.
+ *
+ * Export writes `<locale>.xlf` with a `<file>` per scope, carrying the translation already in the
+ * target catalog where there is one. A document already there is read first, and an export that
+ * would replace a target the catalogs do not hold writes nothing and says which units hold one. Import reads the same documents, accepts each unit that is
+ * current and valid, and writes the accepted translations into the target catalogs: an existing
+ * catalog keeps its comments, key order and block scalars, and changes only the entries a unit was
+ * accepted for, and a scope with no target catalog yet gets one in canonical form. A unit refused
+ * for any reason leaves the entry it names as it was.
+ *
+ * Both directions write through the same transaction `formatProject` uses, so a run publishes
+ * every file it changes or none of them.
+ */
+export async function exchangeProject(
+  options: ExchangeProjectOptions,
+): Promise<ToolkitResult<ExchangeProjectResult>> {
+  requireArgument(
+    'exchangeProject',
+    'options',
+    options,
+    projectOptions(
+      { locales: ['text'], directory: 'text' },
+      { direction: { oneOf: ['export', 'import'] } },
+    ),
+  );
+  const project = await loadProject(options);
+  if (!project.ok) return project;
+  const locales = exchangeLocales(options.locales, project.value.configuration);
+  if (!locales.ok) return locales;
+  const directory = exchangeDirectory(project.value, options);
+  if (!directory.ok) return directory;
+  return options.direction === 'export'
+    ? exportProjectDocuments(
+        project.value,
+        locales.value,
+        directory.value,
+        options.dryRun === true,
+        project.diagnostics,
+      )
+    : importProjectDocuments(
+        project.value,
+        locales.value,
+        directory.value,
+        options.dryRun === true,
+        project.diagnostics,
+      );
+}
+
+async function exportProjectDocuments(
+  project: LoadedProject,
+  locales: readonly CanonicalLocale[],
+  directory: string,
+  dryRun: boolean,
+  projectDiagnostics: readonly ToolkitDiagnostic[],
+): Promise<ToolkitResult<ExchangeProjectResult>> {
+  const sources = project.catalogFiles
+    .map(({ catalog }) => catalog)
+    .filter(({ role }) => role === 'source')
+    .sort((left, right) => compareCodeUnit(left.scopeId, right.scopeId));
+  const changes: TextFileChange[] = [];
+  const documents: ExchangeDocument[] = [];
+  const refusals: ToolkitDiagnostic[] = [];
+  for (const locale of locales) {
+    const files: XliffDocumentFile[] = sources.map((source) => {
+      const target = project.catalogFiles.find(
+        ({ catalog }) =>
+          catalog.role === 'target' &&
+          catalog.scopeId === source.scopeId &&
+          catalog.locale === locale,
+      )?.catalog;
+      return target === undefined ? { source } : { source, target };
+    });
+    const exported = exportXliff22Document(files, locale);
+    if (!exported.ok) {
+      return toolkitFailure([...projectDiagnostics, ...exported.diagnostics]);
+    }
+    const absolutePath = resolve(directory, `${locale}${EXCHANGE_EXTENSION}`);
+    const path = portablePath(project.ownerRoot, absolutePath);
+    const previous = (await pathExists(absolutePath))
+      ? await readFile(absolutePath, 'utf8')
+      : undefined;
+    if (previous !== undefined && previous !== exported.value) {
+      const refusal = replacedTranslationsRefusal(
+        translationsAnExportReplaces(previous, exported.value, files, locale),
+        locale,
+        path,
+      );
+      if (refusal !== undefined) refusals.push(refusal);
+    }
+    changes.push({
+      absolutePath,
+      portablePath: path,
+      previous,
+      contents: exported.value,
+    });
+    documents.push(
+      Object.freeze({
+        locale,
+        path,
+        scopes: sources.length,
+        units: sources.reduce(
+          (count, source) => count + Object.keys(source.messages).length,
+          0,
+        ),
+      }),
+    );
+  }
+  if (refusals.length > 0) {
+    return toolkitFailure([...projectDiagnostics, ...refusals]);
+  }
+  const applied = await applyExchangeChanges(
+    project.ownerRoot,
+    directory,
+    changes,
+    dryRun,
+  );
+  if (!applied.ok) return applied;
+  return toolkitSuccess(
+    Object.freeze({
+      direction: 'export' as const,
+      changed: applied.value.changed,
+      files: applied.value.files,
+      documents: Object.freeze(documents),
+    }),
+    projectDiagnostics,
+  );
+}
+
+async function importProjectDocuments(
+  project: LoadedProject,
+  locales: readonly CanonicalLocale[],
+  directory: string,
+  dryRun: boolean,
+  projectDiagnostics: readonly ToolkitDiagnostic[],
+): Promise<ToolkitResult<ExchangeProjectResult>> {
+  const sources = project.catalogFiles
+    .map(({ catalog }) => catalog)
+    .filter(({ role }) => role === 'source');
+  const diagnostics: ToolkitDiagnostic[] = [...projectDiagnostics];
+  const changes: TextFileChange[] = [];
+  const documents: ExchangeDocument[] = [];
+  for (const locale of locales) {
+    const absolutePath = resolve(directory, `${locale}${EXCHANGE_EXTENSION}`);
+    const path = portablePath(project.ownerRoot, absolutePath);
+    if (!(await pathExists(absolutePath))) {
+      diagnostics.push(
+        toolkitDiagnostic(
+          'TH1802',
+          `Thoth found no XLIFF document for ${locale} at ${JSON.stringify(path)}. Run thoth exchange export --locale ${locale} to write one.`,
+        ),
+      );
+      continue;
+    }
+    await assertOrdinaryContainedPath(project.ownerRoot, absolutePath);
+    const text = await readAuthoredText(project.ownerRoot, absolutePath, {
+      code: 'TH1801',
+      name: 'the XLIFF document',
+      maximumBytes: RESOURCE_LIMITS.xliffBytes,
+    });
+    if (!text.ok) {
+      diagnostics.push(
+        ...text.diagnostics.map((item) => documentDiagnostic(item, path)),
+      );
+      continue;
+    }
+    const read = importXliff22Document({
+      document: text.value,
+      sources,
+      targetLocale: locale,
+      ...(project.extensions === undefined
+        ? {}
+        : { extensions: project.extensions }),
+    });
+    diagnostics.push(
+      ...read.diagnostics.map((item) => documentDiagnostic(item, path)),
+    );
+    if (!read.ok) continue;
+    let scopes = 0;
+    let units = 0;
+    for (const { source, messages } of read.value) {
+      const accepted = Object.keys(messages).length;
+      if (accepted === 0) continue;
+      const change = targetCatalogChange(project, source, locale, messages);
+      if (!change.ok) {
+        diagnostics.push(...change.diagnostics);
+        continue;
+      }
+      scopes += 1;
+      units += accepted;
+      changes.push(change.value);
+    }
+    documents.push(Object.freeze({ locale, path, scopes, units }));
+  }
+  const applied = await applyTextChanges(project.ownerRoot, changes, dryRun);
+  if (!applied.ok) return applied;
+  return toolkitSuccess(
+    Object.freeze({
+      direction: 'import' as const,
+      changed: applied.value.changed,
+      files: applied.value.files,
+      documents: Object.freeze(documents),
+    }),
+    diagnostics,
+  );
+}
+
+/**
+ * The target catalog of one scope and locale with the accepted translations in it.
+ *
+ * The authored file is edited where it exists, so what a person wrote around the translations stays
+ * as they wrote it. Where it does not, the file is new and the canonical form is the only form it
+ * has.
+ */
+function targetCatalogChange(
+  project: LoadedProject,
+  source: Catalog,
+  locale: CanonicalLocale,
+  messages: Readonly<Record<string, CatalogMessage>>,
+): ToolkitResult<TextFileChange> {
+  const absolutePath = resolve(
+    project.ownerRoot,
+    'i18n',
+    source.scopeId,
+    `${locale}.yaml`,
+  );
+  const path = portablePath(project.ownerRoot, absolutePath);
+  const options = {
+    role: 'target' as const,
+    providerId: source.providerId,
+    scopeId: source.scopeId,
+    locale,
+    sourcePath: path,
+    ...(project.extensions === undefined
+      ? {}
+      : { extensions: project.extensions }),
+  };
+  const existing = project.catalogFiles.find(
+    (file) => file.absolutePath === absolutePath,
+  );
+  if (existing !== undefined) {
+    const merged = mergeTargetCatalogSource(existing.source, messages, options);
+    if (!merged.ok) return merged;
+    return toolkitSuccess({
+      absolutePath,
+      portablePath: path,
+      previous: existing.source,
+      contents: merged.value,
+    });
+  }
+  const ordered: Record<string, CatalogMessage> = Object.create(null) as Record<
+    string,
+    CatalogMessage
+  >;
+  for (const id of Object.keys(messages).sort(compareCodeUnit)) {
+    ordered[id] = messages[id] as CatalogMessage;
+  }
+  const contents = catalogText(
+    builtCatalog(
+      Object.freeze({
+        role: 'target',
+        providerId: source.providerId,
+        scopeId: source.scopeId,
+        locale,
+        messages: Object.freeze(ordered),
+        families: Object.freeze({}),
+      }),
+    ),
+  );
+  const reread = parseCatalog(contents, options);
+  if (!reread.ok) return reread;
+  return toolkitSuccess({
+    absolutePath,
+    portablePath: path,
+    previous: undefined,
+    contents,
+  });
+}
+
+/**
+ * The export's transaction, with the documents' folder made first when it does not exist yet.
+ *
+ * The transaction writes each file through a sibling in the same folder, so the folder has to be
+ * there before it starts, and one made for a run that then rolls back is removed again.
+ */
+async function applyExchangeChanges(
+  ownerRoot: string,
+  directory: string,
+  changes: readonly TextFileChange[],
+  dryRun: boolean,
+): Promise<ToolkitResult<FormatProjectResult>> {
+  const pending = changes.some(
+    ({ previous, contents }) => previous !== contents,
+  );
+  const created =
+    !dryRun && pending && !(await pathExists(directory))
+      ? await mkdir(directory, { recursive: true })
+      : undefined;
+  const applied = await applyTextChanges(ownerRoot, changes, dryRun);
+  if (!applied.ok && created !== undefined) {
+    await rm(created, { recursive: true, force: true });
+  }
+  return applied;
 }
 
 async function initOwner(

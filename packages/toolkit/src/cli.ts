@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * The eight things a person can ask Thoth to do, and the two that change a project's shape.
+ * The nine things a person can ask Thoth to do, and the two that change a project's shape.
  *
  * `specs/10-compiler-and-tooling.spec.md` section 11 separates them that way. Initialization
  * adds the setup an owner is missing and migration changes an established shape; generate,
- * check, format, clean, uninstall and watch do neither, because a command that runs unattended
+ * check, format, exchange, clean, uninstall and watch do neither, because a command that runs unattended
  * in a build pipeline must not be able to scatter files through a build.
  */
 
@@ -47,6 +47,12 @@ interface ParsedInvocation {
   readonly command: CliCommand;
   readonly project?: string;
   readonly plan?: string;
+  /** Which way `thoth exchange` runs, given as the word after the command. */
+  readonly direction?: 'export' | 'import';
+  /** The target locales `thoth exchange` covers, one per `--locale`. */
+  readonly locales: readonly string[];
+  /** Where `thoth exchange` writes and reads its documents. */
+  readonly directory?: string;
   readonly json: boolean;
   readonly dryRun: boolean;
   readonly fix: boolean;
@@ -91,6 +97,7 @@ Commands:
   generate   Compile and safely publish generated #i18n artifacts
   check      Validate authored inputs, analysis, and generated freshness
   format     Canonically format Thoth configuration and catalogs
+  exchange   Export XLIFF documents for translators, or import them back
   clean      Remove only verified Thoth-owned generated and work state
   uninstall  Remove Thoth from this owner, keeping authored catalogs
   watch      Reconcile changes in one foreground process
@@ -99,7 +106,7 @@ Commands:
 Common options:
   --project <path>   Select an owner directory or thoth.config.json
   --json             Emit deterministic machine-readable JSON
-  --dry-run          Preview init, generate, format, clean, uninstall, or migrate
+  --dry-run          Preview init, generate, format, exchange, clean, uninstall, or migrate
   --help             Show this help
   --version          Show the toolkit version
 
@@ -113,6 +120,11 @@ Check options:
   --require-complete Fail when a required target locale omits a source message
   --require-fresh    Fail when generated output does not match the sources
   --pseudo           Also generate the configured pseudo-locales (development only)
+
+Exchange options:
+  thoth exchange export|import [--locale <locale> ...]
+  --locale <locale>  A target locale, one XLIFF document each (repeatable; default: every one)
+  --dir <path>       Where the documents are written and read (default: xliff in the owner)
 
 Migrate options:
   --plan <path>      Select one thoth-authored-change-plan/1 JSON file
@@ -146,6 +158,9 @@ function parseInvocation(arguments_: readonly string[]): ParsedInvocation {
   const command = commandValue as CliCommand;
   let project: string | undefined;
   let plan: string | undefined;
+  let direction: 'export' | 'import' | undefined;
+  let directory: string | undefined;
+  const locales: string[] = [];
   let json = false;
   let dryRun = false;
   let fix = false;
@@ -157,9 +172,39 @@ function parseInvocation(arguments_: readonly string[]): ParsedInvocation {
     null,
   ) as Record<string, unknown>;
   let firstInitFlag: string | undefined;
-  for (let index = 1; index < arguments_.length; index += 1) {
+  let first = 1;
+  if (command === 'exchange') {
+    const word = arguments_[1];
+    if (word !== 'export' && word !== 'import') {
+      throw new InvocationError(
+        'thoth exchange requires export or import after the command.',
+      );
+    }
+    direction = word;
+    first = 2;
+  }
+  for (let index = first; index < arguments_.length; index += 1) {
     const flag = arguments_[index] as string;
+    // `--locale` is also a configuration flag of `init`, where it lists every locale the project
+    // supports, so it is read here only for the command that takes it as a target locale.
+    if (command === 'exchange' && flag === '--locale') {
+      locales.push(requireValue(arguments_, index, flag));
+      index += 1;
+      continue;
+    }
     switch (flag) {
+      case '--dir': {
+        if (command !== 'exchange') {
+          throw new InvocationError(
+            '--dir is supported only by thoth exchange.',
+          );
+        }
+        if (directory !== undefined)
+          throw new InvocationError('--dir may appear once.');
+        directory = requireValue(arguments_, index, flag);
+        index += 1;
+        break;
+      }
       case '--project': {
         if (project !== undefined)
           throw new InvocationError('--project may appear once.');
@@ -230,9 +275,15 @@ function parseInvocation(arguments_: readonly string[]): ParsedInvocation {
   }
   if (
     dryRun &&
-    !['init', 'generate', 'format', 'clean', 'uninstall', 'migrate'].includes(
-      command,
-    )
+    ![
+      'init',
+      'generate',
+      'format',
+      'exchange',
+      'clean',
+      'uninstall',
+      'migrate',
+    ].includes(command)
   ) {
     throw new InvocationError(
       `--dry-run is not supported by thoth ${command}.`,
@@ -283,6 +334,9 @@ function parseInvocation(arguments_: readonly string[]): ParsedInvocation {
     command,
     ...(project === undefined ? {} : { project }),
     ...(plan === undefined ? {} : { plan }),
+    ...(direction === undefined ? {} : { direction }),
+    locales: Object.freeze(locales),
+    ...(directory === undefined ? {} : { directory }),
     json,
     dryRun,
     fix,
@@ -766,6 +820,43 @@ async function executeFormat(invocation: ParsedInvocation): Promise<number> {
   );
 }
 
+async function executeExchange(invocation: ParsedInvocation): Promise<number> {
+  const { exchangeProject } = await projectHost();
+  const direction = invocation.direction ?? 'export';
+  const result = await exchangeProject({
+    ...(invocation.project === undefined
+      ? {}
+      : { project: invocation.project }),
+    direction,
+    locales: invocation.locales,
+    ...(invocation.directory === undefined
+      ? {}
+      : { directory: invocation.directory }),
+    dryRun: invocation.dryRun,
+  });
+  if (!result.ok) return reportFailure(invocation, result.diagnostics);
+  const files = result.value.files.join(', ');
+  const human = !result.value.changed
+    ? direction === 'export'
+      ? 'Thoth exchange documents are already current.'
+      : 'Thoth exchange import changed no catalog.'
+    : invocation.dryRun
+      ? `Thoth exchange ${direction} would write: ${files}.`
+      : `Thoth exchange ${direction} wrote: ${files}.`;
+  return reportSuccess(
+    invocation,
+    result.diagnostics,
+    {
+      dryRun: invocation.dryRun,
+      direction,
+      changed: result.value.changed,
+      files: result.value.files,
+      documents: result.value.documents,
+    },
+    human,
+  );
+}
+
 async function executeClean(invocation: ParsedInvocation): Promise<number> {
   const { cleanProject } = await projectHost();
   const result = await cleanProject({
@@ -1081,6 +1172,8 @@ async function execute(invocation: ParsedInvocation): Promise<number> {
       return executeCheck(invocation);
     case 'format':
       return executeFormat(invocation);
+    case 'exchange':
+      return executeExchange(invocation);
     case 'clean':
       return executeClean(invocation);
     case 'uninstall':

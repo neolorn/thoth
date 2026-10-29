@@ -8,7 +8,8 @@
  * configuration's locale, is content, and content is judged and reported as a diagnostic.
  *
  * The shape is the kind of each argument and of each member an entry point reads from it: text, a
- * list, a record. Whether a text is a valid identity or a list holds what it should is content,
+ * list, a record, or one of the texts a union of literals names. Whether a text is a valid identity
+ * or a list holds what it should is content,
  * and is not asked here. Two things are asked of the values themselves, because no digest can be
  * taken over a value that fails them: a text is well-formed Unicode, and `data` is what canonical
  * JSON can carry. The type received is named and the value never is, as section 2 asks of every
@@ -25,7 +26,17 @@ export type ArgumentShape =
   | 'function'
   | 'data'
   | readonly ArgumentShape[]
+  | ArgumentChoice
   | ArgumentMembers;
+
+/**
+ * A text that is one of a closed set, as a signature that writes a union of literals declares it.
+ * Any other text is not the documented shape: an entry point that branched on one of them would
+ * take every misspelling for the other branch.
+ */
+export interface ArgumentChoice {
+  readonly oneOf: readonly [string, string, ...string[]];
+}
 
 /**
  * The members of a record argument. A one-element array is a list whose elements have that shape.
@@ -98,6 +109,20 @@ export function requireArgument(
     if (element === undefined) return;
     for (const [index, item] of (value as readonly unknown[]).entries()) {
       requireArgument(entry, `${name}[${index}]`, item, element);
+    }
+    return;
+  }
+  if ('oneOf' in shape) {
+    const choices = (shape as ArgumentChoice).oneOf.map(
+      (choice) => `'${choice}'`,
+    );
+    const expected = `${choices.slice(0, -1).join(', ')} or ${choices.at(-1)!}`;
+    if (typeof value !== 'string') return refuse(expected);
+    if (!(shape as ArgumentChoice).oneOf.includes(value)) {
+      // The text is not named: it is the value, and section 2 names only its type.
+      throw new TypeError(
+        `${entry}: ${name} must be ${expected}, not another string.`,
+      );
     }
     return;
   }

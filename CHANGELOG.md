@@ -243,11 +243,16 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
 - `thoth watch` regenerates in one foreground process as the inputs change, and starts no work
   for a cycle whose inputs did not change. A stopped watch delivers no further cycle and holds
   nothing that keeps the process alive.
-- `initializeProject`, `generateProject`, `checkProject`, `formatProject`, `cleanProject`,
+- `initializeProject`, `generateProject`, `checkProject`, `formatProject`, `exchangeProject`, `cleanProject`,
   `uninstallProject`, `watchProject`, `compileProject` and `compileProjectFromDisk` are the same
   operations for a build script. Importing the toolkit starts none of them.
 - `exportXliff22` and `importXliff22` exchange translations as XLIFF 2.2, with notes, context and
-  translation state kept across the round trip.
+  translation state kept across the round trip. `importXliff22` takes the extension registry, so a
+  translation calling a registered function is read.
+- `thoth exchange export` writes one XLIFF 2.2 document per target locale, holding every scope, and
+  refuses with `TH1807` to replace one holding a translation the catalogs do not, and
+  `thoth exchange import` writes the returned translations into the catalogs, keeping the comments,
+  the key order and every entry a unit does not translate.
 - `pseudoLocales` in `thoth.config.json`, generated only by `--pseudo`, with length change and
   boundary markers set independently. `PSEUDO_LOCALE_ACCENTED` and `PSEUDO_LOCALE_BIDI`
   name the two tags UTS #35 defines.

@@ -97,6 +97,15 @@ export const injections = Object.freeze([
     caughtBy: 'packages/toolkit/test/call-argument-shapes.test.ts',
   },
   {
+    id: 'call-argument-choice-unchecked',
+    invariant:
+      'A text argument a signature restricts to a union of literals throws a TypeError when it is none of them, so a misspelled exchange direction runs nothing.',
+    source: 'packages/toolkit/src/call-arguments.ts',
+    find: '    if (!(shape as ArgumentChoice).oneOf.includes(value)) {',
+    replace: '    if (false as boolean) {',
+    caughtBy: 'packages/toolkit/test/call-argument-shapes.test.ts',
+  },
+  {
     id: 'handed-over-catalog-unjudged',
     invariant:
       'A catalog a caller assembles is judged as parseCatalog judges the same content.',
@@ -5935,5 +5944,93 @@ export const injections = Object.freeze([
     find: '    this.recovery = admittedRecovery(options.setup.recovery);',
     replace: '    this.recovery = admittedRecovery(undefined);',
     caughtBy: 'packages/runtime/test/standalone-context-options.test.ts',
+  },
+  {
+    id: 'exchange-without-locales-covers-none',
+    invariant:
+      'thoth exchange with no --locale covers every supported locale but the source.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '  if (requested === undefined || requested.length === 0) {',
+    replace: '  if (requested === undefined) {',
+    caughtBy: 'packages/toolkit/test/exchange-command.test.ts',
+  },
+  {
+    id: 'exchange-document-holds-one-scope',
+    invariant:
+      'thoth exchange export writes one document per target locale holding every scope as a file of its own.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '    const files: XliffDocumentFile[] = sources.map((source) => {',
+    replace:
+      '    const files: XliffDocumentFile[] = sources.slice(0, 1).map((source) => {',
+    caughtBy: 'packages/toolkit/test/exchange-command.test.ts',
+  },
+  {
+    id: 'exchange-documents-written-into-a-claimed-root',
+    invariant:
+      'thoth exchange refuses a document folder inside i18n, the generated root or the work root.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '    claimed.some((root) => containedPath(directory, root))',
+    replace: '    claimed.length < 0',
+    caughtBy: 'packages/toolkit/test/exchange-command.test.ts',
+  },
+  {
+    id: 'exchange-import-voids-accepted-units',
+    invariant:
+      'thoth exchange import writes the units it accepts even where other units of the same document are refused.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '    if (!read.ok) continue;\n    let scopes = 0;',
+    replace:
+      "    if (\n      !read.ok ||\n      read.diagnostics.some(({ severity }) => severity === 'error')\n    )\n      continue;\n    let scopes = 0;",
+    caughtBy: 'packages/toolkit/test/exchange-command.test.ts',
+  },
+  {
+    id: 'exchange-export-replaces-returned-translations',
+    invariant:
+      'thoth exchange export refuses to replace a document whose targets the catalogs do not hold.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '    if (previous !== undefined && previous !== exported.value) {',
+    replace:
+      '    if (previous !== undefined && previous !== exported.value && false) {',
+    caughtBy: 'packages/toolkit/test/exchange-command.test.ts',
+  },
+  {
+    id: 'exchange-export-replaces-an-unreadable-document',
+    invariant:
+      'thoth exchange export refuses to replace a document it cannot read, rather than taking it for one that holds nothing.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '  if (!compared.ok) {\n    return documentDiagnostic(',
+    replace:
+      '  if (!compared.ok) return undefined;\n  if (Math.random() > 1) {\n    return documentDiagnostic(',
+    caughtBy: 'packages/toolkit/test/exchange-command.test.ts',
+  },
+  {
+    id: 'exchange-export-refusal-names-no-unit',
+    invariant:
+      'The refusal of thoth exchange export names each unit with what the document holds and what the catalog holds.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '            `${scope} ${messageId}: the document holds ${heldText(document)} and the catalog holds ${heldText(catalog)}.`,',
+    replace:
+      '            `${scope} ${messageId}.${heldText(document).slice(0, 0)}${heldText(catalog).slice(0, 0)}`,',
+    caughtBy: 'packages/toolkit/test/exchange-command.test.ts',
+  },
+  {
+    id: 'exchange-import-rebuilds-the-target-catalog',
+    invariant:
+      'thoth exchange import edits an existing target catalog in place, keeping its comments, key order, block scalars and other entries.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '  if (existing !== undefined) {\n    const merged = mergeTargetCatalogSource(',
+    replace:
+      '  if (existing !== undefined && false) {\n    const merged = mergeTargetCatalogSource(',
+    caughtBy: 'packages/toolkit/test/exchange-command.test.ts',
+  },
+  {
+    id: 'target-catalog-merge-restyles-untouched-entries',
+    invariant:
+      'Writing accepted translations into a target catalog leaves the text of every other entry as it was written.',
+    source: 'packages/toolkit/src/catalog.ts',
+    find: "  const merged = tokens.map((token) => CST.stringify(token)).join('');",
+    replace:
+      "  const merged = formatCatalogSource(\n    tokens.map((token) => CST.stringify(token)).join(''),\n    options,\n  ).value as string;",
+    caughtBy: 'packages/toolkit/test/target-catalog-merge.test.ts',
   },
 ]);

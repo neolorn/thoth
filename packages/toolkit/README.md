@@ -14,11 +14,11 @@
   - Message scopes and localized addresses derived from template and route analysis, so no second list is maintained by hand.
   - Compiled artifacts carrying content digests and compatibility fingerprints, admitted only after verification.
 - **Command line**
-  - `init`, `generate`, `check`, `watch`, `format`, `clean`, `uninstall`, and `migrate`, with options generated from the configuration schema.
+  - `init`, `generate`, `check`, `watch`, `format`, `exchange`, `clean`, `uninstall`, and `migrate`, with options generated from the configuration schema.
   - Stable exit codes, `--json` machine output, and `--dry-run` on every command that writes.
   - Release-completeness and freshness checks, with a per-locale in-progress declaration.
 - **Interchange**
-  - [XLIFF 2.2](https://docs.oasis-open.org/xliff/xliff-core/v2.2/xliff-core-v2.2.html) export and import through `exportXliff22` and `importXliff22`, with translation-state tracking and the authored notes carried alongside each message.
+  - [XLIFF 2.2](https://docs.oasis-open.org/xliff/xliff-core/v2.2/xliff-core-v2.2.html) export and import through `thoth exchange`, one document per target locale holding every scope, with translation-state tracking and the authored notes carried alongside each message. Imports keep the comments and layout of the catalogs they write into.
   - JSON Schemas published for every file format the toolkit reads or writes.
 - **Diagnostics**
   - Stable codes, listed in `DIAGNOSTICS.md` inside this package and in the [diagnostics reference](https://github.com/neolorn/thoth/blob/main/docs/reference/diagnostics.md).

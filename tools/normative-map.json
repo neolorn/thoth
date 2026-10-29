@@ -4178,7 +4178,10 @@
       "spec": "10-compiler-and-tooling.spec.md",
       "section": "2. The compiler core and its hosts",
       "statement": "A release MUST throw a `TypeError` that names the function, the argument, and the type received and never the value when a programmatic entry point is called with an argument that is not its documented shape, and an asynchronous entry point rejects with that error.",
-      "checks": ["assurance:call-argument-shape-unchecked"]
+      "checks": [
+        "assurance:call-argument-shape-unchecked",
+        "assurance:call-argument-choice-unchecked"
+      ]
     },
     {
       "spec": "10-compiler-and-tooling.spec.md",
@@ -4810,6 +4813,51 @@
       "section": "15. XLIFF exchange",
       "statement": "A release MUST NOT flatten MessageFormat, corrupt an inline code, drop required metadata, invent wording, or mark content approved on its own.",
       "checks": ["assurance:initial-xliff-target-imported"]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
+      "section": "15. XLIFF exchange",
+      "statement": "A release MUST take the target locales on the invocation, every supported locale but the source where it names none, and MUST write each document with every scope of the owner as a `<file>` of its own, carrying the translation the target catalog already holds.",
+      "checks": [
+        "assurance:exchange-document-holds-one-scope",
+        "assurance:exchange-without-locales-covers-none"
+      ]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
+      "section": "15. XLIFF exchange",
+      "statement": "A release MUST write and read the documents in one conventional folder inside the owner, which an invocation MAY name instead, and MUST NOT place them where catalog discovery, generation, or cleaning reaches.",
+      "checks": ["assurance:exchange-documents-written-into-a-claimed-root"]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
+      "section": "15. XLIFF exchange",
+      "statement": "Before an export replaces a document, a release MUST read it, and MUST refuse with `TH1807` and write nothing where a unit of it holds a target that differs from the translation the target catalog holds for that message and locale, a missing translation included, or where the document cannot be read.",
+      "checks": [
+        "assurance:exchange-export-replaces-returned-translations",
+        "assurance:exchange-export-replaces-an-unreadable-document"
+      ]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
+      "section": "15. XLIFF exchange",
+      "statement": "The refusal MUST name the document and, for each such unit, what the document holds and what the catalog holds, and no option MAY override it.",
+      "checks": ["assurance:exchange-export-refusal-names-no-unit"]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
+      "section": "15. XLIFF exchange",
+      "statement": "A release MUST write the units it accepts into the target catalog of their scope and locale even where other units of the same document are refused, and MUST leave the entry a refused, stale, or initial unit names as it was.",
+      "checks": ["assurance:exchange-import-voids-accepted-units"]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
+      "section": "15. XLIFF exchange",
+      "statement": "Where that catalog exists, a release MUST change only the entries an accepted unit names, and MUST keep its comments, its key order, its block scalars, and the text and quoting of every other entry.",
+      "checks": [
+        "assurance:exchange-import-rebuilds-the-target-catalog",
+        "assurance:target-catalog-merge-restyles-untouched-entries"
+      ]
     },
     {
       "spec": "10-compiler-and-tooling.spec.md",

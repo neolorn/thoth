@@ -256,7 +256,7 @@ The project could not be selected or read: no Thoth configuration inside the pac
 
 ### TH1703
 
-An environment operation failed, or a disposable one was skipped: a corrupt, incompatible, oversized or linked incremental cache, a cache that could not be persisted, a formatting refused because semantic equality was not proven, or a watcher that could not start or reconcile.
+An environment operation failed, or a disposable one was skipped: a corrupt, incompatible, oversized or linked incremental cache, a cache that could not be persisted, a formatting or an exchange import refused because semantic equality was not proven, or a watcher that could not start or reconcile.
 
 ### TH1704
 
@@ -278,7 +278,7 @@ An XLIFF document is not readable XML, or exceeds the Thoth byte ceiling.
 
 ### TH1802
 
-An XLIFF export or import cannot be performed at all: catalogs that are not the source and target of one scope, a file or unit id that is not an `xs:NMTOKEN`, a document that is not the Thoth 2.2 profile, or a source message whose markup has no XLIFF inline representation.
+An XLIFF export or import, or one document or file of `thoth exchange`, cannot be performed at all: catalogs that are not the source and target of one scope, a file or unit id that is not an `xs:NMTOKEN`, a document that is not the Thoth 2.2 profile, a document `thoth exchange import` expected and did not find, a file that belongs to no scope of the project, or a source message whose markup has no XLIFF inline representation.
 
 ### TH1803
 
@@ -295,3 +295,7 @@ An authored change plan, an application-local extension registry, or a semantic 
 ### TH1806
 
 The host is outside Thoth's supported range: Node.js, TypeScript, or the Angular compiler.
+
+### TH1807
+
+`thoth exchange export` would replace a document holding translations the catalogs do not: a unit whose target differs from the translation its target catalog holds, a missing translation included, or a document it cannot read. Nothing is written.

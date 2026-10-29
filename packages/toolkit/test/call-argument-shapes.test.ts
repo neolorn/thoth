@@ -9,6 +9,7 @@ import {
   createMigrationPlan,
   createPseudoCatalog,
   diffCatalogSets,
+  exchangeProject,
   exportXliff22,
   extensionDescriptor,
   formatCatalog,
@@ -295,6 +296,48 @@ const asynchronous: readonly (readonly [string, () => Promise<unknown>])[] = [
   [
     'cleanProject: options.project must be a string, not an array.',
     () => cleanProject({ project: [] } as never),
+  ],
+  [
+    'exchangeProject: options must be an object, not undefined.',
+    () => exchangeProject(undefined as never),
+  ],
+  [
+    "exchangeProject: options.direction must be 'export' or 'import', not undefined.",
+    () => exchangeProject({} as never),
+  ],
+  [
+    // Misspelled: anything but `export` used to run an import.
+    "exchangeProject: options.direction must be 'export' or 'import', not another string.",
+    () => exchangeProject({ direction: 'exprot' } as never),
+  ],
+  [
+    "exchangeProject: options.direction must be 'export' or 'import', not another string.",
+    () => exchangeProject({ direction: SECRET } as never),
+  ],
+  [
+    "exchangeProject: options.direction must be 'export' or 'import', not a boolean.",
+    () => exchangeProject({ direction: true } as never),
+  ],
+  [
+    'exchangeProject: options.locales must be an array, not a string.',
+    () => exchangeProject({ direction: 'export', locales: SECRET } as never),
+  ],
+  [
+    'exchangeProject: options.locales[1] must be a string, not a number.',
+    () =>
+      exchangeProject({ direction: 'export', locales: ['fr-FR', 7] } as never),
+  ],
+  [
+    'exchangeProject: options.directory must be a string, not a number.',
+    () => exchangeProject({ direction: 'import', directory: 7 } as never),
+  ],
+  [
+    'exchangeProject: options.dryRun must be a boolean, not a string.',
+    () => exchangeProject({ direction: 'import', dryRun: 'yes' } as never),
+  ],
+  [
+    'exchangeProject: options.project must be a string, not an object.',
+    () => exchangeProject({ direction: 'export', project: {} } as never),
   ],
   [
     'watchProject: options.signal must be an object, not undefined.',

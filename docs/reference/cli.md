@@ -16,6 +16,7 @@ Commands:
   generate   Compile and safely publish generated #i18n artifacts
   check      Validate authored inputs, analysis, and generated freshness
   format     Canonically format Thoth configuration and catalogs
+  exchange   Export XLIFF documents for translators, or import them back
   clean      Remove only verified Thoth-owned generated and work state
   uninstall  Remove Thoth from this owner, keeping authored catalogs
   watch      Reconcile changes in one foreground process
@@ -24,7 +25,7 @@ Commands:
 Common options:
   --project <path>   Select an owner directory or thoth.config.json
   --json             Emit deterministic machine-readable JSON
-  --dry-run          Preview init, generate, format, clean, uninstall, or migrate
+  --dry-run          Preview init, generate, format, exchange, clean, uninstall, or migrate
   --help             Show this help
   --version          Show the toolkit version
 
@@ -91,6 +92,11 @@ Check options:
   --require-complete Fail when a required target locale omits a source message
   --require-fresh    Fail when generated output does not match the sources
   --pseudo           Also generate the configured pseudo-locales (development only)
+
+Exchange options:
+  thoth exchange export|import [--locale <locale> ...]
+  --locale <locale>  A target locale, one XLIFF document each (repeatable; default: every one)
+  --dir <path>       Where the documents are written and read (default: xliff in the owner)
 
 Migrate options:
   --plan <path>      Select one thoth-authored-change-plan/1 JSON file

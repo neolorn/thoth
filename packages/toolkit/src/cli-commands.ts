@@ -10,6 +10,7 @@ export const CLI_COMMANDS = Object.freeze([
   'generate',
   'check',
   'format',
+  'exchange',
   'clean',
   'uninstall',
   'migrate',

@@ -13,6 +13,8 @@
  * resolved an earlier one, so what a reviewer reads is not necessarily what compiles.
  */
 import {
+  CST,
+  Parser,
   Scalar,
   isAlias,
   isMap,
@@ -78,7 +80,7 @@ import {
   messageCustomFunctions,
   type ExtensionRegistry,
 } from './extensions.js';
-import { frozenRecord } from './sorted-records.js';
+import { compareCodeUnit, frozenRecord } from './sorted-records.js';
 
 /**
  * Whether a catalog is the one authored in the original language or a translation of it.
@@ -1394,6 +1396,19 @@ function plainSafe(value: string): boolean {
 }
 
 /**
+ * The least quoting a one-line scalar needs: none where plain is unambiguous, single quotes where
+ * nothing needs escaping, and double quotes for an apostrophe or a control character, which single
+ * quotes cannot carry.
+ */
+function flowScalarStyle(value: string): Scalar.Type {
+  return plainSafe(value)
+    ? Scalar.PLAIN
+    : value.includes("'") || /[\u0000-\u001f\u007f]/u.test(value)
+      ? Scalar.QUOTE_DOUBLE
+      : Scalar.QUOTE_SINGLE;
+}
+
+/**
  * Normalise how a catalog is written without rewriting what it says.
  *
  * A formatter that builds a plain object from the semantic model and stringifies it drops every
@@ -1449,11 +1464,7 @@ export function formatCatalogSource(
         // a quoted string would preserve the characters and lose the shape.
         return;
       }
-      node.type = plainSafe(node.value)
-        ? Scalar.PLAIN
-        : node.value.includes("'") || /[\u0000-\u001f\u007f]/u.test(node.value)
-          ? Scalar.QUOTE_DOUBLE
-          : Scalar.QUOTE_SINGLE;
+      node.type = flowScalarStyle(node.value);
       return;
     }
     if (isMap(node)) {
@@ -1478,6 +1489,404 @@ export function formatCatalogSource(
       simpleKeys: true,
     }),
   );
+}
+
+/** What an accepted translation says one target entry now holds. */
+interface MergedEntry {
+  readonly kind: CatalogMessage['kind'];
+  readonly message?: string;
+  readonly description?: string;
+  readonly context?: string;
+}
+
+/**
+ * The entry a target file holds once a translation is accepted into it.
+ *
+ * Guidance the translation does not carry is kept rather than cleared: an absent note says nothing
+ * about the entry, and only what the translation states is what changes.
+ */
+function mergedEntry(
+  existing: CatalogMessage | undefined,
+  accepted: CatalogMessage,
+): MergedEntry {
+  const description = accepted.description ?? existing?.description;
+  const context = accepted.context ?? existing?.context;
+  return {
+    kind: accepted.kind,
+    ...(accepted.kind === 'message' ? { message: accepted.message } : {}),
+    ...(description === undefined ? {} : { description }),
+    ...(context === undefined ? {} : { context }),
+  };
+}
+
+function entryOf(message: CatalogMessage): MergedEntry {
+  return mergedEntry(undefined, message);
+}
+
+function sameEntry(left: MergedEntry, right: MergedEntry): boolean {
+  return (
+    left.kind === right.kind &&
+    left.message === right.message &&
+    left.description === right.description &&
+    left.context === right.context
+  );
+}
+
+type BlockMapToken = CST.BlockMap;
+type BlockMapItem = BlockMapToken['items'][number];
+
+function scalarText(token: CST.Token | null | undefined): string | undefined {
+  return CST.isScalar(token)
+    ? CST.resolveAsScalar(token, true).value
+    : undefined;
+}
+
+function mapItem(map: BlockMapToken, key: string): BlockMapItem | undefined {
+  return map.items.find((item) => scalarText(item.key) === key);
+}
+
+/**
+ * The style a replaced value keeps: a block scalar stays the block scalar its author chose, and a
+ * flow scalar keeps its quoting unless the new text needs more.
+ */
+function replaceScalar(token: CST.Token, value: string): void {
+  if (token.type === 'block-scalar') {
+    CST.setScalarValue(token, value, { afterKey: true });
+    return;
+  }
+  const needed = flowScalarStyle(value);
+  CST.setScalarValue(token, value, {
+    afterKey: true,
+    type:
+      needed === Scalar.QUOTE_DOUBLE || token.type === 'double-quoted-scalar'
+        ? Scalar.QUOTE_DOUBLE
+        : token.type === 'single-quoted-scalar'
+          ? Scalar.QUOTE_SINGLE
+          : needed,
+  });
+}
+
+function flowScalar(value: string, indent: number): string {
+  return CST.stringify(
+    CST.createScalarToken(value, {
+      indent,
+      type: flowScalarStyle(value),
+      end: [],
+    }),
+  );
+}
+
+/** The lines of one new entry, at the indentation of the mapping it joins. */
+function entryLines(
+  key: string,
+  entry: MergedEntry,
+  indent: number,
+  step: number,
+  newline: string,
+  trailing = '',
+): string {
+  const outer = ' '.repeat(indent);
+  const inner = ' '.repeat(indent + step);
+  if (
+    entry.kind === 'message' &&
+    entry.description === undefined &&
+    entry.context === undefined
+  ) {
+    return `${outer}${key}: ${flowScalar(entry.message as string, indent)}${trailing}${newline}`;
+  }
+  return [
+    `${outer}${key}:${trailing}`,
+    entry.kind === 'message'
+      ? `${inner}message: ${flowScalar(entry.message as string, indent + step)}`
+      : `${inner}empty: true`,
+    ...(entry.description === undefined
+      ? []
+      : [
+          `${inner}description: ${flowScalar(entry.description, indent + step)}`,
+        ]),
+    ...(entry.context === undefined
+      ? []
+      : [`${inner}context: ${flowScalar(entry.context, indent + step)}`]),
+    '',
+  ].join(newline);
+}
+
+/** The first mapping item of a snippet written at `indent`, ready to join a mapping there. */
+function snippetItem(text: string, indent: number): BlockMapItem {
+  const document = [...new Parser().parse(text)].find(
+    (token): token is CST.Document => token.type === 'document',
+  );
+  const map = document?.value;
+  if (map?.type !== 'block-map' || map.items[0] === undefined) {
+    throw new TypeError('Thoth could not lay out a catalog entry.');
+  }
+  const item = map.items[0];
+  return {
+    ...item,
+    start:
+      indent === 0
+        ? []
+        : [{ type: 'space', offset: 0, indent: 0, source: ' '.repeat(indent) }],
+  };
+}
+
+/** Whether the text of a mapping item, as it stands, ends its last line. */
+function endsLine(item: BlockMapItem): boolean {
+  return /\n$/u.test(CST.stringify(item));
+}
+
+function lineEnd(newline: string): CST.SourceToken {
+  return { type: 'newline', offset: 0, indent: 0, source: newline };
+}
+
+/**
+ * Appends an item to a mapping, after its last entry and before any comment that closes it.
+ *
+ * Appended rather than placed in key order, because key order is the author's and a translation
+ * landing in the middle of a file reorders the lines around it in a review.
+ */
+function appendItem(
+  map: BlockMapToken,
+  item: BlockMapItem,
+  newline: string,
+): void {
+  let index = map.items.length;
+  while (index > 0 && map.items[index - 1]?.key === undefined) index -= 1;
+  const previous = map.items[index - 1];
+  if (previous !== undefined && !endsLine(previous)) {
+    endLastLine(previous.value, newline);
+  }
+  map.items.splice(index, 0, item);
+}
+
+/** Ends the line a value finishes on, for a file whose last line has no line break. */
+function endLastLine(value: CST.Token | undefined, newline: string): void {
+  if (
+    value?.type === 'scalar' ||
+    value?.type === 'single-quoted-scalar' ||
+    value?.type === 'double-quoted-scalar'
+  ) {
+    value.end = [...(value.end ?? []), lineEnd(newline)];
+  } else if (value?.type === 'block-scalar') {
+    value.source = `${value.source}${newline}`;
+  } else if (value?.type === 'block-map') {
+    endLastLine(value.items.at(-1)?.value, newline);
+  } else {
+    throw new TypeError('Thoth could not lay out a catalog entry.');
+  }
+}
+
+/** The comment written after a value on its own line, kept when that value is replaced. */
+function trailingComment(token: CST.Token | undefined): string {
+  if (token === undefined || !('end' in token) || !Array.isArray(token.end)) {
+    return '';
+  }
+  const comment = token.end.find(
+    (part: CST.SourceToken) => part.type === 'comment',
+  );
+  return comment === undefined ? '' : ` ${comment.source}`;
+}
+
+/** The indentation one level of nesting adds in this file, read from an entry that has some. */
+function nestingStep(messages: BlockMapToken): number {
+  for (const item of messages.items) {
+    if (item.value?.type === 'block-map') {
+      return item.value.indent - messages.indent;
+    }
+  }
+  return messages.indent > 0 ? messages.indent : 2;
+}
+
+function setEntryInMap(
+  entryMap: BlockMapToken,
+  entry: MergedEntry,
+  existing: MergedEntry,
+  newline: string,
+): void {
+  const textItem = mapItem(entryMap, 'message') ?? mapItem(entryMap, 'empty');
+  const key = textItem?.key;
+  const value = textItem?.value;
+  if (key === undefined || key === null || value === undefined) {
+    throw new TypeError('Thoth could not lay out a catalog entry.');
+  }
+  if (entry.kind === 'message') {
+    const message = entry.message as string;
+    if (scalarText(key) !== 'message') {
+      CST.setScalarValue(key, 'message', { implicitKey: true });
+    }
+    if (existing.kind === 'empty') {
+      // `true` is written plain, and a message written plain in its place has to earn that itself.
+      CST.setScalarValue(value, message, {
+        afterKey: true,
+        type: flowScalarStyle(message),
+      });
+    } else if (existing.message !== message) {
+      replaceScalar(value, message);
+    }
+  } else if (existing.kind !== 'empty') {
+    CST.setScalarValue(key, 'empty', { implicitKey: true });
+    CST.setScalarValue(value, 'true', { afterKey: true, type: Scalar.PLAIN });
+  }
+  for (const field of ['description', 'context'] as const) {
+    const value = entry[field];
+    if (value === undefined || value === existing[field]) continue;
+    const item = mapItem(entryMap, field);
+    if (item?.value !== undefined) {
+      replaceScalar(item.value, value);
+      continue;
+    }
+    appendItem(
+      entryMap,
+      snippetItem(
+        `${' '.repeat(entryMap.indent)}${field}: ${flowScalar(value, entryMap.indent)}${newline}`,
+        entryMap.indent,
+      ),
+      newline,
+    );
+  }
+}
+
+/**
+ * Writes accepted translations into a target catalog a person may have edited, and changes nothing
+ * else in it.
+ *
+ * `formatCatalog` writes a whole file from the model, which is right only where no file exists:
+ * every comment, the key order and every block scalar of the authored file would go. This edits the
+ * file's concrete syntax tree instead, so the text of every entry the translations do not change is
+ * the text that was there, and a changed entry keeps its quoting, its block style and the comments
+ * around it wherever the new text allows. An entry new to the file is appended to `messages`.
+ *
+ * The result is parsed back and compared with what was asked for, entry by entry, and refused when
+ * it differs: a file that parses to something other than the translations accepted is worse than
+ * one left alone.
+ */
+export function mergeTargetCatalogSource(
+  source: string,
+  accepted: Readonly<Record<string, CatalogMessage>>,
+  options: CatalogParseOptions,
+): ToolkitResult<string> {
+  const parsed = parseCatalog(source, options);
+  if (!parsed.ok) return parsed;
+  const refused = (reason: string): ToolkitResult<string> =>
+    toolkitFailure([
+      toolkitDiagnostic(
+        'TH1703',
+        `Thoth refused writing translations into ${JSON.stringify(options.sourcePath ?? 'the target catalog')} because ${reason}.`,
+      ),
+    ]);
+  if (parsed.value.role !== 'target') {
+    return refused('it is not a target catalog');
+  }
+  const changes = Object.keys(accepted)
+    .sort(compareCodeUnit)
+    .flatMap((id) => {
+      const existing = parsed.value.messages[id];
+      const entry = mergedEntry(existing, accepted[id] as CatalogMessage);
+      return existing !== undefined && sameEntry(entryOf(existing), entry)
+        ? []
+        : [{ id, entry, existing }];
+    });
+  if (changes.length === 0) return toolkitSuccess(source);
+
+  const newline =
+    source.includes('\r\n') && !/(?<!\r)\n/u.test(source) ? '\r\n' : '\n';
+  const tokens = [...new Parser().parse(source)];
+  const root = tokens.find(
+    (token): token is CST.Document => token.type === 'document',
+  )?.value;
+  const messagesItem =
+    root?.type === 'block-map' ? mapItem(root, 'messages') : undefined;
+  if (root?.type !== 'block-map' || messagesItem === undefined) {
+    return refused('its root is not a block mapping holding messages');
+  }
+  const messageMap = messagesItem.value;
+  if (messageMap?.type !== 'block-map') {
+    // A flow mapping is one line or a hand-wrapped set of them, and an entry added to it would have
+    // to rewrap lines the author laid out.
+    return refused('its messages are a flow mapping');
+  }
+  try {
+    const step = nestingStep(messageMap);
+    for (const { id, entry, existing } of changes) {
+      const item = mapItem(messageMap, id);
+      if (item === undefined) {
+        appendItem(
+          messageMap,
+          snippetItem(
+            entryLines(id, entry, messageMap.indent, step, newline),
+            messageMap.indent,
+          ),
+          newline,
+        );
+        continue;
+      }
+      const value = item.value;
+      const scalarOnly =
+        entry.kind === 'message' &&
+        entry.description === undefined &&
+        entry.context === undefined;
+      if (CST.isScalar(value) && scalarOnly) {
+        replaceScalar(value, entry.message as string);
+        continue;
+      }
+      if (value?.type === 'block-map' && existing !== undefined) {
+        setEntryInMap(value, entry, entryOf(existing), newline);
+        continue;
+      }
+      // A one-line entry that now needs fields of its own becomes a mapping, with the comment that
+      // followed the old value moved up beside its key.
+      const replacement = snippetItem(
+        entryLines(
+          id,
+          entry,
+          messageMap.indent,
+          step,
+          newline,
+          trailingComment(value),
+        ),
+        messageMap.indent,
+      );
+      item.sep = replacement.sep ?? [];
+      item.value = replacement.value as CST.Token;
+    }
+  } catch (error) {
+    if (error instanceof TypeError) {
+      return refused('its layout could not be kept');
+    }
+    throw error;
+  }
+  const merged = tokens.map((token) => CST.stringify(token)).join('');
+  const reread = parseCatalog(merged, options);
+  if (!reread.ok) return refused('the merged file did not parse back');
+  const expected = new Map(
+    Object.entries(parsed.value.messages).map(([id, message]) => [
+      id,
+      entryOf(message),
+    ]),
+  );
+  for (const id of Object.keys(accepted)) {
+    expected.set(
+      id,
+      mergedEntry(parsed.value.messages[id], accepted[id] as CatalogMessage),
+    );
+  }
+  const actual = reread.value.messages;
+  if (
+    Object.keys(actual).length !== expected.size ||
+    [...expected].some(
+      ([id, entry]) =>
+        actual[id] === undefined ||
+        !sameEntry(entryOf(actual[id] as CatalogMessage), entry),
+    ) ||
+    Object.entries(parsed.value.messages).some(
+      ([id, message]) =>
+        accepted[id] === undefined &&
+        JSON.stringify(actual[id]) !== JSON.stringify(message),
+    )
+  ) {
+    return refused('the merged file did not read back as the translations');
+  }
+  return toolkitSuccess(merged);
 }
 
 /** What `formatCatalog` is told beside the catalog. */

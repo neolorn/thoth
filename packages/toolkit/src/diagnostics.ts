@@ -79,7 +79,8 @@ export type ToolkitDiagnosticCode =
   | 'TH1803'
   | 'TH1804'
   | 'TH1805'
-  | 'TH1806';
+  | 'TH1806'
+  | 'TH1807';
 
 /** One point in a source file, given three ways so a caller can use whichever it needs. */
 export interface SourcePosition {

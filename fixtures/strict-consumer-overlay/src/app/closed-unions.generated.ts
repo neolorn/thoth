@@ -31,6 +31,7 @@ import type {
   CatalogMessage,
   CatalogRole,
   ClaimedRouteSegment,
+  ExchangeProjectResult,
   ExtensionDescriptor,
   InvalidationDecision,
   MessageDeclaration,
@@ -249,6 +250,20 @@ export function durationValueSign(value: DurationValue['sign']): void {
     case -1:
     case 0:
     case 1:
+      return;
+    default: {
+      const unhandled: never = value;
+      throw new Error(`Unhandled member ${String(unhandled)}`);
+    }
+  }
+}
+
+export function exchangeProjectResultDirection(
+  value: ExchangeProjectResult['direction'],
+): void {
+  switch (value) {
+    case 'export':
+    case 'import':
       return;
     default: {
       const unhandled: never = value;
@@ -1707,6 +1722,7 @@ export function toolkitDiagnosticCode(value: ToolkitDiagnosticCode): void {
     case 'TH1804':
     case 'TH1805':
     case 'TH1806':
+    case 'TH1807':
       return;
     default: {
       const unhandled: never = value;

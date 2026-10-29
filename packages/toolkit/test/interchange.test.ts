@@ -6,6 +6,7 @@ import {
   createPseudoCatalog,
   exportXliff22,
   importXliff22,
+  defineExtensionRegistry,
   parseCatalog,
   type Catalog,
   type CatalogParseOptions,
@@ -94,6 +95,43 @@ describe('Thoth XLIFF 2.2 interchange', () => {
     if (!imported.ok) return;
     expect(writtenCatalog(imported.value)).toBe(writtenCatalog(target));
     claimCapability('capability:xliff');
+  });
+
+  it('reads a translation calling a function the registry it is given declares', () => {
+    const registry = defineExtensionRegistry([
+      {
+        kind: 'message-function',
+        id: 'example:uppercase',
+        operandType: 'string',
+        resultType: 'string',
+        selector: 'none',
+        maximumOutputLength: 64,
+      },
+    ]);
+    expect(registry.ok).toBe(true);
+    if (!registry.ok) return;
+    const extensions = registry.value;
+    const message = 'messages:\n  shout: "{$name :example:uppercase}"\n';
+    const exported = exportXliff22({
+      source: catalog(message, { ...sourceOptions, extensions }),
+      target: catalog(message, { ...targetOptions, extensions }),
+    });
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) return;
+
+    const without = importXliff22({
+      document: exported.value,
+      source: catalog(message, { ...sourceOptions, extensions }),
+    });
+    const imported = importXliff22({
+      document: exported.value,
+      source: catalog(message, { ...sourceOptions, extensions }),
+      extensions,
+    });
+
+    expect(without.diagnostics.map(({ code }) => code)).toContain('TH1203');
+    expect(imported.diagnostics).toEqual([]);
+    expect(imported.ok).toBe(true);
   });
 
   it('round-trips text beyond the Basic Multilingual Plane', () => {

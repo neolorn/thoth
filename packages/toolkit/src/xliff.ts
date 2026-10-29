@@ -9,7 +9,11 @@
 
 import { parseCST, type CST } from 'messageformat/cst';
 
-import { OBSERVABILITY_ARGUMENT, requireArgument } from './call-arguments.js';
+import {
+  EXTENSION_REGISTRY_ARGUMENT,
+  OBSERVABILITY_ARGUMENT,
+  requireArgument,
+} from './call-arguments.js';
 import {
   admitCatalog,
   builtCatalog,
@@ -29,8 +33,15 @@ import {
   type ToolkitDiagnostic,
   type ToolkitResult,
 } from './diagnostics.js';
-import { canonicalizeLocale } from './locales.js';
-import { parseMessageSemanticModel } from './message-format.js';
+import { canonicalizeLocale, type CanonicalLocale } from './locales.js';
+import {
+  parseMessageSemanticModel,
+  type MessageCustomFunction,
+} from './message-format.js';
+import {
+  messageCustomFunctions,
+  type ExtensionRegistry,
+} from './extensions.js';
 import {
   TOOLKIT_EVENT_CODES,
   emitToolkitEvent,
@@ -119,6 +130,11 @@ export interface XliffImportRequest extends ToolkitObservabilityOptions {
   readonly targetLocale?: string;
   /** Where the document came from, carried into every diagnostic about it. */
   readonly sourcePath?: string;
+  /**
+   * The extensions whose functions and slot kinds the translations may use, as the catalogs are
+   * parsed with. Leaving it out refuses a translation that calls a registered function.
+   */
+  readonly extensions?: ExtensionRegistry;
 }
 
 /**
@@ -1268,6 +1284,18 @@ function exportAdmittedXliff22(
       ),
     ]);
   }
+  const file = xliffFile(source, target);
+  if (!file.ok) return file;
+  return toolkitSuccess(
+    xliffDocument(source.locale, targetLocale.value, [file.value]),
+  );
+}
+
+/** One catalog as the `<file>` element of a document, with its units in message-id order. */
+function xliffFile(
+  source: Catalog,
+  target: Catalog | undefined,
+): ToolkitResult<string> {
   // Every `id` in XLIFF 2.2 Core is an `xs:NMTOKEN`, so the ids are checked rather than assumed.
   // The Thoth identity grammars cannot currently produce anything else once the provider's `@`
   // and `/` are folded away, but a grammar that widens later has to fail here, loudly and at the
@@ -1336,18 +1364,304 @@ function exportAdmittedXliff22(
   }
   return toolkitSuccess(
     [
-      '<?xml version="1.0" encoding="UTF-8"?>',
-      // `xmlns:thoth` is gone with the attribute that needed it. Everything Thoth puts in a
-      // document now goes either in the metadata module or in a `subState`, both of which are
-      // XLIFF's own extension points, so the format carries one fewer namespace to get wrong.
-      `<xliff xmlns="${XLIFF_NAMESPACE}" xmlns:mda="${XLIFF_METADATA_NAMESPACE}" version="2.2" srcLang="${escapeXml(source.locale)}" trgLang="${escapeXml(targetLocale.value)}">`,
       `  <file id="${escapeXml(fileId)}" original="${escapeXml(source.sourcePath ?? `i18n/${source.scopeId}/${source.locale}.yaml`)}">`,
       ...units,
       '  </file>',
-      '</xliff>',
-      '',
     ].join('\n'),
   );
+}
+
+/**
+ * The document around its files.
+ *
+ * `trgLang` is an attribute of `<xliff>` and of nothing below it in XLIFF 2.2 Core, so a document
+ * holds one target language, and several catalogs travel together only as several `<file>`
+ * elements of one document per locale.
+ */
+function xliffDocument(
+  sourceLocale: string,
+  targetLocale: string,
+  files: readonly string[],
+): string {
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    // Everything Thoth puts in a document goes either in the metadata module or in a `subState`,
+    // both of which are XLIFF's own extension points, so the format declares no namespace of its
+    // own.
+    `<xliff xmlns="${XLIFF_NAMESPACE}" xmlns:mda="${XLIFF_METADATA_NAMESPACE}" version="2.2" srcLang="${escapeXml(sourceLocale)}" trgLang="${escapeXml(targetLocale)}">`,
+    ...files,
+    '</xliff>',
+    '',
+  ].join('\n');
+}
+
+/** One scope of a document: its authored catalog, and its translation where one exists. */
+export interface XliffDocumentFile {
+  readonly source: Catalog;
+  readonly target?: Catalog;
+}
+
+/**
+ * Every scope of a project, for one target locale, as one document with a `<file>` per scope.
+ *
+ * Each `<file>` is what `exportXliff22` writes for that scope alone, so a document of one file is
+ * the document `exportXliff22` returns. The files follow the order they are given in.
+ */
+export function exportXliff22Document(
+  files: readonly XliffDocumentFile[],
+  targetLocaleValue: string,
+): ToolkitResult<string> {
+  const targetLocale = canonicalizeLocale(targetLocaleValue);
+  if (!targetLocale.ok) return targetLocale;
+  const first = files[0];
+  if (first === undefined) {
+    return toolkitFailure([
+      toolkitDiagnostic('TH1802', 'XLIFF export requires a source catalog.'),
+    ]);
+  }
+  const elements: string[] = [];
+  const fileIds = new Set<string>();
+  for (const { source, target } of files) {
+    if (source.role !== 'source' || source.locale !== first.source.locale) {
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'TH1802',
+          'XLIFF export requires source catalogs written in one source locale.',
+        ),
+      ]);
+    }
+    if (
+      target !== undefined &&
+      (target.role !== 'target' ||
+        target.providerId !== source.providerId ||
+        target.scopeId !== source.scopeId ||
+        target.locale !== targetLocale.value)
+    ) {
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'TH1802',
+          'XLIFF target catalog does not match the source authority, scope and target locale.',
+        ),
+      ]);
+    }
+    const fileId = xliffFileId(source);
+    if (fileIds.has(fileId)) {
+      return toolkitFailure([
+        toolkitDiagnostic(
+          'TH1802',
+          `XLIFF export holds the Thoth catalog ${JSON.stringify(`${source.providerId}:${source.scopeId}`)} twice.`,
+        ),
+      ]);
+    }
+    fileIds.add(fileId);
+    const file = xliffFile(source, target);
+    if (!file.ok) return file;
+    elements.push(file.value);
+  }
+  return toolkitSuccess(
+    xliffDocument(first.source.locale, targetLocale.value, elements),
+  );
+}
+
+/** A unit of a document an export would replace, holding a target the catalogs do not hold. */
+export interface XliffReplacedTranslation {
+  /** The scope the unit's `<file>` belongs to, or the file id where it belongs to none. */
+  readonly scope: string;
+  readonly messageId: string;
+  /** What the document's targets hold. */
+  readonly document: XliffHeldTranslation;
+  /** What the target catalog holds for the message, or `undefined` where it holds nothing. */
+  readonly catalog: XliffHeldTranslation | undefined;
+}
+
+/**
+ * A translation as one side of an export's comparison holds it: a message's text, the empty
+ * translation, or, for a document target that does not read as either, its content as XML.
+ */
+export type XliffHeldTranslation =
+  | { readonly kind: 'message'; readonly text: string }
+  | { readonly kind: 'empty' }
+  | { readonly kind: 'unread'; readonly xml: string };
+
+/** Text, then elements by namespace, name and attributes in code-unit order, with no prefixes. */
+function canonicalContent(element: XmlElement): string {
+  const chunks: string[] = [];
+  let text = '';
+  for (const child of element.children) {
+    if (typeof child === 'string') {
+      text += child;
+      continue;
+    }
+    if (text.length > 0) chunks.push(JSON.stringify(text));
+    text = '';
+    const attributes = Object.entries(child.attributes)
+      .filter(([name]) => name !== 'xmlns' && !name.startsWith('xmlns:'))
+      .sort(([left], [right]) => compareCodeUnit(left, right))
+      .map(([name, value]) => ` ${name}=${JSON.stringify(value)}`)
+      .join('');
+    chunks.push(
+      `<${child.namespace ?? ''} ${child.localName}${attributes}>${canonicalContent(child)}</>`,
+    );
+  }
+  if (text.length > 0) chunks.push(JSON.stringify(text));
+  return chunks.join('');
+}
+
+/** The children of an element as XML, for showing what a target holds that does not read. */
+function writtenContent(element: XmlElement): string {
+  return element.children
+    .map((child) =>
+      typeof child === 'string'
+        ? escapeXml(child)
+        : `<${child.name}${Object.entries(child.attributes)
+            .map(([name, value]) => ` ${name}="${escapeXml(value)}"`)
+            .join('')}>${writtenContent(child)}</${child.name}>`,
+    )
+    .join('');
+}
+
+/** Every unit of a document that carries a target, by file id and unit id. */
+function documentTargets(
+  root: XmlElement,
+): ReadonlyMap<string, ReadonlyMap<string, XmlElement>> {
+  const files = new Map<string, Map<string, XmlElement>>();
+  for (const file of childElements(root, XLIFF_NAMESPACE, 'file')) {
+    const units = new Map<string, XmlElement>();
+    for (const unit of childElements(file, XLIFF_NAMESPACE, 'unit')) {
+      const held = childElements(unit, XLIFF_NAMESPACE, 'segment').some(
+        (segment) =>
+          childElements(segment, XLIFF_NAMESPACE, 'target').length > 0,
+      );
+      if (held) units.set(unit.attributes['id'] ?? '', unit);
+    }
+    files.set(file.attributes['id'] ?? '', units);
+  }
+  return files;
+}
+
+/** The targets of a unit, segment by segment, with the empty translation's sub-state. */
+function canonicalTargets(unit: XmlElement): string {
+  return childElements(unit, XLIFF_NAMESPACE, 'segment')
+    .map(
+      (segment) =>
+        `${segment.attributes['subState'] === SEGMENT_SUBSTATE_EMPTY ? 'empty' : ''}[${childElements(
+          segment,
+          XLIFF_NAMESPACE,
+          'target',
+        )
+          .map(canonicalContent)
+          .join('][')}]`,
+    )
+    .join('');
+}
+
+/** The translation a unit's one target reads as, or `undefined` where it does not read as one. */
+function targetReading(unit: XmlElement): XliffHeldTranslation | undefined {
+  const segments = childElements(unit, XLIFF_NAMESPACE, 'segment');
+  const segment = segments.length === 1 ? segments[0] : undefined;
+  const targets =
+    segment === undefined
+      ? []
+      : childElements(segment, XLIFF_NAMESPACE, 'target');
+  const target = targets.length === 1 ? targets[0] : undefined;
+  const contract = parseContract(unit);
+  if (segment === undefined || target === undefined || contract === undefined) {
+    return undefined;
+  }
+  if (segment.attributes['subState'] === SEGMENT_SUBSTATE_EMPTY) {
+    return textContent(target) === '' ? { kind: 'empty' } : undefined;
+  }
+  const data =
+    contract.representation === 'flat' ? undefined : originalData(unit);
+  const text =
+    contract.representation === 'flat'
+      ? textContent(target)
+      : data === undefined
+        ? undefined
+        : patternText(target, data)?.text;
+  return text === undefined || text.length === 0
+    ? undefined
+    : { kind: 'message', text };
+}
+
+function sameTranslation(
+  left: XliffHeldTranslation | undefined,
+  right: XliffHeldTranslation | undefined,
+): boolean {
+  if (left === undefined || right === undefined) return false;
+  if (left.kind === 'message' && right.kind === 'message') {
+    return left.text === right.text;
+  }
+  return left.kind === 'empty' && right.kind === 'empty';
+}
+
+/**
+ * The units of a document an export is about to replace whose targets the catalogs do not hold.
+ *
+ * A unit is kept when its targets are the ones the new export writes for it, or when its one target
+ * reads as the translation the target catalog holds for its message. Every other unit with a target
+ * is returned, a missing translation in the catalog included, because replacing the document would
+ * lose what it holds. A document that is not an XLIFF 2.2 document for the export's source and
+ * target locales is refused: what it holds cannot be told.
+ */
+export function translationsAnExportReplaces(
+  previous: string,
+  next: string,
+  files: readonly XliffDocumentFile[],
+  targetLocale: string,
+): ToolkitResult<readonly XliffReplacedTranslation[]> {
+  const first = files[0];
+  if (first === undefined) {
+    return toolkitFailure([
+      toolkitDiagnostic('TH1802', 'XLIFF export requires a source catalog.'),
+    ]);
+  }
+  const opened = openXliffDocument(previous, first.source.locale, targetLocale);
+  if (!opened.ok) return opened;
+  const written = parseXml(next);
+  if (!written.ok) return written;
+  const writtenTargets = documentTargets(written.value);
+  const scopes = new Map(files.map((file) => [xliffFileId(file.source), file]));
+  const replaced: XliffReplacedTranslation[] = [];
+  for (const [fileId, units] of documentTargets(opened.value.root)) {
+    const file = scopes.get(fileId);
+    for (const [messageId, unit] of units) {
+      const rewritten = writtenTargets.get(fileId)?.get(messageId);
+      if (
+        rewritten !== undefined &&
+        canonicalTargets(rewritten) === canonicalTargets(unit)
+      ) {
+        continue;
+      }
+      const held = file?.target?.messages[messageId];
+      const catalog: XliffHeldTranslation | undefined =
+        held === undefined
+          ? undefined
+          : held.kind === 'empty'
+            ? { kind: 'empty' }
+            : { kind: 'message', text: held.message };
+      const reading = targetReading(unit);
+      if (sameTranslation(reading, catalog)) continue;
+      const shown: XliffHeldTranslation = reading ?? {
+        kind: 'unread',
+        xml: childElements(unit, XLIFF_NAMESPACE, 'segment')
+          .flatMap((segment) =>
+            childElements(segment, XLIFF_NAMESPACE, 'target'),
+          )
+          .map(writtenContent)
+          .join(' '),
+      };
+      replaced.push(
+        Object.freeze({
+          scope: file?.source.scopeId ?? fileId,
+          messageId,
+          document: shown,
+          catalog,
+        }),
+      );
+    }
+  }
+  return toolkitSuccess(Object.freeze(replaced));
 }
 
 /**
@@ -1573,6 +1887,7 @@ function importedMessage(
   contract: XliffUnitContract,
   source: CatalogMessage,
   guidance: XliffGuidance,
+  customFunctions: readonly MessageCustomFunction[],
 ): ToolkitResult<CatalogMessage> {
   const messageId = contract.messageId;
   const refusedGuidance = authoredBidiRefusal(messageId, [
@@ -1653,6 +1968,7 @@ function importedMessage(
   if (refusedBody !== undefined) return refusedBody;
   const semantics = parseMessageSemanticModel(body, {
     path: ['messages', messageId],
+    customFunctions,
   });
   if (!semantics.ok) return semantics;
   return toolkitSuccess(
@@ -1686,56 +2002,13 @@ function importAdmittedXliff22(
       ),
     ]);
   }
-  const document = untrustedText(
+  const opened = openXliffDocument(
     request.document,
-    'TH1801',
-    'XLIFF document',
-    RESOURCE_LIMITS.xliffBytes,
+    request.source.locale,
+    request.targetLocale,
   );
-  if (!document.ok) return document;
-  const parsed = parseXml(document.value);
-  if (!parsed.ok) return parsed;
-  const root = parsed.value;
-  // The root is identified by namespace, version and source locale, and by nothing else.
-  //
-  // Not by the prefixes the root happens to declare. Requiring `xmlns:mda` and `xmlns:thoth` on
-  // the root element, spelled that way, is not a conformance requirement: a prefix is chosen by
-  // whoever serialized the document, and a namespace may be declared on any element that uses it.
-  // A check like that rejects a conformant document from a translation-management system for its
-  // spelling and passes only the documents Thoth wrote itself. Prefixes are resolved where they
-  // are read.
-  if (
-    root.localName !== 'xliff' ||
-    root.namespace !== XLIFF_NAMESPACE ||
-    root.attributes['version'] !== '2.2' ||
-    root.attributes['srcLang'] !== request.source.locale
-  ) {
-    return toolkitFailure([
-      toolkitDiagnostic(
-        'TH1802',
-        'XLIFF document does not match the Thoth 2.2 profile or source locale.',
-      ),
-    ]);
-  }
-  const targetLocaleValue = request.targetLocale ?? root.attributes['trgLang'];
-  if (targetLocaleValue === undefined) {
-    return toolkitFailure([
-      toolkitDiagnostic('TH1802', 'XLIFF document has no target locale.'),
-    ]);
-  }
-  const targetLocale = canonicalizeLocale(targetLocaleValue);
-  if (!targetLocale.ok) return targetLocale;
-  if (
-    root.attributes['trgLang'] !== undefined &&
-    root.attributes['trgLang'] !== targetLocale.value
-  ) {
-    return toolkitFailure([
-      toolkitDiagnostic(
-        'TH1802',
-        'Requested target locale does not match the XLIFF document.',
-      ),
-    ]);
-  }
+  if (!opened.ok) return opened;
+  const { root, targetLocale } = opened.value;
   // XLIFF 2.2 Core declares `<file>` with `maxOccurs="unbounded"`, and a translation-management
   // system that holds several catalogs in one document is conformant, so the file belonging to the
   // catalog being imported is selected and the rest of the document is left alone.
@@ -1759,8 +2032,128 @@ function importAdmittedXliff22(
       ),
     ]);
   }
-  const catalogFile = matching[0] as XmlElement;
+  const read = importXliffFile(request, matching[0] as XmlElement);
+  if (!read.ok) return read;
+  const { messages, diagnostics } = read.value;
+  if (diagnostics.some(({ severity }) => severity === 'error')) {
+    return toolkitFailure(diagnostics);
+  }
+  if (Object.keys(messages).length === 0) {
+    return toolkitFailure([
+      ...diagnostics,
+      toolkitDiagnostic(
+        'TH1803',
+        'XLIFF import contains no current valid target units.',
+      ),
+    ]);
+  }
+  return toolkitSuccess(
+    builtCatalog(
+      Object.freeze({
+        role: 'target',
+        providerId: request.source.providerId,
+        scopeId: request.source.scopeId,
+        locale: targetLocale,
+        ...(request.sourcePath === undefined
+          ? {}
+          : { sourcePath: request.sourcePath }),
+        messages,
+        families: Object.freeze({}),
+      }),
+    ),
+    diagnostics,
+  );
+}
+
+interface OpenedXliffDocument {
+  readonly root: XmlElement;
+  readonly targetLocale: CanonicalLocale;
+}
+
+/**
+ * A returned document's root, once it is known to be the profile, the source locale and the target
+ * locale it is being read as.
+ */
+function openXliffDocument(
+  text: string,
+  sourceLocale: string,
+  requestedTargetLocale: string | undefined,
+): ToolkitResult<OpenedXliffDocument> {
+  const document = untrustedText(
+    text,
+    'TH1801',
+    'XLIFF document',
+    RESOURCE_LIMITS.xliffBytes,
+  );
+  if (!document.ok) return document;
+  const parsed = parseXml(document.value);
+  if (!parsed.ok) return parsed;
+  const root = parsed.value;
+  // The root is identified by namespace, version and source locale, and by nothing else.
+  //
+  // Not by the prefixes the root happens to declare. Requiring `xmlns:mda` and `xmlns:thoth` on
+  // the root element, spelled that way, is not a conformance requirement: a prefix is chosen by
+  // whoever serialized the document, and a namespace may be declared on any element that uses it.
+  // A check like that rejects a conformant document from a translation-management system for its
+  // spelling and passes only the documents Thoth wrote itself. Prefixes are resolved where they
+  // are read.
+  if (
+    root.localName !== 'xliff' ||
+    root.namespace !== XLIFF_NAMESPACE ||
+    root.attributes['version'] !== '2.2' ||
+    root.attributes['srcLang'] !== sourceLocale
+  ) {
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'TH1802',
+        'XLIFF document does not match the Thoth 2.2 profile or source locale.',
+      ),
+    ]);
+  }
+  const targetLocaleValue = requestedTargetLocale ?? root.attributes['trgLang'];
+  if (targetLocaleValue === undefined) {
+    return toolkitFailure([
+      toolkitDiagnostic('TH1802', 'XLIFF document has no target locale.'),
+    ]);
+  }
+  const targetLocale = canonicalizeLocale(targetLocaleValue);
+  if (!targetLocale.ok) return targetLocale;
+  if (
+    root.attributes['trgLang'] !== undefined &&
+    root.attributes['trgLang'] !== targetLocale.value
+  ) {
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'TH1802',
+        'Requested target locale does not match the XLIFF document.',
+      ),
+    ]);
+  }
+  return toolkitSuccess({ root, targetLocale: targetLocale.value });
+}
+
+interface XliffFileRead {
+  /** The units accepted as translations, by message id. */
+  readonly messages: Readonly<Record<string, CatalogMessage>>;
+  /** Every unit refused or flagged, each at the severity its reason carries. */
+  readonly diagnostics: readonly ToolkitDiagnostic[];
+}
+
+/**
+ * The units of one `<file>`, each validated on its own against the source catalog it belongs to.
+ *
+ * A refused unit is a diagnostic beside the units that were accepted rather than a refusal of the
+ * file: whether one invalid unit voids the rest is the caller's policy.
+ */
+function importXliffFile(
+  request: {
+    readonly source: Catalog;
+    readonly extensions?: ExtensionRegistry;
+  },
+  catalogFile: XmlElement,
+): ToolkitResult<XliffFileRead> {
   const diagnostics: ToolkitDiagnostic[] = [];
+  const customFunctions = messageCustomFunctions(request.extensions);
   const fileNotes = childElements(catalogFile, XLIFF_NAMESPACE, 'notes');
   if (fileNotes.length > 0) {
     // Thoth writes no file-level notes, so any that arrive were added by a translator or a tool.
@@ -1915,38 +2308,129 @@ function importAdmittedXliff22(
       contract,
       sourceMessage,
       notes.target,
+      customFunctions,
     );
     diagnostics.push(...message.diagnostics);
     if (message.ok) messages[contract.messageId] = message.value;
   }
-  if (diagnostics.some(({ severity }) => severity === 'error')) {
-    return toolkitFailure(diagnostics);
-  }
-  if (Object.keys(messages).length === 0) {
+  return toolkitSuccess({
+    messages: Object.freeze(messages),
+    diagnostics: Object.freeze(diagnostics),
+  });
+}
+
+/** What one `<file>` of a returned document gave the catalog it belongs to. */
+export interface XliffFileImport {
+  readonly source: Catalog;
+  /** The units accepted as translations, by message id. Empty where none was. */
+  readonly messages: Readonly<Record<string, CatalogMessage>>;
+}
+
+/** A returned document holding a `<file>` per scope, and the authored catalogs it was made from. */
+export interface XliffDocumentImportRequest {
+  readonly document: string;
+  readonly sources: readonly Catalog[];
+  /** The locale the document was exported for, which its `trgLang` must name. */
+  readonly targetLocale: string;
+  /**
+   * The extensions whose functions and slot kinds the translations may use, as the catalogs are
+   * parsed with. Leaving it out refuses a translation that calls a registered function.
+   */
+  readonly extensions?: ExtensionRegistry;
+}
+
+/**
+ * Reads every `<file>` of a returned document against the catalog it belongs to.
+ *
+ * Each file is matched to its catalog by the id `exportXliff22Document` gave it, and each unit is
+ * validated on its own, so a refused unit is reported beside the units accepted around it rather
+ * than voiding them. What cannot be separated safely refuses the document: XML that does not
+ * parse, another profile, source locale or target locale, and two files claiming one catalog. A file
+ * naming no catalog given is reported, and the rest of the document is still read.
+ */
+export function importXliff22Document(
+  request: XliffDocumentImportRequest,
+): ToolkitResult<readonly XliffFileImport[]> {
+  const first = request.sources[0];
+  if (
+    first === undefined ||
+    request.sources.some(
+      (source) => source.role !== 'source' || source.locale !== first.locale,
+    )
+  ) {
     return toolkitFailure([
-      ...diagnostics,
       toolkitDiagnostic(
-        'TH1803',
-        'XLIFF import contains no current valid target units.',
+        'TH1802',
+        'XLIFF import requires source catalogs written in one source locale.',
       ),
     ]);
   }
-  return toolkitSuccess(
-    builtCatalog(
-      Object.freeze({
-        role: 'target',
-        providerId: request.source.providerId,
-        scopeId: request.source.scopeId,
-        locale: targetLocale.value,
-        ...(request.sourcePath === undefined
-          ? {}
-          : { sourcePath: request.sourcePath }),
-        messages: Object.freeze(messages),
-        families: Object.freeze({}),
-      }),
-    ),
-    diagnostics,
+  const opened = openXliffDocument(
+    request.document,
+    first.locale,
+    request.targetLocale,
   );
+  if (!opened.ok) return opened;
+  if (opened.value.root.attributes['trgLang'] === undefined) {
+    return toolkitFailure([
+      toolkitDiagnostic('TH1802', 'XLIFF document has no target locale.'),
+    ]);
+  }
+  const catalogs = new Map(
+    request.sources.map((source) => [xliffFileId(source), source]),
+  );
+  const files = childElements(opened.value.root, XLIFF_NAMESPACE, 'file');
+  const fileIds = files.map((file) => file.attributes['id']);
+  const repeated = fileIds.find(
+    (id, index) => id !== undefined && fileIds.indexOf(id) !== index,
+  );
+  if (repeated !== undefined) {
+    return toolkitFailure([
+      toolkitDiagnostic(
+        'TH1802',
+        `XLIFF document contains more than one file with id ${JSON.stringify(repeated)}.`,
+      ),
+    ]);
+  }
+  const diagnostics: ToolkitDiagnostic[] = [];
+  const imports: XliffFileImport[] = [];
+  for (const file of files) {
+    const id = file.attributes['id'] ?? '';
+    const source = catalogs.get(id);
+    if (source === undefined) {
+      diagnostics.push(
+        toolkitDiagnostic(
+          'TH1802',
+          `XLIFF file ${JSON.stringify(id)} belongs to no scope of this project, so none of its units was read.`,
+        ),
+      );
+      continue;
+    }
+    const read = importXliffFile(
+      {
+        source,
+        ...(request.extensions === undefined
+          ? {}
+          : { extensions: request.extensions }),
+      },
+      file,
+    );
+    if (!read.ok) {
+      diagnostics.push(
+        ...read.diagnostics.map((diagnostic) =>
+          toolkitDiagnostic(
+            diagnostic.code,
+            `${diagnostic.summary} The file is ${JSON.stringify(id)}.`,
+            { severity: diagnostic.severity, path: diagnostic.path },
+          ),
+        ),
+      );
+      continue;
+    }
+    diagnostics.push(...read.value.diagnostics);
+    imports.push(Object.freeze({ source, messages: read.value.messages }));
+  }
+  return toolkitSuccess(Object.freeze(imports), diagnostics);
 }
 
 /**
@@ -1964,7 +2448,10 @@ export function importXliff22(
 ): ToolkitResult<Catalog> {
   requireArgument('importXliff22', 'request', request, {
     required: { source: 'record' },
-    optional: { observability: OBSERVABILITY_ARGUMENT },
+    optional: {
+      observability: OBSERVABILITY_ARGUMENT,
+      extensions: EXTENSION_REGISTRY_ARGUMENT,
+    },
   });
   const sink = request.observability;
   if (sink === undefined) return importXliff22Core(request);

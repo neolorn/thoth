@@ -2772,6 +2772,40 @@ async function verifyCommandLine() {
     true,
   );
 
+  // A round trip through the documents as exported: a translator who changes nothing hands back
+  // documents that change no catalog, and one document is written per target locale.
+  const exchangeDirectory = resolve(consumerRoot, 'xliff');
+  const targetLocales = (configuration.locales as readonly string[])
+    .filter((locale) => locale !== configuration.sourceLocale)
+    .sort();
+  const catalogsBefore = await treeDigest(resolve(consumerRoot, 'i18n'));
+  try {
+    const exported = machine(consumerRoot, ['exchange', 'export']);
+    assert.deepEqual(
+      exported.result.files,
+      targetLocales.map((locale) => `xliff/${locale}.xlf`),
+      'thoth exchange export did not write one document per target locale',
+    );
+    const imported = machine(consumerRoot, ['exchange', 'import']);
+    assert.equal(
+      imported.result.changed,
+      false,
+      'thoth exchange import changed a catalog from documents nobody edited',
+    );
+    assert.deepEqual(
+      await treeDigest(resolve(consumerRoot, 'i18n')),
+      catalogsBefore,
+      'thoth exchange import rewrote a catalog it reported unchanged',
+    );
+    recordCapabilityClaim(
+      `${consumerName}: thoth exchange export and import`,
+      'cli:exchange',
+      {},
+    );
+  } finally {
+    await rm(exchangeDirectory, { recursive: true, force: true });
+  }
+
   await verifyWatchEvents(cliPath, catalogFile, catalog, policy);
 }
 
