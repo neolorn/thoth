@@ -12,7 +12,7 @@ Prereleases use the form `0.0.0-rc.1` and are published under the `next` dist-ta
 
 The commands below are written for version `0.0.0`, which this project cannot produce: versions only increase and the project is past it. Substitute the version being released. The example is deliberately impossible because a procedure written in a plausible next version reads as a record of that release rather than as an illustration of the steps.
 
-1. **Write the changelog.** Add the release section to `CHANGELOG.md`: what was added, changed, fixed, and removed, any migration steps, and the supported host ranges. The changelog is written for someone deciding whether to upgrade. Its format is the one [Documentation](CONTRIBUTING.md#documentation) in the contributing guide states. At release the `[Unreleased]` section becomes that version's section, carrying its number and its date.
+1. **Write the changelog.** Add the release section to `CHANGELOG.md`: what was added, changed, fixed, and removed, any migration steps, and the supported host ranges. The changelog is written for someone deciding whether to upgrade. Its format is the one [Documentation](CONTRIBUTING.md#documentation) in the contributing guide states. The section carries the version number and no date until the release, and takes the date of the day it is published.
 
 2. **Set the version.** Update `version` in `package.json`, `packages/runtime/package.json`, and `packages/toolkit/package.json`. The three must match; the verification suite fails otherwise.
 
@@ -22,9 +22,10 @@ The commands below are written for version `0.0.0`, which this project cannot pr
    node tools/generate-format-shapes.ts --release
    ```
 
-3. **Commit the release.**
+3. **Commit the release on a branch.** `main` takes changes through pull requests, as [Pull requests](CONTRIBUTING.md#pull-requests) in the contributing guide states, and a release is one.
 
    ```sh
+   git switch -c chore/release-0.0.0
    git commit -am "chore(release): 0.0.0"
    ```
 
@@ -36,23 +37,30 @@ The commands below are written for version `0.0.0`, which this project cannot pr
 
    The suite must pass in full. As part of the run, `verify:tarballs` packs both packages and verifies the archive contents against the build; the verified archives are written to `release/runtime/0.0.0/` and `release/toolkit/0.0.0/`, one directory per version so that a later release does not remove an archive this one has not published yet.
 
-5. **Tag the verified commit and push both**, then read the tag back from the remote rather than trusting the push output. The tag is created after the suite has passed, so a tag never names a commit the suite has not verified, and a red run leaves a commit to fix with no tag to delete. It is annotated because the push below carries annotated tags and silently leaves a lightweight one behind.
+5. **Merge the release through a pull request, then tag the commit on `main`.** Push the branch and open the pull request. Its `verify` run must pass; then squash-merge it, which writes one commit on `main` with the same tree, and starts the `verify` run on `main`. Wait for that run to pass, then tag the commit it verified and push the tag alone. Read the tag back from the remote rather than trusting the push output.
 
    ```sh
+   git push -u origin chore/release-0.0.0
+   gh pr create --fill
+   gh pr merge --squash --delete-branch
+   git switch main
+   git pull --ff-only
    git tag -a v0.0.0 -m "0.0.0"
-   git push origin main --follow-tags
+   git push origin v0.0.0
    git ls-remote --tags origin "v0.0.0*"
    ```
 
+   The tag is created after the run on `main` has passed, so a tag never names a commit the suite has not verified, and a red run leaves a commit to fix with no tag to delete. Before tagging, `git rev-parse HEAD` must print the commit that run verified. The tag is annotated because a lightweight tag carries no message and no tagger.
+
    Two lines must appear: `refs/tags/v0.0.0` and `refs/tags/v0.0.0^{}`. The second confirms the tag is annotated, and its object must equal what `git rev-parse v0.0.0^{}` prints locally, which is the release commit reaching the remote under the tag. One line means a lightweight tag arrived; no lines mean the tag was left behind. Neither is a release.
 
-6. **Publish the verified archives.** Publish the archives the suite produced rather than repacking, and only once they match the hosted run. The push in step 5 starts the `verify` workflow on the release commit; wait for it to pass, then compare the hashes its "Hash the verified archives" step printed with those of the local archives:
+6. **Publish the verified archives.** Publish the archives the suite produced rather than repacking, and only once they match the hosted run. Compare the hashes that the "Hash the verified archives" step of the run on `main` printed with those of the local archives:
 
    ```sh
    sha256sum release/runtime/0.0.0/*.tgz release/toolkit/0.0.0/*.tgz
    ```
 
-   Both lines must match the hosted run's. The build is reproducible, so a mismatch means the two runs did not build the same thing; find out why before anything is published.
+   Both lines must match the hosted run's. The squash commit has the tree the archives were built from, and the build is reproducible, so a mismatch means the two runs did not build the same thing; find out why before anything is published.
 
    ```sh
    npm publish release/runtime/0.0.0/neolorn-thoth-0.0.0.tgz
@@ -61,10 +69,13 @@ The commands below are written for version `0.0.0`, which this project cannot pr
 
    For a prerelease, add `--tag next`. The registry is set by `publishConfig` in each manifest. Publish both packages in the same session.
 
-7. **Move the version on.** Set the three manifests to the next prerelease identifier, so the tree stops claiming a version that has shipped:
+7. **Move the version on.** Set the three manifests to the next prerelease identifier, so the tree stops claiming a version that has shipped, and merge it through a pull request as in step 5:
 
    ```sh
+   git switch -c chore/version-0.0.1-rc.1
    git commit -am "chore(version): 0.0.1-rc.1"
+   git push -u origin chore/version-0.0.1-rc.1
+   gh pr create --fill
    ```
 
    Step 4 writes the verified archives under the version in the manifests. A tree left on the version it just published packs every later run into that same directory, so the archive holding what was published is replaced by a build that was not. Moving the version on keeps each build between releases under a version nothing has published, and the next release's step 2 sets the version it actually goes out as.
