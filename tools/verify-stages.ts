@@ -625,6 +625,10 @@ const declared: readonly StageDeclaration[] = Object.freeze([
   },
   // The development row on each other Node line the packages admit: install, the command steps,
   // the specs, the build and prerender, and the server bundle's answers, all on that line's Node.
+  // Each installs the development row's lock, so it runs the same Angular build as
+  // `verify:consumer`, and the workers that build starts are set by the share, not by the Node line.
+  // What an older Node adds is its own helper threads, which the budget does not bound, so the
+  // minimum is the development row's.
   ...[...nodeConsumerProfiles.keys()].map((name) => ({
     id: `verify:${name}`,
     processors: 4,
