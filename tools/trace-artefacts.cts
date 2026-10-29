@@ -134,6 +134,7 @@ function install(traceFile: string, workspaceRoot: string): void {
         'consumer:locale-host',
       ],
       ['tmp/focused-package-consumer-verification', 'consumer:focused'],
+      ['tmp/builder-consumer-verification', 'consumer:builder'],
       // `tmp/package-consumer-verification`, the directory that holds the consumers above,
       // is deliberately not one. The only thing any stage does to it is `mkdir` it before installing
       // its own subtree, and counting that made every install write one artefact, which is the

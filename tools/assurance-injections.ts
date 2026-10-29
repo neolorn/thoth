@@ -4477,7 +4477,7 @@ export const injections = Object.freeze([
     id: 'cli-answer-differs-from-the-api',
     invariant:
       'The command line reports the diagnostics and plan the programmatic API returns for the same project, because both run the same core.',
-    source: 'packages/toolkit/src/cli.ts',
+    source: 'packages/toolkit/src/diagnostic-text.ts',
     find: '    unique.set(diagnosticKey(diagnostic), diagnostic);',
     replace:
       "    if (diagnostic.severity === 'info') continue;\n    unique.set(diagnosticKey(diagnostic), diagnostic);",
@@ -4573,7 +4573,7 @@ export const injections = Object.freeze([
     id: 'human-column-zero-based',
     invariant:
       'A human diagnostic position is the machine span start plus one, in line and column.',
-    source: 'packages/toolkit/src/cli.ts',
+    source: 'packages/toolkit/src/diagnostic-text.ts',
     find: '          diagnostic.span.start.column + 1',
     replace: '          diagnostic.span.start.column',
     caughtBy: 'packages/toolkit/test/cli-streams-prompts-interruption.test.ts',
@@ -4597,6 +4597,42 @@ export const injections = Object.freeze([
     replace:
       "  'thoth:watch': 'thoth watch',\n  prebuild: 'thoth generate',\n});",
     caughtBy: 'packages/toolkit/test/init-leaves-the-build-alone.test.ts',
+  },
+  {
+    id: 'builder-runs-the-target-before-generating',
+    invariant:
+      'An Angular builder generates before the Angular target starts, so the target reads the modules its catalogs produce.',
+    source: 'packages/toolkit/src/angular-builders.ts',
+    find: '      first = await generateProject({ cwd });',
+    replace: '      first = await generateProject({ cwd, dryRun: true });',
+    caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
+  },
+  {
+    id: 'builder-runs-the-target-after-a-failed-generation',
+    invariant:
+      'An Angular builder whose first generation fails ends with a failed result and does not start the Angular target.',
+    source: 'packages/toolkit/src/angular-builders.ts',
+    find: '    if (!reportGeneration(context, first)) {',
+    replace: '    if (!reportGeneration(context, first) && false) {',
+    caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
+  },
+  {
+    id: 'serve-builder-generates-once',
+    invariant:
+      'The serve builder keeps generating for as long as the Angular serve target runs.',
+    source: 'packages/toolkit/src/angular-builders.ts',
+    find: "  if (command === 'serve') return true;",
+    replace: "  if (command === 'serve') return false;",
+    caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
+  },
+  {
+    id: 'builder-failed-cycle-ends-the-session',
+    invariant:
+      'A failed generation in a watching session is reported as a failed result and leaves the Angular target running.',
+    source: 'packages/toolkit/src/angular-builders.ts',
+    find: '            generationFailed = true;\n',
+    replace: '            generationFailed = true;\n            return;\n',
+    caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
   },
   {
     id: 'init-asks-a-fifth-question',
@@ -4728,7 +4764,7 @@ export const injections = Object.freeze([
     id: 'terminal-escape-to-a-non-terminal',
     invariant:
       'Nothing the executable writes to a non-terminal carries a terminal escape.',
-    source: 'packages/toolkit/src/cli.ts',
+    source: 'packages/toolkit/src/diagnostic-text.ts',
     find: '  return `${location}${diagnostic.severity} ${diagnostic.code}: ${diagnostic.summary}\\n`;',
     replace:
       '  return `\\u001b[33m${location}${diagnostic.severity} ${diagnostic.code}: ${diagnostic.summary}\\n`;',

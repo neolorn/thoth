@@ -28,7 +28,8 @@ The standards profile is `thoth-1`: Unicode 17.0.0, CLDR and LDML 48.2, MessageF
 defines it, the ECMA-402 13th edition for the options of a numeric function, XLIFF 2.2 Committee
 Specification 01, the sitemaps.org 0.9 protocol, the IANA Language Subtag Registry dated 2026-09-17,
 and the IANA Time Zone Database 2026e. The runtime depends on `tslib` and nothing else. The toolkit
-depends on `yaml` 2.9.1, `ajv` 8.20.0, `jsonc-parser` 3.3.1, `messageformat` 4.0.0 and `tslib`.
+depends on `@angular-devkit/architect` 0.2202.1, `yaml` 2.9.1, `ajv` 8.20.0, `jsonc-parser` 3.3.1,
+`messageformat` 4.0.0 and `tslib`.
 
 It is built and run on Angular 22.2.1, 22.0.4 and 22.0.0, TypeScript 6.0.3 and 6.0.2, RxJS 7.8.2
 and 7.4.0, Node 22.22.3, 24.15.0, 26.0.0 and 26.10.0, and Chromium, Firefox and WebKit through
@@ -253,6 +254,8 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
   refuses with `TH1807` to replace one holding a translation the catalogs do not, and
   `thoth exchange import` writes the returned translations into the catalogs, keeping the comments,
   the key order and every entry a unit does not translate.
+- The toolkit's `build`, `serve` and `test` Angular CLI builders run `thoth generate` inside
+  `ng build`, `ng serve` and `ng test`, and keep regenerating while the Angular command watches.
 - `pseudoLocales` in `thoth.config.json`, generated only by `--pseudo`, with length change and
   boundary markers set independently. `PSEUDO_LOCALE_ACCENTED` and `PSEUDO_LOCALE_BIDI`
   name the two tags UTS #35 defines.

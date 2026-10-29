@@ -290,6 +290,9 @@ importers:
 
   packages/toolkit:
     dependencies:
+      '@angular-devkit/architect':
+        specifier: 0.2202.1
+        version: 0.2202.1(chokidar@5.0.0)
       ajv:
         specifier: 8.20.0
         version: 8.20.0

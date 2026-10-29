@@ -23,6 +23,7 @@ import {
   type ToolkitDiagnostic,
   type ToolkitResult,
 } from './diagnostics.js';
+import { humanDiagnostic, orderedDiagnostics } from './diagnostic-text.js';
 import type { InitConfiguration } from './configuration.js';
 import {
   applyInitOption,
@@ -348,31 +349,6 @@ function parseInvocation(arguments_: readonly string[]): ParsedInvocation {
   });
 }
 
-function diagnosticKey(diagnostic: ToolkitDiagnostic): string {
-  return [
-    diagnostic.span?.sourcePath ?? '',
-    String(diagnostic.span?.start.offset ?? -1).padStart(12, '0'),
-    diagnostic.code,
-    diagnostic.severity,
-    JSON.stringify(diagnostic.path),
-    diagnostic.summary,
-  ].join('\u0000');
-}
-
-function orderedDiagnostics(
-  diagnostics: readonly ToolkitDiagnostic[],
-): readonly ToolkitDiagnostic[] {
-  const unique = new Map<string, ToolkitDiagnostic>();
-  for (const diagnostic of diagnostics) {
-    unique.set(diagnosticKey(diagnostic), diagnostic);
-  }
-  return [...unique.values()].sort((left, right) => {
-    const leftKey = diagnosticKey(left);
-    const rightKey = diagnosticKey(right);
-    return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
-  });
-}
-
 function machineSafeSummary(summary: string): string {
   // A machine-absolute path is the consumer's machine, and
   // `specs/10-compiler-and-tooling.spec.md` section 7 keeps those out of what Thoth publishes.
@@ -412,16 +388,6 @@ function machineDiagnostic(diagnostic: ToolkitDiagnostic) {
           },
         }),
   };
-}
-
-function humanDiagnostic(diagnostic: ToolkitDiagnostic): string {
-  const location =
-    diagnostic.span?.sourcePath === undefined
-      ? ''
-      : `${diagnostic.span.sourcePath}:${diagnostic.span.start.line + 1}:${
-          diagnostic.span.start.column + 1
-        }: `;
-  return `${location}${diagnostic.severity} ${diagnostic.code}: ${diagnostic.summary}\n`;
 }
 
 function failureExitCode(

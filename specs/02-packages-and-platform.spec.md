@@ -85,11 +85,16 @@ core knows nothing of the primary, and that direction is what yields one copy ra
 ## 4. Toolkit entry points
 
 `@neolorn/thoth-toolkit` publishes a side-effect-free programmatic API, the JSON Schemas of its
-public file formats, its own `package.json`, and the `thoth` executable.
+public file formats, its own `package.json`, the `thoth` executable, and the Angular CLI builders
+`build`, `serve` and `test`, which its manifest's `builders` field names.
 
 Importing the toolkit API MUST NOT execute a command, mutate the process, install a hook, scan a
 project, write a file, start a watcher, or perform network access. Command execution begins only
-through the declared executable.
+through the declared executable or a builder the Angular CLI runs.
+
+The builders are found through `builders` rather than through the export map, because that field
+and the `builders.json` it names are how the Angular CLI locates a builder and its option schema.
+Loading a builder MUST do nothing until the Angular CLI runs it.
 
 The schemas are exports rather than files inside the package, so that a consumer validating a file
 against the schema the toolkit actually used can resolve it by name rather than by a path into the
@@ -139,6 +144,13 @@ The toolkit divides its graph three ways. Ordinary implementation dependencies a
 sensitive host APIs, which are TypeScript and the applicable Angular compiler packages, are peer
 dependencies supplied by the consumer. Node compatibility is declared as an engines range rather than
 as a dependency.
+
+The Angular CLI builder API, `@angular-devkit/architect`, is an implementation dependency and not a
+peer. A builder made with one installation of it runs under the Angular CLI's installation, because
+the API recognizes a builder by a symbol shared across installations, so the consumer's copy does
+not have to be the one the toolkit loads. Angular's own builder package, `@angular/build`, depends
+on it the same way. The toolkit depends on the version the `@angular/build` release of its
+development row depends on.
 
 A consumer installs the toolkit as one development package. It MUST NOT have to assemble the
 toolkit's compiler machinery from parts.
@@ -196,6 +208,12 @@ fail with an actionable diagnostic, rather than attempt a best-effort private co
 
 Toolkit integration with Angular and TypeScript MUST use documented, supported APIs behind
 toolkit-owned adapters.
+
+The Angular CLI builders use the builder API the Angular CLI documents and the published
+`BuilderContext` interface of `@angular-devkit/architect`. They MUST NOT call a builder's
+programmatic entry point that Angular marks experimental, import a private module of
+`@angular/build`, replace a member of the context they are given, or copy an Angular builder's
+option schema.
 
 Use of an undocumented or private compiler API requires an explicit decision that names the exact
 compatible host pin, the adapter that isolates it, the regression evidence for it, its effect on the

@@ -2,10 +2,13 @@
  * The toolkit's published manifest, written rather than committed.
  *
  * `specs/02-packages-and-platform.spec.md` section 4 says what this package publishes: a
- * side-effect-free programmatic API, the schemas of its public file formats, its own manifest, and
- * the `thoth` executable. The schemas are exports because a consumer validating a file against
- * the schema Thoth used has to resolve it by name; reaching a path inside the installed directory
- * would make the package's internal layout a consumer's dependency.
+ * side-effect-free programmatic API, the schemas of its public file formats, its own manifest, the
+ * `thoth` executable, and the Angular builders `ng build`, `ng serve` and `ng test` run. The
+ * builders are reached through the manifest's `builders` field, which is how the Angular CLI finds
+ * them, and not through `exports`: the CLI loads a builder by the path `builders.json` names. The
+ * schemas are exports because a consumer validating a file against the schema Thoth used has to
+ * resolve it by name; reaching a path inside the installed directory would make the package's
+ * internal layout a consumer's dependency.
  *
  * The manifest is derived from the source one so the two cannot disagree about a version, a peer
  * range, or a dependency.
@@ -68,6 +71,7 @@ const outputPackage = {
   bin: {
     thoth: './cli.js',
   },
+  builders: './builders.json',
 };
 
 await mkdir(outputRoot, { recursive: true });
@@ -110,6 +114,35 @@ for (const [fileName, schema] of [
     'utf8',
   );
 }
+const builderSchemas = await import(
+  pathToFileURL(resolve(outputRoot, 'angular-builder-schemas.js')).href
+);
+const builderRoot = resolve(outputRoot, 'builders');
+await mkdir(builderRoot, { recursive: true });
+const builders: Record<string, unknown> = {};
+for (const command of ['build', 'serve', 'test']) {
+  const schema = builderSchemas.angularBuilderSchema(command);
+  if (schema?.title !== `Thoth ${command}`) {
+    throw new TypeError(
+      `Refusing to stage an invalid builder schema: ${command}`,
+    );
+  }
+  await writeFile(
+    resolve(builderRoot, `${command}.schema.json`),
+    `${JSON.stringify(schema, null, 2)}\n`,
+    'utf8',
+  );
+  builders[command] = {
+    implementation: `./angular-builder-${command}.js`,
+    schema: `./builders/${command}.schema.json`,
+    description: schema.description,
+  };
+}
+await writeFile(
+  resolve(outputRoot, 'builders.json'),
+  `${JSON.stringify({ builders }, null, 2)}\n`,
+  'utf8',
+);
 await writeFile(
   resolve(outputRoot, 'package.json'),
   `${JSON.stringify(outputPackage, null, 2)}\n`,

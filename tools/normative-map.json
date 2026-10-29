@@ -448,6 +448,12 @@
     },
     {
       "spec": "02-packages-and-platform.spec.md",
+      "section": "4. Toolkit entry points",
+      "statement": "Loading a builder MUST do nothing until the Angular CLI runs it.",
+      "reason": "Each builder module calls `createBuilder` and nothing else when it loads, and reaches the project host through a dynamic import inside the function the Angular CLI calls. Nothing a run can observe tells a module that did nothing at load from one whose work had no visible effect; verify:packages loads each builder the way the Angular CLI does."
+    },
+    {
+      "spec": "02-packages-and-platform.spec.md",
       "section": "5. Distribution format",
       "statement": "`@neolorn/thoth` MUST be distributed in Angular Package Format with partial Angular compilation.",
       "checks": ["plant:verify:packages:runtime-compiled-in-full"]
@@ -576,6 +582,12 @@
         "assurance:toolkit-imports-a-private-compiler-symbol",
         "assurance:toolkit-imports-below-a-compiler-root"
       ]
+    },
+    {
+      "spec": "02-packages-and-platform.spec.md",
+      "section": "10. Compiler-host boundary",
+      "statement": "They MUST NOT call a builder's programmatic entry point that Angular marks experimental, import a private module of `@angular/build`, replace a member of the context they are given, or copy an Angular builder's option schema.",
+      "reason": "An absence in the builders' source, which no run observes. The toolkit's dependency set, held exactly by verify:packages, does not contain `@angular/build`, so none of its entry points or modules can be imported, and each builder's schema is held equal to the toolkit's own by the same stage."
     },
     {
       "spec": "02-packages-and-platform.spec.md",
@@ -4132,13 +4144,13 @@
     {
       "spec": "10-compiler-and-tooling.spec.md",
       "section": "1. Ownership",
-      "statement": "A release MUST NOT import, call, extend, or model itself around a consumer application's compiler, repository tool, build system, workspace layout, or project service.",
+      "statement": "A release MUST NOT import, call, extend, or model itself around a consumer application's compiler, repository tool, build system, workspace layout, or project service, with one exception: the Angular CLI builders are written against the builder API the Angular CLI documents, and run an Angular target the consumer's workspace names, as section 14 states.",
       "checks": ["plant:verify:packages:toolkit-depends-on-a-workspace-tool"]
     },
     {
       "spec": "10-compiler-and-tooling.spec.md",
       "section": "1. Ownership",
-      "statement": "A project-owned orchestrator MAY call either, and a release MUST NOT let one redefine compilation semantics or make the toolkit depend on the project.",
+      "statement": "A project-owned orchestrator MAY call the first two, and a release MUST NOT let one redefine compilation semantics or make the toolkit depend on the project.",
       "reason": "The first half grants an orchestrator permission, which no release behavior can violate. The toolkit offers no hook through which a caller could change how compilation behaves, and that absence is not something a test run can observe; its dependency list is held by verify:packages under the statement before this one."
     },
     {
@@ -4772,7 +4784,24 @@
     {
       "spec": "10-compiler-and-tooling.spec.md",
       "section": "14. Build integration and the first run",
-      "statement": "A release MUST supply composable commands for that and MUST NOT install a lifecycle hook, mutate a consumer application's build implicitly, or require a private Angular builder hook or a consumer compiler dependency.",
+      "statement": "A release MUST: - generate before the Angular target starts, and start it only when generation succeeds; - end the command when that generation fails, with a failed result and every diagnostic in the command's output; - while the Angular target watches, which `ng serve` always does and `ng build` and `ng test` do when their `watch` option is set or Angular's unit-test builder decides by the terminal, run the toolkit's watch in the same process for as long as the target runs, write each cycle's diagnostics to the command's output, report a failed cycle as a failed result without stopping the target, and stop the watch when the target ends; - pass the Angular target no option but `watch`, and only when the command gives one.",
+      "checks": [
+        "assurance:builder-runs-the-target-before-generating",
+        "assurance:builder-runs-the-target-after-a-failed-generation",
+        "assurance:serve-builder-generates-once",
+        "assurance:builder-failed-cycle-ends-the-session"
+      ]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
+      "section": "14. Build integration and the first run",
+      "statement": "A step the builders do not run, such as a standalone typecheck, a server render outside `ng build`, a prerender, or a packaging step, runs `thoth generate` before it, and a release MUST supply composable commands for that.",
+      "reason": "The commands are the command line of section 11, and each is held by the statements of that section. The first half says what a consumer runs, which no release behavior can violate."
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
+      "section": "14. Build integration and the first run",
+      "statement": "A release MUST use only the builder API the Angular CLI documents for the builders, and MUST NOT install a lifecycle hook, change a consumer application's build behind a command the consumer did not run, or require a private Angular API or a consumer compiler dependency.",
       "checks": ["assurance:init-adds-a-lifecycle-script"]
     },
     {

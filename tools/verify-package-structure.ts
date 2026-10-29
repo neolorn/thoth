@@ -629,6 +629,7 @@ assert.equal(toolkitPackage.sideEffects, false);
 assert.deepEqual(toolkitPackage.engines, { node: nodeRange });
 assert.deepEqual(toolkitPackage.bin, { thoth: './cli.js' });
 assert.deepEqual(toolkitPackage.dependencies, {
+  '@angular-devkit/architect': '0.2202.1',
   ajv: '8.20.0',
   'jsonc-parser': '3.3.1',
   messageformat: '4.0.0',
@@ -868,6 +869,10 @@ const toolkitHarnessPackageRoot = resolve(
 await mkdir(dirname(toolkitHarnessPackageRoot), { recursive: true });
 await cp(toolkitRoot, toolkitHarnessPackageRoot, { recursive: true });
 for (const [specifier, sourceRoot] of [
+  [
+    '@angular-devkit/architect',
+    'packages/toolkit/node_modules/@angular-devkit/architect',
+  ],
   ['ajv', 'packages/toolkit/node_modules/ajv'],
   ['jsonc-parser', 'packages/toolkit/node_modules/jsonc-parser'],
   ['messageformat', 'packages/toolkit/node_modules/messageformat'],
@@ -887,6 +892,60 @@ for (const [specifier, sourceRoot] of [
 const builtToolkit = await import(
   pathToFileURL(resolve(toolkitHarnessPackageRoot, 'index.js')).href
 );
+// The three builders, found and loaded by the host the Angular CLI uses, from the installed package,
+// so the manifest's `builders` field, `builders.json`, each schema and each implementation are read
+// the way `ng build` reads them. Loading is where a builder written as ES modules would fail: the
+// host loads it with `require`.
+assert.equal(toolkitPackage.builders, './builders.json');
+const { WorkspaceNodeModulesArchitectHost } = await import(
+  pathToFileURL(
+    resolve(
+      toolkitHarnessNodeModules,
+      '@angular-devkit/architect/node/index.js',
+    ),
+  ).href
+);
+const builderHost = new WorkspaceNodeModulesArchitectHost(
+  {
+    getBuilderName: () => Promise.resolve(''),
+    getOptions: () => Promise.resolve({}),
+    getMetadata: () => Promise.resolve({}),
+    hasTarget: () => Promise.resolve(false),
+    getDefaultConfigurationName: () => Promise.resolve(undefined),
+  },
+  toolkitHarnessRoot,
+);
+const builtBuilderSchemas = await import(
+  pathToFileURL(
+    resolve(toolkitHarnessPackageRoot, 'angular-builder-schemas.js'),
+  ).href
+);
+assert.deepEqual(
+  Object.keys(await readJson(resolve(toolkitRoot, 'builders.json'))).sort(),
+  ['builders'],
+);
+assert.deepEqual(
+  Object.keys(
+    (await readJson(resolve(toolkitRoot, 'builders.json'))).builders,
+  ).sort(),
+  ['build', 'serve', 'test'],
+);
+for (const command of ['build', 'serve', 'test']) {
+  const info = await builderHost.resolveBuilder(
+    `@neolorn/thoth-toolkit:${command}`,
+  );
+  assert.deepEqual(
+    info.optionSchema,
+    builtBuilderSchemas.angularBuilderSchema(command),
+    `The staged ${command} builder schema does not match the toolkit's builder schema.`,
+  );
+  const builder = await builderHost.loadBuilder(info);
+  assert.equal(
+    builder[Symbol.for('@angular-devkit/architect:builder')],
+    true,
+    `The ${command} builder does not load as an Angular builder.`,
+  );
+}
 // Host admission is internal: a consumer does not ask Thoth whether its own compiler is admitted,
 // Thoth answers that when it compiles. The leaf module, for the reason the schema assertions
 // above already give.

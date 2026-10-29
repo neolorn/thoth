@@ -569,6 +569,16 @@ const declared: readonly StageDeclaration[] = Object.freeze([
     reads: ['dist:runtime', 'dist:toolkit'],
     writes: ['consumer:focused'],
   },
+  // The minimal consumer with Thoth's Angular builders in its workspace file and no generation
+  // step of its own: `ng build`, `ng test` and `ng serve`, each from nothing generated. Its own tree,
+  // because the minimal consumer's stage builds the same application without the builders.
+  {
+    id: 'verify:builder-consumer',
+    processors: 4,
+    minimumProcessors: 2,
+    reads: ['dist:runtime', 'dist:toolkit'],
+    writes: ['consumer:builder'],
+  },
   {
     id: 'verify:angular-22.0.4',
     processors: 4,

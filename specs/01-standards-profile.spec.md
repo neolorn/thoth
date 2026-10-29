@@ -375,7 +375,12 @@ behavior, XLIFF mapping, identity, or canonicalization through an ordinary depen
 The runtime package depends on `tslib` and nothing else. Everything else it needs is a peer
 dependency, listed in `02-packages-and-platform.spec.md`.
 
-The toolkit package depends on `tslib` and four packages, each bounded to one responsibility:
+The toolkit package depends on `tslib` and five packages, each bounded to one responsibility:
+
+- `@angular-devkit/architect` 0.2202.1 supplies the Angular CLI builder API the toolkit's builders
+  are written against: `createBuilder`, the context a builder runs in, and target scheduling. It is
+  the version `@angular/build` 22.2.1 depends on. Only the builder modules import it, so neither the
+  programmatic API nor the command line loads it.
 
 - `yaml` 2.9.1 parses YAML 1.2 through its documented document and node APIs. The toolkit applies
   its own restricted admission for profile, duplicate keys, tags, directives, aliases, anchors,

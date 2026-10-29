@@ -1,0 +1,82 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "cli": {
+    "packageManager": "pnpm"
+  },
+  "projects": {
+    "minimal": {
+      "projectType": "application",
+      "root": "",
+      "sourceRoot": "src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@neolorn/thoth-toolkit:build",
+          "options": {
+            "buildTarget": "minimal:angular-build"
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "minimal:angular-build:production"
+            },
+            "development": {
+              "buildTarget": "minimal:angular-build:development"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@neolorn/thoth-toolkit:serve",
+          "options": {
+            "serveTarget": "minimal:angular-serve"
+          }
+        },
+        "test": {
+          "builder": "@neolorn/thoth-toolkit:test",
+          "options": {
+            "testTarget": "minimal:angular-test"
+          }
+        },
+        "angular-build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "src/main.ts",
+            "tsConfig": "tsconfig.app.json",
+            "styles": ["src/styles.css"]
+          },
+          "configurations": {
+            "production": {
+              "outputHashing": "all",
+              "sourceMap": {
+                "scripts": true,
+                "styles": false,
+                "vendor": true,
+                "hidden": true
+              }
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "angular-serve": {
+          "builder": "@angular/build:dev-server",
+          "options": {
+            "buildTarget": "minimal:angular-build:development",
+            "port": 0
+          }
+        },
+        "angular-test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "buildTarget": "minimal:angular-build:development"
+          }
+        }
+      }
+    }
+  }
+}

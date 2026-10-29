@@ -12,13 +12,16 @@ and their stability are `11-diagnostics-and-observability.spec.md`. Dependency s
 ## 1. Ownership
 
 `@neolorn/thoth-toolkit` is a Node package, and it owns the compiler, static analysis, extraction,
-validation, generation, migration, the programmatic API, the command line, and the default
-standalone host. A release MUST NOT import, call, extend, or model itself around a consumer
-application's compiler, repository tool, build system, workspace layout, or project service.
+validation, generation, migration, the programmatic API, the command line, the Angular CLI
+builders, and the default standalone host. A release MUST NOT import, call, extend, or model itself
+around a consumer application's compiler, repository tool, build system, workspace layout, or
+project service, with one exception: the Angular CLI builders are written against the builder API
+the Angular CLI documents, and run an Angular target the consumer's workspace names, as section 14
+states.
 
-A consumer application invokes the built toolkit through its public API or its command line. A
-project-owned orchestrator MAY call either, and a release MUST NOT let one redefine
-compilation semantics or make the toolkit depend on the project.
+A consumer application invokes the built toolkit through its public API, its command line, or its
+Angular CLI builders. A project-owned orchestrator MAY call the first two, and a release MUST NOT
+let one redefine compilation semantics or make the toolkit depend on the project.
 
 A release MUST make importing the toolkit start no compilation, no process mutation, no
 watch, and no filesystem write, so a build script that imports it to read one type pays for nothing
@@ -428,8 +431,10 @@ absolute path, or a process identity in it.
 Cache entries are owner-partitioned, bounded, disposable, and integrity-checked, and a release MUST
 ignore and recompute corrupt or incompatible state rather than fail on it.
 
-Watch is an explicit foreground process. A release MUST NOT require a daemon, an account, a
-service, an install hook, or a background workspace process for it. Once a stopped watch has
+Watch is an explicit foreground process: `thoth watch`, or the watch an Angular CLI builder runs
+inside the Angular command the consumer started, for as long as that command runs (section 14). A
+release MUST NOT require a daemon, an account, a service, an install hook, or a background
+workspace process for it. Once a stopped watch has
 returned, a release MUST deliver no further event and MUST leave the watcher holding no reference
 that keeps the process alive; the event loop releases the operating system handle shortly after,
 and the host reports no event for that release. Startup performs a full
@@ -446,11 +451,28 @@ MUST NOT let watch poll a remote resource or migrate topology.
 A consumer application uses the built runtime and toolkit packages through their public exports, and
 MUST NOT compile a release's repository source or deep-import a private or generated module.
 
-A consumer application's own scripts ensure generation is fresh before a typecheck, build, test,
-server render, prerender, or packaging step that consumes generated contracts. A release MUST
-supply composable commands for that and MUST NOT install a lifecycle hook, mutate a consumer
-application's build implicitly, or require a private Angular builder hook or a consumer compiler
-dependency.
+Generation runs inside the Angular commands that consume generated contracts. The toolkit
+publishes three Angular CLI builders, `@neolorn/thoth-toolkit:build`, `@neolorn/thoth-toolkit:serve`
+and `@neolorn/thoth-toolkit:test`, which a workspace names as the builders of the targets
+`ng build`, `ng serve` and `ng test` run. Each names the Angular target it runs, in `buildTarget`,
+`serveTarget` or `testTarget`, and that target keeps its own builder and options. A release MUST:
+
+- generate before the Angular target starts, and start it only when generation succeeds;
+- end the command when that generation fails, with a failed result and every diagnostic in the
+  command's output;
+- while the Angular target watches, which `ng serve` always does and `ng build` and `ng test` do
+  when their `watch` option is set or Angular's unit-test builder decides by the terminal, run the
+  toolkit's watch in the same process for as long as the target runs, write each cycle's
+  diagnostics to the command's output, report a failed cycle as a failed result without stopping
+  the target, and stop the watch when the target ends;
+- pass the Angular target no option but `watch`, and only when the command gives one.
+
+A step the builders do not run, such as a standalone typecheck, a server render outside
+`ng build`, a prerender, or a packaging step, runs `thoth generate` before it, and a release MUST
+supply composable commands for that. A release MUST use only the builder API the Angular CLI
+documents for the builders, and MUST NOT install a lifecycle hook, change a consumer application's
+build behind a command the consumer did not run, or require a private Angular API or a consumer
+compiler dependency.
 
 A release MUST make generation succeed at every point in an ordinary first run, including
 before a single catalog is authored, because a project with no messages is a valid project and it is
@@ -582,3 +604,4 @@ authored file silently.
 - JSON Schema 2020-12: `https://json-schema.org/draft/2020-12/schema`
 - TypeScript compiler API and public language services: `https://www.typescriptlang.org/docs/`
 - Angular compiler and build documentation: `https://angular.dev/tools/cli`
+- Angular CLI builders: `https://angular.dev/tools/cli/cli-builder`

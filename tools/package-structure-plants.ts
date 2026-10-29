@@ -60,6 +60,26 @@ export const plants = Object.freeze([
     refusal: /@nx\/devkit/u,
   },
   {
+    id: 'toolkit-builder-waits-at-load',
+    plant: (root: string) =>
+      editText(
+        root,
+        'dist/toolkit/angular-builder-serve.js',
+        (text: string) => `${text}\nawait Promise.resolve();\n`,
+      ),
+    refusal: /ERR_REQUIRE_ASYNC_MODULE/u,
+  },
+  {
+    id: 'toolkit-builder-schema-drifts',
+    plant: editJson(
+      'dist/toolkit/builders/test.schema.json',
+      (schema: { additionalProperties: boolean }) => {
+        schema.additionalProperties = true;
+      },
+    ),
+    refusal: /The staged test builder schema does not match/u,
+  },
+  {
     id: 'toolkit-exports-an-internal-module',
     plant: editJson(toolkitManifest, (manifest: PackageManifest) => {
       manifest.exports['./static-analysis'] = './static-analysis.js';

@@ -211,7 +211,7 @@ importers:
         version: 22.2.1(@angular/compiler@22.2.1)(typescript@6.0.3)
       '@neolorn/thoth-toolkit':
         specifier: file:../../../dist/toolkit
-        version: file:../../../dist/toolkit(@angular/compiler@22.2.1)(typescript@6.0.3)
+        version: file:../../../dist/toolkit(@angular/compiler@22.2.1)(chokidar@5.0.0)(typescript@6.0.3)
       '@types/node':
         specifier: 26.6.4
         version: 26.6.4
@@ -3563,8 +3563,9 @@ snapshots:
       '@napi-rs/nice-win32-x64-msvc': 1.1.1
     optional: true
 
-  '@neolorn/thoth-toolkit@file:../../../dist/toolkit(@angular/compiler@22.2.1)(typescript@6.0.3)':
+  '@neolorn/thoth-toolkit@file:../../../dist/toolkit(@angular/compiler@22.2.1)(chokidar@5.0.0)(typescript@6.0.3)':
     dependencies:
+      '@angular-devkit/architect': 0.2202.1(chokidar@5.0.0)
       '@angular/compiler': 22.2.1
       ajv: 8.20.0
       jsonc-parser: 3.3.1
@@ -3572,6 +3573,8 @@ snapshots:
       tslib: 2.8.1
       typescript: 6.0.3
       yaml: 2.9.1
+    transitivePeerDependencies:
+      - chokidar
 
   '@neolorn/thoth@file:../../../dist/runtime(2e152045abffd16ce5ec06cee0882a65)':
     dependencies:

@@ -247,6 +247,19 @@ assertContained(npmStagingRoot, temporaryRoot);
 await rm(npmStagingRoot, { force: true, recursive: true });
 await mkdir(resolve(npmStagingRoot, 'thoth'), { recursive: true });
 await cp(npmManifestPath, resolve(npmStagingRoot, 'package.json'));
+// Seeded with the committed lock less Thoth's two entries. npm keeps a locked entry's integrity
+// rather than reading the tarball again, so those two are resolved afresh, and every other package
+// keeps the version it was locked at instead of floating to whatever the registry has today.
+const npmLockPath = resolve(npmFixtureRoot, 'package-lock.json');
+const npmLock = JSON.parse(await readFile(npmLockPath, 'utf8'));
+for (const name of Object.keys(npmLock.packages)) {
+  if (name.startsWith('node_modules/@neolorn/')) delete npmLock.packages[name];
+}
+await writeFile(
+  resolve(npmStagingRoot, 'package-lock.json'),
+  `${JSON.stringify(npmLock, null, 2)}\n`,
+  'utf8',
+);
 for (const name of ['runtime', 'toolkit']) {
   const folder = resolve(workspaceRoot, 'release', name, packedVersion);
   const packed = readdirSync(folder).filter((file) => file.endsWith('.tgz'));
