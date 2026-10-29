@@ -166,6 +166,17 @@ describe('ng add', () => {
     expect(before.size).toBe(after.files.length - 1);
   });
 
+  it('keeps the generated root and the cache out of version control', async () => {
+    const run = runner();
+    const tree = await application(run);
+    const before = text(tree, '/.gitignore');
+    const after = await add(run, tree);
+
+    expect(text(after, '/.gitignore')).toBe(
+      `${before}src/generated/i18n/\n.thoth/\n`,
+    );
+  });
+
   it('runs build, serve and test through the builders, each naming the Angular target it was, with every configuration carried', async () => {
     const run = runner();
     const tree = await application(run);

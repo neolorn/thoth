@@ -119,7 +119,8 @@ repository.
 Everything under the generated root, `src/generated/i18n/` unless configured otherwise, is output:
 it carries an ownership marker, it regenerates, and `thoth clean` removes it. A hand-edited
 generated file is overwritten by the next `generate`. `.thoth/` holds a cache that is safe to
-delete. Add both to `.gitignore`:
+delete. Where the project has a `.gitignore`, `thoth init` and `ng add` add both to it, and
+`thoth uninstall` takes them out again:
 
 ```text
 src/generated/i18n/

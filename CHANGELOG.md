@@ -261,6 +261,8 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
   `thoth.config.json` from four questions, the builders in `angular.json`, and the providers in
   `app.config.ts` and, where the application renders on the server, `app.config.server.ts`. It
   writes no catalog, and run again it changes nothing.
+- `thoth init` and `ng add` add the generated root and `.thoth/` to an existing `.gitignore`, and
+  `thoth uninstall` removes those lines.
 - `pseudoLocales` in `thoth.config.json`, generated only by `--pseudo`, with length change and
   boundary markers set independently. `PSEUDO_LOCALE_ACCENTED` and `PSEUDO_LOCALE_BIDI`
   name the two tags UTS #35 defines.

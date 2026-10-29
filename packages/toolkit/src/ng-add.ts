@@ -781,10 +781,18 @@ function writeInitialization(
   plan: {
     readonly configurationSource: string;
     readonly packageSource: string;
+    readonly ignoreSource: string | undefined;
   },
   newline: string,
 ): Rule {
   return (tree) => {
+    if (
+      plan.ignoreSource !== undefined &&
+      tree.exists('.gitignore') &&
+      tree.readText('.gitignore') !== plan.ignoreSource
+    ) {
+      tree.overwrite('.gitignore', plan.ignoreSource);
+    }
     const configurationPath = 'thoth.config.json';
     if (!tree.exists(configurationPath)) {
       tree.create(configurationPath, plan.configurationSource);
@@ -924,6 +932,9 @@ export default function ngAdd(
           ...(configurationSource === undefined ? {} : { configurationSource }),
           packageSource: current.readText('package.json'),
           generatedRootPath: applicationGeneratedRoot(project.root),
+          ...(current.exists('.gitignore')
+            ? { ignoreSource: current.readText('.gitignore') }
+            : {}),
         });
         if (!merged.ok) refuse(diagnosticsText(merged.diagnostics));
         return writeInitialization(
@@ -931,6 +942,7 @@ export default function ngAdd(
             configurationSource:
               configurationSource ?? merged.value.configurationSource,
             packageSource: merged.value.packageSource,
+            ignoreSource: merged.value.ignoreSource,
           },
           newline,
         );

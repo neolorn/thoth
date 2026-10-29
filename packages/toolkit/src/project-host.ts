@@ -3368,11 +3368,49 @@ function updatedPackageSource(
   return toolkitSuccess(manifestSource(mutable, source));
 }
 
-/** What initialization writes into the two files it owns a part of. */
+/** What initialization writes into the files it owns a part of. */
 export interface InitializationPlan {
   readonly configuration: ProjectConfiguration;
   readonly configurationSource: string;
   readonly packageSource: string;
+  /** The owner's `.gitignore` with Thoth's two paths in it, where the owner has one. */
+  readonly ignoreSource: string | undefined;
+}
+
+const IGNORE_NAME = '.gitignore';
+
+/**
+ * The paths a version-controlled owner keeps out of its history: the generated root, which every
+ * build rewrites, and the cache. Written the way the translation how-to spells them, so a project
+ * that followed it is found already set up.
+ */
+function ignoredPaths(generatedRootPath: string): readonly string[] {
+  return [`${generatedRootPath}/`, `${WORK_ROOT}/`];
+}
+
+// A path written with or without its leading or trailing slash names the same directory at the
+// owner root, which is the only place these two live.
+function bareIgnorePath(line: string): string {
+  return line.trim().replace(/^\//u, '').replace(/\/$/u, '');
+}
+
+/** The `.gitignore` text with each path it does not already name appended, in its own line endings. */
+function ignoreSourceWith(source: string, paths: readonly string[]): string {
+  const named = new Set(source.split(/\r?\n/u).map(bareIgnorePath));
+  const missing = paths.filter((path) => !named.has(bareIgnorePath(path)));
+  if (missing.length === 0) return source;
+  const newline = /\r\n/u.test(source) ? '\r\n' : '\n';
+  const separator = source.length === 0 || source.endsWith('\n') ? '' : newline;
+  return `${source}${separator}${missing.join(newline)}${newline}`;
+}
+
+/** The `.gitignore` text without the lines that name exactly the paths initialization adds. */
+function ignoreSourceWithout(source: string, paths: readonly string[]): string {
+  const named = new Set(paths);
+  const kept = source
+    .split(/(?<=\n)/u)
+    .filter((line) => !named.has(line.trim()));
+  return kept.join('');
 }
 
 /**
@@ -3388,6 +3426,8 @@ export function planInitialization(request: {
   readonly configurationSource?: string;
   readonly packageSource: string;
   readonly generatedRootPath: string;
+  /** The owner's `.gitignore`, where it has one. None is created, because not every owner uses git. */
+  readonly ignoreSource?: string;
 }): ToolkitResult<InitializationPlan> {
   const manifest = parsedPackageManifest(request.packageSource);
   if (!manifest.ok) return manifest;
@@ -3432,9 +3472,30 @@ export function planInitialization(request: {
       configuration: requested.value,
       configurationSource: formatConfiguration(requested.value),
       packageSource: packageSource.value,
+      ignoreSource:
+        request.ignoreSource === undefined
+          ? undefined
+          : ignoreSourceWith(
+              request.ignoreSource,
+              ignoredPaths(request.generatedRootPath),
+            ),
     }),
     requested.diagnostics,
   );
+}
+
+/** The owner's `.gitignore`, or nothing where it has none. */
+async function readIgnoreFile(
+  ownerRoot: string,
+): Promise<ToolkitResult<string | undefined>> {
+  const path = resolve(ownerRoot, IGNORE_NAME);
+  if (!(await pathExists(path))) return toolkitSuccess(undefined);
+  await assertOrdinaryContainedPath(ownerRoot, path);
+  return readAuthoredText(ownerRoot, path, {
+    code: 'TH1702',
+    name: 'the owner .gitignore',
+    maximumBytes: RESOURCE_LIMITS.configurationBytes,
+  });
 }
 
 /**
@@ -3469,6 +3530,8 @@ export async function initializeProject(
   if (existingConfiguration !== undefined && !existingConfiguration.ok) {
     return existingConfiguration;
   }
+  const ignoreFile = await readIgnoreFile(location.value.ownerRoot);
+  if (!ignoreFile.ok) return ignoreFile;
   const plan = planInitialization({
     ...(options.configuration === undefined
       ? {}
@@ -3478,6 +3541,9 @@ export async function initializeProject(
       : { configurationSource: existingConfiguration.value.source }),
     packageSource: packageManifest.value.source,
     generatedRootPath: location.value.generatedRootPath,
+    ...(ignoreFile.value === undefined
+      ? {}
+      : { ignoreSource: ignoreFile.value }),
   });
   if (!plan.ok) return plan;
   const changes: TextFileChange[] = [
@@ -3498,6 +3564,18 @@ export async function initializeProject(
       contents: plan.value.packageSource,
     },
   ];
+  if (
+    ignoreFile.value !== undefined &&
+    plan.value.ignoreSource !== undefined &&
+    plan.value.ignoreSource !== ignoreFile.value
+  ) {
+    changes.push({
+      absolutePath: resolve(location.value.ownerRoot, IGNORE_NAME),
+      portablePath: IGNORE_NAME,
+      previous: ignoreFile.value,
+      contents: plan.value.ignoreSource,
+    });
+  }
   const applied = await applyTextChanges(
     location.value.ownerRoot,
     changes,
@@ -3661,6 +3739,22 @@ export async function uninstallProject(
       previous: manifest.value.source,
       contents: packageContents,
     });
+  }
+  const ignoreFile = await readIgnoreFile(location.value.ownerRoot);
+  if (!ignoreFile.ok) return ignoreFile;
+  if (ignoreFile.value !== undefined) {
+    const ignoreContents = ignoreSourceWithout(
+      ignoreFile.value,
+      ignoredPaths(location.value.generatedRootPath),
+    );
+    if (ignoreContents !== ignoreFile.value) {
+      changes.push({
+        absolutePath: resolve(location.value.ownerRoot, IGNORE_NAME),
+        portablePath: IGNORE_NAME,
+        previous: ignoreFile.value,
+        contents: ignoreContents,
+      });
+    }
   }
   const applied = await applyTextChanges(
     location.value.ownerRoot,

@@ -384,6 +384,12 @@ The owner's `package.json` is the application's file. Where initialization or un
 it, a release MUST keep the file's indentation and line endings, and MUST NOT write it when none of
 its entries changed.
 
+The generated root and the cache are rewritten by every build, so neither belongs in a
+project's history. Where the owner has a `.gitignore`, initialization and `ng add` MUST add a line
+for each of the two it does not already name, in the file's own line endings, and uninstalling
+MUST remove exactly those lines. A release MUST NOT create a `.gitignore`, because an owner
+without one may not use git.
+
 A release MUST offer a dry run wherever one is meaningful, MUST put every mutating command
 through the output transaction, and MUST NOT prompt for a semantic choice in a noninteractive run.
 

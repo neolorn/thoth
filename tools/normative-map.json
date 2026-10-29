@@ -4599,6 +4599,22 @@
     {
       "spec": "10-compiler-and-tooling.spec.md",
       "section": "11. The command line",
+      "statement": "Where the owner has a `.gitignore`, initialization and `ng add` MUST add a line for each of the two it does not already name, in the file's own line endings, and uninstalling MUST remove exactly those lines.",
+      "checks": [
+        "assurance:ignore-file-left-without-the-generated-paths",
+        "assurance:ignore-file-left-by-ng-add",
+        "assurance:ignore-file-lines-kept-at-uninstall"
+      ]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
+      "section": "11. The command line",
+      "statement": "A release MUST NOT create a `.gitignore`, because an owner without one may not use git.",
+      "checks": ["assurance:ignore-file-created-for-an-owner-without-one"]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
+      "section": "11. The command line",
       "statement": "A release MUST allow an interactive initialization only on a terminal, and MUST prompt only for the source locale, the default locale, the complete supported-locale list, and any aliases before previewing the exact plan.",
       "checks": [
         "assurance:init-asks-a-fifth-question",

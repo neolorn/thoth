@@ -6188,4 +6188,40 @@ export const injections = Object.freeze([
     replace: '  if (graph.scopes.length < 0) {\n',
     caughtBy: 'packages/toolkit/test/first-run-sequence.test.ts',
   },
+  {
+    id: 'ignore-file-left-without-the-generated-paths',
+    invariant:
+      'Initialization adds the generated root and the cache to an existing .gitignore that does not name them.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '  if (missing.length === 0) return source;\n',
+    replace: '  if (missing.length >= 0) return source;\n',
+    caughtBy: 'packages/toolkit/test/ignore-file.test.ts',
+  },
+  {
+    id: 'ignore-file-left-by-ng-add',
+    invariant:
+      'ng add writes the .gitignore initialization plans, so the generated root and the cache are ignored after one command.',
+    source: 'packages/toolkit/src/ng-add.ts',
+    find: "      tree.overwrite('.gitignore', plan.ignoreSource);\n",
+    replace: '',
+    caughtBy: 'packages/toolkit/test/ng-add.test.ts',
+  },
+  {
+    id: 'ignore-file-created-for-an-owner-without-one',
+    invariant:
+      'Initialization creates no .gitignore where the owner has none, because that owner may not use git.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '  if (!(await pathExists(path))) return toolkitSuccess(undefined);\n',
+    replace: "  if (!(await pathExists(path))) return toolkitSuccess('');\n",
+    caughtBy: 'packages/toolkit/test/ignore-file.test.ts',
+  },
+  {
+    id: 'ignore-file-lines-kept-at-uninstall',
+    invariant:
+      'Uninstalling removes the .gitignore lines initialization added and keeps every other line.',
+    source: 'packages/toolkit/src/project-host.ts',
+    find: '    .filter((line) => !named.has(line.trim()));\n',
+    replace: '    .filter((line) => named.size >= 0 || line.length > 0);\n',
+    caughtBy: 'packages/toolkit/test/ignore-file.test.ts',
+  },
 ]);
