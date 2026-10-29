@@ -351,13 +351,20 @@ the server routes `ng new` writes with `provideLocalizedServerRendering`. A rele
   the URL policy, and accept each as an option;
 - write no catalog and no message text, because those are the application's;
 - check the whole setup before writing any of it, and refuse with a message, writing nothing, a
-  workspace with other than one application, a conflict with an existing configuration or package
-  entry, a target already under a name it would give, an application configuration it cannot find
-  or that provides the router more than once, a server configuration other than the one `ng new`
-  writes, and an application that renders on the server when no origin is given;
+  workspace with no application, or with several when `--project` names none of them, a conflict
+  with an existing configuration or package entry, a target already under a name it would give, an
+  application configuration it cannot find or that provides the router more than once, a server
+  configuration other than the one `ng new` writes, and an application that renders on the server
+  when no origin is given;
 - write nothing when run again on a workspace it has set up;
 - use only the schematic API the Angular CLI documents and the rules `@schematics/angular/utility`
   publishes.
+
+In a workspace with several applications, each declares its own locales, routes and catalogs, so
+each is a project of its own. A release MUST set up there only the application `--project` names,
+with its configuration, its package manifest and its `.gitignore` entries at that application's
+root, as initialization run in that directory writes them, and the runtime dependency in the
+workspace's manifest.
 
 Generation writes only owned plans. A bare check is read-only and offline-deterministic. In a check
 that applies fixes, a release MUST apply only previewable semantics-preserving changes, and
@@ -497,7 +504,9 @@ the targets `ng build`, `ng serve` and `ng test` run. Each names the Angular tar
   toolkit's watch in the same process for as long as the target runs, write each cycle's
   diagnostics to the command's output, report a failed cycle as a failed result without stopping
   the target, and stop the watch when the target ends;
-- pass the Angular target no option but `watch`, and only when the command gives one.
+- pass the Angular target no option but `watch`, and only when the command gives one;
+- generate the project whose configuration is at the Angular project's root, so each application
+  of a workspace builds from its own.
 
 A step the builders do not run, such as a standalone typecheck, a server render outside
 `ng build`, a prerender, or a packaging step, runs `thoth generate` before it, and a release MUST

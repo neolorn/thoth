@@ -931,7 +931,9 @@ function parsedPackageManifest(source: string): ToolkitResult<{
  * every compiled artifact. A directory whose name is not a usable identity is reported rather than
  * sanitized, since the identity is durable and a silently corrected one is worse than a refusal.
  */
-function createdPackageManifest(ownerRoot: string): ToolkitResult<string> {
+export function createdPackageManifest(
+  ownerRoot: string,
+): ToolkitResult<string> {
   const name = basename(ownerRoot);
   const provider = parseProviderId(name);
   if (!provider.ok) {

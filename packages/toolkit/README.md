@@ -42,9 +42,11 @@ npx ng add @neolorn/thoth-toolkit
 
 It writes no catalog, refuses a setup it would have to overwrite, and run again changes nothing.
 
+In a workspace with several applications, `--project` names the one to set up, and its `thoth.config.json` and `package.json` go in that application's root. Run it once for each application.
+
 ## Quick start
 
-In a workspace `ng add` does not set up, such as one with several applications, `thoth init` writes the configuration and the package entries. It takes the locales the project serves, where a URL carries the locale, and which messages the recovery screen shows:
+In a project that is not an Angular CLI workspace, `thoth init` writes the configuration and the package entries. It takes the locales the project serves, where a URL carries the locale, and which messages the recovery screen shows:
 
 ```text
 npx thoth init --source-locale en-US --default-locale en-US --locale en-US --locale ar-EG --url-policy path-prefix --recovery-message shell/recovery-message --recovery-retry shell/recovery-retry

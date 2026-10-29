@@ -261,7 +261,8 @@ Playwright 1.63.0. [Compatibility](docs/reference/compatibility.md) lists the co
 - `ng add @neolorn/thoth-toolkit` sets an Angular application up in one command: both packages,
   `thoth.config.json` from four questions, the builders in `angular.json`, and the providers in
   `app.config.ts` and, where the application renders on the server, `app.config.server.ts`. It
-  writes no catalog, and run again it changes nothing.
+  writes no catalog, and run again it changes nothing. In a workspace with several applications,
+  `--project` names the one it sets up, at that application's root.
 - `thoth init` and `ng add` add the generated root and `.thoth/` to an existing `.gitignore`, and
   `thoth uninstall` removes those lines.
 - `pseudoLocales` in `thoth.config.json`, generated only by `--pseudo`, with length change and

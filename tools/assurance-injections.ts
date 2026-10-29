@@ -6145,9 +6145,9 @@ export const injections = Object.freeze([
     id: 'ng-add-writes-a-catalog',
     invariant: 'ng add writes no catalog and no message text.',
     source: 'packages/toolkit/src/ng-add.ts',
-    find: "    const configurationPath = 'thoth.config.json';\n",
+    find: "    const configurationPath = ownerPath(owner, 'thoth.config.json');\n    if (!tree.exists(configurationPath)) {\n",
     replace:
-      "    const configurationPath = 'thoth.config.json';\n    if (!tree.exists('i18n/shell/en-US.yaml')) tree.create('i18n/shell/en-US.yaml', 'messages: {}\\n');\n",
+      "    const configurationPath = ownerPath(owner, 'thoth.config.json');\n    if (!tree.exists('i18n/shell/en-US.yaml')) tree.create('i18n/shell/en-US.yaml', 'messages: {}\\n');\n    if (!tree.exists(configurationPath)) {\n",
     caughtBy: 'packages/toolkit/test/ng-add.test.ts',
   },
   {
@@ -6189,6 +6189,34 @@ export const injections = Object.freeze([
     caughtBy: 'packages/toolkit/test/first-run-sequence.test.ts',
   },
   {
+    id: 'builder-reads-the-workspace-root',
+    invariant:
+      "A builder generates the project at its Angular project's root, so each application of a workspace builds from its own configuration.",
+    source: 'packages/toolkit/src/angular-builders.ts',
+    find: "  return resolve(context.workspaceRoot, typeof root === 'string' ? root : '');\n",
+    replace:
+      "  return resolve(context.workspaceRoot, typeof root === 'string' ? '' : '');\n",
+    caughtBy: 'packages/toolkit/test/angular-builders.test.ts',
+  },
+  {
+    id: 'ng-add-owner-at-the-workspace-root-of-several',
+    invariant:
+      'In a workspace of several applications, ng add writes the configuration and the package manifest at the root of the application --project names.',
+    source: 'packages/toolkit/src/ng-add.ts',
+    find: "    owner: normalizedPath(project.root).replace(/\\/$/u, ''),\n",
+    replace: "    owner: '',\n",
+    caughtBy: 'packages/toolkit/test/ng-add.test.ts',
+  },
+  {
+    id: 'ng-add-guesses-among-several-applications',
+    invariant:
+      'In a workspace of several applications, ng add refuses, naming them, when --project names none.',
+    source: 'packages/toolkit/src/ng-add.ts',
+    find: "  if (typeof requested !== 'string') {\n",
+    replace: "  if (typeof requested === 'symbol') {\n",
+    caughtBy: 'packages/toolkit/test/ng-add.test.ts',
+  },
+  {
     id: 'ignore-file-left-without-the-generated-paths',
     invariant:
       'Initialization adds the generated root and the cache to an existing .gitignore that does not name them.',
@@ -6202,7 +6230,7 @@ export const injections = Object.freeze([
     invariant:
       'ng add writes the .gitignore initialization plans, so the generated root and the cache are ignored after one command.',
     source: 'packages/toolkit/src/ng-add.ts',
-    find: "      tree.overwrite('.gitignore', plan.ignoreSource);\n",
+    find: '      tree.overwrite(ignorePath, plan.ignoreSource);\n',
     replace: '',
     caughtBy: 'packages/toolkit/test/ng-add.test.ts',
   },

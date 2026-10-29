@@ -1,5 +1,6 @@
 /**
- * `ng add @neolorn/thoth-toolkit` on an application `ng new` has just made, then `ng build`.
+ * `ng add @neolorn/thoth-toolkit` on an application `ng new` has just made, then `ng build`, and on a
+ * second application of the same workspace through `--project`.
  *
  * `specs/10-compiler-and-tooling.spec.md` section 11 says what `ng add` writes. This makes the
  * application with the installed Angular CLI's own `ng new`, runs the published schematic through
@@ -274,6 +275,73 @@ assert.ok(
   `No script in dist/${name}/browser carries the recovery message, which reaches the bundle only through the provideLocalization ng add adds to app.config.ts.`,
 );
 
+// A second application in the same workspace, which `--project` sets up at its own root.
+const SECOND = 'admin';
+const SECOND_TEXT = 'The admin page could not be shown. Please reload.';
+const generated = await ng(ngEntry, consumerRoot, [
+  'generate',
+  'application',
+  SECOND,
+  '--routing',
+  '--style=css',
+  '--ssr=false',
+  '--skip-install',
+  '--defaults',
+]);
+assert.equal(generated.status, 0, generated.output);
+const secondRoot = resolve(consumerRoot, 'projects', SECOND);
+const rootConfiguration = await readFile(
+  resolve(consumerRoot, 'thoth.config.json'),
+  'utf8',
+);
+const addedSecond = await ng(ngEntry, consumerRoot, [
+  ...ADD,
+  '--project',
+  SECOND,
+]);
+assert.equal(addedSecond.status, 0, addedSecond.output);
+assert.equal(
+  await readFile(resolve(consumerRoot, 'thoth.config.json'), 'utf8'),
+  rootConfiguration,
+  'ng add --project changed the configuration of the application at the workspace root.',
+);
+const secondManifest = JSON.parse(
+  await readFile(resolve(secondRoot, 'package.json'), 'utf8'),
+);
+assert.equal(secondManifest.imports['#i18n'], './src/generated/i18n/index.ts');
+await lstat(resolve(secondRoot, 'thoth.config.json'));
+await mkdir(resolve(secondRoot, 'i18n/shell'), { recursive: true });
+await writeFile(
+  resolve(secondRoot, 'i18n/shell/en-US.yaml'),
+  `messages:\n  recovery-message: ${SECOND_TEXT}\n  recovery-retry: Try again\n`,
+  'utf8',
+);
+await writeFile(
+  resolve(secondRoot, 'i18n/shell/ar-EG.yaml'),
+  'messages:\n  recovery-message: تعذر عرض صفحة الإدارة. الرجاء إعادة التحميل.\n  recovery-retry: إعادة المحاولة\n',
+  'utf8',
+);
+const builtSecond = await ng(ngEntry, consumerRoot, ['build', SECOND]);
+assert.equal(builtSecond.status, 0, builtSecond.output);
+assert.match(builtSecond.output, /Thoth generated \d+ files/u);
+const secondBrowserRoot = resolve(consumerRoot, 'dist', SECOND, 'browser');
+const secondScripts = (await readdir(secondBrowserRoot)).filter((file) =>
+  file.endsWith('.js'),
+);
+const secondBundled = await Promise.all(
+  secondScripts.map((file) =>
+    readFile(resolve(secondBrowserRoot, file), 'utf8'),
+  ),
+);
+assert.ok(
+  secondBundled.some((text) => text.includes(SECOND_TEXT)),
+  `No script in dist/${SECOND}/browser carries its own recovery message, so its build did not read the configuration and catalogs at projects/${SECOND}.`,
+);
+assert.ok(
+  !secondBundled.some((text) => text.includes(RECOVERY_TEXT)),
+  `A script in dist/${SECOND}/browser carries the recovery message of the application at the workspace root.`,
+);
+
 process.stdout.write(
-  'Thoth ng add consumer verified: on a new Angular application, ng add wrote the configuration, the builders and the providers, a second ng add changed nothing, and ng build with the two catalogs bundled the localization.\n',
+  'Thoth ng add consumer verified: on a new Angular application, ng add wrote the configuration, the builders and the providers, a second ng add changed nothing, and ng build with the two catalogs bundled the localization; a second application, set up with --project at its own root, built from its own catalogs.\n',
 );

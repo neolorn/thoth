@@ -4599,6 +4599,15 @@
     {
       "spec": "10-compiler-and-tooling.spec.md",
       "section": "11. The command line",
+      "statement": "A release MUST set up there only the application `--project` names, with its configuration, its package manifest and its `.gitignore` entries at that application's root, as initialization run in that directory writes them, and the runtime dependency in the workspace's manifest.",
+      "checks": [
+        "assurance:ng-add-owner-at-the-workspace-root-of-several",
+        "assurance:ng-add-guesses-among-several-applications"
+      ]
+    },
+    {
+      "spec": "10-compiler-and-tooling.spec.md",
+      "section": "11. The command line",
       "statement": "Where the owner has a `.gitignore`, initialization and `ng add` MUST add a line for each of the two it does not already name, in the file's own line endings, and uninstalling MUST remove exactly those lines.",
       "checks": [
         "assurance:ignore-file-left-without-the-generated-paths",
@@ -4630,9 +4639,10 @@
     {
       "spec": "10-compiler-and-tooling.spec.md",
       "section": "11. The command line",
-      "statement": "A release MUST: - ask, on a terminal, only for the source locale, the default locale, the supported locales, and the URL policy, and accept each as an option; - write no catalog and no message text, because those are the application's; - check the whole setup before writing any of it, and refuse with a message, writing nothing, a workspace with other than one application, a conflict with an existing configuration or package entry, a target already under a name it would give, an application configuration it cannot find or that provides the router more than once, a server configuration other than the one `ng new` writes, and an application that renders on the server when no origin is given; - write nothing when run again on a workspace it has set up; - use only the schematic API the Angular CLI documents and the rules `@schematics/angular/utility` publishes.",
+      "statement": "A release MUST: - ask, on a terminal, only for the source locale, the default locale, the supported locales, and the URL policy, and accept each as an option; - write no catalog and no message text, because those are the application's; - check the whole setup before writing any of it, and refuse with a message, writing nothing, a workspace with no application, or with several when `--project` names none of them, a conflict with an existing configuration or package entry, a target already under a name it would give, an application configuration it cannot find or that provides the router more than once, a server configuration other than the one `ng new` writes, and an application that renders on the server when no origin is given; - write nothing when run again on a workspace it has set up; - use only the schematic API the Angular CLI documents and the rules `@schematics/angular/utility` publishes.",
       "checks": [
         "assurance:ng-add-asks-for-aliases",
+        "assurance:ng-add-guesses-among-several-applications",
         "assurance:ng-add-writes-a-catalog",
         "assurance:ng-add-overwrites-an-angular-target-name",
         "assurance:ng-add-server-router-without-origin",
@@ -4836,8 +4846,9 @@
     {
       "spec": "10-compiler-and-tooling.spec.md",
       "section": "14. Build integration and the first run",
-      "statement": "A release MUST: - generate before the Angular target starts, and start it only when generation succeeds; - end the command when that generation fails, with a failed result and every diagnostic in the command's output; - while the Angular target watches, which `ng serve` always does and `ng build` and `ng test` do when their `watch` option is set or Angular's unit-test builder decides by the terminal, run the toolkit's watch in the same process for as long as the target runs, write each cycle's diagnostics to the command's output, report a failed cycle as a failed result without stopping the target, and stop the watch when the target ends; - pass the Angular target no option but `watch`, and only when the command gives one.",
+      "statement": "A release MUST: - generate before the Angular target starts, and start it only when generation succeeds; - end the command when that generation fails, with a failed result and every diagnostic in the command's output; - while the Angular target watches, which `ng serve` always does and `ng build` and `ng test` do when their `watch` option is set or Angular's unit-test builder decides by the terminal, run the toolkit's watch in the same process for as long as the target runs, write each cycle's diagnostics to the command's output, report a failed cycle as a failed result without stopping the target, and stop the watch when the target ends; - pass the Angular target no option but `watch`, and only when the command gives one; - generate the project whose configuration is at the Angular project's root, so each application of a workspace builds from its own.",
       "checks": [
+        "assurance:builder-reads-the-workspace-root",
         "assurance:builder-runs-the-target-before-generating",
         "assurance:builder-runs-the-target-after-a-failed-generation",
         "assurance:serve-builder-generates-once",

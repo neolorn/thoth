@@ -133,32 +133,55 @@ function missingFields(requested: InitConfiguration): readonly string[] {
   );
 }
 
-/** The one application in the workspace, which is the one Thoth's configuration at its root serves. */
+/**
+ * The application to set up, and the directory its Thoth owner is: the workspace root where the
+ * workspace has one application, and the application's own root where it has several.
+ *
+ * Several applications cannot share one configuration, because each declares its own locales,
+ * routes and catalogs. The builders find a project's configuration from the Angular project's
+ * root, and `thoth init` run in that directory writes the same owner, so the three agree.
+ */
 function selectedProject(
   workspace: WorkspaceDefinition,
   requested: unknown,
-): { readonly name: string; readonly project: ProjectDefinition } {
+): {
+  readonly name: string;
+  readonly project: ProjectDefinition;
+  readonly owner: string;
+} {
   const applications = [...workspace.projects.entries()].filter(
     ([, project]) => project.extensions['projectType'] === 'application',
   );
-  if (applications.length !== 1) {
+  if (applications.length === 0) {
+    refuse('The workspace has no application project.');
+  }
+  const names = applications.map(([name]) => name).join(', ');
+  if (applications.length === 1) {
+    const [name, project] = applications[0] as [string, ProjectDefinition];
+    if (typeof requested === 'string' && requested !== name) {
+      refuse(
+        `--project names ${JSON.stringify(requested)}, and the workspace's application is ${JSON.stringify(name)}.`,
+      );
+    }
+    return { name, project, owner: '' };
+  }
+  if (typeof requested !== 'string') {
     refuse(
-      applications.length === 0
-        ? 'The workspace has no application project.'
-        : `The workspace has ${applications.length} application projects (${applications
-            .map(([name]) => name)
-            .join(
-              ', ',
-            )}), and the configuration ng add writes at the workspace root serves one. Run thoth init in the directory of each application instead.`,
+      `The workspace has ${applications.length} application projects (${names}), each set up on its own. Pass --project with the one to set up.`,
     );
   }
-  const [name, project] = applications[0] as [string, ProjectDefinition];
-  if (typeof requested === 'string' && requested !== name) {
+  const selected = applications.find(([name]) => name === requested);
+  if (selected === undefined) {
     refuse(
-      `--project names ${JSON.stringify(requested)}, and the workspace's application is ${JSON.stringify(name)}.`,
+      `--project names ${JSON.stringify(requested)}, and the workspace's applications are ${names}.`,
     );
   }
-  return { name, project };
+  const [name, project] = selected;
+  return {
+    name,
+    project,
+    owner: normalizedPath(project.root).replace(/\/$/u, ''),
+  };
 }
 
 /** Each of `build`, `serve` and `test`: already Thoth's, Angular's and about to be, or absent. */
@@ -778,6 +801,7 @@ function rewriteTargets(
 
 /** The configuration and the package entries, written through the tree the way `thoth init` writes them to disk. */
 function writeInitialization(
+  owner: string,
   plan: {
     readonly configurationSource: string;
     readonly packageSource: string;
@@ -786,24 +810,32 @@ function writeInitialization(
   newline: string,
 ): Rule {
   return (tree) => {
+    const ignorePath = ownerPath(owner, '.gitignore');
     if (
       plan.ignoreSource !== undefined &&
-      tree.exists('.gitignore') &&
-      tree.readText('.gitignore') !== plan.ignoreSource
+      tree.exists(ignorePath) &&
+      tree.readText(ignorePath) !== plan.ignoreSource
     ) {
-      tree.overwrite('.gitignore', plan.ignoreSource);
+      tree.overwrite(ignorePath, plan.ignoreSource);
     }
-    const configurationPath = 'thoth.config.json';
+    const configurationPath = ownerPath(owner, 'thoth.config.json');
     if (!tree.exists(configurationPath)) {
       tree.create(configurationPath, plan.configurationSource);
     } else if (tree.readText(configurationPath) !== plan.configurationSource) {
       tree.overwrite(configurationPath, plan.configurationSource);
     }
-    const current = tree.readText('package.json');
-    const { packageSource } = plan;
-    const styled = packageSource.replaceAll(/\r?\n/gu, newline);
-    if (current !== styled) tree.overwrite('package.json', styled);
+    const packagePath = ownerPath(owner, 'package.json');
+    const styled = plan.packageSource.replaceAll(/\r?\n/gu, newline);
+    if (!tree.exists(packagePath)) tree.create(packagePath, styled);
+    else if (tree.readText(packagePath) !== styled) {
+      tree.overwrite(packagePath, styled);
+    }
   };
+}
+
+/** A file of the owner, by its path from the workspace root. */
+function ownerPath(owner: string, name: string): string {
+  return owner === '' ? name : `${owner}/${name}`;
 }
 
 /** The `ng-add` schematic. */
@@ -811,11 +843,25 @@ export default function ngAdd(
   options: Readonly<Record<string, unknown>>,
 ): Rule {
   return async (tree, context) => {
-    const { applicationGeneratedRoot, planInitialization } =
-      await import('./project-host.js');
+    const {
+      applicationGeneratedRoot,
+      createdPackageManifest,
+      planInitialization,
+    } = await import('./project-host.js');
     const utility = angularUtility();
     const workspace = await utility.readWorkspace(tree);
-    const { name, project } = selectedProject(workspace, options['project']);
+    const { name, project, owner } = selectedProject(
+      workspace,
+      options['project'],
+    );
+    // The generated root as the owner's configuration resolves it: below the application inside a
+    // workspace-root owner, and at the owner's own `src` where the owner is the application.
+    const generatedRootPath = applicationGeneratedRoot(
+      owner === '' ? project.root : '',
+    );
+    const packagePath = ownerPath(owner, 'package.json');
+    const configurationPath = ownerPath(owner, 'thoth.config.json');
+    const ignorePath = ownerPath(owner, '.gitignore');
     const states = targetStates(project);
     const angularBuild = angularBuildTarget(name, project, states);
     const buildOptions = angularBuild.options ?? {};
@@ -832,9 +878,15 @@ export default function ngAdd(
       refuse('The workspace has no package.json.');
     }
     const originalPackage = tree.readText('package.json');
+    const ownerPackage = (current: Tree): string => {
+      if (current.exists(packagePath)) return current.readText(packagePath);
+      const created = createdPackageManifest(owner);
+      if (!created.ok) refuse(diagnosticsText(created.diagnostics));
+      return created.value;
+    };
     const given = requestedConfiguration(options);
-    const configurationSource = tree.exists('thoth.config.json')
-      ? tree.readText('thoth.config.json')
+    const configurationSource = tree.exists(configurationPath)
+      ? tree.readText(configurationPath)
       : undefined;
     // On a project that has a configuration, the fields given are laid over the ones it declares,
     // because the Angular CLI hands the schematic the schema's defaults even when nothing is typed:
@@ -844,8 +896,8 @@ export default function ngAdd(
         ? undefined
         : planInitialization({
             configurationSource,
-            packageSource: originalPackage,
-            generatedRootPath: applicationGeneratedRoot(project.root),
+            packageSource: ownerPackage(tree),
+            generatedRootPath,
           });
     if (declared !== undefined && !declared.ok) {
       refuse(diagnosticsText(declared.diagnostics));
@@ -870,8 +922,8 @@ export default function ngAdd(
         ? {}
         : { configuration: requested }),
       ...(configurationSource === undefined ? {} : { configurationSource }),
-      packageSource: originalPackage,
-      generatedRootPath: applicationGeneratedRoot(project.root),
+      packageSource: ownerPackage(tree),
+      generatedRootPath,
     });
     if (!plan.ok) refuse(diagnosticsText(plan.diagnostics));
     const urlPolicy = plan.value.configuration.urlPolicy;
@@ -911,7 +963,7 @@ export default function ngAdd(
       plan.value.configuration.recoveryRetry,
     ].filter((key) => key !== undefined);
     context.logger.info(
-      `Thoth is set up. The messages are yours to write, one file per scope and locale at i18n/<scope>/<locale>.yaml${
+      `Thoth is set up. The messages are yours to write, one file per scope and locale at ${ownerPath(owner, 'i18n')}/<scope>/<locale>.yaml${
         recovery.length === 0
           ? '.'
           : `, beginning with the ones thoth.config.json names for the recovery screen: ${recovery.join(' and ')}.`
@@ -930,14 +982,15 @@ export default function ngAdd(
             ? {}
             : { configuration: requested }),
           ...(configurationSource === undefined ? {} : { configurationSource }),
-          packageSource: current.readText('package.json'),
-          generatedRootPath: applicationGeneratedRoot(project.root),
-          ...(current.exists('.gitignore')
-            ? { ignoreSource: current.readText('.gitignore') }
+          packageSource: ownerPackage(current),
+          generatedRootPath,
+          ...(current.exists(ignorePath)
+            ? { ignoreSource: current.readText(ignorePath) }
             : {}),
         });
         if (!merged.ok) refuse(diagnosticsText(merged.diagnostics));
         return writeInitialization(
+          owner,
           {
             configurationSource:
               configurationSource ?? merged.value.configurationSource,

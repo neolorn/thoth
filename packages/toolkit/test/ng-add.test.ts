@@ -85,6 +85,28 @@ async function application(
   );
 }
 
+/** A workspace of two applications, each at its own root under `projects/`, as `ng generate application` writes them. */
+async function applications(run: TestRunner): Promise<UnitTestTree> {
+  let tree = await run.runExternalSchematic(
+    '@schematics/angular',
+    'workspace',
+    {
+      name: 'stores',
+      newProjectRoot: 'projects',
+      version: '22.2.1',
+    },
+  );
+  for (const name of ['shop', 'admin']) {
+    tree = await run.runExternalSchematic(
+      '@schematics/angular',
+      'application',
+      { name, routing: true, style: 'css', standalone: true, ssr: false },
+      tree,
+    );
+  }
+  return tree;
+}
+
 async function add(
   run: TestRunner,
   tree: Tree,
@@ -175,6 +197,69 @@ describe('ng add', () => {
     expect(text(after, '/.gitignore')).toBe(
       `${before}src/generated/i18n/\n.thoth/\n`,
     );
+  });
+
+  it('sets up the application --project names in a workspace of several, at that application root', async () => {
+    const run = runner();
+    const tree = await applications(run);
+    const before = snapshot(tree);
+    const after = await add(run, tree, { ...ANSWERS, project: 'shop' });
+
+    expect(json(after, '/projects/shop/thoth.config.json')).toMatchObject({
+      sourceLocale: 'en-US',
+      locales: ['en-US', 'ar-EG'],
+      urlPolicy: 'path-prefix',
+    });
+    expect(json(after, '/projects/shop/package.json')).toMatchObject({
+      name: 'shop',
+      private: true,
+      imports: {
+        '#i18n': './src/generated/i18n/index.ts',
+        '#i18n/*': './src/generated/i18n/*.ts',
+      },
+      scripts: { 'thoth:generate': 'thoth generate' },
+    });
+    const workspaceManifest = json(after, '/package.json') as {
+      dependencies: Record<string, string>;
+      imports?: unknown;
+    };
+    expect(workspaceManifest.dependencies['@neolorn/thoth']).toBe(
+      `^${toolkitVersion}`,
+    );
+    expect(workspaceManifest.imports).toBeUndefined();
+    expect(after.exists('/thoth.config.json')).toBe(false);
+    expect(text(after, '/projects/shop/src/app/app.config.ts')).toContain(
+      'provideLocalizedRouter(routes)',
+    );
+
+    const workspace = json(after, '/angular.json') as {
+      projects: Record<
+        string,
+        { architect: Record<string, { builder: string }> }
+      >;
+    };
+    expect(workspace.projects['shop']?.architect['build']?.builder).toBe(
+      '@neolorn/thoth-toolkit:build',
+    );
+    expect(workspace.projects['admin']?.architect['build']?.builder).toBe(
+      '@angular/build:application',
+    );
+    for (const path of before.keys()) {
+      if (path.startsWith('/projects/admin/')) {
+        expect(after.readContent(path), path).toBe(before.get(path));
+      }
+    }
+  });
+
+  it('refuses a workspace of several applications when --project names none, and writes nothing', async () => {
+    const run = runner();
+    const tree = await applications(run);
+    const before = snapshot(tree);
+
+    await expect(add(run, tree)).rejects.toThrow(
+      'The workspace has 2 application projects (shop, admin), each set up on its own. Pass --project with the one to set up.',
+    );
+    expect(snapshot(tree)).toEqual(before);
   });
 
   it('runs build, serve and test through the builders, each naming the Angular target it was, with every configuration carried', async () => {

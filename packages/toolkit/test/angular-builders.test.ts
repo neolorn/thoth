@@ -63,9 +63,16 @@ const catalog = (title: string): string => `messages:\n  app-title: ${title}\n`;
 /** A placeholder that never closes, which no MessageFormat 2 parser accepts. */
 const BROKEN_CATALOG = 'messages:\n  app-title: "Broken {$name"\n';
 
-async function project(): Promise<string> {
+/** A temporary directory removed after the test. */
+async function directory(): Promise<string> {
   const root = await mkdtemp(resolve(tmpdir(), 'angular-builders-'));
   roots.push(root);
+  return root;
+}
+
+/** A Thoth project with one catalog, at `root` or in a directory of its own. */
+async function project(root?: string): Promise<string> {
+  root ??= await directory();
   await write(
     root,
     'package.json',
@@ -135,8 +142,15 @@ const optionSchema = (command: AngularCommand) =>
   >[3];
 
 class WorkspaceHost extends TestingArchitectHost {
+  constructor(
+    root: string,
+    private readonly projectRoot: string,
+  ) {
+    super(root, root);
+  }
+
   override getProjectMetadata() {
-    return Promise.resolve({ root: '' });
+    return Promise.resolve({ root: this.projectRoot });
   }
 }
 
@@ -148,8 +162,10 @@ interface Workspace {
   readonly open: () => number;
 }
 
-function workspace(root: string): Workspace {
-  const host = new WorkspaceHost(root, root);
+/** The workspace at `workspaceRoot`, whose one project `app` has its root at `projectRoot` within it. */
+function workspace(workspaceRoot: string, projectRoot = ''): Workspace {
+  const host = new WorkspaceHost(workspaceRoot, projectRoot);
+  const root = resolve(workspaceRoot, projectRoot);
   const starts: TargetStart[] = [];
   let open = 0;
   host.addBuilder(
@@ -250,6 +266,22 @@ async function schedule(
 }
 
 describe('the Angular builders', () => {
+  it('generate the project at the Angular project root, in a workspace whose applications each have one', async () => {
+    const workspaceRoot = await directory();
+    const applicationRoot = await project(
+      resolve(workspaceRoot, 'projects', 'shop'),
+    );
+    const host = workspace(workspaceRoot, 'projects/shop');
+
+    const { run } = await schedule(host, { project: 'app', target: 'build' });
+    const result = await run.result;
+
+    expect(result.success, host.logs.join('\n')).toBe(true);
+    expect(host.starts[0]?.generated).toContain('app-title');
+    expect(await generatedText(applicationRoot)).toContain('app-title');
+    expect(await generatedText(workspaceRoot)).toBeUndefined();
+  });
+
   it('generate before ng build runs the Angular build target', async () => {
     const root = await project();
     const host = workspace(root);
